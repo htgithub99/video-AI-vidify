@@ -479,6 +479,7 @@ export const PROJECT_LIST_TEXTS = {
     videoTooltip: "Video đã dùng / Giới hạn",
     imageTooltip: "Ảnh đã dùng / Giới hạn",
     voiceTooltip: "Ký tự voice đã dùng / Giới hạn",
+    updatedPrefix: "Cập nhật",
     genreLabels: {
       Documentary: "Tài Liệu",
       Explanation: "Giải Thích",
@@ -506,6 +507,7 @@ export const PROJECT_LIST_TEXTS = {
     videoTooltip: "Video Used / Limit",
     imageTooltip: "Images Used / Limit",
     voiceTooltip: "Voice Characters Used / Limit",
+    updatedPrefix: "Updated",
     genreLabels: {
       Documentary: "Documentary",
       Explanation: "Explanation",
@@ -1266,4 +1268,74 @@ export const IMAGE_FOCUS_OPTION_GROUPS = {
         { value: "conceptual", label: "Artistic", desc: "Prioritize artistic and symbolic expression" }, ],
     },
   ],
+} as const;
+
+export const UI_COMMON_TEXTS = {
+  vi: {
+    DASHBOARD_BADGE: "Next-Gen Video AI Studio",
+    DASHBOARD_HERO_SUBTITLE: "Tạo video AI tự động chất lượng cao với phân cảnh kịch bản điện ảnh, hình ảnh sinh động và giọng đọc thuyết minh chuyên nghiệp.",
+    PROJECTS_CREATED_COUNT: (count: number) => `${count} dự án đã tạo`,
+    VIEW_ALL: "Xem tất cả",
+    PRO_VERSION: "Pro v2.4",
+    LIVE_SYNC: "Live Sync",
+    PRO_STUDIO: "Pro Studio",
+    CINEMATIC_ENGINE: "Cinematic Engine",
+    ACTIVE_STATUS: "Active",
+    KEY_PREFIX: "Key: ",
+  },
+  en: {
+    DASHBOARD_BADGE: "Next-Gen Video AI Studio",
+    DASHBOARD_HERO_SUBTITLE: "Create high-quality automated AI videos with cinematic script breakdown, vivid imagery, and professional narration.",
+    PROJECTS_CREATED_COUNT: (count: number) => `${count} projects created`,
+    VIEW_ALL: "View All",
+    PRO_VERSION: "Pro v2.4",
+    LIVE_SYNC: "Live Sync",
+    PRO_STUDIO: "Pro Studio",
+    CINEMATIC_ENGINE: "Cinematic Engine",
+    ACTIVE_STATUS: "Active",
+    KEY_PREFIX: "Key: ",
+  },
+} as const;
+
+export const CINEMATIC_SETUP_TEXTS = {
+  vi: {
+    TITLE: "Tiền kỳ Phim Điện Ảnh AI",
+    SUBTITLE: "Nhập ý tưởng; AI tự động phát triển Screenplay, Nhân vật, Shot list và Continuity chuẩn điện ảnh.",
+    PLACEHOLDER: "Ví dụ: Một thợ săn tiền thưởng mắc kẹt trên thuộc địa khai khoáng ngoài vũ trụ phải lựa chọn giữa món tiền thưởng khổng lồ và việc cứu những người từng phản bội cô...",
+    FORMAT_LABEL: "Định dạng",
+    EPISODES_LABEL: "Số tập",
+    LANGUAGE_LABEL: "Ngôn ngữ thoại",
+    DURATION_LABEL: "Thời lượng tập",
+    SINGLE_EPISODE: "Phim một tập",
+    SERIES_EPISODE: "Loạt phim nhiều tập",
+    DURATIONS: {
+      ONE_MIN: "1 phút",
+      TWO_MIN: "2 phút",
+      THREE_MIN: "3 phút",
+      THREE_FIVE_MIN: "3–5 phút",
+      FIVE_TEN_MIN: "5–10 phút",
+      TEN_FIFTEEN_MIN: "10–15 phút",
+    },
+    SERIES_NOTICE: (count: number) => `AI sẽ khóa Series Bible: nhân vật, casting, thế giới, đạo cụ và continuity xuyên suốt ${count} tập.`,
+  },
+  en: {
+    TITLE: "AI Cinematic Pre-Production",
+    SUBTITLE: "Enter ideas; AI generates screenplay, characters, shot lists, and cinematic continuity.",
+    PLACEHOLDER: "E.g.: A bounty hunter trapped on an asteroid mining colony must choose between a massive reward and saving the crew that once betrayed her...",
+    FORMAT_LABEL: "Format",
+    EPISODES_LABEL: "Episodes",
+    LANGUAGE_LABEL: "Audio Language",
+    DURATION_LABEL: "Episode Duration",
+    SINGLE_EPISODE: "Single Movie",
+    SERIES_EPISODE: "Mini Series",
+    DURATIONS: {
+      ONE_MIN: "1 min",
+      TWO_MIN: "2 mins",
+      THREE_MIN: "3 mins",
+      THREE_FIVE_MIN: "3–5 mins",
+      FIVE_TEN_MIN: "5–10 mins",
+      TEN_FIFTEEN_MIN: "10–15 mins",
+    },
+    SERIES_NOTICE: (count: number) => `AI will lock Series Bible: characters, casting, worlds, props, and continuity across ${count} episodes.`,
+  },
 } as const;

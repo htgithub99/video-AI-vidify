@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import React, { useState } from "react";
 import _ from "lodash";
 import { Download, ImageIcon, Sparkles } from "lucide-react";
@@ -30,38 +31,38 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({ thumb, onPreview,
   const hasValidHeadline = thumb.hasText && !_.isEmpty(headlineText);
 
   return (
-    <div className="bg-slate-955/90 border border-slate-800/90 rounded-2xl overflow-hidden shadow-md flex flex-col sm:flex-row p-3 gap-3.5">
-      <div className="sm:w-1/2 aspect-video relative overflow-hidden bg-slate-900 rounded-xl border border-slate-800/80 shrink-0">
+    <div className={cn("bg-slate-955/90 border border-slate-800/90 rounded-2xl overflow-hidden shadow-md flex flex-col sm:flex-row p-3 gap-3.5")}>
+      <div className={cn("sm:w-1/2 aspect-video relative overflow-hidden bg-slate-900 rounded-xl border border-slate-800/80 shrink-0")}>
         {thumb.imageUrl ? (
-          <img src={thumb.imageUrl} alt={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_IDEA_FALLBACK} className="w-full h-full object-cover cursor-pointer" onClick={() => onPreview(thumb.imageUrl!)} title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_ZOOM_TOOLTIP} onError={() => onLoadError?.(thumb.id)} />
+          <img src={thumb.imageUrl} alt={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_IDEA_FALLBACK} className={cn("w-full h-full object-cover cursor-pointer")} onClick={() => onPreview(thumb.imageUrl!)} title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_ZOOM_TOOLTIP} onError={() => onLoadError?.(thumb.id)} />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-slate-500 text-[10px] gap-1">
-            <Sparkles className="w-4 h-4 text-slate-600 animate-pulse" />
-            <span>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_UNRENDERED}</span>
+          <div className={cn("w-full h-full skeleton-shimmer flex flex-col items-center justify-center text-slate-400 text-[10px] gap-1.5 p-2")}>
+            <Sparkles className={cn("w-4 h-4 text-purple-400 animate-pulse")} />
+            <span className={cn("font-mono font-bold animate-pulse")}>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_UNRENDERED}</span>
           </div>
         )}
       </div>
 
-      <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
-        <div className="space-y-1.5">
+      <div className={cn("flex-1 flex flex-col justify-between py-0.5 min-w-0")}>
+        <div className={cn("space-y-1.5")}>
           {hasValidHeadline && (
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-              <h4 className="text-purple-300 font-extrabold text-xs uppercase line-clamp-1 tracking-wide">{headlineText}</h4>
+            <div className={cn("flex items-center gap-1.5")}>
+              <span className={cn("w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0")} />
+              <h4 className={cn("text-purple-300 font-extrabold text-xs uppercase line-clamp-1 tracking-wide")}>{headlineText}</h4>
             </div>
           )}
-          {!_.isEmpty(promptText) && <p className="text-[10.5px] text-slate-400 font-normal line-clamp-3 leading-relaxed">{promptText}</p>}
+          {!_.isEmpty(promptText) && <p className={cn("text-[10.5px] text-slate-400 font-normal line-clamp-3 leading-relaxed")}>{promptText}</p>}
         </div>
 
         {thumb.imageUrl && (
-          <div className="pt-3">
+          <div className={cn("pt-3")}>
             <Button
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
               onClick={() => onDownload(thumb.imageUrl!, thumb.id)}
-              className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-md shadow-purple-950/40 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group/btn"
+              className={cn("w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-md shadow-purple-950/40 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group/btn")}
               title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD_TOOLTIP}>
-              <Download className="w-3.5 h-3.5" />
+              <Download className={cn("w-3.5 h-3.5")} />
               <span>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD}</span>
             </Button>
           </div>
@@ -81,23 +82,23 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
   }
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-4 shadow-xl backdrop-blur-md text-left">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20">
-            <ImageIcon className="w-3.5 h-3.5" />
+    <div className={cn("bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-4 shadow-xl backdrop-blur-md text-left")}>
+      <div className={cn("flex items-center justify-between")}>
+        <div className={cn("flex items-center gap-2")}>
+          <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20")}>
+            <ImageIcon className={cn("w-3.5 h-3.5")} />
           </span>
-          <h3 className="text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-1.5" title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_TITLE_TOOLTIP}>
+          <h3 className={cn("text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-1.5")} title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_TITLE_TOOLTIP}>
             {AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_TITLE}
           </h3>
         </div>
 
-        <span className="text-[10px] font-mono font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+        <span className={cn("text-[10px] font-mono font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full")}>
           {completedThumbnailCount}/{_.size(thumbnails)} {AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_SAMPLE_UNIT}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-3.5">
+      <div className={cn("grid grid-cols-1 gap-3.5")}>
         {_.map(thumbnails, (thumb, idx) => (
           <ThumbnailCardItem key={thumb.id || idx} thumb={thumb} onPreview={setPreviewImage} onDownload={handleDownloadThumbnail} onLoadError={onThumbnailLoadError} />
         ))}

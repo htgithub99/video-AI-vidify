@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import React from "react";
 import _ from "lodash";
 import { Zap, X, Activity } from "lucide-react";
@@ -11,8 +12,8 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
   const isReady = !_.isEmpty(_.trim(scriptContent));
 
   return (
-    <div className="bg-slate-900/90 dark:bg-slate-900/90 border border-slate-700/60 dark:border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl transition-all duration-300">
-      <div className="flex items-center gap-3 w-full relative z-10">
+    <div className={cn("bg-slate-900/90 dark:bg-slate-900/90 border border-slate-700/60 dark:border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl transition-all duration-300")}>
+      <div className={cn("flex items-center gap-3 w-full relative z-10")}>
         <Button
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
@@ -29,7 +30,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           }`}
           title={T.startBtnTooltip}>
           <Zap className={`w-5 h-5 shrink-0 ${isReady ? "text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]" : "text-slate-500"}`} />
-          <span className="truncate tracking-wide font-black text-white drop-shadow-sm">{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+          <span className={cn("truncate tracking-wide font-black text-white drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
         </Button>
 
         {isProcessing && (
@@ -44,25 +45,25 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
             }}
             disabled={isCancelling}
             isLoading={isCancelling}
-            className="flex-1 py-4 text-sm font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xl shadow-red-600/30 active:scale-95"
+            className={cn("flex-1 py-4 text-sm font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xl shadow-red-600/30 active:scale-95")}
             title={T.cancelBtnTooltip}>
-            <X className="w-4 h-4 text-white shrink-0 drop-shadow-sm" />
-            <span className="truncate font-extrabold text-white tracking-wide">{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
+            <X className={cn("w-4 h-4 text-white shrink-0 drop-shadow-sm")} />
+            <span className={cn("truncate font-extrabold text-white tracking-wide")}>{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
           </Button>
         )}
       </div>
 
       {(isProcessing || _.gt(stepProgress, 0)) && (
-        <div className="space-y-2 pt-1 text-left relative z-10 bg-slate-955/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner">
-          <div className="flex justify-between items-center text-xs font-mono font-bold">
-            <span className="text-amber-400 flex items-center gap-1.5 font-bold">
-              <Activity className="w-3.5 h-3.5 animate-spin text-amber-400" />
+        <div className={cn("space-y-2 pt-1 text-left relative z-10 bg-slate-955/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner")}>
+          <div className={cn("flex justify-between items-center text-xs font-mono font-bold")}>
+            <span className={cn("text-amber-400 flex items-center gap-1.5 font-bold")}>
+              <Activity className={cn("w-3.5 h-3.5 animate-spin text-amber-400")} />
               {T.progressNodeLabel} [{currentStepIndex}/4]
             </span>
-            <span className="text-emerald-400 font-black tracking-wider text-sm">{stepProgress}%</span>
+            <span className={cn("text-emerald-400 font-black tracking-wider text-sm")}>{stepProgress}%</span>
           </div>
-          <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5 shadow-inner">
-            <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-md shadow-emerald-500/50" style={{ width: `${stepProgress}%` }} />
+          <div className={cn("w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5 shadow-inner")}>
+            <div className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-md shadow-emerald-500/50")} style={{ width: `${stepProgress}%` }} />
           </div>
         </div>
       )}

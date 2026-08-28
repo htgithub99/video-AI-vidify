@@ -15,11 +15,23 @@ const getChildrenText = (node: React.ReactNode): string => {
 };
 
 export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primary", size = "md", isLoading, className = "", disabled, ...props }) => {
-  const baseStyles = "inline-flex items-center gap-2 justify-center font-semibold transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 cursor-pointer shadow-sm relative overflow-hidden";
+  const baseStyles = "inline-flex items-center gap-2 justify-center font-semibold transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 cursor-pointer shadow-sm relative overflow-hidden select-none";
 
-  const sizes = { xs: "px-2.5 py-1 text-[10px] rounded-lg", sm: "px-3 py-1.5 text-[11px] rounded-lg", md: "px-4 py-2 text-xs rounded-xl", lg: "px-5 py-3 text-xs rounded-xl", };
+  const sizes = {
+    xs: "px-2.5 py-1 text-[10px] rounded-lg tracking-wide",
+    sm: "px-3 py-1.5 text-[11px] rounded-xl tracking-wide",
+    md: "px-4 py-2 text-xs rounded-xl tracking-wide",
+    lg: "px-5 py-2.5 text-sm rounded-xl font-bold",
+  };
 
-  const variants = { primary: "bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-450 hover:to-rose-550 active:from-rose-600 active:to-rose-700 text-white border border-rose-400/20 shadow-md shadow-rose-500/10 hover:shadow-rose-500/25", secondary: "bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-100 border border-slate-700/60 hover:border-slate-600 shadow-sm", danger: "bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/30", ghost: "bg-slate-900 hover:bg-slate-800/80 text-slate-400 hover:text-slate-100 border border-transparent active:bg-slate-800 shadow-none", outline: "bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-850 hover:text-slate-100 text-slate-300 active:bg-slate-800/80 shadow-none", unstyled: "", };
+  const variants = {
+    primary: "bg-gradient-to-r from-rose-500 via-rose-600 to-rose-700 hover:from-rose-450 hover:via-rose-500 hover:to-rose-600 active:from-rose-700 active:to-rose-800 text-white border border-rose-450/30 shadow-md shadow-rose-600/20 hover:shadow-rose-600/35 hover:-translate-y-0.5",
+    secondary: "bg-slate-850/90 hover:bg-slate-800 active:bg-slate-900 text-slate-100 border border-slate-750/80 hover:border-slate-650 shadow-sm backdrop-blur-sm hover:-translate-y-0.5",
+    danger: "bg-red-500/15 hover:bg-red-500/25 active:bg-red-500/35 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 shadow-sm",
+    ghost: "bg-transparent hover:bg-slate-800/60 active:bg-slate-800 text-slate-400 hover:text-slate-100 border border-transparent shadow-none",
+    outline: "bg-slate-900/60 hover:bg-slate-850 active:bg-slate-900 border border-slate-750 hover:border-slate-600 text-slate-200 hover:text-white backdrop-blur-sm hover:-translate-y-0.5",
+    unstyled: "",
+  };
 
   const sizeStyles = variant === "unstyled" ? "" : sizes[size] || sizes.md;
   const variantStyles = _.defaultTo(variants[variant], variants.primary);
@@ -36,11 +48,21 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primar
   }
 
   return (
-    <button className={cn(finalBaseStyles, sizeStyles, variantStyles, className)} disabled={disabled || isLoading} title={computedTitle} {...props}>
+    <button
+      className={cn(
+        finalBaseStyles,
+        sizeStyles,
+        variantStyles,
+        isLoading && "button-skeleton-loading opacity-90 cursor-wait active:scale-100",
+        className
+      )}
+      disabled={disabled || isLoading}
+      title={computedTitle}
+      {...props}>
       {isLoading ? (
-        <span className="inline-flex items-center gap-2 justify-center w-full [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden">
-          <span className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin shrink-0 app-loading-spinner inline-block" />
-          <span className="truncate">{children}</span>
+        <span className={cn("inline-flex items-center gap-2 justify-center w-full [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden relative z-10")}>
+          <span className={cn("w-3.5 h-3.5 rounded-full border-2 border-current/30 border-t-current animate-spin shrink-0 app-loading-spinner inline-block")} />
+          <span className={cn("truncate opacity-80 animate-pulse")}>{children}</span>
         </span>
       ) : (
         children

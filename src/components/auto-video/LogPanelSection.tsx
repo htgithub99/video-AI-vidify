@@ -25,29 +25,29 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
   }, [logs.length]);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col min-h-[260px] relative">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-        <span className="font-bold flex items-center gap-2 text-sm text-slate-100" title={T.logHeaderTooltip}>
-          <span className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-400 dark:text-amber-300 flex items-center justify-center">
-            <Activity className="w-4 h-4" />
+    <div className={cn("bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col min-h-[260px] relative")}>
+      <div className={cn("flex items-center justify-between border-b border-slate-800 pb-3")}>
+        <span className={cn("font-bold flex items-center gap-2 text-sm text-slate-100")} title={T.logHeaderTooltip}>
+          <span className={cn("w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-400 dark:text-amber-300 flex items-center justify-center")}>
+            <Activity className={cn("w-4 h-4")} />
           </span>
           {T.logHeaderTitle}
         </span>
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2")}>
           {!_.isEmpty(logs) && (
-            <button type="button" onClick={scrollToLatest} className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer" title={T.logScrollLatestTooltip}>
-              <ArrowDown className="w-3 h-3" />
+            <button type="button" onClick={scrollToLatest} className={cn("flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer")} title={T.logScrollLatestTooltip}>
+              <ArrowDown className={cn("w-3 h-3")} />
               <span>{T.logScrollLatestBtn}</span>
             </button>
           )}
-          <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">{T.logEventsCount(logs.length)}</span>
+          <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300")}>{T.logEventsCount(logs.length)}</span>
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+      <div ref={scrollContainerRef} className={cn("flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent")}>
         {_.isEmpty(logs) ? (
           <div className={cn("flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2", _.isEqual(theme, AppTheme.LIGHT) ? "text-slate-500" : "text-slate-400")}>
-            <Activity className="w-8 h-8 mb-1 opacity-50" />
+            <Activity className={cn("w-8 h-8 mb-1 opacity-50")} />
             <span>{T.logEmpty}</span>
           </div>
         ) : (

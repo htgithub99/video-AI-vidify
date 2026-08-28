@@ -84,7 +84,7 @@ export const Tooltip: React.FC<ITooltipProps & { align?: "start" | "center" | "e
       {isVisible &&
         !_.isEmpty(content) &&
         createPortal(
-          <div style={getTransformStyle()} className="px-3 py-2 text-xs font-medium text-slate-100 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl pointer-events-none w-max max-w-xs text-center leading-relaxed">
+          <div style={getTransformStyle()} className={cn("px-3 py-2 text-xs font-medium text-slate-100 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl pointer-events-none w-max max-w-xs text-center leading-relaxed")}>
             {content}
             <div
               className={cn(

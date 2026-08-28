@@ -1,3 +1,4 @@
+import { cn } from "./lib/utils";
 import { ErrorMessage } from "./constants";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { Toaster } from "sonner";
@@ -631,15 +632,32 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden">
-      <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} />
+    <div className={cn("h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden")}>
+      <Header
+        currentLang={currentLang}
+        setLang={setLang}
+        theme={theme as any}
+        toggleTheme={toggleTheme}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      />
 
       <Toaster position="top-right" theme={theme as any} richColors />
 
-      <div className="flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955">
-        <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} />
+      <div className={cn("flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955")}>
+        <Sidebar
+          currentLang={currentLang}
+          activeTab={activeTab}
+          setActiveTab={handleActiveTabChange}
+          selectedProjectId={selectedProjectId}
+          activeProjectName={activeProject?.name || null}
+          theme={theme as any}
+          toggleTheme={toggleTheme}
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
+        />
 
-        <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
+        <main className={cn("flex-1 min-h-0 overflow-hidden relative bg-slate-955")}>
           <Suspense fallback={<TabContentLoading />}>
             {isSwitchingWorkspaceTab ? (
               <TabContentLoading />
@@ -670,7 +688,7 @@ export default function App() {
             ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
               <DashboardView currentLang={currentLang} projects={projects} onSelectProject={handleSelectProject} onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)} />
             ) : (
-              <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
+              <div className={cn("flex-grow h-full overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 w-full max-w-7xl mx-auto")}>
                 <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
               </div>
             )}

@@ -72,7 +72,7 @@ export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelinePro
   };
 
   return (
-    <div className="relative pl-1.5 py-1 space-y-4">
+    <div className={cn("relative pl-1.5 py-1 space-y-4")}>
       <div className={cn(PROGRESS_LOG_CONFIG.CLASSES.LINE, isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK)} />
 
       {_.map(entries, (entry, index) => {
@@ -88,10 +88,10 @@ export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelinePro
 
             <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, isLightTheme ? style.textLight : style.textDark)}>{entry.message}</span>
 
-            <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+            <div className={cn("flex items-center gap-1.5 ml-auto flex-shrink-0")}>
               {isError && (
                 <button type="button" onClick={() => handleCopy(entry.message, index)} className={cn("p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm cursor-pointer", isCopied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20")} title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}>
-                  {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-rose-400" />}
+                  {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5 text-rose-400")} />}
                 </button>
               )}
 

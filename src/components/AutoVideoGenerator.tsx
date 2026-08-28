@@ -1,3 +1,4 @@
+import { cn } from "../lib/utils";
 import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
 import { toast } from "sonner";
@@ -395,12 +396,12 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const lockedGenreLabel = useMemo(() => (cinematicMode ? genreLabels[VideoGenre.CINEMATIC_EPISODE] : undefined), [cinematicMode]);
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto bg-slate-955 font-sans text-slate-100">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
-        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 scrollbar-none">
+    <div className={cn("h-full flex flex-col overflow-y-auto bg-slate-955 font-sans text-slate-100")}>
+      <div className={cn("flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0")}>
+        <div className={cn("lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 scrollbar-none")}>
           {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
 
-          <div className="space-y-4">
+          <div className={cn("space-y-4")}>
             {cinematicMode ? (
               <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} />
             ) : (
@@ -409,7 +410,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
 
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
 
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
+            <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
               <GenerationSettingsSection
                 generationMode={generationMode}
                 setGenerationMode={setGenerationMode}
@@ -452,7 +453,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
                 />
               )}
 
-              <div className="pt-2 border-t border-slate-800/80">
+              <div className={cn("pt-2 border-t border-slate-800/80")}>
                 <StylePresetSelector selectedStyle={stylePreset} onSelectStyle={setStylePreset} language={currentLang} accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE} genre={genre} allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
               </div>
             </div>
@@ -481,7 +482,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
           </div>
         </div>
 
-        <div className="lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
+        <div className={cn("lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none")}>
           <ActionPanelSection scriptContent={scriptContent} isProcessing={isProcessing} isCancelling={isCancelling} currentStepIndex={currentStepIndex} stepProgress={stepProgress} handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false })} cancelPipeline={cancelPipeline} T={T} />
 
           <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />

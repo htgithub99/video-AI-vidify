@@ -5,6 +5,7 @@ import { VideoProject, GenerateType } from "../types.js";
 import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Search, Globe, ChevronRight, ChevronDown, Layers, Image, Mic } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
+import { Skeleton, ProjectTableSkeleton } from "./ui/Skeleton";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS, SortOrder } from "../constants/index.js";
 import _ from "lodash";
 import { appError } from "../lib/logger.js";
@@ -133,41 +134,74 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
   const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, "config.genre"), Boolean)))];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
-        <div>
-          <h2 className="text-base font-black tracking-tight text-slate-100 flex items-center gap-2 uppercase font-mono">
-            <Film className="w-5 h-5 text-rose-500" />
+    <div className={cn("space-y-6")}>
+      
+      <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 sm:p-7 rounded-3xl shadow-lg relative overflow-hidden")}>
+        <div className={cn("absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl pointer-events-none")} />
+        <div className={cn("relative z-10 space-y-1")}>
+          <h2 className={cn("text-xl font-extrabold tracking-tight text-white flex items-center gap-2.5 font-logo")}>
+            <div className={cn("p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400")}>
+              <Film className={cn("w-5 h-5")} />
+            </div>
             {t.projects}
           </h2>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed font-medium">{_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}</p>
+          <p className={cn("text-xs text-slate-400 leading-relaxed font-medium")}>
+            {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
+          </p>
         </div>
-        <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} onClick={handleOpenCreateTarget} className="flex items-center gap-2 self-start md:self-auto px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl shadow-md shadow-rose-500/10">
-          <Plus className="w-4 h-4" />
+        <Button
+          variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+          onClick={handleOpenCreateTarget}
+          className={cn("flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-2xl font-bold shadow-md shadow-rose-600/20")}>
+          <Plus className={cn("w-4 h-4")} />
           {t.newProject}
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900 border border-slate-800/80 p-4 rounded-xl">
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
+      <div className={cn("flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between glass-card p-4 rounded-2xl")}>
+        <div className={cn("flex flex-wrap items-center gap-2 w-full sm:w-auto")}>
+          <button
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
+            className={cn(
+              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
+                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
+                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
+            )}>
             {localT.allLangs}
           </button>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
+          <button
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
+            className={cn(
+              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
+                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
+                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
+            )}>
             {localT.viBtn}
           </button>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
+          <button
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
+            className={cn(
+              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
+                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
+                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
+            )}>
             {localT.enBtn}
           </button>
 
           {availableGenres.length > 2 && (
-            <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className="bg-slate-950 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 hover:bg-slate-850 transition-all uppercase">
+            <select
+              value={filterGenre}
+              onChange={(e) => setFilterGenre(e.target.value)}
+              className={cn("bg-slate-900/90 border border-slate-800 text-slate-300 rounded-xl px-3 py-1.5 text-[11px] font-bold outline-none hover:border-slate-700 transition-all")}>
               <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
               {_.map(
                 _.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
                 (g) => (
                   <option key={g} value={g}>
-                    {_.toUpper(getGenreLabel(g, currentLang))}
+                    {getGenreLabel(g, currentLang)}
                   </option>
                 ),
               )}
@@ -175,87 +209,45 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
           )}
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} placeholder={localT.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-955 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans" />
+        <div className={cn("relative w-full sm:w-72")}>
+          <Search className={cn("w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2")} />
+          <input
+            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
+            placeholder={localT.searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={cn("w-full bg-slate-950/80 border border-slate-800 text-xs text-slate-100 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/80 transition-all font-sans")}
+          />
         </div>
       </div>
 
       {isLoading || isLoadingAction ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden animate-pulse">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-800 text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-black tracking-wider bg-slate-950/20">
-                  <th className="py-4 px-6 min-w-[280px]">{localT.colVideoProject}</th>
-                  <th className="py-4 px-4 text-center min-w-[100px]">{t.outputLang}</th>
-                  <th className="py-4 px-4 text-center min-w-[120px]">{localT.colCredits}</th>
-                  <th className="py-4 px-4 min-w-[140px]">{localT.colUpdatedAt}</th>
-                  <th className="py-4 px-6 text-right min-w-[150px]">{localT.colActions}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {_.map([1, 2, 3], (i) => (
-                  <tr key={i} className="border-b border-slate-800/60">
-                    <td className="py-4 px-6">
-                      <div className="flex items-start gap-4">
-                        <div className="w-24 h-14 bg-slate-800/50 rounded shrink-0"></div>
-                        <div className="space-y-2 w-full mt-1">
-                          <div className="h-3.5 bg-slate-800 rounded w-1/3"></div>
-                          <div className="h-3 bg-slate-800/60 rounded w-2/3"></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="inline-flex h-5 w-16 bg-slate-800/60 rounded-lg mx-auto"></div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="inline-flex h-4.5 w-12 bg-slate-800/60 rounded mx-auto"></div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3.5 h-3.5 bg-slate-800/60 rounded-full"></div>
-                        <div className="h-3 bg-slate-800/60 rounded w-24"></div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <div className="h-7 w-20 bg-slate-800/60 rounded-lg"></div>
-                        <div className="h-7 w-7 bg-slate-800/60 rounded-lg"></div>
-                        <div className="h-7 w-7 bg-slate-800/60 rounded-lg"></div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ProjectTableSkeleton rows={4} />
       ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-20 bg-slate-900 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 space-y-4">
-          <div className="p-4 bg-slate-950 rounded-full border border-slate-800">
-            <Video className="w-8 h-8 text-slate-600" />
+        <div className={cn("text-center py-20 glass-card rounded-3xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-8 space-y-4")}>
+          <div className={cn("p-4 bg-slate-900/90 rounded-2xl border border-slate-800 text-rose-500 shadow-inner")}>
+            <Video className={cn("w-8 h-8")} />
           </div>
-          <p className="text-slate-400 text-xs font-semibold max-w-sm leading-relaxed">{projects.length === 0 ? t.noProjects : localT.noProjectsMatch}</p>
-          <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={handleOpenCreateTarget} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-bold text-xs">
-            <Plus className="w-4.5 h-4.5" />
+          <p className={cn("text-slate-400 text-xs font-semibold max-w-sm leading-relaxed")}>{projects.length === 0 ? t.noProjects : localT.noProjectsMatch}</p>
+          <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} onClick={handleOpenCreateTarget} className={cn("flex items-center gap-2 font-bold text-xs rounded-xl")}>
+            <Plus className={cn("w-4 h-4")} />
             {t.createNew}
           </Button>
         </div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+        <div className={cn("glass-card rounded-3xl shadow-lg overflow-hidden border border-slate-800/80")}>
+          <div className={cn("overflow-x-auto")}>
+            <table className={cn("w-full border-collapse text-left")}>
               <thead>
-                <tr className="border-b border-slate-800 text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-black tracking-wider bg-slate-950/20">
-                  <th className="py-4 px-6 min-w-[280px]">{localT.colVideoProject}</th>
-                  <th className="py-4 px-4 text-center min-w-[100px]">{t.outputLang}</th>
-                  <th className="py-4 px-4 text-center min-w-[120px]">{localT.colCredits}</th>
-                  <th className="py-4 px-4 min-w-[140px]">{localT.colUpdatedAt}</th>
-                  <th className="py-4 px-6 text-right min-w-[150px]">{localT.colActions}</th>
+                <tr className={cn("border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase font-black tracking-wider bg-slate-955/60")}>
+                  <th className={cn("py-4 px-6 min-w-[280px]")}>{localT.colVideoProject}</th>
+                  <th className={cn("py-4 px-4 text-center min-w-[100px]")}>{t.outputLang}</th>
+                  <th className={cn("py-4 px-4 text-center min-w-[120px]")}>{localT.colCredits}</th>
+                  <th className={cn("py-4 px-4 min-w-[140px]")}>{localT.colUpdatedAt}</th>
+                  <th className={cn("py-4 px-6 text-right min-w-[150px]")}>{localT.colActions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className={cn("divide-y divide-slate-800/60")}>
                 {paginatedProjects.map((project) => {
                   const dateStr = new Date(project.updatedAt).toLocaleDateString(t.en_US, {
                     year: "numeric",
@@ -286,123 +278,125 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
                   return (
                     <React.Fragment key={project.id}>
-                      <tr onClick={() => onSelectProject(project)} className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-6 shrink-0 flex items-center justify-center">
+                      <tr onClick={() => onSelectProject(project)} className={cn("group hover:bg-slate-850/70 cursor-pointer transition-colors duration-200")}>
+                        <td className={cn("py-4 px-6")}>
+                          <div className={cn("flex items-center gap-4")}>
+                            <div className={cn("w-6 shrink-0 flex items-center justify-center")}>
                               {hasChildren && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setExpandedParentIds((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
                                   }}
-                                  className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-slate-100 shrink-0">
-                                  {expandedParentIds[project.id] ? <ChevronDown className="w-4 h-4 text-rose-500" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                  className={cn("p-1.5 hover:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-slate-100 shrink-0")}>
+                                  {expandedParentIds[project.id] ? <ChevronDown className={cn("w-4 h-4 text-rose-500")} /> : <ChevronRight className={cn("w-4 h-4 text-slate-400")} />}
                                 </button>
                               )}
                             </div>
-                            <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
-                              <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
+                            <div className={cn("w-24 h-14 bg-slate-950/90 border border-slate-800 rounded-2xl flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors shadow-inner")}>
+                              <Video className={cn("w-6 h-6 text-slate-700 group-hover:text-rose-500/60 transition-colors")} />
                               {project.config.genre && (
-                                <div className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis" title={getGenreLabel(project.config.genre, currentLang)}>
+                                <div className={cn("absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis")} title={getGenreLabel(project.config.genre, currentLang)}>
                                   {getGenreLabel(project.config.genre, currentLang)}
                                 </div>
                               )}
                             </div>
-                            <div className="space-y-1">
-                              <h3 className="font-bold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors uppercase line-clamp-1">{project.name}</h3>
-                              <p className="text-slate-400 text-[10px] font-medium line-clamp-2 leading-relaxed max-w-md">{project.description || t.No_description_1}</p>
+                            <div className={cn("space-y-0.5 min-w-0 flex-1")}>
+                              <h3 className={cn("font-extrabold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors truncate")} title={project.name}>{project.name}</h3>
+                              <p className={cn("text-slate-400 text-[11px] font-medium truncate leading-relaxed max-w-md")} title={project.description || t.No_description_1}>{project.description || t.No_description_1}</p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-4 px-4 text-center">
-                          <span className="inline-flex items-center gap-1 bg-slate-800/40 border border-slate-700/50 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg text-[9px] font-bold">
-                            <Globe className="w-3 h-3 text-slate-500" />
+                        <td className={cn("py-4 px-4 text-center")}>
+                          <span className={cn("inline-flex items-center gap-1 bg-slate-900/80 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-xl text-[10px] font-bold")}>
+                            <Globe className={cn("w-3 h-3 text-sky-400")} />
                             {project.config.language === COMMON_STRINGS.EN ? t.englishLanguage : t.vietnamLanguage}
                           </span>
                         </td>
 
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-center gap-4 text-xs font-mono font-bold select-none">
-                            <div className="flex items-center gap-1.5" title={localT.videoTooltip}>
-                              <Video className="w-4 h-4 text-blue-500" />
-                              <span className="text-slate-400">
-                                <strong className="text-blue-400">{usedVideos}</strong>
-                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                        <td className={cn("py-4 px-4")}>
+                          <div className={cn("flex items-center justify-center gap-4 text-xs font-mono font-bold select-none")}>
+                            <div className={cn("flex items-center gap-1.5")} title={localT.videoTooltip}>
+                              <Video className={cn("w-4 h-4 text-blue-400")} />
+                              <span className={cn("text-slate-400")}>
+                                <strong className={cn("text-blue-400")}>{usedVideos}</strong>
+                                <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVideo.toLocaleString()}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5" title={localT.imageTooltip}>
-                              <Image className="w-4 h-4 text-emerald-500" />
-                              <span className="text-slate-400">
-                                <strong className="text-emerald-400">{usedImages}</strong>
-                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                            <div className={cn("flex items-center gap-1.5")} title={localT.imageTooltip}>
+                              <Image className={cn("w-4 h-4 text-emerald-400")} />
+                              <span className={cn("text-slate-400")}>
+                                <strong className={cn("text-emerald-400")}>{usedImages}</strong>
+                                <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitImage.toLocaleString()}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5" title={localT.voiceTooltip}>
-                              <Mic className="w-4 h-4 text-amber-500" />
-                              <span className="text-slate-400">
-                                <strong className="text-amber-400">{usedVoice.toLocaleString()}</strong>
-                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                            <div className={cn("flex items-center gap-1.5")} title={localT.voiceTooltip}>
+                              <Mic className={cn("w-4 h-4 text-amber-400")} />
+                              <span className={cn("text-slate-400")}>
+                                <strong className={cn("text-amber-400")}>{usedVoice.toLocaleString()}</strong>
+                                <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVoice.toLocaleString()}
                               </span>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-4 px-4 text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        <td className={cn("py-4 px-4 text-xs text-slate-400 font-mono font-medium")}>
+                          <div className={cn("flex items-center gap-1.5")}>
+                            <Calendar className={cn("w-3.5 h-3.5 text-slate-500")} />
                             <span>{dateStr}</span>
                           </div>
                         </td>
 
-                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === project.id} onClick={() => handleOpenProject(project)} className="text-[10px] uppercase font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 bg-rose-600 text-white shadow-sm hover:bg-rose-700 border border-transparent transition-all">
-                              <PlayCircle className="w-3.5 h-3.5" />
+                        <td className={cn("py-4 px-6 text-right")} onClick={(e) => e.stopPropagation()}>
+                          <div className={cn("flex items-center justify-end gap-2")}>
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === project.id} onClick={() => handleOpenProject(project)} className={cn("text-[10px] font-bold py-1.5 px-3 rounded-xl flex items-center gap-1 shadow-sm")}>
+                              <PlayCircle className={cn("w-3.5 h-3.5")} />
                               <span>{t.Open}</span>
-                              <ChevronRight className="w-3 h-3" />
+                              <ChevronRight className={cn("w-3 h-3")} />
                             </Button>
 
-                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => handleOpenEditTarget(project)} className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none" title={t.editProject}>
-                              <Edit3 className="w-3.5 h-3.5" />
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => handleOpenEditTarget(project)} className={cn("p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 rounded-xl")} title={t.editProject}>
+                              <Edit3 className={cn("w-3.5 h-3.5")} />
                             </Button>
 
-                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(project)} className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none" title={t.delete}>
-                              <Trash2 className="w-3.5 h-3.5" />
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(project)} className={cn("p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl")} title={t.delete}>
+                              <Trash2 className={cn("w-3.5 h-3.5")} />
                             </Button>
                           </div>
                         </td>
                       </tr>
                       {expandedParentIds[project.id] && hasChildren && (
-                        <tr className="bg-slate-950/20 border-b border-slate-800/60" onClick={(e) => e.stopPropagation()}>
-                          <td colSpan={5} className="py-3 px-6 bg-slate-955/10">
-                            <div className="space-y-2 pl-6 border-l-2 border-rose-500/30 ml-4 py-1">
-                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1 select-none">
-                                <Layers className="w-3.5 h-3.5 text-rose-500/60" />
+                        <tr className={cn("bg-slate-950/40 border-b border-slate-800/60")} onClick={(e) => e.stopPropagation()}>
+                          <td colSpan={5} className={cn("py-3 px-6")}>
+                            <div className={cn("space-y-2 pl-6 border-l-2 border-rose-500/30 ml-4 py-1")}>
+                              <h4 className={cn("text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1 select-none")}>
+                                <Layers className={cn("w-3.5 h-3.5 text-rose-500/60")} />
                                 {localT.linkedChildProjects}
                               </h4>
-                              <div className="grid gap-2">
+                              <div className={cn("grid gap-2")}>
                                 {children.map((child) => (
-                                  <div key={child.id} onClick={() => onSelectProject(child)} className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                      <PlayCircle className="w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors" />
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">{child.name}</span>
-                                        <span className="text-[9px] text-slate-500 font-medium font-mono">Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                                  <div key={child.id} onClick={() => onSelectProject(child)} className={cn("flex items-center justify-between p-3 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 rounded-2xl cursor-pointer transition-all duration-200 group/child shadow-sm")}>
+                                    <div className={cn("flex items-center gap-3")}>
+                                      <PlayCircle className={cn("w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors")} />
+                                      <div className={cn("flex flex-col gap-0.5")}>
+                                        <span className={cn("text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors")}>{child.name}</span>
+                                        <span className={cn("text-[9px] text-slate-500 font-medium font-mono")}>
+                                          {localT.updatedPrefix}: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                        </span>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === child.id} onClick={() => handleOpenProject(child)} className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all">
+                                    <div className={cn("flex items-center gap-2")} onClick={(e) => e.stopPropagation()}>
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === child.id} onClick={() => handleOpenProject(child)} className={cn("text-[9px] font-bold py-1 px-3 rounded-xl shadow-sm")}>
                                         {t.Open}
                                       </Button>
-                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(child)} className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors" title={t.delete}>
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(child)} className={cn("p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl")} title={t.delete}>
+                                        <Trash2 className={cn("w-3.5 h-3.5")} />
                                       </Button>
                                     </div>
                                   </div>
@@ -419,18 +413,18 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
             </table>
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-900/50">
-              <div className="text-[10px] text-slate-500 font-medium font-mono">
+            <div className={cn("flex items-center justify-between p-4 border-t border-slate-800/80 bg-slate-950/40")}>
+              <div className={cn("text-[11px] text-slate-400 font-medium font-mono")}>
                 {localT.showing} {(validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)} disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)} className={cn("px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all", _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE) ? "text-slate-600 cursor-not-allowed bg-slate-900" : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white")}>
+              <div className={cn("flex items-center gap-2")}>
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)} disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
                   {t.Previous}
                 </Button>
-                <div className="text-[10px] text-slate-400 font-bold font-mono px-2">
-                  {validCurrentPage} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {totalPages}
+                <div className={cn("text-xs text-slate-300 font-bold font-mono px-3 py-1 rounded-xl bg-slate-900 border border-slate-800")}>
+                  {validCurrentPage} / {totalPages}
                 </div>
-                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)} disabled={_.isEqual(validCurrentPage, totalPages)} className={cn("px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all", _.isEqual(validCurrentPage, totalPages) ? "text-slate-600 cursor-not-allowed bg-slate-900" : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white")}>
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)} disabled={_.isEqual(validCurrentPage, totalPages)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(validCurrentPage, totalPages) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
                   {t.Next}
                 </Button>
               </div>
@@ -442,23 +436,26 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
       <Modal
         isOpen={!!projectToDelete}
         onClose={() => setProjectToDelete(null)}
+        maxWidth="max-w-md"
         title={
-          <div className="flex items-center gap-2">
-            <Trash2 className="w-5 h-5 text-rose-500" />
-            <span className="font-bold text-slate-100">{t.Confirm_Deletion}</span>
+          <div className={cn("flex items-center gap-2")}>
+            <Trash2 className={cn("w-4 h-4 text-rose-500")} />
+            <span>{t.Confirm_Deletion}</span>
           </div>
         }>
-        <div className="p-6">
-          <p className="text-slate-300 text-xs mb-4">
+        <div className={cn("space-y-4")}>
+          <p className={cn("text-slate-300 text-xs leading-relaxed")}>
             {t.Are_you_sure_you_want_to_}
-            <span className="font-bold text-slate-100 px-1">"{projectToDelete?.name}"</span>?
+            <span className={cn("font-bold text-slate-100 px-1")}>"{projectToDelete?.name}"</span>?
           </p>
-          <p className="text-rose-500/80 text-[10px] font-bold uppercase tracking-wider">{t.This_action_cannot_be_und}</p>
-          <div className="flex items-center justify-end gap-3 pt-6 mt-2">
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className="px-4 py-2 text-xs font-bold rounded-xl">
+          <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed")}>
+            {t.This_action_cannot_be_und}
+          </div>
+          <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800")}>
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
               {t.cancel}
             </Button>
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isLoadingAction} onClick={handleDeleteConfirm} className="px-5 py-2 text-xs font-bold rounded-xl">
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isLoadingAction} onClick={handleDeleteConfirm} className={cn("px-5 py-2 text-xs font-bold rounded-xl")}>
               {t.delete}
             </Button>
           </div>
@@ -468,35 +465,36 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
+        maxWidth="max-w-lg"
         title={
-          <div className="flex items-center gap-2">
-            <Video className="w-5 h-5 text-rose-500" />
-            <span className="font-bold text-slate-100">{editingId ? t.Edit_Project : t.newProject}</span>
+          <div className={cn("flex items-center gap-2")}>
+            <Video className={cn("w-4 h-4 text-rose-500")} />
+            <span>{editingId ? t.Edit_Project : t.newProject}</span>
           </div>
         }>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectName} *</label>
-            <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans" />
+        <form onSubmit={handleSubmit} className={cn("space-y-4")}>
+          <div className={cn("space-y-1.5")}>
+            <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectName} *</label>
+            <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className={cn("w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans")} />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectDesc}</label>
-            <textarea placeholder={t.Write_custom_script_idea_} value={desc} rows={3} onChange={(e) => setDesc(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans" />
+          <div className={cn("space-y-1.5")}>
+            <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectDesc}</label>
+            <textarea placeholder={t.Write_custom_script_idea_} value={desc} rows={3} onChange={(e) => setDesc(e.target.value)} className={cn("w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans")} />
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-start gap-3 text-xs text-slate-450">
-            <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <div className="leading-relaxed text-[11px]">
-              <span className="font-extrabold uppercase tracking-wider text-slate-300 text-[9px] block mb-1">{t.Niche_ideas}</span> {t.You_can_choice_History_Do}
+          <div className={cn("bg-slate-950/80 border border-slate-800 p-4 rounded-2xl flex items-start gap-3 text-xs text-slate-300")}>
+            <Lightbulb className={cn("w-4 h-4 text-amber-400 shrink-0 mt-0.5")} />
+            <div className={cn("leading-relaxed text-[11px]")}>
+              <span className={cn("font-extrabold uppercase tracking-wider text-amber-400 text-[10px] block mb-0.5")}>{t.Niche_ideas}</span> {t.You_can_choice_History_Do}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-bold rounded-xl">
+          <div className={cn("flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800")}>
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setShowModal(false)} className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
               {t.cancel}
             </Button>
-            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_SUBMIT} variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} isLoading={isLoadingAction} className="px-5 py-2 text-xs font-bold rounded-xl">
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_SUBMIT} variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} isLoading={isLoadingAction} className={cn("px-5 py-2 text-xs font-bold rounded-xl")}>
               {editingId ? t.Update : t.create}
             </Button>
           </div>

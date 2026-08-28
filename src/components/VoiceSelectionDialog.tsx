@@ -5,6 +5,7 @@ import { Modal } from "./ui/Modal";
 import _ from "lodash";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
+import { VoiceGridSkeleton } from "./ui/Skeleton";
 import { useVoices } from "../hooks/useVoices";
 import { logger } from "../utils/logger";
 import { jsonUtils } from "../lib/json";
@@ -241,66 +242,73 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
       onClose={onClose}
       title={
         <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
-          <div className="flex items-center gap-3 cursor-help">
-            <Mic className="w-5 h-5 text-rose-500" />
+          <div className={cn("flex items-center gap-3 cursor-help")}>
+            <Mic className={cn("w-5 h-5 text-rose-500")} />
             <span>{dialogTexts.TITLE}</span>
           </div>
         </Tooltip>
       }>
-      <div className="flex flex-col h-full min-h-[500px] bg-slate-900">
-        <div className="w-full bg-slate-955/40 border-b border-slate-800/80 p-5 shrink-0 z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Search className="w-3.5 h-3.5" />
+      <div className={cn("flex flex-col h-full min-h-[520px] bg-slate-955 text-left")}>
+        
+        <div className={cn("w-full bg-slate-900/90 border-b border-slate-800/80 p-5 shrink-0 z-10 rounded-t-2xl")}>
+          <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5")}>
+            <div className={cn("space-y-1.5")}>
+              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Search className={cn("w-3.5 h-3.5 text-rose-400")} />
                 {dialogTexts.searchLabel}
               </label>
-              <div className="relative">
-                <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-200 focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 outline-none transition-all shadow-sm" />
-                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+              <div className={cn("relative")}>
+                <input
+                  type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
+                  value={search}
+                  onChange={handleSearchChange}
+                  placeholder={dialogTexts.searchPlaceholder}
+                  className={cn("w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 focus:border-rose-500 outline-none transition-all shadow-inner font-sans")}
+                />
+                <Search className={cn("absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500")} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Globe2 className="w-3.5 h-3.5" />
+            <div className={cn("space-y-1.5")}>
+              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Globe2 className={cn("w-3.5 h-3.5 text-sky-400")} />
                 {dialogTexts.providerLabel}
               </label>
-              <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-0.5">
-                <select value={provider} onChange={(e) => setProvider(_.get(e, "target.value"))} className="w-full bg-transparent py-2 text-sm text-slate-200 outline-none appearance-none pr-6 cursor-pointer">
+              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
+                <select value={provider} onChange={(e) => setProvider(_.get(e, "target.value"))} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className="bg-slate-900 text-slate-200">
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {_.get(opt, "value")}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Globe2 className="w-3.5 h-3.5" />
+            <div className={cn("space-y-1.5")}>
+              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Globe2 className={cn("w-3.5 h-3.5 text-emerald-400")} />
                 {dialogTexts.languageLabel}
               </label>
-              <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-0.5">
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-transparent py-2 text-sm text-slate-200 outline-none appearance-none pr-6 cursor-pointer">
+              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
+                <select value={language} onChange={(e) => setLanguage(e.target.value)} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className="bg-slate-900 text-slate-200">
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {LANGUAGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
+            <div className={cn("space-y-1.5")}>
+              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <User className={cn("w-3.5 h-3.5 text-amber-400")} />
                 {dialogTexts.genderLabel}
               </label>
-              <div className="flex gap-1 bg-slate-955 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+              <div className={cn("flex gap-1 bg-slate-950 rounded-xl p-1 border border-slate-800")}>
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
@@ -309,7 +317,12 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                       key={g}
                       type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                       onClick={() => setGender(g)}
-                      className={cn(`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      className={cn(
+                        "flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all select-none cursor-pointer flex items-center justify-center",
+                        isActive
+                          ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      )}>
                       {_.isEmpty(g) ? dialogTexts.allGender : _.isEqual(g, VOICE_GENDER.MALE) ? dialogTexts.maleGender : dialogTexts.femaleGender}
                     </Button>
                   );
@@ -317,20 +330,20 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5" />
+            <div className={cn("space-y-1.5")}>
+              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Activity className={cn("w-3.5 h-3.5 text-purple-400")} />
                 {dialogTexts.ageLabel}
               </label>
-              <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-0.5">
-                <select value={age} onChange={(e) => setAge(e.target.value)} className="w-full bg-transparent py-2 text-sm text-slate-200 outline-none appearance-none pr-6 cursor-pointer">
+              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
+                <select value={age} onChange={(e) => setAge(e.target.value)} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className="bg-slate-900 text-slate-200">
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {AGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
           </div>
@@ -343,27 +356,32 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               userRequestedNextPageRef.current = true;
             }
           }}>
-          {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm text-slate-500">
-              <div className="w-10 h-10 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(244,63,94,0.3)]" />
-              <p className="text-sm font-bold animate-pulse text-rose-400">{dialogTexts.loading}</p>
-            </div>
-          )}
+          {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) ? (
+            <VoiceGridSkeleton count={6} />
+          ) : (
+            <>
+              {_.isEmpty(filteredVoices) && !loading && (
+                <div className={cn("flex flex-col items-center justify-center text-slate-500 py-16")}>
+                  <Mic className={cn("w-16 h-16 mb-3 opacity-20")} />
+                  <p className={cn("text-xs font-semibold opacity-70")}>{dialogTexts.noVoices}</p>
+                </div>
+              )}
 
-          {_.isEmpty(filteredVoices) && !loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-              <Mic className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-sm mt-1 opacity-70">{dialogTexts.noVoices}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className={cn("grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3.5 p-4")}>
             {_.map(filteredVoices, (voice) => {
               const isSelected = _.isEqual(selectedVoiceId, _.get(voice, "voice_id"));
               const isPlaying = _.isEqual(playingId, _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
 
               return (
-                <div key={_.get(voice, "voice_id")} className={cn(`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${isSelected ? "bg-rose-500/5 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-850 shadow-sm"}`)} onClick={() => onSelectVoice({ ...voice, provider })}>
+                <div
+                  key={_.get(voice, "voice_id")}
+                  className={cn(
+                    "flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer select-none",
+                    isSelected
+                      ? "bg-rose-500/10 border-rose-500/50 shadow-md shadow-rose-500/10 ring-1 ring-rose-500/30"
+                      : "bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900 shadow-sm hover:-translate-y-0.5"
+                  )}
+                  onClick={() => onSelectVoice({ ...voice, provider })}>
                   <Button
                     variant={isPlaying ? REFACTOR_CONSTANTS.VARIANT_PRIMARY : REFACTOR_CONSTANTS.VARIANT_SECONDARY}
                     size={REFACTOR_CONSTANTS.SIZE_MD}
@@ -371,14 +389,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                       e.stopPropagation();
                       handlePlay(voice);
                     }}
-                    className={cn(`shrink-0 w-12 h-12 rounded-full p-0 flex items-center justify-center ${isPlaying ? "bg-rose-500 text-white" : "bg-slate-800 text-slate-300"}`)}>
-                    {isPlaying ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
+                    className={cn(
+                      "shrink-0 w-11 h-11 rounded-2xl p-0 flex items-center justify-center shadow-md",
+                      isPlaying ? "bg-rose-600 text-white animate-pulse" : "bg-slate-950 text-slate-200 border border-slate-800 hover:border-rose-500/40"
+                    )}>
+                    {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4.5 h-4.5 fill-current ml-0.5 text-rose-400")} />}
                   </Button>
 
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <h3 className="font-bold text-base text-slate-100 truncate">{_.get(voice, "name")}</h3>
-                      <div className="flex items-center gap-2 shrink-0">
+                  <div className={cn("flex-1 min-w-0 py-0.5")}>
+                    <div className={cn("flex items-center justify-between gap-2 mb-1.5")}>
+                      <h3 className={cn("font-extrabold text-sm text-slate-100 truncate")}>{_.get(voice, "name")}</h3>
+                      <div className={cn("flex items-center gap-1.5 shrink-0")}>
                         <Button
                           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                           variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
@@ -387,22 +408,29 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                             e.stopPropagation();
                             onToggleFavoriteVoice(_.get(voice, "voice_id"), _.get(voice, "name"), _.get(voice, "category") || REFACTOR_CONSTANTS.VD_CATEGORY_CUSTOM);
                           }}
-                          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
+                          className={cn("w-7 h-7 rounded-xl flex items-center justify-center p-0 text-slate-400 hover:text-rose-500")}
                           title={dialogTexts.favoriteTooltip}>
-                          <Heart className={cn(`w-4 h-4 transition-all duration-200 ${_.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`)} />
+                          <Heart className={cn("w-3.5 h-3.5 transition-all duration-200", _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-500 hover:text-rose-400")} />
                         </Button>
                         {isSelected && (
-                          <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
-                            <Check className="w-3 h-3" />
+                          <span className={cn("shrink-0 flex items-center gap-1 text-[9px] font-black text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30")}>
+                            <Check className={cn("w-2.5 h-2.5")} />
                             {dialogTexts.selectedLabel}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    <div className={cn("flex flex-wrap gap-1 mb-1.5")}>
                       {(() => {
-                        const rawTags = [_.get(voice, "language") && getReadableLanguage(_.get(voice, "language"), currentLang), _.get(voice, "locale") && getReadableLanguage(_.get(voice, "locale"), currentLang, true), _.get(voice, "gender"), _.get(voice, "age"), _.get(voice, "accent"), ...(_.get(voice, "tags") || [])];
+                        const rawTags = [
+                          _.get(voice, "language") && getReadableLanguage(_.get(voice, "language"), currentLang),
+                          _.get(voice, "locale") && getReadableLanguage(_.get(voice, "locale"), currentLang, true),
+                          _.get(voice, "gender"),
+                          _.get(voice, "age"),
+                          _.get(voice, "accent"),
+                          ...(_.get(voice, "tags") || [])
+                        ];
                         const displayTags = _.uniq(_.filter(rawTags, Boolean) as string[]);
 
                         return _.map(
@@ -413,14 +441,14 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                             return !_.includes([lowerLocale, lowerLang], lowerTag);
                           }),
                           (tag, idx) => (
-                            <span key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap">
+                            <span key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn("text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap")}>
                               {tag}
                             </span>
                           ),
                         );
                       })()}
                       {_.map(_.take(_.get(voice, "descriptives"), REFACTOR_CONSTANTS.TAKE_DESC_COUNT), (desc, idx) => (
-                        <span key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-850 border border-slate-700/50 text-slate-400 capitalize whitespace-nowrap">
+                        <span key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn("text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400 capitalize whitespace-nowrap")}>
                           {desc}
                         </span>
                       ))}
@@ -431,13 +459,15 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             })}
           </div>
 
-          <div ref={observerTarget} className="h-4 w-full mt-4" />
+          <div ref={observerTarget} className={cn("h-4 w-full mt-4")} />
 
           {loading && !_.isEmpty(filteredVoices) && (
-            <div className="py-8 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin" />
-              <span className="text-sm text-slate-400 animate-pulse">{dialogTexts.loadingMore}</span>
+            <div className={cn("py-6 flex flex-col items-center justify-center gap-2")}>
+              <div className={cn("w-6 h-6 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin")} />
+              <span className={cn("text-xs text-slate-400 animate-pulse font-mono")}>{dialogTexts.loadingMore}</span>
             </div>
+          )}
+          </>
           )}
         </div>
       </div>

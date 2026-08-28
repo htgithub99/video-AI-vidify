@@ -70,45 +70,45 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
           <SceneTextModeSelect value={textMode} onChange={setTextMode} language={language} label={T.styleTextModeLabel} />
           <ImageFocusModeSelect value={imageFocusMode} onChange={setImageFocusMode} language={language} label={T.imageFocusModeLabel} />
 
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>
+          <div className={cn("space-y-1")}>
+            <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")} title={T.lblChromeHeadlessTooltip}>
               {T.lblChromeHeadless}
             </span>
-            <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblChromeHeadlessTooltip}>
-              <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-              <select value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+            <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors")} title={T.lblChromeHeadlessTooltip}>
+              <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
+              <select value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(chromeGroups, (group) => (
-                  <optgroup key={group.label} label={group.label} className="bg-slate-955 text-slate-400 font-bold">
+                  <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (
-                      <option key={option.value} value={option.value} title={option.desc} className="bg-slate-955 text-slate-300 font-normal">
+                      <option key={option.value} value={option.value} title={option.desc} className={cn("bg-slate-955 text-slate-300 font-normal")}>
                         {option.label}
                       </option>
                     ))}
                   </optgroup>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblResumeModeTooltip}>
+          <div className={cn("space-y-1")}>
+            <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")} title={T.lblResumeModeTooltip}>
               {T.lblResumeMode}
             </span>
-            <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblResumeModeTooltip}>
-              <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-              <select value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+            <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors")} title={T.lblResumeModeTooltip}>
+              <RefreshCw className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
+              <select value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(resumeGroups, (group) => (
-                  <optgroup key={group.label} label={group.label} className="bg-slate-955 text-slate-400 font-bold">
+                  <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (
-                      <option key={option.value} value={option.value} title={option.desc} className="bg-slate-955 text-slate-300 font-normal">
+                      <option key={option.value} value={option.value} title={option.desc} className={cn("bg-slate-955 text-slate-300 font-normal")}>
                         {option.label}
                       </option>
                     ))}
                   </optgroup>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
         </div>

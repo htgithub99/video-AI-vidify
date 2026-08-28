@@ -218,12 +218,12 @@ export default function PipelineStep4(props: PipelineWizardState) {
   ];
 
   return (
-    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible">
+    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible")}>
       {!_.isEmpty(props.project.manualReviewItems) && (
-        <div className="rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200">
-          <div className="font-bold mb-2">Manual review</div>
+        <div className={cn("rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200")}>
+          <div className={cn("font-bold mb-2")}>Manual review</div>
           {_.map(props.project.manualReviewItems, (item) => (
-            <div key={item.id} className="flex items-center gap-2">
+            <div key={item.id} className={cn("flex items-center gap-2")}>
               <span>
                 {item.scope}: {item.targetId || "project"} - {item.reason} [{item.status}]
               </span>
@@ -246,81 +246,81 @@ export default function PipelineStep4(props: PipelineWizardState) {
           ))}
         </div>
       )}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      <div className={cn("absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]")}>
+        <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none")} />
       </div>
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-30">
-          <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-20">
+      <div className={cn("relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6")}>
+        <div className={cn("lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-30")}>
+          <h3 className={cn("font-bold text-slate-100 text-base flex items-center gap-2 relative z-20")}>
             <Tooltip content={shortTexts.RENDER_TITLE_TOOLTIP} position="bottom" align="start">
-              <span className="flex items-center gap-2 cursor-help">
-                <Eye className="w-5 h-5 text-rose-500" /> {shortTexts.RENDER_TITLE}
+              <span className={cn("flex items-center gap-2 cursor-help")}>
+                <Eye className={cn("w-5 h-5 text-rose-500")} /> {shortTexts.RENDER_TITLE}
               </span>
             </Tooltip>
           </h3>
 
           <div ref={playerRef} className={cn("bg-black border border-slate-800/80 relative overflow-hidden group shadow-2xl flex flex-col", isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen flex items-center justify-center" : "aspect-[16/9] rounded-xl ring-1 ring-white/5")}>
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className={cn("absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300")}></div>
 
-            <div className="absolute inset-0 flex items-center justify-center z-0">
+            <div className={cn("absolute inset-0 flex items-center justify-center z-0")}>
               {isRenderLoading ? (
-                <div className="text-white flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs font-mono tracking-widest uppercase">{PIPELINE_STEP4_TEXTS.EXPORTING_FFMPEG}</span>
+                <div className={cn("text-white flex flex-col items-center gap-3")}>
+                  <div className={cn("w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin")}></div>
+                  <span className={cn("text-xs font-mono tracking-widest uppercase")}>{PIPELINE_STEP4_TEXTS.EXPORTING_FFMPEG}</span>
                 </div>
               ) : previewVideoUrl ? (
-                <video ref={videoRef} src={previewVideoUrl} controls className="w-full h-full object-cover z-20" autoPlay />
+                <video ref={videoRef} src={previewVideoUrl} controls className={cn("w-full h-full object-cover z-20")} autoPlay />
               ) : (
-                <div className="text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex flex-col items-center justify-center bg-slate-950">
-                  <div className="mb-4">{t.Nothing_to_simulate || PIPELINE_STEP4_TEXTS.NO_FFMPEG_VIDEO}</div>
-                  <div className="text-[11px] text-slate-600">{PIPELINE_STEP4_TEXTS.USE_CREATE_BTN_HINT}</div>
+                <div className={cn("text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex flex-col items-center justify-center bg-slate-950")}>
+                  <div className={cn("mb-4")}>{t.Nothing_to_simulate || PIPELINE_STEP4_TEXTS.NO_FFMPEG_VIDEO}</div>
+                  <div className={cn("text-[11px] text-slate-600")}>{PIPELINE_STEP4_TEXTS.USE_CREATE_BTN_HINT}</div>
                 </div>
               )}
             </div>
 
             {!isPlayingSim && simActiveScene && (
-              <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
-                <div className="w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500" onClick={startPlaybackSim}>
-                  <Play className="w-8 h-8 fill-current ml-1" />
+              <div className={cn("absolute inset-0 flex items-center justify-center z-10 bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none")}>
+                <div className={cn("w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500")} onClick={startPlaybackSim}>
+                  <Play className={cn("w-8 h-8 fill-current ml-1")} />
                 </div>
               </div>
             )}
 
-            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className={cn("absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300")}></div>
 
-            <div className="absolute bottom-0 left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end px-3 pb-2 pt-6">
-              <div className="w-full h-[3px] group-hover/progress:h-[5px] bg-white/20 cursor-pointer mb-3 relative group/progress flex items-center transition-all duration-150 ease-out" onClick={handleSeek}>
-                <div className="h-full bg-rose-600 relative z-10 transition-none" style={{ width: `${playbackProgress}%` }}>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity translate-x-1/2 shadow-[0_0_5px_rgba(225,29,72,0.8)]"></div>
+            <div className={cn("absolute bottom-0 left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end px-3 pb-2 pt-6")}>
+              <div className={cn("w-full h-[3px] group-hover/progress:h-[5px] bg-white/20 cursor-pointer mb-3 relative group/progress flex items-center transition-all duration-150 ease-out")} onClick={handleSeek}>
+                <div className={cn("h-full bg-rose-600 relative z-10 transition-none")} style={{ width: `${playbackProgress}%` }}>
+                  <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity translate-x-1/2 shadow-[0_0_5px_rgba(225,29,72,0.8)]")}></div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim} className="text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1" title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}>
-                    {isPlayingSim ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+              <div className={cn("flex items-center justify-between")}>
+                <div className={cn("flex items-center gap-4")}>
+                  <button onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim} className={cn("text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1")} title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}>
+                    {isPlayingSim ? <Pause className={cn("w-6 h-6 fill-current")} /> : <Play className={cn("w-6 h-6 fill-current")} />}
                   </button>
 
-                  <div className="text-[12px] md:text-sm font-bold font-sans text-white flex items-center gap-1.5 drop-shadow-md">
+                  <div className={cn("text-[12px] md:text-sm font-bold font-sans text-white flex items-center gap-1.5 drop-shadow-md")}>
                     {simActiveScene ? (
                       <>
-                        <span className="tracking-wide">{formatCleanTime(simActiveScene.startTime)}</span>
-                        <span className="text-white/60 mx-0.5">/</span>
-                        <span className="text-white/80 tracking-wide">{formatCleanTime(simActiveScene.endTime)}</span>
+                        <span className={cn("tracking-wide")}>{formatCleanTime(simActiveScene.startTime)}</span>
+                        <span className={cn("text-white/60 mx-0.5")}>/</span>
+                        <span className={cn("text-white/80 tracking-wide")}>{formatCleanTime(simActiveScene.endTime)}</span>
                       </>
                     ) : (
-                      <span className="text-white/60">{t.PAUSED}</span>
+                      <span className={cn("text-white/60")}>{t.PAUSED}</span>
                     )}
                     <span className={cn("ml-4 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm", isPlayingSim ? "bg-rose-600 text-white" : "bg-white/20 text-white")}>{isPlayingSim ? t.ACTIVE_RUNNING : t.PAUSED}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-white">
-                  <button className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Settings || "Cấu hình"}>
-                    <Settings2 className="w-5 h-5 cursor-pointer" />
+                <div className={cn("flex items-center gap-4 text-white")}>
+                  <button className={cn("p-1 hover:bg-white/10 rounded-full transition-colors outline-none")} title={t.Settings || "Cấu hình"}>
+                    <Settings2 className={cn("w-5 h-5 cursor-pointer")} />
                   </button>
-                  <button onClick={toggleFullscreen} className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Fullscreen || "Toàn màn hình"}>
-                    <Maximize className="w-5 h-5 cursor-pointer" />
+                  <button onClick={toggleFullscreen} className={cn("p-1 hover:bg-white/10 rounded-full transition-colors outline-none")} title={t.Fullscreen || "Toàn màn hình"}>
+                    <Maximize className={cn("w-5 h-5 cursor-pointer")} />
                   </button>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
           </div>
 
           {previewVideoUrl && (
-            <div className="flex justify-end pt-3">
+            <div className={cn("flex justify-end pt-3")}>
               <Button
                 variant="primary"
                 size="md"
@@ -343,54 +343,54 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     document.body.removeChild(a);
                   }, 150);
                 }}
-                className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50 shadow-lg text-white font-bold flex items-center gap-2"
+                className={cn("bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50 shadow-lg text-white font-bold flex items-center gap-2")}
                 title={PIPELINE_STEP4_TEXTS.BTN_DOWNLOAD_HINT}>
-                <Download className="w-4 h-4" />
+                <Download className={cn("w-4 h-4")} />
                 {PIPELINE_STEP4_TEXTS.BTN_DOWNLOAD}
               </Button>
             </div>
           )}
         </div>
 
-        <div className="flex flex-col space-y-6 relative z-40">
-          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-5 shadow-xl relative overflow-visible z-50">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+        <div className={cn("flex flex-col space-y-6 relative z-40")}>
+          <div className={cn("bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-5 shadow-xl relative overflow-visible z-50")}>
+            <div className={cn("absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]")}>
+              <div className={cn("absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none")} />
             </div>
 
-            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 relative z-20 border-b border-slate-800/60 pb-3">
+            <h3 className={cn("font-bold text-slate-100 text-sm flex items-center gap-2 relative z-20 border-b border-slate-800/60 pb-3")}>
               <Tooltip content="Tuỳ chỉnh tên dự án, thư mục lưu trữ và tài nguyên âm thanh/hình ảnh để chuẩn bị cho quá trình tạo video." position="bottom" align="start">
-                <span className="flex items-center gap-2 cursor-help">
-                  <Settings2 className="w-4 h-4 text-slate-400" /> Cấu Hình Đầu Ra
+                <span className={cn("flex items-center gap-2 cursor-help")}>
+                  <Settings2 className={cn("w-4 h-4 text-slate-400")} /> Cấu Hình Đầu Ra
                 </span>
               </Tooltip>
             </h3>
 
-            <div className="space-y-4 relative z-10">
+            <div className={cn("space-y-4 relative z-10")}>
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                <label className={cn("text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2")}>
                   <Tooltip content="Đặt tên cho video của bạn. Tên này sẽ được dùng làm tên thư mục và tên file video khi xuất bản." position="top">
-                    <span className="flex items-center gap-1.5 cursor-help">
-                      <FileText className="w-3.5 h-3.5 text-rose-500" /> Tên Video
+                    <span className={cn("flex items-center gap-1.5 cursor-help")}>
+                      <FileText className={cn("w-3.5 h-3.5 text-rose-500")} /> Tên Video
                     </span>
                   </Tooltip>
                 </label>
-                <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.PROJECT_NAME_PLACEHOLDER} className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner transition-all outline-none" />
+                <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.PROJECT_NAME_PLACEHOLDER} className={cn("w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner transition-all outline-none")} />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                <label className={cn("text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2")}>
                   <Tooltip content="Chọn cách thức hệ thống lấy hình ảnh và âm thanh để ghép vào video." position="top">
-                    <span className="flex items-center gap-1.5 cursor-help">
-                      <Database className="w-3.5 h-3.5 text-rose-500" /> Nguồn Tài Nguyên
+                    <span className={cn("flex items-center gap-1.5 cursor-help")}>
+                      <Database className={cn("w-3.5 h-3.5 text-rose-500")} /> Nguồn Tài Nguyên
                     </span>
                   </Tooltip>
                 </label>
-                <div className="grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1">
+                <div className={cn("grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1")}>
                   {[ { id: ResourceSourceMode.ZIP, label: "File ZIP", tooltip: "Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.", align: "start" as const },
                     { id: ResourceSourceMode.SPLIT, label: "Thư mục Riêng", tooltip: "Trỏ đường dẫn thủ công đến 2 thư mục riêng biệt: Một chứa ảnh, một chứa âm thanh.", align: "center" as const },
                     { id: ResourceSourceMode.CURRENT, label: "Dự Án Hiện Tại", tooltip: "Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.", align: "end" as const }, ].map((mode) => (
-                    <div key={mode.id} className="flex [&>div]:w-full">
+                    <div key={mode.id} className={cn("flex [&>div]:w-full")}>
                       <Tooltip content={mode.tooltip} position="top" align={mode.align}>
                         <button onClick={() => setInputMode(mode.id)} className={cn("w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200", inputMode === mode.id ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50")}>
                           {mode.label}
@@ -401,72 +401,72 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </div>
 
                 {inputMode === ResourceSourceMode.ZIP ? (
-                  <div className="flex gap-2 animate-fadeIn mt-3">
-                    <input type="text" value={parentFolder} onChange={(e) => setParentFolder(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER} className="flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none" />
-                    <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.PARENT)} className="px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors">
-                      <FolderOpen className="w-4 h-4 text-rose-500" />
+                  <div className={cn("flex gap-2 animate-fadeIn mt-3")}>
+                    <input type="text" value={parentFolder} onChange={(e) => setParentFolder(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER} className={cn("flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
+                    <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.PARENT)} className={cn("px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors")}>
+                      <FolderOpen className={cn("w-4 h-4 text-rose-500")} />
                     </Button>
                   </div>
                 ) : inputMode === ResourceSourceMode.SPLIT ? (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 animate-fadeIn mt-3">
-                    <div className="flex gap-1.5">
-                      <input type="text" value={imagesDir} onChange={(e) => setImagesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
-                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
-                        <FolderOpen className="w-4 h-4" />
+                  <div className={cn("grid grid-cols-1 xl:grid-cols-2 gap-3 animate-fadeIn mt-3")}>
+                    <div className={cn("flex gap-1.5")}>
+                      <input type="text" value={imagesDir} onChange={(e) => setImagesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER} className={cn("flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
+                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)} className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
+                        <FolderOpen className={cn("w-4 h-4")} />
                       </Button>
                     </div>
-                    <div className="flex gap-1.5">
-                      <input type="text" value={voicesDir} onChange={(e) => setVoicesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
-                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.VOICES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
-                        <FolderOpen className="w-4 h-4" />
+                    <div className={cn("flex gap-1.5")}>
+                      <input type="text" value={voicesDir} onChange={(e) => setVoicesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER} className={cn("flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
+                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.VOICES)} className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
+                        <FolderOpen className={cn("w-4 h-4")} />
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex gap-2 animate-fadeIn p-2 border border-slate-800/80 rounded-xl bg-slate-900/30 items-center justify-center h-10 mt-3">
-                    <span className="text-xs text-slate-400 italic text-center px-4">{PIPELINE_STEP4_TEXTS.AUTO_GATHER_MEDIA_HINT}</span>
+                  <div className={cn("flex gap-2 animate-fadeIn p-2 border border-slate-800/80 rounded-xl bg-slate-900/30 items-center justify-center h-10 mt-3")}>
+                    <span className={cn("text-xs text-slate-400 italic text-center px-4")}>{PIPELINE_STEP4_TEXTS.AUTO_GATHER_MEDIA_HINT}</span>
                   </div>
                 )}
               </div>
 
-              <div className="pt-4 mt-2 border-t border-slate-800/60 w-full space-y-3">
+              <div className={cn("pt-4 mt-2 border-t border-slate-800/60 w-full space-y-3")}>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                  <label className={cn("text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2")}>
                     <Tooltip content="Độ phân giải video khi xuất bằng FFmpeg." position="top">
-                      <span className="flex items-center gap-1.5 cursor-help">
-                        <Monitor className="w-3.5 h-3.5 text-rose-500" /> Chất Lượng Video
+                      <span className={cn("flex items-center gap-1.5 cursor-help")}>
+                        <Monitor className={cn("w-3.5 h-3.5 text-rose-500")} /> Chất Lượng Video
                       </span>
                     </Tooltip>
                   </label>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-inner">
-                    <select value={ffmpegQuality} onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
-                      <option value={VideoQuality.LOW} className="bg-slate-955 text-slate-200">
+                  <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-inner")}>
+                    <select value={ffmpegQuality} onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
+                      <option value={VideoQuality.LOW} className={cn("bg-slate-955 text-slate-200")}>
                         {PIPELINE_STEP4_TEXTS.QUALITY_480P}
                       </option>
-                      <option value={VideoQuality.HIGH} className="bg-slate-955 text-slate-200">
+                      <option value={VideoQuality.HIGH} className={cn("bg-slate-955 text-slate-200")}>
                         {PIPELINE_STEP4_TEXTS.QUALITY_720P}
                       </option>
-                      <option value={VideoQuality.HIGHEST} className="bg-slate-955 text-slate-200">
+                      <option value={VideoQuality.HIGHEST} className={cn("bg-slate-955 text-slate-200")}>
                         {PIPELINE_STEP4_TEXTS.QUALITY_1080P}
                       </option>
-                      <option value={VideoQuality.ULTRA_4K} className="bg-slate-955 text-slate-200">
+                      <option value={VideoQuality.ULTRA_4K} className={cn("bg-slate-955 text-slate-200")}>
                         {PIPELINE_STEP4_TEXTS.QUALITY_4K}
                       </option>
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                    <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-4 h-4")} />
                   </div>
                 </div>
 
-                <div className="w-full [&>div]:w-full">
+                <div className={cn("w-full [&>div]:w-full")}>
                   <Tooltip content="Tiến hành ghép nối hình ảnh, âm thanh thành một video hoàn chỉnh với độ phân giải mong muốn sử dụng công nghệ FFmpeg." position="top">
-                    <Button variant="ghost" onClick={handleOfflineRenderFFmpeg} disabled={isRenderLoading} className="w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300 bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100">
-                      <div className="text-left flex-1">
-                        <span className="font-bold flex items-center gap-2 text-amber-400 block whitespace-nowrap">
-                          {isRenderLoading ? <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> : <span className="inline-block w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />}
+                    <Button variant="ghost" onClick={handleOfflineRenderFFmpeg} disabled={isRenderLoading} className={cn("w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300 bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100")}>
+                      <div className={cn("text-left flex-1")}>
+                        <span className={cn("font-bold flex items-center gap-2 text-amber-400 block whitespace-nowrap")}>
+                          {isRenderLoading ? <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse")} /> : <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]")} />}
                           {isRenderLoading ? PIPELINE_STEP4_TEXTS.RENDERING : PIPELINE_STEP4_TEXTS.BTN_RENDER_FFMPEG}
                         </span>
                       </div>
-                      {isRenderLoading ? <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" /> : <Video className="w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110" />}
+                      {isRenderLoading ? <div className={cn("w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0")} /> : <Video className={cn("w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110")} />}
                     </Button>
                   </Tooltip>
                 </div>
@@ -474,13 +474,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </div>
           </div>
 
-          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-40">
-            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 relative z-10 border-b border-slate-800/60 pb-3">
-              <Send className="w-4 h-4 text-rose-500" />
+          <div className={cn("bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-40")}>
+            <h3 className={cn("font-bold text-slate-100 text-sm flex items-center gap-2 relative z-10 border-b border-slate-800/60 pb-3")}>
+              <Send className={cn("w-4 h-4 text-rose-500")} />
               {t.Professional_Project_Pack}
             </h3>
 
-            <div className="grid grid-cols-1 gap-3.5 text-xs relative z-10 mt-1">
+            <div className={cn("grid grid-cols-1 gap-3.5 text-xs relative z-10 mt-1")}>
               {_.map(exportButtons, (btn, index) => {
                 const Icon = btn.icon;
                 return (
@@ -494,14 +494,14 @@ export default function PipelineStep4(props: PipelineWizardState) {
                       btn.isPrimary ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]") : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100",
                     )}
                     title={btn.desc}>
-                    <div className="text-left flex-1">
+                    <div className={cn("text-left flex-1")}>
                       <span className={cn("font-bold block flex items-center gap-2", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
-                        {btn.isLoading ? <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> : btn.isPrimary && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]" />}
+                        {btn.isLoading ? <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse")} /> : btn.isPrimary && <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]")} />}
                         {btn.isLoading ? btn.loadingLabel : btn.label}
                       </span>
-                      <span className="text-[10px] text-slate-500 block mt-1 font-normal text-left leading-relaxed">{btn.desc}</span>
+                      <span className={cn("text-[10px] text-slate-500 block mt-1 font-normal text-left leading-relaxed")}>{btn.desc}</span>
                     </div>
-                    {btn.isLoading ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
+                    {btn.isLoading ? <div className={cn("w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0")} /> : <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
                   </Button>
                 );
               })}
@@ -510,9 +510,9 @@ export default function PipelineStep4(props: PipelineWizardState) {
         </div>
       </div>
 
-      <div className="flex items-center justify-start mt-2 border-t border-slate-800/60 pt-4 relative z-10">
-        <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Back}>
-          <ArrowLeft className="w-4 h-4" />
+      <div className={cn("flex items-center justify-start mt-2 border-t border-slate-800/60 pt-4 relative z-10")}>
+        <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className={cn("flex items-center gap-1.5 px-5 py-3 shadow")} title={t.Back}>
+          <ArrowLeft className={cn("w-4 h-4")} />
           {t.Back}
         </Button>
       </div>

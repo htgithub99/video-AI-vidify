@@ -229,4 +229,3 @@ export const applyCinematicContinuityHandoffs = (scenes: StoryboardScene[]): Sto
     return scene;
   });
 };
-
