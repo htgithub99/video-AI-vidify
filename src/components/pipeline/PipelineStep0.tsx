@@ -9,9 +9,18 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
 
-const STEP0_TEXTS = { TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.", TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.", TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.", CHAPTER_PLACEHOLDER: "Nhập tên chương...", } as const;
+const STEP0_TEXTS = { TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.", TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.", TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.", CHAPTER_PLACEHOLDER: "Nhập tên chương..." } as const;
 
-interface SettingSliderProps { label: string; value: number; displayValue: string; min: number; max: number; colorClass: string; accentClass: string; onChange: (val: number) => void; }
+interface SettingSliderProps {
+  label: string;
+  value: number;
+  displayValue: string;
+  min: number;
+  max: number;
+  colorClass: string;
+  accentClass: string;
+  onChange: (val: number) => void;
+}
 
 const SettingSlider: React.FC<SettingSliderProps> = ({ label, value, displayValue, min, max, colorClass, accentClass, onChange }) => (
   <div className={cn("bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all")}>

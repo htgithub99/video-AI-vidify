@@ -20,7 +20,10 @@ const captureLoginDomState = (page: Page, state: string): Promise<void> =>
     errorMessageTemplate: AutoLoginConstants.DIAGNOSTICS.ERROR_MESSAGE,
   });
 
-interface LocatedElement { locator: Locator; selector: string; }
+interface LocatedElement {
+  locator: Locator;
+  selector: string;
+}
 
 const findVisibleLocator = async (page: Page, selectors: readonly string[]): Promise<LocatedElement | null> => {
   for (const selector of selectors) {

@@ -19,7 +19,11 @@ export const isGeminiProviderAvailable = async (): Promise<boolean> => {
   return !_.isEmpty(keys.geminiKey);
 };
 
-interface GeminiContentEstimate { textCharacters: number; estimatedTextTokens: number; mediaInputCount: number; }
+interface GeminiContentEstimate {
+  textCharacters: number;
+  estimatedTextTokens: number;
+  mediaInputCount: number;
+}
 
 export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate => {
   let textCharacters = 0;
@@ -42,7 +46,7 @@ export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate
     _.forEach(_.values(source), visit);
   };
   visit(contents);
-  return { textCharacters, estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS), mediaInputCount, };
+  return { textCharacters, estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS), mediaInputCount };
 };
 
 let currentModelIndex = 0;

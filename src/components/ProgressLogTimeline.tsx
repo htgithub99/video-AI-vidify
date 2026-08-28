@@ -6,7 +6,11 @@ import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
 
-interface ProgressLogTimelineProps { logs: string[]; theme: AppTheme; language?: string; }
+interface ProgressLogTimelineProps {
+  logs: string[];
+  theme: AppTheme;
+  language?: string;
+}
 
 const resolveProgressLogTone = (message: string): ProgressLogTone => {
   const normalizedMessage = _.toLower(message);
@@ -30,7 +34,7 @@ const parseProgressLog = (log: string) => {
   const rawCleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
   const cleanMessage = formatSeamlessMessage(rawCleanMessage);
 
-  return { time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE), message: cleanMessage, tone: resolveProgressLogTone(messageWithoutTime), };
+  return { time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE), message: cleanMessage, tone: resolveProgressLogTone(messageWithoutTime) };
 };
 
 const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {

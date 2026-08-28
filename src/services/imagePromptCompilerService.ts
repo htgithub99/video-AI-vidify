@@ -7,7 +7,13 @@ import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
 import { appendImagePromptAspectRatio, deduplicatePromptSentences, sanitizeImagePrompt } from "./imagePromptQualityService.js";
 import { createSoftStyleDirective } from "./styleReferenceService.js";
 
-export interface ImagePromptCompilerOptions { aspectRatio?: string; targetStyle?: string; characters?: CharacterConfig[]; visualBible?: VisualBible; referenceLocked?: boolean; }
+export interface ImagePromptCompilerOptions {
+  aspectRatio?: string;
+  targetStyle?: string;
+  characters?: CharacterConfig[];
+  visualBible?: VisualBible;
+  referenceLocked?: boolean;
+}
 
 const compactWords = (value: string, maximumWords: number): string => _.join(_.take(_.words(value, IMAGE_PROMPT_COMPILER_CONFIG.NON_WHITESPACE_REGEX), maximumWords), IMAGE_PROMPT_COMPILER_CONFIG.SPACE_SEPARATOR);
 
@@ -108,17 +114,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const narrativeFallback = getSceneNarrativeFallback(scene);
   const sceneVariation = compactWords(_.join(_.compact(!_.isEmpty(visibleAction) ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment] : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.SCENE_VARIATION_MAX_WORDS);
 
-  const promptParts = [
-    styleAnchor,
-    characterDirective,
-    characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    sceneVariation,
-    _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
-    textPolicyDirective,
-    IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE,
-    IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS,
-  ];
+  const promptParts = [styleAnchor, characterDirective, characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING, IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING, sceneVariation, _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), textPolicyDirective, IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS];
 
   const rawPrompt = _.join(_.compact(promptParts), IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
   const cleanedPrompt = deduplicatePromptSentences(sanitizeImagePrompt(rawPrompt)).replace(IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_TARGET).replace(IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_TARGET);

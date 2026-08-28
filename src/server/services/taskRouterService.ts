@@ -11,9 +11,27 @@ export enum AiTaskCapability {
   AudioQa = "audio_qa",
   Thumbnail = "thumbnail",
 }
-export interface AiTaskRequest { capability?: AiTaskCapability; estimatedInputTokens: number; mediaInputCount?: number; maxOutputTokens: number; budgetUsd?: number; }
+export interface AiTaskRequest {
+  capability?: AiTaskCapability;
+  estimatedInputTokens: number;
+  mediaInputCount?: number;
+  maxOutputTokens: number;
+  budgetUsd?: number;
+}
 export type AiProvider = "cerebras" | "groq" | "google";
-export interface AiCallMetadata { capability: AiTaskCapability; provider: AiProvider; model: string; modelVersion: string; promptVersion: string; estimatedCostUsd: number; actualCostUsd: number; latencyMs: number; inputTokens: number; outputTokens: number; fallbackIndex: number; }
+export interface AiCallMetadata {
+  capability: AiTaskCapability;
+  provider: AiProvider;
+  model: string;
+  modelVersion: string;
+  promptVersion: string;
+  estimatedCostUsd: number;
+  actualCostUsd: number;
+  latencyMs: number;
+  inputTokens: number;
+  outputTokens: number;
+  fallbackIndex: number;
+}
 
 const circuitState = new Map<string, { failures: number; openedAt?: number; cooldownMs?: number }>();
 const getRequiredModelCapability = (capability: AiTaskCapability): string => {
@@ -76,5 +94,5 @@ export const routeAiTask = (request: AiTaskRequest) => {
 export const createAiCallMetadata = (route: ReturnType<typeof routeAiTask>, model: string, fallbackIndex: number, latencyMs: number, usage: any): AiCallMetadata => {
   const inputTokens = _.toNumber(usage?.promptTokenCount) || 0;
   const outputTokens = _.toNumber(usage?.candidatesTokenCount) || 0;
-  return { capability: route.capability, provider: "google", model, modelVersion: model, promptVersion: route.promptVersion, estimatedCostUsd: route.estimatedCostUsd, actualCostUsd: estimateCost(inputTokens, outputTokens), latencyMs, inputTokens, outputTokens, fallbackIndex, };
+  return { capability: route.capability, provider: "google", model, modelVersion: model, promptVersion: route.promptVersion, estimatedCostUsd: route.estimatedCostUsd, actualCostUsd: estimateCost(inputTokens, outputTokens), latencyMs, inputTokens, outputTokens, fallbackIndex };
 };

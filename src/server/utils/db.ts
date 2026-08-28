@@ -74,7 +74,7 @@ export async function savePresetToDb(preset: { id: string; name: string; config:
     const db = await initDb();
     const now = new Date().toISOString();
     await db.run(SQL_STATEMENTS.INSERT_PRESET, [preset.id, preset.name, jsonUtils.safeStringify(preset.config), now, now]);
-    return { id: preset.id, name: preset.name, config: preset.config, createdAt: now, updatedAt: now, };
+    return { id: preset.id, name: preset.name, config: preset.config, createdAt: now, updatedAt: now };
   } catch (error) {
     appError(_.join([getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
@@ -108,7 +108,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         };
       }
 
-      return { id: row.id, name: row.name, description: row.description, createdAt: row.createdAt, updatedAt: row.updatedAt, currentStep: row.currentStep, creditsUsed: row.creditsUsed, parentId: detail.parentId, projectKind: detail.projectKind, config, storyboard: _.defaultTo(detail.storyboard, []), };
+      return { id: row.id, name: row.name, description: row.description, createdAt: row.createdAt, updatedAt: row.updatedAt, currentStep: row.currentStep, creditsUsed: row.creditsUsed, parentId: detail.parentId, projectKind: detail.projectKind, config, storyboard: _.defaultTo(detail.storyboard, []) };
     });
   } catch (error) {
     appError(getBackendMsg("SQLITE_LIST_ERR"), error);

@@ -5,7 +5,15 @@ import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory, getRecommendedS
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { cn } from "../../lib/utils";
 
-interface StylePresetSelectorProps { selectedStyle: string; onSelectStyle: (styleId: string) => void; language?: string; label?: string; accentColor?: "blue" | "purple"; genre?: string; allowedPresetIds?: readonly string[]; }
+interface StylePresetSelectorProps {
+  selectedStyle: string;
+  onSelectStyle: (styleId: string) => void;
+  language?: string;
+  label?: string;
+  accentColor?: "blue" | "purple";
+  genre?: string;
+  allowedPresetIds?: readonly string[];
+}
 
 export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ selectedStyle, onSelectStyle, language = "vi", label, accentColor = "blue", genre, allowedPresetIds }) => {
   const isVi = _.isEqual(language, "vi");
@@ -37,7 +45,9 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
       <div className={cn("flex items-center justify-between gap-2")}>
         <div className={cn("flex items-center gap-2 min-w-0")}>
           <Palette className={cn("w-4 h-4 shrink-0", isPurple ? "text-purple-400" : "text-blue-400")} />
-          <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")} title={displayLabel}>{displayLabel}</span>
+          <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")} title={displayLabel}>
+            {displayLabel}
+          </span>
         </div>
 
         <div className={cn("flex items-center gap-2 shrink-0")}>
@@ -74,12 +84,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
           const tagline = preset.tagline || preset.description;
 
           return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => onSelectStyle(preset.id)}
-              title={`${name} - ${tagline}`}
-              className={cn("relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group", isSelected ? (isPurple ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30") : isPurple ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40" : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40")}>
+            <button key={preset.id} type="button" onClick={() => onSelectStyle(preset.id)} title={`${name} - ${tagline}`} className={cn("relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group", isSelected ? (isPurple ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30") : isPurple ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40" : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40")}>
               <div className={cn("p-2 rounded-xl text-lg flex items-center justify-center shrink-0 border", isPurple ? (isSelected ? "bg-purple-900 border-purple-700 text-purple-300" : "bg-purple-950/80 border-purple-800/80 text-purple-400") : isSelected ? "bg-blue-900 border-blue-700 text-blue-300" : "bg-blue-950/80 border-blue-800/80 text-blue-400")}>{preset.icon}</div>
 
               <div className={cn("min-w-0 flex-1 flex flex-col justify-center overflow-hidden")}>

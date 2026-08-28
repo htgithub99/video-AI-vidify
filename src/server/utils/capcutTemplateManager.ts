@@ -8,7 +8,12 @@ import { TEMPLATE_CONFIG } from "../../constants/index.js";
 import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
 import { jsonUtils } from "../../lib/json.js";
 
-export interface CapcutTemplate { id: string; name: string; createdAt: string; filePath: string; }
+export interface CapcutTemplate {
+  id: string;
+  name: string;
+  createdAt: string;
+  filePath: string;
+}
 
 export function getTemplatesDirectory(): string {
   const dataDir = getDataDirectory();
@@ -69,7 +74,7 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const content = { folderPath: folderPath };
   fs.writeFileSync(filePath, jsonUtils.safeStringify(content, null, TEMPLATE_CONFIG.JSON_SPACE), TEMPLATE_CONFIG.UTF8);
 
-  return { id: _.replace(fileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanName, createdAt: new Date().toISOString(), filePath: filePath, };
+  return { id: _.replace(fileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanName, createdAt: new Date().toISOString(), filePath: filePath };
 }
 
 export function deleteTemplate(id: string): boolean {
@@ -104,7 +109,7 @@ export function renameTemplate(id: string, newName: string): CapcutTemplate | nu
 
   try {
     fs.renameSync(oldFilePath, newFilePath);
-    return { id: _.replace(newFileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanNewName, createdAt: new Date().toISOString(), filePath: newFilePath, };
+    return { id: _.replace(newFileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanNewName, createdAt: new Date().toISOString(), filePath: newFilePath };
   } catch (e) {
     logger.error(BACKEND_MESSAGES_LOCALIZED.vi.TEMPLATE_RENAME_FAILED, e);
     return null;

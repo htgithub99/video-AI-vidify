@@ -53,8 +53,10 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primar
         finalBaseStyles,
         sizeStyles,
         variantStyles,
-        isLoading && "button-skeleton-loading opacity-90 cursor-wait active:scale-100",
-        className
+        {
+          "button-skeleton-loading opacity-90 cursor-wait active:scale-100": Boolean(isLoading),
+        },
+        className,
       )}
       disabled={disabled || isLoading}
       title={computedTitle}

@@ -14,29 +14,38 @@ import _ from "lodash";
 import { jsonUtils } from "../lib/json";
 import { toast } from "sonner";
 
-interface SettingsViewProps { currentLang: Lang; }
+interface SettingsViewProps {
+  currentLang: Lang;
+}
 
-interface ApiKeyFieldProps { label: string; value: string; placeholder: string; onChange: (val: string) => void; }
+interface ApiKeyFieldProps {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (val: string) => void;
+}
 
 const ApiKeyField: FC<ApiKeyFieldProps> = ({ label, value, placeholder, onChange }) => (
   <div className={cn("space-y-1.5")}>
-    <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider truncate")} title={label}>{label}</label>
-    <input
-      type={SecurityConstants.INPUT_TYPE_TEXT}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={cn("w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500/80 rounded-xl p-2.5 text-xs text-slate-100 font-mono focus:outline-none transition-all")}
-    />
+    <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider truncate")} title={label}>
+      {label}
+    </label>
+    <input type={SecurityConstants.INPUT_TYPE_TEXT} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cn("w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500/80 rounded-xl p-2.5 text-xs text-slate-100 font-mono focus:outline-none transition-all")} />
   </div>
 );
 
-interface AccountItemProps { email: string; hiddenPwdText: string; onRemove: () => void; }
+interface AccountItemProps {
+  email: string;
+  hiddenPwdText: string;
+  onRemove: () => void;
+}
 
 const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) => (
   <div className={cn("flex justify-between items-center bg-slate-950/70 border border-slate-800 p-2.5 rounded-xl hover:border-slate-700 transition-colors gap-2")}>
     <div className={cn("flex flex-col min-w-0 flex-1")}>
-      <span className={cn("text-xs font-bold text-slate-200 truncate")} title={email}>{email}</span>
+      <span className={cn("text-xs font-bold text-slate-200 truncate")} title={email}>
+        {email}
+      </span>
       <span className={cn("text-[10px] text-slate-500 font-mono truncate")}>{hiddenPwdText}</span>
     </div>
     <button onClick={onRemove} className={cn("text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors p-1.5 rounded-lg shrink-0")}>
@@ -119,7 +128,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
-    const newAcc = { id: Date.now(), email: _.trim(newEmail), password: _.trim(newPassword), recoveryEmail: _.trim(newRecovery), };
+    const newAcc = { id: Date.now(), email: _.trim(newEmail), password: _.trim(newPassword), recoveryEmail: _.trim(newRecovery) };
     const updated = [...accounts, newAcc];
     setAccounts(updated);
 
@@ -175,7 +184,6 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   return (
     <div className={cn("flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left")}>
-      
       <div className={cn("glass-card p-6 sm:p-7 rounded-3xl shadow-lg flex items-center justify-between gap-4 relative overflow-hidden")}>
         <div className={cn("absolute top-0 right-0 w-72 h-72 bg-rose-500/5 rounded-full blur-3xl pointer-events-none")} />
         <div className={cn("flex items-center gap-4 relative z-10 min-w-0")}>
@@ -191,23 +199,19 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               </span>
             </h2>
             <p className={cn("text-xs text-slate-400 mt-1 leading-relaxed font-mono truncate")} title={`${planDisplayText} • Key: ${keyPreview}`}>
-              <span className={cn("truncate")}>{planDisplayText} • Key: <span className={cn("text-slate-200 font-bold")}>{keyPreview}</span></span>
+              <span className={cn("truncate")}>
+                {planDisplayText} • Key: <span className={cn("text-slate-200 font-bold")}>{keyPreview}</span>
+              </span>
             </p>
           </div>
         </div>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={logoutLicense}
-          title={logoutTooltip}
-          className={cn("rounded-2xl font-bold flex items-center gap-2 shrink-0")}>
+        <Button variant="danger" size="sm" onClick={logoutLicense} title={logoutTooltip} className={cn("rounded-2xl font-bold flex items-center gap-2 shrink-0")}>
           <LogOut className={cn("w-4 h-4")} />
           <span className={cn("truncate")}>{logoutLabel}</span>
         </Button>
       </div>
 
       <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch")}>
-        
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col h-full")}>
           <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-4 mb-4")}>
             <div className={cn("flex items-center gap-3 min-w-0")}>
@@ -215,7 +219,9 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 <Key className={cn("w-4 h-4")} />
               </div>
               <div className={cn("min-w-0")}>
-                <h3 className={cn("text-xs font-black text-slate-100 uppercase font-mono tracking-wider truncate")} title={t.apiKeysConfig}>{t.apiKeysConfig}</h3>
+                <h3 className={cn("text-xs font-black text-slate-100 uppercase font-mono tracking-wider truncate")} title={t.apiKeysConfig}>
+                  {t.apiKeysConfig}
+                </h3>
                 <Tooltip content={apiKeyTooltip} position="bottom" align="start">
                   <p className={cn("text-[10px] text-slate-400 mt-0.5 cursor-help truncate")}>{apiKeyShort}</p>
                 </Tooltip>
@@ -231,12 +237,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           </div>
 
           <div className={cn("pt-4 mt-4 border-t border-slate-800/80 flex justify-end")}>
-            <Button
-              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
-              onClick={handleSaveKeys}
-              disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))}
-              title={texts.SAVE_BTN_TOOLTIP}
-              className={cn("rounded-xl flex items-center gap-2 font-bold")}>
+            <Button variant={SecurityConstants.BTN_VARIANT_PRIMARY} onClick={handleSaveKeys} disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))} title={texts.SAVE_BTN_TOOLTIP} className={cn("rounded-xl flex items-center gap-2 font-bold")}>
               {isSavingKeys ? <div className={cn("w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin")} /> : <Save className={cn("w-3.5 h-3.5 shrink-0")} />}
               <span className={cn("truncate")}>{texts.SAVE_BTN}</span>
             </Button>
@@ -250,7 +251,9 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 <Users className={cn("w-4 h-4")} />
               </div>
               <div className={cn("min-w-0")}>
-                <h3 className={cn("text-xs font-black text-slate-100 uppercase font-mono tracking-wider truncate")} title={texts.ACCOUNTS_TITLE}>{texts.ACCOUNTS_TITLE}</h3>
+                <h3 className={cn("text-xs font-black text-slate-100 uppercase font-mono tracking-wider truncate")} title={texts.ACCOUNTS_TITLE}>
+                  {texts.ACCOUNTS_TITLE}
+                </h3>
                 <Tooltip content={systemTooltip} position="bottom" align="start">
                   <p className={cn("text-[10px] text-slate-400 mt-0.5 cursor-help truncate")}>
                     {systemShort} ({accounts.length})
@@ -272,13 +275,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               </Button>
             </div>
 
-            <div className={cn("mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar")}>
-              {_.isEmpty(accounts) ? (
-                <div className={cn("text-center text-xs text-slate-500 py-6 italic truncate")}>{texts.NO_ACCOUNTS}</div>
-              ) : (
-                _.map(accounts, (acc) => <AccountItem key={acc.id} email={_.get(acc, SecurityConstants.PROP_EMAIL)} hiddenPwdText={texts.HIDDEN_PWD} onRemove={() => handleRemoveAccount(acc.id)} />)
-              )}
-            </div>
+            <div className={cn("mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar")}>{_.isEmpty(accounts) ? <div className={cn("text-center text-xs text-slate-500 py-6 italic truncate")}>{texts.NO_ACCOUNTS}</div> : _.map(accounts, (acc) => <AccountItem key={acc.id} email={_.get(acc, SecurityConstants.PROP_EMAIL)} hiddenPwdText={texts.HIDDEN_PWD} onRemove={() => handleRemoveAccount(acc.id)} />)}</div>
           </div>
         </div>
       </div>

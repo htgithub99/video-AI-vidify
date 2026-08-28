@@ -16,27 +16,13 @@ export const Skeleton: FC<SkeletonProps> = ({ className, variant = "rectangular"
     button: "rounded-xl h-10 w-28",
   };
 
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "skeleton-shimmer relative overflow-hidden bg-slate-850/80 border border-slate-800/40 select-none",
-        variantStyles[variant],
-        className
-      )}
-      {...props}
-    />
-  );
+  return <div aria-hidden="true" className={cn("skeleton-shimmer relative overflow-hidden bg-slate-850/80 border border-slate-800/40 select-none", variantStyles[variant], className)} {...props} />;
 };
 
 export const SkeletonText: FC<{ lines?: number; className?: string }> = ({ lines = 2, className }) => (
   <div className={cn("space-y-2 w-full", className)}>
     {_.map(_.range(lines), (index) => (
-      <Skeleton
-        key={index}
-        variant="text"
-        className={cn(index === lines - 1 && lines > 1 ? "w-3/4" : "w-full")}
-      />
+      <Skeleton key={index} variant="text" className={cn(index === lines - 1 && lines > 1 ? "w-3/4" : "w-full")} />
     ))}
   </div>
 );
@@ -168,7 +154,6 @@ export const VoiceGridSkeleton: FC<VoiceGridSkeletonProps> = ({ count = 6, class
 
 export const DashboardSkeleton: FC<{ className?: string }> = ({ className }) => (
   <div className={cn("space-y-6 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8", className)}>
-    
     <div className={cn("glass-card rounded-3xl p-6 sm:p-8 border border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-6")}>
       <div className={cn("space-y-3 w-full md:w-2/3")}>
         <Skeleton variant="text" className={cn("w-48 h-6")} />

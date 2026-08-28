@@ -67,7 +67,10 @@ export class LicenseValidationError extends Error {
   }
 }
 
-interface CachedLicenseEntry { info: LicenseInfo; timestamp: number; }
+interface CachedLicenseEntry {
+  info: LicenseInfo;
+  timestamp: number;
+}
 const licenseCache = new Map<string, CachedLicenseEntry>();
 const inFlightValidations = new Map<string, Promise<LicenseInfo | null>>();
 

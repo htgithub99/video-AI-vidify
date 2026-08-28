@@ -88,7 +88,7 @@ export const createSourceGroundedThumbnailIdeas = (script: string, requestedCoun
     const source = sources[index % _.size(sources)];
     const prompt = _.replace(_.replace(_.replace(THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_PROMPT_TEMPLATE, THUMBNAIL_PROMPT_CONFIG.SOURCE_TOKEN, source), THUMBNAIL_PROMPT_CONFIG.COMPOSITION_TOKEN, layout.composition), THUMBNAIL_PROMPT_CONFIG.STYLE_TOKEN, style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE);
 
-    return { prompt, style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE, hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText), textText: "", generationPrompt: prompt, layoutId: layout.id, layout: layout.composition, layoutRationale: layout.bestFor, subjectFocus: source, };
+    return { prompt, style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE, hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText), textText: "", generationPrompt: prompt, layoutId: layout.id, layout: layout.composition, layoutRationale: layout.bestFor, subjectFocus: source };
   });
 
   return normalizeThumbnailIdeas(generatedItems, requestedCount, textMode);
@@ -121,17 +121,7 @@ export const getThumbnailPlanningIssues = (generatedItems: Array<Partial<Thumbna
         const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), " ");
         const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), " ");
 
-        return _.compact([ !layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT,
-          layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
-          _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
-          hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
-          hasText && (headlineWordCount > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS || _.size(headline) > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_CHARACTERS) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_TOO_LONG,
-          hasText && THUMBNAIL_PROMPT_CONFIG.WEAK_HEADLINE_PREFIX_PATTERN.test(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_WEAK_PREFIX,
-          hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
-          layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH,
-          !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH,
-          containsAspectRatio && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ASPECT_RATIO_PRESENT,
-          !_.isEmpty(normalizedStyleLock) && !_.includes(normalizedPrompt, normalizedStyleLock) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.STYLE_LOCK_MISSING, ]) as string[];
+        return _.compact([!layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT, layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH, _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT, hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE, hasText && (headlineWordCount > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS || _.size(headline) > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_CHARACTERS) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_TOO_LONG, hasText && THUMBNAIL_PROMPT_CONFIG.WEAK_HEADLINE_PREFIX_PATTERN.test(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_WEAK_PREFIX, hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT, layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH, !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH, containsAspectRatio && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ASPECT_RATIO_PRESENT, !_.isEmpty(normalizedStyleLock) && !_.includes(normalizedPrompt, normalizedStyleLock) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.STYLE_LOCK_MISSING]) as string[];
       }),
     ),
   );

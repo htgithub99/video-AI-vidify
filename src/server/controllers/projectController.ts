@@ -326,7 +326,7 @@ function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
       if (_.get(oldScene, "assetUrl") && !_.get(newScene, "assetUrl")) {
-        return { ...newScene, assetUrl: oldScene.assetUrl, assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl], assetName: newScene.assetName || oldScene?.assetName, assetType: newScene.assetType || oldScene?.assetType, };
+        return { ...newScene, assetUrl: oldScene.assetUrl, assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl], assetName: newScene.assetName || oldScene?.assetName, assetType: newScene.assetType || oldScene?.assetType };
       }
       return newScene;
     });
@@ -616,7 +616,8 @@ export const getProjectById = async (request: Request, response: Response) => {
   const { id } = request.params;
   try {
     const project = await getProjectDetail(id);
-    if (project) response.json(project); else {
+    if (project) response.json(project);
+    else {
       response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
     }
   } catch (error: any) {

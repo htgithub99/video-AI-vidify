@@ -25,56 +25,7 @@ const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPast
 
 export default function PipelineWizard(props: PipelineWizardProps) {
   const wizard = usePipelineWizard(props);
-  const {
-    t,
-    project,
-    setProject,
-    currentStep,
-    setCurrentStep,
-    leftSidebarOpen,
-    setLeftSidebarOpen,
-    rightSidebarOpen,
-    setRightSidebarOpen,
-    errorMsg,
-    setErrorMsg,
-    infoMsg,
-    setInfoMsg,
-    zoomedImage,
-    setZoomedImage,
-    systemLogs,
-    showLogsModal,
-    setShowLogsModal,
-    systemVoices,
-    voiceDropdownOpen,
-    handleCloseVoiceModal,
-    voiceSearch,
-    setVoiceSearch,
-    voiceTypeFilter,
-    setVoiceTypeFilter,
-    voiceLangFilter,
-    setVoiceLangFilter,
-    selectedGenderFilter,
-    setSelectedGenderFilter,
-    playingVoiceURI,
-    playVoicePreview,
-    currentLang,
-    getVoiceGender,
-    isPremiumVoice,
-    favoriteStyles,
-    showFavStyles,
-    setShowFavStyles,
-    handleAddFavoriteStyle,
-    handleDeleteFavoriteStyle,
-    handleSaveEditStyle,
-    handleSaveCurrentStyle,
-    handleApplyFavoriteStyle,
-    favoriteVoices,
-    showFavVoices,
-    setShowFavVoices,
-    handleAddFavoriteVoice,
-    handleDeleteFavoriteVoice,
-    handleSaveEditVoice,
-  } = wizard;
+  const { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, errorMsg, setErrorMsg, infoMsg, setInfoMsg, zoomedImage, setZoomedImage, systemLogs, showLogsModal, setShowLogsModal, systemVoices, voiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, playVoicePreview, currentLang, getVoiceGender, isPremiumVoice, favoriteStyles, showFavStyles, setShowFavStyles, handleAddFavoriteStyle, handleDeleteFavoriteStyle, handleSaveEditStyle, handleSaveCurrentStyle, handleApplyFavoriteStyle, favoriteVoices, showFavVoices, setShowFavVoices, handleAddFavoriteVoice, handleDeleteFavoriteVoice, handleSaveEditVoice } = wizard;
   const userLogBadges = getUserLogBadges(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang];
 
@@ -492,18 +443,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Generation_Mode}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })}
-                        className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         {t.Labs_Flow_Mode}
                       </Button>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })}
-                        className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         {t.Gemini_Chat_Mode}
                       </Button>
                     </div>
@@ -512,27 +455,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Generate_Type}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ generateType: GenerateType.Image })}
-                        className={cn(
-                          `flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${!project.visualConfig.generateType || project.visualConfig.generateType === GenerateType.Image ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                        )}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${!project.visualConfig.generateType || project.visualConfig.generateType === GenerateType.Image ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <ImageIcon className={cn("w-3.5 h-3.5")} /> {t.Image}
                       </Button>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ generateType: GenerateType.Video })}
-                        className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <Video className={cn("w-3.5 h-3.5")} /> {t.Video}
                       </Button>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ generateType: GenerateType.Mixed })}
-                        className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Mixed ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Mixed })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Mixed ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <LucideIcons.Film className={cn("w-3.5 h-3.5")} /> {mediaMixTexts.mixed}
                       </Button>
                     </div>
@@ -557,14 +486,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Aspect_Ratio}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                       {Object.values(AspectRatio).map((ratio) => (
-                        <Button
-                          variant="unstyled"
-                          type="button"
-                          key={ratio}
-                          onClick={() => updateVisualConfig({ aspectRatio: ratio })}
-                          className={cn(
-                            `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                          )}>
+                        <Button variant="unstyled" type="button" key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                           {ratio}
                         </Button>
                       ))}
@@ -574,22 +496,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Input_Method_Labs}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })}
-                        className={cn(
-                          `flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                        )}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <Type className={cn("w-3 h-3")} /> {t.Type_Text}
                       </Button>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })}
-                        className={cn(
-                          `flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                        )}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <ClipboardPaste className={cn("w-3 h-3")} /> {t.Quick_Paste}
                       </Button>
                     </div>
@@ -599,14 +509,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Sample_Count}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                       {[1, 2, 3, 4].map((count) => (
-                        <Button
-                          variant="unstyled"
-                          type="button"
-                          key={count}
-                          onClick={() => updateVisualConfig({ generateCount: count })}
-                          className={cn(
-                            `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                          )}>
+                        <Button variant="unstyled" type="button" key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                           {count === 1 ? "1x" : `x${count}`}
                         </Button>
                       ))}
@@ -618,14 +521,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Video_Duration}</div>
                       <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                         {["4s", "6s", "8s", "10s"].map((dur) => (
-                          <Button
-                            variant="unstyled"
-                            type="button"
-                            key={dur}
-                            onClick={() => updateVisualConfig({ videoDuration: dur })}
-                            className={cn(
-                              `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
-                            )}>
+                          <Button variant="unstyled" type="button" key={dur} onClick={() => updateVisualConfig({ videoDuration: dur })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                             {t[`Duration_${dur}` as keyof typeof t] || dur}
                           </Button>
                         ))}
@@ -636,18 +532,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Chrome_Mode}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ chromeHeadless: true })}
-                        className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         {t.Chrome_Hidden}
                       </Button>
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={() => updateVisualConfig({ chromeHeadless: false })}
-                        className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         {t.Chrome_Visible}
                       </Button>
                     </div>
@@ -660,12 +548,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
                           const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
                           return (
-                            <Button
-                              variant="unstyled"
-                              type="button"
-                              key={opt.value}
-                              onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })}
-                              className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button variant="unstyled" type="button" key={opt.value} onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                               {label}
                             </Button>
                           );
@@ -1024,12 +907,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((loc) => {
                           const isActive = voiceLangFilter === loc.id;
                           return (
-                            <Button
-                              variant="unstyled"
-                              key={loc.id}
-                              type="button"
-                              onClick={() => setVoiceLangFilter(loc.id as any)}
-                              className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button variant="unstyled" key={loc.id} type="button" onClick={() => setVoiceLangFilter(loc.id as any)} className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                               {loc.label}
                             </Button>
                           );
@@ -1059,12 +937,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((gen) => {
                           const isActive = selectedGenderFilter === gen.id;
                           return (
-                            <Button
-                              variant="unstyled"
-                              key={gen.id}
-                              type="button"
-                              onClick={() => setSelectedGenderFilter(gen.id as any)}
-                              className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button variant="unstyled" key={gen.id} type="button" onClick={() => setSelectedGenderFilter(gen.id as any)} className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                               {gen.label}
                             </Button>
                           );
@@ -1126,9 +999,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                     pitch = modifiers.pitch;
                                   }
 
-                                  const voiceConfigOverride = { ...project.voiceConfig, voiceURI: pUri, speed, pitch, gender, provider, };
+                                  const voiceConfigOverride = { ...project.voiceConfig, voiceURI: pUri, speed, pitch, gender, provider };
                                   setProject((prev) => {
-                                    return { ...prev, voiceConfig: voiceConfigOverride, };
+                                    return { ...prev, voiceConfig: voiceConfigOverride };
                                   });
 
                                   playVoicePreview(voice.voiceURI, gender, voice.lang, speed, pitch);

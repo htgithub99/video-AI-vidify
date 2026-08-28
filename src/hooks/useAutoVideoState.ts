@@ -11,15 +11,144 @@ import { Lang } from "../lib/lang";
 import { getAutoVideoConfigStorageKey } from "./autoVideoPipelineUtils";
 import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 
-interface CachedGeneratorConfig { version?: number; inputType?: ProjectInputType; scriptContent?: string; genre?: string; language?: ProjectLanguage; duration?: string; splitStrategy?: string; voiceProvider?: string; voiceURI?: string; voiceName?: string; generationMode?: ImageGenerationMode; imageGeneratorEngine?: ImageGeneratorEngine; generateType?: GenerateType; maxVideoScenes?: number; aspectRatio?: AspectRatio; stylePreset?: string; styleBackgroundMode?: BackgroundMode; styleTextInImageMode?: TextInImageMode; imageFocusMode?: ImageFocusMode; thumbnailImageFocusMode?: ImageFocusMode; thumbnailCount?: number; thumbnailStylePreset?: string; thumbnailBackgroundMode?: BackgroundMode; thumbnailTextInImageMode?: ThumbnailTextMode; projectName?: string; referenceImages?: string[]; sceneReferenceImages?: string[]; thumbnailReferenceImages?: string[]; thumbnailSceneReferenceImages?: string[]; resumeMode?: boolean; chromeHeadless?: boolean; musicAssetUrl?: string; }
+interface CachedGeneratorConfig {
+  version?: number;
+  inputType?: ProjectInputType;
+  scriptContent?: string;
+  genre?: string;
+  language?: ProjectLanguage;
+  duration?: string;
+  splitStrategy?: string;
+  voiceProvider?: string;
+  voiceURI?: string;
+  voiceName?: string;
+  generationMode?: ImageGenerationMode;
+  imageGeneratorEngine?: ImageGeneratorEngine;
+  generateType?: GenerateType;
+  maxVideoScenes?: number;
+  aspectRatio?: AspectRatio;
+  stylePreset?: string;
+  styleBackgroundMode?: BackgroundMode;
+  styleTextInImageMode?: TextInImageMode;
+  imageFocusMode?: ImageFocusMode;
+  thumbnailImageFocusMode?: ImageFocusMode;
+  thumbnailCount?: number;
+  thumbnailStylePreset?: string;
+  thumbnailBackgroundMode?: BackgroundMode;
+  thumbnailTextInImageMode?: ThumbnailTextMode;
+  projectName?: string;
+  referenceImages?: string[];
+  sceneReferenceImages?: string[];
+  thumbnailReferenceImages?: string[];
+  thumbnailSceneReferenceImages?: string[];
+  resumeMode?: boolean;
+  chromeHeadless?: boolean;
+  musicAssetUrl?: string;
+}
 
-export interface AutoVideoFormState { inputType: ProjectInputType; scriptContent: string; genre: string; language: ProjectLanguage; duration: string; rewriteLevel: number; similarityReduction: number; creativityLevel: number; factCheck: boolean; audience: string; writingStyle: string; splitStrategy: string; hookStrategy: string; hookDuration: number; hookPosition: string; voiceProvider: string; voiceSpeed: number; voicePitch: number; voiceVolume: number; voiceURI: string; voiceName: string; isVoiceDialogOpen: boolean; generationMode: ImageGenerationMode; imageGeneratorEngine: ImageGeneratorEngine; generateType: GenerateType; maxVideoScenes: number; aspectRatio: AspectRatio; promptInputMethod: PromptInputMethod; sampleCount: number; videoDuration: string; chromeHeadless: boolean; geminiChatSpeed: GeminiChatSpeed; batchDelay: BatchDelayOption; stylePreset: string; styleBackgroundMode: BackgroundMode; styleTextInImageMode: TextInImageMode; imageFocusMode: ImageFocusMode; thumbnailImageFocusMode: ImageFocusMode; referenceImages: string[]; sceneReferenceImages: string[]; characterImages: string[]; thumbnailCount: number; thumbnailStylePreset: string; thumbnailBackgroundMode: BackgroundMode; thumbnailTextInImageMode: ThumbnailTextMode; thumbnailReferenceImages: string[]; thumbnailSceneReferenceImages: string[]; projectName: string; resumeMode: boolean; showAdvancedImageSettings: boolean; ffmpegQuality: VideoQuality; isConfigLoaded: boolean; musicAssetUrl: string; }
+export interface AutoVideoFormState {
+  inputType: ProjectInputType;
+  scriptContent: string;
+  genre: string;
+  language: ProjectLanguage;
+  duration: string;
+  rewriteLevel: number;
+  similarityReduction: number;
+  creativityLevel: number;
+  factCheck: boolean;
+  audience: string;
+  writingStyle: string;
+  splitStrategy: string;
+  hookStrategy: string;
+  hookDuration: number;
+  hookPosition: string;
+  voiceProvider: string;
+  voiceSpeed: number;
+  voicePitch: number;
+  voiceVolume: number;
+  voiceURI: string;
+  voiceName: string;
+  isVoiceDialogOpen: boolean;
+  generationMode: ImageGenerationMode;
+  imageGeneratorEngine: ImageGeneratorEngine;
+  generateType: GenerateType;
+  maxVideoScenes: number;
+  aspectRatio: AspectRatio;
+  promptInputMethod: PromptInputMethod;
+  sampleCount: number;
+  videoDuration: string;
+  chromeHeadless: boolean;
+  geminiChatSpeed: GeminiChatSpeed;
+  batchDelay: BatchDelayOption;
+  stylePreset: string;
+  styleBackgroundMode: BackgroundMode;
+  styleTextInImageMode: TextInImageMode;
+  imageFocusMode: ImageFocusMode;
+  thumbnailImageFocusMode: ImageFocusMode;
+  referenceImages: string[];
+  sceneReferenceImages: string[];
+  characterImages: string[];
+  thumbnailCount: number;
+  thumbnailStylePreset: string;
+  thumbnailBackgroundMode: BackgroundMode;
+  thumbnailTextInImageMode: ThumbnailTextMode;
+  thumbnailReferenceImages: string[];
+  thumbnailSceneReferenceImages: string[];
+  projectName: string;
+  resumeMode: boolean;
+  showAdvancedImageSettings: boolean;
+  ffmpegQuality: VideoQuality;
+  isConfigLoaded: boolean;
+  musicAssetUrl: string;
+}
 
-export interface AutoVideoFormActions { setInputType: (v: ProjectInputType) => void; setScriptContent: (v: string) => void; setGenre: (v: string) => void; setLanguage: (v: ProjectLanguage) => void; setDuration: (v: string) => void; setSplitStrategy: (v: string) => void; setVoiceProvider: (v: string) => void; setVoiceURI: (v: string) => void; setVoiceName: (v: string) => void; setIsVoiceDialogOpen: (v: boolean) => void; setGenerationMode: (v: ImageGenerationMode) => void; setImageGeneratorEngine: (v: ImageGeneratorEngine) => void; setGenerateType: (v: GenerateType) => void; setMaxVideoScenes: (v: number) => void; setAspectRatio: (v: AspectRatio) => void; setChromeHeadless: (v: boolean) => void; setStylePreset: (v: string) => void; setStyleBackgroundMode: (v: BackgroundMode) => void; setStyleTextInImageMode: (v: TextInImageMode) => void; setImageFocusMode: (v: ImageFocusMode) => void; setThumbnailImageFocusMode: (v: ImageFocusMode) => void; setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setThumbnailCount: (v: number) => void; setThumbnailStylePreset: (v: string) => void; setThumbnailBackgroundMode: (v: BackgroundMode) => void; setThumbnailTextInImageMode: (v: ThumbnailTextMode) => void; setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setThumbnailSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setProjectName: (v: string) => void; setResumeMode: (v: boolean) => void; setShowAdvancedImageSettings: (v: boolean) => void; setMusicAssetUrl: (v: string) => void; }
+export interface AutoVideoFormActions {
+  setInputType: (v: ProjectInputType) => void;
+  setScriptContent: (v: string) => void;
+  setGenre: (v: string) => void;
+  setLanguage: (v: ProjectLanguage) => void;
+  setDuration: (v: string) => void;
+  setSplitStrategy: (v: string) => void;
+  setVoiceProvider: (v: string) => void;
+  setVoiceURI: (v: string) => void;
+  setVoiceName: (v: string) => void;
+  setIsVoiceDialogOpen: (v: boolean) => void;
+  setGenerationMode: (v: ImageGenerationMode) => void;
+  setImageGeneratorEngine: (v: ImageGeneratorEngine) => void;
+  setGenerateType: (v: GenerateType) => void;
+  setMaxVideoScenes: (v: number) => void;
+  setAspectRatio: (v: AspectRatio) => void;
+  setChromeHeadless: (v: boolean) => void;
+  setStylePreset: (v: string) => void;
+  setStyleBackgroundMode: (v: BackgroundMode) => void;
+  setStyleTextInImageMode: (v: TextInImageMode) => void;
+  setImageFocusMode: (v: ImageFocusMode) => void;
+  setThumbnailImageFocusMode: (v: ImageFocusMode) => void;
+  setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setThumbnailCount: (v: number) => void;
+  setThumbnailStylePreset: (v: string) => void;
+  setThumbnailBackgroundMode: (v: BackgroundMode) => void;
+  setThumbnailTextInImageMode: (v: ThumbnailTextMode) => void;
+  setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setThumbnailSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setProjectName: (v: string) => void;
+  setResumeMode: (v: boolean) => void;
+  setShowAdvancedImageSettings: (v: boolean) => void;
+  setMusicAssetUrl: (v: string) => void;
+}
 
-interface CachedGeneratorConfig { videoDuration?: string; videoResolution?: string; }
-export interface AutoVideoFormState { videoResolution: string; }
-export interface AutoVideoFormActions { setVideoDuration: (value: string) => void; setVideoResolution: (value: string) => void; }
+interface CachedGeneratorConfig {
+  videoDuration?: string;
+  videoResolution?: string;
+}
+export interface AutoVideoFormState {
+  videoResolution: string;
+}
+export interface AutoVideoFormActions {
+  setVideoDuration: (value: string) => void;
+  setVideoResolution: (value: string) => void;
+}
 
 const buildInitialProjectName = (): string => `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)}`;
 
@@ -292,41 +421,7 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
     storageUtils.set(targetKey, serialized);
     storageUtils.set(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, serialized);
     void storageUtils.setAsync(targetKey, serialized);
-  }, [ isConfigLoaded,
-    selectedProjectId,
-    inputType,
-    scriptContent,
-    genre,
-    language,
-    duration,
-    splitStrategy,
-    voiceProvider,
-    voiceURI,
-    voiceName,
-    generationMode,
-    imageGeneratorEngine,
-    generateType,
-    maxVideoScenes,
-    aspectRatio,
-    videoDuration,
-    videoResolution,
-    stylePreset,
-    styleBackgroundMode,
-    styleTextInImageMode,
-    imageFocusMode,
-    thumbnailImageFocusMode,
-    thumbnailCount,
-    thumbnailStylePreset,
-    thumbnailBackgroundMode,
-    thumbnailTextInImageMode,
-    projectName,
-    referenceImages,
-    sceneReferenceImages,
-    thumbnailReferenceImages,
-    thumbnailSceneReferenceImages,
-    resumeMode,
-    chromeHeadless,
-    musicAssetUrl, ]);
+  }, [isConfigLoaded, selectedProjectId, inputType, scriptContent, genre, language, duration, splitStrategy, voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine, generateType, maxVideoScenes, aspectRatio, videoDuration, videoResolution, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, thumbnailSceneReferenceImages, resumeMode, chromeHeadless, musicAssetUrl]);
 
   const state: AutoVideoFormState = {
     inputType,

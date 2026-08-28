@@ -8,7 +8,23 @@ import { DURATION_OPTIONS, GENRE_OPTION_GROUPS, PROJECT_LANGUAGE_OPTIONS, REFACT
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface ProjectInputSectionProps { inputType: ProjectInputType; setInputType: (type: ProjectInputType) => void; scriptContent: string; setScriptContent: (val: string) => void; genre: string; setGenre: (val: string) => void; language: ProjectLanguage; setLanguage: (val: ProjectLanguage) => void; duration: string; setDuration: (val: string) => void; splitStrategy: string; setSplitStrategy: (val: string) => void; splitLabelMap: Record<string, string>; T: ReturnType<typeof getAutoVideoTexts>; lockedGenreLabel?: string; }
+interface ProjectInputSectionProps {
+  inputType: ProjectInputType;
+  setInputType: (type: ProjectInputType) => void;
+  scriptContent: string;
+  setScriptContent: (val: string) => void;
+  genre: string;
+  setGenre: (val: string) => void;
+  language: ProjectLanguage;
+  setLanguage: (val: ProjectLanguage) => void;
+  duration: string;
+  setDuration: (val: string) => void;
+  splitStrategy: string;
+  setSplitStrategy: (val: string) => void;
+  splitLabelMap: Record<string, string>;
+  T: ReturnType<typeof getAutoVideoTexts>;
+  lockedGenreLabel?: string;
+}
 
 export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputType, setInputType, scriptContent, setScriptContent, genre, setGenre, language, setLanguage, duration, setDuration, splitStrategy, setSplitStrategy, splitLabelMap, T, lockedGenreLabel }) => {
   const wordCount = _.size(_.words(scriptContent));
@@ -90,18 +106,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
         {_.map(inputTypeCards, ({ type, icon, label, tooltip }) => {
           const isSelected = _.isEqual(inputType, type);
           return (
-            <Button
-              key={type}
-              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-              variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-              onClick={() => setInputType(type)}
-              className={cn(
-                "p-3 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[50px] select-none",
-                isSelected
-                  ? "bg-rose-500/15 border-rose-500/60 text-rose-400 font-extrabold shadow-sm ring-1 ring-rose-500/30"
-                  : "bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold"
-              )}
-              title={tooltip}>
+            <Button key={type} type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => setInputType(type)} className={cn("p-3 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[50px] select-none", isSelected ? "bg-rose-500/15 border-rose-500/60 text-rose-400 font-extrabold shadow-sm ring-1 ring-rose-500/30" : "bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold")} title={tooltip}>
               <div className={cn("flex items-center gap-2.5")}>
                 {icon}
                 <span className={cn("text-xs")}>{label}</span>
@@ -113,13 +118,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
       </div>
 
       <div className={cn("relative")}>
-        <textarea
-          rows={4}
-          value={scriptContent}
-          onChange={(e) => setScriptContent(e.target.value)}
-          placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea}
-          className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none shadow-inner transition-all placeholder:text-slate-500 font-sans")}
-        />
+        <textarea rows={4} value={scriptContent} onChange={(e) => setScriptContent(e.target.value)} placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea} className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none shadow-inner transition-all placeholder:text-slate-500 font-sans")} />
       </div>
 
       <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>

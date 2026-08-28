@@ -1,4 +1,4 @@
-export const CINEMATIC_POLICY_CONFIG = { MIN_BEAT_COUNT: 3, MAX_BEAT_COUNT: 5, CLIP_DURATION_SECONDS: 10, PLANNING_CHUNK_SIZE: 2, EPSILON_TOLERANCE: 0.25, } as const;
+export const CINEMATIC_POLICY_CONFIG = { MIN_BEAT_COUNT: 3, MAX_BEAT_COUNT: 5, CLIP_DURATION_SECONDS: 10, PLANNING_CHUNK_SIZE: 2, EPSILON_TOLERANCE: 0.25 } as const;
 
 export const CINEMATIC_POLICY_REQUIRED_FIELDS = ["sequenceId", "shotId", "shotRole", "dialogueMode", "characterBlocking", "eyelineDirection", "screenDirection", "actionStartState", "actionEndState", "locationState", "wardrobeState", "propState"] as const;
 
@@ -12,7 +12,7 @@ export const CINEMATIC_DEFAULT_SOUND_CUES = ["diegetic room tone ambience", "sub
 
 export const CINEMATIC_TEXT_FREE_POLICY = "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.";
 
-export const CINEMATIC_DEFAULTS = { CHARACTER_BLOCKING: "Subject positions into the scene", EYELINE_DIRECTION: "Looking forward", SCREEN_DIRECTION: "Left to right", ACTION_START_STATE: "Opening scene position", ACTION_END_STATE: "Completed action aftermath", LOCATION_STATE: "Established cinematic environment", WARDROBE_STATE: "Established character costume and gear", PROP_STATE: "Established character props", VISIBLE_ACTION: "Action unfolds", REACTION: "Visible reaction", LOCATION_LOCK: "unchanged set geography", WARDROBE_LOCK: "unchanged wardrobe and wear state", PROP_LOCK: "unchanged prop ownership, hand and condition", LIGHTING_LOCK: "unchanged motivated light direction and time", STATIC_AXIS: "static_axis", ESTABLISHED_EYELINE: "established eyeline", PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip", } as const;
+export const CINEMATIC_DEFAULTS = { CHARACTER_BLOCKING: "Subject positions into the scene", EYELINE_DIRECTION: "Looking forward", SCREEN_DIRECTION: "Left to right", ACTION_START_STATE: "Opening scene position", ACTION_END_STATE: "Completed action aftermath", LOCATION_STATE: "Established cinematic environment", WARDROBE_STATE: "Established character costume and gear", PROP_STATE: "Established character props", VISIBLE_ACTION: "Action unfolds", REACTION: "Visible reaction", LOCATION_LOCK: "unchanged set geography", WARDROBE_LOCK: "unchanged wardrobe and wear state", PROP_LOCK: "unchanged prop ownership, hand and condition", LIGHTING_LOCK: "unchanged motivated light direction and time", STATIC_AXIS: "static_axis", ESTABLISHED_EYELINE: "established eyeline", PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip" } as const;
 
 export const CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE = (language: string, targetDuration: string): string => `
 [DEDICATED AI FILM SCREENPLAY CONTRACT]

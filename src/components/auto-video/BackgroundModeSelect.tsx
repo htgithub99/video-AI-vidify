@@ -6,7 +6,12 @@ import { BackgroundMode } from "../../types";
 import { BACKGROUND_MODE_CONFIG } from "../../constants/config";
 import { BACKGROUND_OPTION_GROUPS } from "../../constants/texts";
 
-interface BackgroundModeSelectProps { value: BackgroundMode; onChange: (value: BackgroundMode) => void; language: "vi" | "en"; label: string; }
+interface BackgroundModeSelectProps {
+  value: BackgroundMode;
+  onChange: (value: BackgroundMode) => void;
+  language: "vi" | "en";
+  label: string;
+}
 
 export const BackgroundModeSelect: React.FC<BackgroundModeSelectProps> = ({ value, onChange, language, label }) => {
   const groups = _.get(BACKGROUND_OPTION_GROUPS, language, BACKGROUND_OPTION_GROUPS.vi);

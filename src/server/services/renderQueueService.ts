@@ -14,7 +14,20 @@ export enum JobStatus {
   CANCELLED = "cancelled",
 }
 
-export interface RenderJob { id: string; payload: FFmpegRenderOptions; status: JobStatus; progress: number; url?: string; error?: string; createdAt: Date; updatedAt: Date; startedAt?: Date; completedAt?: Date; heartbeatAt?: Date; licenseKey?: string; }
+export interface RenderJob {
+  id: string;
+  payload: FFmpegRenderOptions;
+  status: JobStatus;
+  progress: number;
+  url?: string;
+  error?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  heartbeatAt?: Date;
+  licenseKey?: string;
+}
 
 type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & {
   createdAt: string;

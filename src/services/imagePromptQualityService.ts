@@ -3,7 +3,15 @@ import { BackgroundMode, CharacterConfig, ImagePromptQualityIssue, ImagePromptQu
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 
-export interface ImagePromptQualityOptions { backgroundMode?: BackgroundMode; textMode?: TextInImageMode; targetStyle?: string; characters?: CharacterConfig[]; visualBible?: VisualBible; requireStructuredPlan?: boolean; forbidAspectRatio?: boolean; }
+export interface ImagePromptQualityOptions {
+  backgroundMode?: BackgroundMode;
+  textMode?: TextInImageMode;
+  targetStyle?: string;
+  characters?: CharacterConfig[];
+  visualBible?: VisualBible;
+  requireStructuredPlan?: boolean;
+  forbidAspectRatio?: boolean;
+}
 
 const ILLUSTRATED_STYLE_PATTERN = /\b(?:2d|cartoon|illustration|illustrated|hand[- ]?drawn|vector|flat\s+color|chibi|stickman|comic|ink|line\s+art)\b/i;
 const REALISTIC_STYLE_CONFLICT_PATTERN = /\b(?:realistic\s+cinematic|photorealistic|hyperrealistic|3d\s+render|dramatic\s+lighting|volumetric\s+lighting|award-winning\s+masterpiece|shot\s+on\s+\d+mm)\b/i;
@@ -174,5 +182,5 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
   });
 
   const blockingSceneIds = new Set(_.map(blockingErrors, "sceneId"));
-  return { totalPrompts: _.size(scenes), validPrompts: _.subtract(_.size(scenes), blockingSceneIds.size), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) && !_.isEmpty(scenes), };
+  return { totalPrompts: _.size(scenes), validPrompts: _.subtract(_.size(scenes), blockingSceneIds.size), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) && !_.isEmpty(scenes) };
 };

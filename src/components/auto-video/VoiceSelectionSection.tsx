@@ -11,7 +11,18 @@ import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface VoiceSelectionSectionProps { voiceName: string; voiceURI: string; voiceProvider: string; isVoiceDialogOpen: boolean; setIsVoiceDialogOpen: (val: boolean) => void; voiceDialogPersistenceScope: string; currentLang: Lang; handleVoiceSelect: (v: CatalogVoice) => void; truncateWords: (str: string, maxWords: number) => string; T: ReturnType<typeof getAutoVideoTexts>; }
+interface VoiceSelectionSectionProps {
+  voiceName: string;
+  voiceURI: string;
+  voiceProvider: string;
+  isVoiceDialogOpen: boolean;
+  setIsVoiceDialogOpen: (val: boolean) => void;
+  voiceDialogPersistenceScope: string;
+  currentLang: Lang;
+  handleVoiceSelect: (v: CatalogVoice) => void;
+  truncateWords: (str: string, maxWords: number) => string;
+  T: ReturnType<typeof getAutoVideoTexts>;
+}
 
 export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({ voiceName, voiceURI, voiceProvider, isVoiceDialogOpen, setIsVoiceDialogOpen, voiceDialogPersistenceScope, currentLang, handleVoiceSelect, truncateWords, T }) => {
   const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, currentLang, AUTO_VIDEO_UI_TEXTS.vi);

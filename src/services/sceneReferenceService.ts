@@ -34,7 +34,12 @@ export const SCENE_REFERENCE_CONFIG = {
   CONTINUING_PRONOUN_PATTERN: /^(?:anh|co|ong|ba|han|nguoi nay|he|she|him|her|his|their)\b/i,
 } as const;
 
-export interface SceneGenerationContext { characterIds: string[]; prompt: string; referenceImages: string[]; referenceRoles: string[]; }
+export interface SceneGenerationContext {
+  characterIds: string[];
+  prompt: string;
+  referenceImages: string[];
+  referenceRoles: string[];
+}
 
 const normalizeTokens = (value: string): string[] => _.uniq(_.filter(_.words(_.toLower(_.deburr(value))), (token) => _.gte(_.size(token), SCENE_REFERENCE_CONFIG.MIN_TOKEN_LENGTH)));
 
@@ -129,5 +134,5 @@ export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], cha
 export const createSceneGenerationContext = (scene: StoryboardScene, visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
-  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceRoles: [], };
+  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceRoles: [] };
 };

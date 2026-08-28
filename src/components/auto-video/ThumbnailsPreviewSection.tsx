@@ -8,9 +8,17 @@ import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
 import { ThumbnailItem, VideoProject } from "../../types";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 
-interface ThumbnailsPreviewSectionProps { activeCreatedProject: VideoProject | null | undefined; onThumbnailLoadError?: (thumbnailId: string) => void; }
+interface ThumbnailsPreviewSectionProps {
+  activeCreatedProject: VideoProject | null | undefined;
+  onThumbnailLoadError?: (thumbnailId: string) => void;
+}
 
-interface ThumbnailCardItemProps { thumb: ThumbnailItem; onPreview: (url: string) => void; onDownload: (imageUrl: string, thumbnailId?: string) => void; onLoadError?: (thumbnailId: string) => void; }
+interface ThumbnailCardItemProps {
+  thumb: ThumbnailItem;
+  onPreview: (url: string) => void;
+  onDownload: (imageUrl: string, thumbnailId?: string) => void;
+  onLoadError?: (thumbnailId: string) => void;
+}
 
 const cleanThumbnailText = (text?: string): string => {
   if (!text || _.isEmpty(_.trim(text))) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -56,12 +64,7 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({ thumb, onPreview,
 
         {thumb.imageUrl && (
           <div className={cn("pt-3")}>
-            <Button
-              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-              variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-              onClick={() => onDownload(thumb.imageUrl!, thumb.id)}
-              className={cn("w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-md shadow-purple-950/40 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group/btn")}
-              title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD_TOOLTIP}>
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => onDownload(thumb.imageUrl!, thumb.id)} className={cn("w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-md shadow-purple-950/40 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group/btn")} title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD_TOOLTIP}>
               <Download className={cn("w-3.5 h-3.5")} />
               <span>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD}</span>
             </Button>

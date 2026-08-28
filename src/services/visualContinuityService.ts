@@ -2,7 +2,10 @@ import _ from "lodash";
 import { VISUAL_CONTINUITY_CONFIG } from "../constants/config.js";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
 
-export interface VisualContinuityReport { blockingErrors: string[]; passed: boolean; }
+export interface VisualContinuityReport {
+  blockingErrors: string[];
+  passed: boolean;
+}
 
 const STYLE_CONTAMINATED_CHARACTER_PATTERN = /\b(?:rendering language|visual language|graphic outlines?|flat color fills?|cel shading|deadpan|anime-influenced|dot nose|rounded facial plane|chibi|stick[- ]figure|panda|mascot|donghua|xianxia|cinematic lighting)\b/i;
 

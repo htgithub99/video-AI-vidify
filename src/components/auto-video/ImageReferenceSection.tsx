@@ -8,7 +8,13 @@ import { ReferenceImageCard } from "./ReferenceImageCard";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-export interface ImageReferenceSectionProps { referenceImages: string[]; setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; handleReferenceFilesUpload: (files: FileList) => void; onDeleteImage?: (index: number) => void; T: ReturnType<typeof getAutoVideoTexts>; }
+export interface ImageReferenceSectionProps {
+  referenceImages: string[];
+  setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  handleReferenceFilesUpload: (files: FileList) => void;
+  onDeleteImage?: (index: number) => void;
+  T: ReturnType<typeof getAutoVideoTexts>;
+}
 
 export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({ referenceImages, setReferenceImages, handleReferenceFilesUpload, onDeleteImage, T }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);

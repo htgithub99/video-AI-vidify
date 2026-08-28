@@ -8,11 +8,23 @@ import { tryParseJSON } from "../utils/helpers.js";
 import { assertResponseContract, ResponseContractName } from "./responseContractService.js";
 import { assertResponseSchema } from "./responseSchemaValidationService.js";
 
-interface AiResponse { text?: string; aiMetadata?: unknown; rotationLogs?: string[]; }
+interface AiResponse {
+  text?: string;
+  aiMetadata?: unknown;
+  rotationLogs?: string[];
+}
 
-interface ScriptPlanRequest { contents: string; config: Record<string, unknown>; task: Record<string, unknown>; }
+interface ScriptPlanRequest {
+  contents: string;
+  config: Record<string, unknown>;
+  task: Record<string, unknown>;
+}
 
-interface ValidScriptPlanResult { value: Record<string, unknown>; aiMetadata: unknown[]; rotationLogs: string[]; }
+interface ValidScriptPlanResult {
+  value: Record<string, unknown>;
+  aiMetadata: unknown[];
+  rotationLogs: string[];
+}
 
 type GenerateContent = (request: ScriptPlanRequest) => Promise<AiResponse>;
 
@@ -140,7 +152,7 @@ export const requestValidScriptPlan = async (request: ScriptPlanRequest, chapter
   }
   if (!_.isEmpty(_.trim(sourceText))) {
     rotationLogs.push(SCRIPT_PLAN_CONFIG.SOURCE_FALLBACK_WARNING);
-    return { value: createSourceGroundedScriptPlan(sourceText!, chapterCount), aiMetadata, rotationLogs, };
+    return { value: createSourceGroundedScriptPlan(sourceText!, chapterCount), aiMetadata, rotationLogs };
   }
   const error = lastError instanceof Error ? lastError : new Error(SCRIPT_PLAN_CONFIG.INVALID_RESPONSE_ERROR);
   Object.assign(error, { rotationLogs, retryable: true, scriptPlanInvalid: true });

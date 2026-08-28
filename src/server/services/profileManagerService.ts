@@ -9,7 +9,11 @@ import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 
 chromium.use(stealthPlugin());
 
-export interface GoogleProfile { id: string; name: string; isLinked: boolean; }
+export interface GoogleProfile {
+  id: string;
+  name: string;
+  isLinked: boolean;
+}
 
 const PROFILES_DIR_NAME = "google_profiles";
 const DEFAULT_PROFILE_COUNT = 3;

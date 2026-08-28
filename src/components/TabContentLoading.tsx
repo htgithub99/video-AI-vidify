@@ -4,7 +4,6 @@ import { cn } from "../lib/utils";
 export default function TabContentLoading() {
   return (
     <div aria-busy="true" aria-label="Loading workspace..." className={cn("h-full flex flex-col bg-slate-955 p-4 sm:p-6 space-y-6 overflow-hidden animate-in fade-in duration-200")}>
-      
       <div className={cn("glass-card rounded-3xl p-6 border border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4")}>
         <div className={cn("flex items-center gap-4 w-full sm:w-auto")}>
           <Skeleton variant="circular" className={cn("w-12 h-12 shrink-0")} />
@@ -20,7 +19,6 @@ export default function TabContentLoading() {
       </div>
 
       <div className={cn("flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0")}>
-        
         <div className={cn("lg:col-span-7 space-y-4")}>
           <div className={cn("glass-card rounded-3xl p-5 border border-slate-800/80 space-y-4")}>
             <div className={cn("flex justify-between items-center")}>

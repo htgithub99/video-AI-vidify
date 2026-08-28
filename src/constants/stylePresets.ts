@@ -5,20 +5,39 @@ export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "documentary
 
 export type BackgroundMode = "minimal" | "contextual" | "white";
 
-export interface CuratedStylePreset { id: string; name: string; nameVi: string; category: StyleCategory; icon: string; tagline: string; description: string; positivePrompt: string; negativePrompt: string; defaultBackgroundMode: BackgroundMode; characterRule: string; keywords: string[]; }
+export interface CuratedStylePreset {
+  id: string;
+  name: string;
+  nameVi: string;
+  category: StyleCategory;
+  icon: string;
+  tagline: string;
+  description: string;
+  positivePrompt: string;
+  negativePrompt: string;
+  defaultBackgroundMode: BackgroundMode;
+  characterRule: string;
+  keywords: string[];
+}
 
-export interface StyleCategoryItem { id: StyleCategory; nameVi: string; nameEn: string; }
+export interface StyleCategoryItem {
+  id: StyleCategory;
+  nameVi: string;
+  nameEn: string;
+}
 
-export const STYLE_PRESET_CONFIG = { DEFAULT_ID: "stickman", CUSTOM_ID: "custom", CUSTOM_NAME: "Tùy chỉnh", CUSTOM_NAME_VI: "Tùy chỉnh", CUSTOM_CATEGORY: "all" as StyleCategory, CUSTOM_ICON: "🎨", CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản", CUSTOM_BG_MODE: "contextual" as BackgroundMode, MIN_CUSTOM_PROMPT_LENGTH: 30, CINEMATIC_PHOTOREAL_ID: "cinematic_photoreal", KEYWORD_LENGTH_KEY: "keywordLength", WORD_BOUNDARY_PREFIX: "\\b", WORD_BOUNDARY_SUFFIX: "\\b", REGEX_FLAG_I: "i", EMPTY_STRING: "", } as const;
+export const STYLE_PRESET_CONFIG = { DEFAULT_ID: "stickman", CUSTOM_ID: "custom", CUSTOM_NAME: "Tùy chỉnh", CUSTOM_NAME_VI: "Tùy chỉnh", CUSTOM_CATEGORY: "all" as StyleCategory, CUSTOM_ICON: "🎨", CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản", CUSTOM_BG_MODE: "contextual" as BackgroundMode, MIN_CUSTOM_PROMPT_LENGTH: 30, CINEMATIC_PHOTOREAL_ID: "cinematic_photoreal", KEYWORD_LENGTH_KEY: "keywordLength", WORD_BOUNDARY_PREFIX: "\\b", WORD_BOUNDARY_SUFFIX: "\\b", REGEX_FLAG_I: "i", EMPTY_STRING: "" } as const;
 
 export const STYLE_IDENTITY_BOUNDARY = "Style applies only to rendering, linework, shape language, palette, materials, and lighting. Character name, gender, age, face, hair, body, wardrobe, role, and setting must come only from the story character card and current scene.";
 
-export const STYLE_CATEGORIES: StyleCategoryItem[] = [ { id: "all", nameVi: "Tất cả", nameEn: "All" },
+export const STYLE_CATEGORIES: StyleCategoryItem[] = [
+  { id: "all", nameVi: "Tất cả", nameEn: "All" },
   { id: "cartoon_2d", nameVi: "2D & Minh họa", nameEn: "2D & Illustration" },
   { id: "3d_cinematic", nameVi: "3D & Phim ảnh", nameEn: "3D & Cinematic" },
   { id: "documentary_editorial", nameVi: "Ảnh thật & Tư liệu", nameEn: "Real & Documentary" },
   { id: "infographic_concept", nameVi: "Đồ họa & Giải thích", nameEn: "Graphics & Explainers" },
-  { id: "artistic_retro", nameVi: "Hội họa & Kỳ ảo", nameEn: "Painterly & Fantasy" }, ];
+  { id: "artistic_retro", nameVi: "Hội họa & Kỳ ảo", nameEn: "Painterly & Fantasy" },
+];
 
 export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
   stickman: {

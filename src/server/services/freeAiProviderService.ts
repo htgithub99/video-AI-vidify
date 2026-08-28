@@ -11,9 +11,21 @@ interface FreeProviderRequest {
   config?: any;
   task?: { capability?: AiTaskCapability };
 }
-interface FreeProviderResult { response?: any; lastError?: any; rotationLogs: string[]; }
-interface FreeProviderKeys { cerebrasKey: string; groqKey: string; }
-interface ProviderCandidate { id: FreeProviderId; url: string; apiKey: string; models: readonly string[]; }
+interface FreeProviderResult {
+  response?: any;
+  lastError?: any;
+  rotationLogs: string[];
+}
+interface FreeProviderKeys {
+  cerebrasKey: string;
+  groqKey: string;
+}
+interface ProviderCandidate {
+  id: FreeProviderId;
+  url: string;
+  apiKey: string;
+  models: readonly string[];
+}
 
 const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] => (requiresTools ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels : capability === AiTaskCapability.ScriptWriting ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels : FREE_AI_PROVIDER_CONFIG.GROQ.models);
 const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({ id: FREE_AI_PROVIDER_CONFIG.GROQ.id, url: FREE_AI_PROVIDER_CONFIG.GROQ.url, models: resolveGroqModels(requiresTools, capability), apiKey });

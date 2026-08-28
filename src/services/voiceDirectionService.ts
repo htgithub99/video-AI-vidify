@@ -3,7 +3,12 @@ import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTIO
 import { delayAsync, safeSystemFetch } from "../lib/shared-utils";
 import { VoiceArc, VoiceDirection } from "../types";
 
-export interface DirectedVoiceOptions { text: string; voiceArc: VoiceArc; basePayload: Record<string, unknown>; signal?: AbortSignal; }
+export interface DirectedVoiceOptions {
+  text: string;
+  voiceArc: VoiceArc;
+  basePayload: Record<string, unknown>;
+  signal?: AbortSignal;
+}
 
 const VOICE_ARC_ORDER: Array<keyof VoiceArc> = ["setup", "descent", "isolation", "climax", "reckoning", "resolution"];
 
@@ -38,7 +43,7 @@ const requestVoiceChunk = async (text: string, direction: VoiceDirection, basePa
     const response = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, createDirectedPayload(text, direction, basePayload), signal);
     const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
     if (response.success && !_.isEmpty(audioBase64)) {
-      return { audioBase64, provider: _.toString(_.get(response.data, "provider", _.get(basePayload, "provider"))), };
+      return { audioBase64, provider: _.toString(_.get(response.data, "provider", _.get(basePayload, "provider"))) };
     }
     lastError = _.toString(response.error || _.get(response.data, "error") || lastError);
     if (_.lt(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT), VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS)) {

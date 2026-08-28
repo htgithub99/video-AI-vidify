@@ -23,7 +23,14 @@ export interface LicenseInfo {
   };
 }
 
-interface LicenseContextType { licenseKey: string | null; licenseInfo: LicenseInfo | null; isLoading: boolean; activateLicense: (key: string) => Promise<boolean | string>; logoutLicense: () => void; refetchLicense: () => void; }
+interface LicenseContextType {
+  licenseKey: string | null;
+  licenseInfo: LicenseInfo | null;
+  isLoading: boolean;
+  activateLicense: (key: string) => Promise<boolean | string>;
+  logoutLicense: () => void;
+  refetchLicense: () => void;
+}
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 

@@ -6,7 +6,14 @@ import { Chapter, ShotPurpose, StoryboardScene, VisualBible } from "../types";
 import { assignStoryboardChapterIds } from "../utils/storyboardChapterUtils";
 import { compileImagePrompt, compileStoryboardPrompts } from "./imagePromptCompilerService";
 
-export interface StoryboardFallbackOptions { rewrittenScript: string; chapters?: Chapter[]; splitStrategy?: SplitStrategy; aspectRatio?: string; targetStyle?: string; visualBible?: VisualBible; }
+export interface StoryboardFallbackOptions {
+  rewrittenScript: string;
+  chapters?: Chapter[];
+  splitStrategy?: SplitStrategy;
+  aspectRatio?: string;
+  targetStyle?: string;
+  visualBible?: VisualBible;
+}
 
 const DENSE_SPLIT_STRATEGIES: SplitStrategy[] = [SplitStrategy.WORD, SplitStrategy.ULTRADENSE, SplitStrategy.HYPERDENSE, SplitStrategy.SHORT_SENTENCE, SplitStrategy.HIGHPACED];
 
@@ -69,7 +76,7 @@ const hydrateScriptGroundedScene = (scene: StoryboardScene, index: number): Stor
   const visibleAction = isUnsupportedFantasyLeak(scene.visibleAction, script) ? baseline.visibleAction : scene.visibleAction || baseline.visibleAction;
   const reaction = isUnsupportedFantasyLeak(scene.reaction, script) ? baseline.reaction : scene.reaction || baseline.reaction;
   const lighting = isUnsupportedFantasyLeak(scene.lighting, script) ? undefined : scene.lighting;
-  return { ...baseline, ...scene, script, subtitle: _.trim(scene.subtitle || script), visualIntent, visibleAction, reaction, lighting, shotSize: scene.shotSize || baseline.shotSize, cameraAngle: scene.cameraAngle || baseline.cameraAngle, composition: scene.composition || baseline.composition, cameraMotion: scene.cameraMotion || baseline.cameraMotion, effects: scene.effects || baseline.effects, lightingEffect: scene.lightingEffect || baseline.lightingEffect, transition: scene.transition || baseline.transition, };
+  return { ...baseline, ...scene, script, subtitle: _.trim(scene.subtitle || script), visualIntent, visibleAction, reaction, lighting, shotSize: scene.shotSize || baseline.shotSize, cameraAngle: scene.cameraAngle || baseline.cameraAngle, composition: scene.composition || baseline.composition, cameraMotion: scene.cameraMotion || baseline.cameraMotion, effects: scene.effects || baseline.effects, lightingEffect: scene.lightingEffect || baseline.lightingEffect, transition: scene.transition || baseline.transition };
 };
 
 export const ensureScriptGroundedSceneDetails = (scenes: StoryboardScene[], options: Omit<StoryboardFallbackOptions, "rewrittenScript" | "chapters" | "splitStrategy"> = {}): StoryboardScene[] =>

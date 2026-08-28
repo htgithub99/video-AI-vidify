@@ -1,12 +1,15 @@
 import _ from "lodash";
 
-const IMAGE_DIMENSION_CONFIG = { PNG_SIGNATURE: "89504e470d0a1a0a", PNG_WIDTH_OFFSET: 16, PNG_HEIGHT_OFFSET: 20, JPEG_START_MARKER: 0xffd8, JPEG_MARKER_PREFIX: 0xff, JPEG_SCAN_START: 2, JPEG_SEGMENT_LENGTH_OFFSET: 2, JPEG_HEIGHT_OFFSET: 5, JPEG_WIDTH_OFFSET: 7, JPEG_START_OF_FRAME_MARKERS: new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]), MIN_SEGMENT_LENGTH: 2, ASPECT_SEPARATOR: ":", MAX_RELATIVE_ERROR: 0.08, } as const;
+const IMAGE_DIMENSION_CONFIG = { PNG_SIGNATURE: "89504e470d0a1a0a", PNG_WIDTH_OFFSET: 16, PNG_HEIGHT_OFFSET: 20, JPEG_START_MARKER: 0xffd8, JPEG_MARKER_PREFIX: 0xff, JPEG_SCAN_START: 2, JPEG_SEGMENT_LENGTH_OFFSET: 2, JPEG_HEIGHT_OFFSET: 5, JPEG_WIDTH_OFFSET: 7, JPEG_START_OF_FRAME_MARKERS: new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]), MIN_SEGMENT_LENGTH: 2, ASPECT_SEPARATOR: ":", MAX_RELATIVE_ERROR: 0.08 } as const;
 
-export interface ImageDimensions { width: number; height: number; }
+export interface ImageDimensions {
+  width: number;
+  height: number;
+}
 
 const readPngDimensions = (buffer: Buffer): ImageDimensions | undefined => {
   if (!_.startsWith(buffer.toString("hex", 0, 8), IMAGE_DIMENSION_CONFIG.PNG_SIGNATURE)) return undefined;
-  return { width: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_WIDTH_OFFSET), height: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_HEIGHT_OFFSET), };
+  return { width: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_WIDTH_OFFSET), height: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_HEIGHT_OFFSET) };
 };
 
 const readJpegDimensions = (buffer: Buffer): ImageDimensions | undefined => {
@@ -19,7 +22,7 @@ const readJpegDimensions = (buffer: Buffer): ImageDimensions | undefined => {
     }
     const marker = buffer[_.add(offset, 1)];
     if (IMAGE_DIMENSION_CONFIG.JPEG_START_OF_FRAME_MARKERS.has(marker)) {
-      return { height: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_HEIGHT_OFFSET)), width: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_WIDTH_OFFSET)), };
+      return { height: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_HEIGHT_OFFSET)), width: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_WIDTH_OFFSET)) };
     }
     const lengthOffset = _.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_SEGMENT_LENGTH_OFFSET);
     if (_.gte(lengthOffset, _.subtract(buffer.length, 1))) return undefined;

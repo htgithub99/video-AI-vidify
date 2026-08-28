@@ -6,7 +6,16 @@ import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface ActionPanelSectionProps { scriptContent: string; isProcessing: boolean; isCancelling: boolean; currentStepIndex: number; stepProgress: number; handleStartAutoGenerate: () => Promise<void>; cancelPipeline: () => void; T: ReturnType<typeof getAutoVideoTexts>; }
+interface ActionPanelSectionProps {
+  scriptContent: string;
+  isProcessing: boolean;
+  isCancelling: boolean;
+  currentStepIndex: number;
+  stepProgress: number;
+  handleStartAutoGenerate: () => Promise<void>;
+  cancelPipeline: () => void;
+  T: ReturnType<typeof getAutoVideoTexts>;
+}
 
 export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptContent, isProcessing, isCancelling, currentStepIndex, stepProgress, handleStartAutoGenerate, cancelPipeline, T }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
@@ -25,9 +34,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           }}
           disabled={isProcessing || !isReady}
           isLoading={isProcessing && !isCancelling}
-          className={`flex-1 py-4 text-sm font-extrabold text-white rounded-2xl shadow-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border ${
-            isProcessing ? "bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 border-amber-300/40 shadow-rose-500/30" : !isReady ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none" : "bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 hover:from-amber-400 hover:via-rose-450 hover:to-pink-500 active:scale-95 border-rose-400/40 shadow-rose-500/35 hover:shadow-rose-500/50"
-          }`}
+          className={`flex-1 py-4 text-sm font-extrabold text-white rounded-2xl shadow-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border ${isProcessing ? "bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 border-amber-300/40 shadow-rose-500/30" : !isReady ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none" : "bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 hover:from-amber-400 hover:via-rose-450 hover:to-pink-500 active:scale-95 border-rose-400/40 shadow-rose-500/35 hover:shadow-rose-500/50"}`}
           title={T.startBtnTooltip}>
           <Zap className={`w-5 h-5 shrink-0 ${isReady ? "text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]" : "text-slate-500"}`} />
           <span className={cn("truncate tracking-wide font-black text-white drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>

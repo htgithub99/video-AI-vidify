@@ -2,7 +2,9 @@ import _ from "lodash";
 import { IMAGE_GENERATION_CONTINUITY_CONFIG } from "../constants/config";
 import { CharacterConfig, StoryboardScene } from "../types";
 
-export interface ContinuityBatchItem { continuityKey?: string; }
+export interface ContinuityBatchItem {
+  continuityKey?: string;
+}
 
 const resolvePrimaryCharacter = (characterIds: string[], characters: CharacterConfig[]): CharacterConfig | undefined => {
   const presentCharacters = _.filter(characters, (character) => _.includes(characterIds, character.id));

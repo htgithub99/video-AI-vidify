@@ -4,11 +4,28 @@ import { safeSystemFetch } from "../lib/shared-utils";
 import { StoryboardScene } from "../types";
 import { formatTimeHelper } from "../utils/helpers";
 
-interface VoiceAlignment { id: string; start: number; end: number; duration: number; audioBase64?: string; audioUrl?: string; }
+interface VoiceAlignment {
+  id: string;
+  start: number;
+  end: number;
+  duration: number;
+  audioBase64?: string;
+  audioUrl?: string;
+}
 
-export interface VoiceTimelineResult { scenes: StoryboardScene[]; backendAligned: boolean; warning?: string; }
+export interface VoiceTimelineResult {
+  scenes: StoryboardScene[];
+  backendAligned: boolean;
+  warning?: string;
+}
 
-export interface AlignVoiceTimelineOptions { audioBase64: string; scenes: StoryboardScene[]; projectId: string; projectName: string; signal?: AbortSignal; }
+export interface AlignVoiceTimelineOptions {
+  audioBase64: string;
+  scenes: StoryboardScene[];
+  projectId: string;
+  projectName: string;
+  signal?: AbortSignal;
+}
 
 export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] => _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
 
@@ -57,7 +74,7 @@ const createProportionalVoiceTimeline = (scenes: StoryboardScene[], totalDuratio
     const isLastScene = _.isEqual(index, _.subtract(_.size(scenes), 1));
     const duration = isLastScene ? _.subtract(totalDurationSeconds, cursor) : _.multiply(totalDurationSeconds, _.divide(weights[index], totalWeight));
     const end = _.add(cursor, duration);
-    const alignedScene = { ...scene, duration, startTime: formatTimeHelper(cursor), endTime: formatTimeHelper(end), _start: cursor, _end: end, };
+    const alignedScene = { ...scene, duration, startTime: formatTimeHelper(cursor), endTime: formatTimeHelper(end), _start: cursor, _end: end };
     cursor = end;
     return alignedScene;
   });
@@ -80,15 +97,15 @@ export const alignVoiceTimeline = async ({ audioBase64, scenes, projectId, proje
     signal,
   );
   if (response.success && response.data?.success && _.isArray(response.data.alignments)) {
-    return { scenes: applyVoiceAlignments(cleanScenes, response.data.alignments), backendAligned: true, };
+    return { scenes: applyVoiceAlignments(cleanScenes, response.data.alignments), backendAligned: true };
   }
   try {
     const audioDuration = await decodeAudioDuration(audioBase64);
     if (audioDuration >= VOICE_ALIGNMENT_CONFIG.MIN_AUDIO_DURATION_SECONDS) {
-      return { scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration), backendAligned: false, warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING), };
+      return { scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration), backendAligned: false, warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING) };
     }
   } catch {
-    return { scenes: cleanScenes, backendAligned: false, warning: VOICE_ALIGNMENT_CONFIG.DURATION_WARNING, };
+    return { scenes: cleanScenes, backendAligned: false, warning: VOICE_ALIGNMENT_CONFIG.DURATION_WARNING };
   }
-  return { scenes: cleanScenes, backendAligned: false, warning: _.toString(response.error || response.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED), };
+  return { scenes: cleanScenes, backendAligned: false, warning: _.toString(response.error || response.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED) };
 };

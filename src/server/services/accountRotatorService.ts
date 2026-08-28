@@ -8,7 +8,12 @@ import { requestContext } from "../utils/requestContext.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { jsonUtils } from "../../lib/json.js";
 
-export interface GoogleAccount { email: string; password?: string; recoveryEmail?: string; status?: string; }
+export interface GoogleAccount {
+  email: string;
+  password?: string;
+  recoveryEmail?: string;
+  status?: string;
+}
 
 function getAccountsFilePath(): string {
   return path.join(getDataDirectory(), REFACTOR_CONSTANTS.ACCOUNTS_FILE);

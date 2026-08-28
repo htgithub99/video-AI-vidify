@@ -1,7 +1,10 @@
 import _ from "lodash";
 import { QualityMode, StoryboardScene } from "../types";
 
-export interface QualityProfile { draftCandidates: number; upscale: "key_only" | "approved" | "all_approved"; }
+export interface QualityProfile {
+  draftCandidates: number;
+  upscale: "key_only" | "approved" | "all_approved";
+}
 
 export const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
   [QualityMode.Economy]: { draftCandidates: 1, upscale: "key_only" },

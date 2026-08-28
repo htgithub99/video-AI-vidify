@@ -4,7 +4,15 @@ import _ from "lodash";
 import { Image as ImageIcon, X, ZoomIn } from "lucide-react";
 import { REFACTOR_CONSTANTS, SecurityConstants } from "../../constants";
 
-interface ReferenceImageCardProps { imageSrc: string; index: number; badgePrefix?: string; deleteTooltip?: string; previewTooltip?: string; onPreview: (src: string) => void; onDelete: (index: number) => void; }
+interface ReferenceImageCardProps {
+  imageSrc: string;
+  index: number;
+  badgePrefix?: string;
+  deleteTooltip?: string;
+  previewTooltip?: string;
+  onPreview: (src: string) => void;
+  onDelete: (index: number) => void;
+}
 
 export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({ imageSrc, index, badgePrefix = REFACTOR_CONSTANTS.VD_EMPTY_STRING, deleteTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING, previewTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING, onPreview, onDelete }) => {
   const displayIndex = _.add(index, SecurityConstants.DEFAULT_AMOUNT);

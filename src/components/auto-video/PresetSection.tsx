@@ -7,9 +7,23 @@ import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface PresetItem { id: string; name: string; config?: Record<string, unknown>; }
+interface PresetItem {
+  id: string;
+  name: string;
+  config?: Record<string, unknown>;
+}
 
-interface PresetSectionProps { presets: PresetItem[]; selectedPresetId: string; handleApplyPreset: (id: string) => void; presetNameInputState: string; setPresetNameInputState: (val: string) => void; handleSavePreset: () => void; handleDeletePreset: (id: string) => void; T: ReturnType<typeof getAutoVideoTexts>; truncateWords: (str: string, maxWords: number) => string; }
+interface PresetSectionProps {
+  presets: PresetItem[];
+  selectedPresetId: string;
+  handleApplyPreset: (id: string) => void;
+  presetNameInputState: string;
+  setPresetNameInputState: (val: string) => void;
+  handleSavePreset: () => void;
+  handleDeletePreset: (id: string) => void;
+  T: ReturnType<typeof getAutoVideoTexts>;
+  truncateWords: (str: string, maxWords: number) => string;
+}
 
 export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedPresetId, handleApplyPreset, presetNameInputState, setPresetNameInputState, handleSavePreset, handleDeletePreset, T, truncateWords }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;

@@ -28,5 +28,5 @@ export const createSourceGroundedSeo = (script: string, config: Partial<Record<"
   const descriptionText = _.truncate(normalizedScript, { length: SEO_FALLBACK_CONFIG.DESCRIPTION_MAX_LENGTH });
   const descriptions = _.times(config.numDescriptions || SEO_FALLBACK_CONFIG.DEFAULT_DESCRIPTION_COUNT, () => createUnknownScoreMetadata(descriptionText));
   const terms = createTerms(normalizedScript);
-  return { titles, descriptions, hashtags: _.take(terms, config.numHashtags || SEO_FALLBACK_CONFIG.DEFAULT_HASHTAG_COUNT), tags: _.take(terms, config.numTags || SEO_FALLBACK_CONFIG.DEFAULT_TAG_COUNT), };
+  return { titles, descriptions, hashtags: _.take(terms, config.numHashtags || SEO_FALLBACK_CONFIG.DEFAULT_HASHTAG_COUNT), tags: _.take(terms, config.numTags || SEO_FALLBACK_CONFIG.DEFAULT_TAG_COUNT) };
 };

@@ -7,42 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import {
-  EXTERNAL_URLS,
-  BACKEND_MESSAGES,
-  PROMPT_FILLER_WORDS,
-  NON_ALPHANUMERIC_SPACE_REGEX,
-  PLAYWRIGHT_SUBMIT_ICON_REGEX,
-  PLAYWRIGHT_SUBMIT_TEXT_REGEX,
-  IMAGE_GEN_IMAGEN_EXACT_REGEX,
-  IMAGE_GEN_IMAGEN_FALLBACK_REGEX,
-  IMAGE_GEN_LABS_EXACT_REGEX,
-  IMAGE_GEN_LABS_FALLBACK_REGEX,
-  IMAGE_GEN_VEO_EXACT_REGEX,
-  IMAGE_GEN_VEO_FALLBACK_REGEX,
-  GEMINI_MODEL_PRO_REGEX,
-  GEMINI_MODEL_FLASH_REGEX,
-  GEMINI_MODEL_FLASH_FAMILY_REGEX,
-  GEMINI_MODEL_FLASH_LITE_REGEX,
-  CONTENT_TYPES,
-  COMMON_STRINGS,
-  URL_CONSTANTS,
-  IMAGE_ID_URL_REGEX,
-  REFACTOR_CONSTANTS,
-  BASE64_IMAGE_MIME_REGEX,
-  GEMINI_BATCH_SETUP_CONFIG,
-  GEMINI_CHAT_RECOVERY_CONFIG,
-  GEMINI_CHAT_VIDEO_INPUT_CONFIG,
-  GEMINI_CHAT_VIDEO_SELECTORS,
-  GEMINI_CHAT_PACING_CONFIG,
-  PIPELINE_CONFIG,
-  GEMINI_DOM_DIAGNOSTICS_CONFIG,
-  GEMINI_MEDIA_EXTRACTION_CONFIG,
-  GEMINI_MEDIA_ERRORS,
-  GEMINI_MODEL_SELECTION_CONFIG,
-  GEMINI_ACTIVE_VIDEO_MODE_REGEX,
-  GEMINI_ACTIVE_IMAGE_MODE_REGEX,
-} from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_FAMILY_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_RECOVERY_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS, GEMINI_MODEL_SELECTION_CONFIG, GEMINI_ACTIVE_VIDEO_MODE_REGEX, GEMINI_ACTIVE_IMAGE_MODE_REGEX } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
@@ -58,7 +23,12 @@ import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 
-interface BrowserSession { context: BrowserContext; page: Page; account: GoogleAccount; ownsContext?: boolean; }
+interface BrowserSession {
+  context: BrowserContext;
+  page: Page;
+  account: GoogleAccount;
+  ownsContext?: boolean;
+}
 
 type GeminiVisualConfig = Partial<VisualConfig>;
 
@@ -351,7 +321,8 @@ export class SimpleMutex {
         }
       };
 
-      if (this.locked) this.queue.push(() => resolve(release)); else {
+      if (this.locked) this.queue.push(() => resolve(release));
+      else {
         this.locked = true;
         resolve(release);
       }
@@ -416,7 +387,13 @@ export interface ImageGeneratorOptions {
   };
 }
 
-export interface ImageGeneratorResult { success: boolean; base64: string | null; fallbackUrl: string; warning?: string; newProjectId?: string; }
+export interface ImageGeneratorResult {
+  success: boolean;
+  base64: string | null;
+  fallbackUrl: string;
+  warning?: string;
+  newProjectId?: string;
+}
 
 export const extractKeywords = (text: string): string => {
   if (!text) return "aesthetic,cinematic";
@@ -609,13 +586,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   await closeActiveBrowser();
   const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
   const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
-  const chromeArgs = [
-    REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace("{0}", _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)),
-    REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace("{0}", profilePath),
-    REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
-    REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
-    "https://grok.com/imagine",
-  ];
+  const chromeArgs = [REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace("{0}", _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)), REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace("{0}", profilePath), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, "https://grok.com/imagine"];
   if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
   grokChromeProcess = spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
   await waitForGrokChrome();
@@ -623,7 +594,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
   const context = _.first(grokBrowser.contexts());
   if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
-  grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || await context.newPage();
+  grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || (await context.newPage());
   const sharedGeminiPage = await context.newPage();
   activeBrowserInstance = { context, page: sharedGeminiPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
@@ -704,7 +675,10 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       const resolutionButton = page.getByRole("radio", { name: requestedResolution, exact: true }).first();
       if (await resolutionButton.isVisible().catch(() => false)) await resolutionButton.click().catch(() => {});
       if (await durationButton.isVisible().catch(() => false)) await durationButton.click().catch(() => {});
-      const selectedDuration = await page.locator('[role="radio"][aria-checked="true"], button[aria-pressed="true"]').evaluateAll((nodes) => nodes.map((node) => (node.textContent || "").trim()).filter(Boolean)).catch(() => [] as string[]);
+      const selectedDuration = await page
+        .locator('[role="radio"][aria-checked="true"], button[aria-pressed="true"]')
+        .evaluateAll((nodes) => nodes.map((node) => (node.textContent || "").trim()).filter(Boolean))
+        .catch(() => [] as string[]);
       if (!selectedDuration.some((label) => label.includes(requestedDuration))) {
         appLog(`[Grok Imagine] Thời lượng ${requestedDuration} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
       }
@@ -722,33 +696,39 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
     const sendButton = page.getByRole("button", { name: /^(Gửi|Send|Submit)$/i }).last();
     if (await sendButton.isVisible().catch(() => false)) {
       await sendButton.waitFor({ state: "visible", timeout: 10000 });
-      await page.waitForFunction(() => {
-        const button = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-        return Boolean(button && !button.disabled);
-      }, undefined, { timeout: 10000 });
+      await page.waitForFunction(
+        () => {
+          const button = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+          return Boolean(button && !button.disabled);
+        },
+        undefined,
+        { timeout: 10000 },
+      );
       await sendButton.click();
     } else {
       await editor.press("Enter");
     }
     await page.waitForTimeout(800);
     const submittedPromptStillVisible = _.isEqual(_.trim(await editor.textContent().catch(() => "")), _.trim(_.toString(options.prompt)));
-    if (submittedPromptStillVisible && await sendButton.isEnabled().catch(() => false)) {
+    if (submittedPromptStillVisible && (await sendButton.isEnabled().catch(() => false))) {
       await sendButton.click();
     }
     appLog(`[Grok Imagine] Đã gửi prompt tạo ${isVideo ? "video" : "ảnh"}.`);
 
-    const mediaUrl = await page.waitForFunction(
-      ({ video, oldImages, oldVideos }) => {
-        if (video) {
-          const urls = Array.from(document.querySelectorAll("video")).map((node) => (node as HTMLVideoElement).currentSrc || (node as HTMLVideoElement).src);
-          return urls.find((url) => url && !oldVideos.includes(url) && /assets\.grok\.com\/.+\/generated\/.+\.mp4(?:\?|$)/i.test(url)) || null;
-        }
-        const urls = Array.from(document.querySelectorAll("img")).map((node) => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src);
-        return urls.find((url) => url && !oldImages.includes(url) && /imagine-public\.x\.ai\/.+\/images\/.+\.(?:jpg|jpeg|png|webp)(?:\?|$)/i.test(url)) || null;
-      },
-      { video: isVideo, oldImages: initialImageUrls, oldVideos: initialVideoUrls },
-      { timeout: isVideo ? 360000 : 180000 },
-    ).then((handle) => handle.jsonValue() as Promise<string | null>);
+    const mediaUrl = await page
+      .waitForFunction(
+        ({ video, oldImages, oldVideos }) => {
+          if (video) {
+            const urls = Array.from(document.querySelectorAll("video")).map((node) => (node as HTMLVideoElement).currentSrc || (node as HTMLVideoElement).src);
+            return urls.find((url) => url && !oldVideos.includes(url) && /assets\.grok\.com\/.+\/generated\/.+\.mp4(?:\?|$)/i.test(url)) || null;
+          }
+          const urls = Array.from(document.querySelectorAll("img")).map((node) => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src);
+          return urls.find((url) => url && !oldImages.includes(url) && /imagine-public\.x\.ai\/.+\/images\/.+\.(?:jpg|jpeg|png|webp)(?:\?|$)/i.test(url)) || null;
+        },
+        { video: isVideo, oldImages: initialImageUrls, oldVideos: initialVideoUrls },
+        { timeout: isVideo ? 360000 : 180000 },
+      )
+      .then((handle) => handle.jsonValue() as Promise<string | null>);
 
     if (!mediaUrl) throw new Error("Grok Imagine không trả về URL media mới.");
     const response = await context.request.get(mediaUrl, { timeout: 120000 });
@@ -1184,7 +1164,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${getErrorMessage(error)}`);
   } finally {
     if (browserInstance) {
-      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup(); else {
+      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
+      else {
         await closeActiveBrowser();
       }
     }
@@ -1201,11 +1182,11 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         cleanBase64 = _.split(cleanBase64, ",")[1];
       }
 
-      return { success: true, base64: cleanBase64, fallbackUrl: parsed.directBase64, newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined, };
+      return { success: true, base64: cleanBase64, fallbackUrl: parsed.directBase64, newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined };
     }
   } catch (e) {}
 
-  return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR, newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined, };
+  return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR, newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined };
 }
 
 const isCaptchaOrChallengeActive = async (page: Page): Promise<boolean> => {
@@ -1409,7 +1390,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", getErrorMessage(error)));
   } finally {
     if (browserInstance) {
-      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup(); else {
+      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
+      else {
         await closeActiveBrowser();
       }
     }
@@ -1426,12 +1408,25 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     };
   }
 
-  return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, };
+  return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING };
 }
 
-export interface BatchImageItem { sceneId: string; prompt: string; generateType?: GenerateType; referenceImages?: string[]; continuityKey?: string; }
+export interface BatchImageItem {
+  sceneId: string;
+  prompt: string;
+  generateType?: GenerateType;
+  referenceImages?: string[];
+  continuityKey?: string;
+}
 
-export interface BatchImageResult { sceneId: string; success: boolean; base64: string | null; fallbackUrl: string; warning?: string; assetType: GenerateType.Image | GenerateType.Video; }
+export interface BatchImageResult {
+  sceneId: string;
+  success: boolean;
+  base64: string | null;
+  fallbackUrl: string;
+  warning?: string;
+  assetType: GenerateType.Image | GenerateType.Video;
+}
 
 const resolveBatchAssetType = (item: BatchImageItem): GenerateType.Image | GenerateType.Video => (_.isEqual(item.generateType, GenerateType.Video) ? GenerateType.Video : GenerateType.Image);
 
@@ -1439,11 +1434,12 @@ const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisu
   const isThumbnail = _.some(["th_", "thumb_", "thumbnail_"], (prefix) => _.startsWith(_.toString(item.sceneId), prefix));
 
   let targetReferences: any[] = [];
-  if (isThumbnail) targetReferences = !_.isEmpty(item?.referenceImages) ? (item.referenceImages as any[]) : !_.isEmpty(visualConfig?.thumbnailReferenceImages) ? (visualConfig.thumbnailReferenceImages as any[]) : !_.isEmpty(visualConfig?.thumbnailSceneReferenceImages) ? (visualConfig.thumbnailSceneReferenceImages as any[]) : !_.isEmpty(visualConfig?.styleReferenceImages) ? (visualConfig.styleReferenceImages as any[]) : []; else {
+  if (isThumbnail) targetReferences = !_.isEmpty(item?.referenceImages) ? (item.referenceImages as any[]) : !_.isEmpty(visualConfig?.thumbnailReferenceImages) ? (visualConfig.thumbnailReferenceImages as any[]) : !_.isEmpty(visualConfig?.thumbnailSceneReferenceImages) ? (visualConfig.thumbnailSceneReferenceImages as any[]) : !_.isEmpty(visualConfig?.styleReferenceImages) ? (visualConfig.styleReferenceImages as any[]) : [];
+  else {
     targetReferences = !_.isEmpty(item?.referenceImages) ? (item.referenceImages as any[]) : !_.isEmpty(visualConfig?.sceneReferenceImages) ? (visualConfig.sceneReferenceImages as any[]) : !_.isEmpty(visualConfig?.referenceImages) ? (visualConfig.referenceImages as any[]) : !_.isEmpty(visualConfig?.styleReferenceImages) ? (visualConfig.styleReferenceImages as any[]) : [];
   }
 
-  return { ...visualConfig, generateType: resolveBatchAssetType(item), imageGeneratorEngine: visualConfig.imageGeneratorEngine, referenceImages: targetReferences, sceneReferenceImages: visualConfig?.sceneReferenceImages, styleReferenceImages: visualConfig?.styleReferenceImages, thumbnailReferenceImages: visualConfig?.thumbnailReferenceImages, };
+  return { ...visualConfig, generateType: resolveBatchAssetType(item), imageGeneratorEngine: visualConfig.imageGeneratorEngine, referenceImages: targetReferences, sceneReferenceImages: visualConfig?.sceneReferenceImages, styleReferenceImages: visualConfig?.styleReferenceImages, thumbnailReferenceImages: visualConfig?.thumbnailReferenceImages };
 };
 
 export async function closeAllBatchPages() {
@@ -1514,7 +1510,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           retainBrowserSession: true,
           visualConfig: itemVisualConfig,
         });
-        const batchRes = { sceneId: item.sceneId, ...result, assetType: itemVisualConfig.generateType, };
+        const batchRes = { sceneId: item.sceneId, ...result, assetType: itemVisualConfig.generateType };
         results.push(batchRes);
         if (onProgress) onProgress(batchRes);
         if (i < items.length - 1) {
@@ -1537,12 +1533,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
     const context = browserInstance.context;
 
-    const reusablePages = _.uniq(
-      _.filter(
-        _.concat([browserInstance.page], globalBatchPages, context.pages()),
-        (page) => !page.isClosed() && !_.includes(page.url(), "grok.com") && (_.isEqual(page.url(), "about:blank") || _.includes(page.url(), "gemini.google.com")),
-      ),
-    );
+    const reusablePages = _.uniq(_.filter(_.concat([browserInstance.page], globalBatchPages, context.pages()), (page) => !page.isClosed() && !_.includes(page.url(), "grok.com") && (_.isEqual(page.url(), "about:blank") || _.includes(page.url(), "gemini.google.com"))));
     const candidates = _.take(reusablePages, maxTabs);
     const surplusPages = _.drop(reusablePages, maxTabs);
     await Promise.allSettled(_.map(surplusPages, (page) => page.close()));
@@ -1720,7 +1711,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
         };
       }
 
-      return { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, assetType: itemVisualConfig.generateType, };
+      return { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, assetType: itemVisualConfig.generateType };
     };
 
     const sharedQueue = [...items];
@@ -1749,7 +1740,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           results.push(res);
           if (onProgress) onProgress(res);
         } catch (err: any) {
-          const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: err.message || BACKEND_MESSAGES.UNKNOWN_ERROR, assetType: resolveBatchAssetType(item), };
+          const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: err.message || BACKEND_MESSAGES.UNKNOWN_ERROR, assetType: resolveBatchAssetType(item) };
           results.push(res);
           if (onProgress) onProgress(res);
         }
@@ -1781,7 +1772,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     _.forEach(
       _.filter(items, (item) => !_.some(results, { sceneId: item.sceneId })),
       (item) => {
-        const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, assetType: resolveBatchAssetType(item), };
+        const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, assetType: resolveBatchAssetType(item) };
         results.push(res);
         if (onProgress) onProgress(res);
       },
@@ -1792,7 +1783,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", err.message));
     _.forEach(items, (item) => {
       if (!_.find(results, (r) => _.eq(r.sceneId, item.sceneId))) {
-        const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: err.message, assetType: resolveBatchAssetType(item), };
+        const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: err.message, assetType: resolveBatchAssetType(item) };
         results.push(res);
         if (onProgress) onProgress(res);
       }
@@ -1800,7 +1791,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   } finally {
     if (browserInstance) {
       if (browserInstance.ownsContext === false) {
-        await Promise.allSettled(_.map(batchWorkerPages, (page) => page.isClosed() ? Promise.resolve() : page.close()));
+        await Promise.allSettled(_.map(batchWorkerPages, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
         globalBatchPages = _.filter(globalBatchPages, (page) => !page.isClosed());
         if (!browserInstance.page.isClosed() && !_.includes(browserInstance.page.url(), "grok.com")) await browserInstance.page.close().catch(() => {});
         activeBrowserInstance = null;
@@ -2052,7 +2043,7 @@ export const createGeminiReferenceFiles = (referenceImages: unknown) =>
         : readEncodedProjectImage(source);
       if (!encodedAsset?.data || !encodedAsset.mimeType) return null;
       const extension = _.last(_.split(encodedAsset.mimeType, GEMINI_CHAT_VIDEO_INPUT_CONFIG.MIME_PREFIX)) || "png";
-      return { name: _.join([GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_PREFIX, _.add(index, SecurityConstants.DEFAULT_AMOUNT), GEMINI_CHAT_VIDEO_INPUT_CONFIG.EXTENSION_SEPARATOR, extension], REFACTOR_CONSTANTS.VD_EMPTY_STRING), mimeType: encodedAsset.mimeType, buffer: Buffer.from(encodedAsset.data, REFACTOR_CONSTANTS.ENCODING_BASE64), };
+      return { name: _.join([GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_PREFIX, _.add(index, SecurityConstants.DEFAULT_AMOUNT), GEMINI_CHAT_VIDEO_INPUT_CONFIG.EXTENSION_SEPARATOR, extension], REFACTOR_CONSTANTS.VD_EMPTY_STRING), mimeType: encodedAsset.mimeType, buffer: Buffer.from(encodedAsset.data, REFACTOR_CONSTANTS.ENCODING_BASE64) };
     })
     .compact()
     .value();
@@ -2208,7 +2199,8 @@ async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: G
         }
       }, promptText);
 
-      if (clipboardSuccess) await page.keyboard.press("Control+V"); else {
+      if (clipboardSuccess) await page.keyboard.press("Control+V");
+      else {
         await page.keyboard.insertText(promptText);
       }
     } catch (pasteErr) {
@@ -2407,12 +2399,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 
     let src: string = GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE;
     for (let i = SecurityConstants.ZERO; i < GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_SOURCE_POLL_ATTEMPTS; i = _.add(i, SecurityConstants.DEFAULT_AMOUNT)) {
-      src = await mediaElement
-        .evaluate(
-          (element: HTMLImageElement | HTMLVideoElement | HTMLSourceElement, sourceSelector) => ("currentSrc" in element && element.currentSrc ? element.currentSrc : element.src ? element.src : element.getAttribute("src") ? String(element.getAttribute("src")) : "querySelector" in element && element.querySelector<HTMLSourceElement>(sourceSelector)?.src ? String(element.querySelector<HTMLSourceElement>(sourceSelector)?.src) : GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE),
-          GEMINI_MEDIA_EXTRACTION_CONFIG.SOURCE_SELECTOR,
-        )
-        .catch(() => "");
+      src = await mediaElement.evaluate((element: HTMLImageElement | HTMLVideoElement | HTMLSourceElement, sourceSelector) => ("currentSrc" in element && element.currentSrc ? element.currentSrc : element.src ? element.src : element.getAttribute("src") ? String(element.getAttribute("src")) : "querySelector" in element && element.querySelector<HTMLSourceElement>(sourceSelector)?.src ? String(element.querySelector<HTMLSourceElement>(sourceSelector)?.src) : GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE), GEMINI_MEDIA_EXTRACTION_CONFIG.SOURCE_SELECTOR).catch(() => "");
       if (_.some(GEMINI_MEDIA_EXTRACTION_CONFIG.URL_PREFIXES, (prefix) => _.startsWith(src, prefix))) {
         break;
       }

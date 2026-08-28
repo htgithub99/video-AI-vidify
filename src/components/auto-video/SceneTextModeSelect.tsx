@@ -6,7 +6,12 @@ import { TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config";
 import { TextInImageMode } from "../../types";
 import { SCENE_TEXT_GROUPS } from "../../constants/texts";
 
-interface SceneTextModeSelectProps { value: TextInImageMode; onChange: (value: TextInImageMode) => void; language: "vi" | "en"; label: string; }
+interface SceneTextModeSelectProps {
+  value: TextInImageMode;
+  onChange: (value: TextInImageMode) => void;
+  language: "vi" | "en";
+  label: string;
+}
 
 export const SceneTextModeSelect: React.FC<SceneTextModeSelectProps> = ({ value, onChange, language, label }) => {
   const groups = _.get(SCENE_TEXT_GROUPS, language, SCENE_TEXT_GROUPS.vi);

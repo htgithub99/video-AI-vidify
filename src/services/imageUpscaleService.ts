@@ -6,9 +6,23 @@ import { selectScenesForUpscale } from "./qualityProfileService";
 
 const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string => _.reduce(values, (message, value, key) => message.replace(`{${key}}`, _.toString(value)), template);
 
-export interface ImageUpscaleResult { assetUrl: string; changed: boolean; sourceWidth: number; sourceHeight: number; outputWidth: number; outputHeight: number; }
+export interface ImageUpscaleResult {
+  assetUrl: string;
+  changed: boolean;
+  sourceWidth: number;
+  sourceHeight: number;
+  outputWidth: number;
+  outputHeight: number;
+}
 
-export interface ApprovedSceneUpscaleOptions { scenes: StoryboardScene[]; validatedSceneIds: Set<string>; qualityMode?: QualityMode; persistAsset: (dataUrl: string) => Promise<string>; persistCheckpoint: () => Promise<void>; onLog: (message: string) => void; }
+export interface ApprovedSceneUpscaleOptions {
+  scenes: StoryboardScene[];
+  validatedSceneIds: Set<string>;
+  qualityMode?: QualityMode;
+  persistAsset: (dataUrl: string) => Promise<string>;
+  persistCheckpoint: () => Promise<void>;
+  onLog: (message: string) => void;
+}
 
 const loadImage = (assetUrl: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {

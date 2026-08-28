@@ -10,7 +10,13 @@ export enum GeminiErrorCategory {
   Transient = "transient",
   Fatal = "fatal",
 }
-export interface GeminiErrorDecision { category: GeminiErrorCategory; retryable: boolean; retryLimit: number; waitMs: number; cooldownMs: number; }
+export interface GeminiErrorDecision {
+  category: GeminiErrorCategory;
+  retryable: boolean;
+  retryLimit: number;
+  waitMs: number;
+  cooldownMs: number;
+}
 
 const includesPattern = (value: string, patterns: readonly string[]): boolean => _.some(patterns, (pattern) => _.includes(value, _.toLower(pattern)));
 const resolveRetryWaitMs = (value: string): number => {

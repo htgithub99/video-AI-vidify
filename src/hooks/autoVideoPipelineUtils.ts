@@ -9,9 +9,25 @@ import { resolveStylePreset } from "../constants/stylePresets";
 
 export { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../lib/imagePromptDirectives";
 
-export interface CachedVoiceAudio { audioBase64: string; audioUrl: string; isCached: boolean; }
-export interface ReferenceChangeState { hasVisualOverrides: boolean; shouldRegenerateSceneAssets: boolean; shouldRegenerateStoryboard: boolean; shouldRegenerateThumbnails: boolean; }
-export interface PipelineInvalidationState { regenerateScript: boolean; regenerateStoryboard: boolean; regenerateVoice: boolean; regenerateSceneAssets: boolean; regenerateSeo: boolean; regenerateThumbnails: boolean; }
+export interface CachedVoiceAudio {
+  audioBase64: string;
+  audioUrl: string;
+  isCached: boolean;
+}
+export interface ReferenceChangeState {
+  hasVisualOverrides: boolean;
+  shouldRegenerateSceneAssets: boolean;
+  shouldRegenerateStoryboard: boolean;
+  shouldRegenerateThumbnails: boolean;
+}
+export interface PipelineInvalidationState {
+  regenerateScript: boolean;
+  regenerateStoryboard: boolean;
+  regenerateVoice: boolean;
+  regenerateSceneAssets: boolean;
+  regenerateSeo: boolean;
+  regenerateThumbnails: boolean;
+}
 
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;
@@ -37,7 +53,10 @@ export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<C
   return { audioBase64, audioUrl, isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)) };
 };
 
-export interface ResolvedTargetProject { selectedAutoProject: VideoProject | null; existingTargetProject: VideoProject | null; }
+export interface ResolvedTargetProject {
+  selectedAutoProject: VideoProject | null;
+  existingTargetProject: VideoProject | null;
+}
 
 export const resolveTargetProject = (projects: VideoProject[], selectedProjectId: string | null | undefined, activeProject: VideoProject | null, projectName: string, scriptContent: string): ResolvedTargetProject => {
   const selectedProject = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
@@ -70,7 +89,7 @@ export const getReferenceChangeState = (project: VideoProject | null, styleImage
   const sceneChanged = !_.isEqual(sceneImages, _.defaultTo(project?.visualConfig?.sceneReferenceImages, []));
   const thumbnailChanged = !_.isEqual(thumbnailImages, _.defaultTo(project?.visualConfig?.thumbnailReferenceImages, []));
   const characterChanged = !_.isEqual(characterImages, _.defaultTo(project?.visualConfig?.characters?.[0]?.images, []));
-  return { shouldRegenerateStoryboard: styleChanged || characterChanged, hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]), shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged, shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged, };
+  return { shouldRegenerateStoryboard: styleChanged || characterChanged, hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]), shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged, shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged };
 };
 
 const buildComparisonConfigs = (config: PipelineConfig) => ({
@@ -139,11 +158,10 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
     regenerateSceneAssets = false;
   }
 
-  return { regenerateScript, regenerateStoryboard, regenerateVoice, regenerateSceneAssets, regenerateSeo: regenerateScript, regenerateThumbnails: regenerateScript || Boolean(config.forceRegenerateScenes) || references.shouldRegenerateThumbnails || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount) || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode) || !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode) || !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode) || !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle), };
+  return { regenerateScript, regenerateStoryboard, regenerateVoice, regenerateSceneAssets, regenerateSeo: regenerateScript, regenerateThumbnails: regenerateScript || Boolean(config.forceRegenerateScenes) || references.shouldRegenerateThumbnails || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount) || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode) || !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode) || !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode) || !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle) };
 };
 
-export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean =>
-  _.every(scenes, (scene, index) => _.every([!_.isEmpty(scene.startTime), !_.isEmpty(scene.endTime), !_.isUndefined(scene.duration), _.isFinite(scene._start), _.isFinite(scene._end), _.gte(_.toNumber(scene._end), _.toNumber(scene._start)), index === 0 || Math.abs(_.toNumber(scene._start) - _.toNumber(scenes[index - 1]._end)) < ALIGNMENT_CONFIG.EPSILON_SECONDS, hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio))]));
+export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean => _.every(scenes, (scene, index) => _.every([!_.isEmpty(scene.startTime), !_.isEmpty(scene.endTime), !_.isUndefined(scene.duration), _.isFinite(scene._start), _.isFinite(scene._end), _.gte(_.toNumber(scene._end), _.toNumber(scene._start)), index === 0 || Math.abs(_.toNumber(scene._start) - _.toNumber(scenes[index - 1]._end)) < ALIGNMENT_CONFIG.EPSILON_SECONDS, hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio))]));
 
 export const applyGeneratedMediaLanguage = (prompt: string, directive: string): string => (_.includes(prompt, AUTO_VIDEO_PIPELINE_CONFIG.GENERATED_MEDIA_LANGUAGE_MARKER) ? prompt : _.join([prompt, directive], REFACTOR_CONSTANTS.AVG_BLANK));
 export const calculateSceneDuration = (scenes: StoryboardScene[]): number => _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);

@@ -3,9 +3,9 @@ import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
 import { VideoGenre } from "../constants/enums.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
-export const SCRIPT_QUALITY_THRESHOLDS = { CONTINUITY: 80, FACTUALITY: 85, REPETITION: 80, EMOTIONAL_ARC: 80, CONVERSATIONAL: 80, HOOK_PAYOFF: 80, HOOK_FACTUAL_SAFETY: 80, MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, WORDS_PER_MINUTE: 150, MIN_SCORE: 0, MAX_SCORE: 100, DECIMAL_PRECISION: 2, SECONDS_PER_MINUTE: 60, SECONDS_PER_HOUR: 3600, HOOK_WEIGHT_RETENTION: 0.35, HOOK_WEIGHT_CLARITY: 0.2, HOOK_WEIGHT_EMOTION: 0.25, HOOK_WEIGHT_FACTUAL_SAFETY: 0.2, } as const;
+export const SCRIPT_QUALITY_THRESHOLDS = { CONTINUITY: 80, FACTUALITY: 85, REPETITION: 80, EMOTIONAL_ARC: 80, CONVERSATIONAL: 80, HOOK_PAYOFF: 80, HOOK_FACTUAL_SAFETY: 80, MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, WORDS_PER_MINUTE: 150, MIN_SCORE: 0, MAX_SCORE: 100, DECIMAL_PRECISION: 2, SECONDS_PER_MINUTE: 60, SECONDS_PER_HOUR: 3600, HOOK_WEIGHT_RETENTION: 0.35, HOOK_WEIGHT_CLARITY: 0.2, HOOK_WEIGHT_EMOTION: 0.25, HOOK_WEIGHT_FACTUAL_SAFETY: 0.2 } as const;
 
-export const SCRIPT_QUALITY_MESSAGES = { MISSING_OR_EMPTY: "script_missing_or_empty", DURATION_OUT_OF_TARGET: "script_duration_out_of_target", CONTINUITY_BELOW_TARGET: "script_continuity_below_target", FACTUALITY_BELOW_TARGET: "script_factuality_below_target", REPETITION_BELOW_TARGET: "script_repetition_below_target", EMOTIONAL_ARC_BELOW_TARGET: "script_emotional_arc_below_target", CONVERSATIONAL_BELOW_TARGET: "script_conversational_style_below_target", HOOK_PAYOFF_BELOW_TARGET: "script_hook_payoff_below_target", EDITORIAL_ADVISORY_PREFIX: "editorial_advisory: ", AI_PROSE_EMPTY_TRANSITION: "script_ai_prose_empty_transition", TRAILER_METAPHOR_OVERUSED: "script_trailer_metaphor_overused", SUSPENSE_TEMPLATE_OVERUSED: "script_suspense_template_overused", } as const;
+export const SCRIPT_QUALITY_MESSAGES = { MISSING_OR_EMPTY: "script_missing_or_empty", DURATION_OUT_OF_TARGET: "script_duration_out_of_target", CONTINUITY_BELOW_TARGET: "script_continuity_below_target", FACTUALITY_BELOW_TARGET: "script_factuality_below_target", REPETITION_BELOW_TARGET: "script_repetition_below_target", EMOTIONAL_ARC_BELOW_TARGET: "script_emotional_arc_below_target", CONVERSATIONAL_BELOW_TARGET: "script_conversational_style_below_target", HOOK_PAYOFF_BELOW_TARGET: "script_hook_payoff_below_target", EDITORIAL_ADVISORY_PREFIX: "editorial_advisory: ", AI_PROSE_EMPTY_TRANSITION: "script_ai_prose_empty_transition", TRAILER_METAPHOR_OVERUSED: "script_trailer_metaphor_overused", SUSPENSE_TEMPLATE_OVERUSED: "script_suspense_template_overused" } as const;
 
 const HARD_SCRIPT_BLOCKER_PATTERN = /(?:empty|missing(?:_|\s)+(?:the(?:_|\s)+)?script|no(?:_|\s)+script|unintelligible|corrupt|malformed|child(?:_|\s)+sexual|sexual(?:_|\s)+exploitation|csam|doxx|privacy(?:_|\s)+violation|incitement|illegal(?:_|\s)+instructions?)/i;
 
@@ -15,7 +15,7 @@ const VI_AI_PROSE_PATTERNS: ReadonlyArray<[string, RegExp]> = [
   [SCRIPT_QUALITY_MESSAGES.SUSPENSE_TEMPLATE_OVERUSED, /bạn tưởng[^.!?…]{0,120}(?:nhưng|hóa ra)/giu],
 ];
 
-const DURATION_REGEX = { HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i, MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i, SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i, NUMERIC: /\d+(?:\.\d+)?/, } as const;
+const DURATION_REGEX = { HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i, MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i, SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i, NUMERIC: /\d+(?:\.\d+)?/ } as const;
 
 const SATIRICAL_GENRE_SET = new Set<string>([VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY]);
 
@@ -51,13 +51,7 @@ export const rankHookVersions = (versions: HookVersion[]): HookVersion[] =>
     (version, index) => ({ ...version, selected: index === 0 && Boolean(version.score?.accepted) }),
   );
 
-const evaluateBelowTargetScores = (report: { continuityScore: number; factualityScore: number; repetitionScore: number; emotionalArcScore: number; conversationalScore: number; hookPayoffScore: number }): string[] =>
-  _.compact([ report.continuityScore < SCRIPT_QUALITY_THRESHOLDS.CONTINUITY && SCRIPT_QUALITY_MESSAGES.CONTINUITY_BELOW_TARGET,
-    report.factualityScore < SCRIPT_QUALITY_THRESHOLDS.FACTUALITY && SCRIPT_QUALITY_MESSAGES.FACTUALITY_BELOW_TARGET,
-    report.repetitionScore < SCRIPT_QUALITY_THRESHOLDS.REPETITION && SCRIPT_QUALITY_MESSAGES.REPETITION_BELOW_TARGET,
-    report.emotionalArcScore < SCRIPT_QUALITY_THRESHOLDS.EMOTIONAL_ARC && SCRIPT_QUALITY_MESSAGES.EMOTIONAL_ARC_BELOW_TARGET,
-    report.conversationalScore < SCRIPT_QUALITY_THRESHOLDS.CONVERSATIONAL && SCRIPT_QUALITY_MESSAGES.CONVERSATIONAL_BELOW_TARGET,
-    report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && SCRIPT_QUALITY_MESSAGES.HOOK_PAYOFF_BELOW_TARGET, ]);
+const evaluateBelowTargetScores = (report: { continuityScore: number; factualityScore: number; repetitionScore: number; emotionalArcScore: number; conversationalScore: number; hookPayoffScore: number }): string[] => _.compact([report.continuityScore < SCRIPT_QUALITY_THRESHOLDS.CONTINUITY && SCRIPT_QUALITY_MESSAGES.CONTINUITY_BELOW_TARGET, report.factualityScore < SCRIPT_QUALITY_THRESHOLDS.FACTUALITY && SCRIPT_QUALITY_MESSAGES.FACTUALITY_BELOW_TARGET, report.repetitionScore < SCRIPT_QUALITY_THRESHOLDS.REPETITION && SCRIPT_QUALITY_MESSAGES.REPETITION_BELOW_TARGET, report.emotionalArcScore < SCRIPT_QUALITY_THRESHOLDS.EMOTIONAL_ARC && SCRIPT_QUALITY_MESSAGES.EMOTIONAL_ARC_BELOW_TARGET, report.conversationalScore < SCRIPT_QUALITY_THRESHOLDS.CONVERSATIONAL && SCRIPT_QUALITY_MESSAGES.CONVERSATIONAL_BELOW_TARGET, report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && SCRIPT_QUALITY_MESSAGES.HOOK_PAYOFF_BELOW_TARGET]);
 
 export const normalizeScriptQualityReport = (value: Partial<ScriptQualityReport>, wordCount: number, targetDurationSeconds: number): ScriptQualityReport => {
   const safeWordCount = _.max([0, wordCount]) || 0;

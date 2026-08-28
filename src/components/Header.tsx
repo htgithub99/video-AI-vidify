@@ -22,7 +22,15 @@ interface HeaderProps {
   onToggleMobileMenu?: () => void;
 }
 
-interface QuotaBadgeProps { icon: ReactNode; usage: number; limit: number; isUnlimited: boolean; colorClass: string; tooltip: string; formatNumber?: boolean; }
+interface QuotaBadgeProps {
+  icon: ReactNode;
+  usage: number;
+  limit: number;
+  isUnlimited: boolean;
+  colorClass: string;
+  tooltip: string;
+  formatNumber?: boolean;
+}
 
 const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colorClass, tooltip, formatNumber = false }) => {
   const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
@@ -64,13 +72,8 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
     <header className={cn("bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 text-slate-200 sticky top-0 z-50 shadow-sm flex-shrink-0")}>
       <div className={cn("w-full max-w-[100vw] xl:max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 py-2.5 flex items-center justify-between gap-2 sm:gap-4 relative")}>
         <div className={cn("flex items-center gap-2 sm:gap-3 min-w-0")}>
-          
           {onToggleMobileMenu && (
-            <button
-              type="button"
-              onClick={onToggleMobileMenu}
-              className={cn("md:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0")}
-              title="Menu">
+            <button type="button" onClick={onToggleMobileMenu} className={cn("md:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0")} title="Menu">
               {isMobileMenuOpen ? <X className={cn("w-4 h-4 text-rose-400")} /> : <Menu className={cn("w-4 h-4")} />}
             </button>
           )}

@@ -11,9 +11,24 @@ import { AppLanguage } from "../constants/enums";
 import { SecurityConstants, UIConstants } from "../constants/security";
 import _ from "lodash";
 
-interface DashboardViewProps { currentLang: Lang; projects: VideoProject[]; onSelectProject: (id: string) => void; onNavigateToProjects: () => void; }
+interface DashboardViewProps {
+  currentLang: Lang;
+  projects: VideoProject[];
+  onSelectProject: (id: string) => void;
+  onNavigateToProjects: () => void;
+}
 
-interface QuotaProgressBarProps { icon: ReactNode; label: string; usage: number; limit: number; percent: number; isUnlimited: boolean; colorClass: string; bgBarClass: string; formatNumber?: boolean; }
+interface QuotaProgressBarProps {
+  icon: ReactNode;
+  label: string;
+  usage: number;
+  limit: number;
+  percent: number;
+  isUnlimited: boolean;
+  colorClass: string;
+  bgBarClass: string;
+  formatNumber?: boolean;
+}
 
 const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit, percent, isUnlimited, colorClass, bgBarClass, formatNumber = false }) => {
   const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
@@ -69,14 +84,15 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
 
   return (
     <div className={cn("flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left")}>
-      
       <div className={cn("relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-rose-950/40 border border-slate-800/80 p-6 sm:p-8 backdrop-blur-md shadow-xl")}>
         <div className={cn("absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none")} />
         <div className={cn("relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6")}>
           <div className={cn("space-y-2 max-w-2xl min-w-0")}>
             <div className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-black max-w-full")}>
               <Sparkles className={cn("w-3.5 h-3.5 shrink-0")} />
-              <span className={cn("truncate")} title={commonTexts.DASHBOARD_BADGE}>{commonTexts.DASHBOARD_BADGE}</span>
+              <span className={cn("truncate")} title={commonTexts.DASHBOARD_BADGE}>
+                {commonTexts.DASHBOARD_BADGE}
+              </span>
             </div>
             <h2 className={cn("text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-logo truncate")} title={t.dashboardAICreator}>
               {t.dashboardAICreator}
@@ -97,7 +113,9 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
       <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-6")}>
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between")}>
           <div className={cn("flex items-center justify-between mb-4")}>
-            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={t.dashboardCreatorInfo}>{t.dashboardCreatorInfo}</h3>
+            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={t.dashboardCreatorInfo}>
+              {t.dashboardCreatorInfo}
+            </h3>
             <span className={cn("w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0")} />
           </div>
           <div className={cn("flex items-center gap-4 my-2 min-w-0")}>
@@ -107,7 +125,9 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
               </div>
             </div>
             <div className={cn("min-w-0 flex-1")}>
-              <h4 className={cn("text-base font-extrabold text-slate-100 truncate")} title={t.dashboardAICreator}>{t.dashboardAICreator}</h4>
+              <h4 className={cn("text-base font-extrabold text-slate-100 truncate")} title={t.dashboardAICreator}>
+                {t.dashboardAICreator}
+              </h4>
               <p className={cn("text-xs text-rose-400 font-bold mt-0.5 flex items-center gap-1 truncate")} title={t.dashboardMemberPro}>
                 <Zap className={cn("w-3 h-3 text-amber-400 fill-amber-400 shrink-0")} />
                 <span className={cn("truncate")}>{t.dashboardMemberPro}</span>
@@ -121,7 +141,9 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
 
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between gap-4")}>
           <div className={cn("flex items-center justify-between")}>
-            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.MEDIA_QUOTA}>{quotaText.MEDIA_QUOTA}</h3>
+            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.MEDIA_QUOTA}>
+              {quotaText.MEDIA_QUOTA}
+            </h3>
             <Activity className={cn("w-4 h-4 text-emerald-400 shrink-0")} />
           </div>
           <div className={cn("space-y-4 flex-1")}>
@@ -132,11 +154,15 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
 
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between gap-4")}>
           <div className={cn("flex items-center justify-between")}>
-            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.VOICE_QUOTA}>{quotaText.VOICE_QUOTA}</h3>
+            <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.VOICE_QUOTA}>
+              {quotaText.VOICE_QUOTA}
+            </h3>
             <Mic className={cn("w-4 h-4 text-amber-400 shrink-0")} />
           </div>
           <QuotaProgressBar icon={<Mic className={cn("w-3.5 h-3.5 shrink-0")} />} label={quotaText.CHARS} usage={usageVoice} limit={limitVoice} percent={voicePercent} isUnlimited={isUnlimited} colorClass="text-amber-400" bgBarClass="bg-gradient-to-r from-amber-500 to-orange-400" formatNumber />
-          <p className={cn("text-[10px] text-slate-500 font-mono mt-auto truncate")} title={quotaText.SYNC_MSG}>{quotaText.SYNC_MSG}</p>
+          <p className={cn("text-[10px] text-slate-500 font-mono mt-auto truncate")} title={quotaText.SYNC_MSG}>
+            {quotaText.SYNC_MSG}
+          </p>
         </div>
       </div>
 
@@ -156,13 +182,13 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
           <div className={cn("flex flex-col sm:flex-row gap-6 items-start")}>
             <div className={cn("w-full sm:w-56 aspect-video bg-slate-950/90 border border-slate-800/80 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 relative group shadow-inner")}>
               <Video className={cn("w-12 h-12 text-slate-700 group-hover:scale-110 transition-transform duration-300")} />
-              <div className={cn("absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-white shadow-sm border border-white/10 truncate max-w-[80px]")}>
-                {_.isEqual(latestProject.config?.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}
-              </div>
+              <div className={cn("absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-white shadow-sm border border-white/10 truncate max-w-[80px]")}>{_.isEqual(latestProject.config?.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}</div>
             </div>
             <div className={cn("flex-1 space-y-3 min-w-0 w-full")}>
               <div className={cn("min-w-0")}>
-                <h4 className={cn("text-lg font-extrabold text-slate-100 tracking-wide truncate")} title={latestProject.name}>{latestProject.name}</h4>
+                <h4 className={cn("text-lg font-extrabold text-slate-100 tracking-wide truncate")} title={latestProject.name}>
+                  {latestProject.name}
+                </h4>
                 <p className={cn("text-xs text-slate-400 leading-relaxed max-w-2xl mt-1 truncate")} title={latestProject.description || t.dashboardNoDesc}>
                   {latestProject.description || t.dashboardNoDesc}
                 </p>
@@ -184,8 +210,12 @@ export default function DashboardView({ currentLang, projects, onSelectProject, 
           <div className={cn("w-16 h-16 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 text-slate-600")}>
             <Video className={cn("w-8 h-8")} />
           </div>
-          <h4 className={cn("text-base font-extrabold text-slate-100 truncate")} title={t.dashboardWelcome}>{t.dashboardWelcome}</h4>
-          <p className={cn("text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed truncate")} title={t.dashboardWelcomeDesc}>{t.dashboardWelcomeDesc}</p>
+          <h4 className={cn("text-base font-extrabold text-slate-100 truncate")} title={t.dashboardWelcome}>
+            {t.dashboardWelcome}
+          </h4>
+          <p className={cn("text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed truncate")} title={t.dashboardWelcomeDesc}>
+            {t.dashboardWelcomeDesc}
+          </p>
           <Button variant="primary" size="md" className={cn("mt-5 rounded-2xl")} onClick={onNavigateToProjects} title={t.dashboardGoToContent}>
             <span className={cn("truncate")}>{t.dashboardGoToContent}</span>
           </Button>

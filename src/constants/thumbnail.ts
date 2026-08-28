@@ -95,7 +95,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
 ] as const;
 
-export const LEGACY_THUMBNAIL_LAYOUT_MAP = { layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage, subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight, subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight, interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline, emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight, before_after_split: ThumbnailLayoutId.EditorialMontage, } as const;
+export const LEGACY_THUMBNAIL_LAYOUT_MAP = { layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage, subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight, subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight, interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline, emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight, before_after_split: ThumbnailLayoutId.EditorialMontage } as const;
 
 export const THUMBNAIL_TYPOGRAPHY_CATALOG = [
   {

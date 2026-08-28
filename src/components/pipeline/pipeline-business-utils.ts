@@ -7,7 +7,11 @@ import { createAuthenticatedHeaders } from "../../lib/shared-utils";
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { logger } from "../../utils/logger";
 
-interface VoiceReference { gender?: string; name?: string; provider?: string; }
+interface VoiceReference {
+  gender?: string;
+  name?: string;
+  provider?: string;
+}
 
 type RequestPayload = Record<string, unknown>;
 type RequestHeaders = Record<string, string>;

@@ -157,7 +157,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
     setProject((prev) => {
       const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
         if (c.id === charId) {
-          return { ...c, [field]: value, };
+          return { ...c, [field]: value };
         }
         return c;
       });
@@ -216,13 +216,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
           <div className={cn("flex flex-wrap gap-2.5 self-start sm:self-auto relative z-20")}>
             <Tooltip content="AI tự động phân tách kịch bản dài thành các cảnh quay ngắn gọn để tiện cho việc sinh ảnh." position="bottom" align="end">
-              <Button
-                variant="primary"
-                type="button"
-                onClick={() => handleTriggerStoryboardSplit(true, "top")}
-                disabled={!!loadingStates["storyboardSplit_loading"]}
-                className={cn("flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 hover:text-white border border-rose-400/20 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 h-auto relative z-20")}
-                title={t.Automatically_split_story}>
+              <Button variant="primary" type="button" onClick={() => handleTriggerStoryboardSplit(true, "top")} disabled={!!loadingStates["storyboardSplit_loading"]} className={cn("flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 hover:text-white border border-rose-400/20 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 h-auto relative z-20")} title={t.Automatically_split_story}>
                 {loadingStates["storyboardSplit_loading"] ? (
                   <>
                     <RefreshCw className={cn("w-4 h-4 animate-spin")} />
@@ -987,7 +981,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 {(() => {
                   const engine = project.visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
                   let modelLabel = ImageModelLabel.Veo3;
-                  if (engine === ImageGeneratorEngine.Imagen) modelLabel = ImageModelLabel.Imagen; else if (engine === ImageGeneratorEngine.LabsSandbox) modelLabel = ImageModelLabel.LabsSandbox;
+                  if (engine === ImageGeneratorEngine.Imagen) modelLabel = ImageModelLabel.Imagen;
+                  else if (engine === ImageGeneratorEngine.LabsSandbox) modelLabel = ImageModelLabel.LabsSandbox;
                   if (project.visualConfig?.generationMode === ImageGenerationMode.GeminiChat) {
                     return `GEMINI ROOM • ${modelLabel}`;
                   }
@@ -1112,12 +1107,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             </Button>
                           </div>
                         )}
-                        <Button
-                          variant="ghost"
-                          type="button"
-                          onClick={handleExtractStyle}
-                          disabled={!!loadingStates["extractStyle"]}
-                          className={cn("shrink-0 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")}>
+                        <Button variant="ghost" type="button" onClick={handleExtractStyle} disabled={!!loadingStates["extractStyle"]} className={cn("shrink-0 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")}>
                           {loadingStates["extractStyle"] ? (
                             <>
                               <RefreshCw className={cn("w-3 h-3 animate-spin")} />
@@ -1131,12 +1121,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           )}
                         </Button>
                         {project.visualConfig?.referencePrompt && project.storyboard && project.storyboard.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            type="button"
-                            onClick={handleApplyStyleToScenes}
-                            disabled={!!loadingStates["applyStyle"]}
-                            className={cn("shrink-0 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 h-auto")}>
+                          <Button variant="ghost" type="button" onClick={handleApplyStyleToScenes} disabled={!!loadingStates["applyStyle"]} className={cn("shrink-0 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 h-auto")}>
                             {loadingStates["applyStyle"] ? (
                               <>
                                 <RefreshCw className={cn("w-3 h-3 animate-spin")} />
@@ -1228,13 +1213,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       <Copy className={cn("w-2.5 h-2.5")} />
                                     </Button>
                                   </div>
-                                  <textarea
-                                    value={char.description}
-                                    onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
-                                    className={cn("w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800")}
-                                    placeholder={t.charBioPlaceholder}
-                                    title={char.description}
-                                  />
+                                  <textarea value={char.description} onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)} className={cn("w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800")} placeholder={t.charBioPlaceholder} title={char.description} />
                                 </div>
                               </div>
 
@@ -1286,7 +1265,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                                   if (c.id === char.id) {
                                                     const newImgs = [...(c.images || [])];
                                                     newImgs.splice(idx, 1);
-                                                    return { ...c, images: newImgs, };
+                                                    return { ...c, images: newImgs };
                                                   }
                                                   return c;
                                                 });
@@ -1331,22 +1310,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       <Copy className={cn("w-2.5 h-2.5")} />
                                     </Button>
                                   </div>
-                                  <textarea
-                                    value={char.prompt}
-                                    onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
-                                    className={cn("w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900")}
-                                    placeholder={t.charFeaturePlaceholder}
-                                    title={char.prompt}
-                                  />
+                                  <textarea value={char.prompt} onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)} className={cn("w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900")} placeholder={t.charFeaturePlaceholder} title={char.prompt} />
                                 </div>
                               )}
 
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => handleExtractCharacter(char.id)}
-                                disabled={isExtracting}
-                                className={cn("w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")}>
+                              <Button type="button" variant="ghost" onClick={() => handleExtractCharacter(char.id)} disabled={isExtracting} className={cn("w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")}>
                                 {isExtracting ? (
                                   <>
                                     <RefreshCw className={cn("w-2.5 h-2.5 animate-spin")} />
@@ -1483,24 +1451,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </div>
             ) : (
               <div className={cn("flex flex-col md:flex-row items-center gap-2 w-full md:w-auto")}>
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={handleOptimizeAllPrompts}
-                  disabled={isBatchGenerating || !!loadingStates["optimizePrompts"] || (project.storyboard || []).length === 0}
-                  className={cn("w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto")}
-                  title={t.OPTIMIZE_PROMPTS}>
+                <Button variant="primary" type="button" onClick={handleOptimizeAllPrompts} disabled={isBatchGenerating || !!loadingStates["optimizePrompts"] || (project.storyboard || []).length === 0} className={cn("w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto")} title={t.OPTIMIZE_PROMPTS}>
                   {loadingStates["optimizePrompts"] ? <RefreshCw className={cn("w-4 h-4 animate-spin text-emerald-200 shrink-0")} /> : <ShieldCheck className={cn("w-4 h-4 text-emerald-200 shrink-0")} />}
                   <span>{loadingStates["optimizePrompts"] ? t.optimizingPrompts : t.OPTIMIZE_PROMPTS}</span>
                 </Button>
 
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={handleBatchGenerateClick}
-                  disabled={isBatchGenerating || (project.storyboard || []).length === 0}
-                  className={cn("w-full md:w-auto bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto")}
-                  title={t.Trigger_batch_AI_renderin}>
+                <Button variant="primary" type="button" onClick={handleBatchGenerateClick} disabled={isBatchGenerating || (project.storyboard || []).length === 0} className={cn("w-full md:w-auto bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto")} title={t.Trigger_batch_AI_renderin}>
                   <Sparkles className={cn("w-4 h-4 text-amber-200 animate-pulse")} />
                   <span>{t.BATCH_RENDER}</span>
                 </Button>

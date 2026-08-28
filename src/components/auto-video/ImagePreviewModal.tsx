@@ -6,7 +6,10 @@ import { X } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 
-interface ImagePreviewModalProps { imageUrl: string | null; onClose: () => void; }
+interface ImagePreviewModalProps {
+  imageUrl: string | null;
+  onClose: () => void;
+}
 
 export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, onClose }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;

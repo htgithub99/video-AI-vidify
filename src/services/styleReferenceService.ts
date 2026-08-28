@@ -103,5 +103,4 @@ export const resolveReferenceLockedStyle = (style: unknown, _hasReferences: bool
   return preset.positivePrompt;
 };
 
-export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string =>
-  referenceLocked ? _.trim(value.replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING).replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ").replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1")) : value;
+export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string => (referenceLocked ? _.trim(value.replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING).replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ").replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1")) : value);

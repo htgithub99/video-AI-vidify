@@ -6,7 +6,12 @@ import { cn } from "../../lib/utils";
 import { AppTheme } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface LogPanelSectionProps { logs: string[]; theme: AppTheme; T: ReturnType<typeof getAutoVideoTexts>; language?: string; }
+interface LogPanelSectionProps {
+  logs: string[];
+  theme: AppTheme;
+  T: ReturnType<typeof getAutoVideoTexts>;
+  language?: string;
+}
 
 export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T, language }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);

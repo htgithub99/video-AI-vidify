@@ -50,7 +50,9 @@ export default function PipelineStep4(props: PipelineWizardState) {
     try {
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {});
       if (response.success && response.data?.folderPath) {
-        if (type === FolderSelectionType.PARENT) setParentFolder(response.data.folderPath); else if (type === FolderSelectionType.IMAGES) setImagesDir(response.data.folderPath); else if (type === FolderSelectionType.VOICES) setVoicesDir(response.data.folderPath);
+        if (type === FolderSelectionType.PARENT) setParentFolder(response.data.folderPath);
+        else if (type === FolderSelectionType.IMAGES) setImagesDir(response.data.folderPath);
+        else if (type === FolderSelectionType.VOICES) setVoicesDir(response.data.folderPath);
       }
     } catch (err: any) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.FOLDER_SELECT_ERR + err.message);
@@ -130,10 +132,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
               if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
                 renderPending = false;
                 const finalMultimodalQa = createAdvisoryFinalVideoReport();
-                const renderedProject = { ...props.project, storyboard: scenesWithSubtitles, renderedVideoUrl: statusData.url, finalMultimodalQa, };
-                const reviewedProject = { ...renderedProject, manualReviewItems: createManualReviewItems(renderedProject), };
+                const renderedProject = { ...props.project, storyboard: scenesWithSubtitles, renderedVideoUrl: statusData.url, finalMultimodalQa };
+                const reviewedProject = { ...renderedProject, manualReviewItems: createManualReviewItems(renderedProject) };
                 const finalQc = evaluateFinalQuality(reviewedProject);
-                const completedProject = { ...reviewedProject, finalQc, status: REFACTOR_CONSTANTS.STATUS_COMPLETED, };
+                const completedProject = { ...reviewedProject, finalQc, status: REFACTOR_CONSTANTS.STATUS_COMPLETED };
                 props.setProject(completedProject);
                 await props.onSaveProject(completedProject, true);
                 setPreviewVideoUrl(statusData.url);
@@ -158,7 +160,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
             return;
           }
           await new Promise((pollDelayResolve) => {
-            if (renderPending) window.setTimeout(pollDelayResolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS); else {
+            if (renderPending) window.setTimeout(pollDelayResolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+            else {
               pollDelayResolve(undefined);
             }
           });
@@ -387,9 +390,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   </Tooltip>
                 </label>
                 <div className={cn("grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1")}>
-                  {[ { id: ResourceSourceMode.ZIP, label: "File ZIP", tooltip: "Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.", align: "start" as const },
+                  {[
+                    { id: ResourceSourceMode.ZIP, label: "File ZIP", tooltip: "Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.", align: "start" as const },
                     { id: ResourceSourceMode.SPLIT, label: "Thư mục Riêng", tooltip: "Trỏ đường dẫn thủ công đến 2 thư mục riêng biệt: Một chứa ảnh, một chứa âm thanh.", align: "center" as const },
-                    { id: ResourceSourceMode.CURRENT, label: "Dự Án Hiện Tại", tooltip: "Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.", align: "end" as const }, ].map((mode) => (
+                    { id: ResourceSourceMode.CURRENT, label: "Dự Án Hiện Tại", tooltip: "Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.", align: "end" as const },
+                  ].map((mode) => (
                     <div key={mode.id} className={cn("flex [&>div]:w-full")}>
                       <Tooltip content={mode.tooltip} position="top" align={mode.align}>
                         <button onClick={() => setInputMode(mode.id)} className={cn("w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200", inputMode === mode.id ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50")}>
@@ -484,16 +489,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               {_.map(exportButtons, (btn, index) => {
                 const Icon = btn.icon;
                 return (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    onClick={btn.handler}
-                    disabled={btn.isLoading}
-                    className={cn(
-                      "w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300",
-                      btn.isPrimary ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]") : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100",
-                    )}
-                    title={btn.desc}>
+                  <Button key={index} variant="ghost" onClick={btn.handler} disabled={btn.isLoading} className={cn("w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300", btn.isPrimary ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]") : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100")} title={btn.desc}>
                     <div className={cn("text-left flex-1")}>
                       <span className={cn("font-bold block flex items-center gap-2", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
                         {btn.isLoading ? <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse")} /> : btn.isPrimary && <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]")} />}

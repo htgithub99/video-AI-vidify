@@ -38,13 +38,13 @@ export const resolveGenreVoiceArc = (genre: string = ""): VoiceArc => {
   return DEFAULT_VOICE_ARC;
 };
 
-export const PRODUCTION_QA_THRESHOLDS = { MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, MAX_SUBTITLE_LINES: 1, MAX_SUBTITLE_CHARS_PER_LINE: 42, MAX_SUBTITLE_CHARS_PER_SECOND: 21, MIN_SUBTITLE_DURATION_SECONDS: 1.2, MAX_TRANSITION_REPETITION_RATIO: 0.75, MIN_THUMBNAIL_SCORE: 80, } as const;
+export const PRODUCTION_QA_THRESHOLDS = { MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, MAX_SUBTITLE_LINES: 1, MAX_SUBTITLE_CHARS_PER_LINE: 42, MAX_SUBTITLE_CHARS_PER_SECOND: 21, MIN_SUBTITLE_DURATION_SECONDS: 1.2, MAX_TRANSITION_REPETITION_RATIO: 0.75, MIN_THUMBNAIL_SCORE: 80 } as const;
 
 export const evaluateAudioTiming = (actual: number, target: number): AudioQualityReport => {
   const durationRatio = target > 0 ? actual / target : 0;
   const durationFit = target > 0 && durationRatio >= PRODUCTION_QA_THRESHOLDS.MINIMUM_DURATION_RATIO && durationRatio <= PRODUCTION_QA_THRESHOLDS.MAXIMUM_DURATION_RATIO;
   const hasAudioDuration = actual > 0;
-  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false, };
+  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false };
 };
 
 export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityReport => {
@@ -71,7 +71,7 @@ export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => 
 
 export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQualityReport => {
   const narrativeAlignment = _.defaultTo(quality.narrativeAlignment, quality.promptAlignment);
-  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])), };
+  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])) };
   const belowTarget = _.compact(_.map(scores, (value, key) => (value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? `thumbnail_${key}_below_target` : "")));
   const blockingErrors = _.uniq(quality.blockingErrors);
   return { ...scores, blockingErrors, warnings: _.uniq([...quality.warnings, ...belowTarget]), passed: quality.usableForVideo && _.isEmpty(blockingErrors) && _.isEmpty(belowTarget) };

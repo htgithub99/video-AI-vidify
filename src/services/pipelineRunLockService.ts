@@ -2,9 +2,18 @@ import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../constants";
 import { jsonUtils } from "../lib/json";
 
-interface PipelineRunLock { runId: string; targetKey: string; ownerId: string; expiresAt: number; }
+interface PipelineRunLock {
+  runId: string;
+  targetKey: string;
+  ownerId: string;
+  expiresAt: number;
+}
 
-export interface PipelineRunLease { acquired: boolean; runId: string; targetKey: string; }
+export interface PipelineRunLease {
+  acquired: boolean;
+  runId: string;
+  targetKey: string;
+}
 
 const createRunId = (): string => crypto.randomUUID();
 const activeLeaseRunIds = new Set<string>();

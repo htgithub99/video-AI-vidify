@@ -14,5 +14,5 @@ export const createShadowComparison = (baseline: VideoProject | null, current: V
   const durationDeltaSeconds = getStoryboardDuration(current) - getStoryboardDuration(baseline);
   const regressions = _.compact([approvedSceneDelta < 0 && SHADOW_COMPARISON_CONFIG.APPROVED_SCENE_REGRESSION, scriptContinuityDelta < 0 && SHADOW_COMPARISON_CONFIG.SCRIPT_CONTINUITY_REGRESSION, hookPayoffDelta < 0 && SHADOW_COMPARISON_CONFIG.HOOK_PAYOFF_REGRESSION, Math.abs(durationDeltaSeconds) > SHADOW_COMPARISON_CONFIG.MATERIAL_DURATION_DELTA_SECONDS && SHADOW_COMPARISON_CONFIG.MATERIAL_DURATION_CHANGE]);
   const improved = _.isEmpty(regressions) && _.some([approvedSceneDelta > 0, scriptContinuityDelta > 0, hookPayoffDelta > 0]);
-  return { baselineProjectId: baseline?.id, comparedAt: new Date().toISOString(), sceneCountDelta, approvedSceneDelta, scriptContinuityDelta, hookPayoffDelta, durationDeltaSeconds, estimatedCostUsd: current.benchmark?.estimatedCostUsd || 0, regressions, improved, };
+  return { baselineProjectId: baseline?.id, comparedAt: new Date().toISOString(), sceneCountDelta, approvedSceneDelta, scriptContinuityDelta, hookPayoffDelta, durationDeltaSeconds, estimatedCostUsd: current.benchmark?.estimatedCostUsd || 0, regressions, improved };
 };

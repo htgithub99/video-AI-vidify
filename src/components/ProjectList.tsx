@@ -17,7 +17,15 @@ const getGenreLabel = (genre: string, lang: Lang) => {
   return labels[genre] || genre;
 };
 
-interface ProjectListProps { currentLang: Lang; projects: VideoProject[]; isLoading?: boolean; onSelectProject: (p: VideoProject) => void; onCreateProject: (name: string, desc: string) => Promise<void> | void; onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void; onDeleteProject: (id: string) => Promise<void> | void; }
+interface ProjectListProps {
+  currentLang: Lang;
+  projects: VideoProject[];
+  isLoading?: boolean;
+  onSelectProject: (p: VideoProject) => void;
+  onCreateProject: (name: string, desc: string) => Promise<void> | void;
+  onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void;
+  onDeleteProject: (id: string) => Promise<void> | void;
+}
 
 export default function ProjectList({ currentLang, projects, isLoading = false, onSelectProject, onCreateProject, onUpdateProject, onDeleteProject }: ProjectListProps) {
   const t = translations[currentLang];
@@ -71,7 +79,8 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
     try {
       await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
 
-      if (editingId && onUpdateProject) await onUpdateProject(editingId, name, desc); else {
+      if (editingId && onUpdateProject) await onUpdateProject(editingId, name, desc);
+      else {
         await onCreateProject(name, desc);
       }
     } catch (err) {
@@ -135,7 +144,6 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
   return (
     <div className={cn("space-y-6")}>
-      
       <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 sm:p-7 rounded-3xl shadow-lg relative overflow-hidden")}>
         <div className={cn("absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl pointer-events-none")} />
         <div className={cn("relative z-10 space-y-1")}>
@@ -145,14 +153,9 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
             </div>
             {t.projects}
           </h2>
-          <p className={cn("text-xs text-slate-400 leading-relaxed font-medium")}>
-            {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
-          </p>
+          <p className={cn("text-xs text-slate-400 leading-relaxed font-medium")}>{_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}</p>
         </div>
-        <Button
-          variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-          onClick={handleOpenCreateTarget}
-          className={cn("flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-2xl font-bold shadow-md shadow-rose-600/20")}>
+        <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} onClick={handleOpenCreateTarget} className={cn("flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-2xl font-bold shadow-md shadow-rose-600/20")}>
           <Plus className={cn("w-4 h-4")} />
           {t.newProject}
         </Button>
@@ -160,42 +163,18 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
       <div className={cn("flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between glass-card p-4 rounded-2xl")}>
         <div className={cn("flex flex-wrap items-center gap-2 w-full sm:w-auto")}>
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
-            className={cn(
-              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
-                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
-            )}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.allLangs}
           </button>
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
-            className={cn(
-              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
-                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
-            )}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.viBtn}
           </button>
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
-            className={cn(
-              "px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
-                ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850"
-            )}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.enBtn}
           </button>
 
           {availableGenres.length > 2 && (
-            <select
-              value={filterGenre}
-              onChange={(e) => setFilterGenre(e.target.value)}
-              className={cn("bg-slate-900/90 border border-slate-800 text-slate-300 rounded-xl px-3 py-1.5 text-[11px] font-bold outline-none hover:border-slate-700 transition-all")}>
+            <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className={cn("bg-slate-900/90 border border-slate-800 text-slate-300 rounded-xl px-3 py-1.5 text-[11px] font-bold outline-none hover:border-slate-700 transition-all")}>
               <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
               {_.map(
                 _.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
@@ -211,13 +190,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
         <div className={cn("relative w-full sm:w-72")}>
           <Search className={cn("w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2")} />
-          <input
-            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-            placeholder={localT.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={cn("w-full bg-slate-950/80 border border-slate-800 text-xs text-slate-100 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/80 transition-all font-sans")}
-          />
+          <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} placeholder={localT.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className={cn("w-full bg-slate-950/80 border border-slate-800 text-xs text-slate-100 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/80 transition-all font-sans")} />
         </div>
       </div>
 
@@ -302,8 +275,12 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                               )}
                             </div>
                             <div className={cn("space-y-0.5 min-w-0 flex-1")}>
-                              <h3 className={cn("font-extrabold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors truncate")} title={project.name}>{project.name}</h3>
-                              <p className={cn("text-slate-400 text-[11px] font-medium truncate leading-relaxed max-w-md")} title={project.description || t.No_description_1}>{project.description || t.No_description_1}</p>
+                              <h3 className={cn("font-extrabold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors truncate")} title={project.name}>
+                                {project.name}
+                              </h3>
+                              <p className={cn("text-slate-400 text-[11px] font-medium truncate leading-relaxed max-w-md")} title={project.description || t.No_description_1}>
+                                {project.description || t.No_description_1}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -448,9 +425,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
             {t.Are_you_sure_you_want_to_}
             <span className={cn("font-bold text-slate-100 px-1")}>"{projectToDelete?.name}"</span>?
           </p>
-          <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed")}>
-            {t.This_action_cannot_be_und}
-          </div>
+          <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed")}>{t.This_action_cannot_be_und}</div>
           <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800")}>
             <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
               {t.cancel}

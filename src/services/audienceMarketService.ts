@@ -1,7 +1,15 @@
 import _ from "lodash";
 import { ProjectLanguage } from "../types";
 
-export interface AudienceMarketProfile { id: "vietnam" | "international_english"; locale: string; narration: string; retention: string; culturalContext: string; visualContext: string; seoContext: string; }
+export interface AudienceMarketProfile {
+  id: "vietnam" | "international_english";
+  locale: string;
+  narration: string;
+  retention: string;
+  culturalContext: string;
+  visualContext: string;
+  seoContext: string;
+}
 
 const MARKET_PROFILES: Record<AudienceMarketProfile["id"], AudienceMarketProfile> = {
   vietnam: {

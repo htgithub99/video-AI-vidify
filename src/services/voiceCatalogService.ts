@@ -1,7 +1,10 @@
 import _ from "lodash";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
 
-interface VoiceCatalogCacheEntry { data: unknown; expiresAt: number; }
+interface VoiceCatalogCacheEntry {
+  data: unknown;
+  expiresAt: number;
+}
 
 const responseCache = new Map<string, VoiceCatalogCacheEntry>();
 const pendingRequests = new Map<string, Promise<unknown>>();

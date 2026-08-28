@@ -21,7 +21,8 @@ const SIZE_MAP: Record<string, string> = {
 
 export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, children, maxWidth }) => {
   useEffect(() => {
-    if (isOpen) document.body.style.overflow = "hidden"; else {
+    if (isOpen) document.body.style.overflow = "hidden";
+    else {
       document.body.style.overflow = "unset";
     }
     return () => {

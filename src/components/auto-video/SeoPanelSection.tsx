@@ -9,7 +9,9 @@ import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { VideoProject } from "../../types";
 
-interface SeoPanelSectionProps { activeCreatedProject: VideoProject | null | undefined; }
+interface SeoPanelSectionProps {
+  activeCreatedProject: VideoProject | null | undefined;
+}
 
 export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedProject }) => {
   const seo = activeCreatedProject?.seo;
@@ -58,10 +60,12 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
                   </Button>
                 </div>
                 <div className={cn("grid grid-cols-4 gap-2 pt-2 border-t border-slate-900 text-[9px] font-mono")}>
-                  {[ { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEARCH, score: title.searchScore },
+                  {[
+                    { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEARCH, score: title.searchScore },
                     { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_CTR, score: title.ctrScore },
                     { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_COMPET, score: title.compScore },
-                    { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEO, score: title.seoScore }, ].map(({ label, score }) => (
+                    { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEO, score: title.seoScore },
+                  ].map(({ label, score }) => (
                     <div key={label}>
                       <div className={cn("flex justify-between mb-0.5 text-slate-400")}>
                         <span>{label}</span>

@@ -4,7 +4,10 @@ import { VideoProject } from "../types";
 import { hasProductionAudioSource } from "./productionAudioService";
 import { hasSceneAsset } from "./projectImageGenerationService";
 
-export interface PipelineReadiness { ready: boolean; blockers: string[]; }
+export interface PipelineReadiness {
+  ready: boolean;
+  blockers: string[];
+}
 
 export const getRenderReadiness = (project: VideoProject): PipelineReadiness => {
   const storyboard = _.defaultTo(project.storyboard, []);

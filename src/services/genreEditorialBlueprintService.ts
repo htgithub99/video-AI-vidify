@@ -1,7 +1,18 @@
 import _ from "lodash";
 import { VideoGenre } from "../constants/enums";
 
-export interface GenreEditorialBlueprint { id: string; narrativeEngine: string; visualGrammar: string; pacing: string; sourcePolicy: string; voiceDirection: string; audioDirection: string; motionPolicy: string; thumbnailPromise: string; musicProfile: string; }
+export interface GenreEditorialBlueprint {
+  id: string;
+  narrativeEngine: string;
+  visualGrammar: string;
+  pacing: string;
+  sourcePolicy: string;
+  voiceDirection: string;
+  audioDirection: string;
+  motionPolicy: string;
+  thumbnailPromise: string;
+  musicProfile: string;
+}
 
 const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
   cinematic_episode: {

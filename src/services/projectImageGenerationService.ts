@@ -3,8 +3,23 @@ import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG,
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
-export interface ProjectImageItem { sceneId: string; prompt: string; generateType?: GenerateType; idempotencyKey?: string; referenceImages?: string[]; continuityKey?: string; }
-export interface ProjectImageResult { sceneId: string; success: boolean; base64?: string; fallbackUrl?: string; warning?: string; assetType?: GenerateType.Image | GenerateType.Video; newProjectId?: string; }
+export interface ProjectImageItem {
+  sceneId: string;
+  prompt: string;
+  generateType?: GenerateType;
+  idempotencyKey?: string;
+  referenceImages?: string[];
+  continuityKey?: string;
+}
+export interface ProjectImageResult {
+  sceneId: string;
+  success: boolean;
+  base64?: string;
+  fallbackUrl?: string;
+  warning?: string;
+  assetType?: GenerateType.Image | GenerateType.Video;
+  newProjectId?: string;
+}
 type ImagePayloadFactory = (item: ProjectImageItem) => object;
 interface ProjectImageGenerationConfig {
   items: ProjectImageItem[];
@@ -14,8 +29,18 @@ interface ProjectImageGenerationConfig {
   cancelRef?: { current: boolean };
   onBatchResult: (result: ProjectImageResult) => void;
 }
-export interface ProjectImageGenerationSummary { completedSceneIds: string[]; failedSceneIds: string[]; cancelled: boolean; }
-export interface SceneAssetSummary { total: number; completed: number; missingSceneIds: string[]; rejectedSceneIds: string[]; complete: boolean; }
+export interface ProjectImageGenerationSummary {
+  completedSceneIds: string[];
+  failedSceneIds: string[];
+  cancelled: boolean;
+}
+export interface SceneAssetSummary {
+  total: number;
+  completed: number;
+  missingSceneIds: string[];
+  rejectedSceneIds: string[];
+  complete: boolean;
+}
 
 const EDITORIAL_VIDEO_CONFIG = {
   MINIMUM_SCORE: 4,
@@ -28,7 +53,7 @@ const EDITORIAL_VIDEO_CONFIG = {
   SCORES: { GENERAL_ACTION: 5, STRONG_STORY_MOTION: 3, ENVIRONMENTAL_MOTION: 3, DECORATIVE_PENALTY: -5, HIGH_VALUE_PURPOSE: 4, VISUAL_HOOK_AND_EVIDENCE: 2, DURATION_RANGE: 2, SINGLE_FRAME_LAYOUT: 1, STATIC_PURPOSE_PENALTY: -4, STATIC_CAMERA_PENALTY: -2, EMPTY_ACTION_PENALTY: -2 },
 } as const;
 
-const MOTION_REGEX = { ASPECT_RATIO_FLAG: /\s+--ar\s+[^\s]+/gi, MULTI_SHOT_EXACT: /exactly\s+[3-5]\s+chronological\s+(?:camera\s+setups|shots)/i, MULTI_SHOT_RANGE: /(?:3\s+to\s+5|three\s+to\s+five)\s+(?:timed\s+)?chronological\s+shots/i, MULTI_SHOT_ENUMERATED: /shot\s*1/i, SHOT_2: /shot\s*2/i, SHOT_3: /shot\s*3/i, MOTION_DIRECTION_SUFFIX: /Video motion direction:[\s\S]*$/i, HAS_MOTION_DIRECTION: /Video motion direction:/i, ACTION_PATTERN: /\b(?:walk(?:s|ed|ing)?|run(?:s|ning)?|turn(?:s|ed|ing)?|open(?:s|ed|ing)?|close(?:s|d|ing)?|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|drive|drives|driving|travel(?:s|ed|ing)?|fall(?:s|ing)?|rise|rises|rising|fight(?:s|ing)?|dance|dances|dancing|move(?:s|d|ing)?|pour(?:s|ed|ing)?|throw(?:s|ing)?|drop(?:s|ped|ping)?|reveal(?:s|ed|ing)?|transform(?:s|ed|ing)?|collapse|collapses|collapsed|chase|chases|chasing|exchange(?:s|d|ing)?|hand(?:s|ed|ing)? over|sign(?:s|ed|ing)?|hide|hides|hiding|discover(?:s|ed|ing)?|fold(?:s|ed|ing)?|unfold(?:s|ed|ing)?|flip(?:s|ped|ping)?|tear(?:s|ing)?|giằng|bước|chạy|mở|đóng|đổ|ném|rơi|biến đổi|sụp đổ|đuổi|trao|nhận|ký|giấu|phát hiện|gấp|lật|xé)\b/i, ENVIRONMENTAL_MOTION: /\b(?:rain|smoke|traffic|crowd|waves|wind|fire|machine|conveyor|storm|mưa|khói|giao thông|đám đông|sóng|gió|lửa|máy móc)\b/i, DECORATIVE_GESTURE: /\b(?:stretch(?:es|ed|ing)?|lean(?:s|ed|ing)? back|pose|poses|posing|smile|smiles|smiling|stare|stares|staring|look|looks|looking|hold|holds|holding|sit|sits|sitting|stand|stands|standing|slump|slumps|slumping|drop(?:s|ped|ping)? (?:her |his )?head|head (?:in|into) (?:her |his )?hands|vươn vai|tạo dáng|mỉm cười|nhìn chằm chằm|đứng yên|ngồi yên|gục đầu|ôm đầu)\b/i, STRONG_STORY_MOTION: /\b(?:walk(?:s|ed|ing)? (?:through|into|out|toward|past)|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|sign(?:s|ed|ing)? (?:a |the |her |his )?(?:paper|document|contract|form)|scrawl(?:s|ed|ing)? (?:a |the |her |his )?(?:name|signature)|hand(?:s|ed|ing)? over|exchange(?:s|d|ing)?|drop(?:s|ped|ping)? (?:a |the |her |his )?(?:phone|smartphone|document|glass|bag|object)|open(?:s|ed|ing)? (?:a |the )?(?:door|document|envelope|box)|flip(?:s|ped|ping)? (?:open )?(?:a |the )?(?:document|page|folder)|fold(?:s|ed|ing)? (?:a |the )?(?:uniform|garment|letter|document)|tear(?:s|ing)? (?:a |the )?(?:letter|document)|bước (?:vào|ra|qua|về phía)|ký|trao|nhận|mở (?:cửa|tài liệu|phong bì)|lật (?:tài liệu|trang giấy)|gấp (?:đồng phục|quần áo|lá thư))\b/i, } as const;
+const MOTION_REGEX = { ASPECT_RATIO_FLAG: /\s+--ar\s+[^\s]+/gi, MULTI_SHOT_EXACT: /exactly\s+[3-5]\s+chronological\s+(?:camera\s+setups|shots)/i, MULTI_SHOT_RANGE: /(?:3\s+to\s+5|three\s+to\s+five)\s+(?:timed\s+)?chronological\s+shots/i, MULTI_SHOT_ENUMERATED: /shot\s*1/i, SHOT_2: /shot\s*2/i, SHOT_3: /shot\s*3/i, MOTION_DIRECTION_SUFFIX: /Video motion direction:[\s\S]*$/i, HAS_MOTION_DIRECTION: /Video motion direction:/i, ACTION_PATTERN: /\b(?:walk(?:s|ed|ing)?|run(?:s|ning)?|turn(?:s|ed|ing)?|open(?:s|ed|ing)?|close(?:s|d|ing)?|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|drive|drives|driving|travel(?:s|ed|ing)?|fall(?:s|ing)?|rise|rises|rising|fight(?:s|ing)?|dance|dances|dancing|move(?:s|d|ing)?|pour(?:s|ed|ing)?|throw(?:s|ing)?|drop(?:s|ped|ping)?|reveal(?:s|ed|ing)?|transform(?:s|ed|ing)?|collapse|collapses|collapsed|chase|chases|chasing|exchange(?:s|d|ing)?|hand(?:s|ed|ing)? over|sign(?:s|ed|ing)?|hide|hides|hiding|discover(?:s|ed|ing)?|fold(?:s|ed|ing)?|unfold(?:s|ed|ing)?|flip(?:s|ped|ping)?|tear(?:s|ing)?|giằng|bước|chạy|mở|đóng|đổ|ném|rơi|biến đổi|sụp đổ|đuổi|trao|nhận|ký|giấu|phát hiện|gấp|lật|xé)\b/i, ENVIRONMENTAL_MOTION: /\b(?:rain|smoke|traffic|crowd|waves|wind|fire|machine|conveyor|storm|mưa|khói|giao thông|đám đông|sóng|gió|lửa|máy móc)\b/i, DECORATIVE_GESTURE: /\b(?:stretch(?:es|ed|ing)?|lean(?:s|ed|ing)? back|pose|poses|posing|smile|smiles|smiling|stare|stares|staring|look|looks|looking|hold|holds|holding|sit|sits|sitting|stand|stands|standing|slump|slumps|slumping|drop(?:s|ped|ping)? (?:her |his )?head|head (?:in|into) (?:her |his )?hands|vươn vai|tạo dáng|mỉm cười|nhìn chằm chằm|đứng yên|ngồi yên|gục đầu|ôm đầu)\b/i, STRONG_STORY_MOTION: /\b(?:walk(?:s|ed|ing)? (?:through|into|out|toward|past)|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|sign(?:s|ed|ing)? (?:a |the |her |his )?(?:paper|document|contract|form)|scrawl(?:s|ed|ing)? (?:a |the |her |his )?(?:name|signature)|hand(?:s|ed|ing)? over|exchange(?:s|d|ing)?|drop(?:s|ped|ping)? (?:a |the |her |his )?(?:phone|smartphone|document|glass|bag|object)|open(?:s|ed|ing)? (?:a |the )?(?:door|document|envelope|box)|flip(?:s|ped|ping)? (?:open )?(?:a |the )?(?:document|page|folder)|fold(?:s|ed|ing)? (?:a |the )?(?:uniform|garment|letter|document)|tear(?:s|ing)? (?:a |the )?(?:letter|document)|bước (?:vào|ra|qua|về phía)|ký|trao|nhận|mở (?:cửa|tài liệu|phong bì)|lật (?:tài liệu|trang giấy)|gấp (?:đồng phục|quần áo|lá thư))\b/i } as const;
 
 const HIGH_VALUE_PURPOSES = new Set(["action", "reveal", "punchline", "callback", "montage"]);
 const STATIC_PURPOSES = new Set(["reaction", "emotional_hold"]);
@@ -72,7 +97,7 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
   const base64 = _.defaultTo(_.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY), _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY));
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY, response.success);
-  return { sceneId: item.sceneId, success: _.every([response.success, _.some([generationSucceeded, _.isEqual(item.generateType, GenerateType.Image)], Boolean), _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl)], Boolean), base64, fallbackUrl, warning: response.error, assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image, newProjectId: _.get(response.data, "newProjectId"), };
+  return { sceneId: item.sceneId, success: _.every([response.success, _.some([generationSucceeded, _.isEqual(item.generateType, GenerateType.Image)], Boolean), _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl)], Boolean), base64, fallbackUrl, warning: response.error, assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image, newProjectId: _.get(response.data, "newProjectId") };
 };
 
 export const createProjectImageUrl = (result: ProjectImageResult): string => {
@@ -116,16 +141,7 @@ const calculateSceneMotionScore = (hasGeneralAction: boolean, hasStrongStoryMoti
   return _.max([0, scoreSum]) || 0;
 };
 
-const calculateEditorialSceneScore = (scene: StoryboardScene, motionScore: number, aiRankValue: number): number =>
-  _.sum([ motionScore,
-    HIGH_VALUE_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? EDITORIAL_VIDEO_CONFIG.SCORES.HIGH_VALUE_PURPOSE : 0,
-    !_.isEmpty(scene.visualHook) && !_.isEmpty(scene.storyEvidence) ? EDITORIAL_VIDEO_CONFIG.SCORES.VISUAL_HOOK_AND_EVIDENCE : 0,
-    _.inRange(_.defaultTo(scene.duration, 0), EDITORIAL_VIDEO_CONFIG.DURATION_MIN, EDITORIAL_VIDEO_CONFIG.DURATION_MAX) ? EDITORIAL_VIDEO_CONFIG.SCORES.DURATION_RANGE : 0,
-    _.isEqual(scene.layout, "single_frame") ? EDITORIAL_VIDEO_CONFIG.SCORES.SINGLE_FRAME_LAYOUT : 0,
-    STATIC_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? EDITORIAL_VIDEO_CONFIG.SCORES.STATIC_PURPOSE_PENALTY : 0,
-    _.isEqual(_.toLower(_.toString(scene.cameraMotion)), "static") ? EDITORIAL_VIDEO_CONFIG.SCORES.STATIC_CAMERA_PENALTY : 0,
-    _.isEmpty(scene.visibleAction) ? EDITORIAL_VIDEO_CONFIG.SCORES.EMPTY_ACTION_PENALTY : 0,
-    aiRankValue, ]);
+const calculateEditorialSceneScore = (scene: StoryboardScene, motionScore: number, aiRankValue: number): number => _.sum([motionScore, HIGH_VALUE_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? EDITORIAL_VIDEO_CONFIG.SCORES.HIGH_VALUE_PURPOSE : 0, !_.isEmpty(scene.visualHook) && !_.isEmpty(scene.storyEvidence) ? EDITORIAL_VIDEO_CONFIG.SCORES.VISUAL_HOOK_AND_EVIDENCE : 0, _.inRange(_.defaultTo(scene.duration, 0), EDITORIAL_VIDEO_CONFIG.DURATION_MIN, EDITORIAL_VIDEO_CONFIG.DURATION_MAX) ? EDITORIAL_VIDEO_CONFIG.SCORES.DURATION_RANGE : 0, _.isEqual(scene.layout, "single_frame") ? EDITORIAL_VIDEO_CONFIG.SCORES.SINGLE_FRAME_LAYOUT : 0, STATIC_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? EDITORIAL_VIDEO_CONFIG.SCORES.STATIC_PURPOSE_PENALTY : 0, _.isEqual(_.toLower(_.toString(scene.cameraMotion)), "static") ? EDITORIAL_VIDEO_CONFIG.SCORES.STATIC_CAMERA_PENALTY : 0, _.isEmpty(scene.visibleAction) ? EDITORIAL_VIDEO_CONFIG.SCORES.EMPTY_ACTION_PENALTY : 0, aiRankValue]);
 
 export const rankEditorialVideoSceneIds = (scenes: StoryboardScene[], aiSelectedIds: string[], maxVideoScenes: number): string[] => {
   const aiRank = new Map(_.map(aiSelectedIds, (id, index) => [id, _.subtract(aiSelectedIds.length, index)]));

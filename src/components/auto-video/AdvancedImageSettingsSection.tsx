@@ -13,7 +13,22 @@ import { SceneTextModeSelect } from "./SceneTextModeSelect";
 import { ADVANCED_SETTING_GROUPS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface AdvancedImageSettingsSectionProps { showAdvancedImageSettings: boolean; setShowAdvancedImageSettings: (val: boolean) => void; chromeHeadless: boolean; setChromeHeadless: (val: boolean) => void; resumeMode: boolean; setResumeMode: (val: boolean) => void; backgroundMode: BackgroundMode; setBackgroundMode: (value: BackgroundMode) => void; textMode: TextInImageMode; setTextMode: (value: TextInImageMode) => void; imageFocusMode: ImageFocusMode; setImageFocusMode: (value: ImageFocusMode) => void; language: AppLanguage; T: ReturnType<typeof getAutoVideoTexts>; }
+interface AdvancedImageSettingsSectionProps {
+  showAdvancedImageSettings: boolean;
+  setShowAdvancedImageSettings: (val: boolean) => void;
+  chromeHeadless: boolean;
+  setChromeHeadless: (val: boolean) => void;
+  resumeMode: boolean;
+  setResumeMode: (val: boolean) => void;
+  backgroundMode: BackgroundMode;
+  setBackgroundMode: (value: BackgroundMode) => void;
+  textMode: TextInImageMode;
+  setTextMode: (value: TextInImageMode) => void;
+  imageFocusMode: ImageFocusMode;
+  setImageFocusMode: (value: ImageFocusMode) => void;
+  language: AppLanguage;
+  T: ReturnType<typeof getAutoVideoTexts>;
+}
 
 const buildOptionGroups = (lang: AppLanguage) => {
   const isVi = _.isEqual(lang, AppLanguage.VI);
@@ -22,16 +37,20 @@ const buildOptionGroups = (lang: AppLanguage) => {
   const chromeGroups = [
     {
       label: texts.chromeGroup,
-      options: [ { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: texts.headlessLabel, desc: texts.headlessDesc },
-        { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: texts.windowedLabel, desc: texts.windowedDesc }, ],
+      options: [
+        { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: texts.headlessLabel, desc: texts.headlessDesc },
+        { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: texts.windowedLabel, desc: texts.windowedDesc },
+      ],
     },
   ];
 
   const resumeGroups = [
     {
       label: texts.resumeGroup,
-      options: [ { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: texts.resumeLabel, desc: texts.resumeDesc },
-        { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: texts.newLabel, desc: texts.newDesc }, ],
+      options: [
+        { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: texts.resumeLabel, desc: texts.resumeDesc },
+        { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: texts.newLabel, desc: texts.newDesc },
+      ],
     },
   ];
 

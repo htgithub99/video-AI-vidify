@@ -7,9 +7,34 @@ import { logger } from "../../lib/logger.js";
 import { getDataDirectory } from "../utils/paths.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 
-export interface DomDiagnosticElement { tag: string; id: string; className: string; ariaBusy: string; ariaLabel: string; role: string; dataTestId: string; src: string; href: string; text: string; html: string; }
+export interface DomDiagnosticElement {
+  tag: string;
+  id: string;
+  className: string;
+  ariaBusy: string;
+  ariaLabel: string;
+  role: string;
+  dataTestId: string;
+  src: string;
+  href: string;
+  text: string;
+  html: string;
+}
 
-export interface DomDiagnosticCaptureOptions { fileName: string; selector: string; maxElements: number; maxClassNameLength: number; maxTextLength: number; maxHtmlLength: number; prioritySelector?: string; errorMessageTemplate: string; maxFileBytes?: number; retainedFileBytes?: number; detailedStatePattern?: RegExp; minimalMaxElements?: number; }
+export interface DomDiagnosticCaptureOptions {
+  fileName: string;
+  selector: string;
+  maxElements: number;
+  maxClassNameLength: number;
+  maxTextLength: number;
+  maxHtmlLength: number;
+  prioritySelector?: string;
+  errorMessageTemplate: string;
+  maxFileBytes?: number;
+  retainedFileBytes?: number;
+  detailedStatePattern?: RegExp;
+  minimalMaxElements?: number;
+}
 
 const rotateDiagnosticFile = (filePath: string, maxFileBytes: number, retainedFileBytes: number): void => {
   if (!fs.existsSync(filePath) || fs.statSync(filePath).size < maxFileBytes) return;
@@ -42,7 +67,21 @@ export const captureDomDiagnostics = async (page: Page, state: string, options: 
             const htmlElement = element as HTMLElement;
             const mediaElement = element as HTMLImageElement | HTMLVideoElement | HTMLSourceElement;
             const currentSrc = "currentSrc" in mediaElement ? mediaElement.currentSrc : "";
-            return { tag: element.tagName.toLowerCase(), id: String(htmlElement.id), className: String(htmlElement.className).slice(0, limits.maxClassNameLength), ariaBusy: element.getAttribute("aria-busy") ? String(element.getAttribute("aria-busy")) : "", ariaLabel: element.getAttribute("aria-label") ? String(element.getAttribute("aria-label")) : "", role: element.getAttribute("role") ? String(element.getAttribute("role")) : "", dataTestId: element.getAttribute("data-test-id") ? String(element.getAttribute("data-test-id")) : "", src: currentSrc ? currentSrc : mediaElement.src ? mediaElement.src : element.getAttribute("src") ? String(element.getAttribute("src")) : "", href: element.getAttribute("href") ? String(element.getAttribute("href")) : "", text: String(htmlElement.innerText ? htmlElement.innerText : htmlElement.textContent) .trim() .slice(0, limits.maxTextLength), html: String(htmlElement.outerHTML).slice(0, limits.maxHtmlLength), };
+            return {
+              tag: element.tagName.toLowerCase(),
+              id: String(htmlElement.id),
+              className: String(htmlElement.className).slice(0, limits.maxClassNameLength),
+              ariaBusy: element.getAttribute("aria-busy") ? String(element.getAttribute("aria-busy")) : "",
+              ariaLabel: element.getAttribute("aria-label") ? String(element.getAttribute("aria-label")) : "",
+              role: element.getAttribute("role") ? String(element.getAttribute("role")) : "",
+              dataTestId: element.getAttribute("data-test-id") ? String(element.getAttribute("data-test-id")) : "",
+              src: currentSrc ? currentSrc : mediaElement.src ? mediaElement.src : element.getAttribute("src") ? String(element.getAttribute("src")) : "",
+              href: element.getAttribute("href") ? String(element.getAttribute("href")) : "",
+              text: String(htmlElement.innerText ? htmlElement.innerText : htmlElement.textContent)
+                .trim()
+                .slice(0, limits.maxTextLength),
+              html: String(htmlElement.outerHTML).slice(0, limits.maxHtmlLength),
+            };
           });
       },
       {

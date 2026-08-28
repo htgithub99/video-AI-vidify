@@ -39,21 +39,10 @@ const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefine
 const findWorkspaceChild = (projects: VideoProject[], parentId: string, kind: ProjectKind): VideoProject | undefined => _.find(projects, (project) => _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind));
 
 const convertToSlug = (text: string): string => {
-  return _.trim(_.toLower(text).normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D).replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN).replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)).substring(
-    REFACTOR_CONSTANTS.ZERO,
-    REFACTOR_CONSTANTS.VD_SLUG_LIMIT,
-  );
+  return _.trim(_.toLower(text).normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D).replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN).replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
 };
 
-const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean =>
-  _.some(
-    [
-      _.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean),
-      _.every([_.isEqual(tab, AppTab.CINEMATIC_FILM), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic), _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)])], Boolean),
-      _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean),
-    ],
-    Boolean,
-  );
+const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([_.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.CINEMATIC_FILM), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic), _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean)], Boolean);
 
 const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
   const response = await fetch(API_ROUTES.PROJECTS, {
@@ -228,7 +217,8 @@ export default function App() {
       if (activeProj) {
         if (!activeProj.parentId) {
           const studioChild = findWorkspaceChild(projects, activeProj.id, ProjectKind.Studio);
-          if (studioChild) setSelectedProjectId(studioChild.id); else {
+          if (studioChild) setSelectedProjectId(studioChild.id);
+          else {
             if (creatingChildRef.current[activeProj.id]) return;
             creatingChildRef.current[activeProj.id] = true;
 
@@ -263,7 +253,8 @@ export default function App() {
           }
         } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), ProjectKind.Studio)) {
           const studioChild = findWorkspaceChild(projects, activeProj.parentId, ProjectKind.Studio);
-          if (studioChild) setSelectedProjectId(studioChild.id); else {
+          if (studioChild) setSelectedProjectId(studioChild.id);
+          else {
             setSelectedProjectId(activeProj.parentId);
           }
         }
@@ -313,7 +304,8 @@ export default function App() {
         if (!activeProj.parentId) {
           const targetKind = isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto;
           const autoChild = findWorkspaceChild(projects, activeProj.id, targetKind);
-          if (autoChild) setSelectedProjectId(autoChild.id); else {
+          if (autoChild) setSelectedProjectId(autoChild.id);
+          else {
             const childKey = _.join([activeProj.id, targetSuffix], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
             if (creatingChildRef.current[childKey]) return;
             creatingChildRef.current[childKey] = true;
@@ -368,7 +360,8 @@ export default function App() {
           }
         } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto)) {
           const autoChild = findWorkspaceChild(projects, activeProj.parentId, isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto);
-          if (autoChild) setSelectedProjectId(autoChild.id); else {
+          if (autoChild) setSelectedProjectId(autoChild.id);
+          else {
             setSelectedProjectId(activeProj.parentId);
           }
         }
@@ -609,7 +602,7 @@ export default function App() {
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = _.find(projects, { id });
     if (!projToUpdate) return;
-    const updated = { ...projToUpdate, name, description, updatedAt: new Date().toISOString(), };
+    const updated = { ...projToUpdate, name, description, updatedAt: new Date().toISOString() };
     setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
     try {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
@@ -633,29 +626,12 @@ export default function App() {
 
   return (
     <div className={cn("h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden")}>
-      <Header
-        currentLang={currentLang}
-        setLang={setLang}
-        theme={theme as any}
-        toggleTheme={toggleTheme}
-        isMobileMenuOpen={isMobileMenuOpen}
-        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
+      <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} isMobileMenuOpen={isMobileMenuOpen} onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
 
       <Toaster position="top-right" theme={theme as any} richColors />
 
       <div className={cn("flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955")}>
-        <Sidebar
-          currentLang={currentLang}
-          activeTab={activeTab}
-          setActiveTab={handleActiveTabChange}
-          selectedProjectId={selectedProjectId}
-          activeProjectName={activeProject?.name || null}
-          theme={theme as any}
-          toggleTheme={toggleTheme}
-          isMobileOpen={isMobileMenuOpen}
-          onCloseMobile={() => setIsMobileMenuOpen(false)}
-        />
+        <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
 
         <main className={cn("flex-1 min-h-0 overflow-hidden relative bg-slate-955")}>
           <Suspense fallback={<TabContentLoading />}>

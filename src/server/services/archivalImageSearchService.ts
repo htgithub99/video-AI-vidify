@@ -1,9 +1,21 @@
 import _ from "lodash";
 import { BrowserContext, Page, chromium } from "playwright";
 
-export interface ArchivalImageResult { success: boolean; base64?: string; mimeType?: string; sourceUrl?: string; license?: string; provider?: "google_images" | "bing_images" | "wikimedia_commons"; warning?: string; }
+export interface ArchivalImageResult {
+  success: boolean;
+  base64?: string;
+  mimeType?: string;
+  sourceUrl?: string;
+  license?: string;
+  provider?: "google_images" | "bing_images" | "wikimedia_commons";
+  warning?: string;
+}
 
-interface SearchCandidate { mediaUrl: string; sourceUrl: string; title?: string; }
+interface SearchCandidate {
+  mediaUrl: string;
+  sourceUrl: string;
+  title?: string;
+}
 
 const COMMONS_HOST = "https://commons.wikimedia.org";
 const GOOGLE_IMAGE_SEARCH = "https://www.google.com/search?tbm=isch&safe=active&hl=en&q=";
@@ -14,9 +26,11 @@ const DOWNLOAD_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebK
 const GENERIC_SEARCH_TERMS = /\b(?:historic(?:al)?|archive|archival|photograph|photo|image|exterior|interior|real|authentic|documentary|view)\b/gi;
 const SEARCH_STOP_WORDS = new Set(["chien", "thang", "lich", "hinh", "anh", "the", "and", "with", "from", "photo", "image", "history", "historic", "view", "real", "tran", "quan", "manh", "thoi", "thanh", "pho", "xay", "dung", "quyet", "dinh", "chien", "luoc", "nha", "vua", "nguoi", "viet", "nam"]);
 const MISLEADING_CONTEXT_PATTERN = /(?:\b(?:street|road|avenue|address|pharmacy|shop|hotel|restaurant)\b|\b(?:duong|pho|hieu thuoc|cua hang|khach san|nha hang)\b)/i;
-const VERIFIED_STOCK_LICENSES: Array<{ host: RegExp; license: string }> = [ { host: /(?:^|\.)pexels\.com$/i, license: "Pexels License" },
+const VERIFIED_STOCK_LICENSES: Array<{ host: RegExp; license: string }> = [
+  { host: /(?:^|\.)pexels\.com$/i, license: "Pexels License" },
   { host: /(?:^|\.)unsplash\.com$/i, license: "Unsplash License" },
-  { host: /(?:^|\.)pixabay\.com$/i, license: "Pixabay Content License" }, ];
+  { host: /(?:^|\.)pixabay\.com$/i, license: "Pixabay Content License" },
+];
 
 const resolveVerifiedWebLicense = (sourceUrl: string): string => {
   try {

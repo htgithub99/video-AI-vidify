@@ -2,13 +2,13 @@ import path from "path";
 import fs from "fs";
 import _ from "lodash";
 
-const CONFIG_KEYS = { APP_DATA_DIR: "APP_DATA_DIR", ELECTRON_RUNNING: "ELECTRON_RUNNING", } as const;
+const CONFIG_KEYS = { APP_DATA_DIR: "APP_DATA_DIR", ELECTRON_RUNNING: "ELECTRON_RUNNING" } as const;
 
-const DIRECTORIES = { DATA: "data", } as const;
+const DIRECTORIES = { DATA: "data" } as const;
 
-const PLATFORMS = { WIN32: "win32", } as const;
+const PLATFORMS = { WIN32: "win32" } as const;
 
-const PYTHON_COMMANDS = { PYTHON: "python", PYTHON3: "python3", } as const;
+const PYTHON_COMMANDS = { PYTHON: "python", PYTHON3: "python3" } as const;
 
 export function getDataDirectory(): string {
   const appDataPath = process.env[CONFIG_KEYS.APP_DATA_DIR];

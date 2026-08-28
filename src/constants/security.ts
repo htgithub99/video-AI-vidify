@@ -225,7 +225,7 @@ export const SecurityConstants = {
   RECOVERY_EMAIL_PROP: "recoveryEmail",
 };
 
-export const LocalizationConstants = { FEATURE_VIDEO: "Video", FEATURE_IMAGE: "Ảnh", FEATURE_VOICE: "Giọng nói", PLAN_LIFETIME: "Vĩnh Viễn", PLAN_PRO: "PRO", PLAN_FREE: "Miễn Phí", } as const;
+export const LocalizationConstants = { FEATURE_VIDEO: "Video", FEATURE_IMAGE: "Ảnh", FEATURE_VOICE: "Giọng nói", PLAN_LIFETIME: "Vĩnh Viễn", PLAN_PRO: "PRO", PLAN_FREE: "Miễn Phí" } as const;
 
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: "Vui lòng kích hoạt mã bản quyền để sử dụng ứng dụng.",
@@ -406,7 +406,7 @@ export const ImageGenMessages = {
   CHROME_MODE_CHANGED: "[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...",
 } as const;
 
-export const UIConstants = { INFINITY: "∞", LANG_VI: "VN", LANG_EN: "EN", } as const;
+export const UIConstants = { INFINITY: "∞", LANG_VI: "VN", LANG_EN: "EN" } as const;
 
 export const getClientEnvironmentLicenseKey = (): string => {
   const metaEnv = typeof import.meta !== "undefined" ? (import.meta as any).env : undefined;

@@ -15,9 +15,16 @@ export enum ConfigIssueCode {
   VideoModeRoutedThroughGemini = "video_mode_routed_through_gemini",
 }
 
-export interface ConfigIssue { code: ConfigIssueCode; severity: ConfigIssueSeverity; }
+export interface ConfigIssue {
+  code: ConfigIssueCode;
+  severity: ConfigIssueSeverity;
+}
 
-export interface ResolvedVisualConfig { config: VisualConfig; issues: ConfigIssue[]; blocked: boolean; }
+export interface ResolvedVisualConfig {
+  config: VisualConfig;
+  issues: ConfigIssue[];
+  blocked: boolean;
+}
 
 const VIDEO_ENGINES = [ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Lite, ImageGeneratorEngine.Veo3Fast, ImageGeneratorEngine.Veo3Quality] as const;
 

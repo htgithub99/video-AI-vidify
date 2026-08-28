@@ -5,7 +5,20 @@ import { Upload, X } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Button } from "../ui/Button";
 
-export interface ImageUploadZoneProps { onUpload: (files: FileList) => void; hoverColor: string; title: string; subtitle: string; uploadClass?: string; inputClass?: string; contentClass?: string; iconBoxClass?: string; iconClass?: string; titleClass?: string; subtitleClass?: string; hideSubtitle?: boolean; }
+export interface ImageUploadZoneProps {
+  onUpload: (files: FileList) => void;
+  hoverColor: string;
+  title: string;
+  subtitle: string;
+  uploadClass?: string;
+  inputClass?: string;
+  contentClass?: string;
+  iconBoxClass?: string;
+  iconClass?: string;
+  titleClass?: string;
+  subtitleClass?: string;
+  hideSubtitle?: boolean;
+}
 
 export function ImageUploadZone({ onUpload, hoverColor, title, subtitle, uploadClass, inputClass, contentClass, iconBoxClass, iconClass, titleClass, subtitleClass, hideSubtitle }: ImageUploadZoneProps) {
   const defaultUploadClass = `bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
@@ -45,7 +58,10 @@ export function ImageUploadZone({ onUpload, hoverColor, title, subtitle, uploadC
   );
 }
 
-interface ImageDeleteOverlayProps { onDelete: () => void; tooltip: string; }
+interface ImageDeleteOverlayProps {
+  onDelete: () => void;
+  tooltip: string;
+}
 
 export function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProps) {
   return (

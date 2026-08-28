@@ -13,7 +13,27 @@ import { StylePresetSelector } from "./StylePresetSelector";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface ProjectSettingsSectionProps { projectName: string; setProjectName: (val: string) => void; thumbnailCount: number; setThumbnailCount: (val: number) => void; thumbnailStylePreset: string; setThumbnailStylePreset: (val: string) => void; backgroundMode: BackgroundMode; setBackgroundMode: (value: BackgroundMode) => void; textInImageMode: ThumbnailTextMode; setTextInImageMode: (value: ThumbnailTextMode) => void; imageFocusMode: ImageFocusMode; setImageFocusMode: (value: ImageFocusMode) => void; language: AppLanguage; T: ReturnType<typeof getAutoVideoTexts>; musicAssetUrl: string; onMusicUpload: (files: FileList) => void; onRemoveMusic?: () => void; genre: string; allowedStylePresetIds?: readonly string[]; }
+interface ProjectSettingsSectionProps {
+  projectName: string;
+  setProjectName: (val: string) => void;
+  thumbnailCount: number;
+  setThumbnailCount: (val: number) => void;
+  thumbnailStylePreset: string;
+  setThumbnailStylePreset: (val: string) => void;
+  backgroundMode: BackgroundMode;
+  setBackgroundMode: (value: BackgroundMode) => void;
+  textInImageMode: ThumbnailTextMode;
+  setTextInImageMode: (value: ThumbnailTextMode) => void;
+  imageFocusMode: ImageFocusMode;
+  setImageFocusMode: (value: ImageFocusMode) => void;
+  language: AppLanguage;
+  T: ReturnType<typeof getAutoVideoTexts>;
+  musicAssetUrl: string;
+  onMusicUpload: (files: FileList) => void;
+  onRemoveMusic?: () => void;
+  genre: string;
+  allowedStylePresetIds?: readonly string[];
+}
 
 export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({ projectName, setProjectName, thumbnailCount, setThumbnailCount, thumbnailStylePreset, setThumbnailStylePreset, backgroundMode, setBackgroundMode, textInImageMode, setTextInImageMode, imageFocusMode, setImageFocusMode, language, T, musicAssetUrl, onMusicUpload, onRemoveMusic, genre, allowedStylePresetIds }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);

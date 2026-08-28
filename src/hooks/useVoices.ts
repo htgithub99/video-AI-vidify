@@ -5,7 +5,15 @@ import { API_QUERY_PARAMS, VBEE_PROVIDER_ID, VOICE_OWNERSHIP_KEY, VOICE_OWNERSHI
 import { fetchVoiceCatalog } from "../services/voiceCatalogService";
 import { jsonUtils } from "../lib/json";
 
-export interface UseVoicesFilters { provider: string; page: number; pageSize: number; language?: string; gender?: string; age?: string; search?: string; }
+export interface UseVoicesFilters {
+  provider: string;
+  page: number;
+  pageSize: number;
+  language?: string;
+  gender?: string;
+  age?: string;
+  search?: string;
+}
 
 const buildVoiceQueryParams = (filters: UseVoicesFilters): URLSearchParams => {
   const params = new URLSearchParams();

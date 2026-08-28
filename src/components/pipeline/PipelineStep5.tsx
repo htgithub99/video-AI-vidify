@@ -16,7 +16,15 @@ import { formatUserFacingLog } from "../../lib/userLogFormatter";
 
 const { Play, Square, Download, Trash, Sparkles, Terminal, RefreshCw, FileText, Eye } = LucideIcons as any;
 
-interface PromptItem { id: number; prompt: string; status: PromptStatus; resultBase64?: string; resultUrl?: string; errorMsg?: string; elapsedTime?: number; }
+interface PromptItem {
+  id: number;
+  prompt: string;
+  status: PromptStatus;
+  resultBase64?: string;
+  resultUrl?: string;
+  errorMsg?: string;
+  elapsedTime?: number;
+}
 
 export default function PipelineStep5(props: PipelineWizardState) {
   const { currentLang, setZoomedImage, sandboxConfig, t, project } = props;
@@ -329,9 +337,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
                   {_.map(prompts, (item, idx) => {
                     const isCurrent = idx === currentIndex;
                     return (
-                      <div
-                        key={item.id}
-                        className={cn(`border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : _.includes([PromptStatus.SUCCESS], item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : _.includes([PromptStatus.ERROR], item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"}`)}>
+                      <div key={item.id} className={cn(`border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : _.includes([PromptStatus.SUCCESS], item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : _.includes([PromptStatus.ERROR], item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"}`)}>
                         <div className={cn("flex items-center justify-between mb-2")}>
                           <span className={cn("text-[9px] font-mono font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-slate-450 uppercase tracking-widest")}>{t.node6_prompt_label.replace("{id}", String(item.id))}</span>
 

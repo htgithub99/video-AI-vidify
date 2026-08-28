@@ -6,7 +6,12 @@ import { THUMBNAIL_TEXT_MODE_CONFIG } from "../../constants/config";
 import { ThumbnailTextMode } from "../../types";
 import { THUMBNAIL_TEXT_GROUPS } from "../../constants/texts";
 
-interface ThumbnailTextModeSelectProps { value: ThumbnailTextMode; onChange: (value: ThumbnailTextMode) => void; language: "vi" | "en"; label: string; }
+interface ThumbnailTextModeSelectProps {
+  value: ThumbnailTextMode;
+  onChange: (value: ThumbnailTextMode) => void;
+  language: "vi" | "en";
+  label: string;
+}
 
 export const ThumbnailTextModeSelect: React.FC<ThumbnailTextModeSelectProps> = ({ value, onChange, language, label }) => {
   const groups = _.get(THUMBNAIL_TEXT_GROUPS, language, THUMBNAIL_TEXT_GROUPS.vi);

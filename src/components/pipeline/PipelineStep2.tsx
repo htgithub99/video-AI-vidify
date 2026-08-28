@@ -50,7 +50,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
     setProject((prev) => {
       const updatedChars = _.map(prev.visualConfig?.characters || [], (c) => {
         if (c.id === charId) {
-          return { ...c, [field]: value, };
+          return { ...c, [field]: value };
         }
         return c;
       });
@@ -272,14 +272,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         <span>{t.Extract_Style}</span>
                       </Button>
                       {project.visualConfig?.thumbnailReferencePrompt && project?.thumbnails?.length && (
-                        <Button
-                          variant="ghost"
-                          type="button"
-                          onClick={handleApplyThumbnailStyle}
-                          disabled={!!loadingStates["applyThumbnailStyle"]}
-                          isLoading={!!loadingStates["applyThumbnailStyle"]}
-                          className={cn("flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto")}
-                          title={t.Apply_Style}>
+                        <Button variant="ghost" type="button" onClick={handleApplyThumbnailStyle} disabled={!!loadingStates["applyThumbnailStyle"]} isLoading={!!loadingStates["applyThumbnailStyle"]} className={cn("flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto")} title={t.Apply_Style}>
                           <Check className={cn("w-3 h-3 text-amber-100")} />
                           <span>{t.Apply_Style}</span>
                         </Button>
@@ -334,14 +327,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                       {t.charReAnalyze}
                     </Button>
                     {_.some(project.visualConfig.characters, (c) => c.prompt || c.description) && !_.isEmpty(project.thumbnails) && (
-                      <Button
-                        type="button"
-                        variant="primary"
-                        onClick={handleApplyCharacterToThumbnails}
-                        disabled={!!loadingStates["applyCharacter"]}
-                        isLoading={!!loadingStates["applyCharacter"]}
-                        className={cn("bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto")}
-                        title={t.Apply_Character_Thumbnails}>
+                      <Button type="button" variant="primary" onClick={handleApplyCharacterToThumbnails} disabled={!!loadingStates["applyCharacter"]} isLoading={!!loadingStates["applyCharacter"]} className={cn("bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto")} title={t.Apply_Character_Thumbnails}>
                         <Check className={cn("w-2.5 h-2.5 text-amber-100")} />
                         <span>{t.Apply_Character_Thumbnails}</span>
                       </Button>
@@ -374,13 +360,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   <Copy className={cn("w-2.5 h-2.5")} />
                                 </Button>
                               </div>
-                              <textarea
-                                value={char.description}
-                                onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
-                                className={cn("w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800")}
-                                placeholder={t.charBioPlaceholder}
-                                title={char.description}
-                              />
+                              <textarea value={char.description} onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)} className={cn("w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800")} placeholder={t.charBioPlaceholder} title={char.description} />
                             </div>
                           </div>
 
@@ -432,7 +412,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                               if (c.id === char.id) {
                                                 const newImgs = [...(c.images || [])];
                                                 newImgs.splice(idx, 1);
-                                                return { ...c, images: newImgs, };
+                                                return { ...c, images: newImgs };
                                               }
                                               return c;
                                             });
@@ -479,23 +459,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   <Copy className={cn("w-2.5 h-2.5")} />
                                 </Button>
                               </div>
-                              <textarea
-                                value={char.prompt}
-                                onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
-                                className={cn("w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900")}
-                                placeholder={t.charFeaturePlaceholder}
-                                title={char.prompt}
-                              />
+                              <textarea value={char.prompt} onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)} className={cn("w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900")} placeholder={t.charFeaturePlaceholder} title={char.prompt} />
                             </div>
                           )}
 
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => handleExtractCharacter(char.id)}
-                            disabled={isExtracting || !char.images?.length}
-                            className={cn("w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")}
-                            title={t.charExtractBtn || "Trích xuất đặc tả"}>
+                          <Button type="button" variant="ghost" onClick={() => handleExtractCharacter(char.id)} disabled={isExtracting || !char.images?.length} className={cn("w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")} title={t.charExtractBtn || "Trích xuất đặc tả"}>
                             {isExtracting ? (
                               <>
                                 <RefreshCw className={cn("w-2.5 h-2.5 animate-spin")} />
@@ -702,13 +670,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             )}
                           </div>
                           <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
-                            <Button
-                              variant="primary"
-                              onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
-                              disabled={!!loadingStates["renderThumb_" + thumb.id]}
-                              isLoading={!!loadingStates["renderThumb_" + thumb.id]}
-                              className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"} active:scale-95`)}
-                              title={t.Render_YouTube_mockup_thu}>
+                            <Button variant="primary" onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)} disabled={!!loadingStates["renderThumb_" + thumb.id]} isLoading={!!loadingStates["renderThumb_" + thumb.id]} className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"} active:scale-95`)} title={t.Render_YouTube_mockup_thu}>
                               <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
                               <span className={cn("relative z-10")}>{thumb.imageUrl ? t.Recreate_Mockup : t.Render_Mockup}</span>
                             </Button>

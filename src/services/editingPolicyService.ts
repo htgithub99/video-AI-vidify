@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { StoryboardScene, VisualBible } from "../types";
 
-export const EDITING_POLICY_CONSTANTS = { MOTION_ZOOM_IN: "Zoom In", MOTION_ZOOM_OUT: "Zoom Out", MOTION_PAN_LEFT: "Pan Left", MOTION_PAN_RIGHT: "Pan Right", MOTION_PAN_UP: "Pan Up", MOTION_PAN_DOWN: "Pan Down", MOTION_DRIFT: "drift", MOTION_STATIC: "static", TRANSITION_CUT: "cut", TRANSITION_FADE_BLACK: "fade_black", TRANSITION_CROSS_DISSOLVE: "cross_dissolve", LIGHTING_NATURAL: "natural_light", EMPTY_STRING: "", SPACE_SEPARATOR: " ", NORMALIZE_REGEX: /[ -]+/g, FLAT_STYLE_PATTERN: /stickman|flat(?: solid)? colors?|minimalist|no gradients?|no shading/i, SHOT_WIDE_PATTERN: /wide|establishing/i, SHOT_CLOSE_PATTERN: /close|extreme/i, SHORT_SCENE_SECONDS: 2.75, INTENSE_EFFECT_COOLDOWN_SCENES: 6, } as const;
+export const EDITING_POLICY_CONSTANTS = { MOTION_ZOOM_IN: "Zoom In", MOTION_ZOOM_OUT: "Zoom Out", MOTION_PAN_LEFT: "Pan Left", MOTION_PAN_RIGHT: "Pan Right", MOTION_PAN_UP: "Pan Up", MOTION_PAN_DOWN: "Pan Down", MOTION_DRIFT: "drift", MOTION_STATIC: "static", TRANSITION_CUT: "cut", TRANSITION_FADE_BLACK: "fade_black", TRANSITION_CROSS_DISSOLVE: "cross_dissolve", LIGHTING_NATURAL: "natural_light", EMPTY_STRING: "", SPACE_SEPARATOR: " ", NORMALIZE_REGEX: /[ -]+/g, FLAT_STYLE_PATTERN: /stickman|flat(?: solid)? colors?|minimalist|no gradients?|no shading/i, SHOT_WIDE_PATTERN: /wide|establishing/i, SHOT_CLOSE_PATTERN: /close|extreme/i, SHORT_SCENE_SECONDS: 2.75, INTENSE_EFFECT_COOLDOWN_SCENES: 6 } as const;
 
 const SAFE_FLAT_EFFECTS = new Set<string>([EDITING_POLICY_CONSTANTS.EMPTY_STRING, "none", "sharpen", "soft_focus"]);
 
@@ -123,6 +123,6 @@ export const applyProfessionalEditingPolicy = (scenes: StoryboardScene[], visual
     lastComposition = composition;
     lastCameraMotion = cameraMotion;
 
-    return { ...scene, shotSize: shotSize as StoryboardScene["shotSize"], cameraAngle, composition, effects, lightingEffect, cameraMotion, transition: normalizeTransition(scene, scenes[index + 1], index), };
+    return { ...scene, shotSize: shotSize as StoryboardScene["shotSize"], cameraAngle, composition, effects, lightingEffect, cameraMotion, transition: normalizeTransition(scene, scenes[index + 1], index) };
   });
 };

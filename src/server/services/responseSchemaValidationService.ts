@@ -1,6 +1,16 @@
 import _ from "lodash";
 
-interface ResponseSchema { type?: string; required?: readonly string[]; properties?: Record<string, ResponseSchema>; items?: ResponseSchema; minItems?: number; minimum?: number; maximum?: number; enum?: readonly unknown[]; additionalProperties?: boolean; }
+interface ResponseSchema {
+  type?: string;
+  required?: readonly string[];
+  properties?: Record<string, ResponseSchema>;
+  items?: ResponseSchema;
+  minItems?: number;
+  minimum?: number;
+  maximum?: number;
+  enum?: readonly unknown[];
+  additionalProperties?: boolean;
+}
 
 const isFiniteNumber = (value: unknown): value is number => _.isNumber(value) && Number.isFinite(value);
 

@@ -4,7 +4,10 @@ import _ from "lodash";
 import { ASSETS_DIR_NAME, BASE64_DATA_URL_REGEX, CONTENT_TYPE_HEADER, CONTENT_TYPES, getBackendMsg, MimeType, REFACTOR_CONSTANTS, STYLE_EXTRACTION_CONFIG } from "../../constants/index.js";
 import { getDataDirectory } from "../utils/paths.js";
 
-export interface EncodedImageAsset { data: string; mimeType: string; }
+export interface EncodedImageAsset {
+  data: string;
+  mimeType: string;
+}
 
 export const hasValidImages = (images: unknown): boolean => _.isArray(images) && _.some(images, (img) => Boolean(_.isString(img) && _.trim(img).length > 0));
 
@@ -32,7 +35,7 @@ export const readEncodedProjectImage = (assetUrl: string): EncodedImageAsset | u
   if (dataUrlMatch) return { mimeType: dataUrlMatch[1], data: dataUrlMatch[2] };
   const assetPath = resolveLocalProjectAssetPath(assetUrl);
   if (!assetPath) return undefined;
-  return { mimeType: getImageMimeType(assetPath), data: fs.readFileSync(assetPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding), };
+  return { mimeType: getImageMimeType(assetPath), data: fs.readFileSync(assetPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding) };
 };
 
 export const readStyleReferenceImage = async (imageSource: string): Promise<EncodedImageAsset> => {

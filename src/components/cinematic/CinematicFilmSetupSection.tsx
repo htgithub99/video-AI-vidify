@@ -34,21 +34,15 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
         <div className={cn("min-w-0 flex-1")}>
           <h2 className={cn("text-sm font-extrabold text-white flex items-center gap-2 truncate")} title={texts.TITLE}>
             <span className={cn("truncate")}>{texts.TITLE}</span>
-            <span className={cn("px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal shrink-0")}>
-              {common.CINEMATIC_ENGINE}
-            </span>
+            <span className={cn("px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal shrink-0")}>{common.CINEMATIC_ENGINE}</span>
           </h2>
-          <p className={cn("text-[11px] text-slate-400 mt-0.5 truncate")} title={texts.SUBTITLE}>{texts.SUBTITLE}</p>
+          <p className={cn("text-[11px] text-slate-400 mt-0.5 truncate")} title={texts.SUBTITLE}>
+            {texts.SUBTITLE}
+          </p>
         </div>
       </div>
 
-      <textarea
-        rows={5}
-        value={idea}
-        onChange={(event) => setIdea(event.target.value)}
-        placeholder={texts.PLACEHOLDER}
-        className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-amber-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none placeholder:text-slate-600 transition-all shadow-inner")}
-      />
+      <textarea rows={5} value={idea} onChange={(event) => setIdea(event.target.value)} placeholder={texts.PLACEHOLDER} className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-amber-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none placeholder:text-slate-600 transition-all shadow-inner")} />
 
       <div className={cn("grid grid-cols-2 lg:grid-cols-4 gap-3")}>
         <div className={cn("space-y-1.5 min-w-0")}>
@@ -76,7 +70,9 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
           </select>
         </div>
         <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.DURATION_LABEL}>{texts.DURATION_LABEL}</span>
+          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.DURATION_LABEL}>
+            {texts.DURATION_LABEL}
+          </span>
           <select value={duration} onChange={(event) => setDuration(event.target.value)} className={cn("w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none hover:border-slate-700 transition-colors cursor-pointer truncate")}>
             <option value="1 minute">{texts.DURATIONS.ONE_MIN}</option>
             <option value="2 minutes">{texts.DURATIONS.TWO_MIN}</option>

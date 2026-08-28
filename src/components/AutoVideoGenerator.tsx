@@ -33,7 +33,16 @@ import CinematicFilmSetupSection from "./cinematic/CinematicFilmSetupSection";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
 import { genreLabels } from "../constants/data";
 
-interface AutoVideoGeneratorProps { currentLang: Lang; projects: VideoProject[]; selectedProjectId?: string | null; onSelectProject: (id: string) => void; onCreateProject: (name: string, desc: string) => Promise<void>; onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void; theme?: AppTheme; cinematicMode?: boolean; }
+interface AutoVideoGeneratorProps {
+  currentLang: Lang;
+  projects: VideoProject[];
+  selectedProjectId?: string | null;
+  onSelectProject: (id: string) => void;
+  onCreateProject: (name: string, desc: string) => Promise<void>;
+  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void;
+  theme?: AppTheme;
+  cinematicMode?: boolean;
+}
 
 export default function AutoVideoGenerator({ currentLang, projects, selectedProjectId, onSelectProject, onUpdateProject, theme = AppTheme.DARK, cinematicMode = false }: AutoVideoGeneratorProps) {
   const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
@@ -43,96 +52,9 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
-  const {
-    inputType,
-    scriptContent,
-    genre,
-    language,
-    duration,
-    splitStrategy,
-    voiceProvider,
-    voiceURI,
-    voiceName,
-    isVoiceDialogOpen,
-    generationMode,
-    imageGeneratorEngine,
-    generateType,
-    maxVideoScenes,
-    aspectRatio,
-    chromeHeadless,
-    stylePreset,
-    styleBackgroundMode,
-    styleTextInImageMode,
-    imageFocusMode,
-    referenceImages,
-    sceneReferenceImages,
-    characterImages,
-    thumbnailCount,
-    thumbnailStylePreset,
-    thumbnailBackgroundMode,
-    thumbnailTextInImageMode,
-    thumbnailImageFocusMode,
-    thumbnailReferenceImages,
-    thumbnailSceneReferenceImages,
-    projectName,
-    resumeMode,
-    showAdvancedImageSettings,
-    rewriteLevel,
-    similarityReduction,
-    creativityLevel,
-    factCheck,
-    audience,
-    writingStyle,
-    hookStrategy,
-    hookDuration,
-    hookPosition,
-    voiceSpeed,
-    voicePitch,
-    voiceVolume,
-    promptInputMethod,
-    sampleCount,
-    videoDuration,
-    videoResolution,
-    geminiChatSpeed,
-    batchDelay,
-    ffmpegQuality,
-    isConfigLoaded,
-    musicAssetUrl,
-  } = state;
+  const { inputType, scriptContent, genre, language, duration, splitStrategy, voiceProvider, voiceURI, voiceName, isVoiceDialogOpen, generationMode, imageGeneratorEngine, generateType, maxVideoScenes, aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages, characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages, thumbnailSceneReferenceImages, projectName, resumeMode, showAdvancedImageSettings, rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle, hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume, promptInputMethod, sampleCount, videoDuration, videoResolution, geminiChatSpeed, batchDelay, ffmpegQuality, isConfigLoaded, musicAssetUrl } = state;
 
-  const {
-    setInputType,
-    setScriptContent,
-    setGenre,
-    setLanguage,
-    setDuration,
-    setSplitStrategy,
-    setVoiceProvider,
-    setVoiceURI,
-    setVoiceName,
-    setIsVoiceDialogOpen,
-    setGenerationMode,
-    setImageGeneratorEngine,
-    setGenerateType,
-    setMaxVideoScenes,
-    setAspectRatio,
-    setVideoDuration,
-    setVideoResolution,
-    setChromeHeadless,
-    setStylePreset,
-    setStyleBackgroundMode,
-    setStyleTextInImageMode,
-    setImageFocusMode,
-    setThumbnailCount,
-    setThumbnailStylePreset,
-    setThumbnailBackgroundMode,
-    setThumbnailTextInImageMode,
-    setThumbnailImageFocusMode,
-    setProjectName,
-    setResumeMode,
-    setShowAdvancedImageSettings,
-    setMusicAssetUrl,
-  } = actions;
+  const { setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy, setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen, setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes, setAspectRatio, setVideoDuration, setVideoResolution, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode, setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setProjectName, setResumeMode, setShowAdvancedImageSettings, setMusicAssetUrl } = actions;
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
 
@@ -402,83 +324,21 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
           {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
 
           <div className={cn("space-y-4")}>
-            {cinematicMode ? (
-              <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} />
-            ) : (
-              <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} genre={genre} setGenre={setGenre} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} splitStrategy={splitStrategy} setSplitStrategy={setSplitStrategy} splitLabelMap={splitLabelMap} T={T} lockedGenreLabel={lockedGenreLabel} />
-            )}
+            {cinematicMode ? <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} /> : <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} genre={genre} setGenre={setGenre} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} splitStrategy={splitStrategy} setSplitStrategy={setSplitStrategy} splitLabelMap={splitLabelMap} T={T} lockedGenreLabel={lockedGenreLabel} />}
 
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
 
             <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
-              <GenerationSettingsSection
-                generationMode={generationMode}
-                setGenerationMode={setGenerationMode}
-                imageGeneratorEngine={imageGeneratorEngine}
-                setImageGeneratorEngine={setImageGeneratorEngine}
-                generateType={generateType}
-                setGenerateType={setGenerateType}
-                maxVideoScenes={maxVideoScenes}
-                setMaxVideoScenes={setMaxVideoScenes}
-                aspectRatio={aspectRatio}
-                setAspectRatio={setAspectRatio}
-                T={T}
-                getImageEngineOptions={getImageEngineOptions}
-                mediaMixTexts={mediaMixTexts}
-                forceVideoOnly={cinematicMode}
-                chromeHeadless={chromeHeadless}
-                setChromeHeadless={setChromeHeadless}
-                videoDuration={videoDuration}
-                setVideoDuration={setVideoDuration}
-                videoResolution={videoResolution}
-                setVideoResolution={setVideoResolution}
-              />
+              <GenerationSettingsSection generationMode={generationMode} setGenerationMode={setGenerationMode} imageGeneratorEngine={imageGeneratorEngine} setImageGeneratorEngine={setImageGeneratorEngine} generateType={generateType} setGenerateType={setGenerateType} maxVideoScenes={maxVideoScenes} setMaxVideoScenes={setMaxVideoScenes} aspectRatio={aspectRatio} setAspectRatio={setAspectRatio} T={T} getImageEngineOptions={getImageEngineOptions} mediaMixTexts={mediaMixTexts} forceVideoOnly={cinematicMode} chromeHeadless={chromeHeadless} setChromeHeadless={setChromeHeadless} videoDuration={videoDuration} setVideoDuration={setVideoDuration} videoResolution={videoResolution} setVideoResolution={setVideoResolution} />
 
-              {!cinematicMode && (
-                <AdvancedImageSettingsSection
-                  showAdvancedImageSettings={showAdvancedImageSettings}
-                  setShowAdvancedImageSettings={setShowAdvancedImageSettings}
-                  chromeHeadless={chromeHeadless}
-                  setChromeHeadless={setChromeHeadless}
-                  resumeMode={resumeMode}
-                  setResumeMode={setResumeMode}
-                  backgroundMode={styleBackgroundMode}
-                  setBackgroundMode={setStyleBackgroundMode}
-                  textMode={styleTextInImageMode}
-                  setTextMode={setStyleTextInImageMode}
-                  imageFocusMode={imageFocusMode}
-                  setImageFocusMode={setImageFocusMode}
-                  language={currentLang as AppLanguage}
-                  T={T}
-                />
-              )}
+              {!cinematicMode && <AdvancedImageSettingsSection showAdvancedImageSettings={showAdvancedImageSettings} setShowAdvancedImageSettings={setShowAdvancedImageSettings} chromeHeadless={chromeHeadless} setChromeHeadless={setChromeHeadless} resumeMode={resumeMode} setResumeMode={setResumeMode} backgroundMode={styleBackgroundMode} setBackgroundMode={setStyleBackgroundMode} textMode={styleTextInImageMode} setTextMode={setStyleTextInImageMode} imageFocusMode={imageFocusMode} setImageFocusMode={setImageFocusMode} language={currentLang as AppLanguage} T={T} />}
 
               <div className={cn("pt-2 border-t border-slate-800/80")}>
                 <StylePresetSelector selectedStyle={stylePreset} onSelectStyle={setStylePreset} language={currentLang} accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE} genre={genre} allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
               </div>
             </div>
 
-            <ProjectSettingsSection
-              genre={genre}
-              projectName={projectName}
-              setProjectName={setProjectName}
-              thumbnailCount={thumbnailCount}
-              setThumbnailCount={setThumbnailCount}
-              thumbnailStylePreset={thumbnailStylePreset}
-              setThumbnailStylePreset={setThumbnailStylePreset}
-              backgroundMode={thumbnailBackgroundMode}
-              setBackgroundMode={setThumbnailBackgroundMode}
-              textInImageMode={thumbnailTextInImageMode}
-              setTextInImageMode={setThumbnailTextInImageMode}
-              imageFocusMode={thumbnailImageFocusMode}
-              setImageFocusMode={setThumbnailImageFocusMode}
-              language={currentLang as AppLanguage}
-              T={T}
-              musicAssetUrl={musicAssetUrl}
-              onMusicUpload={handleMusicUpload}
-              onRemoveMusic={() => setMusicAssetUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
-              allowedStylePresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined}
-            />
+            <ProjectSettingsSection genre={genre} projectName={projectName} setProjectName={setProjectName} thumbnailCount={thumbnailCount} setThumbnailCount={setThumbnailCount} thumbnailStylePreset={thumbnailStylePreset} setThumbnailStylePreset={setThumbnailStylePreset} backgroundMode={thumbnailBackgroundMode} setBackgroundMode={setThumbnailBackgroundMode} textInImageMode={thumbnailTextInImageMode} setTextInImageMode={setThumbnailTextInImageMode} imageFocusMode={thumbnailImageFocusMode} setImageFocusMode={setThumbnailImageFocusMode} language={currentLang as AppLanguage} T={T} musicAssetUrl={musicAssetUrl} onMusicUpload={handleMusicUpload} onRemoveMusic={() => setMusicAssetUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING)} allowedStylePresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
           </div>
         </div>
 

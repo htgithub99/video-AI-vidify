@@ -68,7 +68,7 @@ export const rollbackSceneAssetRevision = (scene: StoryboardScene, revisionId: s
     status: SceneAssetStatus.Approved,
   });
   if (!target) throw new Error(DEPENDENCY_HASH_CONFIG.APPROVED_REVISION_REQUIRED);
-  const restored = { ...scene, assetUrl: target.assetUrl, assetUrls: [target.assetUrl], assetStatus: SceneAssetStatus.Approved, };
+  const restored = { ...scene, assetUrl: target.assetUrl, assetUrls: [target.assetUrl], assetStatus: SceneAssetStatus.Approved };
   const revision = appendAssetRevision(restored, target.assetUrl, SceneAssetStatus.Approved);
   revision.operation = DEPENDENCY_HASH_CONFIG.ROLLBACK_OPERATION;
   revision.parentRevisionId = scene.assetRevisionId;

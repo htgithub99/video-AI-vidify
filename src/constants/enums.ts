@@ -208,7 +208,7 @@ export enum FileEncoding {
   UTF8 = "utf-8",
 }
 
-export const FFMPEG_CONFIG = { OPTIONS_CONCAT: ["-f", "concat", "-safe", "0"], OPTIONS_OUTPUT_MP3: ["-c:a", "libmp3lame", "-b:a", "128k", "-y"], };
+export const FFMPEG_CONFIG = { OPTIONS_CONCAT: ["-f", "concat", "-safe", "0"], OPTIONS_OUTPUT_MP3: ["-c:a", "libmp3lame", "-b:a", "128k", "-y"] };
 
 export enum SortOrder {
   ASC = "asc",

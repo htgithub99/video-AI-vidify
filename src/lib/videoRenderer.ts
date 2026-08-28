@@ -51,15 +51,15 @@ const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
   [RENDER_LOGIC_CONSTANTS.CINEMATIC_ARC]: (p) => {
     const t = easeCubicInOut(p);
     const arcPhase = Math.sin(t * Math.PI);
-    return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * arcPhase, };
+    return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * arcPhase };
   },
   [RENDER_LOGIC_CONSTANTS.PUSH_IN]: (p) => {
     const t = easeExpoOut(p);
-    return { scale: 1.0 + 0.08 * t, dx: 12 * t, dy: -8 * t, };
+    return { scale: 1.0 + 0.08 * t, dx: 12 * t, dy: -8 * t };
   },
   [RENDER_LOGIC_CONSTANTS.SLOW_REVEAL]: (p) => {
     const t = easeCubicInOut(p);
-    return { scale: 1.08 - 0.06 * t, dx: -18 * t, dy: 20 * t, };
+    return { scale: 1.08 - 0.06 * t, dx: -18 * t, dy: 20 * t };
   },
   [RENDER_LOGIC_CONSTANTS.MOTION_STATIC]: () => ({ scale: 1.0, dx: 0, dy: 0 }),
   [AI_MOTION_EFFECT_IDS[6]]: (p) => {
@@ -133,7 +133,7 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
 
     const actualDuration = end - start;
     elapsed = end;
-    return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script, assetName: sc.assetName, };
+    return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script, assetName: sc.assetName };
   });
 };
 

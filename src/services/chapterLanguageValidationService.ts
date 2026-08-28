@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { TECHNICAL_RESPONSE_RETRY_CONFIG } from "../constants/config";
 
-export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = { MINIMUM_ANALYSIS_CHARACTERS: 30, MINIMUM_ANALYSIS_WORDS: 5, MINIMUM_VIETNAMESE_DIACRITIC_RATIO: 0.05, MAXIMUM_JOINED_PUNCTUATION_COUNT: 1, MAXIMUM_WORD_CHARACTERS: 32, MAXIMUM_GENERATION_ATTEMPTS: TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS, } as const;
+export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = { MINIMUM_ANALYSIS_CHARACTERS: 30, MINIMUM_ANALYSIS_WORDS: 5, MINIMUM_VIETNAMESE_DIACRITIC_RATIO: 0.05, MAXIMUM_JOINED_PUNCTUATION_COUNT: 1, MAXIMUM_WORD_CHARACTERS: 32, MAXIMUM_GENERATION_ATTEMPTS: TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS } as const;
 
 const LETTER_REGEX = /\p{L}/gu;
 const WORD_REGEX = /\p{L}+/gu;
@@ -16,7 +16,10 @@ export enum ChapterLanguageIssue {
   JoinedWords = "joined_words",
 }
 
-export interface ChapterLanguageValidation { valid: boolean; issues: ChapterLanguageIssue[]; }
+export interface ChapterLanguageValidation {
+  valid: boolean;
+  issues: ChapterLanguageIssue[];
+}
 
 export const validateChapterLanguage = (content: unknown, isVietnamese: boolean): ChapterLanguageValidation => {
   const text = _.trim(_.toString(content));

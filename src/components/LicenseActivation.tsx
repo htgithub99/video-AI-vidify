@@ -6,7 +6,11 @@ import _ from "lodash";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 
-interface ToastMessageProps { type: "error" | "success"; message: string; onClose: () => void; }
+interface ToastMessageProps {
+  type: "error" | "success";
+  message: string;
+  onClose: () => void;
+}
 
 const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
   const isError = _.isEqual(type, "error");
@@ -64,7 +68,8 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
       setSuccessMsg(SecurityConstants.EMPTY_STRING);
 
       const result = await activateLicense(cleanKey);
-      if (result !== true) setErrorMsg(_.isString(result) ? result : SecurityMessages.ACTIVATION_ERROR_MSG); else {
+      if (result !== true) setErrorMsg(_.isString(result) ? result : SecurityMessages.ACTIVATION_ERROR_MSG);
+      else {
         setSuccessMsg(SecurityMessages.ACTIVATION_SUCCESS_MSG);
         setTimeout(() => setSuccessMsg(SecurityConstants.EMPTY_STRING), SecurityConstants.TOAST_DURATION);
       }
@@ -99,7 +104,6 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
     return (
       <>
         <div className={cn("flex items-center justify-center min-h-screen bg-slate-955 p-4 relative overflow-hidden")}>
-          
           <div className={cn("absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none")} />
           <div className={cn("absolute bottom-10 right-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none")} />
 
@@ -115,25 +119,10 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
             </div>
             <form onSubmit={handleFormSubmit} className={cn("space-y-5")}>
               <div>
-                <input
-                  type={SecurityConstants.INPUT_TYPE_TEXT}
-                  value={inputKey}
-                  onChange={(e) => setInputKey(e.target.value)}
-                  placeholder={SecurityMessages.INPUT_PLACEHOLDER_SHORT}
-                  title={SecurityMessages.INPUT_PLACEHOLDER_TOOLTIP}
-                  className={cn("w-full px-4 py-3 bg-slate-950/80 border border-slate-800 focus:border-rose-500 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-mono text-center text-xs tracking-wider")}
-                  required
-                />
+                <input type={SecurityConstants.INPUT_TYPE_TEXT} value={inputKey} onChange={(e) => setInputKey(e.target.value)} placeholder={SecurityMessages.INPUT_PLACEHOLDER_SHORT} title={SecurityMessages.INPUT_PLACEHOLDER_TOOLTIP} className={cn("w-full px-4 py-3 bg-slate-950/80 border border-slate-800 focus:border-rose-500 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-mono text-center text-xs tracking-wider")} required />
               </div>
 
-              <button
-                type={SecurityConstants.BUTTON_TYPE_SUBMIT}
-                title={SecurityMessages.ACTIVATE_BUTTON}
-                disabled={_.some([isActivating, _.isEmpty(_.trim(inputKey))])}
-                className={cn(
-                  "w-full flex items-center justify-center py-3.5 px-4 rounded-2xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-lg shadow-rose-600/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                  isActivating && "button-skeleton-loading opacity-90 cursor-wait"
-                )}>
+              <button type={SecurityConstants.BUTTON_TYPE_SUBMIT} title={SecurityMessages.ACTIVATE_BUTTON} disabled={_.some([isActivating, _.isEmpty(_.trim(inputKey))])} className={cn("w-full flex items-center justify-center py-3.5 px-4 rounded-2xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-lg shadow-rose-600/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer", isActivating && "button-skeleton-loading opacity-90 cursor-wait")}>
                 {isActivating ? (
                   <span className={cn("inline-flex items-center gap-2 relative z-10")}>
                     <Loader2 className={cn("w-4 h-4 animate-spin")} />
