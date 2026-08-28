@@ -595,8 +595,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   const context = _.first(grokBrowser.contexts());
   if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
   grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || (await context.newPage());
-  const sharedGeminiPage = await context.newPage();
-  activeBrowserInstance = { context, page: sharedGeminiPage, account, ownsContext: false };
+  activeBrowserInstance = { context, page: grokPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
   appLog(`[Grok Imagine] Sử dụng Chrome của tài khoản ${account.email}.`);
   return { context, page: grokPage };
@@ -1276,6 +1275,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         if (!browserInstance) {
           browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
           activePage = browserInstance.page;
+          if (_.includes(activePage.url(), "grok.com")) {
+            activePage = await browserInstance.context.newPage();
+            activeBrowserInstance = { ...browserInstance, page: activePage };
+          }
         }
         const currentUrl = activePage!.url();
         if (!_.includes(currentUrl, "gemini.google.com")) {
