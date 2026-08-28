@@ -211,104 +211,147 @@ export const DashboardSkeleton: FC<{ className?: string }> = ({ className }) => 
 );
 
 export const AutoVideoStudioSkeleton: FC<{ className?: string }> = ({ className }) => (
-  <div className={cn("h-full flex flex-col overflow-y-auto bg-slate-955", className)}>
-    <div className={cn("flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0")}>
-      <div className={cn("lg:col-span-7 h-auto lg:h-full p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 overflow-y-auto scrollbar-none")}>
-        <div className={cn("glass-card rounded-3xl p-5 border border-slate-800/80 space-y-3")}>
+  <div className={cn("w-full h-full min-h-0 flex flex-col overflow-hidden bg-slate-955", className)}>
+    <div className={cn("flex-1 w-full h-full grid grid-cols-1 lg:grid-cols-12 min-h-0 overflow-hidden")}>
+      <div className={cn("lg:col-span-7 h-full p-4 sm:p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 overflow-y-auto scrollbar-none")}>
+        <div className={cn("glass-card rounded-3xl p-5 border border-slate-800/80 space-y-3.5 shadow-xl")}>
+          <div className={cn("flex justify-between items-center")}>
+            <div className={cn("flex items-center gap-2.5")}>
+              <Skeleton variant="rectangular" className={cn("w-8 h-8 rounded-xl")} />
+              <Skeleton variant="text" className={cn("w-44 h-4")} />
+            </div>
+            <Skeleton variant="rectangular" className={cn("w-28 h-6 rounded-full")} />
+          </div>
+          <Skeleton variant="rectangular" className={cn("h-32 w-full rounded-2xl")} />
+          <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
+            {_.map(_.range(4), (i) => (
+              <div key={i} className={cn("space-y-1.5")}>
+                <Skeleton variant="text" className={cn("w-16 h-3")} />
+                <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl")}>
           <div className={cn("flex justify-between items-center")}>
             <div className={cn("flex items-center gap-2")}>
               <Skeleton variant="rectangular" className={cn("w-6 h-6 rounded-lg")} />
+              <Skeleton variant="text" className={cn("w-44 h-4")} />
+            </div>
+            <Skeleton variant="rectangular" className={cn("w-32 h-6 rounded-full")} />
+          </div>
+          <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3")}>
+            {_.map(_.range(6), (i) => (
+              <div key={i} className={cn("space-y-1.5")}>
+                <Skeleton variant="text" className={cn("w-20 h-3")} />
+                <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
+              </div>
+            ))}
+          </div>
+          <div className={cn("pt-3 border-t border-slate-800/80 space-y-3")}>
+            <div className={cn("flex justify-between items-center")}>
               <Skeleton variant="text" className={cn("w-36 h-4")} />
+              <Skeleton variant="rectangular" className={cn("w-36 h-7 rounded-full")} />
             </div>
-            <Skeleton variant="text" className={cn("w-28 h-4")} />
-          </div>
-          <Skeleton variant="rectangular" className={cn("h-28 w-full rounded-2xl")} />
-          <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
+            <div className={cn("flex gap-2")}>
+              <Skeleton variant="rectangular" className={cn("w-16 h-7 rounded-xl")} />
+              <Skeleton variant="rectangular" className={cn("w-28 h-7 rounded-xl")} />
+            </div>
+            <div className={cn("grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3")}>
+              {_.map(_.range(3), (i) => (
+                <div key={i} className={cn("h-16 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 flex items-center gap-3")}>
+                  <Skeleton variant="rectangular" className={cn("w-9 h-9 rounded-xl shrink-0")} />
+                  <div className={cn("flex-1 space-y-1.5")}>
+                    <Skeleton variant="text" className={cn("w-24 h-3.5")} />
+                    <Skeleton variant="text" className={cn("w-32 h-2.5")} />
+                  </div>
+                  <Skeleton variant="circular" className={cn("w-4 h-4 shrink-0")} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className={cn("glass-card rounded-3xl p-4 border border-slate-800/80 flex items-center justify-between gap-4")}>
-          <div className={cn("flex items-center gap-3 flex-1")}>
-            <Skeleton variant="rectangular" className={cn("w-10 h-10 rounded-xl")} />
-            <div className={cn("space-y-1.5 flex-1")}>
-              <Skeleton variant="text" className={cn("w-28 h-3.5")} />
-              <Skeleton variant="text" className={cn("w-44 h-3")} />
+        <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl")}>
+          <div className={cn("flex justify-between items-center")}>
+            <div className={cn("flex items-center gap-2")}>
+              <Skeleton variant="rectangular" className={cn("w-6 h-6 rounded-lg")} />
+              <Skeleton variant="text" className={cn("w-32 h-4")} />
             </div>
-          </div>
-          <Skeleton variant="button" className={cn("w-28 h-9 rounded-xl")} />
-        </div>
-
-        <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4")}>
-          <div className={cn("flex items-center gap-2")}>
-            <Skeleton variant="rectangular" className={cn("w-6 h-6 rounded-lg")} />
-            <Skeleton variant="text" className={cn("w-44 h-4")} />
+            <Skeleton variant="rectangular" className={cn("w-20 h-6 rounded-full")} />
           </div>
           <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3")}>
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
+            {_.map(_.range(5), (i) => (
+              <div key={i} className={cn("space-y-1.5")}>
+                <Skeleton variant="text" className={cn("w-20 h-3")} />
+                <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
+              </div>
+            ))}
           </div>
-          <div className={cn("pt-2 border-t border-slate-800/80 space-y-3")}>
-            <Skeleton variant="text" className={cn("w-36 h-4")} />
+          <div className={cn("pt-3 border-t border-slate-800/80 space-y-3")}>
+            <div className={cn("flex justify-between items-center")}>
+              <Skeleton variant="text" className={cn("w-36 h-4")} />
+              <Skeleton variant="rectangular" className={cn("w-36 h-7 rounded-full")} />
+            </div>
+            <div className={cn("flex gap-2")}>
+              <Skeleton variant="rectangular" className={cn("w-16 h-7 rounded-xl")} />
+              <Skeleton variant="rectangular" className={cn("w-28 h-7 rounded-xl")} />
+            </div>
             <div className={cn("grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3")}>
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
+              {_.map(_.range(3), (i) => (
+                <div key={i} className={cn("h-16 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 flex items-center gap-3")}>
+                  <Skeleton variant="rectangular" className={cn("w-9 h-9 rounded-xl shrink-0")} />
+                  <div className={cn("flex-1 space-y-1.5")}>
+                    <Skeleton variant="text" className={cn("w-24 h-3.5")} />
+                    <Skeleton variant="text" className={cn("w-32 h-2.5")} />
+                  </div>
+                  <Skeleton variant="circular" className={cn("w-4 h-4 shrink-0")} />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
-        <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4")}>
-          <div className={cn("flex items-center gap-2")}>
-            <Skeleton variant="rectangular" className={cn("w-6 h-6 rounded-lg")} />
-            <Skeleton variant="text" className={cn("w-36 h-4")} />
-          </div>
-          <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3")}>
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-            <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
-          </div>
-          <div className={cn("pt-2 border-t border-slate-800/80 space-y-3")}>
-            <Skeleton variant="text" className={cn("w-36 h-4")} />
-            <div className={cn("grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3")}>
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
-              <Skeleton variant="rectangular" className={cn("h-16 w-full rounded-2xl")} />
-            </div>
+          <div className={cn("pt-2")}>
+            <Skeleton variant="rectangular" className={cn("h-11 w-full rounded-2xl border-dashed")} />
           </div>
         </div>
       </div>
 
-      <div className={cn("lg:col-span-5 h-auto lg:h-full p-5 space-y-5 flex flex-col justify-between overflow-y-auto scrollbar-none")}>
+      <div className={cn("lg:col-span-5 h-full p-4 sm:p-5 space-y-4 flex flex-col justify-between overflow-y-auto scrollbar-none")}>
         <Skeleton variant="rectangular" className={cn("h-13 w-full rounded-2xl")} />
 
-        <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-3 h-48")}>
-          <div className={cn("flex justify-between items-center")}>
-            <Skeleton variant="text" className={cn("w-28 h-4")} />
-            <Skeleton variant="rectangular" className={cn("w-16 h-5 rounded-full")} />
+        <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-3.5 h-64 flex flex-col justify-between shadow-xl")}>
+          <div className={cn("flex justify-between items-center border-b border-slate-800/80 pb-3")}>
+            <div className={cn("flex items-center gap-2")}>
+              <Skeleton variant="circular" className={cn("w-4 h-4")} />
+              <Skeleton variant="text" className={cn("w-24 h-4")} />
+            </div>
+            <div className={cn("flex gap-2")}>
+              <Skeleton variant="rectangular" className={cn("w-16 h-6 rounded-md")} />
+              <Skeleton variant="rectangular" className={cn("w-20 h-6 rounded-md")} />
+            </div>
           </div>
-          <div className={cn("space-y-2 pt-2")}>
-            <Skeleton variant="text" className={cn("w-full h-3")} />
-            <Skeleton variant="text" className={cn("w-5/6 h-3")} />
-            <Skeleton variant="text" className={cn("w-4/6 h-3")} />
+          <div className={cn("space-y-3 flex-1 pt-1")}>
+            {_.map(_.range(3), (i) => (
+              <div key={i} className={cn("flex items-center gap-3")}>
+                <Skeleton variant="circular" className={cn("w-5 h-5 shrink-0")} />
+                <Skeleton variant="text" className={cn("w-full h-3")} />
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 flex-1 flex flex-col justify-between")}>
+        <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 flex-1 flex flex-col justify-between shadow-xl")}>
           <div className={cn("flex justify-between items-center")}>
-            <Skeleton variant="text" className={cn("w-32 h-4")} />
-            <Skeleton variant="circular" className={cn("w-4 h-4")} />
+            <div className={cn("flex items-center gap-2")}>
+              <Skeleton variant="circular" className={cn("w-4 h-4")} />
+              <Skeleton variant="text" className={cn("w-32 h-4")} />
+            </div>
           </div>
-          <Skeleton variant="rectangular" className={cn("aspect-video w-full rounded-2xl")} />
+          <div className={cn("aspect-video w-full rounded-2xl bg-slate-955 border border-slate-800/80 flex flex-col items-center justify-center gap-2")}>
+            <Skeleton variant="circular" className={cn("w-10 h-10")} />
+            <Skeleton variant="text" className={cn("w-28 h-3")} />
+          </div>
           <div className={cn("grid grid-cols-3 gap-2 pt-1")}>
             <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
             <Skeleton variant="rectangular" className={cn("h-10 w-full rounded-xl")} />
@@ -321,7 +364,7 @@ export const AutoVideoStudioSkeleton: FC<{ className?: string }> = ({ className 
 );
 
 export const PipelineWizardSkeleton: FC<{ className?: string }> = ({ className }) => (
-  <div className={cn("flex-1 w-full h-full flex flex-col min-h-0 bg-slate-950 text-slate-100 font-sans overflow-hidden select-none", className)}>
+  <div className={cn("flex-1 w-full h-full flex flex-col min-h-0 bg-slate-955 text-slate-100 font-sans overflow-hidden select-none", className)}>
     <div className={cn("h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 shadow-sm")}>
       <div className={cn("flex items-center gap-3")}>
         <Skeleton variant="button" className={cn("w-24 h-8 rounded-lg")} />

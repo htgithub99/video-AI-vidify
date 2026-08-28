@@ -24,9 +24,5 @@ export default function TabContentLoading({ activeTab }: TabContentLoadingProps)
     return <SettingsSkeleton />;
   }
 
-  if (_.isEqual(activeTab, AppTab.STUDIO)) {
-    return <PipelineWizardSkeleton />;
-  }
-
   return <AutoVideoStudioSkeleton />;
 }
