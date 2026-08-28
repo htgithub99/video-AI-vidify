@@ -693,6 +693,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       if (!selectedDuration.some((label) => label.includes(requestedResolution))) {
         appLog(`[Grok Imagine] Độ phân giải ${requestedResolution} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
       }
+      appLog(`[Grok Imagine] Cấu hình yêu cầu: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}, Chrome ${options.visualConfig?.chromeHeadless === false ? "hiển thị" : "chạy ngầm"}.`);
     }
 
     const initialImageUrls = await page.locator("img").evaluateAll((elements) => elements.map((element) => (element as HTMLImageElement).currentSrc || (element as HTMLImageElement).src));

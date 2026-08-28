@@ -1369,7 +1369,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           }
         };
 
-        if (_.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat)) {
+        if (_.every([!isCinematicEpisodeGenre(config.genre), _.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat)], Boolean)) {
           appendLog(T.logBatchImageStreamStart(executionVisualConfig.generateType, _.size(remainingTargetScenes)));
           const sceneBatchItems = _.map(remainingTargetScenes, (scene) => {
             const sceneGenerateType = resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds);
@@ -1495,7 +1495,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
               visualConfig: {
                 ...thumbnailVisualConfigPayload,
                 style: currentThumbnailStyle || currentStylePreset,
-                batchTabCount: _.min([3, _.size(unifiedThumbnailItems)]) || 1,
+                batchTabCount: _.size(unifiedThumbnailItems),
               },
               style: currentThumbnailStyle || currentStylePreset,
               sandboxConfig: sandboxConfigPayload,

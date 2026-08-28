@@ -57,6 +57,9 @@ const applyProjectToState = (proj: VideoProject, actions: AutoVideoFormActions) 
     if (proj.visualConfig.generateType) actions.setGenerateType(proj.visualConfig.generateType);
     if (!_.isUndefined(proj.visualConfig.maxVideoScenes)) actions.setMaxVideoScenes(proj.visualConfig.maxVideoScenes);
     if (proj.visualConfig.aspectRatio) actions.setAspectRatio(proj.visualConfig.aspectRatio as AspectRatio);
+    if (proj.visualConfig.videoDuration) actions.setVideoDuration(proj.visualConfig.videoDuration);
+    if (proj.visualConfig.videoResolution) actions.setVideoResolution(proj.visualConfig.videoResolution);
+    if (!_.isUndefined(proj.visualConfig.chromeHeadless)) actions.setChromeHeadless(proj.visualConfig.chromeHeadless);
     if (proj.visualConfig.stylePreset) actions.setStylePreset(proj.visualConfig.stylePreset);
     if (proj.visualConfig.styleBackgroundMode) actions.setStyleBackgroundMode(normalizeBackgroundMode(proj.visualConfig.styleBackgroundMode));
     actions.setStyleTextInImageMode(SCENE_TEXT_MODE);

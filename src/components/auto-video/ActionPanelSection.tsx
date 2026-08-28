@@ -14,9 +14,12 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
     <div className="bg-slate-900/90 dark:bg-slate-900/90 border border-slate-700/60 dark:border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl transition-all duration-300">
       <div className="flex items-center gap-3 w-full relative z-10">
         <Button
+          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
           size={REFACTOR_CONSTANTS.SIZE_LG}
-          onClick={() => {
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
             void handleStartAutoGenerate();
           }}
           disabled={isProcessing || !isReady}
@@ -31,9 +34,14 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
 
         {isProcessing && (
           <Button
+            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
             variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
             size={REFACTOR_CONSTANTS.SIZE_LG}
-            onClick={cancelPipeline}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              cancelPipeline();
+            }}
             disabled={isCancelling}
             isLoading={isCancelling}
             className="flex-1 py-4 text-sm font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xl shadow-red-600/30 active:scale-95"
