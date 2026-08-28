@@ -58,7 +58,7 @@ import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 
-interface BrowserSession { context: BrowserContext; page: Page; account: GoogleAccount; }
+interface BrowserSession { context: BrowserContext; page: Page; account: GoogleAccount; ownsContext?: boolean; }
 
 type GeminiVisualConfig = Partial<VisualConfig>;
 
@@ -496,7 +496,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean): Promise
         appLog(REFACTOR_CONSTANTS.MSG_ALREADY_LOGGED_IN.replace("{0}", account.email));
       }
 
-      return { context, page, account };
+      return { context, page, account, ownsContext: true };
     } catch (error: unknown) {
       appError(REFACTOR_CONSTANTS.MSG_LAUNCH_LOGIN_ERR.replace("{0}", account.email).replace("{1}", getErrorMessage(error)));
       if (context) {
@@ -527,7 +527,13 @@ export async function closeActiveBrowser() {
   if (activeBrowserInstance) {
     appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
     try {
-      await activeBrowserInstance.context.close();
+      if (activeBrowserInstance.ownsContext === false) {
+        const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), "grok.com"));
+        await Promise.allSettled(_.map(geminiPages, (page) => page.close()));
+        if (!activeBrowserInstance.page.isClosed() && !_.includes(activeBrowserInstance.page.url(), "grok.com")) await activeBrowserInstance.page.close();
+      } else {
+        await activeBrowserInstance.context.close();
+      }
     } catch (e) {}
     activeBrowserInstance = null;
   }
@@ -584,6 +590,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 let grokPage: Page | null = null;
 let grokBrowser: Browser | null = null;
 let grokChromeProcess: ChildProcess | null = null;
+let activeGrokLocalProjectId: string | null = null;
 
 const waitForGrokChrome = async (): Promise<void> => {
   for (let attempt = 0; attempt < REFACTOR_CONSTANTS.GROK_CDP_READY_ATTEMPTS; attempt++) {
@@ -618,14 +625,18 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
   grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || await context.newPage();
   const sharedGeminiPage = await context.newPage();
-  activeBrowserInstance = { context, page: sharedGeminiPage, account };
+  activeBrowserInstance = { context, page: sharedGeminiPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
   appLog(`[Grok Imagine] Sử dụng Chrome của tài khoản ${account.email}.`);
   return { context, page: grokPage };
 };
 
 const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
-  if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) return { context: grokPage.context(), page: grokPage };
+  if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) {
+    const duplicateGrokPages = _.filter(grokPage.context().pages(), (page) => page !== grokPage && _.includes(page.url(), "grok.com/imagine"));
+    await Promise.allSettled(_.map(duplicateGrokPages, (page) => page.close()));
+    return { context: grokPage.context(), page: grokPage };
+  }
   grokBrowser = null;
   grokPage = null;
   grokChromeProcess = null;
@@ -635,6 +646,8 @@ const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ conte
     const existingPage = existingContext && (_.find(existingContext.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || _.first(existingContext.pages()));
     if (existingContext && existingPage) {
       grokPage = existingPage;
+      const duplicateGrokPages = _.filter(existingContext.pages(), (page) => page !== existingPage && _.includes(page.url(), "grok.com/imagine"));
+      await Promise.allSettled(_.map(duplicateGrokPages, (page) => page.close()));
       return { context: existingContext, page: existingPage };
     }
   } catch {}
@@ -662,9 +675,14 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       throw new Error("Grok Imagine đang chờ xác nhận tuổi trong hồ sơ Chrome của tài khoản hiện tại.");
     }
 
-    const createNew = page.getByRole("button", { name: /Tạo mới|Create new/i }).first();
-    if (await createNew.isVisible().catch(() => false)) await createNew.click().catch(() => {});
-    await page.waitForTimeout(400);
+    const localProjectId = _.toString(options.sandboxConfig?.localProjectId || options.sandboxConfig?.projectId);
+    if (!_.isEmpty(localProjectId) && !_.isEqual(activeGrokLocalProjectId, localProjectId)) {
+      const createNew = page.getByRole("button", { name: /Tạo mới|Dự án mới|Create new|New project/i }).first();
+      if (await createNew.isVisible().catch(() => false)) await createNew.click().catch(() => {});
+      activeGrokLocalProjectId = localProjectId;
+      await page.waitForTimeout(400);
+      appLog(`[Grok Imagine] Đã gắn một room duy nhất cho dự án ${localProjectId}.`);
+    }
 
     const isVideo = options.visualConfig?.generateType === GenerateType.Video;
     const mode = page.getByRole("radio", { name: isVideo ? /Video/i : /Hình ảnh|Image/i }).first();
@@ -1513,44 +1531,41 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   const release = await imageGenMutex.acquire();
   const results: BatchImageResult[] = [];
   let browserInstance: BrowserSession | null = null;
+  let batchWorkerPages: Page[] = [];
 
   try {
-    browserInstance = await launchBrowserForAccount(visualConfig?.chromeHeadless);
+    browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
     const context = browserInstance.context;
 
-    globalBatchPages = _.filter(globalBatchPages, (p) => !p.isClosed());
-    if (!_.includes(globalBatchPages, browserInstance.page)) {
-      globalBatchPages.unshift(browserInstance.page);
-    }
+    const reusablePages = _.uniq(
+      _.filter(
+        _.concat([browserInstance.page], globalBatchPages, context.pages()),
+        (page) => !page.isClosed() && !_.includes(page.url(), "grok.com") && (_.isEqual(page.url(), "about:blank") || _.includes(page.url(), "gemini.google.com")),
+      ),
+    );
+    const candidates = _.take(reusablePages, maxTabs);
+    const surplusPages = _.drop(reusablePages, maxTabs);
+    await Promise.allSettled(_.map(surplusPages, (page) => page.close()));
+    while (_.lt(_.size(candidates), maxTabs)) candidates.push(await createGeminiBatchPage(context));
 
-    const readyPages: Page[] = [];
-    const candidates = globalBatchPages.slice(0, maxTabs);
-    const preparationResults = await Promise.allSettled(_.map(candidates, prepareGeminiBatchPage));
-    _.forEach(preparationResults, (result, index) => {
-      const page = candidates[index];
-      if (_.isEqual(result.status, "fulfilled")) {
-        readyPages.push(page);
-        return;
+    const prepareExistingTab = async (page: Page, index: number): Promise<Page | null> => {
+      for (let attempt = SecurityConstants.ZERO; attempt < GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM; attempt++) {
+        try {
+          await prepareGeminiBatchPage(page, index);
+          return page;
+        } catch (error) {
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
+        }
       }
-      page.close().catch(() => {});
-    });
-
-    const maximumReplacementAttempts = _.multiply(maxTabs, 2);
-    let replacementAttempts = SecurityConstants.ZERO;
-    while (_.lt(_.size(readyPages), maxTabs) && _.lt(replacementAttempts, maximumReplacementAttempts)) {
-      replacementAttempts = _.add(replacementAttempts, SecurityConstants.DEFAULT_AMOUNT);
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", _.toString(_.subtract(maxTabs, _.size(readyPages)))));
-      try {
-        const page = await createPreparedGeminiBatchPage(context, _.size(readyPages));
-        readyPages.push(page);
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace(SecurityConstants.PLACEHOLDER_0, _.toString(_.size(readyPages))).replace(SecurityConstants.PLACEHOLDER_1, _.toString(maxTabs)));
-      } catch (error) {
-        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
-      }
-    }
+      await page.close().catch(() => {});
+      return null;
+    };
+    const preparedPages = await Promise.all(_.map(candidates, prepareExistingTab));
+    const readyPages = _.compact(preparedPages);
     if (_.isEmpty(readyPages)) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", BACKEND_MESSAGES.UNKNOWN_ERROR));
     globalBatchPages = readyPages;
     const activePages = readyPages.slice(0, maxTabs);
+    batchWorkerPages = activePages;
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
@@ -1784,7 +1799,15 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     });
   } finally {
     if (browserInstance) {
-      await browserInstance.context.close().catch(() => {});
+      if (browserInstance.ownsContext === false) {
+        await Promise.allSettled(_.map(batchWorkerPages, (page) => page.isClosed() ? Promise.resolve() : page.close()));
+        globalBatchPages = _.filter(globalBatchPages, (page) => !page.isClosed());
+        if (!browserInstance.page.isClosed() && !_.includes(browserInstance.page.url(), "grok.com")) await browserInstance.page.close().catch(() => {});
+        activeBrowserInstance = null;
+        activeBrowserHeadless = undefined;
+      } else {
+        await browserInstance.context.close().catch(() => {});
+      }
     }
     release();
   }

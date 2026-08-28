@@ -4,7 +4,7 @@ import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
 export interface ProjectImageItem { sceneId: string; prompt: string; generateType?: GenerateType; idempotencyKey?: string; referenceImages?: string[]; continuityKey?: string; }
-export interface ProjectImageResult { sceneId: string; success: boolean; base64?: string; fallbackUrl?: string; warning?: string; assetType?: GenerateType.Image | GenerateType.Video; }
+export interface ProjectImageResult { sceneId: string; success: boolean; base64?: string; fallbackUrl?: string; warning?: string; assetType?: GenerateType.Image | GenerateType.Video; newProjectId?: string; }
 type ImagePayloadFactory = (item: ProjectImageItem) => object;
 interface ProjectImageGenerationConfig {
   items: ProjectImageItem[];
@@ -72,7 +72,7 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
   const base64 = _.defaultTo(_.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY), _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY));
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY, response.success);
-  return { sceneId: item.sceneId, success: _.every([response.success, _.some([generationSucceeded, _.isEqual(item.generateType, GenerateType.Image)], Boolean), _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl)], Boolean), base64, fallbackUrl, warning: response.error, assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image, };
+  return { sceneId: item.sceneId, success: _.every([response.success, _.some([generationSucceeded, _.isEqual(item.generateType, GenerateType.Image)], Boolean), _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl)], Boolean), base64, fallbackUrl, warning: response.error, assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image, newProjectId: _.get(response.data, "newProjectId"), };
 };
 
 export const createProjectImageUrl = (result: ProjectImageResult): string => {

@@ -229,8 +229,6 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
     setIsProcessing(true);
     setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.START);
     setCurrentStepIndex(1);
-    setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-    if (resetDerivedPresentation) setActiveCreatedProject(null);
 
     let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
     setLogs(_.clone(currentLogs));
@@ -437,6 +435,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             batchDelay: config.batchDelay,
             videoDuration: config.videoDuration,
             videoResolution: config.videoResolution,
+            flowProjectId: selectedProj?.visualConfig?.flowProjectId,
             thumbnailCount: config.thumbnailCount,
             thumbnailReferenceImages: config.thumbnailReferenceImages,
             thumbnailSceneReferenceImages: config.thumbnailSceneReferenceImages,
@@ -1302,6 +1301,10 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
               );
 
               if (imageResult.success) {
+                if (!_.isEmpty(imageResult.newProjectId) && !_.isEqual(sandboxConfigPayload.flowProjectId, imageResult.newProjectId)) {
+                  sandboxConfigPayload.flowProjectId = imageResult.newProjectId;
+                  voiceUpdatedProj.visualConfig.flowProjectId = imageResult.newProjectId;
+                }
                 const base64Val = imageResult.base64;
                 const fallbackUrl = imageResult.fallbackUrl;
                 if (base64Val) {

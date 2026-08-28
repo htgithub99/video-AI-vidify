@@ -135,7 +135,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
 
-  const presentationProject = isProcessing && !_.isEqual(activeCreatedProject?.status, REFACTOR_CONSTANTS.STATUS_GENERATING) ? null : activeCreatedProject;
+  const presentationProject = activeCreatedProject;
 
   const { startPipeline, cancelPipeline, setActiveCreatedProject, setRenderedVideoUrl, setLogs } = pipelineActions;
 
