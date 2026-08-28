@@ -82,17 +82,17 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ render
       )}
 
       {activeCreatedProject && (
-        <div className={cn("grid grid-cols-3 gap-2 pt-1")}>
-          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)} title={regenerationTexts.voice} className={cn("py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-blue-400/30 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
-            {isVoiceActive ? <RefreshCw className={cn("w-4 h-4 text-cyan-100 animate-spin")} /> : <Mic className={cn("w-4 h-4 text-cyan-100")} />}
+        <div className={cn("grid grid-cols-3 gap-1.5 sm:gap-2 pt-1")}>
+          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)} title={regenerationTexts.voice} className={cn("py-2 px-1 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-blue-400/30 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
+            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-cyan-100 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5 text-cyan-100")} />}
             <span className={cn("truncate")}>{regenerationTexts.voice}</span>
           </Button>
-          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)} title={regenerationTexts.images} className={cn("py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-purple-400/30 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-purple-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
-            {isImagesActive ? <RefreshCw className={cn("w-4 h-4 text-pink-100 animate-spin")} /> : <ImageIcon className={cn("w-4 h-4 text-pink-100")} />}
+          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)} title={regenerationTexts.images} className={cn("py-2 px-1 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-purple-400/30 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-purple-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
+            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-pink-100 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5 text-pink-100")} />}
             <span className={cn("truncate")}>{regenerationTexts.images}</span>
           </Button>
-          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)} title={regenerationTexts.render} className={cn("py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-emerald-400/30 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
-            <RefreshCw className={`w-4 h-4 text-teal-100 ${isRenderActive ? "animate-spin" : ""}`} />
+          <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} disabled={isAnyDisabled} onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)} title={regenerationTexts.render} className={cn("py-2 px-1 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-emerald-400/30 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer")}>
+            <RefreshCw className={cn("w-3.5 h-3.5 text-teal-100", { "animate-spin": isRenderActive })} />
             <span className={cn("truncate")}>{regenerationTexts.render}</span>
           </Button>
         </div>

@@ -84,7 +84,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
       </Button>
 
       {showAdvancedImageSettings && (
-        <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "sm:grid-cols-5")}>
+        <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "!grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3 lg:!grid-cols-5")}>
           <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.styleBgModeLabel} />
           <SceneTextModeSelect value={textMode} onChange={setTextMode} language={language} label={T.styleTextModeLabel} />
           <ImageFocusModeSelect value={imageFocusMode} onChange={setImageFocusMode} language={language} label={T.imageFocusModeLabel} />

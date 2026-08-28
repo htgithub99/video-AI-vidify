@@ -51,7 +51,10 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
   const [currentPage, setCurrentPage] = useState(1);
 
   React.useEffect(() => {
-    if (refetchLicense) refetchLicense();
+    refetchLicense?.();
+  }, []);
+
+  React.useEffect(() => {
     setCurrentPage(PROJECT_LIST_CONSTANTS.PAGE_ONE);
   }, [searchQuery, filterLang, filterGenre]);
 
@@ -133,13 +136,8 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
   );
 
   const totalPages = _.max([PROJECT_LIST_CONSTANTS.PAGE_ONE, _.ceil(filteredProjects.length / PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE)]) as number;
-  const validCurrentPage = _.min([currentPage, totalPages]) as number;
-
-  if (!_.isEqual(validCurrentPage, currentPage)) {
-    setCurrentPage(validCurrentPage);
-  }
-
-  const paginatedProjects = _.slice(filteredProjects, (validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE);
+  const safeCurrentPage = _.clamp(currentPage, 1, totalPages);
+  const paginatedProjects = _.slice(filteredProjects, (safeCurrentPage - 1) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, safeCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE);
   const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, "config.genre"), Boolean)))];
 
   return (
@@ -163,18 +161,18 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
       <div className={cn("flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between glass-card p-4 rounded-2xl")}>
         <div className={cn("flex flex-wrap items-center gap-2 w-full sm:w-auto")}>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn("px-3 py-1.5 h-8 text-[11px] font-bold rounded-xl transition-colors cursor-pointer select-none border", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.allLangs}
           </button>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn("px-3 py-1.5 h-8 text-[11px] font-bold rounded-xl transition-colors cursor-pointer select-none border", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.viBtn}
           </button>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)} className={cn("px-3 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer select-none", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-850")}>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)} className={cn("px-3 py-1.5 h-8 text-[11px] font-bold rounded-xl transition-colors cursor-pointer select-none border", _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN) ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30" : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850")}>
             {localT.enBtn}
           </button>
 
           {availableGenres.length > 2 && (
-            <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className={cn("bg-slate-900/90 border border-slate-800 text-slate-300 rounded-xl px-3 py-1.5 text-[11px] font-bold outline-none hover:border-slate-700 transition-all")}>
+            <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className={cn("bg-slate-900/90 border border-slate-800 text-slate-300 rounded-xl px-3 py-1.5 h-8 text-[11px] font-bold outline-none hover:border-slate-700 transition-all")}>
               <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
               {_.map(
                 _.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
@@ -266,18 +264,20 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                                 </button>
                               )}
                             </div>
-                            <div className={cn("w-24 h-14 bg-slate-950/90 border border-slate-800 rounded-2xl flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors shadow-inner")}>
-                              <Video className={cn("w-6 h-6 text-slate-700 group-hover:text-rose-500/60 transition-colors")} />
-                              {project.config.genre && (
-                                <div className={cn("absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis")} title={getGenreLabel(project.config.genre, currentLang)}>
-                                  {getGenreLabel(project.config.genre, currentLang)}
-                                </div>
-                              )}
+                            <div className={cn("w-14 h-14 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center justify-center shrink-0 group-hover:border-rose-500/40 transition-colors shadow-inner")}>
+                              <Video className={cn("w-6 h-6 text-slate-500 group-hover:text-rose-500 transition-colors")} />
                             </div>
-                            <div className={cn("space-y-0.5 min-w-0 flex-1")}>
-                              <h3 className={cn("font-extrabold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors truncate")} title={project.name}>
-                                {project.name}
-                              </h3>
+                            <div className={cn("space-y-1 min-w-0 flex-1")}>
+                              <div className={cn("flex items-center gap-2 min-w-0")}>
+                                <h3 className={cn("font-extrabold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors truncate")} title={project.name}>
+                                  {project.name}
+                                </h3>
+                                {project.config.genre && (
+                                  <span className={cn("px-1.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-[9px] font-bold font-mono text-rose-400 uppercase shrink-0 truncate max-w-[140px]")} title={getGenreLabel(project.config.genre, currentLang)}>
+                                    {getGenreLabel(project.config.genre, currentLang)}
+                                  </span>
+                                )}
+                              </div>
                               <p className={cn("text-slate-400 text-[11px] font-medium truncate leading-relaxed max-w-md")} title={project.description || t.No_description_1}>
                                 {project.description || t.No_description_1}
                               </p>
@@ -285,36 +285,36 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                           </div>
                         </td>
 
-                        <td className={cn("py-4 px-4 text-center")}>
+                        <td className={cn("py-4 px-4 text-center whitespace-nowrap")}>
                           <span className={cn("inline-flex items-center gap-1 bg-slate-900/80 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-xl text-[10px] font-bold")}>
                             <Globe className={cn("w-3 h-3 text-sky-400")} />
                             {project.config.language === COMMON_STRINGS.EN ? t.englishLanguage : t.vietnamLanguage}
                           </span>
                         </td>
 
-                        <td className={cn("py-4 px-4")}>
-                          <div className={cn("flex items-center justify-center gap-4 text-xs font-mono font-bold select-none")}>
-                            <div className={cn("flex items-center gap-1.5")} title={localT.videoTooltip}>
-                              <Video className={cn("w-4 h-4 text-blue-400")} />
-                              <span className={cn("text-slate-400")}>
+                        <td className={cn("py-4 px-4 whitespace-nowrap")}>
+                          <div className={cn("flex items-center justify-center gap-4 text-xs font-mono font-bold select-none whitespace-nowrap")}>
+                            <div className={cn("flex items-center gap-1.5 shrink-0")} title={localT.videoTooltip}>
+                              <Video className={cn("w-4 h-4 text-blue-400 shrink-0")} />
+                              <span className={cn("text-slate-400 whitespace-nowrap")}>
                                 <strong className={cn("text-blue-400")}>{usedVideos}</strong>
                                 <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVideo.toLocaleString()}
                               </span>
                             </div>
 
-                            <div className={cn("flex items-center gap-1.5")} title={localT.imageTooltip}>
-                              <Image className={cn("w-4 h-4 text-emerald-400")} />
-                              <span className={cn("text-slate-400")}>
+                            <div className={cn("flex items-center gap-1.5 shrink-0")} title={localT.imageTooltip}>
+                              <Image className={cn("w-4 h-4 text-emerald-400 shrink-0")} />
+                              <span className={cn("text-slate-400 whitespace-nowrap")}>
                                 <strong className={cn("text-emerald-400")}>{usedImages}</strong>
                                 <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitImage.toLocaleString()}
                               </span>
                             </div>
 
-                            <div className={cn("flex items-center gap-1.5")} title={localT.voiceTooltip}>
-                              <Mic className={cn("w-4 h-4 text-amber-400")} />
-                              <span className={cn("text-slate-400")}>
+                            <div className={cn("flex items-center gap-1.5 shrink-0")} title={localT.voiceTooltip}>
+                              <Mic className={cn("w-4 h-4 text-amber-400 shrink-0")} />
+                              <span className={cn("text-slate-400 whitespace-nowrap")}>
                                 <strong className={cn("text-amber-400")}>{usedVoice.toLocaleString()}</strong>
                                 <span className={cn("mx-0.5 text-slate-600")}>{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVoice.toLocaleString()}
@@ -323,10 +323,10 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                           </div>
                         </td>
 
-                        <td className={cn("py-4 px-4 text-xs text-slate-400 font-mono font-medium")}>
-                          <div className={cn("flex items-center gap-1.5")}>
-                            <Calendar className={cn("w-3.5 h-3.5 text-slate-500")} />
-                            <span>{dateStr}</span>
+                        <td className={cn("py-4 px-4 text-xs text-slate-400 font-mono font-medium whitespace-nowrap")}>
+                          <div className={cn("flex items-center gap-1.5 whitespace-nowrap")}>
+                            <Calendar className={cn("w-3.5 h-3.5 text-slate-500 shrink-0")} />
+                            <span className={cn("whitespace-nowrap")}>{dateStr}</span>
                           </div>
                         </td>
 
@@ -392,16 +392,16 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
           {totalPages > 1 && (
             <div className={cn("flex items-center justify-between p-4 border-t border-slate-800/80 bg-slate-950/40")}>
               <div className={cn("text-[11px] text-slate-400 font-medium font-mono")}>
-                {localT.showing} {(validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
+                {localT.showing} {(safeCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([safeCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
               </div>
               <div className={cn("flex items-center gap-2")}>
-                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)} disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)} disabled={_.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
                   {t.Previous}
                 </Button>
                 <div className={cn("text-xs text-slate-300 font-bold font-mono px-3 py-1 rounded-xl bg-slate-900 border border-slate-800")}>
-                  {validCurrentPage} / {totalPages}
+                  {safeCurrentPage} / {totalPages}
                 </div>
-                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)} disabled={_.isEqual(validCurrentPage, totalPages)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(validCurrentPage, totalPages) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)} disabled={_.isEqual(safeCurrentPage, totalPages)} className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", _.isEqual(safeCurrentPage, totalPages) ? "text-slate-600 cursor-not-allowed" : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white")}>
                   {t.Next}
                 </Button>
               </div>

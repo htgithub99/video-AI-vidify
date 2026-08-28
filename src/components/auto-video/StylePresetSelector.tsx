@@ -77,36 +77,38 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
         )}
       </div>
 
-      <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2.5")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2.5 sm:gap-3")}>
         {_.map(filteredPresets, (preset) => {
           const isSelected = _.isEqual(currentPreset.id, preset.id);
           const name = isVi ? preset.nameVi : preset.name;
           const tagline = preset.tagline || preset.description;
 
           return (
-            <button key={preset.id} type="button" onClick={() => onSelectStyle(preset.id)} title={`${name} - ${tagline}`} className={cn("relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group", isSelected ? (isPurple ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30") : isPurple ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40" : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40")}>
-              <div className={cn("p-2 rounded-xl text-lg flex items-center justify-center shrink-0 border", isPurple ? (isSelected ? "bg-purple-900 border-purple-700 text-purple-300" : "bg-purple-950/80 border-purple-800/80 text-purple-400") : isSelected ? "bg-blue-900 border-blue-700 text-blue-300" : "bg-blue-950/80 border-blue-800/80 text-blue-400")}>{preset.icon}</div>
+            <button key={preset.id} type="button" onClick={() => onSelectStyle(preset.id)} title={`${name} - ${tagline}`} className={cn("relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group", isSelected ? (isPurple ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30") : isPurple ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40" : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40")}>
+              <div className={cn("p-1.5 sm:p-2 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 border", isPurple ? (isSelected ? "bg-purple-900 border-purple-700 text-purple-300" : "bg-purple-950/80 border-purple-800/80 text-purple-400") : isSelected ? "bg-blue-900 border-blue-700 text-blue-300" : "bg-blue-950/80 border-blue-800/80 text-blue-400")}>{preset.icon}</div>
 
-              <div className={cn("min-w-0 flex-1 flex flex-col justify-center overflow-hidden")}>
-                <span className={cn("text-xs block leading-tight truncate whitespace-nowrap font-bold", isSelected ? (isPurple ? "text-purple-300 font-extrabold" : "text-blue-300 font-extrabold") : "text-slate-100")} title={name}>
-                  {name}
-                </span>
-                <span className={cn("text-[10px] block truncate whitespace-nowrap leading-tight mt-0.5 font-medium", isSelected ? (isPurple ? "text-purple-400" : "text-blue-400") : "text-slate-400")} title={tagline}>
+              <div className={cn("min-w-0 flex-1 flex flex-col justify-center overflow-hidden pr-1")}>
+                <div className={cn("flex items-center gap-1.5 min-w-0")}>
+                  <span className={cn("text-xs block leading-tight truncate font-bold", isSelected ? (isPurple ? "text-purple-300 font-extrabold" : "text-blue-300 font-extrabold") : "text-slate-100")} title={name}>
+                    {name}
+                  </span>
+                  {recommendedIds.has(preset.id) && (
+                    <span className={cn("text-[8px] uppercase tracking-wider text-amber-400 font-bold bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded font-mono shrink-0")} title={uiTexts.recommendedBadge}>
+                      {uiTexts.recommendedBadge}
+                    </span>
+                  )}
+                </div>
+                <span className={cn("text-[10px] block truncate leading-tight mt-0.5 font-medium", isSelected ? (isPurple ? "text-purple-400" : "text-blue-400") : "text-slate-400")} title={tagline}>
                   {tagline}
                 </span>
               </div>
 
               {isSelected ? (
-                <div className={cn("w-4 h-4 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs ml-1", isPurple ? "bg-purple-600" : "bg-blue-600")}>
+                <div className={cn("w-4 h-4 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs ml-auto", isPurple ? "bg-purple-600" : "bg-blue-600")}>
                   <Check className={cn("w-2.5 h-2.5 stroke-[3.5]")} />
                 </div>
               ) : (
-                <div className={cn("w-3.5 h-3.5 rounded-full border border-slate-700 shrink-0 ml-1 group-hover:border-slate-500")} />
-              )}
-              {recommendedIds.has(preset.id) && (
-                <span className={cn("absolute right-2 top-1 text-[8px] uppercase tracking-wide text-amber-400 font-bold bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded font-mono")} title={uiTexts.recommendedBadge}>
-                  {uiTexts.recommendedBadge}
-                </span>
+                <div className={cn("w-3.5 h-3.5 rounded-full border border-slate-700 shrink-0 ml-auto group-hover:border-slate-500")} />
               )}
             </button>
           );

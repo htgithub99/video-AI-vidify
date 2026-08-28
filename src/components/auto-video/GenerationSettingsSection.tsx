@@ -62,7 +62,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
       </div>
 
       <div className={cn("space-y-3.5")}>
-        <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3")}>
           {!forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>

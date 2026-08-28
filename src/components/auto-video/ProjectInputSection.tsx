@@ -121,7 +121,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
         <textarea rows={4} value={scriptContent} onChange={(e) => setScriptContent(e.target.value)} placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea} className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none shadow-inner transition-all placeholder:text-slate-500 font-sans")} />
       </div>
 
-      <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
         {_.map(selectFields, ({ label, icon, value, onChange, options, optionGroups }, fieldIndex) => (
           <div key={label} className={cn("space-y-1.5")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block truncate")}>{label}</span>

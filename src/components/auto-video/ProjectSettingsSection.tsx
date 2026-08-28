@@ -63,7 +63,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({ 
         </div>
       </div>
 
-      <div className={cn("grid grid-cols-1 sm:grid-cols-5 gap-3 items-end")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end")}>
         <div className={cn("space-y-1")}>
           <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblProjectName}</span>
           <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={REFACTOR_CONSTANTS.PROJECT_NAME_PLACEHOLDER} className={cn("w-full bg-slate-955/90 border border-slate-800/90 focus:border-purple-500/80 text-slate-200 p-2.5 rounded-xl text-xs outline-none transition-colors")} />

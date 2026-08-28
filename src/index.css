@@ -5,6 +5,16 @@
   --font-logo: "Merienda", cursive;
   --font-mono: "JetBrains Mono", monospace;
 
+  --radius-xs: 0.75rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.75rem;
+  --radius: 0.75rem;
+
   --color-slate-955: #000000;
   --color-slate-950: #09090b;
   --color-slate-900: #18181b;
@@ -457,10 +467,12 @@ input.accent-amber-500::-moz-range-thumb {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem !important;
 }
 :root.light .glass-panel {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.75rem !important;
 }
 
 .glass-card {
@@ -468,6 +480,7 @@ input.accent-amber-500::-moz-range-thumb {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-card:hover {
@@ -477,6 +490,7 @@ input.accent-amber-500::-moz-range-thumb {
 :root.light .glass-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 0.75rem !important;
 }
 :root.light .glass-card:hover {
   border-color: rgba(217, 119, 6, 0.4);

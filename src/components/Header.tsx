@@ -73,7 +73,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
       <div className={cn("w-full max-w-[100vw] xl:max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 py-2.5 flex items-center justify-between gap-2 sm:gap-4 relative")}>
         <div className={cn("flex items-center gap-2 sm:gap-3 min-w-0")}>
           {onToggleMobileMenu && (
-            <button type="button" onClick={onToggleMobileMenu} className={cn("md:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0")} title="Menu">
+            <button type="button" onClick={onToggleMobileMenu} className={cn("xl:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0")} title="Menu">
               {isMobileMenuOpen ? <X className={cn("w-4 h-4 text-rose-400")} /> : <Menu className={cn("w-4 h-4")} />}
             </button>
           )}

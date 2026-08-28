@@ -59,6 +59,7 @@ const createProjectRecord = async (project: VideoProject): Promise<VideoProject>
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);
     const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
@@ -634,9 +635,9 @@ export default function App() {
         <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
 
         <main className={cn("flex-1 min-h-0 overflow-hidden relative bg-slate-955")}>
-          <Suspense fallback={<TabContentLoading />}>
+          <Suspense fallback={<TabContentLoading activeTab={activeTab} />}>
             {isSwitchingWorkspaceTab ? (
-              <TabContentLoading />
+              <TabContentLoading activeTab={activeTab} />
             ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
               <PipelineWizard
                 key={selectedProjectId}

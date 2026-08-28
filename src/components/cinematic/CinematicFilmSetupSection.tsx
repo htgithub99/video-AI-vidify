@@ -44,7 +44,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
 
       <textarea rows={5} value={idea} onChange={(event) => setIdea(event.target.value)} placeholder={texts.PLACEHOLDER} className={cn("w-full bg-slate-950/90 border border-slate-800 focus:border-amber-500 text-slate-100 p-4 rounded-2xl text-xs leading-relaxed outline-none resize-none placeholder:text-slate-600 transition-all shadow-inner")} />
 
-      <div className={cn("grid grid-cols-2 lg:grid-cols-4 gap-3")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
         <div className={cn("space-y-1.5 min-w-0")}>
           <span className={cn("text-[10px] font-mono font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider truncate")} title={texts.FORMAT_LABEL}>
             <Film className={cn("w-3 h-3 text-amber-400 shrink-0")} /> <span className={cn("truncate")}>{texts.FORMAT_LABEL}</span>

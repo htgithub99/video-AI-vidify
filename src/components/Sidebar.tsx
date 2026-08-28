@@ -123,7 +123,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
     <aside className={cn("bg-slate-955 border-r border-slate-800/80 text-slate-200 flex flex-col transition-all duration-300 h-full select-none backdrop-blur-md z-20", isCollapsed ? "w-18" : "w-64")}>
       <div className={cn("p-4 border-b border-slate-800/80 flex flex-col items-center justify-center relative")}>
         {onCloseMobile && (
-          <button onClick={onCloseMobile} className={cn("md:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition-colors")} title="Đóng menu">
+          <button onClick={onCloseMobile} className={cn("xl:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition-colors")} title="Đóng menu">
             <X className={cn("w-4 h-4")} />
           </button>
         )}
@@ -151,7 +151,12 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
 
       <nav className={cn("flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar")}>
         {_.map(
-          _.filter(menuItems, (item) => !item.hide),
+          _.filter(menuItems, (item) => {
+            if (item.hide) return false;
+            const isManagementTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab);
+            if (isManagementTab && item.requiresProject) return false;
+            return true;
+          }),
           (item) => {
             const isSelected = _.isEqual(activeTab, item.id);
             const isDisabled = item.requiresProject && !selectedProjectId;
@@ -160,7 +165,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
         )}
       </nav>
 
-      <div className={cn("hidden md:block p-3 border-t border-slate-800/80 bg-slate-950/40")}>
+      <div className={cn("hidden xl:block p-3 border-t border-slate-800/80 bg-slate-950/40")}>
         <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className={cn("w-full flex items-center justify-center gap-2 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-850 rounded-xl transition-all shadow-none")}>
           {isCollapsed ? <ChevronRight className={cn("w-4 h-4")} /> : <ChevronLeft className={cn("w-4 h-4")} />}
           {!isCollapsed && <span className={cn("text-xs font-mono font-bold")}>{texts.COLLAPSE}</span>}
@@ -171,10 +176,10 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
 
   return (
     <>
-      <div className={cn("hidden md:flex h-full shrink-0")}>{sidebarContent}</div>
+      <div className={cn("hidden xl:flex h-full shrink-0")}>{sidebarContent}</div>
 
       {isMobileOpen && (
-        <div className={cn("md:hidden fixed inset-0 z-50 flex")}>
+        <div className={cn("xl:hidden fixed inset-0 z-50 flex")}>
           <div className={cn("fixed inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200")} onClick={onCloseMobile} />
           <div className={cn("relative z-50 h-full animate-in slide-in-from-left duration-200")}>{sidebarContent}</div>
         </div>
