@@ -25,7 +25,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
 
   const recommendedIds = useMemo(() => new Set(getRecommendedStylePresetIds(genre)), [genre]);
 
-  const currentPreset = useMemo(() => resolveStylePreset(selectedStyle);, [selectedStyle]);
+  const currentPreset = useMemo(() => resolveStylePreset(selectedStyle), [selectedStyle]);
 
   const filteredPresets = useMemo(() => {
     const categoryPresets = _.isEqual(activeCategory, "all") ? presetsList : _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));

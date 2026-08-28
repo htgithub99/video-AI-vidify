@@ -91,6 +91,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     promptInputMethod,
     sampleCount,
     videoDuration,
+    videoResolution,
     geminiChatSpeed,
     batchDelay,
     ffmpegQuality,
@@ -114,6 +115,8 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     setGenerateType,
     setMaxVideoScenes,
     setAspectRatio,
+    setVideoDuration,
+    setVideoResolution,
     setChromeHeadless,
     setStylePreset,
     setStyleBackgroundMode,
@@ -301,6 +304,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       promptInputMethod,
       sampleCount,
       videoDuration,
+      videoResolution,
       chromeHeadless,
       geminiChatSpeed,
       batchDelay,
@@ -423,6 +427,10 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
                 forceVideoOnly={cinematicMode}
                 chromeHeadless={chromeHeadless}
                 setChromeHeadless={setChromeHeadless}
+                videoDuration={videoDuration}
+                setVideoDuration={setVideoDuration}
+                videoResolution={videoResolution}
+                setVideoResolution={setVideoResolution}
               />
 
               {!cinematicMode && (

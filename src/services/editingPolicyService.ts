@@ -56,9 +56,7 @@ const normalizeTransition = (scene: StoryboardScene, nextScene: StoryboardScene 
   if (!GENTLE_TRANSITIONS.has(requested)) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
   }
-  // Continuous action, dialogue, eyelines and prop handoffs need an invisible cut.
   if (sameSequence || actionHandoff) return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
-  // A dissolve is meaningful only for a genuine reflective/time/location bridge.
   if (_.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE)) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE;
   }
@@ -80,7 +78,6 @@ const resolveCinematicCameraMotion = (scene: StoryboardScene, index: number, tot
     return REPEATED_MOTION_ALTERNATIVES[index % REPEATED_MOTION_ALTERNATIVES.length];
   }
 
-  // Flat/cartoon frames need less synthetic movement to keep line art stable.
   if (flatStyle && index % 6 !== 3) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
   return GENTLE_MOTION_RHYTHM[index % GENTLE_MOTION_RHYTHM.length];
 };

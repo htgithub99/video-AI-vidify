@@ -47,7 +47,8 @@ import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
-import { BrowserContext, Locator, Page } from "playwright";
+import { Browser, BrowserContext, Locator, Page } from "playwright";
+import { ChildProcess, spawn } from "child_process";
 import _ from "lodash";
 import { removeVideoAudioTrack } from "../utils/videoAssetProcessor.js";
 import { captureDomDiagnostics } from "./domDiagnosticsService.js";
@@ -70,7 +71,7 @@ const normalizeFlowProjectId = (projectId?: string): string => {
 
 const dismissFlowOnboarding = async (page: Page): Promise<void> => {
   for (let pass = 0; pass < 5; pass++) {
-    const dialog = page.locator('[role="dialog"]:visible').last();
+    const dialog = page.locator(`${REFACTOR_CONSTANTS.PLAYWRIGHT_DIALOG_SELECTOR}${REFACTOR_CONSTANTS.PLAYWRIGHT_VISIBLE_PSEUDO}`).last();
     if (!(await dialog.isVisible().catch(() => false))) return;
 
     await dialog
@@ -359,6 +360,7 @@ export class SimpleMutex {
 }
 
 export const imageGenMutex = new SimpleMutex();
+const grokGenerationMutex = new SimpleMutex();
 const geminiRequestPacingMutex = new SimpleMutex();
 let nextGeminiRequestAt = SecurityConstants.ZERO;
 
@@ -403,6 +405,7 @@ export interface ImageGeneratorOptions {
     generationMode?: ImageGenerationMode;
     geminiChatSpeed?: GeminiChatSpeed;
     videoDuration?: string;
+    videoResolution?: string;
     referenceImages?: string[];
     preserveVideoAudio?: boolean;
   };
@@ -578,9 +581,177 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
   return activeBrowserInstance;
 }
 
+let grokPage: Page | null = null;
+let grokBrowser: Browser | null = null;
+let grokChromeProcess: ChildProcess | null = null;
+
+const waitForGrokChrome = async (): Promise<void> => {
+  for (let attempt = 0; attempt < REFACTOR_CONSTANTS.GROK_CDP_READY_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}/json/version`);
+      if (response.ok) return;
+    } catch {}
+    await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS);
+  }
+  throw new Error("Không thể kết nối với cửa sổ Chrome dành cho Grok. Hãy đóng cửa sổ Grok cũ rồi thử lại.");
+};
+
+const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+  const account = await getNextAccount();
+  if (!account) throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
+  await closeActiveBrowser();
+  const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
+  const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
+  const chromeArgs = [
+    REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace("{0}", _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)),
+    REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace("{0}", profilePath),
+    REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
+    REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
+    "https://grok.com/imagine",
+  ];
+  if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
+  grokChromeProcess = spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
+  await waitForGrokChrome();
+  await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * 8);
+  grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
+  const context = _.first(grokBrowser.contexts());
+  if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
+  grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || await context.newPage();
+  const sharedGeminiPage = await context.newPage();
+  activeBrowserInstance = { context, page: sharedGeminiPage, account };
+  activeBrowserHeadless = chromeHeadless !== false;
+  appLog(`[Grok Imagine] Sử dụng Chrome của tài khoản ${account.email}.`);
+  return { context, page: grokPage };
+};
+
+const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+  if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) return { context: grokPage.context(), page: grokPage };
+  grokBrowser = null;
+  grokPage = null;
+  grokChromeProcess = null;
+  try {
+    grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
+    const existingContext = _.first(grokBrowser.contexts());
+    const existingPage = existingContext && (_.find(existingContext.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || _.first(existingContext.pages()));
+    if (existingContext && existingPage) {
+      grokPage = existingPage;
+      return { context: existingContext, page: existingPage };
+    }
+  } catch {}
+  return launchNativeGrokBrowser(chromeHeadless);
+};
+
+const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Promise<ImageGeneratorResult> => {
+  const release = await grokGenerationMutex.acquire();
+  try {
+    const { context, page } = await getOrLaunchGrokBrowser(options.visualConfig?.chromeHeadless);
+    await page.goto("https://grok.com/imagine", { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForTimeout(1500);
+
+    const loginButton = page.getByRole("button", { name: /Đăng nhập|Log in|Sign in/i }).first();
+    if (await loginButton.isVisible().catch(() => false)) {
+      if (options.visualConfig?.chromeHeadless === false) {
+        await page.bringToFront().catch(() => {});
+        await loginButton.click().catch(() => {});
+      }
+      throw new Error("Tài khoản Chrome hiện tại chưa đăng nhập Grok. Hãy bật Chrome Hiển thị và đăng nhập Grok một lần trong cửa sổ của tài khoản này.");
+    }
+
+    const ageGate = page.getByText(/xác nhận tuổi|confirm your age|verify your age/i).first();
+    if (await ageGate.isVisible().catch(() => false)) {
+      throw new Error("Grok Imagine đang chờ xác nhận tuổi trong hồ sơ Chrome của tài khoản hiện tại.");
+    }
+
+    const createNew = page.getByRole("button", { name: /Tạo mới|Create new/i }).first();
+    if (await createNew.isVisible().catch(() => false)) await createNew.click().catch(() => {});
+    await page.waitForTimeout(400);
+
+    const isVideo = options.visualConfig?.generateType === GenerateType.Video;
+    const mode = page.getByRole("radio", { name: isVideo ? /Video/i : /Hình ảnh|Image/i }).first();
+    if (await mode.isVisible().catch(() => false)) await mode.click();
+    await page.waitForTimeout(300);
+
+    const targetRatio = _.defaultTo(options.visualConfig?.aspectRatio, AspectRatio.SixteenNine);
+    const ratioButton = page.getByRole("button", { name: /Tỷ lệ khung hình|Aspect ratio/i }).first();
+    if (await ratioButton.isVisible().catch(() => false)) {
+      await ratioButton.click();
+      const ratioOption = page.getByRole("menuitemradio", { name: new RegExp(_.escapeRegExp(targetRatio), "i") }).first();
+      if (await ratioOption.isVisible().catch(() => false)) await ratioOption.click();
+    }
+
+    if (isVideo) {
+      const requestedDuration = _.includes(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, options.visualConfig?.videoDuration) ? _.toString(options.visualConfig?.videoDuration) : REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION;
+      const requestedResolution = _.includes(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, options.visualConfig?.videoResolution) ? _.toString(options.visualConfig?.videoResolution) : REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION;
+      const durationButton = page.getByRole("radio", { name: requestedDuration, exact: true }).first();
+      const resolutionButton = page.getByRole("radio", { name: requestedResolution, exact: true }).first();
+      if (await resolutionButton.isVisible().catch(() => false)) await resolutionButton.click().catch(() => {});
+      if (await durationButton.isVisible().catch(() => false)) await durationButton.click().catch(() => {});
+      const selectedDuration = await page.locator('[role="radio"][aria-checked="true"], button[aria-pressed="true"]').evaluateAll((nodes) => nodes.map((node) => (node.textContent || "").trim()).filter(Boolean)).catch(() => [] as string[]);
+      if (!selectedDuration.some((label) => label.includes(requestedDuration))) {
+        appLog(`[Grok Imagine] Thời lượng ${requestedDuration} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
+      }
+      if (!selectedDuration.some((label) => label.includes(requestedResolution))) {
+        appLog(`[Grok Imagine] Độ phân giải ${requestedResolution} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
+      }
+    }
+
+    const initialImageUrls = await page.locator("img").evaluateAll((elements) => elements.map((element) => (element as HTMLImageElement).currentSrc || (element as HTMLImageElement).src));
+    const initialVideoUrls = await page.locator("video").evaluateAll((elements) => elements.map((element) => (element as HTMLVideoElement).currentSrc || (element as HTMLVideoElement).src));
+    const editor = page.locator('[contenteditable="true"]').last();
+    await editor.waitFor({ state: "visible", timeout: 30000 });
+    await editor.fill(_.toString(options.prompt));
+    const sendButton = page.getByRole("button", { name: /^(Gửi|Send|Submit)$/i }).last();
+    if (await sendButton.isVisible().catch(() => false)) {
+      await sendButton.waitFor({ state: "visible", timeout: 10000 });
+      await page.waitForFunction(() => {
+        const button = document.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+        return Boolean(button && !button.disabled);
+      }, undefined, { timeout: 10000 });
+      await sendButton.click();
+    } else {
+      await editor.press("Enter");
+    }
+    await page.waitForTimeout(800);
+    const submittedPromptStillVisible = _.isEqual(_.trim(await editor.textContent().catch(() => "")), _.trim(_.toString(options.prompt)));
+    if (submittedPromptStillVisible && await sendButton.isEnabled().catch(() => false)) {
+      await sendButton.click();
+    }
+    appLog(`[Grok Imagine] Đã gửi prompt tạo ${isVideo ? "video" : "ảnh"}.`);
+
+    const mediaUrl = await page.waitForFunction(
+      ({ video, oldImages, oldVideos }) => {
+        if (video) {
+          const urls = Array.from(document.querySelectorAll("video")).map((node) => (node as HTMLVideoElement).currentSrc || (node as HTMLVideoElement).src);
+          return urls.find((url) => url && !oldVideos.includes(url) && /assets\.grok\.com\/.+\/generated\/.+\.mp4(?:\?|$)/i.test(url)) || null;
+        }
+        const urls = Array.from(document.querySelectorAll("img")).map((node) => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src);
+        return urls.find((url) => url && !oldImages.includes(url) && /imagine-public\.x\.ai\/.+\/images\/.+\.(?:jpg|jpeg|png|webp)(?:\?|$)/i.test(url)) || null;
+      },
+      { video: isVideo, oldImages: initialImageUrls, oldVideos: initialVideoUrls },
+      { timeout: isVideo ? 360000 : 180000 },
+    ).then((handle) => handle.jsonValue() as Promise<string | null>);
+
+    if (!mediaUrl) throw new Error("Grok Imagine không trả về URL media mới.");
+    const response = await context.request.get(mediaUrl, { timeout: 120000 });
+    if (!response.ok()) throw new Error(`Không tải được media Grok (${response.status()}).`);
+    const buffer = await response.body();
+    if (buffer.length < 10000) throw new Error("Media Grok tải về không hợp lệ.");
+    const contentType = response.headers()["content-type"] || (isVideo ? "video/mp4" : "image/jpeg");
+    const dataUrl = `data:${contentType};base64,${buffer.toString("base64")}`;
+    appLog(`[Grok Imagine] Đã tải trực tiếp ${isVideo ? "video" : "ảnh"} từ URL media (${buffer.length} bytes).`);
+    return { success: true, base64: buffer.toString("base64"), fallbackUrl: dataUrl };
+  } catch (error) {
+    appError("[Grok Imagine] Generation failed", error);
+    return { success: false, base64: null, fallbackUrl: "", warning: getErrorMessage(error) };
+  } finally {
+    release();
+  }
+};
+
 export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, visualConfig, sandboxConfig = {} } = options;
 
+  if (visualConfig?.imageGeneratorEngine === ImageGeneratorEngine.GrokImagine) return generateMediaWithGrokImagine(options);
   if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) return generateImageWithGeminiChat(options);
 
   const finalPrompt = _.defaultTo(prompt, "");
@@ -1275,7 +1446,7 @@ async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number
   return ms;
 }
 
-const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => context.newPage();;
+const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => context.newPage();
 
 const createPreparedGeminiBatchPage = async (context: BrowserContext, tabIndex: number): Promise<Page> => {
   const page = await createGeminiBatchPage(context);

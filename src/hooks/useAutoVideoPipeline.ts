@@ -95,7 +95,7 @@ import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { calculateSceneDuration, fetchCachedVoiceAudio, getReferenceChangeState, getPipelineInvalidationState, preserveInterruptedStoryboardCheckpoint, hasCompleteSceneAlignment, resolveTargetProject } from "./autoVideoPipelineUtils";
 
-export interface PipelineConfig { scriptContent: string; inputType: ProjectInputType; genre: string; language: ProjectLanguage; duration: string; rewriteLevel: number; similarityReduction: number; creativityLevel: number; factCheck: boolean; audience: string; writingStyle: string; splitStrategy: string; hookStrategy: string; hookDuration: number; hookPosition: string; voiceProvider: string; voiceSpeed: number; voicePitch: number; voiceVolume: number; voiceURI: string; voiceName: string; generationMode: ImageGenerationMode; imageGeneratorEngine: ImageGeneratorEngine; generateType: GenerateType; maxVideoScenes: number; aspectRatio: AspectRatio; promptInputMethod: PromptInputMethod; sampleCount: number; videoDuration: string; chromeHeadless: boolean; geminiChatSpeed: GeminiChatSpeed; batchDelay: BatchDelayOption; stylePreset: string; styleBackgroundMode: BackgroundMode; styleTextInImageMode: TextInImageMode; imageFocusMode: ImageFocusMode; referenceImages: string[]; sceneReferenceImages: string[]; characterImages: string[]; thumbnailCount: number; thumbnailStylePreset: string; thumbnailBackgroundMode: BackgroundMode; thumbnailTextInImageMode: ThumbnailTextMode; thumbnailImageFocusMode: ImageFocusMode; thumbnailReferenceImages: string[]; thumbnailSceneReferenceImages?: string[]; projectName: string; resumeMode: boolean; ffmpegQuality: VideoQuality; selectedProjectId?: string | null; forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; musicAssetUrl?: string; filmFormat?: "single" | "series"; episodeCount?: number; cinematicMode?: boolean; }
+export interface PipelineConfig { scriptContent: string; inputType: ProjectInputType; genre: string; language: ProjectLanguage; duration: string; rewriteLevel: number; similarityReduction: number; creativityLevel: number; factCheck: boolean; audience: string; writingStyle: string; splitStrategy: string; hookStrategy: string; hookDuration: number; hookPosition: string; voiceProvider: string; voiceSpeed: number; voicePitch: number; voiceVolume: number; voiceURI: string; voiceName: string; generationMode: ImageGenerationMode; imageGeneratorEngine: ImageGeneratorEngine; generateType: GenerateType; maxVideoScenes: number; aspectRatio: AspectRatio; promptInputMethod: PromptInputMethod; sampleCount: number; videoDuration: string; videoResolution: string; chromeHeadless: boolean; geminiChatSpeed: GeminiChatSpeed; batchDelay: BatchDelayOption; stylePreset: string; styleBackgroundMode: BackgroundMode; styleTextInImageMode: TextInImageMode; imageFocusMode: ImageFocusMode; referenceImages: string[]; sceneReferenceImages: string[]; characterImages: string[]; thumbnailCount: number; thumbnailStylePreset: string; thumbnailBackgroundMode: BackgroundMode; thumbnailTextInImageMode: ThumbnailTextMode; thumbnailImageFocusMode: ImageFocusMode; thumbnailReferenceImages: string[]; thumbnailSceneReferenceImages?: string[]; projectName: string; resumeMode: boolean; ffmpegQuality: VideoQuality; selectedProjectId?: string | null; forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; musicAssetUrl?: string; filmFormat?: "single" | "series"; episodeCount?: number; cinematicMode?: boolean; }
 
 export interface PipelineState { isProcessing: boolean; isCancelling: boolean; currentStepIndex: number; stepProgress: number; logs: string[]; renderedVideoUrl: string; activeCreatedProject: VideoProject | null; }
 
@@ -336,6 +336,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             geminiChatSpeed: config.geminiChatSpeed,
             promptInputMethod: config.promptInputMethod,
             videoDuration: config.videoDuration,
+            videoResolution: config.videoResolution,
             generateCount: config.sampleCount,
             styleReferenceImages: config.referenceImages,
             sceneReferenceImages: config.sceneReferenceImages,
@@ -435,6 +436,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             geminiChatSpeed: config.geminiChatSpeed,
             batchDelay: config.batchDelay,
             videoDuration: config.videoDuration,
+            videoResolution: config.videoResolution,
             thumbnailCount: config.thumbnailCount,
             thumbnailReferenceImages: config.thumbnailReferenceImages,
             thumbnailSceneReferenceImages: config.thumbnailSceneReferenceImages,
@@ -1071,6 +1073,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           generateType: config.generateType,
           maxVideoScenes: config.maxVideoScenes,
           videoDuration: config.videoDuration,
+          videoResolution: config.videoResolution,
         },
         config.genre,
         realScenes.length,
@@ -1100,6 +1103,9 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
       );
 
       const visualConfigPayload = { ...executionVisualConfig, aspectRatio: config.aspectRatio, chromeHeadless: config.chromeHeadless, geminiChatSpeed: config.geminiChatSpeed, style: currentStylePreset, qualityMode: _.defaultTo(voiceUpdatedProj.visualConfig.qualityMode, QualityMode.Balanced), generateCount: resolveQualityProfile(voiceUpdatedProj.visualConfig.qualityMode).draftCandidates, styleReferenceImages: [], sceneReferenceImages: [], referenceImages: [], thumbnailReferenceImages: [], thumbnailSceneReferenceImages: [], contentLanguage: config.language, preserveVideoAudio: isCinematicEpisodeGenre(config.genre), };
+      const thumbnailVisualConfigPayload = isCinematicEpisodeGenre(config.genre)
+        ? { ...visualConfigPayload, generationMode: ImageGenerationMode.GeminiChat, imageGeneratorEngine: ImageGeneratorEngine.LabsSandbox, generateType: GenerateType.Image }
+        : visualConfigPayload;
 
       const sandboxConfigPayload = { localProjectId: voiceUpdatedProj.id, flowProjectId: voiceUpdatedProj.visualConfig?.flowProjectId, };
       const cachedSeoData = config.resumeMode && !invalidationState.regenerateSeo && newProj.seo ? newProj.seo : null;
@@ -1163,7 +1169,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
         continuityKey: string;
         idempotencyKey: string;
       }> = [];
-      if (_.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat)) {
+      if (_.some([_.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat), isCinematicEpisodeGenre(config.genre)], Boolean)) {
         const reusableThumbnails = config.resumeMode && !shouldRegenerateThumbnails ? _.defaultTo(newProj.thumbnails, []) : [];
         if (!_.isEmpty(reusableThumbnails) && _.every(reusableThumbnails, (thumb) => !_.isEmpty(thumb.imageUrl))) {
           unifiedBatchThumbnails = _.cloneDeep(reusableThumbnails);
@@ -1182,9 +1188,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           );
           unifiedBatchThumbnails = thumbnailPlan.success && _.isArray(thumbnailPlan.data?.thumbnails) ? thumbnailPlan.data.thumbnails : [];
           const thumbnailReferenceImages: string[] = [];
-          unifiedThumbnailItems = isCinematicEpisodeGenre(config.genre)
-            ? []
-            : _.map(
+          unifiedThumbnailItems = _.map(
                 _.filter(unifiedBatchThumbnails, (thumb) => _.isEmpty(thumb.imageUrl)),
                 (thumb) => {
                   const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
@@ -1483,7 +1487,28 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             await imageCheckpointQueue;
           }
         } else {
-          await runSceneGeneration(remainingTargetScenes, false);
+          const generateFilmThumbnails = async (): Promise<void> => {
+            if (_.isEmpty(unifiedThumbnailItems)) return;
+            appendLog(config.language === ProjectLanguage.VI ? "[Ảnh bìa] Gemini đang tạo ảnh bìa song song với clip phim." : "[Thumbnail] Gemini is generating thumbnails in parallel with film clips.");
+            await generateProjectImages({
+              items: unifiedThumbnailItems,
+              visualConfig: {
+                ...thumbnailVisualConfigPayload,
+                style: currentThumbnailStyle || currentStylePreset,
+                batchTabCount: _.min([3, _.size(unifiedThumbnailItems)]) || 1,
+              },
+              style: currentThumbnailStyle || currentStylePreset,
+              sandboxConfig: sandboxConfigPayload,
+              cancelRef: cancellationRef,
+              onBatchResult: (result) => {
+                if (!result.success) return;
+                const thumbnail = _.find(unifiedBatchThumbnails || [], { id: result.sceneId });
+                const imageUrl = createProjectImageUrl(result);
+                if (thumbnail && !_.isEmpty(imageUrl)) thumbnail.imageUrl = imageUrl;
+              },
+            });
+          };
+          await Promise.all([runSceneGeneration(remainingTargetScenes, false), generateFilmThumbnails()]);
         }
 
         const unresolvedSourceScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
@@ -1814,7 +1839,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           }
 
           if (!_.isEmpty(targetThumbsToGen)) {
-            if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+            if (_.some([_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat), isCinematicEpisodeGenre(config.genre)], Boolean)) {
               appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_START);
 
               const batchThumbItems = _.map(targetThumbsToGen, (thumb) => {
@@ -1839,7 +1864,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
 
               const thumbnailGenerationSummary = await generateProjectImages({
                 items: batchThumbItems,
-                visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, referenceImages: thumbnailReferenceImages, batchTabCount: _.size(targetThumbsToGen) },
+                visualConfig: { ...thumbnailVisualConfigPayload, style: currentThumbnailStyle || currentStylePreset, referenceImages: thumbnailReferenceImages, batchTabCount: _.size(targetThumbsToGen) },
                 style: currentThumbnailStyle || currentStylePreset,
                 sandboxConfig: sandboxConfigPayload,
                 cancelRef: cancellationRef,
@@ -1866,7 +1891,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
                     engine: ImageGeneratorEngine.Imagen,
                     sandboxConfig: sandboxConfigPayload,
                     visualConfig: {
-                      ...visualConfigPayload,
+                      ...thumbnailVisualConfigPayload,
                       generateType: GenerateType.Image,
                       imageGeneratorEngine: ImageGeneratorEngine.Imagen,
                       style: currentThumbnailStyle || currentStylePreset,
@@ -1896,7 +1921,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
                       bypassCache: true,
                       engine: _.defaultTo(voiceUpdatedProj.visualConfig.imageGeneratorEngine, ImageGeneratorEngine.Imagen),
                       sandboxConfig: sandboxConfigPayload,
-                      visualConfig: { ...visualConfigPayload, style: thumbnailStyle, referenceImages: thumbnailReferenceImages },
+                      visualConfig: { ...thumbnailVisualConfigPayload, style: thumbnailStyle, referenceImages: thumbnailReferenceImages },
                     },
                     requestSignal,
                   );
@@ -1918,7 +1943,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
       }
 
       if (isCinematicEpisodeGenre(config.genre)) {
-        appendLog(config.language === ProjectLanguage.VI ? "[Ảnh bìa] Toàn bộ take phim bắt buộc đã sẵn sàng; tự động tạo ảnh bìa của đúng câu chuyện hiện tại." : "[Thumbnail] All required film takes are ready; automatically creating the thumbnail for the current story.");
+        appendLog(config.language === ProjectLanguage.VI ? "[Ảnh bìa] Đã đồng bộ kết quả ảnh bìa Gemini với dự án phim." : "[Thumbnail] Gemini thumbnail results are synchronized with the film project.");
       }
       if (isCinematicEpisodeGenre(config.genre)) {
         const mayUseTextFreeFilmFrame = _.isEqual(config.thumbnailTextInImageMode, ThumbnailTextMode.NoText);
@@ -1991,7 +2016,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
               bypassCache: true,
               engine: ImageGeneratorEngine.Imagen,
               sandboxConfig: sandboxConfigPayload,
-              visualConfig: { ...visualConfigPayload, generateType: GenerateType.Image, imageGeneratorEngine: ImageGeneratorEngine.Imagen },
+              visualConfig: { ...thumbnailVisualConfigPayload, generateType: GenerateType.Image, imageGeneratorEngine: ImageGeneratorEngine.Imagen },
             }),
             requestSignal,
           );

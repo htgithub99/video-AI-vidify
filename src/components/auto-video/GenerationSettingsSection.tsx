@@ -24,16 +24,26 @@ interface GenerationSettingsSectionProps {
   forceVideoOnly?: boolean;
   chromeHeadless?: boolean;
   setChromeHeadless?: (val: boolean) => void;
+  videoDuration: string;
+  setVideoDuration: (value: string) => void;
+  videoResolution: string;
+  setVideoResolution: (value: string) => void;
 }
 
-export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({ generationMode, setGenerationMode, imageGeneratorEngine, setImageGeneratorEngine, aspectRatio, setAspectRatio, generateType, setGenerateType, maxVideoScenes, setMaxVideoScenes, getImageEngineOptions, T, mediaMixTexts, forceVideoOnly = false, chromeHeadless = false, setChromeHeadless }) => {
+export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({ generationMode, setGenerationMode, imageGeneratorEngine, setImageGeneratorEngine, aspectRatio, setAspectRatio, generateType, setGenerateType, maxVideoScenes, setMaxVideoScenes, getImageEngineOptions, T, mediaMixTexts, forceVideoOnly = false, chromeHeadless = false, setChromeHeadless, videoDuration, setVideoDuration, videoResolution, setVideoResolution }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
   const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", uiTexts.maxVideos);
   const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", uiTexts.maxVideosTooltip);
   const selectingLabel = _.get(mediaMixTexts, "selecting", uiTexts.selectingScenes);
 
-  const engineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
+  const allEngineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
+  const isGrokProvider = forceVideoOnly && _.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine);
+  const engineOptions = forceVideoOnly
+    ? _.filter(allEngineOptions, (option) => isGrokProvider
+      ? _.isEqual(option.value, ImageGeneratorEngine.GrokImagine)
+      : !_.isEqual(option.value, ImageGeneratorEngine.GrokImagine))
+    : allEngineOptions;
   const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
 
   return (
@@ -55,7 +65,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
       </div>
 
       <div className="space-y-3.5">
-        <div className={`grid grid-cols-2 ${forceVideoOnly ? "sm:grid-cols-3" : "sm:grid-cols-4"} gap-3`}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {!forceVideoOnly && (
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
@@ -75,6 +85,26 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">
                     {T.optionAssistantMode}
                   </option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              </div>
+            </div>
+          )}
+
+          {forceVideoOnly && (
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
+              <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
+                <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                <select
+                  value={isGrokProvider ? ImageGeneratorEngine.GrokImagine : ImageGenerationMode.LabsFlow}
+                  onChange={(event) => {
+                    setGenerationMode(ImageGenerationMode.LabsFlow);
+                    setImageGeneratorEngine(_.isEqual(event.target.value, ImageGeneratorEngine.GrokImagine) ? ImageGeneratorEngine.GrokImagine : ImageGeneratorEngine.Veo3);
+                  }}
+                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                  <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.PROVIDER_GOOGLE_FLOW}</option>
+                  <option value={ImageGeneratorEngine.GrokImagine} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.PROVIDER_GROK_IMAGINE}</option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
@@ -112,6 +142,31 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
             </div>
+          )}
+
+          {isGrokProvider && (
+            <>
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Thời lượng</span>
+                <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5">
+                  <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                  <select value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                    {_.map(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, (duration) => <option key={duration} value={duration} className="bg-slate-955 text-slate-300">{duration}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Độ phân giải</span>
+                <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5">
+                  <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                  <select value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                    {_.map(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, (resolution) => <option key={resolution} value={resolution} className="bg-slate-955 text-slate-300">{resolution}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                </div>
+              </div>
+            </>
           )}
 
           <div className="space-y-1">

@@ -72,9 +72,9 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
     [activateLicense, inputKey],
   );
 
-  const isProPlan = useMemo(() => _.includes(_.get(licenseInfo, "plan_type", SecurityConstants.EMPTY_STRING), PlanType.PRO);, [licenseInfo]);
+  const isProPlan = useMemo(() => _.includes(_.get(licenseInfo, "plan_type", SecurityConstants.EMPTY_STRING), PlanType.PRO), [licenseInfo]);
 
-  const isRevoked = useMemo(() => _.isEqual(_.get(licenseInfo, "status"), LicenseStatus.REVOKED);, [licenseInfo]);
+  const isRevoked = useMemo(() => _.isEqual(_.get(licenseInfo, "status"), LicenseStatus.REVOKED), [licenseInfo]);
 
   if (isLoading) {
     return (

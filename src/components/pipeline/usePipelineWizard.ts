@@ -197,15 +197,15 @@ export function usePipelineWizard(props: any) {
 
   const [infoMsg, setInfoMsg] = useState("");
 
-  const [hooksDraft, setHooksDraft] = useState<HookVersion[]>(() => initialProject?.hookConfig?.versions || [];);
+  const [hooksDraft, setHooksDraft] = useState<HookVersion[]>(() => initialProject?.hookConfig?.versions || []);
 
-  const [hookStrategy, setHookStrategy] = useState<string>(() => initialProject?.hookConfig?.type || "Auto";);
+  const [hookStrategy, setHookStrategy] = useState<string>(() => initialProject?.hookConfig?.type || "Auto");
 
-  const [hookDuration, setHookDuration] = useState<number>(() => initialProject?.hookConfig?.duration || 10;);
+  const [hookDuration, setHookDuration] = useState<number>(() => initialProject?.hookConfig?.duration || 10);
 
-  const [hookCount, setHookCount] = useState<number>(() => initialProject?.hookConfig?.count || 3;);
+  const [hookCount, setHookCount] = useState<number>(() => initialProject?.hookConfig?.count || 3);
 
-  const [hookPosition, setHookPosition] = useState<HookPosition>(() => initialProject?.hookConfig?.positions || "start";);
+  const [hookPosition, setHookPosition] = useState<HookPosition>(() => initialProject?.hookConfig?.positions || "start");
 
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
 
@@ -425,7 +425,7 @@ export function usePipelineWizard(props: any) {
 
   const scenesPerPage = 12;
 
-  const paginatedStoryboard = useMemo(() => (project.storyboard || []).slice((storyboardPage - 1) * scenesPerPage, storyboardPage * scenesPerPage);, [project.storyboard, storyboardPage, scenesPerPage]);
+  const paginatedStoryboard = useMemo(() => (project.storyboard || []).slice((storyboardPage - 1) * scenesPerPage, storyboardPage * scenesPerPage), [project.storyboard, storyboardPage, scenesPerPage]);
 
   useEffect(() => {
     const totalScenes = (project.storyboard || []).length;
@@ -613,7 +613,7 @@ export function usePipelineWizard(props: any) {
 
   const [voiceAudioDuration, setVoiceAudioDuration] = useState<number | null>(null);
 
-  const [storyboardSourceMode, setStoryboardSourceMode] = useState<StoryboardSourceMode>(() => (initialProject as any)?.storyboardSourceMode || StoryboardSourceMode.SCRIPT;);
+  const [storyboardSourceMode, setStoryboardSourceMode] = useState<StoryboardSourceMode>(() => (initialProject as any)?.storyboardSourceMode || StoryboardSourceMode.SCRIPT);
 
   const [isAudioDragging, setIsAudioDragging] = useState(false);
 
@@ -3351,7 +3351,7 @@ export function usePipelineWizard(props: any) {
     };
   }, []);
 
-  const getSceneImageUrl = (scene: any): string => _.toString(scene?.assetUrl);;
+  const getSceneImageUrl = (scene: any): string => _.toString(scene?.assetUrl);
 
   const handleDownloadJSONProject = async () => {
     logAction("handleDownloadJSONProject");

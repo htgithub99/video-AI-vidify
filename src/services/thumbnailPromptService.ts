@@ -39,7 +39,7 @@ const cleanTextValue = (val: unknown): string => {
   return str.replace(/^["'«“]+|["'»”]+$/g, "").normalize("NFC");
 };
 
-export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextValue(value).replace(/\s+/g, " ").trim().normalize("NFC");;
+export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextValue(value).replace(/\s+/g, " ").trim().normalize("NFC");
 
 const normalizeThumbnail = (source: Partial<ThumbnailItem>, index: number, usedLayoutIds: Set<string>, textMode: string): ThumbnailItem => {
   const layoutId = resolveLayoutId(source.layoutId, usedLayoutIds, index);

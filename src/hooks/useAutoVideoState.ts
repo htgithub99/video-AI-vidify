@@ -17,6 +17,10 @@ export interface AutoVideoFormState { inputType: ProjectInputType; scriptContent
 
 export interface AutoVideoFormActions { setInputType: (v: ProjectInputType) => void; setScriptContent: (v: string) => void; setGenre: (v: string) => void; setLanguage: (v: ProjectLanguage) => void; setDuration: (v: string) => void; setSplitStrategy: (v: string) => void; setVoiceProvider: (v: string) => void; setVoiceURI: (v: string) => void; setVoiceName: (v: string) => void; setIsVoiceDialogOpen: (v: boolean) => void; setGenerationMode: (v: ImageGenerationMode) => void; setImageGeneratorEngine: (v: ImageGeneratorEngine) => void; setGenerateType: (v: GenerateType) => void; setMaxVideoScenes: (v: number) => void; setAspectRatio: (v: AspectRatio) => void; setChromeHeadless: (v: boolean) => void; setStylePreset: (v: string) => void; setStyleBackgroundMode: (v: BackgroundMode) => void; setStyleTextInImageMode: (v: TextInImageMode) => void; setImageFocusMode: (v: ImageFocusMode) => void; setThumbnailImageFocusMode: (v: ImageFocusMode) => void; setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setThumbnailCount: (v: number) => void; setThumbnailStylePreset: (v: string) => void; setThumbnailBackgroundMode: (v: BackgroundMode) => void; setThumbnailTextInImageMode: (v: ThumbnailTextMode) => void; setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setThumbnailSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>; setProjectName: (v: string) => void; setResumeMode: (v: boolean) => void; setShowAdvancedImageSettings: (v: boolean) => void; setMusicAssetUrl: (v: string) => void; }
 
+interface CachedGeneratorConfig { videoDuration?: string; videoResolution?: string; }
+export interface AutoVideoFormState { videoResolution: string; }
+export interface AutoVideoFormActions { setVideoDuration: (value: string) => void; setVideoResolution: (value: string) => void; }
+
 const buildInitialProjectName = (): string => `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)}`;
 
 const readSynchronousCache = (projectId?: string | null): CachedGeneratorConfig | null => {
@@ -111,7 +115,8 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialCachedConfig?.aspectRatio || AspectRatio.SixteenNine);
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
-  const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
+  const [videoDuration, setVideoDuration] = useState<string>(initialCachedConfig?.videoDuration || REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
+  const [videoResolution, setVideoResolution] = useState<string>(initialCachedConfig?.videoResolution || REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
   const [chromeHeadless, setChromeHeadless] = useState<boolean>(initialCachedConfig?.chromeHeadless ?? AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Fast);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
@@ -155,6 +160,8 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
     setGenerateType,
     setMaxVideoScenes,
     setAspectRatio,
+    setVideoDuration,
+    setVideoResolution,
     setChromeHeadless,
     setStylePreset,
     setStyleBackgroundMode,
@@ -204,6 +211,8 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
           if (parsed.generateType) setGenerateType(parsed.generateType);
           if (!_.isUndefined(parsed.maxVideoScenes)) setMaxVideoScenes(parsed.maxVideoScenes);
           if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+          if (parsed.videoDuration) setVideoDuration(parsed.videoDuration);
+          if (parsed.videoResolution) setVideoResolution(parsed.videoResolution);
           if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
           if (parsed.styleBackgroundMode) setStyleBackgroundMode(normalizeBackgroundMode(parsed.styleBackgroundMode));
           setStyleTextInImageMode(SCENE_TEXT_MODE);
@@ -254,6 +263,8 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
       generateType,
       maxVideoScenes,
       aspectRatio,
+      videoDuration,
+      videoResolution,
       stylePreset,
       styleBackgroundMode,
       styleTextInImageMode,
@@ -294,6 +305,8 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
     generateType,
     maxVideoScenes,
     aspectRatio,
+    videoDuration,
+    videoResolution,
     stylePreset,
     styleBackgroundMode,
     styleTextInImageMode,
@@ -343,6 +356,7 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
     promptInputMethod,
     sampleCount,
     videoDuration,
+    videoResolution,
     chromeHeadless,
     geminiChatSpeed,
     batchDelay,

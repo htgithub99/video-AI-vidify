@@ -65,6 +65,7 @@ export enum ImageGeneratorEngine {
   Veo3Fast = "veo3-fast",
   Veo3Quality = "veo3-quality",
   LabsSandbox = "labs-sandbox",
+  GrokImagine = "grok-imagine",
 }
 
 export enum ImageGenerationMode {
@@ -411,6 +412,7 @@ export interface VisualConfig {
   geminiChatSpeed?: GeminiChatSpeed;
   batchDelay?: BatchDelayOption;
   videoDuration?: string;
+  videoResolution?: string;
   qualityMode?: QualityMode;
   batchTabCount?: number;
   preserveVideoAudio?: boolean;

@@ -5,7 +5,7 @@ import _ from "lodash";
 import { storageUtils } from "./storage";
 import { jsonUtils } from "./json";
 
-export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;;
+export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 
 export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
   _.assign(
@@ -147,4 +147,4 @@ export const readFilesAsDataURL = (files: FileList, callback: (result: string) =
   });
 };
 
-export const generateRandomString = (): string => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);;
+export const generateRandomString = (): string => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);

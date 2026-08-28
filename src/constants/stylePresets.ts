@@ -283,9 +283,6 @@ export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
   "True Crime": ["true_crime_evidence", "archival_documentary", "cinematic_photoreal"],
 };
 
-// Deliberately narrow: these presets describe a production-rendering medium
-// suitable for continuous moving shots. Editorial, archival, infographic,
-// meme, stickman and product styles belong to the automatic-video workspace.
 export const CINEMATIC_FILM_STYLE_PRESET_IDS = ["cinematic_photoreal", "fantasy_concept_art", "tien_hiep_3d"] as const;
 
 export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(_.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]), (presetId) => Boolean(CURATED_STYLE_PRESETS[presetId]));
@@ -300,9 +297,9 @@ const findByPresetId = (normalized: string): CuratedStylePreset | undefined => {
   return CURATED_STYLE_PRESETS[resolvedId];
 };
 
-const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.trim(preset.positivePrompt), trimmed) || _.isEqual(_.toLower(_.trim(preset.positivePrompt)), normalized));;
+const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.trim(preset.positivePrompt), trimmed) || _.isEqual(_.toLower(_.trim(preset.positivePrompt)), normalized));
 
-const findByPresetName = (normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.toLower(preset.name), normalized) || _.isEqual(_.toLower(preset.nameVi), normalized));;
+const findByPresetName = (normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.toLower(preset.name), normalized) || _.isEqual(_.toLower(preset.nameVi), normalized));
 
 const findByKeywords = (normalized: string): CuratedStylePreset | undefined => {
   const allPresets = _.values(CURATED_STYLE_PRESETS);

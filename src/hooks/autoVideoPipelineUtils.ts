@@ -97,6 +97,7 @@ const buildComparisonConfigs = (config: PipelineConfig) => ({
     style: config.stylePreset,
     chromeHeadless: config.chromeHeadless,
     videoDuration: config.videoDuration,
+    videoResolution: config.videoResolution,
     styleBackgroundMode: config.styleBackgroundMode,
     styleTextInImageMode: config.styleTextInImageMode,
     thumbnailBackgroundMode: config.thumbnailBackgroundMode,

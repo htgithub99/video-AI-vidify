@@ -492,9 +492,9 @@ export const PIPELINE_LOGS_LOCALIZED = {
 export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
 export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
 
-export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key];;
+export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key];
 
-export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key];;
+export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key];
 
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
   get(_, prop: string) {

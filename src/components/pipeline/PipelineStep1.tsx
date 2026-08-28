@@ -22,7 +22,7 @@ import * as LucideIcons from "lucide-react";
 const { Layout, RefreshCw, Mic, ChevronDown, Pause, Play, Volume2, Music, Download, Check, FileText, Sparkles, Upload, Sliders, ChevronUp, ImageIcon, X, Copy, Layers, HelpCircle, Trash, ArrowLeft, ArrowRight, User, Palette, ShieldCheck } = LucideIcons as any;
 
 export default function PipelineStep1(props: PipelineWizardState) {
-  const getMotionLabel = (motion: string): string => motionLabels[motion as keyof typeof motionLabels] || motion;;
+  const getMotionLabel = (motion: string): string => motionLabels[motion as keyof typeof motionLabels] || motion;
 
   const voiceTestAudioRef = useRef<HTMLAudioElement>(null);
   const [testingVoiceURI, setTestingVoiceURI] = useState<string | null>(null);
@@ -844,7 +844,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               <span>{t.Replace}</span>
                               <input
                                 type="file"
-                                accept="audio/*"
+                                accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL}
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
@@ -946,7 +946,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </div>
                           <input
                             type="file"
-                            accept="audio/*"
+                            accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL}
                             className="hidden"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
@@ -1028,7 +1028,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   }}>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                     multiple
                     onChange={(e) => {
                       if (e.target.files) {
@@ -1254,7 +1254,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   }}>
                                   <input
                                     type="file"
-                                    accept="image/*"
+                                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                                     multiple
                                     onChange={(e) => {
                                       if (e.target.files) {
@@ -1416,7 +1416,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <input
                 type="file"
                 multiple
-                accept="image/*"
+                accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                 onChange={(e) => {
                   if (e.target.files) handleBulkUploadImages(e.target.files);
                 }}
@@ -1718,7 +1718,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           <span>{isUploadingImage ? t.uploadingImage : t.Upload_file}</span>
                           <input
                             type="file"
-                            accept="image/*"
+                            accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                             className="hidden"
                             disabled={isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id]}
                             onChange={(e) => {

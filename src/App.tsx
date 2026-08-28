@@ -136,7 +136,7 @@ export default function App() {
     }
   }, [selectedProjectId]);
 
-  const [theme, setTheme] = useState<"dark" | "light">(() => (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;);
+  const [theme, setTheme] = useState<"dark" | "light">(() => (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT);
 
   useEffect(() => {
     storageUtils.set(STORAGE_KEYS.APP_THEME, theme);

@@ -187,7 +187,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   }}>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                     multiple
                     onChange={(e) => {
                       if (e.target.files) {
@@ -400,7 +400,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               }}>
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                                 multiple
                                 onChange={(e) => {
                                   if (e.target.files) {

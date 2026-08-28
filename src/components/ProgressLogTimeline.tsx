@@ -21,7 +21,7 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
   return matchedTone || ProgressLogTone.Info;
 };
 
-const formatSeamlessMessage = (msg: string): string => _.reduce(PROGRESS_LOG_CONFIG.SEAMLESS_REPLACEMENTS, (acc, rule) => acc.replace(rule.pattern, rule.replacement), msg);;
+const formatSeamlessMessage = (msg: string): string => _.reduce(PROGRESS_LOG_CONFIG.SEAMLESS_REPLACEMENTS, (acc, rule) => acc.replace(rule.pattern, rule.replacement), msg);
 
 const parseProgressLog = (log: string) => {
   const rawLog = _.toString(log);

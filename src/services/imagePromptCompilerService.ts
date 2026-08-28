@@ -43,8 +43,6 @@ const getSceneWardrobe = (character: CharacterConfig, scene: StoryboardScene): s
 
 const resolveSceneCharacters = (scene: StoryboardScene, characters?: CharacterConfig[]): CharacterConfig[] => {
   if (_.isEmpty(characters)) return [];
-  // An explicit empty array is authoritative: an earlier prompt may still contain
-  // a stale name, but the historical/continuity planner has removed that person.
   const validIds = new Set(_.map(characters, "id"));
   const characterIds = _.isArray(scene.characterIds) ? _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id)) : resolveSceneCharacterIds(scene, characters);
   return !_.isEmpty(characterIds) ? _.filter(characters, (character) => _.includes(characterIds, character.id)) : !_.isArray(scene.characterIds) && _.isEqual(_.size(characters), IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_SUBJECT_COUNT) && !_.isEmpty(scene.visibleAction || scene.visualIntent || scene.script) ? characters : [];
