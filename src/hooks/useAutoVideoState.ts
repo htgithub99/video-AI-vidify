@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import _ from "lodash";
 import { VideoProject, ProjectInputType, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, AspectRatio, BackgroundMode, TextInImageMode, ThumbnailTextMode, ImageFocusMode } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue, STORAGE_KEYS } from "../constants";
+import { AUTO_VIDEO_DEFAULTS, CINEMATIC_CONFIG, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue, STORAGE_KEYS } from "../constants";
 import { PRESET_CONSTANTS, AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -152,12 +152,12 @@ export interface AutoVideoFormActions {
 
 const buildInitialProjectName = (): string => `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)}`;
 
-const readSynchronousCache = (projectId?: string | null): CachedGeneratorConfig | null => {
+const readSynchronousCache = (projectId?: string | null, scope: string = "auto"): CachedGeneratorConfig | null => {
   try {
-    const key = getAutoVideoConfigStorageKey(projectId);
+    const key = getAutoVideoConfigStorageKey(projectId, scope);
     const raw = storageUtils.get(key);
     if (raw) return jsonUtils.safeParse<CachedGeneratorConfig>(raw, null);
-    const globalRaw = storageUtils.get(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
+    const globalRaw = storageUtils.get(getAutoVideoConfigStorageKey(undefined, scope));
     if (globalRaw) return jsonUtils.safeParse<CachedGeneratorConfig>(globalRaw, null);
   } catch {}
   return null;
@@ -205,15 +205,16 @@ const applyProjectToState = (proj: VideoProject, actions: AutoVideoFormActions) 
   }
 };
 
-export function useAutoVideoState(selectedProjectId: string | null | undefined, projects: VideoProject[], currentLang: Lang) {
+export function useAutoVideoState(selectedProjectId: string | null | undefined, projects: VideoProject[], currentLang: Lang, scope: string = "auto") {
   const T = _.get(AUTO_GENERATOR_PANEL_TEXTS, currentLang, AUTO_GENERATOR_PANEL_TEXTS.vi);
+  const usesCinematicDefaults = _.isEqual(scope, CINEMATIC_CONFIG.STATE_SCOPE);
 
   const projectsRef = useRef(projects);
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
 
-  const initialCachedConfig = useMemo(() => readSynchronousCache(selectedProjectId), []);
+  const initialCachedConfig = useMemo(() => readSynchronousCache(selectedProjectId, scope), [scope]);
 
   const [inputType, setInputType] = useState<ProjectInputType>(initialCachedConfig?.inputType || ProjectInputType.Script);
   const [scriptContent, setScriptContent] = useState<string>(initialCachedConfig?.scriptContent ?? REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -240,16 +241,16 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
   const [voiceName, setVoiceName] = useState<string>(initialCachedConfig?.voiceName || PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(initialCachedConfig?.generationMode || ImageGenerationMode.GeminiChat);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(initialCachedConfig?.imageGeneratorEngine || ImageGeneratorEngine.LabsSandbox);
+  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(initialCachedConfig?.generationMode || (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.MODE : ImageGenerationMode.GeminiChat));
+  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(initialCachedConfig?.imageGeneratorEngine || (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.ENGINE : ImageGeneratorEngine.LabsSandbox));
   const [generateType, setGenerateType] = useState<GenerateType>(initialCachedConfig?.generateType || GenerateType.Image);
   const [maxVideoScenes, setMaxVideoScenes] = useState<number>(initialCachedConfig?.maxVideoScenes ?? MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialCachedConfig?.aspectRatio || AspectRatio.SixteenNine);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(initialCachedConfig?.aspectRatio || (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.ASPECT_RATIO : AspectRatio.SixteenNine));
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
-  const [videoDuration, setVideoDuration] = useState<string>(initialCachedConfig?.videoDuration || REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
-  const [videoResolution, setVideoResolution] = useState<string>(initialCachedConfig?.videoResolution || REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
-  const [chromeHeadless, setChromeHeadless] = useState<boolean>(initialCachedConfig?.chromeHeadless ?? AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
+  const [videoDuration, setVideoDuration] = useState<string>(initialCachedConfig?.videoDuration || (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.CLIP_DURATION : REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION));
+  const [videoResolution, setVideoResolution] = useState<string>(initialCachedConfig?.videoResolution || (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.RESOLUTION : REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION));
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(initialCachedConfig?.chromeHeadless ?? (usesCinematicDefaults ? CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS));
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Fast);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
@@ -317,7 +318,7 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
   const loadConfig = useCallback(
     async (projectId?: string | null) => {
       try {
-        const parsed = (await jsonUtils.getAsyncItem<CachedGeneratorConfig | null>(getAutoVideoConfigStorageKey(projectId), null)) || readSynchronousCache(projectId);
+        const parsed = (await jsonUtils.getAsyncItem<CachedGeneratorConfig | null>(getAutoVideoConfigStorageKey(projectId, scope), null)) || readSynchronousCache(projectId, scope);
 
         const foundProj = projectId ? _.find(projectsRef.current, { id: projectId }) : undefined;
         const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
@@ -416,10 +417,10 @@ export function useAutoVideoState(selectedProjectId: string | null | undefined, 
       musicAssetUrl,
     };
 
-    const targetKey = getAutoVideoConfigStorageKey(selectedProjectId);
+    const targetKey = getAutoVideoConfigStorageKey(selectedProjectId, scope);
     const serialized = jsonUtils.safeStringify(config);
     storageUtils.set(targetKey, serialized);
-    storageUtils.set(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, serialized);
+    storageUtils.set(getAutoVideoConfigStorageKey(undefined, scope), serialized);
     void storageUtils.setAsync(targetKey, serialized);
   }, [isConfigLoaded, selectedProjectId, inputType, scriptContent, genre, language, duration, splitStrategy, voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine, generateType, maxVideoScenes, aspectRatio, videoDuration, videoResolution, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, thumbnailSceneReferenceImages, resumeMode, chromeHeadless, musicAssetUrl]);
 

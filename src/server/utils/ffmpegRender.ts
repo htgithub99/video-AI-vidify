@@ -80,6 +80,7 @@ export interface FFmpegRenderOptions {
     shotPurpose?: string;
     sourceTrimStartSeconds?: number;
     sourceTrimEndSeconds?: number;
+    sourceCrop?: string;
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { CINEMATIC_DEFAULT_SOUND_CUES, CINEMATIC_DEFAULTS, CINEMATIC_POLICY_CONFIG, CINEMATIC_POLICY_REQUIRED_FIELDS } from "../constants/cinematicConstants";
+import { CINEMATIC_DEFAULT_SOUND_CUES, CINEMATIC_DEFAULTS, CINEMATIC_POLICY_CONFIG, CINEMATIC_POLICY_REQUIRED_FIELDS, resolveCinematicClipDuration } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
 import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, StoryboardScene, VisualConfig } from "../types";
 
@@ -13,7 +13,8 @@ export const applyCinematicProductionPolicy = (source: VisualConfig, genre?: str
   return { ...source, generationMode: ImageGenerationMode.LabsFlow, generateType: GenerateType.Video, maxVideoScenes: Math.max(sceneCount, _.defaultTo(source.maxVideoScenes, 0)), imageGeneratorEngine: selectedEngineCannotGenerateVideo ? ImageGeneratorEngine.Veo3 : source.imageGeneratorEngine };
 };
 
-export const getCinematicSceneContractIssues = (scene: StoryboardScene): string[] => {
+export const getCinematicSceneContractIssues = (scene: StoryboardScene, requestedDuration?: string | number): string[] => {
+  const clipDurationSeconds = resolveCinematicClipDuration(requestedDuration);
   const issues: string[] = [];
   _.forEach(CINEMATIC_PRODUCTION_POLICY.REQUIRED_TEXT_FIELDS, (field) => {
     if (_.isEmpty(_.trim(_.toString(scene[field])))) issues.push(`${scene.id}:${field}:missing`);
@@ -57,14 +58,17 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene): string[
     });
     const firstStart = _.toNumber(scene.cinematicBeats[0]?.startSecond),
       lastEnd = _.toNumber(_.last(scene.cinematicBeats)?.endSecond);
-    if (Math.abs(firstStart - 0) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE || Math.abs(lastEnd - CINEMATIC_POLICY_CONFIG.CLIP_DURATION_SECONDS) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE) issues.push(`${scene.id}:cinematicBeats:must_cover_full_clip`);
+    if (Math.abs(firstStart - 0) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE || Math.abs(lastEnd - clipDurationSeconds) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE) issues.push(`${scene.id}:cinematicBeats:must_cover_0_to_${clipDurationSeconds}_seconds`);
     if (!_.includes(["payoff", "reaction", "reveal"], _.toString(_.last(scene.cinematicBeats)?.shotRole))) issues.push(`${scene.id}:cinematicBeats:final_shot_must_show_consequence`);
   }
   return issues;
 };
 
-export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[]): string[] => {
-  const issues = _.flatMap(scenes, getCinematicSceneContractIssues);
+export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number): string[] => {
+  const issues = _.flatMap(scenes, (scene) => getCinematicSceneContractIssues(scene, requestedDuration));
+  const dialogueSceneCount = _.size(_.filter(scenes, (scene) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode) && !_.isEmpty(_.trim(scene.spokenDialogue))));
+  const minimumDialogueScenes = Math.max(1, Math.ceil(scenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
+  if (_.gt(scenes.length, 1) && _.lt(dialogueSceneCount, minimumDialogueScenes)) issues.push(`storyboard:dialogue_coverage:requires_at_least_${minimumDialogueScenes}_playable_dialogue_scenes`);
   _.forEach(_.tail(scenes), (scene, index) => {
     const previous = scenes[index];
     if (!_.isEqual(previous.sequenceId || previous.chapterId, scene.sequenceId || scene.chapterId)) return;
@@ -103,8 +107,8 @@ const toCinematicBeat = (scene: StoryboardScene, index: number): NonNullable<Sto
   lipSyncRequired: Boolean(scene.lipSyncRequired),
 });
 
-const timeCinematicBeats = (beats: NonNullable<StoryboardScene["cinematicBeats"]>): NonNullable<StoryboardScene["cinematicBeats"]> => {
-  const duration = CINEMATIC_POLICY_CONFIG.CLIP_DURATION_SECONDS;
+const timeCinematicBeats = (beats: NonNullable<StoryboardScene["cinematicBeats"]>, requestedDuration?: string | number): NonNullable<StoryboardScene["cinematicBeats"]> => {
+  const duration = resolveCinematicClipDuration(requestedDuration);
   return _.map(beats, (beat, index) => ({
     ...beat,
     startSecond: Number(((index * duration) / beats.length).toFixed(2)),

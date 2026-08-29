@@ -259,3 +259,43 @@ export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = {
     warnings: stringArraySchema,
   },
 } as const;
+
+export const CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["decisions"],
+  properties: {
+    decisions: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["sceneId", "bestInSeconds", "bestOutSeconds", "takeDecision", "recommendedTransition", "audioBridgeMode", "continuityScore", "storyClarityScore", "performanceScore", "entryStateObserved", "exitStateObserved", "dominantAction", "supportShotType", "reason", "warnings"],
+        properties: {
+          sceneId: stringSchema,
+          bestInSeconds: { type: "number", minimum: 0 },
+          bestOutSeconds: { type: "number", minimum: 0 },
+          takeDecision: { type: "string", enum: ["use", "trim", "omit"] },
+          recommendedTransition: { type: "string", enum: ["cut", "match_cut", "cross_dissolve", "fade_black"] },
+          audioBridgeMode: { type: "string", enum: ["hard", "j_cut", "l_cut", "ambience"] },
+          continuityScore: numberScoreSchema,
+          storyClarityScore: numberScoreSchema,
+          performanceScore: numberScoreSchema,
+          entryStateObserved: stringSchema,
+          exitStateObserved: stringSchema,
+          dominantAction: stringSchema,
+          supportShotType: { type: "string", enum: ["none", "reaction", "insert", "environment", "aftermath"] },
+          reason: stringSchema,
+          warnings: stringArraySchema,
+        },
+      },
+    },
+  },
+} as const;
+
+export const VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["violatesPolicy", "repairedPrompt", "risks", "rationale"],
+  properties: { violatesPolicy: { type: "boolean" }, repairedPrompt: stringSchema, risks: stringArraySchema, rationale: stringSchema },
+} as const;

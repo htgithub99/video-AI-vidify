@@ -123,7 +123,7 @@ export const REFACTOR_CONSTANTS = {
   ENGINE_IMAGEN: "3.1 Pro",
   ENGINE_VEO3: "3.7 Flash",
   ENGINE_LABS_SANDBOX: "3.5 Flash-Lite",
-  ENGINE_OMNI_FLASH: "🎬 Omni Flash",
+  ENGINE_OMNI_FLASH: "🎬 Omni 1.1 Flash",
   ENGINE_VEO3_LITE: "🎥 Veo 3.1 - Lite",
   ENGINE_VEO3_FAST: "🎥 Veo 3.1 - Fast",
   ENGINE_VEO3_QUALITY: "🎥 Veo 3.1 - Quality",
@@ -213,6 +213,8 @@ export const REFACTOR_CONSTANTS = {
   GROK_FREE_VIDEO_RESOLUTION: "480p",
   GROK_VIDEO_DURATIONS: ["6s", "10s", "15s"],
   GROK_VIDEO_RESOLUTIONS: ["480p", "720p"],
+  FLOW_VIDEO_DURATIONS: ["4s", "6s", "8s", "10s"],
+  FLOW_VIDEO_RESOLUTIONS: ["360p", "720p"],
   PROJECT_IMAGE_BATCH_ERROR: "quá trình tạo ảnh hàng loạt gặp sự cố.",
   PROJECT_IMAGE_BATCH_INCOMPLETE: "quá trình tạo ảnh hàng loạt đã bỏ lỡ {0} phân cảnh.",
   PROJECT_IMAGE_GENERATION_FAILED: "không thể tạo {0} hình ảnh phân cảnh.",
@@ -466,4 +468,4 @@ export const REFACTOR_CONSTANTS = {
   DATA_URL_PREFIX: "data:",
 } as const;
 
-export const ROUTER_PATHS = { EXTRACT_STYLE: "/extract-style", REWRITE_PROMPTS: "/rewrite-prompts", OPTIMIZE_PROMPTS: "/optimize-prompts", REWRITE_THUMBNAILS: "/rewrite-thumbnails", REWRITE_THUMBNAILS_CHARACTER: "/rewrite-thumbnails-character", ANALYZE_CHARACTER: "/analyze-character", EXTRACT_CHARACTER: "/extract-character", REWRITE_PROMPTS_CHARACTER: "/rewrite-prompts-character", HOOKS: "/hooks", SCRIPT: "/script", ALIGN_VOICE: "/align-voice", VALIDATE_AUDIO: "/validate-audio", VALIDATE_FINAL_VIDEO: "/validate-final-video", ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips", EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame", REFERENCE_ASSETS: "/reference-assets/:projectId/:group", REFERENCE_AUDIO: "/reference-audio/:projectId", SELECT_VIDEO_SCENES: "/select-video-scenes", VALIDATE_SCENE_IMAGE: "/validate-scene-image", SEARCH_ARCHIVAL_IMAGE: "/search-archival-image" } as const;
+export const ROUTER_PATHS = { EXTRACT_STYLE: "/extract-style", REWRITE_PROMPTS: "/rewrite-prompts", OPTIMIZE_PROMPTS: "/optimize-prompts", REWRITE_THUMBNAILS: "/rewrite-thumbnails", REWRITE_THUMBNAILS_CHARACTER: "/rewrite-thumbnails-character", ANALYZE_CHARACTER: "/analyze-character", EXTRACT_CHARACTER: "/extract-character", REWRITE_PROMPTS_CHARACTER: "/rewrite-prompts-character", HOOKS: "/hooks", SCRIPT: "/script", ALIGN_VOICE: "/align-voice", VALIDATE_AUDIO: "/validate-audio", VALIDATE_FINAL_VIDEO: "/validate-final-video", ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips", REPAIR_VIDEO_PROMPT: "/repair-video-prompt", EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame", REFERENCE_ASSETS: "/reference-assets/:projectId/:group", REFERENCE_AUDIO: "/reference-audio/:projectId", SELECT_VIDEO_SCENES: "/select-video-scenes", VALIDATE_SCENE_IMAGE: "/validate-scene-image", SEARCH_ARCHIVAL_IMAGE: "/search-archival-image" } as const;

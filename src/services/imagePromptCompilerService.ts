@@ -21,17 +21,13 @@ const hasVietnameseNarration = (value: unknown): boolean => _.gte(_.size(_.toStr
 
 const compactSceneField = (value: unknown): string => {
   const str = _.trim(_.toString(value));
-  if (_.isEmpty(str) || hasVietnameseNarration(str)) {
-    return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
-  }
-  return compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+  return _.isEmpty(str) ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING : str;
 };
 
 const compactScriptSource = (value: unknown): string => {
   const str = _.trim(_.toString(value));
   if (_.isEmpty(str)) return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
-  const compacted = compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
-  return hasVietnameseNarration(str) ? `literal narrated event to depict: ${compacted}` : compacted;
+  return hasVietnameseNarration(str) ? `literal narrated event to depict completely: ${str}` : str;
 };
 
 const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: string): string => {
@@ -90,9 +86,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const textOverlay = _.trim(_.toString(scene.textOverlay));
   const textPolicyDirective = _.isEqual(scene.textAllowed, false) ? IMAGE_PROMPT_COMPILER_CONFIG.STRICT_NO_TEXT_DIRECTIVE : !_.isEmpty(textOverlay) ? _.replace(IMAGE_PROMPT_COMPILER_CONFIG.TEXT_OVERLAY_DIRECTIVE_TEMPLATE, "{text}", textOverlay) : IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE;
   const aiAuthoredPrompt = _.trim(_.toString(scene.prompt));
-  const technicalPromptText = _.isEmpty(textOverlay) ? aiAuthoredPrompt : _.replace(aiAuthoredPrompt, textOverlay, "");
-  const hasStructuredStoryDirection = _.some([scene.visibleAction, scene.storyEvidence, scene.visualIntent, scene.reaction, scene.visualHook], (value) => !_.isEmpty(_.trim(_.toString(value))));
-  if (!hasStructuredStoryDirection && !_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
+  if (!_.isEmpty(aiAuthoredPrompt)) {
     const cleanedAiPrompt = deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt));
     const alreadyHasNoTextPolicy = _.isEqual(scene.textAllowed, false) && /(?:completely text-free|strictly no text|no readable text)/i.test(cleanedAiPrompt);
     const policyLockedPrompt = alreadyHasNoTextPolicy ? cleanedAiPrompt : _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
@@ -112,7 +106,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const composition = compactSceneField(scene.composition);
   const lighting = compactSceneField(scene.lighting);
   const narrativeFallback = getSceneNarrativeFallback(scene);
-  const sceneVariation = compactWords(_.join(_.compact(!_.isEmpty(visibleAction) ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment] : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.SCENE_VARIATION_MAX_WORDS);
+  const sceneVariation = _.join(_.compact(!_.isEmpty(visibleAction) ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment] : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
 
   const promptParts = [styleAnchor, characterDirective, characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING, IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING, sceneVariation, _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), textPolicyDirective, IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS];
 

@@ -17,7 +17,7 @@ import JSZip from "jszip";
 import { safeParseJSON, formatTime, extractCharacterListFromParsedJSON } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG, CINEMATIC_GENERATION_RECOVERY_CONFIG, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
@@ -28,7 +28,7 @@ import { createAudienceMarketDirective } from "../../services/audienceMarketServ
 import { createStoryboardRetentionDirective, createViewerRetentionDirective } from "../../services/viewerRetentionBlueprintService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
-import { EXTERNAL_URLS, ALIGN_CONFIG, EXPORT_ZIP_CONFIG, ENCODING_UTF8, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, THUMBNAILS_DIR_NAME, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getChapterExpansionPrompt, getFinalScriptEditorialPrompt, getScriptSplitPrompt, getSceneDetailBatchPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getVideoSceneSelectionPrompt, getSceneImageQualityPrompt, SCENE_QA_REFERENCE_DIRECTIVE, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, getCharacterRewriteThumbnailsBatchPrompt, getMultiStepHookPrompt, getCombinedScriptPrompt, getAudioQualityPrompt, getFinalVideoQualityPrompt, getContentSafetyPrompt, REGEX_AUTO_MODE_PATH, LogEvent, ErrorMessage, getDurationText, getThumbnailLayoutPrompt, getThumbnailContractRepairPrompt, GENRE_VISUAL_GUIDELINES, VideoGenre, SplitStrategy, SceneDensity, CAPCUT_CONFIG, WHITESPACE_REGEX, ALPHANUMERIC_ONLY_REGEX, SINGLE_QUOTE_REGEX, HTTP_HEADERS, CONTENT_TYPES, TRANSFER_ENCODINGS, UltraStreamLogType, DEFAULT_SCENE_CAMERA_MOTION, DEFAULT_SCENE_EFFECTS, DEFAULT_SCENE_LIGHTING_EFFECT, DEFAULT_SCENE_TRANSITION, stylePresetsKeywords, BASE64_DATA_URL_REGEX, CONTENT_TYPE_HEADER, HTTP_METHODS, HTTP_STATUS_CODES, TEMPLATE_CONFIG, TTS_POLLING_CONFIG, HTTP_STATUS, CAMERA_ANGLES, BORDERLESS_KEYWORD, getDuplicateScenePromptDirective, VISUAL_BIBLE_REFERENCE_PROMPT, getSeoOptimizationPrompt, THUMBNAIL_IMAGE_REFERENCE_PROMPT, FileEncoding, MimeType, TEMPLATE_TMP_CONTENT, FFMPEG_CONFIG, COMMON_STRINGS, ROUTER_PATHS, REFACTOR_CONSTANTS, CONTENT_SAFETY_RESPONSE_SCHEMA, HOOK_RESPONSE_SCHEMA, SCRIPT_PLAN_RESPONSE_SCHEMA, CHAPTER_RESPONSE_SCHEMA, FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA, VISUAL_QA_RESPONSE_SCHEMA, VISUAL_BIBLE_RESPONSE_SCHEMA, FINAL_VIDEO_QA_RESPONSE_SCHEMA, SCRIPT_PROMPT_CONFIG, VIETNAMESE_CHAPTER_RETRY_DIRECTIVE, ENGLISH_CHAPTER_RETRY_DIRECTIVE, getVietnameseDiacriticsRestorationPrompt, RESPONSE_CONTRACT_CONFIG, SYSTEM_FETCH_CONFIG, resolveStylePreset, STYLE_IDENTITY_BOUNDARY } from "../../constants";
+import { EXTERNAL_URLS, ALIGN_CONFIG, EXPORT_ZIP_CONFIG, ENCODING_UTF8, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, THUMBNAILS_DIR_NAME, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getChapterExpansionPrompt, getFinalScriptEditorialPrompt, getScriptSplitPrompt, getSceneDetailBatchPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getVideoSceneSelectionPrompt, getSceneImageQualityPrompt, SCENE_QA_REFERENCE_DIRECTIVE, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, getCharacterRewriteThumbnailsBatchPrompt, getMultiStepHookPrompt, getCombinedScriptPrompt, getAudioQualityPrompt, getFinalVideoQualityPrompt, getCinematicEditDecisionPrompt, getVideoPromptPolicyRepairPrompt, getContentSafetyPrompt, REGEX_AUTO_MODE_PATH, LogEvent, ErrorMessage, getDurationText, getThumbnailLayoutPrompt, getThumbnailContractRepairPrompt, GENRE_VISUAL_GUIDELINES, VideoGenre, SplitStrategy, SceneDensity, CAPCUT_CONFIG, WHITESPACE_REGEX, ALPHANUMERIC_ONLY_REGEX, SINGLE_QUOTE_REGEX, HTTP_HEADERS, CONTENT_TYPES, TRANSFER_ENCODINGS, UltraStreamLogType, DEFAULT_SCENE_CAMERA_MOTION, DEFAULT_SCENE_EFFECTS, DEFAULT_SCENE_LIGHTING_EFFECT, DEFAULT_SCENE_TRANSITION, stylePresetsKeywords, BASE64_DATA_URL_REGEX, CONTENT_TYPE_HEADER, HTTP_METHODS, HTTP_STATUS_CODES, TEMPLATE_CONFIG, TTS_POLLING_CONFIG, HTTP_STATUS, CAMERA_ANGLES, BORDERLESS_KEYWORD, getDuplicateScenePromptDirective, VISUAL_BIBLE_REFERENCE_PROMPT, getSeoOptimizationPrompt, THUMBNAIL_IMAGE_REFERENCE_PROMPT, FileEncoding, MimeType, TEMPLATE_TMP_CONTENT, FFMPEG_CONFIG, COMMON_STRINGS, ROUTER_PATHS, REFACTOR_CONSTANTS, CONTENT_SAFETY_RESPONSE_SCHEMA, HOOK_RESPONSE_SCHEMA, SCRIPT_PLAN_RESPONSE_SCHEMA, CHAPTER_RESPONSE_SCHEMA, FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA, VISUAL_QA_RESPONSE_SCHEMA, VISUAL_BIBLE_RESPONSE_SCHEMA, FINAL_VIDEO_QA_RESPONSE_SCHEMA, CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA, VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, CINEMATIC_EDIT_ANALYSIS_CONFIG, SCRIPT_PROMPT_CONFIG, VIETNAMESE_CHAPTER_RETRY_DIRECTIVE, ENGLISH_CHAPTER_RETRY_DIRECTIVE, getVietnameseDiacriticsRestorationPrompt, RESPONSE_CONTRACT_CONFIG, SYSTEM_FETCH_CONFIG, resolveStylePreset, STYLE_IDENTITY_BOUNDARY } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
@@ -54,6 +54,7 @@ import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCo
 import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, getVisualShotPlanIssues, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
 import { CINEMATIC_PRODUCTION_POLICY, isCinematicEpisodeGenre } from "../../services/cinematicProductionPolicyService.js";
 import { createCinematicScreenplayDirective } from "../../services/cinematicEpisodeService.js";
+import { resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
@@ -271,6 +272,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const promptCharacters = createPromptCharacterCards(characters);
     const charactersJson = !_.isEmpty(promptCharacters) ? jsonUtils.safeStringify(promptCharacters) : undefined;
     const isCinematicPlanning = isCinematicEpisodeGenre(_.toString(req.body?.genre || req.body?.config?.genre));
+    const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
     const chunkSize = isCinematicPlanning ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE : PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
     const backgroundDirective = resolvedVisualConfig.styleBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleBackgroundMode) : undefined;
     const textDirective = resolvedVisualConfig.styleTextInImageMode ? _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleTextInImageMode) : undefined;
@@ -287,7 +289,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunkItem = chunks[chunkIndex];
       const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
-      const createPlanningPrompt = (correctionIssuesJson: string = "") => getOptimizePromptsBatchPrompt(visualStyle, targetStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi, backgroundDirective, textDirective, focusDirective, resolvedVisualConfig.styleBackgroundMode || "auto", resolvedVisualConfig.styleTextInImageMode || "auto", resolvedVisualConfig.imageFocusMode || "default", referenceContext, jsonUtils.safeStringify(resolvedVisualBible), jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)), jsonUtils.safeStringify(resolvedVisualBible.locations || []), jsonUtils.safeStringify(resolvedVisualBible.props || []), correctionIssuesJson, _.toString(req.body?.genre || req.body?.config?.genre));
+      const createPlanningPrompt = (correctionIssuesJson: string = "") => getOptimizePromptsBatchPrompt(visualStyle, targetStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi, backgroundDirective, textDirective, focusDirective, resolvedVisualConfig.styleBackgroundMode || "auto", resolvedVisualConfig.styleTextInImageMode || "auto", resolvedVisualConfig.imageFocusMode || "default", referenceContext, jsonUtils.safeStringify(resolvedVisualBible), jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)), jsonUtils.safeStringify(resolvedVisualBible.locations || []), jsonUtils.safeStringify(resolvedVisualBible.props || []), correctionIssuesJson, _.toString(req.body?.genre || req.body?.config?.genre), clipDurationSeconds);
       const sceneIds = _.map(chunkItem, (item) => _.toString(_.get(item, "id")));
       const planningString = { type: "string" } as const;
       const planningSchema = {
@@ -313,7 +315,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             layout: planningString,
             textAllowed: { type: "boolean" },
             textOverlay: planningString,
-            shotPurpose: { type: "string", enum: ["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"] },
+            shotPurpose: { type: "string", enum: ["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold", "obstacle", "decision", "escalation", "reversal", "climax", "payoff", "transition"] },
             shotSize: planningString,
             cameraAngle: planningString,
             composition: planningString,
@@ -359,8 +361,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
                   spokenDialogue: planningString,
                   speakerCharacterId: planningString,
                   lipSyncRequired: { type: "boolean" },
-                  startSecond: { type: "number", minimum: 0, maximum: 10 },
-                  endSecond: { type: "number", minimum: 0, maximum: 10 },
+                  startSecond: { type: "number", minimum: 0, maximum: clipDurationSeconds },
+                  endSecond: { type: "number", minimum: 0, maximum: clipDurationSeconds },
                 },
               },
             },
@@ -400,18 +402,33 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           const baseScene = _.find(plannedScenes, { id: sceneId });
           if (!baseScene) return;
           issues.push(...getVisualShotPlanIssues(item, baseScene));
+          const optimizedPrompt = _.trim(_.toString(_.get(item, "prompt")));
+          const optimizedPromptWordCount = _.size(_.words(optimizedPrompt));
+          if (_.lt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MIN_PROMPT_WORDS) || _.gt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MAX_PROMPT_WORDS)) issues.push(`${sceneId}:prompt:incomplete_or_outside_global_length_contract`);
+          if (!VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SENTENCE_END_PATTERN.test(optimizedPrompt) || VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.DANGLING_END_PATTERN.test(optimizedPrompt)) issues.push(`${sceneId}:prompt:incomplete_sentence`);
+          if (VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.COMPILER_FALLBACK_PATTERN.test(optimizedPrompt)) issues.push(`${sceneId}:prompt:compiler_fallback_forbidden`);
           _.forEach(englishRequiredFields, (field) => {
             const value = _.trim(_.toString(_.get(item, field)));
             if (_.isEmpty(value)) issues.push(`${sceneId}:${field}:missing`);
           });
           if (!_.isArray(_.get(item, "characterIds"))) issues.push(`${sceneId}:characterIds:must_be_array`);
+          const returnedCharacterIds = _.uniq(_.map(_.castArray(_.get(item, "characterIds", [])), _.toString));
+          const validCharacterIds = new Set(_.map(characters, "id"));
+          _.forEach(_.reject(returnedCharacterIds, (id) => validCharacterIds.has(id)), (id) => issues.push(`${sceneId}:characterIds:unknown:${id}`));
+          const sourceCharacterIds = _.uniq(_.map(_.defaultTo(baseScene.characterIds, []), _.toString));
+          const subjectMayBeOmitted = _.some([_.get(item, "shotRole"), _.get(item, "shotPurpose")], (role) => _.includes(VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SUBJECT_OPTIONAL_ROLES, _.toString(role))) && _.isEqual(_.get(item, "expectedSubjectCount"), 0);
+          if (!subjectMayBeOmitted) _.forEach(_.difference(sourceCharacterIds, returnedCharacterIds), (id) => issues.push(`${sceneId}:characterIds:missing_story_subject:${id}`));
+          _.forEach(returnedCharacterIds, (id) => {
+            const characterName = _.trim(_.toString(_.find(characters, { id })?.name));
+            if (!_.isEmpty(characterName) && !_.includes(_.lowerCase(optimizedPrompt), _.lowerCase(characterName))) issues.push(`${sceneId}:prompt:missing_named_character:${id}`);
+          });
           if (!_.isArray(_.get(item, "propIds"))) issues.push(`${sceneId}:propIds:must_be_array`);
           if (!_.isInteger(_.get(item, "expectedSubjectCount")) || _.lt(_.get(item, "expectedSubjectCount"), 0)) {
             issues.push(`${sceneId}:expectedSubjectCount:invalid`);
           }
           if (!_.isBoolean(_.get(item, "allowBackgroundPeople"))) issues.push(`${sceneId}:allowBackgroundPeople:must_be_boolean`);
           if (!_.includes(["single_frame", "split_screen", "collage"], _.get(item, "layout"))) issues.push(`${sceneId}:layout:invalid`);
-          if (!_.includes(["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"], _.get(item, "shotPurpose"))) issues.push(`${sceneId}:shotPurpose:invalid`);
+          if (!_.includes(["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold", "obstacle", "decision", "escalation", "reversal", "climax", "payoff", "transition"], _.get(item, "shotPurpose"))) issues.push(`${sceneId}:shotPurpose:invalid`);
           if (!_.isBoolean(_.get(item, "textAllowed"))) issues.push(`${sceneId}:textAllowed:must_be_boolean`);
           if (isCinematicPlanning && !_.isBoolean(_.get(item, "lipSyncRequired"))) issues.push(`${sceneId}:lipSyncRequired:must_be_boolean`);
           if (isCinematicPlanning && (!_.isArray(_.get(item, "soundDesignCues")) || _.gt(_.size(_.get(item, "soundDesignCues")), 3))) issues.push(`${sceneId}:soundDesignCues:invalid`);
@@ -426,11 +443,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             if (!_.startsWith(finalVideoPrompt, "Cinematic live-action photorealism, natural human skin texture, physically plausible environment")) {
               issues.push(`${sceneId}:generationPrompt:missing_required_technical_foundation`);
             }
-            if (!/Create one continuous 10-second cinematic sequence with exactly [3-5] chronological shots and exactly [2-4] motivated cuts\./i.test(finalVideoPrompt)) {
+            const sequenceContractPattern = new RegExp(`Create one continuous ${clipDurationSeconds}(?:\\.0)?-second cinematic sequence with exactly [3-5] chronological shots and exactly [2-4] motivated cuts\\.`, "i");
+            if (!sequenceContractPattern.test(finalVideoPrompt)) {
               issues.push(`${sceneId}:generationPrompt:missing_sequence_contract`);
-            }
-            if (!/Continue directly from Shot 1\./i.test(finalVideoPrompt) || !/Continue directly from Shot 2\./i.test(finalVideoPrompt)) {
-              issues.push(`${sceneId}:generationPrompt:missing_observable_shot_handoff`);
             }
             if (!/Maintain identical character identity, face, hairstyle, wardrobe/i.test(finalVideoPrompt)) {
               issues.push(`${sceneId}:generationPrompt:missing_continuity_lock`);
@@ -444,6 +459,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             if (!_.isArray(beats) || beats.length < 3 || beats.length > 5) {
               issues.push(`${sceneId}:cinematicBeats:requires_between_3_and_5`);
             } else {
+              for (let handoffIndex = 1; handoffIndex < beats.length; handoffIndex++) {
+                if (!new RegExp(`Continue directly from Shot ${handoffIndex}\\.`, "i").test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:missing_handoff_after_shot_${handoffIndex}`);
+              }
+              const firstBeatStart = _.toNumber(_.get(beats, [0, "startSecond"]));
+              const finalBeatEnd = _.toNumber(_.get(_.last(beats), "endSecond"));
+              if (Math.abs(firstBeatStart) > 0.01 || Math.abs(finalBeatEnd - clipDurationSeconds) > 0.05) issues.push(`${sceneId}:cinematicBeats:must_cover_0_to_${clipDurationSeconds}_seconds`);
               _.forEach(beats, (beat, beatIndex) => {
                 if (!_.isEqual(_.toString(beat.sourceSceneId), sceneId)) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:source_scene_mismatch`);
                 if (!_.lt(_.toNumber(beat.startSecond), _.toNumber(beat.endSecond))) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:timing_invalid`);
@@ -478,7 +499,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               if (_.uniq(beatShotIds).length !== beats.length || _.some(beatShotIds, _.isEmpty)) issues.push(`${sceneId}:cinematicBeats:shot_ids_must_be_unique`);
               if (_.some(beats, (beat) => _.lt(_.subtract(_.toNumber(beat.endSecond), _.toNumber(beat.startSecond)), 1.5))) issues.push(`${sceneId}:cinematicBeats:shot_too_short_for_playable_action`);
               if (!_.includes(["payoff", "reaction", "reveal"], _.toString(_.last(beats)?.shotRole))) issues.push(`${sceneId}:cinematicBeats:final_shot_must_show_consequence`);
-              if (!_.isEqual(_.toNumber(beats[0].startSecond), 0) || !_.isEqual(_.toNumber(_.last(beats)?.endSecond), 10)) issues.push(`${sceneId}:cinematicBeats:must_cover_0_to_10_seconds`);
+              if (!_.isEqual(_.toNumber(beats[0].startSecond), 0) || Math.abs(_.toNumber(_.last(beats)?.endSecond) - clipDurationSeconds) > 0.05) issues.push(`${sceneId}:cinematicBeats:must_cover_0_to_${clipDurationSeconds}_seconds`);
             }
           }
           if (isCinematicPlanning && _.isEqual(_.get(item, "dialogueMode"), "on_screen_dialogue")) {
@@ -506,6 +527,16 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           }
         });
         if (isCinematicPlanning) {
+          const playableDialogueScenes = _.filter(items, (item) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.get(item, "dialogueMode")) && !_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue")))));
+          if (_.gte(items.length, CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE) && _.isEmpty(playableDialogueScenes)) issues.push("chunk:dialogue_coverage:missing_playable_character_exchange");
+          const previousPlannedScene = chunkStartIndex > 0 ? plannedScenes[chunkStartIndex - 1] : undefined;
+          const firstCurrentScene = _.first(items);
+          if (previousPlannedScene && firstCurrentScene) {
+            if (_.isEqual(previousPlannedScene.shotPurpose, _.get(firstCurrentScene, "shotPurpose"))) issues.push(`${_.get(firstCurrentScene, "id")}:editorial_role:must_advance_from_previous_clip`);
+            const previousEndState = _.lowerCase(_.trim(_.toString(previousPlannedScene.actionEndState)));
+            const currentStartState = _.lowerCase(_.trim(_.toString(_.get(firstCurrentScene, "actionStartState"))));
+            if (!_.isEmpty(previousEndState) && !_.isEqual(previousEndState, currentStartState)) issues.push(`${_.get(firstCurrentScene, "id")}:actionStartState:must_match_previous_clip_end_state`);
+          }
           _.forEach(_.tail(items), (item, index) => {
             const previous = items[index];
             const sameAction = _.isEqual(_.lowerCase(_.trim(_.toString(_.get(previous, "visibleAction")))), _.lowerCase(_.trim(_.toString(_.get(item, "visibleAction")))));
@@ -568,14 +599,14 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         const baseScene = _.find(plannedScenes, { id: sceneId });
         const returnedItem = returnedById[sceneId];
         if (!baseScene || !returnedItem) return;
-        optimizedMap.set(
-          sceneId,
-          normalizeVisualShotPlan(returnedItem, baseScene, {
+        const normalizedScene = normalizeVisualShotPlan(returnedItem, baseScene, {
             characters,
             visualBible: resolvedVisualBible,
             textMode: resolvedVisualConfig.styleTextInImageMode,
-          }),
-        );
+          });
+        optimizedMap.set(sceneId, normalizedScene);
+        const plannedSceneIndex = _.findIndex(plannedScenes, { id: sceneId });
+        if (_.gte(plannedSceneIndex, 0)) plannedScenes[plannedSceneIndex] = normalizedScene;
       });
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
@@ -1034,8 +1065,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       appLogStep(msg, multiStepLogs);
     };
 
-    activeHookText = selectedHookText || "";
-    if (!activeHookText && config.hookConfig) {
+    const isCinematicScript = isCinematicEpisodeGenre(config.genre);
+    activeHookText = isCinematicScript ? "" : selectedHookText || "";
+    if (!isCinematicScript && !activeHookText && config.hookConfig) {
       logStep(getPipelineLog("HOOK_AUTO_GENERATE", isVi));
       try {
         const hookType = config.hookConfig.type || "Auto";
@@ -1079,7 +1111,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
     const retentionDirective = createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
-    const cinematicScreenplayDirective = isCinematicEpisodeGenre(config.genre) ? createCinematicScreenplayDirective(config.language, durationText) : "";
+    const cinematicScreenplayDirective = isCinematicScript ? createCinematicScreenplayDirective(config.language, durationText) : "";
     const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${cinematicScreenplayDirective}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${retentionDirective}\n\n${contentControlDirective}`;
 
     let groundedResearchResponse: any = null;
@@ -1223,13 +1255,13 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         }),
       );
 
-      let cleanedSegment = await requestValidChapterSegment(`Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`);
+      let cleanedSegment = await requestValidChapterSegment(`Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\n${cinematicScreenplayDirective}\n\nChapter Prompt:\n${chapterPrompt}`);
       cleanedSegment = removeRepeatedNarrationOpening(cleanedSegment, fullScript);
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       for (let expansionIndex = 0; expansionIndex < REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT && _.size(_.words(cleanedSegment)) < chapterMinimumWords; expansionIndex++) {
         const currentWordCount = _.size(_.words(cleanedSegment));
-        const continuation = await requestValidChapterSegment(getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi));
+        const continuation = await requestValidChapterSegment(`${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi)}\n\n${cinematicScreenplayDirective}`);
         if (_.isEmpty(continuation)) break;
         const deduplicatedContinuation = removeRepeatedNarrationOpening(continuation, `${fullScript} ${cleanedSegment}`);
         cleanedSegment = _.trim(`${cleanedSegment} ${deduplicatedContinuation}`);
@@ -1253,7 +1285,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let editorialQa: Record<string, unknown> = {};
     try {
       const editorialResponse = await generateContentWithRetry({
-        contents: `${getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount)}\n\n${retentionDirective}`,
+        contents: `${getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount)}\n\n${cinematicScreenplayDirective}\n\n${retentionDirective}`,
         config: {
           responseMimeType: CONTENT_TYPES.JSON,
           responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
@@ -1598,7 +1630,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       const configuredDurationSeconds = parseTargetDurationSeconds(config?.duration);
       if (_.gt(configuredDurationSeconds, 0)) chosenDuration = configuredDurationSeconds;
     }
-    const cinematicClipCount = isCinematicStoryboard ? (_.gt(normalizedRequestedClipCount, 0) ? normalizedRequestedClipCount : _.max([1, Math.ceil(_.toNumber(chosenDuration) / 10)])) : undefined;
+    const storyboardClipDurationSeconds = resolveCinematicClipDuration(config?.videoDuration);
+    const cinematicClipCount = isCinematicStoryboard ? (_.gt(normalizedRequestedClipCount, 0) ? normalizedRequestedClipCount : _.max([1, Math.ceil(_.toNumber(chosenDuration) / storyboardClipDurationSeconds)])) : undefined;
     let genreVisualGuideline =
       GENRE_VISUAL_GUIDELINES[genre as VideoGenre] ||
       `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
@@ -1675,7 +1708,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     try {
       logStoryboardStep(getBilingualMessage("STORYBOARD_SPLITTING_GEMINI"));
 
-      const splitPrompt = getScriptSplitPrompt(rewrittenScript, jsonUtils.safeStringify(syncedChapters), splitStrategy, isVi, cinematicClipCount);
+      const splitPrompt = getScriptSplitPrompt(rewrittenScript, jsonUtils.safeStringify(syncedChapters), splitStrategy, isVi, cinematicClipCount, storyboardClipDurationSeconds);
 
       const cinematicSplitSchema = cinematicClipCount
         ? ({
@@ -2437,12 +2470,30 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
   }
 });
 
+router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response) => {
+  const prompt = _.trim(_.toString(req.body?.prompt));
+  if (_.isEmpty(prompt)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Video prompt is required." });
+  try {
+    const response = await generateContentWithRetry({
+      contents: getVideoPromptPolicyRepairPrompt(prompt),
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS },
+      task: { capability: AiTaskCapability.VisualPlanning },
+    });
+    return res.json({ success: true, review: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata });
+  } catch (error: any) {
+    logger.warn(LogEvent.VISUAL_QA_ERROR, error);
+    return res.json({ success: true, review: { violatesPolicy: false, repairedPrompt: prompt, risks: [], rationale: "review_unavailable" } });
+  }
+});
+
 router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Response) => {
   const projectId = path.basename(_.toString(req.body?.projectId));
   const scenes = _.filter(_.castArray(req.body?.scenes), (scene) => _.isEqual(scene?.assetType, GenerateType.Video));
   const dataRoot = path.resolve(getDataDirectory());
   const projectRoot = path.resolve(dataRoot, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
   const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
+  const analysisDir = path.join(dataRoot, `${CINEMATIC_EDIT_ANALYSIS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  fs.mkdirSync(analysisDir, { recursive: true });
   const analyzeScene = async (scene: any) => {
     const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), "?")) || "", "/\\");
     const candidate = path.resolve(dataRoot, relativePath);
@@ -2515,11 +2566,88 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const destructiveEdgeDamage = _.gt(duration, 0) && _.lt(usableDuration, _.min([4, duration * 0.55]) || 0);
     const takeDecision = invalidDuration || destructiveEdgeDamage ? "omit" : trimStartSeconds > 0 || trimEndSeconds > 0 || hasEmbeddedBorder ? "trim" : "use";
     const reason = takeDecision === "omit" ? (invalidDuration ? "invalid_duration" : "insufficient_usable_duration_after_edge_cleanup") : takeDecision === "trim" ? _.join(warnings, ",") || "safe_edge_cleanup" : "technical_clip_analysis_passed";
-    return { sceneId: scene.id, duration, trimStartSeconds, trimEndSeconds, sourceCrop, warnings, takeDecision, reason };
+    let contactSheetData = "";
+    if (_.gt(duration, 0)) {
+      const contactSheetPath = path.join(analysisDir, `${path.basename(_.toString(scene.id))}-${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`);
+      const frameRate = CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / duration;
+      const tileRows = Math.ceil(CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS);
+      const contactSheetFilter = `fps=${frameRate},scale=${Math.floor(CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_WIDTH / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS)}:-2,tile=${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS}x${tileRows}`;
+      await new Promise<void>((resolve) => {
+        const process = spawn(executable, ["-y", "-i", candidate, "-vf", contactSheetFilter, "-frames:v", "1", contactSheetPath], { windowsHide: true, stdio: "ignore" });
+        const timeout = setTimeout(() => process.kill(), CINEMATIC_EDIT_ANALYSIS_CONFIG.FFMPEG_TIMEOUT_MS);
+        process.once("error", () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        process.once("exit", () => {
+          clearTimeout(timeout);
+          if (fs.existsSync(contactSheetPath)) contactSheetData = fs.readFileSync(contactSheetPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+          resolve();
+        });
+      });
+    }
+    return { sceneId: scene.id, duration, trimStartSeconds, trimEndSeconds, sourceCrop, warnings, takeDecision, reason, contactSheetData };
   };
-  const decisions: any[] = [];
-  for (const batch of _.chunk(scenes, 3)) decisions.push(...(await Promise.all(_.map(batch, analyzeScene))));
-  return res.json({ success: true, decisions });
+  const technicalDecisions: any[] = [];
+  try {
+    for (const batch of _.chunk(scenes, 3)) technicalDecisions.push(...(await Promise.all(_.map(batch, analyzeScene))));
+    const reviewableDecisions = _.filter(technicalDecisions, "contactSheetData");
+    if (_.isEmpty(reviewableDecisions) || !(await isAiProviderAvailable())) {
+      return res.json({ success: true, decisions: _.map(technicalDecisions, (decision) => _.omit(decision, "contactSheetData")), editorialReviewAvailable: false });
+    }
+    const metadata = _.map(reviewableDecisions, (decision) => {
+      const scene = _.find(scenes, { id: decision.sceneId });
+      return {
+        ..._.pick(scene, ["id", "visualIntent", "visibleAction", "reaction", "storyEvidence", "shotPurpose", "shotRole", "dialogueMode", "spokenDialogue", "characterBlocking", "eyelineDirection", "screenDirection", "actionStartState", "actionEndState", "locationState", "wardrobeState", "propState", "cinematicBeats", "cinematicContinuityHandoff"]),
+        duration: decision.duration,
+        technicalTrimStartSeconds: decision.trimStartSeconds,
+        technicalTrimEndSeconds: decision.trimEndSeconds,
+        technicalWarnings: decision.warnings,
+      };
+    });
+    const parts: any[] = [{ text: getCinematicEditDecisionPrompt(metadata) }];
+    _.forEach(reviewableDecisions, (decision) => parts.push({ inlineData: { mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE, data: decision.contactSheetData } }));
+    const editorialResponse = await generateContentWithRetry({
+      contents: [{ role: "user", parts }],
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA, maxOutputTokens: CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_OUTPUT_TOKENS },
+      task: { capability: AiTaskCapability.VisualQa },
+    });
+    const editorialByScene = _.keyBy(_.castArray(safeParseJSON(editorialResponse.text, {})?.decisions), "sceneId");
+    const decisions = _.map(technicalDecisions, (technical) => {
+      const editorial = editorialByScene[technical.sceneId];
+      if (!editorial) return _.omit(technical, "contactSheetData");
+      const maxTrim = technical.duration * CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_EDGE_TRIM_RATIO;
+      const editorialStart = _.clamp(_.toNumber(editorial.bestInSeconds), 0, maxTrim);
+      const editorialOut = _.clamp(_.toNumber(editorial.bestOutSeconds), editorialStart + CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS, technical.duration);
+      const trimStartSeconds = _.max([technical.trimStartSeconds, editorialStart]) || 0;
+      const trimEndSeconds = _.max([technical.trimEndSeconds, technical.duration - editorialOut]) || 0;
+      const usableDuration = technical.duration - trimStartSeconds - trimEndSeconds;
+      const editorialTakeDecision = _.lt(usableDuration, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS) ? technical.takeDecision : editorial.takeDecision;
+      return {
+        ..._.omit(technical, "contactSheetData"),
+        trimStartSeconds,
+        trimEndSeconds,
+        takeDecision: _.isEqual(technical.takeDecision, "omit") ? "omit" : editorialTakeDecision,
+        recommendedTransition: editorial.recommendedTransition,
+        audioBridgeMode: editorial.audioBridgeMode,
+        continuityScore: editorial.continuityScore,
+        storyClarityScore: editorial.storyClarityScore,
+        performanceScore: editorial.performanceScore,
+        supportShotType: editorial.supportShotType,
+        entryStateObserved: editorial.entryStateObserved,
+        exitStateObserved: editorial.exitStateObserved,
+        dominantAction: editorial.dominantAction,
+        warnings: _.uniq([...technical.warnings, ..._.castArray(editorial.warnings)]),
+        reason: _.join(_.compact([technical.reason, editorial.reason]), ";"),
+      };
+    });
+    return res.json({ success: true, decisions, editorialReviewAvailable: true, aiMetadata: editorialResponse.aiMetadata });
+  } catch (error) {
+    logger.warn(LogEvent.VISUAL_QA_ERROR, error);
+    return res.json({ success: true, decisions: _.map(technicalDecisions, (decision) => _.omit(decision, "contactSheetData")), editorialReviewAvailable: false });
+  } finally {
+    fs.rmSync(analysisDir, { recursive: true, force: true });
+  }
 });
 
 router.post(ROUTER_PATHS.EXTRACT_THUMBNAIL_FRAME, async (req: Request, res: Response) => {

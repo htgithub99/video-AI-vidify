@@ -48,7 +48,7 @@ const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOpt
   ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio"]),
   globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
   scenes: _.map(payload.scenes, (scene) => ({
-    ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose", "sourceTrimStartSeconds", "sourceTrimEndSeconds"]),
+    ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose", "sourceTrimStartSeconds", "sourceTrimEndSeconds", "sourceCrop"]),
     imageUrl: isPersistableAssetUrl(scene.imageUrl) ? scene.imageUrl : undefined,
     audioUrl: isPersistableAssetUrl(scene.audioUrl) ? scene.audioUrl : undefined,
   })),

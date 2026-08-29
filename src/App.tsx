@@ -27,6 +27,13 @@ const CinematicFilmStudio = lazy(() => import("./components/CinematicFilmStudio.
 
 const isProjectWorkspaceTab = (tab: string): boolean => _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab);
 
+const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
+  if (_.isEqual(tab, AppTab.STUDIO)) return ProjectKind.Studio;
+  if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
+  if (_.isEqual(tab, AppTab.CINEMATIC_FILM)) return ProjectKind.Cinematic;
+  return undefined;
+};
+
 const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefined => {
   if (!project) return undefined;
   if (project.projectKind) return project.projectKind;
@@ -37,6 +44,15 @@ const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefine
 };
 
 const findWorkspaceChild = (projects: VideoProject[], parentId: string, kind: ProjectKind): VideoProject | undefined => _.find(projects, (project) => _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind));
+
+const findProjectForWorkspaceTab = (projects: VideoProject[], selectedProjectId: string | null, tab: string): VideoProject | undefined => {
+  const targetKind = getProjectKindForTab(tab);
+  const selectedProject = _.find(projects, { id: selectedProjectId });
+  if (!targetKind || !selectedProject) return undefined;
+  if (_.isEqual(getWorkspaceProjectKind(selectedProject), targetKind)) return selectedProject;
+  const parentId = selectedProject.parentId || selectedProject.id;
+  return findWorkspaceChild(projects, parentId, targetKind);
+};
 
 const convertToSlug = (text: string): string => {
   return _.trim(_.toLower(text).normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D).replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN).replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
@@ -588,12 +604,16 @@ export default function App() {
         return;
       }
 
-      const shouldShowLoading = _.every([activeTab, tab], isProjectWorkspaceTab);
+      const targetWorkspaceProject = findProjectForWorkspaceTab(projectsRef.current, selectedProjectId, tab);
+      const switchesBetweenWorkspaceTabs = _.every([activeTab, tab], isProjectWorkspaceTab);
+      const shouldShowLoading = switchesBetweenWorkspaceTabs && !targetWorkspaceProject;
       workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
       setIsSwitchingWorkspaceTab(shouldShowLoading);
 
       if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
         setSelectedProjectId(null);
+      } else if (targetWorkspaceProject && !_.isEqual(targetWorkspaceProject.id, selectedProjectId)) {
+        setSelectedProjectId(targetWorkspaceProject.id);
       }
       setActiveTab(tab);
     },

@@ -5,10 +5,10 @@ import { toast } from "sonner";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
 import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
-import { VideoProject, ProjectInputType, ImageGenerationMode, ImageGeneratorEngine, GenerateType } from "../types";
+import { VideoProject, ProjectInputType, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, TextInImageMode } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
-import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG } from "../constants/config";
 import { deleteProjectRegenerationAssets, applyProjectRegenerationReset } from "../services/projectRegenerationService";
@@ -49,7 +49,8 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
   const splitLabelMap = useMemo(() => getSplitLabels(T), [T]);
 
-  const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang);
+  const stateScope = cinematicMode ? CINEMATIC_CONFIG.STATE_SCOPE : "auto";
+  const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang, stateScope);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
   const { inputType, scriptContent, genre, language, duration, splitStrategy, voiceProvider, voiceURI, voiceName, isVoiceDialogOpen, generationMode, imageGeneratorEngine, generateType, maxVideoScenes, aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages, characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages, thumbnailSceneReferenceImages, projectName, resumeMode, showAdvancedImageSettings, rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle, hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume, promptInputMethod, sampleCount, videoDuration, videoResolution, geminiChatSpeed, batchDelay, ffmpegQuality, isConfigLoaded, musicAssetUrl } = state;
@@ -59,6 +60,10 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
 
   const presentationProject = activeCreatedProject;
+  const canContinueProject = useMemo(
+    () => Boolean(presentationProject && !_.isEqual(presentationProject.status, REFACTOR_CONSTANTS.STATUS_COMPLETED) && (presentationProject.generationCheckpoint || !_.isEmpty(presentationProject.storyboard))),
+    [presentationProject],
+  );
 
   const { startPipeline, cancelPipeline, setActiveCreatedProject, setRenderedVideoUrl, setLogs } = pipelineActions;
 
@@ -103,7 +108,14 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     if (!_.some(videoEngines, (option) => _.isEqual(option.value, imageGeneratorEngine))) {
       setImageGeneratorEngine(_.get(_.first(videoEngines), "value", ImageGeneratorEngine.Veo3));
     }
-  }, [cinematicMode, duration, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, setDuration, setGenre, setInputType, setGenerateType, setGenerationMode, setImageGeneratorEngine, setStylePreset, setThumbnailStylePreset]);
+    if (_.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine)) {
+      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, videoDuration)) setVideoDuration(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
+      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
+    } else {
+      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS, videoDuration)) setVideoDuration(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION);
+      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION);
+    }
+  }, [cinematicMode, duration, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, videoDuration, videoResolution, setDuration, setGenre, setInputType, setGenerateType, setGenerationMode, setImageGeneratorEngine, setVideoDuration, setVideoResolution, setStylePreset, setThumbnailStylePreset]);
 
   useEffect(() => {
     if (!cinematicMode && _.includes([GenerateType.Video, GenerateType.Mixed], generateType) && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
@@ -196,57 +208,58 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     reader.readAsDataURL(file);
   };
 
-  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}): Promise<void> =>
+  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean; runIntent?: "new" | "continue" | "render_only" } = {}): Promise<void> =>
     startPipeline({
       scriptContent,
-      inputType,
-      genre,
+      inputType: cinematicMode ? ProjectInputType.Idea : inputType,
+      genre: cinematicMode ? VideoGenre.CINEMATIC_EPISODE : genre,
       language,
       duration,
-      rewriteLevel,
-      similarityReduction,
-      creativityLevel,
-      factCheck,
-      audience,
-      writingStyle,
-      splitStrategy,
-      hookStrategy,
-      hookDuration,
-      hookPosition,
-      voiceProvider,
+      rewriteLevel: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.REWRITE_LEVEL : rewriteLevel,
+      similarityReduction: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.SIMILARITY_REDUCTION : similarityReduction,
+      creativityLevel: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.CREATIVITY_LEVEL : creativityLevel,
+      factCheck: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.FACT_CHECK : factCheck,
+      audience: cinematicMode ? (_.isEqual(language, ProjectLanguage.VI) ? CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_VI : CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_EN) : audience,
+      writingStyle: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.WRITING_STYLE : writingStyle,
+      splitStrategy: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.SPLIT_STRATEGY : splitStrategy,
+      hookStrategy: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : hookStrategy,
+      hookDuration: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_DURATION : hookDuration,
+      hookPosition: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_POSITION : hookPosition,
+      voiceProvider: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.VOICE_PROVIDER : voiceProvider,
       voiceSpeed,
       voicePitch,
       voiceVolume,
-      voiceURI,
-      voiceName,
-      generationMode,
+      voiceURI: cinematicMode ? REFACTOR_CONSTANTS.VD_EMPTY_STRING : voiceURI,
+      voiceName: cinematicMode ? REFACTOR_CONSTANTS.VD_EMPTY_STRING : voiceName,
+      generationMode: cinematicMode ? ImageGenerationMode.LabsFlow : generationMode,
       imageGeneratorEngine,
-      generateType,
-      maxVideoScenes,
+      generateType: cinematicMode ? GenerateType.Video : generateType,
+      maxVideoScenes: cinematicMode ? CINEMATIC_CONFIG.UNLIMITED_VIDEO_SCENES : maxVideoScenes,
       aspectRatio,
       promptInputMethod,
-      sampleCount,
+      sampleCount: cinematicMode ? 1 : sampleCount,
       videoDuration,
       videoResolution,
       chromeHeadless,
       geminiChatSpeed,
       batchDelay,
       stylePreset,
-      styleBackgroundMode,
-      styleTextInImageMode,
+      styleBackgroundMode: cinematicMode ? BackgroundMode.Contextual : styleBackgroundMode,
+      styleTextInImageMode: cinematicMode ? TextInImageMode.NoText : styleTextInImageMode,
       imageFocusMode,
-      referenceImages,
-      sceneReferenceImages,
-      characterImages,
+      referenceImages: cinematicMode ? [] : referenceImages,
+      sceneReferenceImages: cinematicMode ? [] : sceneReferenceImages,
+      characterImages: cinematicMode ? [] : characterImages,
       thumbnailCount,
       thumbnailStylePreset,
       thumbnailBackgroundMode,
       thumbnailTextInImageMode,
       thumbnailImageFocusMode,
-      thumbnailReferenceImages,
-      thumbnailSceneReferenceImages,
+      thumbnailReferenceImages: cinematicMode ? [] : thumbnailReferenceImages,
+      thumbnailSceneReferenceImages: cinematicMode ? [] : thumbnailSceneReferenceImages,
       projectName,
       resumeMode: overrides.resumeMode ?? resumeMode,
+      runIntent: overrides.runIntent,
       ffmpegQuality,
       selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
@@ -279,15 +292,16 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
 
     setRegeneratingTarget(target);
     try {
-      const isDeleteSuccess = await deleteProjectRegenerationAssets(project.id, target);
+      const isRenderOnly = _.isEqual(target, REGENERATION_TARGET.RENDER);
+      const isDeleteSuccess = isRenderOnly || (await deleteProjectRegenerationAssets(project.id, target));
       if (!isDeleteSuccess) {
         toast.error(regenerationTexts.failed);
         return;
       }
 
-      pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      if (!isRenderOnly) pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-      const { updatedProject, changed } = applyProjectRegenerationReset(project, target);
+      const { updatedProject, changed } = isRenderOnly ? { updatedProject: project, changed: false } : applyProjectRegenerationReset(project, target);
       if (changed) {
         setActiveCreatedProject(updatedProject);
         await onUpdateProject(updatedProject, true);
@@ -298,7 +312,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       } else if (_.isEqual(target, REGENERATION_TARGET.IMAGES)) {
         await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
       } else if (_.isEqual(target, REGENERATION_TARGET.RENDER)) {
-        await handleStartAutoGenerate({ resumeMode: true });
+        await handleStartAutoGenerate({ resumeMode: true, runIntent: "render_only" });
       }
     } catch (err: unknown) {
       const errorMessage = _.get(err, "message", regenerationTexts.failed);
@@ -324,7 +338,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
           {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
 
           <div className={cn("space-y-4")}>
-            {cinematicMode ? <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} /> : <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} genre={genre} setGenre={setGenre} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} splitStrategy={splitStrategy} setSplitStrategy={setSplitStrategy} splitLabelMap={splitLabelMap} T={T} lockedGenreLabel={lockedGenreLabel} />}
+            {cinematicMode ? <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} currentLang={currentLang} /> : <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} genre={genre} setGenre={setGenre} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} splitStrategy={splitStrategy} setSplitStrategy={setSplitStrategy} splitLabelMap={splitLabelMap} T={T} lockedGenreLabel={lockedGenreLabel} />}
 
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
 
@@ -343,7 +357,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
         </div>
 
         <div className={cn("lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none")}>
-          <ActionPanelSection scriptContent={scriptContent} isProcessing={isProcessing} isCancelling={isCancelling} currentStepIndex={currentStepIndex} stepProgress={stepProgress} handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false })} cancelPipeline={cancelPipeline} T={T} />
+          <ActionPanelSection scriptContent={scriptContent} isProcessing={isProcessing} isCancelling={isCancelling} currentStepIndex={currentStepIndex} stepProgress={stepProgress} handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false, runIntent: "new" })} handleContinueAutoGenerate={() => handleStartAutoGenerate({ resumeMode: true, runIntent: "continue" })} canContinue={canContinueProject} cancelPipeline={cancelPipeline} T={T} />
 
           <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
 

@@ -117,7 +117,7 @@ export const resolveStoryboardCharacterIds = (scenes: StoryboardScene[], charact
 export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], characters: CharacterConfig[]): StoryboardScene[] => {
   let previousCharacterIds: string[] = [];
   return _.map(scenes, (scene) => {
-    const narration = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle]), " "));
+    const narration = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle, scene.visibleAction, scene.reaction, scene.spokenDialogue]), " "));
     const narrationMatchedIds = _.map(
       _.filter(characters, (character) => {
         const stableName = normalizeSearchText(character.name);
@@ -125,7 +125,10 @@ export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], cha
       }),
       "id",
     );
-    const characterIds = _.isEmpty(narrationMatchedIds) && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration) ? previousCharacterIds : narrationMatchedIds;
+    const validIds = new Set(_.map(characters, "id"));
+    const speakerIds = validIds.has(_.toString(scene.speakerCharacterId)) ? [_.toString(scene.speakerCharacterId)] : [];
+    const directIds = _.uniq(_.concat(narrationMatchedIds, speakerIds));
+    const characterIds = _.isEmpty(directIds) && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration) ? previousCharacterIds : directIds;
     if (!_.isEmpty(characterIds)) previousCharacterIds = characterIds;
     return { ...scene, characterIds };
   });

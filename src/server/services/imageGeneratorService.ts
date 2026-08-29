@@ -7,13 +7,13 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_FAMILY_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_RECOVERY_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS, GEMINI_MODEL_SELECTION_CONFIG, GEMINI_ACTIVE_VIDEO_MODE_REGEX, GEMINI_ACTIVE_IMAGE_MODE_REGEX } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_FAMILY_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_RECOVERY_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS, GEMINI_MODEL_SELECTION_CONFIG, GEMINI_ACTIVE_VIDEO_MODE_REGEX, GEMINI_ACTIVE_IMAGE_MODE_REGEX, FLOW_AGENT_UI_CONFIG, FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
 import { Browser, BrowserContext, Locator, Page } from "playwright";
-import { ChildProcess, spawn } from "child_process";
+import { spawn } from "child_process";
 import _ from "lodash";
 import { removeVideoAudioTrack } from "../utils/videoAssetProcessor.js";
 import { captureDomDiagnostics } from "./domDiagnosticsService.js";
@@ -154,45 +154,108 @@ const createFlowProject = async (page: Page): Promise<string> => {
 };
 
 const configureFlowAgentSettings = async (page: Page, visualConfig?: ImageGeneratorOptions["visualConfig"]): Promise<boolean> => {
-  const settingsButton = page.getByRole("button", { name: /tune\s*(Cài đặt|Settings)/i }).first();
+  const settingsButton = page.getByRole("button", { name: FLOW_AGENT_UI_CONFIG.SETTINGS_BUTTON }).last();
   if (!(await settingsButton.isVisible().catch(() => false))) return false;
   await settingsButton.click();
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
+  const settingsTitle = page.getByText(FLOW_AGENT_UI_CONFIG.SETTINGS_TITLE, { exact: true }).last();
+  if (!(await settingsTitle.isVisible().catch(() => false))) return false;
 
-  const neverConfirm = page.getByRole("radio", { name: /Không bao giờ|Never/i }).first();
+  const neverConfirm = page.getByRole("radio", { name: FLOW_AGENT_UI_CONFIG.NEVER_CONFIRM }).first();
   if (await neverConfirm.isVisible().catch(() => false)) await neverConfirm.click();
 
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetRatio = _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine);
-  const ratioTabs = page.getByRole("tab", { name: new RegExp(`(?:crop_[^ ]+\\s*)?${_.escapeRegExp(targetRatio)}$`, "i") });
-  const ratioCount = await ratioTabs.count();
-  if (ratioCount > 0) await ratioTabs.nth(isVideo ? ratioCount - 1 : 0).click();
+  const sectionTitle = page.getByText(isVideo ? FLOW_AGENT_UI_CONFIG.VIDEO_SECTION : FLOW_AGENT_UI_CONFIG.IMAGE_SECTION, { exact: true }).last();
+  if (!(await sectionTitle.isVisible().catch(() => false))) return false;
+  const section = sectionTitle.locator("xpath=following-sibling::*[1]");
+  const tabLists = section.getByRole("tablist");
+  const ratioTab = tabLists.first().getByRole("tab", { name: new RegExp(`(?:crop_[^ ]+\\s*)?${_.escapeRegExp(targetRatio)}$`, "i") }).first();
+  if (!(await ratioTab.isVisible().catch(() => false))) return false;
+  await ratioTab.click();
 
-  const countLabel = _.defaultTo(visualConfig?.generateCount, 1) === 1 ? "x1" : `x${visualConfig?.generateCount}`;
-  const countTabs = page.getByRole("tab", { name: new RegExp(`^${countLabel}$`, "i") });
-  const count = await countTabs.count();
-  if (count > 0) await countTabs.nth(isVideo ? count - 1 : 0).click();
+  const requestedCount = isVideo ? 1 : _.clamp(_.defaultTo(visualConfig?.generateCount, 1), 1, 4);
+  const countTab = tabLists.nth(1).getByRole("tab", { name: new RegExp(`^x${requestedCount}$`, "i") }).first();
+  if (!(await countTab.isVisible().catch(() => false))) return false;
+  await countTab.click();
 
+  let selectedModelPattern: RegExp | undefined;
   if (isVideo) {
     const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
-    const targetEngine = engine === ImageGeneratorEngine.Veo3Lite ? /Veo 3\.1 - Lite/i : engine === ImageGeneratorEngine.Veo3Fast ? /Veo 3\.1 - Fast/i : engine === ImageGeneratorEngine.Veo3Quality ? /Veo 3\.1 - Quality/i : /Omni Flash/i;
+    const targetEngine = engine === ImageGeneratorEngine.Veo3Lite ? FLOW_AGENT_UI_CONFIG.VEO_LITE_MODEL : engine === ImageGeneratorEngine.Veo3Fast ? FLOW_AGENT_UI_CONFIG.VEO_FAST_MODEL : engine === ImageGeneratorEngine.Veo3Quality ? FLOW_AGENT_UI_CONFIG.VEO_QUALITY_MODEL : FLOW_AGENT_UI_CONFIG.OMNI_MODEL;
+    selectedModelPattern = targetEngine;
     const modelButton = page
       .locator("button")
-      .filter({ hasText: /Omni Flash|Veo 3\.1 - (Lite|Fast|Quality)/i })
+      .filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN })
       .last();
-    if (await modelButton.isVisible().catch(() => false)) {
-      const currentModel = _.defaultTo(await modelButton.textContent(), "");
-      if (!targetEngine.test(currentModel)) {
-        await modelButton.click();
-        const modelItem = page.getByRole("menuitem", { name: targetEngine }).first();
-        if (await modelItem.isVisible().catch(() => false)) await modelItem.click();
-      }
+    if (!(await modelButton.isVisible().catch(() => false))) return false;
+    const currentModel = _.defaultTo(await modelButton.textContent(), "");
+    if (!targetEngine.test(currentModel)) {
+      await modelButton.click();
+      const modelItem = page.getByRole("menuitem", { name: targetEngine }).first();
+      if (!(await modelItem.isVisible().catch(() => false))) return false;
+      await modelItem.click();
     }
   }
 
-  const saveButton = page.getByRole("button", { name: /^(Lưu|Save)$/i }).last();
-  if (await saveButton.isVisible().catch(() => false)) await saveButton.click();
-  await page.waitForTimeout(500);
+  const ratioSelected = _.isEqual(await ratioTab.getAttribute("aria-selected"), "true");
+  const countSelected = _.isEqual(await countTab.getAttribute("aria-selected"), "true");
+  const modelSelected = !isVideo || Boolean(selectedModelPattern?.test(_.defaultTo(await section.locator("button").filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN }).last().textContent().catch(() => ""), "")));
+  if (!ratioSelected || !countSelected || !modelSelected) return false;
+  const saveButton = page.getByRole("button", { name: FLOW_AGENT_UI_CONFIG.SAVE_BUTTON }).last();
+  if (!(await saveButton.isVisible().catch(() => false))) return false;
+  await saveButton.click();
+  await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.SAVE_SETTLE_MS);
+  return !(await settingsTitle.isVisible().catch(() => false));
+};
+
+const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: ImageGeneratorOptions["visualConfig"]): Promise<boolean> => {
+  const agentButton = page.getByRole("button", { name: /^(?:Tác nhân|Agent)$/i }).last();
+  if (_.isEqual(await agentButton.getAttribute("aria-pressed").catch(() => null), "true")) {
+    await agentButton.click();
+    await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
+  }
+
+  const configButton = page.locator("button").filter({ hasText: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON }).last();
+  if (!(await configButton.isVisible().catch(() => false))) return false;
+  await configButton.click();
+  const menu = page.getByRole("menu").last();
+  if (!(await menu.isVisible().catch(() => false))) return false;
+
+  const videoTab = menu.getByRole("tab", { name: FLOW_DIRECT_VIDEO_CONFIG.VIDEO_TAB }).last();
+  if (!(await videoTab.isVisible().catch(() => false))) return false;
+  await videoTab.click();
+  const componentsTab = menu.getByRole("tab", { name: FLOW_DIRECT_VIDEO_CONFIG.COMPONENTS_TAB }).last();
+  if (await componentsTab.isVisible().catch(() => false)) await componentsTab.click();
+
+  const targetRatio = _.includes(FLOW_AGENT_VIDEO_ASPECT_RATIOS, visualConfig?.aspectRatio as (typeof FLOW_AGENT_VIDEO_ASPECT_RATIOS)[number]) ? visualConfig?.aspectRatio : AspectRatio.SixteenNine;
+  const targetResolution = _.includes(FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS, visualConfig?.videoResolution as (typeof FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS)[number]) ? visualConfig?.videoResolution : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION;
+  const targetDuration = _.includes(FLOW_DIRECT_VIDEO_CONFIG.DURATIONS, visualConfig?.videoDuration as (typeof FLOW_DIRECT_VIDEO_CONFIG.DURATIONS)[number]) ? visualConfig?.videoDuration : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION;
+  const ratioTab = menu.getByRole("tab", { name: new RegExp(`(?:crop_[^ ]+\\s*)?${_.escapeRegExp(_.toString(targetRatio))}$`, "i") }).last();
+  const resolutionTab = menu.getByRole("tab", { name: new RegExp(`^${_.escapeRegExp(_.toString(targetResolution))}$`, "i") }).last();
+  const durationTab = menu.getByRole("tab", { name: new RegExp(`^${_.escapeRegExp(_.toString(targetDuration))}$`, "i") }).last();
+  const countTab = menu.getByRole("tab", { name: new RegExp(`^${FLOW_DIRECT_VIDEO_CONFIG.SINGLE_OUTPUT}$`, "i") }).last();
+  for (const tab of [ratioTab, resolutionTab, durationTab, countTab]) {
+    if (!(await tab.isVisible().catch(() => false))) return false;
+    await tab.click();
+  }
+
+  const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
+  const targetEngine = engine === ImageGeneratorEngine.Veo3Lite ? FLOW_AGENT_UI_CONFIG.VEO_LITE_MODEL : engine === ImageGeneratorEngine.Veo3Fast ? FLOW_AGENT_UI_CONFIG.VEO_FAST_MODEL : engine === ImageGeneratorEngine.Veo3Quality ? FLOW_AGENT_UI_CONFIG.VEO_QUALITY_MODEL : FLOW_AGENT_UI_CONFIG.OMNI_MODEL;
+  const modelButton = menu.locator("button").filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN }).last();
+  if (!(await modelButton.isVisible().catch(() => false))) return false;
+  if (!targetEngine.test(_.defaultTo(await modelButton.textContent(), ""))) {
+    await modelButton.click();
+    const modelItem = page.getByRole("menuitem", { name: targetEngine }).last();
+    if (!(await modelItem.isVisible().catch(() => false))) return false;
+    await modelItem.click();
+  }
+
+  const selectedTabs = await Promise.all([ratioTab, resolutionTab, durationTab, countTab].map((tab) => tab.getAttribute("aria-selected")));
+  const selectedModel = targetEngine.test(_.defaultTo(await menu.locator("button").filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN }).last().textContent().catch(() => ""), ""));
+  if (!_.every(selectedTabs, (selected) => _.isEqual(selected, "true")) || !selectedModel) return false;
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
   return true;
 };
 
@@ -566,7 +629,6 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 
 let grokPage: Page | null = null;
 let grokBrowser: Browser | null = null;
-let grokChromeProcess: ChildProcess | null = null;
 let activeGrokLocalProjectId: string | null = null;
 
 const waitForGrokChrome = async (): Promise<void> => {
@@ -588,7 +650,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
   const chromeArgs = [REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace("{0}", _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)), REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace("{0}", profilePath), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, "https://grok.com/imagine"];
   if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
-  grokChromeProcess = spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
+  spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
   await waitForGrokChrome();
   await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * 8);
   grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
@@ -609,7 +671,6 @@ const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ conte
   }
   grokBrowser = null;
   grokPage = null;
-  grokChromeProcess = null;
   try {
     grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
     const existingContext = _.first(grokBrowser.contexts());
@@ -865,7 +926,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
-            const configuredAgentUi = await configureFlowAgentSettings(activePage, visualConfig);
+            const configuredAgentUi = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? await configureFlowDirectVideoSettings(activePage, visualConfig) : await configureFlowAgentSettings(activePage, visualConfig);
             if (configuredAgentUi) {
               lastPlaywrightConfigState = currentConfigState;
               appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SUCCESS);

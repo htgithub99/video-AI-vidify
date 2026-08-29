@@ -1,4 +1,10 @@
-export const CINEMATIC_POLICY_CONFIG = { MIN_BEAT_COUNT: 3, MAX_BEAT_COUNT: 5, CLIP_DURATION_SECONDS: 10, PLANNING_CHUNK_SIZE: 2, EPSILON_TOLERANCE: 0.25 } as const;
+export const CINEMATIC_POLICY_CONFIG = { MIN_BEAT_COUNT: 3, MAX_BEAT_COUNT: 5, CLIP_DURATION_SECONDS: 10, MIN_CLIP_DURATION_SECONDS: 3, MAX_CLIP_DURATION_SECONDS: 15, PLANNING_CHUNK_SIZE: 2, EPSILON_TOLERANCE: 0.25, MIN_DIALOGUE_SCENE_RATIO: 0.3 } as const;
+
+export const resolveCinematicClipDuration = (value?: string | number): number => {
+  const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));
+  if (!Number.isFinite(parsed)) return CINEMATIC_POLICY_CONFIG.CLIP_DURATION_SECONDS;
+  return Math.min(CINEMATIC_POLICY_CONFIG.MAX_CLIP_DURATION_SECONDS, Math.max(CINEMATIC_POLICY_CONFIG.MIN_CLIP_DURATION_SECONDS, parsed));
+};
 
 export const CINEMATIC_POLICY_REQUIRED_FIELDS = ["sequenceId", "shotId", "shotRole", "dialogueMode", "characterBlocking", "eyelineDirection", "screenDirection", "actionStartState", "actionEndState", "locationState", "wardrobeState", "propState"] as const;
 
@@ -31,6 +37,8 @@ You are the head screenwriter and story editor for a ${targetDuration} original 
 - Prefer concise speakable dialogue, interruptions, silence and reactions. No exposition speeches, generic motivational lines, trailer narration, omniscient summary or repeated statement of facts already visible.
 - Dialogue must be short enough for natural lip-sync inside its planned shot. Preserve the exact chosen output language and never mix languages unless the story explicitly requires it.
 - The finished film must use character dialogue and production sound, never narration or voice-over. Convey exposition through playable conversation, behavior, props and consequences. A beat without dialogue is silent_action with diegetic ambience; off_screen_dialogue is allowed only when the named speaker is physically present in the same location.
+- SCREENPLAY OUTPUT LOCK: Write the actual playable screenplay, not prose describing what the film would show. Every chapter must contain concrete scene action plus natural character dialogue. Attribute every spoken line to a named character. Do not write a narrator, narration paragraphs, voice-over, explanatory commentary, YouTube hook, synopsis, recap or phrases such as "we see", "the audience learns", "câu hỏi là", or "liệu rằng". Important story information must be discovered through a character's decision, conversation, physical evidence or visible consequence.
+- DIALOGUE COVERAGE: Unless a sequence is deliberately silent for suspense or action clarity, include at least one short speakable exchange that changes the plan, relationship, danger or available information. A film may contain silent shots, but it may not become a narrator-led slideshow. Preserve pauses and reactions around dialogue so speech remains naturally performable inside generated clips.
 - Establish geography before action, preserve prop ownership and wardrobe/damage progression, and design entrances/exits that the next clip can continue.
 - Design production sound as narrative information: establish stable room tone, give recurring locations/forces a restrained sonic motif, let footsteps, mechanisms, breath, cloth, weather or distant threats anticipate visible events, and carry ambience across connected clips. Avoid constant trailer music, generic impacts and a whoosh at every cut.
 - End each sequence on a changed objective, new danger, discovery, sacrifice or consequence. The ending must pay off the opening dramatic question.

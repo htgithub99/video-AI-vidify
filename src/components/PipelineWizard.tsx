@@ -49,9 +49,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     [currentStep]: true,
   });
 
-  if (!visitedSteps[currentStep]) {
-    setVisitedSteps((prev) => ({ ...prev, [currentStep]: true }));
-  }
+  React.useEffect(() => {
+    setVisitedSteps((previous) => (previous[currentStep] ? previous : { ...previous, [currentStep]: true }));
+  }, [currentStep]);
 
   const handleAddFavorite = () => {
     if (!favFormName.trim() || !favFormURI.trim()) return;

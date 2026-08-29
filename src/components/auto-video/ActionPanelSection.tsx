@@ -1,7 +1,7 @@
 import { cn } from "../../lib/utils";
 import React from "react";
 import _ from "lodash";
-import { Zap, X, Activity } from "lucide-react";
+import { Zap, X, Activity, Play } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
@@ -13,11 +13,13 @@ interface ActionPanelSectionProps {
   currentStepIndex: number;
   stepProgress: number;
   handleStartAutoGenerate: () => Promise<void>;
+  handleContinueAutoGenerate: () => Promise<void>;
+  canContinue: boolean;
   cancelPipeline: () => void;
   T: ReturnType<typeof getAutoVideoTexts>;
 }
 
-export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptContent, isProcessing, isCancelling, currentStepIndex, stepProgress, handleStartAutoGenerate, cancelPipeline, T }) => {
+export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptContent, isProcessing, isCancelling, currentStepIndex, stepProgress, handleStartAutoGenerate, handleContinueAutoGenerate, canContinue, cancelPipeline, T }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
 
   return (
@@ -40,6 +42,23 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           <span className={cn("truncate tracking-wide font-black text-white drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
         </Button>
 
+        {!isProcessing && canContinue && (
+          <Button
+            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+            variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+            size={REFACTOR_CONSTANTS.SIZE_LG}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void handleContinueAutoGenerate();
+            }}
+            className={cn("flex-1 py-4 text-sm font-extrabold text-white rounded-2xl border border-emerald-400/40 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500")}
+            title={T.continueBtnTooltip}>
+            <Play className={cn("w-4 h-4 shrink-0")} />
+            <span className={cn("truncate")}>{T.continueBtn}</span>
+          </Button>
+        )}
+
         {isProcessing && (
           <Button
             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
@@ -60,17 +79,17 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
         )}
       </div>
 
-      {(isProcessing || _.gt(stepProgress, 0)) && (
-        <div className={cn("space-y-2 pt-1 text-left relative z-10 bg-slate-955/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner")}>
+      {(isProcessing || canContinue) && (
+        <div className={cn("space-y-2 text-left relative z-10 bg-slate-955/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner")}>
           <div className={cn("flex justify-between items-center text-xs font-mono font-bold")}>
             <span className={cn("text-amber-400 flex items-center gap-1.5 font-bold")}>
-              <Activity className={cn("w-3.5 h-3.5 animate-spin text-amber-400")} />
+              <Activity className={cn("w-3.5 h-3.5 text-amber-400", { "animate-spin": isProcessing })} />
               {T.progressNodeLabel} [{currentStepIndex}/4]
             </span>
             <span className={cn("text-emerald-400 font-black tracking-wider text-sm")}>{stepProgress}%</span>
           </div>
           <div className={cn("w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5 shadow-inner")}>
-            <div className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-md shadow-emerald-500/50")} style={{ width: `${stepProgress}%` }} />
+            <div className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-[width] duration-500 shadow-md shadow-emerald-500/50")} style={{ width: `${stepProgress}%` }} />
           </div>
         </div>
       )}

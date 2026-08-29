@@ -319,10 +319,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 }
 
 function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
-  const oldImagesCount = _.size(_.filter(oldProject.storyboard, (s: any) => s.assetUrl));
-  const newImagesCount = _.size(_.filter(newProject.storyboard, (s: any) => s.assetUrl));
-
-  if (_.gt(_.subtract(oldImagesCount, newImagesCount), COMMON_STRINGS.IMAGE_DIFF_THRESHOLD) && !newProject.allowBulkDeleteImages) {
+  if (!newProject.allowBulkDeleteImages) {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
       if (_.get(oldScene, "assetUrl") && !_.get(newScene, "assetUrl")) {
@@ -673,6 +670,44 @@ export const updateProject = async (request: Request, response: Response) => {
     if (oldProject) {
       let newProject = request.body;
 
+      if (newProject.resetDerivedData) {
+        Object.assign(newProject, {
+          output: undefined,
+          scriptRewritten: undefined,
+          factCheckNotes: undefined,
+          creativeBrief: undefined,
+          narrativePlan: undefined,
+          chapterPlans: undefined,
+          factPack: undefined,
+          scriptQa: undefined,
+          subtitleQa: undefined,
+          editorQa: undefined,
+          visualBible: undefined,
+          storyboardQa: undefined,
+          imagePromptQa: undefined,
+          contentSafety: undefined,
+          audioCueSheet: undefined,
+          shadowComparison: undefined,
+          dependencyHashes: undefined,
+          manualReviewItems: [],
+          finalQc: undefined,
+          finalMultimodalQa: undefined,
+          chapters: [],
+          storyboard: [],
+          thumbnails: [],
+          seo: undefined,
+          assets: [],
+          renderedVideoUrl: undefined,
+        });
+      }
+
+      if (!newProject.allowBulkDeleteImages) {
+        if (_.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard)) newProject.storyboard = oldProject.storyboard;
+        if (_.isEmpty(newProject.thumbnails) && !_.isEmpty(oldProject.thumbnails)) newProject.thumbnails = oldProject.thumbnails;
+        if (_.isEmpty(newProject.renderedVideoUrl) && !_.isEmpty(oldProject.renderedVideoUrl)) newProject.renderedVideoUrl = oldProject.renderedVideoUrl;
+        if (_.isEmpty(newProject.voiceConfig?.audioUrl) && _.isEmpty(newProject.voiceConfig?.audioBase64) && (!_.isEmpty(oldProject.voiceConfig?.audioUrl) || !_.isEmpty(oldProject.voiceConfig?.audioBase64))) newProject.voiceConfig = oldProject.voiceConfig;
+      }
+
       const failedBeforeProducingStoryboard = _.includes([REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED], newProject.status) && _.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard);
       if (failedBeforeProducingStoryboard && !newProject.isRecreatingStoryboard) {
         newProject = {
@@ -696,6 +731,16 @@ export const updateProject = async (request: Request, response: Response) => {
       const folderName = id;
       const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
 
+      if (newProject.resetDerivedData) {
+        const videoDir = path.resolve(projectDir, VIDEOS_DIR_NAME);
+        const resolvedProjectDir = path.resolve(projectDir);
+        const relativeVideoDir = path.relative(resolvedProjectDir, videoDir);
+        if (!relativeVideoDir.startsWith("..") && !path.isAbsolute(relativeVideoDir)) {
+          fs.rmSync(videoDir, { recursive: true, force: true });
+          fs.mkdirSync(videoDir, { recursive: true });
+        }
+      }
+
       if (oldProject?.storyboard && newProject?.storyboard) {
         if (newProject.isRecreatingStoryboard) {
           const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
@@ -718,6 +763,7 @@ export const updateProject = async (request: Request, response: Response) => {
       delete newProject.allowBulkDeleteImages;
       delete newProject.isRecreatingStoryboard;
       delete newProject.allowAudioCleanup;
+      delete newProject.resetDerivedData;
 
       const updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
       const savedProject = await saveProjectDetail(updatedProject);

@@ -3,7 +3,7 @@ import React from "react";
 import _ from "lodash";
 import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react";
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
-import { MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
+import { FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
@@ -34,7 +34,7 @@ interface GenerationSettingsSectionProps {
 export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({ generationMode, setGenerationMode, imageGeneratorEngine, setImageGeneratorEngine, aspectRatio, setAspectRatio, generateType, setGenerateType, maxVideoScenes, setMaxVideoScenes, getImageEngineOptions, T, mediaMixTexts, forceVideoOnly = false, chromeHeadless = false, setChromeHeadless, videoDuration, setVideoDuration, videoResolution, setVideoResolution }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
-  const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", uiTexts.maxVideos);
+  const maxVideosLabel = mediaMixTexts?.maxVideos || uiTexts.maxVideos;
   const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", uiTexts.maxVideosTooltip);
   const selectingLabel = _.get(mediaMixTexts, "selecting", uiTexts.selectingScenes);
 
@@ -42,6 +42,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   const isGrokProvider = forceVideoOnly && _.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine);
   const engineOptions = forceVideoOnly ? _.filter(allEngineOptions, (option) => (isGrokProvider ? _.isEqual(option.value, ImageGeneratorEngine.GrokImagine) : !_.isEqual(option.value, ImageGeneratorEngine.GrokImagine))) : allEngineOptions;
   const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
+  const aspectRatioOptions = forceVideoOnly && !isGrokProvider ? FLOW_AGENT_VIDEO_ASPECT_RATIOS : _.values(AspectRatio);
+  const videoDurationOptions = isGrokProvider ? REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS : REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS;
+  const videoResolutionOptions = isGrokProvider ? REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS : REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS;
 
   return (
     <div className={cn("space-y-4")}>
@@ -97,7 +100,16 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   value={isGrokProvider ? ImageGeneratorEngine.GrokImagine : ImageGenerationMode.LabsFlow}
                   onChange={(event) => {
                     setGenerationMode(ImageGenerationMode.LabsFlow);
-                    setImageGeneratorEngine(_.isEqual(event.target.value, ImageGeneratorEngine.GrokImagine) ? ImageGeneratorEngine.GrokImagine : ImageGeneratorEngine.Veo3);
+                    const nextEngine = _.isEqual(event.target.value, ImageGeneratorEngine.GrokImagine) ? ImageGeneratorEngine.GrokImagine : ImageGeneratorEngine.Veo3;
+                    setImageGeneratorEngine(nextEngine);
+                    if (_.isEqual(nextEngine, ImageGeneratorEngine.GrokImagine)) {
+                      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, videoDuration)) setVideoDuration(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
+                      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
+                    } else {
+                      if (!_.includes(FLOW_AGENT_VIDEO_ASPECT_RATIOS, aspectRatio as (typeof FLOW_AGENT_VIDEO_ASPECT_RATIOS)[number])) setAspectRatio(AspectRatio.SixteenNine);
+                      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS, videoDuration)) setVideoDuration(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION);
+                      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION);
+                    }
                   }}
                   className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                   <option value={ImageGenerationMode.LabsFlow} className={cn("bg-slate-955 text-slate-300")}>
@@ -145,14 +157,14 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </div>
           )}
 
-          {isGrokProvider && (
+          {forceVideoOnly && (
             <>
               <div className={cn("space-y-1")}>
-                <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>Thời lượng</span>
+                <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblDuration}</span>
                 <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5")}>
                   <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                   <select value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
-                    {_.map(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, (duration) => (
+                    {_.map(videoDurationOptions, (duration) => (
                       <option key={duration} value={duration} className={cn("bg-slate-955 text-slate-300")}>
                         {duration}
                       </option>
@@ -162,11 +174,11 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                 </div>
               </div>
               <div className={cn("space-y-1")}>
-                <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>Độ phân giải</span>
+                <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblVideoResolution}</span>
                 <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5")}>
                   <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                   <select value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
-                    {_.map(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, (resolution) => (
+                    {_.map(videoResolutionOptions, (resolution) => (
                       <option key={resolution} value={resolution} className={cn("bg-slate-955 text-slate-300")}>
                         {resolution}
                       </option>
@@ -183,7 +195,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
               <Layout className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
               <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
-                {_.map(_.values(AspectRatio), (r) => (
+                {_.map(aspectRatioOptions, (r) => (
                   <option key={r} value={r} className={cn("bg-slate-955 text-slate-300")}>
                     {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
                   </option>

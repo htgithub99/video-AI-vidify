@@ -481,6 +481,13 @@ export enum ShotPurpose {
   Callback = "callback",
   Montage = "montage",
   EmotionalHold = "emotional_hold",
+  Obstacle = "obstacle",
+  Decision = "decision",
+  Escalation = "escalation",
+  Reversal = "reversal",
+  Climax = "climax",
+  Payoff = "payoff",
+  Transition = "transition",
 }
 
 export interface StoryboardScene {
@@ -593,6 +600,13 @@ export interface StoryboardScene {
   cinematicTakeDecision?: CinematicTakeDecision;
   cinematicTakeDecisionReason?: string;
   cinematicRegenerationCount?: number;
+  cinematicContinuityScore?: number;
+  cinematicStoryClarityScore?: number;
+  cinematicPerformanceScore?: number;
+  cinematicAudioBridgeMode?: "hard" | "j_cut" | "l_cut" | "ambience";
+  cinematicSupportShotType?: "none" | "reaction" | "insert" | "environment" | "aftermath";
+  cinematicGenerationRetryCount?: number;
+  cinematicPolicyReview?: { violatesPolicy: boolean; risks: string[]; rationale: string };
 }
 
 export interface SubtitleCue {
@@ -993,11 +1007,22 @@ export interface VideoProject {
   allowBulkDeleteImages?: boolean;
   isRecreatingStoryboard?: boolean;
   allowAudioCleanup?: boolean;
+  resetDerivedData?: boolean;
   status?: string;
   activeRunId?: string | null;
   lastRunId?: string;
-  generationLogs?: string[];
-  renderedVideoUrl?: string;
+    generationLogs?: string[];
+    generationCheckpoint?: {
+      intent: "new" | "continue" | "render_only";
+      phase: string;
+      lastSuccessfulPhase?: string;
+      completedSceneIds: string[];
+      pendingSceneIds: string[];
+      failedSceneIds: string[];
+      renderJobId?: string | null;
+      updatedAt: string;
+    };
+    renderedVideoUrl?: string;
 }
 
 export interface PipelineWizardProps {

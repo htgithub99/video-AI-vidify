@@ -1,4 +1,4 @@
-import { SubtitleMode } from "../types";
+import { AspectRatio, ImageGenerationMode, ImageGeneratorEngine, SubtitleMode } from "../types";
 
 export const APP_CONFIG = { TOAST_DURATION: 3000 };
 
@@ -612,9 +612,9 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_PROJECT_SUCCESS: '✅ Đã chuẩn bị dự án "{0}" thành công!',
   LOG_SCRIPT_GEN: "📌 [Bước 1/4] Trí tuệ nhân tạo (AI) đang phân tích và biên soạn kịch bản chi tiết...",
   LOG_VOICE_GEN: "📌 [Bước 2/4] Đang tạo giọng thuyết minh ({0})...",
-  LOG_IMAGE_GEN: "📌 [Bước 3/4] Đang vẽ tranh minh họa bằng công nghệ AI ({0})...",
+  LOG_IMAGE_GEN: "📌 [Bước 3/4] Đang tạo tài nguyên hình ảnh và video phân cảnh ({0})...",
   LOG_IMAGE_SCENE_GEN: "🎨 Đang vẽ hình minh họa cho phân cảnh {0}/{1}...",
-  LOG_RENDER_GEN: "📌 [Bước 4/4] Đang ghép nối hình ảnh, âm thanh và hoàn thiện video chất lượng cao...",
+  LOG_RENDER_GEN: "📌 [Bước 4/4] Đang biên tập phân cảnh, cân bằng âm thanh và hoàn thiện video...",
   LOG_RENDER_SUCCESS: "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
   ERR_RENDER_NO_URL: "Không tìm thấy tệp video sau khi hoàn tất xuất bản",
   ERR_AUTO_GEN_FAILED: "❌ Quy trình tạo video gặp sự cố. {0}",
@@ -635,7 +635,7 @@ export const AUTO_GENERATOR_CONSTANTS = {
   VOICE_AGE_PATH: "voiceConfig.age",
   VOICE_EMOTION_PATH: "voiceConfig.emotion",
   LOG_VOICE_TTS_SUCCESS: "✓ Sinh giọng nói tổng thành công.",
-  LOG_ALIGN_BACKEND_START: "Bước 9: Đang chạy Whisper căn khớp thời gian và cắt nhỏ giọng đọc theo từng phân cảnh trên backend...",
+  LOG_ALIGN_BACKEND_START: "Đang căn khớp lời thoại và thời lượng cho từng phân cảnh...",
   LOG_ALIGN_BACKEND_SUCCESS: "✓ Căn khớp và tách nhỏ âm thanh trên backend thành công.",
   LOG_ALIGN_BACKEND_ERROR: "⚠️ Lỗi cắt nhỏ âm thanh trên backend: ",
   UI_SEO_TITLE_SHORT: "Tối ưu SEO",
@@ -665,11 +665,11 @@ export const AUTO_GENERATOR_CONSTANTS = {
   UI_SEO_METRIC_CTR: "CTR",
   UI_SEO_METRIC_COMPET: "Compet",
   UI_SEO_METRIC_SEO: "SEO",
-  LOG_SCRIPT_WRITE: "Bước 1: Đang tiến hành viết lại kịch bản nâng cao...",
+  LOG_SCRIPT_WRITE: "Đang biên tập kịch bản theo yêu cầu nội dung và thời lượng...",
   LOG_SCRIPT_REWRITE_SUCCESS: "✓ Viết lại kịch bản thành công.",
   LOG_STORYBOARD_SPLIT: "Đang phân tích kịch bản và chia phân cảnh...",
-  LOG_STYLE_EXTRACT: "Bước 3: Phát hiện ảnh mẫu phong cách. Đang học hỏi phong cách nghệ thuật...",
-  LOG_STYLE_EXTRACT_SKIP: "Bước 3: Không có ảnh mẫu phong cách, bỏ qua bước học hỏi nghệ thuật.",
+  LOG_STYLE_EXTRACT: "Đã phát hiện ảnh mẫu; đang phân tích ngôn ngữ hình ảnh.",
+  LOG_STYLE_EXTRACT_SKIP: "Không có ảnh mẫu; sử dụng phong cách đã chọn trong cấu hình.",
   LOG_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả phân cảnh...",
   LOG_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách hình ảnh vào kịch bản thành công.",
   LOG_CHAR_ANALYZE: "Đang phân tích nhân vật chính và nhân vật phụ từ kịch bản...",
@@ -677,12 +677,12 @@ export const AUTO_GENERATOR_CONSTANTS = {
   CHARACTER_ID_PREFIX: "char_",
   LOG_CHAR_REWRITE: "Đang viết lại mô tả phân cảnh đồng nhất nhân vật chính...",
   LOG_CHAR_REWRITE_SUCCESS: "✓ Viết lại mô tả đồng nhất nhân vật chính thành công.",
-  LOG_PROMPT_OPTIMIZE: "Bước 5: Đang thực hiện tối ưu hóa câu lệnh tạo ảnh...",
+  LOG_PROMPT_OPTIMIZE: "Đang hoàn thiện prompt hình ảnh và video cho từng phân cảnh...",
   LOG_PROMPT_OPTIMIZE_SUCCESS: "✓ Tối ưu hóa câu lệnh hoàn tất.",
-  LOG_SEO_OPTIMIZE: "Bước 7: Đang tối ưu hóa tiêu đề, mô tả và từ khóa tìm kiếm...",
+  LOG_SEO_OPTIMIZE: "Đang biên tập tiêu đề, mô tả và từ khóa tìm kiếm...",
   LOG_SEO_SUCCESS: "✓ Dữ liệu chuẩn SEO đã được tạo thành công.",
   LOG_SEO_FAILED: "⚠️ Không thể sinh dữ liệu SEO.",
-  LOG_THUMBNAILS_GEN: "Bước 8: Đang tạo ý tưởng thiết kế ảnh bìa...",
+  LOG_THUMBNAILS_GEN: "Đang thiết kế các phương án ảnh bìa...",
   LOG_THUMBNAILS_SUCCESS: "✓ Vẽ toàn bộ ảnh bìa thu nhỏ thành công.",
   LOG_THUMBNAILS_FAILED: "⚠️ Không thể sinh ảnh bìa.",
   ERR_SCRIPT_REWRITE: "Lỗi trong quá trình viết lại kịch bản.",
@@ -694,8 +694,8 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_THUMBNAILS_IDEAS_CREATED: "✓ Tạo {0} ý tưởng ảnh bìa. Bắt đầu vẽ ảnh bìa hàng loạt...",
   LOG_THUMBNAILS_SCENE_GEN: "Đang vẽ ảnh bìa {0}/{1}...",
   LOG_VOICE_GEN_TTS: 'Đang tạo giọng đọc AI (TTS) với giọng đọc "{0}"...',
-  LOG_THUMB_STYLE_EXTRACT: "Bước 3.5: Phát hiện ảnh mẫu ảnh bìa. Đang học hỏi phong cách ảnh bìa...",
-  LOG_THUMB_STYLE_EXTRACT_SKIP: "Bước 3.5: Không có ảnh mẫu ảnh bìa, bỏ qua bước học hỏi ảnh bìa.",
+  LOG_THUMB_STYLE_EXTRACT: "Đã phát hiện ảnh mẫu ảnh bìa; đang phân tích bố cục và phong cách.",
+  LOG_THUMB_STYLE_EXTRACT_SKIP: "Không có ảnh mẫu ảnh bìa; sử dụng phong cách ảnh bìa đã chọn.",
   LOG_THUMB_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách ảnh bìa thành công: {0}",
   LOG_THUMB_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả ảnh bìa...",
   LOG_THUMB_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách ảnh bìa thành công.",
@@ -803,6 +803,15 @@ export const STORYBOARD_FALLBACK_CONFIG = {
 
 export const PRODUCTION_AUDIO_CONFIG = { BLOCKED_SOURCE_VALUES: ["simulated", "simulated_speech"], SOURCE_REQUIRED_ERROR: "Video cần giọng đọc thật. Hãy tạo hoặc tải lên giọng đọc rồi thử lại.", SOURCE_BLOCKED_ERROR: "Giọng đọc mẫu không thể dùng để dựng video. Hãy tạo hoặc tải lên giọng đọc thật." } as const;
 
+export const VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG = {
+  MIN_PROMPT_WORDS: 45,
+  MAX_PROMPT_WORDS: 140,
+  SENTENCE_END_PATTERN: /[.!?]$/,
+  DANGLING_END_PATTERN: /\b(?:a|an|the|and|or|but|with|without|into|from|toward|towards|through|while|then|his|her|their|its|một|những|các|và|hoặc|nhưng|với|vào|từ|khi)\s*[.!?]?$/i,
+  COMPILER_FALLBACK_PATTERN: /literal narrated event to depict|Editorial visual grounded only in this narration/i,
+  SUBJECT_OPTIONAL_ROLES: ["insert", "transition"],
+} as const;
+
 export const SCRIPT_PLAN_CONFIG = {
   MIN_CHAPTERS: 3,
   MAX_CHAPTERS: 8,
@@ -883,6 +892,40 @@ export const RENDER_QUEUE_CONFIG = {
 } as const;
 
 export const FINAL_MULTIMODAL_QA_CONFIG = { TARGET_SCORE: 85, FRAME_COUNT: 12, MIN_SAMPLE_INTERVAL_SECONDS: 1, DEFAULT_SAMPLE_INTERVAL_SECONDS: 6, FRAME_SCALE_WIDTH: 512, FRAME_FILE_PATTERN: "frame_%02d.jpg", FRAME_EXTENSION: ".jpg", FRAME_MIME_TYPE: "image/jpeg", AUDIO_FILE_NAME: "final_mix.mp3", AUDIO_MIME_TYPE: "audio/mpeg", AUDIO_BITRATE: "64k", AUDIO_CHANNELS: 1, MAX_AUDIO_REVIEW_SECONDS: 120, MAX_OUTPUT_TOKENS: 1536, TEMP_DIR_PREFIX: "final-qc-", FFMPEG_FALLBACK_COMMAND: "ffmpeg", UNAVAILABLE_WARNING: "final_multimodal_qa_unavailable", UNAVAILABLE_ERROR: "final_multimodal_qa_required", BELOW_TARGET_WARNING: "final_quality_below_target", SCORE_FIELDS: ["visualScore", "cropScore", "continuityScore", "pacingScore", "transitionVarietyScore", "promiseAlignmentScore", "audioMixScore", "subtitleLegibilityScore"] } as const;
+
+export const CINEMATIC_EDIT_ANALYSIS_CONFIG = { FRAME_COUNT: 6, CONTACT_SHEET_WIDTH: 768, CONTACT_SHEET_COLUMNS: 3, CONTACT_SHEET_FILE_NAME: "contact.jpg", TEMP_DIR_PREFIX: "cinematic-edit-", IMAGE_MIME_TYPE: "image/jpeg", MAX_OUTPUT_TOKENS: 8192, MIN_USABLE_SECONDS: 1.5, MAX_EDGE_TRIM_RATIO: 0.3, FFMPEG_TIMEOUT_MS: 30000 } as const;
+
+export const FLOW_AGENT_UI_CONFIG = {
+  SETTINGS_BUTTON: /(?:tune\s*)?(?:Cài đặt|Settings)/i,
+  SETTINGS_TITLE: /Cài đặt tác nhân|Agent settings/i,
+  NEVER_CONFIRM: /Không bao giờ|Never/i,
+  IMAGE_SECTION: /Chế độ mặc định của tính năng tạo hình ảnh|Default image generation mode/i,
+  VIDEO_SECTION: /Chế độ mặc định của tính năng tạo video|Default video generation mode/i,
+  MODEL_PATTERN: /Omni(?:\s+1\.1)?\s+Flash|Veo 3\.1\s*-\s*(?:Lite|Fast|Quality)/i,
+  OMNI_MODEL: /Omni(?:\s+1\.1)?\s+Flash/i,
+  VEO_LITE_MODEL: /Veo 3\.1\s*-\s*Lite/i,
+  VEO_FAST_MODEL: /Veo 3\.1\s*-\s*Fast/i,
+  VEO_QUALITY_MODEL: /Veo 3\.1\s*-\s*Quality/i,
+  SAVE_BUTTON: /^(?:Lưu|Save)$/i,
+  CREATE_BUTTON: /^(?:arrow_forward\s*)?(?:Tạo|Create)$/i,
+  CONFIG_SETTLE_MS: 350,
+  SAVE_SETTLE_MS: 500,
+} as const;
+
+export const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRatio.NineSixteen] as const;
+
+export const FLOW_DIRECT_VIDEO_CONFIG = {
+  VIDEO_TAB: /(?:videocam\s*)?(?:Video)/i,
+  COMPONENTS_TAB: /(?:chrome_extension\s*)?(?:Thành phần|Components)/i,
+  CONFIG_BUTTON: /Video\s*·|Nano Banana|Omni(?:\s+1\.1)?\s+Flash|Veo 3\.1/i,
+  RESOLUTIONS: ["360p", "720p"],
+  DURATIONS: ["4s", "6s", "8s", "10s"],
+  DEFAULT_RESOLUTION: "360p",
+  DEFAULT_DURATION: "8s",
+  SINGLE_OUTPUT: "x1",
+} as const;
+
+export const CINEMATIC_GENERATION_RECOVERY_CONFIG = { IMMEDIATE_RETRY_COUNT: 2, POLICY_REPAIR_MAX_OUTPUT_TOKENS: 4096 } as const;
 
 export const VISUAL_QA_MEDIA_CONFIG = { TEMP_DIR_PREFIX: "visual-qa-", INPUT_FILE_NAME: "candidate.mp4", FRAME_FILE_PATTERN: "frame_%02d.jpg", FRAME_EXTENSION: ".jpg", FRAME_MIME_TYPE: "image/jpeg", VIDEO_EXTENSION_PATTERN: /\.(?:mp4|webm|mov|mkv)$/i, FRAME_FILTER: "fps=1/2,scale=512:-2", MAX_FRAMES: 3, FFMPEG_FALLBACK_COMMAND: "ffmpeg", EXTRACTION_FAILED: "Chưa thể đọc khung hình video để kiểm tra chất lượng. Hãy tạo lại cảnh video rồi thử lại." } as const;
 
@@ -992,6 +1035,30 @@ export const CINEMATIC_CONFIG = {
   MAX_EPISODE_COUNT: 24,
   DEFAULT_DURATION: "1 minute",
   DURATIONS: ["1 minute", "2 minutes", "3 minutes", "3-5 minutes", "5-10 minutes", "10-15 minutes"],
-  PERSISTENCE_SCOPE: "auto_video_generator",
+  PERSISTENCE_SCOPE: "cinematic_film_studio",
+  STATE_SCOPE: "cinematic",
+  UNLIMITED_VIDEO_SCENES: Number.MAX_SAFE_INTEGER,
+  GENERATION_DEFAULTS: {
+    MODE: ImageGenerationMode.LabsFlow,
+    ENGINE: ImageGeneratorEngine.Veo3,
+    CHROME_HEADLESS: false,
+    CLIP_DURATION: "10s",
+    RESOLUTION: "360p",
+    ASPECT_RATIO: AspectRatio.SixteenNine,
+  },
+  PIPELINE_PROFILE: {
+    REWRITE_LEVEL: 100,
+    SIMILARITY_REDUCTION: 7,
+    CREATIVITY_LEVEL: 8,
+    FACT_CHECK: false,
+    WRITING_STYLE: "playable cinematic screenplay with natural character dialogue and no narration",
+    SPLIT_STRATEGY: "cinematic",
+    HOOK_STRATEGY: "disabled",
+    HOOK_DURATION: 0,
+    HOOK_POSITION: "none",
+    VOICE_PROVIDER: "native_video_audio",
+    AUDIENCE_VI: "khán giả phim Việt Nam",
+    AUDIENCE_EN: "international film audience",
+  },
   ACCENT_COLOR_BLUE: "blue",
 } as const;
