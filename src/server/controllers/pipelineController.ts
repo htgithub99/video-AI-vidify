@@ -1412,16 +1412,13 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     let versions = combinedResult.versions || [];
     if (_.isArray(versions)) {
       versions = rankHookVersions(
-        _.map(
-          versions,
-          (v: any, idx: number): HookVersion => ({
-            id: v.id || `hk_${idx + 1}`,
-            content: v.content || "",
-            type: v.type || hookType || "StyleName",
-            selected: idx === 0,
-            score: v.score,
-          }),
-        ),
+        _.map(versions, (v: any, idx: number): HookVersion => ({
+          id: v.id || `hk_${idx + 1}`,
+          content: v.content || "",
+          type: v.type || hookType || "StyleName",
+          selected: idx === 0,
+          score: v.score,
+        })),
       );
     }
 
@@ -1527,16 +1524,13 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         assertResponseContract(hookResult, ResponseContractName.Hook);
         if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          const rawGeneratedHookVersions = _.map(
-            _.take(hookResult.versions, hookCount),
-            (version: any, index: number): HookVersion => ({
-              id: version.id || `hk_${index + 1}`,
-              content: version.content || "",
-              type: version.type || hookType,
-              selected: false,
-              score: version.score,
-            }),
-          );
+          const rawGeneratedHookVersions = _.map(_.take(hookResult.versions, hookCount), (version: any, index: number): HookVersion => ({
+            id: version.id || `hk_${index + 1}`,
+            content: version.content || "",
+            type: version.type || hookType,
+            selected: false,
+            score: version.score,
+          }));
           generatedHookVersions = resolveUsableHooks(await repairHookVersionsLanguage(rawGeneratedHookVersions, isVi), hookType, hookCount, originalInput, isVi);
           const selectedHook = _.find(generatedHookVersions, "selected");
           if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);

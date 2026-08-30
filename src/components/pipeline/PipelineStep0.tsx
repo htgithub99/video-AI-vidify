@@ -374,8 +374,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <SettingSlider
               label={t.C_ng_Vi_t_l_i}
-              value={project.config.rewriteLevel}
-              displayValue={`${project.config.rewriteLevel}%`}
+              value={project.config.rewriteLevel ?? 50}
+              displayValue={`${project.config.rewriteLevel ?? 50}%`}
               min={0}
               max={100}
               colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10"
@@ -390,8 +390,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <SettingSlider
               label={t.Gi_m_tr_ng_l_p}
-              value={project.config.similarityReduction}
-              displayValue={`${project.config.similarityReduction}/10`}
+              value={project.config.similarityReduction ?? 5}
+              displayValue={`${project.config.similarityReduction ?? 5}/10`}
               min={1}
               max={10}
               colorClass="text-amber-450 bg-amber-500/10 border-amber-500/10"

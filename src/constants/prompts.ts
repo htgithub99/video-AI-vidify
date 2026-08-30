@@ -28,8 +28,17 @@ const getNaturalNarrationLanguageDirective = (isVi: boolean): string =>
 - Vary sentence openings and length. Use punctuation as natural breathing points for English TTS; avoid run-ons, uniform cadence and repeated transition templates.
 - Remove empty AI phrases such as "in today's world", "it is important to note", "little did they know", "but the story doesn't end there", "a stark reminder", "a valuable lesson", "a complex tapestry" and "behind the glamorous facade" unless the source literally requires them.
 - Use contractions when natural for the chosen voice, but never manufacture slang, copy a creator's signature wording, overuse rhetorical questions, or translate Vietnamese idioms literally.`;
-const SATIRICAL_GENRES = new Set<string>([VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY]);
-const getSatiricalHookDirective = (genre: string): string => (SATIRICAL_GENRES.has(genre) ? `\nSATIRICAL HOOK RULE: Use dry conversational irony and a sharp expectation-versus-reality turn. Tease the absurd mechanism, not the victim. No invented statistic, moral condemnation, humiliation, generic shock bait, or formal documentary phrasing.` : "");
+const SATIRICAL_GENRES = new Set<string>([
+  VideoGenre.SATIRICAL_LIFE_AUTO,
+  VideoGenre.TRANSFORMATION_TIMELINE,
+  VideoGenre.CAREER_SOCIAL_DARKSIDE,
+  VideoGenre.DOWNFALL_CONSEQUENCE,
+  VideoGenre.DARK_COMEDY_TRAGEDY,
+]);
+const getSatiricalHookDirective = (genre: string): string =>
+  SATIRICAL_GENRES.has(genre)
+    ? `\nSATIRICAL HOOK RULE: Use dry conversational irony and a sharp expectation-versus-reality turn. Tease the absurd mechanism, not the victim. No invented statistic, moral condemnation, humiliation, generic shock bait, or formal documentary phrasing.`
+    : "";
 const getGenreStylePriorityDirective = (genre: string): string =>
   SATIRICAL_GENRES.has(genre)
     ? `\n[GENRE VOICE PRIORITY]: The dry conversational satirical narrator persona is mandatory and overrides any formal tone implied by the selected Writing Style. A Professional or Documentary style may increase rigor, clarity and factual discipline, but must never turn the narration into corporate prose, a solemn warning, a moral lecture or victim-blaming.
@@ -66,7 +75,9 @@ const getGenreStylePriorityDirective = (genre: string): string =>
 export const VIETNAMESE_CHAPTER_RETRY_DIRECTIVE = `CRITICAL MANDATE: The narration segment for this chapter MUST be written 100% in natural, grammatically correct VIETNAMESE WITH COMPLETE DIACRITICS AND TONES (Tiếng Việt có dấu đầy đủ: à, á, ả, ã, ạ, â, ê, ô, ơ, ư, đ...). ABSOLUTELY NEVER write unaccented or tone-less Vietnamese (e.g., NEVER write "Ban dang ngoi trong phong...", ALWAYS write "Bạn đang ngồi trong phòng..."). Return natural Vietnamese with complete diacritics and tones. Return only the required JSON object.`;
 export const ENGLISH_CHAPTER_RETRY_DIRECTIVE = `CRITICAL MANDATE: The narration segment for this chapter MUST be written 100% in natural, fluent ENGLISH. Follow all sentence structure and word count requirements strictly. Return only the required JSON object.`;
 
-export const getVietnameseDiacriticsRestorationPrompt = (rawText: string): string => `You are an expert Vietnamese linguistic specialist. Your task is to restore ALL ACCENTS, DIACRITICS, AND TONES (sắc, huyền, hỏi, ngã, nặng, â, ê, ô, ơ, ư, đ) for the following unaccented or partially accented Vietnamese text.
+export const getVietnameseDiacriticsRestorationPrompt = (
+  rawText: string,
+): string => `You are an expert Vietnamese linguistic specialist. Your task is to restore ALL ACCENTS, DIACRITICS, AND TONES (sắc, huyền, hỏi, ngã, nặng, â, ê, ô, ơ, ư, đ) for the following unaccented or partially accented Vietnamese text.
 MANDATORY REQUIREMENTS:
 1. Preserve 100% of the original sentence structure, phrasing, meaning, tone, and punctuation.
 2. Add accurate Vietnamese diacritics and tone marks matching natural, formal Vietnamese vocabulary and grammar.
@@ -75,7 +86,10 @@ MANDATORY REQUIREMENTS:
 [Text to restore diacritics]:
 ${rawText}`;
 
-export const getGeneratedMediaLanguageDirective = (isVi: boolean): string => (isVi ? `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Keep the technical image/video prompt in English, but every human-readable word rendered inside the scene (signs, screens, labels, documents, captions, UI, posters) MUST be natural Vietnamese with correct diacritics. If generated media contains speech, dialogue, narration, singing, lip-sync, or any audible human voice, it MUST be spoken exclusively in Vietnamese with natural Vietnamese pronunciation. Never render or speak English unless the scene script explicitly quotes an English term. Do not invent visible text or dialogue when the script does not require it.` : `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Every human-readable word rendered inside the scene and every spoken or lip-synced line in generated media MUST be in natural English. Do not invent visible text or dialogue when the script does not require it.`);
+export const getGeneratedMediaLanguageDirective = (isVi: boolean): string =>
+  isVi
+    ? `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Keep the technical image/video prompt in English, but every human-readable word rendered inside the scene (signs, screens, labels, documents, captions, UI, posters) MUST be natural Vietnamese with correct diacritics. If generated media contains speech, dialogue, narration, singing, lip-sync, or any audible human voice, it MUST be spoken exclusively in Vietnamese with natural Vietnamese pronunciation. Never render or speak English unless the scene script explicitly quotes an English term. Do not invent visible text or dialogue when the script does not require it.`
+    : `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Every human-readable word rendered inside the scene and every spoken or lip-synced line in generated media MUST be in natural English. Do not invent visible text or dialogue when the script does not require it.`;
 
 const PROMPT_DIRECTIVE_LABELS = { background: "BACKGROUND POLICY", text: "TEXT-IN-IMAGE POLICY", focus: "IMAGE FOCUS & COMPOSITION POLICY" } as const;
 
@@ -89,7 +103,11 @@ const PROMPT_DIRECTIVE_INTEGRATION_RULES = `[DIRECTIVE PRIORITY & INTEGRATION RU
 7. Do not include any model-specific aspect-ratio parameter. The application appends exactly one after the AI-authored prompt.`;
 
 const getPromptDirectiveSection = (backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => {
-  const directives = _.compact([backgroundDirective && `[${PROMPT_DIRECTIVE_LABELS.background}]\n${backgroundDirective}`, textDirective && `[${PROMPT_DIRECTIVE_LABELS.text}]\n${textDirective}`, focusDirective && `[${PROMPT_DIRECTIVE_LABELS.focus}]\n${focusDirective}`]);
+  const directives = _.compact([
+    backgroundDirective && `[${PROMPT_DIRECTIVE_LABELS.background}]\n${backgroundDirective}`,
+    textDirective && `[${PROMPT_DIRECTIVE_LABELS.text}]\n${textDirective}`,
+    focusDirective && `[${PROMPT_DIRECTIVE_LABELS.focus}]\n${focusDirective}`,
+  ]);
 
   return _.isEmpty(directives) ? "" : `${_.join(directives, "\n")}\n${PROMPT_DIRECTIVE_INTEGRATION_RULES}`;
 };
@@ -166,7 +184,15 @@ export const COMPACT_CINEMATIC_PROMPT_RULES = `[CORE VISUAL PROMPT CONTRACT]
 7. Avoid redundant style synonyms, repeated lens terms, duplicate directives, frames, borders and invented typography.
 8. Do not include any model-specific aspect-ratio parameter; the application appends exactly one after the AI-authored prompt.`;
 
-export const getSceneStyleRewritePrompt = (promptText: string, newStyle: string, isThumbnail: boolean = false, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
+export const getSceneStyleRewritePrompt = (
+  promptText: string,
+  newStyle: string,
+  isThumbnail: boolean = false,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+): string => `You are an elite AI Image Prompt Designer.
 Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it to perfectly align with the new visual style, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -190,7 +216,16 @@ ${NO_FRAME_RULE}
 - Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after your rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
-export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string, isThumbnail: boolean = false): string => `You are an elite AI Image Prompt Designer.
+export const getStyleRewriteBatchPrompt = (
+  newStyle: string,
+  chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  isVi: boolean = false,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+  isThumbnail: boolean = false,
+): string => `You are an elite AI Image Prompt Designer.
 Your task is to take a list of original ${isThumbnail ? "thumbnail" : "image"} generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, key identifiers${isThumbnail ? ", selected layout, negative space, headline wording, and headline placement" : ""} intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -220,7 +255,28 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes:
 ${chunkJson}`;
 
-export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string, backgroundMode: string = "auto", textMode: string = "auto", focusMode: string = "default", referenceContext: string = "No reference image will be attached.", visualBibleJson: string = "", continuityContext: string = "", locationLibraryJson: string = "", propLibraryJson: string = "", correctionIssuesJson: string = "", editorialContext: string = "", clipDurationSeconds: number = 10): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
+export const getOptimizePromptsBatchPrompt = (
+  visualStyle: string,
+  referenceStyle: string,
+  chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  charactersJson?: string,
+  isVi: boolean = false,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+  backgroundMode: string = "auto",
+  textMode: string = "auto",
+  focusMode: string = "default",
+  referenceContext: string = "No reference image will be attached.",
+  visualBibleJson: string = "",
+  continuityContext: string = "",
+  locationLibraryJson: string = "",
+  propLibraryJson: string = "",
+  correctionIssuesJson: string = "",
+  editorialContext: string = "",
+  clipDurationSeconds: number = 10,
+): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
 
 ${UNTRUSTED_INPUT_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
@@ -366,7 +422,14 @@ Output ONLY this JSON array shape:
 Input scenes:
 ${chunkJson}`;
 
-export const getHookGeneratorPrompt = (count: number, originalInput: string, genre: string, hookType: string, duration: number, language: string): string => `You are a professional Youtube and TikTok script writer specializing in video layouts.
+export const getHookGeneratorPrompt = (
+  count: number,
+  originalInput: string,
+  genre: string,
+  hookType: string,
+  duration: number,
+  language: string,
+): string => `You are a professional Youtube and TikTok script writer specializing in video layouts.
 Generate ${count || 3} different hooks based on this input: "${originalInput}".
 Genre/Category context: ${genre || "Storytelling"}.
 Hook Style desired: ${hookType || "Auto"} (options: Auto, Mystery, Shock, Drama, Curiosity, Emotional, Historical, Statistical, Question, Story).
@@ -379,7 +442,18 @@ You must return a raw JSON Array matching this format perfectly. No markdown cod
 [ { "id": "hk_unique_1", "content": "The Hook Line...", "type": "StyleName", "selected": true }
  ]`;
 
-export const getChapterWriterPrompt = (chapterTitle: string, chapterDescription: string, genre: string, writingStyle: string, isVi: boolean, genreGuideline: string, styleGuideline: string, chapterWordTarget: number, splitStrategy: string, storyState: string): string => {
+export const getChapterWriterPrompt = (
+  chapterTitle: string,
+  chapterDescription: string,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  genreGuideline: string,
+  styleGuideline: string,
+  chapterWordTarget: number,
+  splitStrategy: string,
+  storyState: string,
+): string => {
   let sentenceLengthDirective = "";
   const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
   const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
@@ -437,7 +511,14 @@ Provide strict output complying EXACTLY with this JSON structure:
 }`;
 };
 
-export const getChapterExpansionPrompt = (originalInput: string, chapterTitle: string, currentSegment: string, minimumAdditionalWords: number, maximumAdditionalWords: number, isVi: boolean): string => `You are extending one narration chapter that is shorter than its required duration. Write ${minimumAdditionalWords}-${maximumAdditionalWords} NEW words that continue the existing chapter naturally. Stay strictly on the original topic and chapter title, add concrete consequences/examples, avoid repeating existing sentences, and do not introduce unsupported precise facts. Return ONLY a JSON object with scriptSegment containing the continuation text, not the existing text and not a placeholder. Language: ${isVi ? "Vietnamese" : "English"}.
+export const getChapterExpansionPrompt = (
+  originalInput: string,
+  chapterTitle: string,
+  currentSegment: string,
+  minimumAdditionalWords: number,
+  maximumAdditionalWords: number,
+  isVi: boolean,
+): string => `You are extending one narration chapter that is shorter than its required duration. Write ${minimumAdditionalWords}-${maximumAdditionalWords} NEW words that continue the existing chapter naturally. Stay strictly on the original topic and chapter title, add concrete consequences/examples, avoid repeating existing sentences, and do not introduce unsupported precise facts. Return ONLY a JSON object with scriptSegment containing the continuation text, not the existing text and not a placeholder. Language: ${isVi ? "Vietnamese" : "English"}.
 
 [Original topic]
 ${originalInput}
@@ -448,7 +529,12 @@ ${chapterTitle}
 [Existing segment]
 ${currentSegment}`;
 
-export const getFinalScriptEditorialPrompt = (script: string, genre: string, isVi: boolean, targetWordCount: number): string => `You are the final senior narration editor. Polish the supplied complete video script once, then score the finished result.
+export const getFinalScriptEditorialPrompt = (
+  script: string,
+  genre: string,
+  isVi: boolean,
+  targetWordCount: number,
+): string => `You are the final senior narration editor. Polish the supplied complete video script once, then score the finished result.
 ${UNTRUSTED_INPUT_RULE}
 
 Language: ${isVi ? "Natural spoken Vietnamese with complete correct diacritics" : "Natural idiomatic spoken English"}.
@@ -476,7 +562,17 @@ Return JSON only with this exact structure:
 [COMPLETE SCRIPT]
 ${script}`;
 
-export const getSceneImageQualityPrompt = (sceneId: string, sceneScript: string, imagePrompt: string, expectedSubjectCount?: number, purpose: string = "scene", expectedHeadline: string = "", layoutId: string = "", typographyId: string = "", allowBackgroundPeople: boolean = false): string => `You are a strict senior ${purpose === "video" ? "film editor, continuity supervisor and AI-video quality controller" : "art director and AI-image quality controller"}.
+export const getSceneImageQualityPrompt = (
+  sceneId: string,
+  sceneScript: string,
+  imagePrompt: string,
+  expectedSubjectCount?: number,
+  purpose: string = "scene",
+  expectedHeadline: string = "",
+  layoutId: string = "",
+  typographyId: string = "",
+  allowBackgroundPeople: boolean = false,
+): string => `You are a strict senior ${purpose === "video" ? "film editor, continuity supervisor and AI-video quality controller" : "art director and AI-image quality controller"}.
 Evaluate the attached ${purpose === "thumbnail" ? "finished YouTube thumbnail" : purpose === "video" ? "chronological sampled frames from one generated film clip" : "image"} for use in a professional edited video.
 
 SCENE ID: ${sceneId}
@@ -512,9 +608,13 @@ Return JSON only:
 
 Use integer scores from 0 to 100. Detect unwanted readable text, multi-panel/collage layouts, and duplicated primary subjects explicitly. Only mark them blocking when they materially violate the supplied prompt or make the frame unusable. If a blocking defect exists, usableForVideo must be false.`;
 
-export const SCENE_QA_REFERENCE_DIRECTIVE = "The next image is the canonical character/style reference. Penalize identity, clothing, age, skin-tone, line-style, and palette drift in the candidate image.";
+export const SCENE_QA_REFERENCE_DIRECTIVE =
+  "The next image is the canonical character/style reference. Penalize identity, clothing, age, skin-tone, line-style, and palette drift in the candidate image.";
 
-export const getImagePromptDesignerPrompt = (genre: string, rewrittenScript: string): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
+export const getImagePromptDesignerPrompt = (
+  genre: string,
+  rewrittenScript: string,
+): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
 - Genre Theme: ${genre}
@@ -538,7 +638,26 @@ ${COMPACT_CINEMATIC_PROMPT_RULES}
 ${NO_FRAME_RULE}
 Return ONLY the prompt text in English, no explanations, no quotes.`;
 
-export const getVideoDirectorSceneSplitPrompt = (chunkIndex: number, totalChunks: number, genre: string, genreVisualGuideline: string, splitInstruction: string, visualStyle: string, referenceStyle: string, customSplitRules: string, isVi: boolean, chunkScript: string, chaptersStr: string, referenceCharacters?: string, aspectRatio: string = AspectRatio.SixteenNine, characterSpecs?: string, landscapeSpecs?: string, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes and design high-quality, consistent image prompts.
+export const getVideoDirectorSceneSplitPrompt = (
+  chunkIndex: number,
+  totalChunks: number,
+  genre: string,
+  genreVisualGuideline: string,
+  splitInstruction: string,
+  visualStyle: string,
+  referenceStyle: string,
+  customSplitRules: string,
+  isVi: boolean,
+  chunkScript: string,
+  chaptersStr: string,
+  referenceCharacters?: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  characterSpecs?: string,
+  landscapeSpecs?: string,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes and design high-quality, consistent image prompts.
 ${UNTRUSTED_INPUT_RULE}
 
 [TARGET CANVAS]
@@ -661,9 +780,19 @@ ${chunkScript}
 Chapters structure context:
 ${chaptersStr}`;
 
-export const getScriptSplitPrompt = (script: string, chaptersStr: string, splitStrategy: string, isVi: boolean, cinematicClipCount?: number, clipDurationSeconds: number = 10): string => {
+export const getScriptSplitPrompt = (
+  script: string,
+  chaptersStr: string,
+  splitStrategy: string,
+  isVi: boolean,
+  cinematicClipCount?: number,
+  clipDurationSeconds: number = 10,
+): string => {
   const strategyConfig = SPLIT_STRATEGY_CONFIGS[splitStrategy];
-  const splitInstruction = cinematicClipCount ? `CINEMATIC COST BUDGET: Return EXACTLY ${cinematicClipCount} clip units—no more and no fewer. Each unit represents one ${clipDurationSeconds}-second video-generation request and must contain an AI-selected 3 to 5 internal camera shots; 3 is the minimum, while 4 or 5 are used only when they add distinct readable story information. Group adjacent sentences that belong to the same continuous cause-action-consequence event. Give every unit one distinct editorial role—setup, obstacle, decision, escalation, reversal, climax, reaction, payoff or transition—and never repeat the same role or visible action in adjacent units. Do not create one clip per sentence, clause, camera angle, reaction, or insert. Preserve every script word exactly across the ${cinematicClipCount} units.` : strategyConfig?.instruction || "CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.";
+  const splitInstruction = cinematicClipCount
+    ? `CINEMATIC COST BUDGET: Return EXACTLY ${cinematicClipCount} clip units—no more and no fewer. Each unit represents one ${clipDurationSeconds}-second video-generation request and must contain an AI-selected 3 to 5 internal camera shots; 3 is the minimum, while 4 or 5 are used only when they add distinct readable story information. Group adjacent sentences that belong to the same continuous cause-action-consequence event. Give every unit one distinct editorial role—setup, obstacle, decision, escalation, reversal, climax, reaction, payoff or transition—and never repeat the same role or visible action in adjacent units. Do not create one clip per sentence, clause, camera angle, reaction, or insert. Preserve every script word exactly across the ${cinematicClipCount} units.`
+    : strategyConfig?.instruction ||
+      "CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.";
 
   return `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes.
 
@@ -710,7 +839,15 @@ Chapters structure context:
 ${chaptersStr}`;
 };
 
-export const getSeoOptimizationPrompt = (rewrittenScript: string, isVi: boolean, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number, genre?: string): string => `You are an elite YouTube & TikTok viral video strategist, SEO growth hacker, and copywriting master.
+export const getSeoOptimizationPrompt = (
+  rewrittenScript: string,
+  isVi: boolean,
+  numTitles: number,
+  numDescriptions: number,
+  numHashtags: number,
+  numTags: number,
+  genre?: string,
+): string => `You are an elite YouTube & TikTok viral video strategist, SEO growth hacker, and copywriting master.
 Your task is to analyze the provided video script and generate punchy, irresistible, highly-clickable video titles, descriptions, hashtags, and search tags in ${isVi ? "Vietnamese" : "English"}.
 
 [TARGET GENRE & AUDIENCE PSYCHOLOGY]
@@ -749,7 +886,10 @@ Return ONLY a valid raw JSON object matching this schema with NO markdown wrappi
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getVideoSceneSelectionPrompt = (scenesJson: string, maxVideos: number): string => `You are a cinematic editor. Select at most ${maxVideos} storyboard scenes that benefit most from real motion.
+export const getVideoSceneSelectionPrompt = (
+  scenesJson: string,
+  maxVideos: number,
+): string => `You are a cinematic editor. Select at most ${maxVideos} storyboard scenes that benefit most from real motion.
 
 Judge incremental motion value: select a scene only when moving video communicates something materially better than a well-directed still image.
 
@@ -770,16 +910,28 @@ Return only valid JSON:
 Storyboard:
 ${scenesJson}`;
 
-export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nMULTIMODAL REFERENCE ROLE:\nUse the supplied images only as a soft visual-language reference. Preserve a small set of reusable traits such as medium, character construction, line behavior and color/rendering method. The script is always authoritative for people, locations, props, action, era, mood, lighting and composition. Ignore every sampled location, object arrangement, pose and lighting state. Never force a scene into the sample's world when the narration calls for another setting.";
+export const VISUAL_BIBLE_REFERENCE_PROMPT =
+  "\n\nMULTIMODAL REFERENCE ROLE:\nUse the supplied images only as a soft visual-language reference. Preserve a small set of reusable traits such as medium, character construction, line behavior and color/rendering method. The script is always authoritative for people, locations, props, action, era, mood, lighting and composition. Ignore every sampled location, object arrangement, pose and lighting state. Never force a scene into the sample's world when the narration calls for another setting.";
 
-export const THUMBNAIL_IMAGE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL THUMBNAIL REFERENCE DIRECTIVE:\nReference 1, when supplied, is the authoritative scene Style Core for all character construction. A thumbnail sample may influence only broad background treatment and contrast, never character anatomy, medium, line language or coloring. The selected layout controls geometry and typography through the closed eight-template catalog. Render the exact requested headline and required arrow directly in the generated image. Never copy sample people, location, lighting, words, logos, poses, objects, story details or arrangement.";
+export const THUMBNAIL_IMAGE_REFERENCE_PROMPT =
+  "\n\nCRITICAL MULTIMODAL THUMBNAIL REFERENCE DIRECTIVE:\nReference 1, when supplied, is the authoritative scene Style Core for all character construction. A thumbnail sample may influence only broad background treatment and contrast, never character anatomy, medium, line language or coloring. The selected layout controls geometry and typography through the closed eight-template catalog. Render the exact requested headline and required arrow directly in the generated image. Never copy sample people, location, lighting, words, logos, poses, objects, story details or arrangement.";
 
 export const TEMPLATE_TMP_CONTENT = (projectName: string) => `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${projectName}`;
 
-export const CAMERA_ANGLES = ["low-angle shot, looking up", "high-angle shot, looking down", "close-up portrait shot focusing on expression", "wide-angle panoramic view establishing the environment", "medium shot from side profile", "dramatic over-the-shoulder shot", "extreme close-up shot focusing on details", "three-quarter angle shot showing action"];
+export const CAMERA_ANGLES = [
+  "low-angle shot, looking up",
+  "high-angle shot, looking down",
+  "close-up portrait shot focusing on expression",
+  "wide-angle panoramic view establishing the environment",
+  "medium shot from side profile",
+  "dramatic over-the-shoulder shot",
+  "extreme close-up shot focusing on details",
+  "three-quarter angle shot showing action",
+];
 
 export const BORDERLESS_KEYWORD = "borderless, no frame, no borders";
-export const getDuplicateScenePromptDirective = (sceneScript: string, cameraAngle: string): string => `unique narrative beat showing specifically: ${sceneScript}, visibly different subject action and composition, alternate camera shot: ${cameraAngle}, distinct scene progression`;
+export const getDuplicateScenePromptDirective = (sceneScript: string, cameraAngle: string): string =>
+  `unique narrative beat showing specifically: ${sceneScript}, visibly different subject action and composition, alternate camera shot: ${cameraAngle}, distinct scene progression`;
 
 export const getSceneDetailBatchPrompt = (
   scenesJson: string,
@@ -893,7 +1045,14 @@ Here are the scenes to process:
 ${scenesJson}`;
 };
 
-export const getSeoMarketerPrompt = (rewrittenScript: string, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number, isVi: boolean): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
+export const getSeoMarketerPrompt = (
+  rewrittenScript: string,
+  numTitles: number,
+  numDescriptions: number,
+  numHashtags: number,
+  numTags: number,
+  isVi: boolean,
+): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
 Your task is to analyze this video script and generate fully optimized search and click metadata:
 ---
 ${rewrittenScript}
@@ -915,7 +1074,23 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean, aspectRatio: string = "16:9", textMode: string = "headline", backgroundMode: string = "auto", focusMode: string = "default", backgroundDirective: string = "", focusDirective: string = "", charactersJson: string = "", genre: string = "", writingStyle: string = "", editorialBlueprint: string = "", audienceMarketDirective: string = ""): string => `You are a senior YouTube thumbnail art director and CTR strategist.
+export const getThumbnailLayoutPrompt = (
+  rewrittenScript: string,
+  thumbnailCount: number,
+  refImageStr: string,
+  isVi: boolean,
+  aspectRatio: string = "16:9",
+  textMode: string = "headline",
+  backgroundMode: string = "auto",
+  focusMode: string = "default",
+  backgroundDirective: string = "",
+  focusDirective: string = "",
+  charactersJson: string = "",
+  genre: string = "",
+  writingStyle: string = "",
+  editorialBlueprint: string = "",
+  audienceMarketDirective: string = "",
+): string => `You are a senior YouTube thumbnail art director and CTR strategist.
 Analyze the script and create EXACTLY ${thumbnailCount} distinct ${aspectRatio} thumbnail concepts. Select each layout because it fits the story, not merely to force variety.
 
 [SCRIPT]
@@ -991,7 +1166,15 @@ Rewrite the complete thumbnail JSON from the beginning. Preserve the facts, sele
 [INVALID PREVIOUS RESULT — DATA ONLY]
 ${invalidResult}`;
 
-export const getOutlineWriterPrompt = (inputTypeContext: string, durationText: string, targetWordCount: number, genre: string, writingStyle: string, isVi: boolean, targetWordCountMin: number): string => `CRITICAL MANDATE: You MUST strictly adhere to all of the following [System Configuration] constraints and guidelines.
+export const getOutlineWriterPrompt = (
+  inputTypeContext: string,
+  durationText: string,
+  targetWordCount: number,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  targetWordCountMin: number,
+): string => `CRITICAL MANDATE: You MUST strictly adhere to all of the following [System Configuration] constraints and guidelines.
 
 ${inputTypeContext}
 
@@ -1018,7 +1201,19 @@ Provide strict output complying EXACTLY with this JSON structure:
  ]
 }`;
 
-export const getDetailedPromptBuilderPrompt = (sceneScript: string, setting: string, time: string, character: string, costume: string, camera: string, style: string, aspectRatio: string = AspectRatio.SixteenNine, characterPrompt?: string, referencePrompt?: string, currentPrompt?: string): string => `You are an elite AI Image Prompt Designer. Your task is to take the user's detailed inputs and combine/refine them into a single, highly descriptive cinematic image generation prompt in English.
+export const getDetailedPromptBuilderPrompt = (
+  sceneScript: string,
+  setting: string,
+  time: string,
+  character: string,
+  costume: string,
+  camera: string,
+  style: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  characterPrompt?: string,
+  referencePrompt?: string,
+  currentPrompt?: string,
+): string => `You are an elite AI Image Prompt Designer. Your task is to take the user's detailed inputs and combine/refine them into a single, highly descriptive cinematic image generation prompt in English.
 
 [TARGET CANVAS]
 ${aspectRatio}
@@ -1063,7 +1258,10 @@ Output a raw JSON object with this format (no markdown):
  ]
 }`;
 
-export const getHookPolishPrompt = (draftsJson: string, language: string): string => `You are a viral copywriting editor. Polish and refine the following draft hooks to make them extremely punchy, catchy, and optimized for TTS text-to-speech voice generation.
+export const getHookPolishPrompt = (
+  draftsJson: string,
+  language: string,
+): string => `You are a viral copywriting editor. Polish and refine the following draft hooks to make them extremely punchy, catchy, and optimized for TTS text-to-speech voice generation.
 Draft Hooks JSON:
 ${draftsJson}
 
@@ -1075,7 +1273,12 @@ Rules:
 [ { "id": "hk_unique_1", "content": "Polished Hook Line...", "type": "Angle Name", "selected": true }
  ]`;
 
-export const getScriptConceptPrompt = (originalInput: string, genre: string, writingStyle: string, language: string): string => `You are an expert Hollywood screenwriter, researcher, and creative director.
+export const getScriptConceptPrompt = (
+  originalInput: string,
+  genre: string,
+  writingStyle: string,
+  language: string,
+): string => `You are an expert Hollywood screenwriter, researcher, and creative director.
 Create a high-retention "Concept & Terminology Sheet" with a 3-ACT HOLLYWOOD PACING framework based on:
 Input Idea: "${originalInput}"
 Genre: "${genre}"
@@ -1121,7 +1324,10 @@ Output a raw JSON object matching this schema (no markdown wrapping):
  ]
 }`;
 
-export const getScriptSanitizePrompt = (rawScript: string, isVi: boolean): string => `You are an AI Script Formatting Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
+export const getScriptSanitizePrompt = (
+  rawScript: string,
+  isVi: boolean,
+): string => `You are an AI Script Formatting Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
 Raw Script:
 """
 ${rawScript}
@@ -1187,7 +1393,10 @@ Output a raw JSON object matching this schema (no markdown wrapping):
   return prompt;
 };
 
-export const getScenePromptRefinePrompt = (_scenesJson: string, visualBibleJson: string): string => `You are an elite Image Prompt Refiner. Your goal is to apply a global Visual Bible to individual scene prompts to ensure perfect character and visual consistency across the entire storyboard.
+export const getScenePromptRefinePrompt = (
+  _scenesJson: string,
+  visualBibleJson: string,
+): string => `You are an elite Image Prompt Refiner. Your goal is to apply a global Visual Bible to individual scene prompts to ensure perfect character and visual consistency across the entire storyboard.
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
 You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
@@ -1235,7 +1444,11 @@ Output a raw JSON object (no markdown wrapping):
   "keywords": ["keyword 1", "keyword 2"]
 }`;
 
-export const getSeoRefinementPrompt = (draftSeoJson: string, keywordsJson: string, isVi: boolean): string => `You are a high-CTR SEO Optimizer. Take the draft SEO metadata and optimize it using the analyzed keywords list.
+export const getSeoRefinementPrompt = (
+  draftSeoJson: string,
+  keywordsJson: string,
+  isVi: boolean,
+): string => `You are a high-CTR SEO Optimizer. Take the draft SEO metadata and optimize it using the analyzed keywords list.
 Draft SEO:
 ${draftSeoJson}
 
@@ -1257,7 +1470,11 @@ Rules:
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailConceptPrompt = (script: string, count: number, isVi: boolean): string => `You are a world-class viral YouTube thumbnail growth hacker and CTR strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
+export const getThumbnailConceptPrompt = (
+  script: string,
+  count: number,
+  isVi: boolean,
+): string => `You are a world-class viral YouTube thumbnail growth hacker and CTR strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
 Script:
 """
 ${script}
@@ -1278,7 +1495,10 @@ Output a raw JSON object (no markdown wrapping):
  ]
 }`;
 
-export const getThumbnailPromptRefinePrompt = (draftThumbsJson: string, conceptsJson: string): string => `You are an expert thumbnail layout editor. Your task is to refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
+export const getThumbnailPromptRefinePrompt = (
+  draftThumbsJson: string,
+  conceptsJson: string,
+): string => `You are an expert thumbnail layout editor. Your task is to refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Draft Thumbnails to refine:
@@ -1321,7 +1541,11 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
   }
 ]`;
 
-export const getCharacterAnalysisPrompt = (script: string, visualStyle: string = "", sourceContext: string = ""): string => `Analyze the source premise and script, then design at most three recurring, visually important characters in the supplied art style.
+export const getCharacterAnalysisPrompt = (
+  script: string,
+  visualStyle: string = "",
+  sourceContext: string = "",
+): string => `Analyze the source premise and script, then design at most three recurring, visually important characters in the supplied art style.
 
 Authoritative source premise/topic:
 ${sourceContext || "No separate source premise supplied. Infer identity only from explicit script evidence."}
@@ -1386,7 +1610,9 @@ containing at most 3 elements. Do not include markdown tags, code blocks, or exp
 Script:
 ${script}`;
 
-export const getCharacterExtractPrompt = (characterDescription: string): string => `You are an expert prompt engineer. Analyze the provided image(s) showing the same main character, along with their text description: "${characterDescription || ""}".
+export const getCharacterExtractPrompt = (
+  characterDescription: string,
+): string => `You are an expert prompt engineer. Analyze the provided image(s) showing the same main character, along with their text description: "${characterDescription || ""}".
 Extract a highly detailed character design prompt in English that describes this character consistently. Focus on:
 - Gender, ethnicity, and approximate age
 - Facial features (eyes, nose, expression style)
@@ -1396,7 +1622,14 @@ Extract a highly detailed character design prompt in English that describes this
 
 Keep the output as a set of keywords or descriptive phrases separated by commas, max 30 words in total. Only return the English character prompt keywords, with no introductory text or markdown.`;
 
-export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
+export const getCharacterRewriteBatchPrompt = (
+  charactersJson: string,
+  chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
 
 [TARGET CANVAS]
 ${aspectRatio}
@@ -1434,7 +1667,14 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 Input scenes:
 ${chunkJson}`;
 
-export const getCharacterRewriteThumbnailsBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
+export const getCharacterRewriteThumbnailsBatchPrompt = (
+  charactersJson: string,
+  chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
 
 [TARGET CANVAS]
 ${aspectRatio}
@@ -1532,7 +1772,14 @@ Analyze and return JSON with these exact fields:
 
 Return ONLY valid JSON matching this schema.`;
 
-export const getMultiStepHookPrompt = (originalInput: string, genre: string, hookType: string, duration: number, language: string, count: number): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
+export const getMultiStepHookPrompt = (
+  originalInput: string,
+  genre: string,
+  hookType: string,
+  duration: number,
+  language: string,
+  count: number,
+): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
 Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
 
 [Genre Context]: ${genre || "Storytelling"}
@@ -1577,7 +1824,20 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   ]
 }`;
 
-export const getCombinedScriptPrompt = (originalInput: string, durationText: string, targetWordCount: number, genre: string, writingStyle: string, isVi: boolean, selectedHookText: string, genreGuideline: string, styleGuideline: string, audienceGuideline: string, targetChapterCount: number, hookConfig?: { type: string; duration: number; positions: string }): string => `You are an elite, professional research director and script outline planner.
+export const getCombinedScriptPrompt = (
+  originalInput: string,
+  durationText: string,
+  targetWordCount: number,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  selectedHookText: string,
+  genreGuideline: string,
+  styleGuideline: string,
+  audienceGuideline: string,
+  targetChapterCount: number,
+  hookConfig?: { type: string; duration: number; positions: string },
+): string => `You are an elite, professional research director and script outline planner.
 ${UNTRUSTED_INPUT_RULE}
 Your mission is to perform a highly unified script outline and research process for this input: "${originalInput}".
 
@@ -1709,22 +1969,32 @@ MANDATORY: Generate exactly ${targetChapterCount} concise chapters in the chapte
   ]
 }`;
 
-export const getAudioQualityPrompt = (script: string, targetDurationSeconds: number): string => `You are an independent senior voice director and audio QC engineer. Listen to the supplied narration audio and compare it with the script. Use editorial judgment. Blocking errors are reserved for technically unusable audio such as prolonged silence/dropouts, severe clipping, unintelligible or materially wrong narration, or speed so extreme that viewers cannot follow it. Lower-quality delivery, limited emotion, small pronunciation imperfections, or a duration preference belong in warnings and scores, not blockingErrors.
+export const getAudioQualityPrompt = (
+  script: string,
+  targetDurationSeconds: number,
+): string => `You are an independent senior voice director and audio QC engineer. Listen to the supplied narration audio and compare it with the script. Use editorial judgment. Blocking errors are reserved for technically unusable audio such as prolonged silence/dropouts, severe clipping, unintelligible or materially wrong narration, or speed so extreme that viewers cannot follow it. Lower-quality delivery, limited emotion, small pronunciation imperfections, or a duration preference belong in warnings and scores, not blockingErrors.
 Target duration: ${targetDurationSeconds} seconds
 Script: ${script}
 Score pronunciation accuracy, natural pauses, loudness/clipping safety, human naturalness versus robotic delivery, and emotional transitions from 0 to 100. Add blocking errors for unintelligible or materially incorrect pronunciation, clipping, silence/dropouts, severe speed problems, robotic delivery, or emotion that contradicts the story. Output ONLY raw JSON:
 {"pronunciationScore":0,"pauseScore":0,"loudnessScore":0,"naturalnessScore":0,"emotionTransitionScore":0,"blockingErrors":[],"warnings":[]}`;
 
-export const getFinalVideoQualityPrompt = (script: string, viewerPromise: string): string => `You are the final independent multimodal QC director. The supplied images are evenly distributed chronological frames from the rendered video, followed by the rendered audio mix. Detect black/blank/corrupt frames, severe anatomy, prominent garbled or illegible subtitles, destructive crop, character/style drift, recurring protagonist/antagonist/supporting-character identity drift, broken visual continuity, disappearance or unexplained transfer/change of a story-critical prop, repetitive compositions, weak pacing, clipped or inaudible narration/dialogue, narration masked by supporting audio, abrupt audio cuts, audible room-tone resets at clip boundaries, distracting synthetic tones, repetitive beeps, excessive impacts, effects unrelated to visible action, and mismatch with the script/viewer promise. Judge whether the concrete viewer objective remains visually trackable, whether location/time changes have a motivated bridge, whether setup/escalation/climax receive proportionate screen time, and whether the ending visibly proves the promised result or consequence instead of merely stopping. Adapt that judgment to genre: evidence-to-conclusion for factual work, question-to-result for education, problem-to-proof-to-verdict for reviews, and objective-to-consequence for narrative work. Background music, ambience, and sound effects remain editorial enhancements rather than completion blockers: their absence may create an advisory warning when the genre or visible action clearly benefits from sound design, but it must never block video completion. When supporting audio is absent, assess audioMixScore from speech clarity, loudness, continuity, and freedom from clipping. When supporting audio is present, also assess relevance, variation, tonal quality and balance with speech. Use practical publishing judgment. A publishable result needs clear speech, readable subtitles, coherent visuals, professional pacing, a visible payoff and no distracting audio. Score every field from 0 to 100. Output ONLY raw JSON:
+export const getFinalVideoQualityPrompt = (
+  script: string,
+  viewerPromise: string,
+): string => `You are the final independent multimodal QC director. The supplied images are evenly distributed chronological frames from the rendered video, followed by the rendered audio mix. Detect black/blank/corrupt frames, severe anatomy, prominent garbled or illegible subtitles, destructive crop, character/style drift, recurring protagonist/antagonist/supporting-character identity drift, broken visual continuity, disappearance or unexplained transfer/change of a story-critical prop, repetitive compositions, weak pacing, clipped or inaudible narration/dialogue, narration masked by supporting audio, abrupt audio cuts, audible room-tone resets at clip boundaries, distracting synthetic tones, repetitive beeps, excessive impacts, effects unrelated to visible action, and mismatch with the script/viewer promise. Judge whether the concrete viewer objective remains visually trackable, whether location/time changes have a motivated bridge, whether setup/escalation/climax receive proportionate screen time, and whether the ending visibly proves the promised result or consequence instead of merely stopping. Adapt that judgment to genre: evidence-to-conclusion for factual work, question-to-result for education, problem-to-proof-to-verdict for reviews, and objective-to-consequence for narrative work. Background music, ambience, and sound effects remain editorial enhancements rather than completion blockers: their absence may create an advisory warning when the genre or visible action clearly benefits from sound design, but it must never block video completion. When supporting audio is absent, assess audioMixScore from speech clarity, loudness, continuity, and freedom from clipping. When supporting audio is present, also assess relevance, variation, tonal quality and balance with speech. Use practical publishing judgment. A publishable result needs clear speech, readable subtitles, coherent visuals, professional pacing, a visible payoff and no distracting audio. Score every field from 0 to 100. Output ONLY raw JSON:
 {"visualScore":0,"cropScore":0,"continuityScore":0,"pacingScore":0,"transitionVarietyScore":0,"promiseAlignmentScore":0,"audioMixScore":0,"subtitleLegibilityScore":0,"blockingErrors":[],"warnings":[]}
 Viewer promise: ${viewerPromise}
 Script: ${script}`;
 
-export const getContentSafetyPrompt = (input: string): string => `You are Vidify's independent safety, privacy, and rights editor. Classify the proposed video before production. Apply strict scrutiny to crime, sexual exploitation, minors, victim-blaming, graphic or gratuitous content, private-person allegations, likeness, copyright/reference rights, and true-case claims without disclosure. Do not block responsible documentary discussion merely because the topic is sensitive; require careful scope/disclosure. Block content that sexualizes/exploits minors, meaningfully facilitates abuse/crime, doxxes private people, makes unsupported harmful allegations, or requires rights the user has not established. Output ONLY raw JSON:
+export const getContentSafetyPrompt = (
+  input: string,
+): string => `You are Vidify's independent safety, privacy, and rights editor. Classify the proposed video before production. Apply strict scrutiny to crime, sexual exploitation, minors, victim-blaming, graphic or gratuitous content, private-person allegations, likeness, copyright/reference rights, and true-case claims without disclosure. Do not block responsible documentary discussion merely because the topic is sensitive; require careful scope/disclosure. Block content that sexualizes/exploits minors, meaningfully facilitates abuse/crime, doxxes private people, makes unsupported harmful allegations, or requires rights the user has not established. Output ONLY raw JSON:
 {"sensitiveTopic":false,"trueCase":false,"minorsInvolved":false,"sexualExploitationRisk":false,"victimExploitationRisk":false,"privacyRisk":false,"likenessRisk":false,"copyrightRisk":false,"requiredDisclosures":[],"blockingErrors":[],"warnings":[]}
 Input: ${input}`;
 
-export const getCinematicEditDecisionPrompt = (sceneMetadata: unknown): string => `You are the finishing editor and dialogue editor for a narrative film. For every scene, you receive its labeled chronological contact sheet followed by the production-audio track extracted from that same clip.
+export const getCinematicEditDecisionPrompt = (
+  sceneMetadata: unknown,
+): string => `You are the finishing editor and dialogue editor for a narrative film. For every scene, you receive its labeled chronological contact sheet followed by the production-audio track extracted from that same clip.
 
 Choose the strongest honest edit from the footage and sound that actually exist. Protect chronological cause and effect, character identity, geography, eyelines, screen direction, expected dialogue, complete visible actions, and clean sentence boundaries. Detect every genuine internal shot boundary and report observedShotCount. A production clip is expected to contain at least three chronological shots; when fewer than three are visible, add shot_count_below_3 to warnings and lower performanceScore.
 
@@ -1735,7 +2005,9 @@ Use reaction, insert, environment or aftermath as supportShotType only when that
 SCENE METADATA:
 ${JSON.stringify(sceneMetadata)}`;
 
-export const getVideoPromptPolicyRepairPrompt = (prompt: string): string => `You are a responsible generative-video policy editor. Review the production prompt below for likely model safety refusal triggers. Distinguish allowed fictional cinematic conflict from prohibited graphic gore, sexual exploitation, minors, hateful targeting, real-person abuse, instructions facilitating wrongdoing, or other disallowed content. Do not weaken harmless fictional drama merely because it includes weapons, pursuit, suspense, arrest, or non-graphic action.
+export const getVideoPromptPolicyRepairPrompt = (
+  prompt: string,
+): string => `You are a responsible generative-video policy editor. Review the production prompt below for likely model safety refusal triggers. Distinguish allowed fictional cinematic conflict from prohibited graphic gore, sexual exploitation, minors, hateful targeting, real-person abuse, instructions facilitating wrongdoing, or other disallowed content. Do not weaken harmless fictional drama merely because it includes weapons, pursuit, suspense, arrest, or non-graphic action.
 
 If it is already safe, set violatesPolicy=false and return the prompt exactly unchanged, including its wording, line breaks and section order. If it contains a likely violation, set violatesPolicy=true and rewrite the ENTIRE prompt from its first word through its final constraint, changing only unsafe story details while preserving character identity, chronology, camera plan, dialogue intent, duration, continuity, setting and visible story consequence. Never return a patch, fragment, instruction to merge text, shortened version or omitted section. Prefer non-graphic implication, off-screen impact, defensive action, arrest, disarmament, environmental reaction or restrained aftermath. Never add policy-evasion language or references to safety rules. repairedPrompt must always be a complete production-ready video prompt that independently satisfies every original structural requirement.
 

@@ -14,22 +14,19 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
       const sourceDuration = _.toNumber(scene.duration);
       const segments = _.filter(scene.cinematicEditSegments || [], (segment) => isUsableSegment(segment, sourceDuration));
       if (_.isEmpty(segments)) return [...timeline, scene];
-      const editedSegments = _.map(
-        segments,
-        (segment, index): StoryboardScene => ({
-          ...scene,
-          id: `${scene.id}__${segment.segmentId || index + 1}`,
-          duration: sourceDuration,
-          sourceTrimStartSeconds: Number(_.toNumber(segment.inSeconds).toFixed(3)),
-          sourceTrimEndSeconds: Number((_.max([0, sourceDuration - _.toNumber(segment.outSeconds)]) || 0).toFixed(3)),
-          shotRole: segment.shotRole,
-          transition: segment.transition,
-          cinematicAudioBridgeMode: segment.audioBridgeMode,
-          subtitle: segment.containsDialogue ? scene.subtitle : "",
-          spokenDialogue: segment.containsDialogue ? scene.spokenDialogue : "",
-          subtitleCues: [],
-        }),
-      );
+      const editedSegments = _.map(segments, (segment, index): StoryboardScene => ({
+        ...scene,
+        id: `${scene.id}__${segment.segmentId || index + 1}`,
+        duration: sourceDuration,
+        sourceTrimStartSeconds: Number(_.toNumber(segment.inSeconds).toFixed(3)),
+        sourceTrimEndSeconds: Number((_.max([0, sourceDuration - _.toNumber(segment.outSeconds)]) || 0).toFixed(3)),
+        shotRole: segment.shotRole,
+        transition: segment.transition,
+        cinematicAudioBridgeMode: segment.audioBridgeMode,
+        subtitle: segment.containsDialogue ? scene.subtitle : "",
+        spokenDialogue: segment.containsDialogue ? scene.spokenDialogue : "",
+        subtitleCues: [],
+      }));
       return [...timeline, ...editedSegments];
     },
     [],

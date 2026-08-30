@@ -234,9 +234,7 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
   const referenceFiles = createGeminiReferenceFiles(normalizedReferences);
   if (!_.isEqual(referenceFiles.length, normalizedReferences.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.READ_FAILED, provider));
 
-  let uploaded = _.isEqual(provider, "flow")
-    ? await attachFlowReferenceFiles(page, referenceFiles)
-    : await attachGrokReferenceFiles(page, referenceFiles);
+  let uploaded = _.isEqual(provider, "flow") ? await attachFlowReferenceFiles(page, referenceFiles) : await attachGrokReferenceFiles(page, referenceFiles);
 
   if (!uploaded) {
     const uploadPattern = _.isEqual(provider, "flow") ? PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_BUTTON : PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_BUTTON;
@@ -261,8 +259,7 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
     if (_.gte(attachedCount, referenceFiles.length)) break;
     await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
   }
-  if (_.lt(attachedCount, referenceFiles.length))
-    throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.VERIFY_FAILED, provider));
+  if (_.lt(attachedCount, referenceFiles.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.VERIFY_FAILED, provider));
   signatureMap.set(page, nextSignature);
   appLog(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.SUCCESS, provider, referenceFiles.length));
 };

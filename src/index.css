@@ -74,8 +74,103 @@
   }
 }
 
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-content-fade {
+  animation: tabFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tab-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background-color: #1f1f1f;
+}
+
+html.light .tab-loading-overlay {
+  background-color: #f8f9fa;
+}
+
+/* BACKGROUND VÀ SHADOW CHO PANEL CẤU HÌNH NÂNG CAO */
+.advanced-config-panel {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+html.light .advanced-config-panel {
+  background-color: #ede8dd !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.advanced-config-icon {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+html.light .advanced-config-icon {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* ĐỒNG NHẤT CHIỀU CAO CỦA CÁC HEADER BUTTON VÀ BADGES ĐI KÈM */
+.header-badge,
+.header-action-btn,
+.header-control-item,
+.btn-tag {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 0.75rem !important;
+  box-sizing: border-box !important;
+}
+
+/* NÚT CON BÊN TRONG CONTAINER HEADER (NHƯ LANGUAGE SWITCHER) */
+.header-control-container {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 0.75rem !important;
+  padding: 3px !important;
+  box-sizing: border-box !important;
+}
+
+.header-control-container button,
+.btn-lang-item {
+  height: 100% !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  border-radius: 0.5rem !important;
+  box-sizing: border-box !important;
+}
+
 /* ĐỒNG NHẤT CHIỀU CAO BUTTON TRÊN TOÀN BỘ CÁC MÀN HÌNH */
-button:not(.btn-icon-tiny):not(.btn-tag) {
+button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *) {
   min-height: 40px !important;
 }
 
@@ -916,6 +1011,9 @@ body,
 }
 
 /* BORDER-FREE FRAMELESS AESTHETIC & BẢNG MÀU PHONG THỦY TUỔI 1999 (KỶ MÃO - MỆNH THÀNH ĐẦU THỔ) */
+*,
+*::before,
+*::after,
 .creation-workspace,
 .creation-workspace *,
 .workspace-card,
@@ -939,7 +1037,13 @@ button,
 table,
 th,
 td,
-tr {
+tr,
+div,
+span,
+header,
+main,
+nav,
+aside {
   border: none !important;
   border-width: 0 !important;
   outline: none !important;
@@ -956,43 +1060,107 @@ div:has(> select) {
   border: none !important;
 }
 
-/* Nổi khối sang trọng bằng Soft Ambient Shadows & Tonal Depth thay cho Border */
+/* ẨN HOÀN TOÀN CONTAINER TOASTER KHI RỖNG TRÁNH VỆT MỜ LEM NHIỄM Ở GÓC */
+[data-sonner-toaster],
+[data-sonner-toaster] *,
+ol[data-sonner-toaster] {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+[data-sonner-toaster]:empty,
+[data-sonner-toaster] ol:empty,
+[data-sonner-toaster]:not(:has(li)) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Nổi khối sang trọng bằng Soft Ambient Shadows thuần túy (Không có bất kỳ đường viền nào) */
 .glass-card,
 .workspace-card,
 .glass-panel,
 .log-panel,
-.action-panel {
-  background: rgba(22, 17, 28, 0.88) !important;
+.action-panel,
+.creation-workspace > div {
+  background: rgba(20, 16, 26, 0.92) !important;
   box-shadow:
-    0 12px 36px -4px rgba(0, 0, 0, 0.5),
-    0 4px 16px -2px rgba(0, 0, 0, 0.35) !important;
-  backdrop-filter: blur(24px) !important;
+    0 18px 45px -8px rgba(0, 0, 0, 0.75),
+    0 6px 18px -4px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(28px) !important;
 }
 
 :root.light .glass-card,
 :root.light .workspace-card,
 :root.light .glass-panel,
 :root.light .log-panel,
-:root.light .action-panel {
-  background: rgba(255, 253, 248, 0.96) !important;
+:root.light .action-panel,
+:root.light .creation-workspace > div {
+  background: rgba(255, 252, 245, 0.98) !important;
   box-shadow:
-    0 10px 30px -4px rgba(190, 140, 60, 0.12),
-    0 2px 10px -1px rgba(0, 0, 0, 0.04) !important;
-  backdrop-filter: blur(24px) !important;
+    0 14px 38px -6px rgba(180, 120, 30, 0.16),
+    0 4px 14px -2px rgba(120, 70, 10, 0.06) !important;
+  backdrop-filter: blur(28px) !important;
 }
 
-/* Inputs, Textarea: Borderless sang trọng với nền chìm */
+/* Các khối cấu hình lớn (Setting Blocks, Sub-cards) nổi khối mềm mại */
+.creation-workspace .bg-slate-955\/50,
+.creation-workspace .bg-slate-900\/60,
+.creation-workspace .bg-slate-900\/80 {
+  box-shadow:
+    0 8px 22px -4px rgba(0, 0, 0, 0.55),
+    0 2px 8px -2px rgba(0, 0, 0, 0.35) !important;
+}
+
+:root.light .creation-workspace .bg-slate-955\/50,
+:root.light .creation-workspace .bg-slate-900\/60,
+:root.light .creation-workspace .bg-slate-900\/80 {
+  box-shadow:
+    0 6px 20px -3px rgba(180, 120, 30, 0.1),
+    0 2px 6px -1px rgba(120, 70, 10, 0.04) !important;
+}
+
+/* XÓA HOÀN TOÀN BOX-SHADOW VÀ NỀN KHỎI CÁC THANH TIÊU ĐỀ SECTION, HEADER BARS, BADGES */
+.header-badge,
+div:has(> .header-badge),
+div:has(> .header-badge) *,
+.creation-workspace .flex:has(> .header-badge) {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* BẢO VỆ TUYỆT ĐỐI NHÃN (LABELS, TITLES) KHÔNG BỊ LOANG BACKGROUND */
+label,
+.field-label,
+.section-title,
+span[class*="text-"],
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* CHỈ ÁP DỤNG NỀN VÀ BÓNG CHÌM CHO CHÍNH XÁC Ô NHẬP LIỆU */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-textarea {
-  background: rgba(12, 10, 17, 0.88) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+textarea,
+.relative:has(> select) {
+  background: rgba(10, 8, 14, 0.92) !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6) !important;
   color: #f8fafc !important;
 }
 
 :root.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-:root.light textarea {
-  background: rgba(245, 238, 226, 0.9) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06) !important;
+:root.light textarea,
+:root.light .relative:has(> select) {
+  background: rgba(244, 236, 222, 0.95) !important;
+  box-shadow: inset 0 2px 5px rgba(120, 70, 10, 0.12) !important;
   color: #241a10 !important;
 }
 

@@ -88,8 +88,8 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           </h3>
         </div>
 
-        <div className={cn("flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full")}>
-          <Sparkles className={cn("w-3 h-3 text-blue-400")} />
+        <div className={cn("header-badge flex items-center gap-2 text-[11px] font-mono font-bold text-slate-300 bg-slate-955/80 px-3 py-1 rounded-full")}>
+          <Sparkles className={cn("w-3.5 h-3.5 text-blue-400")} />
           <span className={cn("font-semibold text-slate-300")}>
             {aspectRatio} • {selectedEngineLabel}
           </span>

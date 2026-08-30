@@ -53,7 +53,7 @@ const hasObservableActionHandoff = (scene: StoryboardScene, nextScene: Storyboar
   const continuityFrom = normalizeContinuityValue(nextScene.continuityFrom);
   return Boolean(
     (endState && startState && (_.isEqual(endState, startState) || _.includes(startState, endState) || _.includes(endState, startState))) ||
-      (endState && continuityFrom && (_.includes(continuityFrom, endState) || _.includes(endState, continuityFrom))),
+    (endState && continuityFrom && (_.includes(continuityFrom, endState) || _.includes(endState, continuityFrom))),
   );
 };
 

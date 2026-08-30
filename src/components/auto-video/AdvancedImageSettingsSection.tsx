@@ -80,15 +80,20 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   const currentResumeValue = resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW;
 
   return (
-    <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
+    <div
+      className={cn(
+        "glass-card bg-slate-900/80 rounded-2xl shadow-sm overflow-hidden transition-all text-left",
+        AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS,
+        showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS,
+      )}>
       <Button
         type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
         variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
         onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
         aria-expanded={showAdvancedImageSettings}
-        className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}>
+        className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS, "cursor-pointer hover:bg-slate-800/40 rounded-2xl")}>
         <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS}>
-          <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS}>
+          <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS, "bg-blue-500/15 text-blue-400")}>
             <Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} />
           </span>
           <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TEXT_WRAP_CLASS}>

@@ -971,34 +971,31 @@ export function useAutoVideoPipeline(
         }
         if (!_.isEmpty(rawAnalyzedCharacters)) {
           analyzedCharacters = normalizeCharacterLibrary(
-            _.map(
-              rawAnalyzedCharacters,
-              (character: any, index: number): CharacterConfig => ({
-                id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, _.add(index, 1)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-                name: character.name,
-                description: character.description,
-                prompt: character.prompt || character.description,
-                ..._.pick(character, [
-                  "referenceGenerationPrompt",
-                  "narrativeRole",
-                  "genderPresentation",
-                  "ageRange",
-                  "ethnicitySkinTone",
-                  "bodyBuild",
-                  "faceShape",
-                  "eyes",
-                  "nose",
-                  "hair",
-                  "signatureClothing",
-                  "accessories",
-                  "colorPalette",
-                  "silhouette",
-                  "timelineStages",
-                ]),
-                images: [],
-                extracted: false,
-              }),
-            ),
+            _.map(rawAnalyzedCharacters, (character: any, index: number): CharacterConfig => ({
+              id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, _.add(index, 1)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+              name: character.name,
+              description: character.description,
+              prompt: character.prompt || character.description,
+              ..._.pick(character, [
+                "referenceGenerationPrompt",
+                "narrativeRole",
+                "genderPresentation",
+                "ageRange",
+                "ethnicitySkinTone",
+                "bodyBuild",
+                "faceShape",
+                "eyes",
+                "nose",
+                "hair",
+                "signatureClothing",
+                "accessories",
+                "colorPalette",
+                "silhouette",
+                "timelineStages",
+              ]),
+              images: [],
+              extracted: false,
+            })),
           );
           didAnalyzeCharacters = true;
           newProj = {
@@ -1750,8 +1747,8 @@ export function useAutoVideoPipeline(
 
       const hasReferenceImages = Boolean(
         !_.isEmpty(voiceUpdatedProj.visualConfig?.referenceImages) ||
-          !_.isEmpty(voiceUpdatedProj.visualConfig?.sceneReferenceImages) ||
-          !_.isEmpty(voiceUpdatedProj.visualConfig?.styleReferenceImages),
+        !_.isEmpty(voiceUpdatedProj.visualConfig?.sceneReferenceImages) ||
+        !_.isEmpty(voiceUpdatedProj.visualConfig?.styleReferenceImages),
       );
 
       const createSceneRequestContext = (scene: StoryboardScene, sceneGenerateType: GenerateType) => {

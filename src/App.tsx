@@ -7,6 +7,7 @@ import Sidebar from "./components/Sidebar.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
+import { PageLoadingSpinner } from "./components/ui/Skeleton.tsx";
 
 import {
   VideoProject,
@@ -600,25 +601,50 @@ export default function App() {
     }
   };
 
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+  const tabSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const activeProject = _.find(projects, { id: selectedProjectId });
 
   const handleActiveTabChange = useCallback(
     (tab: string) => {
-      if (_.some([_.isEqual(tab, activeTab), _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean)], Boolean)) {
+      if (_.isEqual(tab, activeTab)) {
         return;
       }
+
+      if (tabSwitchTimerRef.current) {
+        clearTimeout(tabSwitchTimerRef.current);
+      }
+
+      setIsTabSwitching(true);
 
       const targetWorkspaceProject = findProjectForWorkspaceTab(projectsRef.current, selectedProjectId, tab);
 
       if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
         setSelectedProjectId(null);
-      } else if (targetWorkspaceProject && !_.isEqual(targetWorkspaceProject.id, selectedProjectId)) {
+      } else if (targetWorkspaceProject) {
         setSelectedProjectId(targetWorkspaceProject.id);
+      } else if (_.isEqual(tab, AppTab.STUDIO) && _.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
+        const fallbackProj = _.first(projectsRef.current);
+        if (fallbackProj) setSelectedProjectId(fallbackProj.id);
       }
+
       setActiveTab(tab);
+
+      tabSwitchTimerRef.current = setTimeout(() => {
+        setIsTabSwitching(false);
+      }, 500);
     },
     [activeTab, selectedProjectId],
   );
+
+  useEffect(() => {
+    return () => {
+      if (tabSwitchTimerRef.current) {
+        clearTimeout(tabSwitchTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = _.find(projects, { id });
@@ -672,17 +698,23 @@ export default function App() {
         <Toaster position="top-right" theme={theme as any} richColors />
 
         <main className={cn("app-main flex-1 min-h-0 h-full w-full overflow-hidden relative bg-slate-955 self-stretch")}>
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.DASHBOARD) && "hidden")}>
+          {isTabSwitching && (
+            <div className={cn("tab-loading-overlay select-none")}>
+              <PageLoadingSpinner />
+            </div>
+          )}
+
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.DASHBOARD) && "hidden")}>
             <DashboardView
               currentLang={currentLang}
               projects={projects}
               isLoading={isLoadingProjects}
               onSelectProject={handleSelectProject}
-              onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
+              onNavigateToProjects={() => handleActiveTabChange(AppTab.PROJECTS)}
             />
           </div>
 
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.PROJECTS) && "hidden")}>
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.PROJECTS) && "hidden")}>
             <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6")}>
               <ProjectList
                 currentLang={currentLang}
@@ -696,7 +728,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && "hidden")}>
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && "hidden")}>
             <AutoVideoGenerator
               currentLang={currentLang}
               projects={projects}
@@ -708,7 +740,7 @@ export default function App() {
             />
           </div>
 
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && "hidden")}>
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && "hidden")}>
             <CinematicFilmStudio
               currentLang={currentLang}
               projects={projects}
@@ -721,30 +753,32 @@ export default function App() {
           </div>
 
           {_.isEqual(activeTab, AppTab.SETTINGS) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col")}>
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
               <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />
             </div>
           )}
 
           {_.isEqual(activeTab, AppTab.STUDIO) &&
             (selectedProjectId && activeProject ? (
-              <PipelineWizard
-                key={selectedProjectId}
-                theme={theme as any}
-                currentLang={currentLang}
-                project={activeProject}
-                onSaveProject={async (project) => {
-                  await handleUpdateProject(project);
-                }}
-                setProject={async (project) => {
-                  await handleUpdateProject(project);
-                }}
-                onBackToDashboard={() => handleSelectProject(null)}
-                costTracker={costTracker}
-                setCostTracker={setCostTracker}
-                credits={credits}
-                setCredits={() => {}}
-              />
+              <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+                <PipelineWizard
+                  key={selectedProjectId}
+                  theme={theme as any}
+                  currentLang={currentLang}
+                  project={activeProject}
+                  onSaveProject={async (project) => {
+                    await handleUpdateProject(project);
+                  }}
+                  setProject={async (project) => {
+                    await handleUpdateProject(project);
+                  }}
+                  onBackToDashboard={() => handleSelectProject(null)}
+                  costTracker={costTracker}
+                  setCostTracker={setCostTracker}
+                  credits={credits}
+                  setCredits={() => {}}
+                />
+              </div>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center p-6 space-y-4">
                 <MinimalSpinnerLoading />

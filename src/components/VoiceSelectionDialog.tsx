@@ -5,7 +5,7 @@ import { Modal } from "./ui/Modal";
 import _ from "lodash";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
-import { VoiceGridSkeleton } from "./ui/Skeleton";
+import { PageLoadingSpinner } from "./ui/Skeleton";
 import { useVoices } from "../hooks/useVoices";
 import { logger } from "../utils/logger";
 import { jsonUtils } from "../lib/json";
@@ -293,6 +293,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      maxWidth="6xl"
       title={
         <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
           <div className={cn("flex items-center gap-3 cursor-help")}>
@@ -418,11 +419,13 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
             }
           }}>
           {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) ? (
-            <VoiceGridSkeleton count={6} />
+            <div className={cn("flex-1 min-h-[420px] flex items-center justify-center p-8 select-none")}>
+              <PageLoadingSpinner />
+            </div>
           ) : (
             <>
               {_.isEmpty(filteredVoices) && !loading && (
-                <div className={cn("flex flex-col items-center justify-center text-slate-500 py-16")}>
+                <div className={cn("flex flex-col items-center justify-center text-slate-500 py-20")}>
                   <Mic className={cn("w-16 h-16 mb-3 opacity-20")} />
                   <p className={cn("text-xs font-semibold opacity-70")}>{dialogTexts.noVoices}</p>
                 </div>
@@ -436,95 +439,77 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   return (
                     <div
                       key={_.get(voice, "voice_id")}
-                      className={cn("flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer select-none", {
-                        "bg-rose-500/10 border-rose-500/50 shadow-md shadow-rose-500/10 ring-1 ring-rose-500/30": isSelected,
-                        "bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900 shadow-sm hover:-translate-y-0.5": !isSelected,
+                      className={cn("relative flex items-center gap-3.5 p-3.5 rounded-2xl border-none transition-all cursor-pointer select-none group", {
+                        "bg-rose-500/15 shadow-md ring-2 ring-rose-500/60": isSelected,
+                        "bg-slate-900/80 hover:bg-slate-850 hover:shadow-md hover:-translate-y-0.5": !isSelected,
                       })}
                       onClick={() => onSelectVoice({ ...voice, provider })}>
-                      <Button
-                        variant={isPlaying ? REFACTOR_CONSTANTS.VARIANT_PRIMARY : REFACTOR_CONSTANTS.VARIANT_SECONDARY}
-                        size={REFACTOR_CONSTANTS.SIZE_MD}
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePlay(voice);
                         }}
-                        className={cn("shrink-0 w-11 h-11 rounded-2xl p-0 flex items-center justify-center shadow-md", {
+                        className={cn("shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center shadow-md transition-all cursor-pointer border-none", {
                           "bg-rose-600 text-white animate-pulse": isPlaying,
-                          "bg-slate-950 text-slate-200 border border-slate-800 hover:border-rose-500/40": !isPlaying,
+                          "bg-slate-950/80 text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying,
                         })}>
-                        {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4.5 h-4.5 fill-current ml-0.5 text-rose-400")} />}
-                      </Button>
+                        {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4 h-4 fill-current ml-0.5")} />}
+                      </button>
 
-                      <div className={cn("flex-1 min-w-0 py-0.5")}>
+                      <div className={cn("flex-1 min-w-0")}>
                         <div className={cn("flex items-center justify-between gap-2 mb-1.5")}>
                           <h3 className={cn("font-extrabold text-sm text-slate-100 truncate")}>{_.get(voice, "name")}</h3>
                           <div className={cn("flex items-center gap-1.5 shrink-0")}>
-                            <Button
-                              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                              size={REFACTOR_CONSTANTS.SIZE_XS}
+                            {isSelected && (
+                              <span className={cn("shrink-0 flex items-center gap-1 text-[10px] font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full")}>
+                                <Check className={cn("w-3 h-3 stroke-[3]")} />
+                                {dialogTexts.selectedLabel}
+                              </span>
+                            )}
+                            <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onToggleFavoriteVoice(_.get(voice, "voice_id"), _.get(voice, "name"), _.get(voice, "category") || REFACTOR_CONSTANTS.VD_CATEGORY_CUSTOM);
                               }}
-                              className={cn("w-7 h-7 rounded-xl flex items-center justify-center p-0 text-slate-400 hover:text-rose-500")}
+                              className={cn(
+                                "w-8 h-8 rounded-xl flex items-center justify-center p-0 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer border-none bg-transparent transition-colors",
+                              )}
                               title={dialogTexts.favoriteTooltip}>
                               <Heart
                                 className={cn(
-                                  "w-3.5 h-3.5 transition-all duration-200",
+                                  "w-4 h-4 transition-all duration-200",
                                   _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id")))
                                     ? "text-rose-500 fill-rose-500 scale-110"
-                                    : "text-slate-500 hover:text-rose-400",
+                                    : "text-slate-400 hover:text-rose-500",
                                 )}
                               />
-                            </Button>
-                            {isSelected && (
-                              <span
-                                className={cn(
-                                  "shrink-0 flex items-center gap-1 text-[9px] font-black text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30",
-                                )}>
-                                <Check className={cn("w-2.5 h-2.5")} />
-                                {dialogTexts.selectedLabel}
-                              </span>
-                            )}
+                            </button>
                           </div>
                         </div>
 
-                        <div className={cn("flex flex-wrap gap-1 mb-1.5")}>
-                          {(() => {
-                            const rawTags = [
-                              _.get(voice, "language") && getReadableLanguage(_.get(voice, "language"), currentLang),
-                              _.get(voice, "locale") && getReadableLanguage(_.get(voice, "locale"), currentLang, true),
-                              _.get(voice, "gender"),
-                              _.get(voice, "age"),
-                              _.get(voice, "accent"),
-                              ...(_.get(voice, "tags") || []),
-                            ];
-                            const displayTags = _.uniq(_.filter(rawTags, Boolean) as string[]);
-
-                            return _.map(
-                              _.filter(displayTags, (tag) => {
-                                const lowerTag = _.toLower(String(tag));
-                                const lowerLocale = _.toLower(_.get(voice, "locale"));
-                                const lowerLang = _.toLower(_.get(voice, "language"));
-                                return !_.includes([lowerLocale, lowerLang], lowerTag);
-                              }),
-                              (tag, idx) => (
-                                <span
-                                  key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
-                                  className={cn(
-                                    "text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap",
-                                  )}>
-                                  {tag}
-                                </span>
-                              ),
-                            );
-                          })()}
-                          {_.map(_.take(_.get(voice, "descriptives"), REFACTOR_CONSTANTS.TAKE_DESC_COUNT), (desc, idx) => (
+                        <div className={cn("flex flex-wrap gap-1 items-center")}>
+                          {_.get(voice, "gender") && (
+                            <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 capitalize whitespace-nowrap")}>
+                              {_.get(voice, "gender")}
+                            </span>
+                          )}
+                          {_.get(voice, "age") && (
+                            <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 capitalize whitespace-nowrap")}>
+                              {_.get(voice, "age")}
+                            </span>
+                          )}
+                          {(_.get(voice, "locale") || _.get(voice, "language")) && (
+                            <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 capitalize whitespace-nowrap")}>
+                              {getReadableLanguage(_.get(voice, "locale") || _.get(voice, "language"), currentLang, true)}
+                            </span>
+                          )}
+                          {_.map(_.take(_.get(voice, "tags") || [], 2), (tag, idx) => (
                             <span
-                              key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
-                              className={cn("text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400 capitalize whitespace-nowrap")}>
-                              {desc}
+                              key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
+                              className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 capitalize whitespace-nowrap")}>
+                              {tag}
                             </span>
                           ))}
                         </div>

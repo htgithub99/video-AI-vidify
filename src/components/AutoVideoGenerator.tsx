@@ -1,4 +1,3 @@
-import { Settings2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
@@ -162,8 +161,8 @@ export default function AutoVideoGenerator({
     () =>
       Boolean(
         presentationProject &&
-          !_.isEqual(presentationProject.status, REFACTOR_CONSTANTS.STATUS_COMPLETED) &&
-          (presentationProject.generationCheckpoint || !_.isEmpty(presentationProject.storyboard)),
+        !_.isEqual(presentationProject.status, REFACTOR_CONSTANTS.STATUS_COMPLETED) &&
+        (presentationProject.generationCheckpoint || !_.isEmpty(presentationProject.storyboard)),
       ),
     [presentationProject],
   );
@@ -468,32 +467,20 @@ export default function AutoVideoGenerator({
 
   return (
     <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible w-full")}>
-        <div className={cn("border-b border-slate-800 pb-4 relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
-          <div>
-            <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2")}>
-              <Settings2 className={cn("w-5 h-5 text-rose-500")} />
-              {cinematicMode ? "Làm Phim Điện Ảnh AI" : "Tạo Video Tự Động"}
-              <span className={cn("px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[10px] font-black")}>{cinematicMode ? "Cinematic Engine" : "Auto Pipeline"}</span>
-            </h3>
-            <p className={cn("text-slate-400 text-xs mt-1")}>
-              {cinematicMode ? "Thiết lập ý tưởng kịch bản, quy mô tập và phong cách điện ảnh." : "Nhập kịch bản, thiết lập giọng đọc AI và tự động sinh toàn bộ video."}
-            </p>
-          </div>
-          {!cinematicMode && (
-            <PresetSection
-              presets={presets}
-              selectedPresetId={selectedPresetId}
-              presetNameInputState={presetNameInputState}
-              setPresetNameInputState={setPresetNameInputState}
-              handleSavePreset={handleSavePreset}
-              handleApplyPreset={handleApplyPreset}
-              handleDeletePreset={handleDeletePreset}
-              T={T}
-              truncateWords={truncateWords}
-            />
-          )}
-        </div>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full")}>
+        {!cinematicMode && (
+          <PresetSection
+            presets={presets}
+            selectedPresetId={selectedPresetId}
+            presetNameInputState={presetNameInputState}
+            setPresetNameInputState={setPresetNameInputState}
+            handleSavePreset={handleSavePreset}
+            handleApplyPreset={handleApplyPreset}
+            handleDeletePreset={handleDeletePreset}
+            T={T}
+            truncateWords={truncateWords}
+          />
+        )}
 
         <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6")}>
           <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full justify-stretch min-w-0")}>

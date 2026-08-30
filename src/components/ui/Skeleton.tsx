@@ -8,9 +8,18 @@ export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 
 export const MinimalSpinnerLoading: FC<{ className?: string }> = ({ className }) => (
   <div className={cn("w-full h-full min-h-[220px] flex-1 flex items-center justify-center p-6 select-none", className)}>
-    <div className="relative flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-[2.5px] border-slate-700/20 border-t-[#38bdf8] border-r-[#a855f7] border-b-[#f43f5e] animate-spin" />
+    <div className="relative w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[conic-gradient(from_0deg,#3b82f6,#a855f7,#ec4899,#3b82f6)] animate-spin shadow-[0_0_24px_rgba(168,85,247,0.35)]">
+      <div className="w-[44px] h-[44px] rounded-full bg-[#1F1F1F] dark:bg-[#1F1F1F] transition-colors" />
     </div>
+  </div>
+);
+
+export const PageLoadingSpinner: FC<{ className?: string }> = ({ className }) => (
+  <div className={cn("flex flex-col items-center justify-center gap-4 select-none", className)}>
+    <div className="relative w-[52px] h-[52px] rounded-full flex items-center justify-center bg-[conic-gradient(from_0deg,#3b82f6,#a855f7,#ec4899,#3b82f6)] animate-spin shadow-[0_0_24px_rgba(168,85,247,0.35)]">
+      <div className="w-[44px] h-[44px] rounded-full bg-[#1F1F1F] dark:bg-[#1F1F1F] transition-colors" />
+    </div>
+    <span className="text-xs font-bold font-mono tracking-wider text-slate-400 uppercase animate-pulse">Đang tải không gian làm việc...</span>
   </div>
 );
 

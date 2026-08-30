@@ -2,17 +2,11 @@ import { FC, ReactNode } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
 import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Menu, X } from "lucide-react";
-import { Button } from "./ui/Button";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
 import { UIConstants, SecurityConstants } from "../constants/security";
 import { QUOTA_TEXTS } from "../constants/texts";
 import _ from "lodash";
-
-const LANG_BTN_BASE =
-  "px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] rounded-lg font-black transition-all duration-200 outline-none flex items-center justify-center relative z-10 focus-visible:ring-2 focus-visible:ring-rose-500 active:scale-95";
-const LANG_BTN_ACTIVE = "bg-rose-600 text-white shadow-sm shadow-rose-600/30";
-const LANG_BTN_INACTIVE = "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60";
 
 interface HeaderProps {
   currentLang: AppLanguage | Lang;
@@ -40,11 +34,11 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colo
   return (
     <div
       className={cn(
-        "hidden lg:flex items-center gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-2.5 py-1.5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-900/60 cursor-default shrink-0",
+        "header-control-item hidden lg:flex items-center gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-2.5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-900/60 cursor-default shrink-0",
       )}
       title={tooltip}>
       {icon}
-      <span className={cn("text-[11px] font-bold text-slate-400 font-mono")}>
+      <span className={cn("text-[11px] font-bold text-slate-400 font-mono flex items-center")}>
         <span className={cn(colorClass, "font-black")}>{formattedUsage}</span>
         <span className={cn("text-slate-600 mx-1")}>/</span>
         <span className={cn("text-slate-300")}>{formattedLimit}</span>
@@ -75,20 +69,22 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
 
   return (
     <header className={cn("app-header bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 text-slate-200 sticky top-0 z-50 flex-shrink-0")}>
-      <div className={cn("w-full px-3 sm:px-5 lg:px-6 py-2.5 flex items-center justify-between gap-3 sm:gap-5 relative")}>
+      <div className={cn("w-full px-3 sm:px-5 lg:px-6 py-2 flex items-center justify-between gap-3 sm:gap-5 relative")}>
         <div className={cn("flex items-center gap-2 sm:gap-3 min-w-0")}>
           {onToggleMobileMenu && (
             <button
               type="button"
               onClick={onToggleMobileMenu}
-              className={cn("xl:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0")}
+              className={cn(
+                "header-action-btn xl:hidden w-8 h-8 p-0 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0 flex items-center justify-center",
+              )}
               title="Menu">
               {isMobileMenuOpen ? <X className={cn("w-4 h-4 text-rose-400")} /> : <Menu className={cn("w-4 h-4")} />}
             </button>
           )}
 
-          <div className={cn("p-2 bg-rose-600 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-white/15 shrink-0")}>
-            <Video className={cn("w-4 h-4 sm:w-4.5 sm:h-4.5 text-white")} />
+          <div className={cn("w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-white/15 shrink-0")}>
+            <Video className={cn("w-4 h-4 text-white")} />
           </div>
           <div className={cn("min-w-0")}>
             <h1 className={cn("text-sm sm:text-base font-extrabold text-slate-100 flex items-center gap-2 font-logo truncate")}>
@@ -102,9 +98,9 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
           </div>
         </div>
 
-        <div className={cn("flex items-center justify-end gap-1.5 sm:gap-2.5 shrink-0")}>
-          <div className={cn("hidden xl:flex items-center gap-2 mr-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20")}>
-            <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse")} />
+        <div className={cn("flex items-center justify-end gap-1.5 sm:gap-2 shrink-0")}>
+          <div className={cn("header-control-item hidden xl:flex items-center gap-2 px-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20")}>
+            <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]")} />
             <span className={cn("text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider")}>{t.Live_Sync}</span>
           </div>
 
@@ -134,30 +130,36 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
             formatNumber
           />
 
-          <Button variant="outline" size="xs" onClick={toggleTheme} className={cn("p-1.5 sm:p-2 text-slate-400 hover:text-slate-100 rounded-xl")} title={themeTooltip}>
-            {_.isEqual(theme, AppTheme.DARK) ? (
-              <Sun className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400")} />
-            ) : (
-              <Moon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400")} />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={cn(
+              "header-control-item w-8 min-w-[32px] max-w-[32px] p-0 text-slate-400 hover:text-slate-100 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-center cursor-pointer shadow-sm",
             )}
-          </Button>
+            title={themeTooltip}>
+            {_.isEqual(theme, AppTheme.DARK) ? <Sun className={cn("w-3.5 h-3.5 text-amber-400")} /> : <Moon className={cn("w-3.5 h-3.5 text-sky-400")} />}
+          </button>
 
-          <Button
-            variant="danger"
-            size="xs"
+          <button
+            type="button"
             onClick={logoutLicense}
-            className={cn("px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-xl flex items-center gap-1.5 font-bold text-xs")}
+            className={cn(
+              "header-control-item px-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 cursor-pointer shadow-sm",
+            )}
             title={logoutTooltip}>
             <LogOut className={cn("w-3.5 h-3.5")} />
             <span className={cn("hidden lg:inline text-[10px]")}>{logoutLabel}</span>
-          </Button>
+          </button>
 
-          <div className={cn("flex items-center bg-slate-900/80 border border-slate-800 rounded-xl p-0.5 sm:p-1 shrink-0 gap-0.5 sm:gap-1 shadow-inner relative")}>
+          <div className={cn("header-control-container bg-slate-900/80 border border-slate-800 rounded-xl shrink-0 gap-0.5 shadow-inner relative")}>
             {_.map(Object.values(AppLanguage), (langCode) => (
               <button
                 key={langCode}
                 onClick={() => setLang(langCode as Lang)}
-                className={cn(LANG_BTN_BASE, _.isEqual(currentLang, langCode) ? LANG_BTN_ACTIVE : LANG_BTN_INACTIVE)}>
+                className={cn(
+                  "btn-lang-item px-2 sm:px-2.5 text-[9px] sm:text-[10px] rounded-lg font-black outline-none flex items-center justify-center relative z-10 cursor-pointer",
+                  _.isEqual(currentLang, langCode) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60",
+                )}>
                 {langCode.toUpperCase()}
               </button>
             ))}

@@ -62,33 +62,44 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   };
 
   return (
-    <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col justify-between")}>
-      <h3 className={cn("text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-2")} title={T.previewHeaderTooltip}>
-        <Eye className={cn("w-4 h-4 text-amber-400")} /> {T.previewHeaderTitle}
-      </h3>
+    <div className={cn("glass-card bg-slate-900/80 p-5 rounded-3xl space-y-4 shadow-xl flex flex-col justify-between w-full text-left")}>
+      <div className={cn("flex items-center justify-between border-b border-slate-800 pb-3")}>
+        <div className={cn("flex items-center gap-2")}>
+          <span className={cn("w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center")}>
+            <Eye className={cn("w-4 h-4 text-amber-400")} />
+          </span>
+          <h3 className={cn("text-xs font-bold text-slate-100 font-mono uppercase tracking-wider")} title={T.previewHeaderTooltip}>
+            {T.previewHeaderTitle}
+          </h3>
+        </div>
+        {!_.isEmpty(renderedVideoUrl) && (
+          <span className={cn("px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono shadow-sm")}>🟢 Sẵn sàng</span>
+        )}
+      </div>
 
-      <div className={cn("flex-1 min-h-[260px] bg-slate-955 rounded-2xl border border-slate-800/80 overflow-hidden relative p-4 shadow-inner")}>
+      <div
+        className={cn(
+          "w-full bg-slate-955 rounded-2xl overflow-hidden relative shadow-inner flex items-center justify-center min-h-[190px] sm:min-h-[210px] max-h-[250px] aspect-video mx-auto",
+        )}>
         {!_.isEmpty(renderedVideoUrl) ? (
-          <div className={cn("absolute inset-4 flex items-center justify-center")}>
-            <video ref={previewVideoRef} src={renderedVideoUrl} controls preload="metadata" className={cn("max-w-full max-h-full object-contain rounded-xl")} />
-          </div>
+          <video ref={previewVideoRef} src={renderedVideoUrl} controls preload="metadata" className={cn("w-full h-full object-contain rounded-2xl")} />
         ) : (
-          <div className={cn("absolute inset-0 text-center p-6 text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-3")}>
-            <Video className={cn("w-10 h-10 text-slate-600")} />
-            <span className={cn("text-slate-400 leading-relaxed max-w-xs block")}>{T.previewEmpty}</span>
+          <div className={cn("text-center p-6 text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-2.5 select-none")}>
+            <div className={cn("w-12 h-12 rounded-2xl bg-slate-900/80 flex items-center justify-center shadow-inner")}>
+              <Video className={cn("w-6 h-6 text-slate-500")} />
+            </div>
+            <span className={cn("text-slate-400 font-medium text-xs leading-relaxed max-w-xs block")}>{T.previewEmpty}</span>
           </div>
         )}
       </div>
 
       {!_.isEmpty(renderedVideoUrl) && (
-        <div className={cn("flex gap-2 pt-1")}>
+        <div className={cn("grid grid-cols-2 gap-2 pt-1")}>
           <Button
             variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
             size={REFACTOR_CONSTANTS.SIZE_MD}
             onClick={handleDownload}
-            className={cn(
-              "flex-1 h-10 min-h-[40px] px-4 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2",
-            )}
+            className={cn("h-10 min-h-[40px] px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm")}
             title={T.downloadVideoTooltip}>
             <Download className={cn("w-4 h-4")} /> {T.downloadVideoBtn}
           </Button>
@@ -98,7 +109,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
               variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
               size={REFACTOR_CONSTANTS.SIZE_MD}
               onClick={() => onSelectProject(activeCreatedProject.id)}
-              className={cn("flex-1 h-10 min-h-[40px] px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2")}
+              className={cn("h-10 min-h-[40px] px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm")}
               title={T.openStudioTooltip}>
               <Sliders className={cn("w-4 h-4 text-rose-400")} /> {T.openStudioBtn}
             </Button>
@@ -107,7 +118,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
       )}
 
       {activeCreatedProject && (
-        <div className={cn("grid grid-cols-3 gap-1.5 sm:gap-2 pt-1")}>
+        <div className={cn("grid grid-cols-3 gap-2 pt-1")}>
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
             variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
@@ -115,9 +126,9 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
             title={regenerationTexts.voice}
             className={cn(
-              "h-10 min-h-[40px] px-2 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-blue-400/30 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
             )}>
-            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-cyan-100 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5 text-cyan-100")} />}
+            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-cyan-200 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5 text-cyan-200")} />}
             <span className={cn("truncate")}>{regenerationTexts.voice}</span>
           </Button>
           <Button
@@ -127,9 +138,9 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)}
             title={regenerationTexts.images}
             className={cn(
-              "h-10 min-h-[40px] px-2 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-purple-400/30 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-purple-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
             )}>
-            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-pink-100 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5 text-pink-100")} />}
+            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-pink-200 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5 text-pink-200")} />}
             <span className={cn("truncate")}>{regenerationTexts.images}</span>
           </Button>
           <Button
@@ -139,9 +150,9 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)}
             title={regenerationTexts.render}
             className={cn(
-              "h-10 min-h-[40px] px-2 text-[10.5px] sm:text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1 border border-emerald-400/30 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
             )}>
-            <RefreshCw className={cn("w-3.5 h-3.5 text-teal-100", { "animate-spin": isRenderActive })} />
+            <RefreshCw className={cn("w-3.5 h-3.5 text-teal-200", { "animate-spin": isRenderActive })} />
             <span className={cn("truncate")}>{regenerationTexts.render}</span>
           </Button>
         </div>

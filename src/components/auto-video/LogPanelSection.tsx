@@ -32,7 +32,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
   return (
     <div
       className={cn(
-        "workspace-card log-panel glass-card bg-slate-900/80 p-4 space-y-3.5 h-[260px] min-h-[220px] max-h-[300px] flex-none flex flex-col relative rounded-3xl shadow-xl backdrop-blur-xl w-full",
+        "workspace-card log-panel glass-card bg-slate-900/80 p-3.5 space-y-2.5 h-[190px] min-h-[170px] max-h-[210px] flex-none flex flex-col relative rounded-2xl shadow-xl backdrop-blur-xl w-full",
       )}>
       <div className={cn("flex items-center justify-between border-b border-slate-800 pb-3")}>
         <span className={cn("section-title flex items-center gap-2 text-slate-100")} title={T.logHeaderTooltip}>
@@ -47,14 +47,16 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
               type="button"
               onClick={scrollToLatest}
               className={cn(
-                "flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer",
+                "header-action-btn flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border-none shadow-sm cursor-pointer",
               )}
               title={T.logScrollLatestTooltip}>
-              <ArrowDown className={cn("w-3 h-3")} />
+              <ArrowDown className={cn("w-3.5 h-3.5")} />
               <span>{T.logScrollLatestBtn}</span>
             </button>
           )}
-          <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300")}>{T.logEventsCount(logs.length)}</span>
+          <span className={cn("header-badge inline-flex items-center text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-300")}>
+            {T.logEventsCount(logs.length)}
+          </span>
         </div>
       </div>
 
