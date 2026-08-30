@@ -16,7 +16,24 @@ interface VoiceReference {
 type RequestPayload = Record<string, unknown>;
 type RequestHeaders = Record<string, string>;
 
-const PIPELINE_CONTENT_FIELDS = ["name", "description", "input", "config", "hookConfig", "voiceConfig", "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig", "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"];
+const PIPELINE_CONTENT_FIELDS = [
+  "name",
+  "description",
+  "input",
+  "config",
+  "hookConfig",
+  "voiceConfig",
+  "visualConfig",
+  "storyboard",
+  "thumbnails",
+  "chapters",
+  "seoConfig",
+  "seo",
+  "assets",
+  "currentStep",
+  "creditsUsed",
+  "storyboardSourceMode",
+];
 
 const DEFAULT_VOICE_SPEED = 1;
 const DEFAULT_VOICE_PITCH = 1;
@@ -28,7 +45,8 @@ const TIME_PADDING_LENGTH = 2;
 const SECONDS_PER_MINUTE = 60;
 const DEFAULT_TARGET_DURATION_SECONDS = 15;
 
-const isEmptyProjectValue = (value: unknown): boolean => _.includes([undefined, null, REFACTOR_CONSTANTS.VD_EMPTY_STRING], value) || (_.isArray(value) && _.isEmpty(value)) || (_.isObject(value) && _.isEmpty(value));
+const isEmptyProjectValue = (value: unknown): boolean =>
+  _.includes([undefined, null, REFACTOR_CONSTANTS.VD_EMPTY_STRING], value) || (_.isArray(value) && _.isEmpty(value)) || (_.isObject(value) && _.isEmpty(value));
 
 export const getVoiceGender = (voice: VoiceReference): any => voice?.gender?.toLowerCase() || DEFAULT_VOICE_GENDER;
 
@@ -37,7 +55,11 @@ export const isPremiumVoice = (voice: VoiceReference | string): boolean => {
   return !_.isEmpty(voiceName);
 };
 
-export const getVoiceModifiers = (voiceUri: string, baseSpeed: number = DEFAULT_VOICE_SPEED, basePitch: number = DEFAULT_VOICE_PITCH): { finalSpeed: number; finalPitch: number } => {
+export const getVoiceModifiers = (
+  voiceUri: string,
+  baseSpeed: number = DEFAULT_VOICE_SPEED,
+  basePitch: number = DEFAULT_VOICE_PITCH,
+): { finalSpeed: number; finalPitch: number } => {
   if (_.isEmpty(voiceUri)) return { finalSpeed: baseSpeed, finalPitch: basePitch };
   const modifiers = VOICE_MODIFIERS[voiceUri] || (_.includes(voiceUri, CHILD_VOICE_MARKER) ? VOICE_MODIFIERS[CHILD_VOICE_PRESET] : null);
   return modifiers ? { finalSpeed: modifiers.speed, finalPitch: modifiers.pitch } : { finalSpeed: baseSpeed, finalPitch: basePitch };

@@ -10,7 +10,11 @@ import { GenerateType } from "../../types.js";
 
 const getRequestedUsageAmount = (request: Request, featureType: FeatureType): number => {
   const requestedItems = _.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
-  const requestedVisualItems = _.isArray(requestedItems) ? _.filter(requestedItems, (item) => (_.isEqual(featureType, FeatureType.VIDEO) ? _.isEqual(item.generateType, GenerateType.Video) : !_.isEqual(item.generateType, GenerateType.Video))) : requestedItems;
+  const requestedVisualItems = _.isArray(requestedItems)
+    ? _.filter(requestedItems, (item) =>
+        _.isEqual(featureType, FeatureType.VIDEO) ? _.isEqual(item.generateType, GenerateType.Video) : !_.isEqual(item.generateType, GenerateType.Video),
+      )
+    : requestedItems;
   const requestedAmountByFeature: Record<FeatureType, number> = {
     [FeatureType.VIDEO]: SecurityConstants.DEFAULT_AMOUNT,
     [FeatureType.IMAGE]: _.isArray(requestedVisualItems) ? _.size(requestedVisualItems) : SecurityConstants.DEFAULT_AMOUNT,
@@ -85,7 +89,11 @@ export const requireLicense = (featureType?: FeatureType) => {
       const projectedUsage = _.add(currentUsage, requestedAmount);
 
       if (_.gt(projectedUsage, maxLimit)) {
-        const featureName = _.isEqual(featureType, FeatureType.VIDEO) ? LocalizationConstants.FEATURE_VIDEO : _.isEqual(featureType, FeatureType.IMAGE) ? LocalizationConstants.FEATURE_IMAGE : LocalizationConstants.FEATURE_VOICE;
+        const featureName = _.isEqual(featureType, FeatureType.VIDEO)
+          ? LocalizationConstants.FEATURE_VIDEO
+          : _.isEqual(featureType, FeatureType.IMAGE)
+            ? LocalizationConstants.FEATURE_IMAGE
+            : LocalizationConstants.FEATURE_VOICE;
         const planName = _.get(license, SecurityConstants.PROP_PLAN_ID, SecurityConstants.UNKNOWN_PLAN_NAME);
 
         let errorMsg = SecurityConstants.EMPTY_STRING;

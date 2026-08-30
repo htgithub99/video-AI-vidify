@@ -6,7 +6,10 @@ import { smartSplitSentences } from "../lib/textProcessor";
 const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE;
 const SEMANTIC_BREAK_PATTERN = /[,;:—]\s+|\s+(?:nhưng|vì|khi|rồi|còn|tuy nhiên|sau đó|đồng thời|while|but|because|when|then|however|meanwhile)\s+/gi;
 
-const splitLongWord = (word: string): string[] => _.map(_.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE), (start) => _.slice(word, start, start + PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE).join(""));
+const splitLongWord = (word: string): string[] =>
+  _.map(_.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE), (start) =>
+    _.slice(word, start, start + PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE).join(""),
+  );
 
 const findBestSemanticBreak = (text: string): number => {
   const lowerBound = _.floor(text.length * 0.3);
@@ -59,7 +62,10 @@ const createBalancedSubtitleLines = (text: string): string[] => {
 
 export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] => {
   const cueTexts = _.map(splitSemanticPhrases(scene.subtitle || scene.script), (phrase) => _.join(createBalancedSubtitleLines(phrase), "\n"));
-  const cueWeights = _.map(cueTexts, (text) => _.max([_.size(_.replace(text, /\s/g, "")), PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND]) || 0);
+  const cueWeights = _.map(
+    cueTexts,
+    (text) => _.max([_.size(_.replace(text, /\s/g, "")), PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND]) || 0,
+  );
   const totalWeight = _.sum(cueWeights);
   let cursor = 0;
   return _.map(cueTexts, (text, index) => {
@@ -68,7 +74,9 @@ export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] =
     const remainingCues = _.subtract(_.size(cueTexts), _.add(index, 1));
     const reservedDuration = remainingCues * PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS;
     const availableDuration = _.max([0, _.subtract(_.subtract(scene.duration, cursor), reservedDuration)]) || 0;
-    const durationSeconds = isLastCue ? _.max([0, _.subtract(scene.duration, cursor)]) || 0 : _.min([_.max([PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS, proportionalDuration]) || proportionalDuration, availableDuration]) || 0;
+    const durationSeconds = isLastCue
+      ? _.max([0, _.subtract(scene.duration, cursor)]) || 0
+      : _.min([_.max([PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS, proportionalDuration]) || proportionalDuration, availableDuration]) || 0;
     const cue = { text, startOffsetSeconds: cursor, durationSeconds };
     cursor = _.add(cursor, durationSeconds);
     return cue;

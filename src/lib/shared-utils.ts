@@ -50,7 +50,15 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
   }
 };
 
-export const safeSystemFetchStream = async (url: string, payload: any, onLine: (data: any) => void, onComplete?: () => void, onError?: (err: any) => void, cancelRef?: { current: boolean }, inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS) => {
+export const safeSystemFetchStream = async (
+  url: string,
+  payload: any,
+  onLine: (data: any) => void,
+  onComplete?: () => void,
+  onError?: (err: any) => void,
+  cancelRef?: { current: boolean },
+  inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS,
+) => {
   const controller = new AbortController();
   let inactivityTimer: ReturnType<typeof setTimeout> | undefined;
   const resetInactivityTimer = () => {
@@ -104,7 +112,8 @@ export const safeSystemFetchStream = async (url: string, payload: any, onLine: (
     }
     if (onComplete) onComplete();
   } catch (error: any) {
-    const normalizedError = controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT) : error;
+    const normalizedError =
+      controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT) : error;
     appError(ERROR_MESSAGES.STREAM_FLOW_ERROR, url, normalizedError);
     if (onError) onError(normalizedError);
     throw normalizedError;
@@ -147,4 +156,5 @@ export const readFilesAsDataURL = (files: FileList, callback: (result: string) =
   });
 };
 
-export const generateRandomString = (): string => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+export const generateRandomString = (): string =>
+  Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);

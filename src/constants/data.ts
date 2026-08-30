@@ -11,41 +11,245 @@ export interface PipelineNode {
 }
 
 export const pipelineNodes = [
-  { id: "In", nameVi: "Đầu Vào", nameEn: "Input Source", stageGroup: 0, descVi: "Thu thập kịch bản thô hoặc ý tưởng ban đầu.", descEn: "Captures raw Original Script or short Story Idea." },
-  { id: "HKG", nameVi: "Tạo lời dẫn", nameEn: "Hook Generator", stageGroup: 1, descVi: "Thiết kế câu mở đầu, câu giữ chân và kêu gọi hành động.", descEn: "Calculates high click-rate Opening, Retention and CTA hooks." },
-  { id: "SRW", nameVi: "Viết Lại Kịch Bản", nameEn: "Script Rewriter", stageGroup: 2, descVi: "Viết lại và điều chỉnh độ độc bản của câu chuyện.", descEn: "Rewrites original words to bypass redundant phrases." },
-  { id: "SEH", nameVi: "Nâng Cấp Văn Phong", nameEn: "Script Enhancer", stageGroup: 2, descVi: "Tối ưu độ trôi chảy và kịch tính hóa hội thoại.", descEn: "Injects flow dramatic triggers and flow patterns." },
-  { id: "LFE", nameVi: "Mở Rộng Thời Lượng", nameEn: "Long Form Expander", stageGroup: 2, descVi: "Mở rộng cốt truyện lên tới 60 phút bằng cách thêm bối cảnh.", descEn: "Expands script lengths dynamically by adding contextual side stories." },
-  { id: "FCK", nameVi: "Kiểm Chứng Thực Tế", nameEn: "Fact Checker", stageGroup: 2, descVi: "Rà soát tên riêng, năm, địa danh lịch sử chuẩn xác.", descEn: "Validates factual events, metrics and chronologies." },
-  { id: "CGT", nameVi: "Thiết lập chương truyện", nameEn: "Chapter Generator", stageGroup: 2, descVi: "Trực quan hóa cấu trúc câu chuyện thành chương mục.", descEn: "Breaks large scripts into core semantic chapters." },
-  { id: "SGE", nameVi: "Dựng phân cảnh", nameEn: "Storyboard Generator", stageGroup: 3, descVi: "Lập sơ độ phân cảnh chi tiết đồng bộ mốc thời gian.", descEn: "Forms coordinates linking timing, narration, and screen actions." },
-  { id: "SSP", nameVi: "Phân dòng cảnh", nameEn: "Scene Splitter", stageGroup: 3, descVi: "Cắt nhỏ kịch bản bám sát diễn biến bối cảnh.", descEn: "Splits chapter narratives into granular scenes." },
-  { id: "TGE", nameVi: "Thiết Kế Sơ Đồ Thời Gian", nameEn: "Timeline Generator", stageGroup: 3, descVi: "Ước lượng thời gian và thời lượng cho từng khung hình.", descEn: "Calculates start-end frames based on reading speeds." },
-  { id: "VPL", nameVi: "Kế Hoạch Hình Ảnh", nameEn: "Visual Planner", stageGroup: 4, descVi: "Định lượng số lượng ảnh cần thiết cho đoạn phim.", descEn: "Optimizes assets count, preventing duplicate images." },
-  { id: "ASM", nameVi: "Tài nguyên hình ảnh", nameEn: "Asset Manager", stageGroup: 4, descVi: "Nhập dữ liệu hình ảnh tải lên hoặc tự động khởi tạo.", descEn: "Mixes imported CSV elements and system default textures." },
-  { id: "PGE", nameVi: "Mô tả hình ảnh", nameEn: "Prompt Generator", stageGroup: 4, descVi: "Dựng từ khóa vẽ tranh chi tiết cho công cụ.", descEn: "Enhances descriptive painting formulas for high quality." },
-  { id: "CCM", nameVi: "Duy Trì Nhân Vật", nameEn: "Character Consistency", stageGroup: 4, descVi: "Khóa diện mạo, trang phục và tỷ lệ cơ thể nhân vật.", descEn: "Locks key faces, clothing features and colors." },
-  { id: "IMG", nameVi: "Tạo Ảnh Thần Tốc", nameEn: "Image Generator", stageGroup: 4, descVi: "Thực thi quy trình lập hình ảnh tự động.", descEn: "Runs the latent diffusion rendering pipeline." },
-  { id: "VGE", nameVi: "Tạo giọng nói", nameEn: "Voice Generator", stageGroup: 5, descVi: "Chuyển đổi văn bản thành tệp thu âm diễn cảm.", descEn: "Transforms text strings into full wave audio files." },
-  { id: "SGE_sub", nameVi: "Hệ Thống Phụ Đề", nameEn: "Subtitle Generator", stageGroup: 5, descVi: "Tạo tệp phụ đề định dạng chuẩn bám sát giọng đọc.", descEn: "Drafts exact SRT subtitle alignments." },
-  { id: "FAL", nameVi: "Căn Khớp Giọng Nói", nameEn: "Forced Alignment", stageGroup: 5, descVi: "Áp dụng thuật toán khớp âm thanh thực tế với chữ.", descEn: "Aligns speech phonemes directly to text stamps." },
-  { id: "TNG", nameVi: "Thiết kế ảnh bìa", nameEn: "Thumbnail Generator", stageGroup: 4, descVi: "Khởi sinh các mẫu ảnh bìa tăng tỷ lệ nhấn xem.", descEn: "Generates high engagement MrBeast or History layouts." },
-  { id: "TTG", nameVi: "Dựng Tiêu Đề", nameEn: "Title Generator", stageGroup: 6, descVi: "Tối ưu tiêu đề dễ tìm kiếm và thu hút đám đông.", descEn: "Creates clickbait and standard search terms." },
-  { id: "DSG", nameVi: "Tạo phần mô tả", nameEn: "Description Generator", stageGroup: 6, descVi: "Soạn nội dung giới thiệu tối ưu tìm kiếm.", descEn: "Writes descriptive templates fitted for algorithm reach." },
+  {
+    id: "In",
+    nameVi: "Đầu Vào",
+    nameEn: "Input Source",
+    stageGroup: 0,
+    descVi: "Thu thập kịch bản thô hoặc ý tưởng ban đầu.",
+    descEn: "Captures raw Original Script or short Story Idea.",
+  },
+  {
+    id: "HKG",
+    nameVi: "Tạo lời dẫn",
+    nameEn: "Hook Generator",
+    stageGroup: 1,
+    descVi: "Thiết kế câu mở đầu, câu giữ chân và kêu gọi hành động.",
+    descEn: "Calculates high click-rate Opening, Retention and CTA hooks.",
+  },
+  {
+    id: "SRW",
+    nameVi: "Viết Lại Kịch Bản",
+    nameEn: "Script Rewriter",
+    stageGroup: 2,
+    descVi: "Viết lại và điều chỉnh độ độc bản của câu chuyện.",
+    descEn: "Rewrites original words to bypass redundant phrases.",
+  },
+  {
+    id: "SEH",
+    nameVi: "Nâng Cấp Văn Phong",
+    nameEn: "Script Enhancer",
+    stageGroup: 2,
+    descVi: "Tối ưu độ trôi chảy và kịch tính hóa hội thoại.",
+    descEn: "Injects flow dramatic triggers and flow patterns.",
+  },
+  {
+    id: "LFE",
+    nameVi: "Mở Rộng Thời Lượng",
+    nameEn: "Long Form Expander",
+    stageGroup: 2,
+    descVi: "Mở rộng cốt truyện lên tới 60 phút bằng cách thêm bối cảnh.",
+    descEn: "Expands script lengths dynamically by adding contextual side stories.",
+  },
+  {
+    id: "FCK",
+    nameVi: "Kiểm Chứng Thực Tế",
+    nameEn: "Fact Checker",
+    stageGroup: 2,
+    descVi: "Rà soát tên riêng, năm, địa danh lịch sử chuẩn xác.",
+    descEn: "Validates factual events, metrics and chronologies.",
+  },
+  {
+    id: "CGT",
+    nameVi: "Thiết lập chương truyện",
+    nameEn: "Chapter Generator",
+    stageGroup: 2,
+    descVi: "Trực quan hóa cấu trúc câu chuyện thành chương mục.",
+    descEn: "Breaks large scripts into core semantic chapters.",
+  },
+  {
+    id: "SGE",
+    nameVi: "Dựng phân cảnh",
+    nameEn: "Storyboard Generator",
+    stageGroup: 3,
+    descVi: "Lập sơ độ phân cảnh chi tiết đồng bộ mốc thời gian.",
+    descEn: "Forms coordinates linking timing, narration, and screen actions.",
+  },
+  {
+    id: "SSP",
+    nameVi: "Phân dòng cảnh",
+    nameEn: "Scene Splitter",
+    stageGroup: 3,
+    descVi: "Cắt nhỏ kịch bản bám sát diễn biến bối cảnh.",
+    descEn: "Splits chapter narratives into granular scenes.",
+  },
+  {
+    id: "TGE",
+    nameVi: "Thiết Kế Sơ Đồ Thời Gian",
+    nameEn: "Timeline Generator",
+    stageGroup: 3,
+    descVi: "Ước lượng thời gian và thời lượng cho từng khung hình.",
+    descEn: "Calculates start-end frames based on reading speeds.",
+  },
+  {
+    id: "VPL",
+    nameVi: "Kế Hoạch Hình Ảnh",
+    nameEn: "Visual Planner",
+    stageGroup: 4,
+    descVi: "Định lượng số lượng ảnh cần thiết cho đoạn phim.",
+    descEn: "Optimizes assets count, preventing duplicate images.",
+  },
+  {
+    id: "ASM",
+    nameVi: "Tài nguyên hình ảnh",
+    nameEn: "Asset Manager",
+    stageGroup: 4,
+    descVi: "Nhập dữ liệu hình ảnh tải lên hoặc tự động khởi tạo.",
+    descEn: "Mixes imported CSV elements and system default textures.",
+  },
+  {
+    id: "PGE",
+    nameVi: "Mô tả hình ảnh",
+    nameEn: "Prompt Generator",
+    stageGroup: 4,
+    descVi: "Dựng từ khóa vẽ tranh chi tiết cho công cụ.",
+    descEn: "Enhances descriptive painting formulas for high quality.",
+  },
+  {
+    id: "CCM",
+    nameVi: "Duy Trì Nhân Vật",
+    nameEn: "Character Consistency",
+    stageGroup: 4,
+    descVi: "Khóa diện mạo, trang phục và tỷ lệ cơ thể nhân vật.",
+    descEn: "Locks key faces, clothing features and colors.",
+  },
+  {
+    id: "IMG",
+    nameVi: "Tạo Ảnh Thần Tốc",
+    nameEn: "Image Generator",
+    stageGroup: 4,
+    descVi: "Thực thi quy trình lập hình ảnh tự động.",
+    descEn: "Runs the latent diffusion rendering pipeline.",
+  },
+  {
+    id: "VGE",
+    nameVi: "Tạo giọng nói",
+    nameEn: "Voice Generator",
+    stageGroup: 5,
+    descVi: "Chuyển đổi văn bản thành tệp thu âm diễn cảm.",
+    descEn: "Transforms text strings into full wave audio files.",
+  },
+  {
+    id: "SGE_sub",
+    nameVi: "Hệ Thống Phụ Đề",
+    nameEn: "Subtitle Generator",
+    stageGroup: 5,
+    descVi: "Tạo tệp phụ đề định dạng chuẩn bám sát giọng đọc.",
+    descEn: "Drafts exact SRT subtitle alignments.",
+  },
+  {
+    id: "FAL",
+    nameVi: "Căn Khớp Giọng Nói",
+    nameEn: "Forced Alignment",
+    stageGroup: 5,
+    descVi: "Áp dụng thuật toán khớp âm thanh thực tế với chữ.",
+    descEn: "Aligns speech phonemes directly to text stamps.",
+  },
+  {
+    id: "TNG",
+    nameVi: "Thiết kế ảnh bìa",
+    nameEn: "Thumbnail Generator",
+    stageGroup: 4,
+    descVi: "Khởi sinh các mẫu ảnh bìa tăng tỷ lệ nhấn xem.",
+    descEn: "Generates high engagement MrBeast or History layouts.",
+  },
+  {
+    id: "TTG",
+    nameVi: "Dựng Tiêu Đề",
+    nameEn: "Title Generator",
+    stageGroup: 6,
+    descVi: "Tối ưu tiêu đề dễ tìm kiếm và thu hút đám đông.",
+    descEn: "Creates clickbait and standard search terms.",
+  },
+  {
+    id: "DSG",
+    nameVi: "Tạo phần mô tả",
+    nameEn: "Description Generator",
+    stageGroup: 6,
+    descVi: "Soạn nội dung giới thiệu tối ưu tìm kiếm.",
+    descEn: "Writes descriptive templates fitted for algorithm reach.",
+  },
   { id: "HSG", nameVi: "Đề xuât chủ đề", nameEn: "Hashtag Generator", stageGroup: 6, descVi: "Gợi ý các thẻ nổi bật thịnh hành.", descEn: "Finds trending tags." },
   { id: "TAG", nameVi: "Từ Khóa Tìm Kiếm", nameEn: "Tag Generator", stageGroup: 6, descVi: "Tổng hợp bộ nhãn tìm kiếm phim siêu tốc.", descEn: "Compiles search key phrases." },
-  { id: "VDA", nameVi: "Hệ thống điều phối", nameEn: "Video Director AI", stageGroup: 7, descVi: "Tổng hợp điều khiển góc quay máy ảnh chuyển tiếp.", descEn: "Ensures scene flow, camera transitions and visuals fit." },
-  { id: "AVE", nameVi: "Trình Biên Tập Tự Động", nameEn: "Auto Video Editor", stageGroup: 7, descVi: "Tổng hòa các dải âm thanh, phụ đề và dữ liệu thành phim hoàn chỉnh.", descEn: "Fuses visuals, subtitle layers and music track." },
-  { id: "QCH", nameVi: "Kiểm Soát Chất Lượng", nameEn: "Quality Checker", stageGroup: 7, descVi: "Đánh giá tỷ lệ nén tệp tin, chuẩn khung hình và độ trong âm thanh.", descEn: "Verifies file compressions and safely scales." },
-  { id: "EXP", nameVi: "Xuất bản phim", nameEn: "Exporter Engine", stageGroup: 7, descVi: "Hỗ trợ tải tệp phim độ tương thích cao cực nhanh.", descEn: "Allows professional raw file export in XML format." },
+  {
+    id: "VDA",
+    nameVi: "Hệ thống điều phối",
+    nameEn: "Video Director AI",
+    stageGroup: 7,
+    descVi: "Tổng hợp điều khiển góc quay máy ảnh chuyển tiếp.",
+    descEn: "Ensures scene flow, camera transitions and visuals fit.",
+  },
+  {
+    id: "AVE",
+    nameVi: "Trình Biên Tập Tự Động",
+    nameEn: "Auto Video Editor",
+    stageGroup: 7,
+    descVi: "Tổng hòa các dải âm thanh, phụ đề và dữ liệu thành phim hoàn chỉnh.",
+    descEn: "Fuses visuals, subtitle layers and music track.",
+  },
+  {
+    id: "QCH",
+    nameVi: "Kiểm Soát Chất Lượng",
+    nameEn: "Quality Checker",
+    stageGroup: 7,
+    descVi: "Đánh giá tỷ lệ nén tệp tin, chuẩn khung hình và độ trong âm thanh.",
+    descEn: "Verifies file compressions and safely scales.",
+  },
+  {
+    id: "EXP",
+    nameVi: "Xuất bản phim",
+    nameEn: "Exporter Engine",
+    stageGroup: 7,
+    descVi: "Hỗ trợ tải tệp phim độ tương thích cao cực nhanh.",
+    descEn: "Allows professional raw file export in XML format.",
+  },
 ] as const;
 
-export const genreLabels = { [VideoGenre.CINEMATIC_EPISODE]: "Phim truyện điện ảnh AI", [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Tóm tắt phim & truyện", [VideoGenre.NARRATIVE_EXPLAINER]: "Giải thích nguồn gốc & sự kiện", [VideoGenre.CHARACTER_PSYCHOLOGY]: "Phân tích tâm lý nhân vật", [VideoGenre.LORE_WORLD_BUILDING]: "Giải mã chi tiết bí ẩn", [VideoGenre.SATIRICAL_LIFE_AUTO]: "AI tự chọn", [VideoGenre.TRANSFORMATION_TIMELINE]: "Biến đổi theo thời gian", [VideoGenre.CAREER_SOCIAL_DARKSIDE]: "Góc tối nghề nghiệp", [VideoGenre.DOWNFALL_CONSEQUENCE]: "Sa ngã và trả giá", [VideoGenre.DARK_COMEDY_TRAGEDY]: "Bi kịch hài đen", Storytelling: "Tóm tắt phim & truyện", History: "Lịch sử & tài liệu", Documentary: "Phim tài liệu", Explanation: "Giải thích nguồn gốc & sự kiện", Review: "Đánh giá / Review", Education: "Giáo dục", News: "Tin tức", "Top List": "Bảng xếp hạng / Top list", "True Crime": "Trinh thám / Thám án", Science: "Khoa học", Psychology: "Tâm lý & triết học", Philosophy: "Triết học" } as const;
+export const genreLabels = {
+  [VideoGenre.CINEMATIC_EPISODE]: "Phim truyện điện ảnh AI",
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Tóm tắt phim & truyện",
+  [VideoGenre.NARRATIVE_EXPLAINER]: "Giải thích nguồn gốc & sự kiện",
+  [VideoGenre.CHARACTER_PSYCHOLOGY]: "Phân tích tâm lý nhân vật",
+  [VideoGenre.LORE_WORLD_BUILDING]: "Giải mã chi tiết bí ẩn",
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: "AI tự chọn",
+  [VideoGenre.TRANSFORMATION_TIMELINE]: "Biến đổi theo thời gian",
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: "Góc tối nghề nghiệp",
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: "Sa ngã và trả giá",
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: "Bi kịch hài đen",
+  Storytelling: "Tóm tắt phim & truyện",
+  History: "Lịch sử & tài liệu",
+  Documentary: "Phim tài liệu",
+  Explanation: "Giải thích nguồn gốc & sự kiện",
+  Review: "Đánh giá / Review",
+  Education: "Giáo dục",
+  News: "Tin tức",
+  "Top List": "Bảng xếp hạng / Top list",
+  "True Crime": "Trinh thám / Thám án",
+  Science: "Khoa học",
+  Psychology: "Tâm lý & triết học",
+  Philosophy: "Triết học",
+} as const;
 
 export const GENRE_OPTION_GROUPS = [
   {
     label: "Kể chuyện châm biếm",
-    options: [VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY],
+    options: [
+      VideoGenre.SATIRICAL_LIFE_AUTO,
+      VideoGenre.TRANSFORMATION_TIMELINE,
+      VideoGenre.CAREER_SOCIAL_DARKSIDE,
+      VideoGenre.DOWNFALL_CONSEQUENCE,
+      VideoGenre.DARK_COMEDY_TRAGEDY,
+    ],
   },
   {
     label: "Kể chuyện – giải thích",
@@ -74,20 +278,63 @@ export const normalizeGenreValue = (genre?: string): string => _.get(GENRE_VALUE
 
 export const audLabels = { "General Audience": "Khán giả đại chúng", Kids: "Trẻ em", Teenagers: "Thanh thiếu niên", Adults: "Người lớn", Seniors: "Người cao tuổi" } as const;
 
-export const styleLabels = { Professional: "Chuyên nghiệp", Documentary: "Tài liệu chân thực", Viral: "Lan truyền / Đề xuất", Mystery: "Bí ẩn / Kịch tính", Drama: "Kịch tính / Gây cấn", Educational: "Mang tính giáo dục", Scientific: "Khoa học thực tiễn" } as const;
+export const styleLabels = {
+  Professional: "Chuyên nghiệp",
+  Documentary: "Tài liệu chân thực",
+  Viral: "Lan truyền / Đề xuất",
+  Mystery: "Bí ẩn / Kịch tính",
+  Drama: "Kịch tính / Gây cấn",
+  Educational: "Mang tính giáo dục",
+  Scientific: "Khoa học thực tiễn",
+} as const;
 
-export const motionLabels = { "Zoom In": "Phóng to", "Zoom Out": "Thu nhỏ", "Pan Left": "Góc trái", "Pan Right": "Góc phải", "Pan Up": "Góc trên", "Pan Down": "Góc dưới", Drift: "Trôi nhẹ", "Cinematic Arc": "Hình cung", "Push In": "Đẩy vào", "Slow Reveal": "Hé lộ", Static: "Tĩnh" } as const;
+export const motionLabels = {
+  "Zoom In": "Phóng to",
+  "Zoom Out": "Thu nhỏ",
+  "Pan Left": "Góc trái",
+  "Pan Right": "Góc phải",
+  "Pan Up": "Góc trên",
+  "Pan Down": "Góc dưới",
+  Drift: "Trôi nhẹ",
+  "Cinematic Arc": "Hình cung",
+  "Push In": "Đẩy vào",
+  "Slow Reveal": "Hé lộ",
+  Static: "Tĩnh",
+} as const;
 
 export const emotionMap = { Normal: "Bình thường", Excited: "Hào hứng", Serious: "Trang nghiêm", Dramatic: "Kịch tính", Mysterious: "Bí ẩn" } as const;
 
-export const stylePresetsKeywords = { Stickman: "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading", "2D Vector": "2D flat vector cartoon illustration, vibrant pastel colors, clean bold outlines, minimalist design, stylized characters", Anime: "modern anime style, vibrant cel shading, clean hand-drawn keyframe linework, Kyoto Animation aesthetic, expressive anime eyes, studio lighting", "3D Pixar": "3D cute animated cartoon render, smooth clay-like shading, Pixar aesthetic, soft ambient studio lighting, vibrant saturated colors", Comic: "comic book illustration style, bold ink outlines, dynamic action composition, halftone dot shading, graphic novel artwork", Cinematic: "cinematic film still, photorealistic, shot on 35mm lens, natural filmic lighting, rich atmospheric depth of field, dramatic cinematic composition", Watercolor: "artistic watercolor wash illustration, soft paint bleed, subtle ink linework on textured paper, delicate pastel palette", Cyberpunk: "cyberpunk neon aesthetic, glowing neon lights, futuristic dark atmosphere, high contrast moody shadows, volumetric fog", "Oil Painting": "classic oil on canvas painting, textured visible brush strokes, impasto technique, dramatic chiaroscuro lighting", "Pixel Art": "8-bit retro pixel art, detailed vintage sprite design, limited color palette, clean grid pixels, nostalgic 90s arcade game look", Realistic: "cinematic film still, photorealistic, natural lighting, high depth of field, authentic textures", Historical: "historical accuracy, period-accurate costume design, aged sepia tone, archival epic style, ancient realism", "Black & White": "monochrome photography, high contrast black and white film grain, classic noir shading, deep dramatic shadows", Documentary: "raw documentary photography, photojournalism style, unposed authentic moment, natural ambient light", "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets" } as const;
+export const stylePresetsKeywords = {
+  Stickman:
+    "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading",
+  "2D Vector": "2D flat vector cartoon illustration, vibrant pastel colors, clean bold outlines, minimalist design, stylized characters",
+  Anime: "modern anime style, vibrant cel shading, clean hand-drawn keyframe linework, Kyoto Animation aesthetic, expressive anime eyes, studio lighting",
+  "3D Pixar": "3D cute animated cartoon render, smooth clay-like shading, Pixar aesthetic, soft ambient studio lighting, vibrant saturated colors",
+  Comic: "comic book illustration style, bold ink outlines, dynamic action composition, halftone dot shading, graphic novel artwork",
+  Cinematic: "cinematic film still, photorealistic, shot on 35mm lens, natural filmic lighting, rich atmospheric depth of field, dramatic cinematic composition",
+  Watercolor: "artistic watercolor wash illustration, soft paint bleed, subtle ink linework on textured paper, delicate pastel palette",
+  Cyberpunk: "cyberpunk neon aesthetic, glowing neon lights, futuristic dark atmosphere, high contrast moody shadows, volumetric fog",
+  "Oil Painting": "classic oil on canvas painting, textured visible brush strokes, impasto technique, dramatic chiaroscuro lighting",
+  "Pixel Art": "8-bit retro pixel art, detailed vintage sprite design, limited color palette, clean grid pixels, nostalgic 90s arcade game look",
+  Realistic: "cinematic film still, photorealistic, natural lighting, high depth of field, authentic textures",
+  Historical: "historical accuracy, period-accurate costume design, aged sepia tone, archival epic style, ancient realism",
+  "Black & White": "monochrome photography, high contrast black and white film grain, classic noir shading, deep dramatic shadows",
+  Documentary: "raw documentary photography, photojournalism style, unposed authentic moment, natural ambient light",
+  "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets",
+} as const;
 
 export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ["not found", "404", "unsupported"] as const;
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ["429", "quota", "Quota exceeded", "503", "500", "550", "fetch failed", "Timeout", "undici"] as const;
 export const STICKMAN_KEYWORDS = ["người que", "hình que", "nét que", "stickman", "stick figure", "hoạt hình", "stick"] as const;
 
 export const LOG_SUCCESS_KEYWORDS = ["thành công", "success", "hoàn thành"] as const;
-export const CONSOLE_LOG_IGNORED_MESSAGES = ["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"] as const;
+export const CONSOLE_LOG_IGNORED_MESSAGES = [
+  "Warning:",
+  "Maximum update depth exceeded",
+  "setState inside useEffect",
+  "React limits the number of nested updates",
+  "Cannot update a component while rendering",
+] as const;
 export const VITE_CONNECTION_LOST_KEYWORDS = ["[vite] server connection lost", "server connection lost. polling for restart"] as const;
 export const VITE_HOT_UPDATE_KEYWORDS = ["[vite] hot updated", "[vite] hmr update"] as const;
 export const VITE_FAILED_RELOAD_KEYWORD = "[hmr] failed to reload";
@@ -163,9 +410,66 @@ export const DURATION_OPTIONS = [
 
 export const DEFAULT_IMAGE_KEYWORDS = "cinematic,landscape";
 
-export const ABBREVIATIONS = ["tp", "ts", "ths", "gs", "pgs", "ks", "nxb", "sđt", "vv", "dr", "mr", "mrs", "ms", "st", "vol", "pm", "am", "vs", "eg", "ie", "co", "inc", "approx", "vn"] as const;
+export const ABBREVIATIONS = [
+  "tp",
+  "ts",
+  "ths",
+  "gs",
+  "pgs",
+  "ks",
+  "nxb",
+  "sđt",
+  "vv",
+  "dr",
+  "mr",
+  "mrs",
+  "ms",
+  "st",
+  "vol",
+  "pm",
+  "am",
+  "vs",
+  "eg",
+  "ie",
+  "co",
+  "inc",
+  "approx",
+  "vn",
+] as const;
 
-export const CONJUNCTIONS = ["và", "nhưng", "hoặc", "vì", "nên", "để", "khi", "mà", "thì", "nếu", "tuy", "bởi", "sau", "trong", "cho", "and", "but", "or", "because", "so", "then", "to", "when", "while", "if", "although", "that", "which", "who", "for", "with"] as const;
+export const CONJUNCTIONS = [
+  "và",
+  "nhưng",
+  "hoặc",
+  "vì",
+  "nên",
+  "để",
+  "khi",
+  "mà",
+  "thì",
+  "nếu",
+  "tuy",
+  "bởi",
+  "sau",
+  "trong",
+  "cho",
+  "and",
+  "but",
+  "or",
+  "because",
+  "so",
+  "then",
+  "to",
+  "when",
+  "while",
+  "if",
+  "although",
+  "that",
+  "which",
+  "who",
+  "for",
+  "with",
+] as const;
 
 export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Pan Up", "Pan Down", "Drift", "Cinematic Arc", "Push In", "Slow Reveal", "Static"] as const;
 
@@ -219,10 +523,79 @@ export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale
 
 export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Blur Dissolve", "Brightness Fade", "Fade out to black", "Slide", "Zoom transition", "Cut"] as const;
 
-export const AI_MOTION_EFFECT_IDS = ["zoom_in", "zoom_out", "pan_left", "pan_right", "pan_up", "pan_down", "diagonal_up_left", "diagonal_up_right", "diagonal_down_left", "diagonal_down_right", "drift", "cinematic_arc", "push_in", "pull_out", "slow_reveal", "floating_camera", "handheld_soft", "parallax_left", "parallax_right", "static"] as const;
-export const AI_TRANSITION_EFFECT_IDS = ["cut", "cross_dissolve", "blur_dissolve", "brightness_fade", "fade_black", "fade_white", "slide_left", "slide_right", "slide_up", "slide_down", "wipe_left", "wipe_right", "wipe_up", "wipe_down", "zoom_transition", "flash", "whip_left", "whip_right", "glitch_transition", "film_burn"] as const;
-export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitch", "warm", "cold", "noir", "horror_fog", "vhs", "neon", "film_grain", "sharpen", "chromatic_aberration", "pixelate", "soft_focus"] as const;
-export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
+export const AI_MOTION_EFFECT_IDS = [
+  "zoom_in",
+  "zoom_out",
+  "pan_left",
+  "pan_right",
+  "pan_up",
+  "pan_down",
+  "diagonal_up_left",
+  "diagonal_up_right",
+  "diagonal_down_left",
+  "diagonal_down_right",
+  "drift",
+  "cinematic_arc",
+  "push_in",
+  "pull_out",
+  "slow_reveal",
+  "floating_camera",
+  "handheld_soft",
+  "parallax_left",
+  "parallax_right",
+  "static",
+] as const;
+export const AI_TRANSITION_EFFECT_IDS = [
+  "cut",
+  "cross_dissolve",
+  "blur_dissolve",
+  "brightness_fade",
+  "fade_black",
+  "fade_white",
+  "slide_left",
+  "slide_right",
+  "slide_up",
+  "slide_down",
+  "wipe_left",
+  "wipe_right",
+  "wipe_up",
+  "wipe_down",
+  "zoom_transition",
+  "flash",
+  "whip_left",
+  "whip_right",
+  "glitch_transition",
+  "film_burn",
+] as const;
+export const AI_VISUAL_EFFECT_IDS = [
+  "sad_vignette",
+  "vintage",
+  "dreamy",
+  "glitch",
+  "warm",
+  "cold",
+  "noir",
+  "horror_fog",
+  "vhs",
+  "neon",
+  "film_grain",
+  "sharpen",
+  "chromatic_aberration",
+  "pixelate",
+  "soft_focus",
+] as const;
+export const AI_LIGHTING_EFFECT_IDS = [
+  "natural_light",
+  "light_leak",
+  "lens_flare",
+  "god_rays",
+  "spotlight",
+  "bokeh",
+  "flicker",
+  "strobe",
+  "exposure_pulse",
+  "golden_glow",
+] as const;
 
 export const AI_MODEL_CAPABILITY = { TEXT: "text", VISUAL: "visual", AUDIO: "audio" } as const;
 
@@ -251,9 +624,39 @@ export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not 
 export const GEMINI_ZERO_QUOTA_PATTERNS = ["limit: 0", "limit=0", "free_tier_requests, limit: 0", "free_tier_input_token_count, limit: 0"] as const;
 export const GEMINI_DAILY_QUOTA_PATTERNS = ["perday", "per day", "requestsperday", "tokensperday"] as const;
 
-export const PROMPT_FILLER_WORDS = ["beautiful", "detailed", "artistic", "image", "generation", "prompt", "describing", "characters", "clothes", "historical", "accuracy", "weather", "camera", "angle", "lighting", "based", "style", "with", "what", "where", "photo", "shot", "highly", "ultra", "dramatic", "gorgeous", "scene", "rendering"] as const;
+export const PROMPT_FILLER_WORDS = [
+  "beautiful",
+  "detailed",
+  "artistic",
+  "image",
+  "generation",
+  "prompt",
+  "describing",
+  "characters",
+  "clothes",
+  "historical",
+  "accuracy",
+  "weather",
+  "camera",
+  "angle",
+  "lighting",
+  "based",
+  "style",
+  "with",
+  "what",
+  "where",
+  "photo",
+  "shot",
+  "highly",
+  "ultra",
+  "dramatic",
+  "gorgeous",
+  "scene",
+  "rendering",
+] as const;
 
-export const STICKMAN_STYLE_MODIFIERS = "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval eyes and tiny nose, restrained expressive eyebrows and mouth, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading, simple cutout-like composition";
+export const STICKMAN_STYLE_MODIFIERS =
+  "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval eyes and tiny nose, restrained expressive eyebrows and mouth, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading, simple cutout-like composition";
 
 export const DEFAULT_SESSION_ID = ";1781857807598";
 
@@ -336,7 +739,9 @@ export const getDurationText = (isVi: boolean, durStr: string) => {
     const mins = parseInt(match[1], 10);
     const targetWordCount = mins * spokenWordsPerMinute;
     const paragraphs = mins * 3;
-    const durationText = isVi ? `${mins} phút (${mins} minutes). You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.` : `${mins} minutes. You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`;
+    const durationText = isVi
+      ? `${mins} phút (${mins} minutes). You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`
+      : `${mins} minutes. You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`;
     return { targetWordCount, durationText, targetWordCountMin: Math.floor(targetWordCount * 0.95) };
   }
   return { targetWordCount: spokenWordsPerMinute * 2, durationText: isVi ? "2 phút (2 minutes)" : "2 minutes", targetWordCountMin: Math.floor(spokenWordsPerMinute * 2 * 0.95) };

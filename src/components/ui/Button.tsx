@@ -15,21 +15,23 @@ const getChildrenText = (node: React.ReactNode): string => {
 };
 
 export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primary", size = "md", isLoading, className = "", disabled, ...props }) => {
-  const baseStyles = "inline-flex items-center gap-2 justify-center font-semibold transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 cursor-pointer shadow-sm relative overflow-hidden select-none";
+  const baseStyles =
+    "inline-flex items-center gap-2 justify-center font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm relative overflow-hidden select-none";
 
   const sizes = {
-    xs: "px-2.5 py-1 text-[10px] rounded-lg tracking-wide",
-    sm: "px-3 py-1.5 text-[11px] rounded-xl tracking-wide",
-    md: "px-4 py-2 text-xs rounded-xl tracking-wide",
-    lg: "px-5 py-2.5 text-sm rounded-xl font-bold",
+    xs: "px-3 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
+    sm: "px-3.5 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
+    md: "px-4 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
+    lg: "px-5 h-12 min-h-[48px] max-h-[48px] text-sm rounded-xl font-bold",
   };
 
   const variants = {
-    primary: "bg-gradient-to-r from-rose-500 via-rose-600 to-rose-700 hover:from-rose-450 hover:via-rose-500 hover:to-rose-600 active:from-rose-700 active:to-rose-800 text-white border border-rose-450/30 shadow-md shadow-rose-600/20 hover:shadow-rose-600/35 hover:-translate-y-0.5",
-    secondary: "bg-slate-850/90 hover:bg-slate-800 active:bg-slate-900 text-slate-100 border border-slate-750/80 hover:border-slate-650 shadow-sm backdrop-blur-sm hover:-translate-y-0.5",
+    primary:
+      "bg-gradient-to-r from-rose-500 via-rose-600 to-rose-700 hover:from-rose-450 hover:via-rose-500 hover:to-rose-600 active:from-rose-700 active:to-rose-800 text-white border border-rose-450/30 shadow-md shadow-rose-600/20",
+    secondary: "bg-slate-850/90 hover:bg-slate-800 active:bg-slate-900 text-slate-100 border border-slate-750/80 hover:border-slate-650 shadow-sm backdrop-blur-sm",
     danger: "bg-red-500/15 hover:bg-red-500/25 active:bg-red-500/35 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 shadow-sm",
     ghost: "bg-transparent hover:bg-slate-800/60 active:bg-slate-800 text-slate-400 hover:text-slate-100 border border-transparent shadow-none",
-    outline: "bg-slate-900/60 hover:bg-slate-850 active:bg-slate-900 border border-slate-750 hover:border-slate-600 text-slate-200 hover:text-white backdrop-blur-sm hover:-translate-y-0.5",
+    outline: "bg-slate-900/60 hover:bg-slate-850 active:bg-slate-900 border border-slate-750 hover:border-slate-650 text-slate-200 hover:text-white backdrop-blur-sm",
     unstyled: "",
   };
 

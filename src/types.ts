@@ -425,6 +425,7 @@ export interface CharacterConfig {
   description: string;
   images: string[];
   prompt?: string;
+  referenceGenerationPrompt?: string;
   extracted?: boolean;
   narrativeRole?: string;
   genderPresentation?: string;
@@ -488,6 +489,17 @@ export enum ShotPurpose {
   Climax = "climax",
   Payoff = "payoff",
   Transition = "transition",
+}
+
+export interface CinematicEditSegment {
+  segmentId: string;
+  inSeconds: number;
+  outSeconds: number;
+  shotRole: "master" | "coverage" | "reaction" | "insert" | "transition" | "payoff";
+  storyContribution: string;
+  transition: "cut" | "match_cut" | "cross_dissolve" | "fade_black";
+  audioBridgeMode: "hard" | "j_cut" | "l_cut" | "ambience";
+  containsDialogue: boolean;
 }
 
 export interface StoryboardScene {
@@ -599,13 +611,15 @@ export interface StoryboardScene {
   clipQaWarnings?: string[];
   cinematicTakeDecision?: CinematicTakeDecision;
   cinematicTakeDecisionReason?: string;
-  cinematicRegenerationCount?: number;
   cinematicContinuityScore?: number;
   cinematicStoryClarityScore?: number;
   cinematicPerformanceScore?: number;
+  cinematicDialogueCoverageScore?: number;
+  cinematicDialogueDetected?: boolean;
+  cinematicObservedShotCount?: number;
+  cinematicEditSegments?: CinematicEditSegment[];
   cinematicAudioBridgeMode?: "hard" | "j_cut" | "l_cut" | "ambience";
   cinematicSupportShotType?: "none" | "reaction" | "insert" | "environment" | "aftermath";
-  cinematicGenerationRetryCount?: number;
   cinematicPolicyReview?: { violatesPolicy: boolean; risks: string[]; rationale: string };
 }
 
@@ -1011,18 +1025,18 @@ export interface VideoProject {
   status?: string;
   activeRunId?: string | null;
   lastRunId?: string;
-    generationLogs?: string[];
-    generationCheckpoint?: {
-      intent: "new" | "continue" | "render_only";
-      phase: string;
-      lastSuccessfulPhase?: string;
-      completedSceneIds: string[];
-      pendingSceneIds: string[];
-      failedSceneIds: string[];
-      renderJobId?: string | null;
-      updatedAt: string;
-    };
-    renderedVideoUrl?: string;
+  generationLogs?: string[];
+  generationCheckpoint?: {
+    intent: "new" | "continue" | "render_only";
+    phase: string;
+    lastSuccessfulPhase?: string;
+    completedSceneIds: string[];
+    pendingSceneIds: string[];
+    failedSceneIds: string[];
+    renderJobId?: string | null;
+    updatedAt: string;
+  };
+  renderedVideoUrl?: string;
 }
 
 export interface PipelineWizardProps {
@@ -1147,7 +1161,8 @@ export enum GeminiChatSelector {
 }
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image: 'download-generated-image-button, [data-test-id="download-generated-image-button"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^="blob:"], model-response img[src*="googleusercontent"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)',
+  image:
+    'download-generated-image-button, [data-test-id="download-generated-image-button"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^="blob:"], model-response img[src*="googleusercontent"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)',
   video: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
   all: "img, video",
 } as const;

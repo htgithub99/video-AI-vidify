@@ -188,7 +188,11 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
         break;
       }
 
-      const needsManual = _.some([await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS), _.includes(currentUrl, AutoLoginConstants.URLS.CHALLENGE_KEYWORD), _.includes(currentUrl, AutoLoginConstants.URLS.REJECTED_SIGN_IN_KEYWORD)]);
+      const needsManual = _.some([
+        await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS),
+        _.includes(currentUrl, AutoLoginConstants.URLS.CHALLENGE_KEYWORD),
+        _.includes(currentUrl, AutoLoginConstants.URLS.REJECTED_SIGN_IN_KEYWORD),
+      ]);
 
       if (needsManual && isHeadless) {
         await captureLoginDomState(page, "manual_verification_headless");

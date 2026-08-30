@@ -48,7 +48,14 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
           const isPassedGroup = node.stageGroup < activeStepIndex;
 
           return (
-            <Button key={node.id} onClick={() => setSelectedNode(node)} variant="ghost" size="xs" className={cn(`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer flex-col items-start justify-start gap-1 h-auto w-full shadow-none ${isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-850"}`)}>
+            <Button
+              key={node.id}
+              onClick={() => setSelectedNode(node)}
+              variant="ghost"
+              size="xs"
+              className={cn(
+                `p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer flex-col items-start justify-start gap-1 h-auto w-full shadow-none ${isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-850"}`,
+              )}>
               {isActiveGroup && (
                 <span className={cn("absolute top-1 right-1 flex h-2 w-2")}>
                   <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75")}></span>
@@ -65,7 +72,10 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
               </div>
               <p className={cn("text-xs font-semibold truncate uppercase tracking-tight w-full text-left")}>{currentLang === "vi" ? node.nameVi : node.nameEn}</p>
 
-              <div className={cn("mt-1.5 pt-1.5 border-t border-slate-800/50 text-[8px] text-slate-500 uppercase font-bold truncate flex items-center gap-1 font-mono justify-between w-full")}>
+              <div
+                className={cn(
+                  "mt-1.5 pt-1.5 border-t border-slate-800/50 text-[8px] text-slate-500 uppercase font-bold truncate flex items-center gap-1 font-mono justify-between w-full",
+                )}>
                 <span>{getGroupName(node.stageGroup)}</span>
                 <HelpCircle className={cn("w-3 h-3 text-slate-600 group-hover:text-rose-400")} />
               </div>

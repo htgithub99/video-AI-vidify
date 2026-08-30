@@ -14,7 +14,15 @@ interface ReferenceImageCardProps {
   onDelete: (index: number) => void;
 }
 
-export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({ imageSrc, index, badgePrefix = REFACTOR_CONSTANTS.VD_EMPTY_STRING, deleteTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING, previewTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING, onPreview, onDelete }) => {
+export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({
+  imageSrc,
+  index,
+  badgePrefix = REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  deleteTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  previewTooltip = REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  onPreview,
+  onDelete,
+}) => {
   const displayIndex = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
   const badgeLabel = _.join([badgePrefix, displayIndex], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
@@ -28,12 +36,29 @@ export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({ imageSrc
       <div className={cn("absolute inset-0 bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-600 -z-10")}>
         <ImageIcon className={cn("w-6 h-6")} />
       </div>
-      <span className={cn("absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-md text-[9px] font-mono font-bold text-white px-1.5 py-0.5 rounded border border-white/10 pointer-events-none")}>{badgeLabel}</span>
+      <span
+        className={cn(
+          "absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-md text-[9px] font-mono font-bold text-white px-1.5 py-0.5 rounded border border-white/10 pointer-events-none",
+        )}>
+        {badgeLabel}
+      </span>
       <div className={cn("absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1.5 p-1")}>
-        <button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} onClick={() => onPreview(imageSrc)} title={previewTooltip} className={cn("w-7 h-7 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer")}>
+        <button
+          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+          onClick={() => onPreview(imageSrc)}
+          title={previewTooltip}
+          className={cn(
+            "w-7 h-7 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer",
+          )}>
           <ZoomIn className={cn("w-3.5 h-3.5")} />
         </button>
-        <button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} onClick={() => onDelete(index)} title={deleteTooltip} className={cn("w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer")}>
+        <button
+          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+          onClick={() => onDelete(index)}
+          title={deleteTooltip}
+          className={cn(
+            "w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer",
+          )}>
           <X className={cn("w-3.5 h-3.5")} />
         </button>
       </div>

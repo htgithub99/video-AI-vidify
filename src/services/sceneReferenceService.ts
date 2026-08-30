@@ -29,8 +29,10 @@ export const SCENE_REFERENCE_CONFIG = {
   CHARACTER_SEPARATOR: "\n",
   TRANSIENT_STYLE_PATTERN: /\b(?:cinematic|dramatic|volumetric)\s+lighting\b|\b(?:sharp\s+detail|high\s+quality|photorealistic|3d\s+render)\b/gi,
   DUPLICATE_SEPARATOR_PATTERN: /\s*,\s*,+/g,
-  PEOPLE_PATTERN: /\b(?:person|people|character|characters|figure|figures|man|men|woman|women|boy|boys|girl|girls|child|children|family|families|worker|workers|official|officials|crowd|gambler|gamblers|player|players|youth|teenager|teenagers)\b/i,
-  SINGLE_CHARACTER_SUBJECT_PATTERN: /\b(?:person|character|man|woman|male|female|worker|employee|professional|office worker|girl|boy|she|he|her|him|nhan vien|phu nu|co ay|anh ay)\b/i,
+  PEOPLE_PATTERN:
+    /\b(?:person|people|character|characters|figure|figures|man|men|woman|women|boy|boys|girl|girls|child|children|family|families|worker|workers|official|officials|crowd|gambler|gamblers|player|players|youth|teenager|teenagers)\b/i,
+  SINGLE_CHARACTER_SUBJECT_PATTERN:
+    /\b(?:person|character|man|woman|male|female|worker|employee|professional|office worker|girl|boy|she|he|her|him|nhan vien|phu nu|co ay|anh ay)\b/i,
   CONTINUING_PRONOUN_PATTERN: /^(?:anh|co|ong|ba|han|nguoi nay|he|she|him|her|his|their)\b/i,
 } as const;
 
@@ -41,13 +43,31 @@ export interface SceneGenerationContext {
   referenceRoles: string[];
 }
 
-const normalizeTokens = (value: string): string[] => _.uniq(_.filter(_.words(_.toLower(_.deburr(value))), (token) => _.gte(_.size(token), SCENE_REFERENCE_CONFIG.MIN_TOKEN_LENGTH)));
+const normalizeTokens = (value: string): string[] =>
+  _.uniq(_.filter(_.words(_.toLower(_.deburr(value))), (token) => _.gte(_.size(token), SCENE_REFERENCE_CONFIG.MIN_TOKEN_LENGTH)));
 
 const normalizeSearchText = (value: string): string => _.join(_.words(_.toLower(_.deburr(value))), " ");
 
-const getCharacterIdentityText = (character: CharacterConfig): string => _.join(_.compact([character.name, character.prompt, character.description, character.hair, character.signatureClothing, character.accessories]), " ");
+const getCharacterIdentityText = (character: CharacterConfig): string =>
+  _.join(_.compact([character.name, character.prompt, character.description, character.hair, character.signatureClothing, character.accessories]), " ");
 
-const getCharacterIdentityDetails = (character: CharacterConfig): string[] => _.uniqBy(_.compact([character.genderPresentation, character.ageRange, character.ethnicitySkinTone, character.bodyBuild, character.faceShape, character.eyes, character.nose, character.hair, character.signatureClothing, character.accessories, character.silhouette]), (value) => _.toLower(_.trim(value)));
+const getCharacterIdentityDetails = (character: CharacterConfig): string[] =>
+  _.uniqBy(
+    _.compact([
+      character.genderPresentation,
+      character.ageRange,
+      character.ethnicitySkinTone,
+      character.bodyBuild,
+      character.faceShape,
+      character.eyes,
+      character.nose,
+      character.hair,
+      character.signatureClothing,
+      character.accessories,
+      character.silhouette,
+    ]),
+    (value) => _.toLower(_.trim(value)),
+  );
 
 export const createCharacterIdentityDescription = (character: CharacterConfig): string => {
   const details = getCharacterIdentityDetails(character);
@@ -61,9 +81,22 @@ export const createCharacterIdentityDescription = (character: CharacterConfig): 
 
 export const createCharacterIdentityBlocks = (characters: CharacterConfig[]): string => {
   if (_.isEmpty(characters)) return "";
-  const intro = _.isEqual(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_INTRO : _.replace(SCENE_REFERENCE_CONFIG.MULTI_CHARACTER_INTRO, "{0}", _.toString(_.size(characters)));
-  const blocks = _.map(characters, (character, index) => _.join([_.replace(_.replace(SCENE_REFERENCE_CONFIG.CHARACTER_LABEL, "{0}", _.toString(_.add(index, 1))), "{1}", _.toUpper(character.name)), createCharacterIdentityDescription(character)], ": "));
-  return _.join([intro, SCENE_REFERENCE_CONFIG.CHARACTER_SECTION, ...blocks, _.gt(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.IDENTITY_LOCK : ""].filter(Boolean), SCENE_REFERENCE_CONFIG.CHARACTER_SEPARATOR);
+  const intro = _.isEqual(_.size(characters), 1)
+    ? SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_INTRO
+    : _.replace(SCENE_REFERENCE_CONFIG.MULTI_CHARACTER_INTRO, "{0}", _.toString(_.size(characters)));
+  const blocks = _.map(characters, (character, index) =>
+    _.join(
+      [
+        _.replace(_.replace(SCENE_REFERENCE_CONFIG.CHARACTER_LABEL, "{0}", _.toString(_.add(index, 1))), "{1}", _.toUpper(character.name)),
+        createCharacterIdentityDescription(character),
+      ],
+      ": ",
+    ),
+  );
+  return _.join(
+    [intro, SCENE_REFERENCE_CONFIG.CHARACTER_SECTION, ...blocks, _.gt(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.IDENTITY_LOCK : ""].filter(Boolean),
+    SCENE_REFERENCE_CONFIG.CHARACTER_SEPARATOR,
+  );
 };
 
 const isCharacterMentioned = (sceneText: string, character: CharacterConfig): boolean => {
@@ -88,7 +121,10 @@ const isCharacterMentioned = (sceneText: string, character: CharacterConfig): bo
   return _.gte(matches, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_TOKEN_MATCHES) && _.gte(matchRatio, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_MATCH_RATIO);
 };
 
-export const resolveSceneCharacterIds = (scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">, characters: CharacterConfig[]): string[] => {
+export const resolveSceneCharacterIds = (
+  scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">,
+  characters: CharacterConfig[],
+): string[] => {
   const validIds = new Set(_.map(characters, "id"));
   const explicitIds = _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id));
   if (!_.isEmpty(explicitIds)) return explicitIds;
@@ -108,7 +144,12 @@ export const resolveStoryboardCharacterIds = (scenes: StoryboardScene[], charact
   return _.map(scenes, (scene) => {
     const resolvedCharacterIds = resolveSceneCharacterIds(scene, characters);
     const sceneText = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle]), " "));
-    const inheritedCharacterIds = _.every([_.isEmpty(resolvedCharacterIds), _.isEqual(_.size(previousCharacterIds), 1), SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(sceneText)], Boolean) ? previousCharacterIds : resolvedCharacterIds;
+    const inheritedCharacterIds = _.every(
+      [_.isEmpty(resolvedCharacterIds), _.isEqual(_.size(previousCharacterIds), 1), SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(sceneText)],
+      Boolean,
+    )
+      ? previousCharacterIds
+      : resolvedCharacterIds;
     if (!_.isEmpty(inheritedCharacterIds)) previousCharacterIds = inheritedCharacterIds;
     return { ...scene, characterIds: inheritedCharacterIds };
   });
@@ -134,8 +175,26 @@ export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], cha
   });
 };
 
-export const createSceneGenerationContext = (scene: StoryboardScene, visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">): SceneGenerationContext => {
+export const createSceneGenerationContext = (
+  scene: StoryboardScene,
+  visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">,
+): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
   return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceRoles: [] };
+};
+
+export const resolveCinematicSceneCharacterReferences = (
+  scene: StoryboardScene,
+  characters: CharacterConfig[],
+): Pick<SceneGenerationContext, "characterIds" | "referenceImages" | "referenceRoles"> => {
+  const characterIds = resolveSceneCharacterIds(scene, characters);
+  const charactersById = _.keyBy(characters, "id");
+  const visibleCharacters = _.compact(_.map(characterIds, (characterId) => charactersById[characterId]));
+  const referenceImages = _.take(_.compact(_.map(visibleCharacters, (character) => _.first(_.filter(character.images, _.isString)))), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
+  return {
+    characterIds: _.take(characterIds, SCENE_REFERENCE_CONFIG.MAX_IMAGES),
+    referenceImages,
+    referenceRoles: _.map(referenceImages, () => SCENE_REFERENCE_CONFIG.CHARACTER_ROLE),
+  };
 };

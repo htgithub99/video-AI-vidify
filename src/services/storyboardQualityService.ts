@@ -25,10 +25,26 @@ export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityRepor
   return report;
 };
 
-export const applyDeterministicStoryboardCoverage = (report: StoryboardQualityReport, script: string, scenes: Array<{ script?: string; subtitle?: string }>): StoryboardQualityReport => {
+export const applyDeterministicStoryboardCoverage = (
+  report: StoryboardQualityReport,
+  script: string,
+  scenes: Array<{ script?: string; subtitle?: string }>,
+): StoryboardQualityReport => {
   const scriptCoverageScore = _.round(calculateStoryboardScriptCoverage(script, scenes) * 100);
   const maximumSceneWords = _.max(_.map(scenes, (scene) => _.size(_.words(scene.script || scene.subtitle)))) || 0;
   const pacingCoverageScore = maximumSceneWords > 0 ? _.round(_.clamp((STORYBOARD_QUALITY_CONFIG.MIN_SCORE * 22) / maximumSceneWords, 0, 100)) : 0;
-  const warnings = _.uniq(_.compact([...report.warnings, scriptCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "", pacingCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : ""]));
-  return { ...report, scriptCoverageScore, pacingCoverageScore, warnings, passed: report.passed && scriptCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE && pacingCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE };
+  const warnings = _.uniq(
+    _.compact([
+      ...report.warnings,
+      scriptCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
+      pacingCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
+    ]),
+  );
+  return {
+    ...report,
+    scriptCoverageScore,
+    pacingCoverageScore,
+    warnings,
+    passed: report.passed && scriptCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE && pacingCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE,
+  };
 };

@@ -7,7 +7,48 @@ import { validateChapterLanguage } from "./chapterLanguageValidationService";
 
 const normalizeContent = (value: unknown): string => _.trim(_.toString(value));
 const isUsableContent = (content: string): boolean => _.inRange(_.size(content), REFACTOR_CONSTANTS.HOOK_MIN_CONTENT_LENGTH, _.add(REFACTOR_CONSTANTS.HOOK_MAX_CONTENT_LENGTH, 1));
-const TOPIC_STOP_WORDS = new Set(["ai", "ban", "bi", "cai", "cho", "co", "cua", "da", "day", "duoc", "gi", "khi", "la", "mot", "nay", "nhung", "noi", "sao", "tai", "that", "the", "thi", "trong", "va", "vi", "why", "what", "when", "where", "the", "a", "an", "is", "are", "to", "of", "in", "it", "this", "that"]);
+const TOPIC_STOP_WORDS = new Set([
+  "ai",
+  "ban",
+  "bi",
+  "cai",
+  "cho",
+  "co",
+  "cua",
+  "da",
+  "day",
+  "duoc",
+  "gi",
+  "khi",
+  "la",
+  "mot",
+  "nay",
+  "nhung",
+  "noi",
+  "sao",
+  "tai",
+  "that",
+  "the",
+  "thi",
+  "trong",
+  "va",
+  "vi",
+  "why",
+  "what",
+  "when",
+  "where",
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "to",
+  "of",
+  "in",
+  "it",
+  "this",
+  "that",
+]);
 const getTopicTokens = (value: string): string[] => _.filter(_.uniq(_.words(_.deburr(_.toLower(value)))), (token) => _.gte(token.length, 3) && !TOPIC_STOP_WORDS.has(token));
 export const isHookTopicallyGrounded = (content: string, sourceText: string): boolean => {
   const sourceTokens = getTopicTokens(sourceText);
@@ -36,7 +77,13 @@ export const resolveUsableHooks = (versions: unknown, hookType: string, count: n
       const source = _.isPlainObject(version) ? (version as Record<string, unknown>) : {};
       const content = normalizeContent(source.content ?? source.text);
       if (!isUsableContent(content) || !isHookTopicallyGrounded(content, sourceText) || !validateChapterLanguage(content, isVietnamese).valid) return null;
-      return { id: normalizeContent(source.id) || `hk_${_.add(index, 1)}`, content, type: normalizeContent(source.type) || hookType, selected: false, score: source.score as HookVersion["score"] };
+      return {
+        id: normalizeContent(source.id) || `hk_${_.add(index, 1)}`,
+        content,
+        type: normalizeContent(source.type) || hookType,
+        selected: false,
+        score: source.score as HookVersion["score"],
+      };
     }),
   );
   const ranked = rankHookVersions(normalized);

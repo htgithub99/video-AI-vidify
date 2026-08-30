@@ -65,7 +65,9 @@ export const SecurityConstants = {
     return decodeSecret("7a7d447f4671546d46716a4f604d744b6a492626262cf716e5");
   },
   get GAS_API_URL() {
-    return decodeSecret("444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1");
+    return decodeSecret(
+      "444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1",
+    );
   },
   LOCAL_STORAGE_LICENSE_KEY: "vidify_license_key",
   DEFAULT_LICENSE_KEY: "4DE63-66EB0-A241C-F9BA5-05341",
@@ -225,7 +227,14 @@ export const SecurityConstants = {
   RECOVERY_EMAIL_PROP: "recoveryEmail",
 };
 
-export const LocalizationConstants = { FEATURE_VIDEO: "Video", FEATURE_IMAGE: "Ảnh", FEATURE_VOICE: "Giọng nói", PLAN_LIFETIME: "Vĩnh Viễn", PLAN_PRO: "PRO", PLAN_FREE: "Miễn Phí" } as const;
+export const LocalizationConstants = {
+  FEATURE_VIDEO: "Video",
+  FEATURE_IMAGE: "Ảnh",
+  FEATURE_VOICE: "Giọng nói",
+  PLAN_LIFETIME: "Vĩnh Viễn",
+  PLAN_PRO: "PRO",
+  PLAN_FREE: "Miễn Phí",
+} as const;
 
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: "Vui lòng kích hoạt mã bản quyền để sử dụng ứng dụng.",
@@ -313,10 +322,25 @@ export const AutoLoginConstants = {
     VERIFY_IT_IS_YOU: "text=Verify it's you",
     ABOUT_SIGN_IN_BTN: 'a[href*="ServiceLogin"], a[data-g-label="sign-in"], a:has-text("Sign in"), a:has-text("Đăng nhập")',
     EMAIL_SELECTORS: ["input#identifierId", 'input[name="identifier"]', 'input[type="email"]', 'input[aria-label*="Email"]', 'input[aria-label*="email"]'],
-    PWD_SELECTORS: ['input[name="Passwd"]', 'input[autocomplete="current-password"]', 'input[name="password"]', 'input[type="password"]:not([aria-hidden="true"]):not([name="hiddenPassword"])', 'input[aria-label*="password"]', 'input[aria-label*="Mật khẩu"]'],
+    PWD_SELECTORS: [
+      'input[name="Passwd"]',
+      'input[autocomplete="current-password"]',
+      'input[name="password"]',
+      'input[type="password"]:not([aria-hidden="true"]):not([name="hiddenPassword"])',
+      'input[aria-label*="password"]',
+      'input[aria-label*="Mật khẩu"]',
+    ],
     EMAIL_NEXT_SELECTORS: ["#identifierNext button", "#identifierNext", 'form button:has-text("Next")', 'form button:has-text("Tiếp theo")', 'button[type="submit"]'],
     PWD_NEXT_SELECTORS: ["#passwordNext button", "#passwordNext", 'form button:has-text("Next")', 'form button:has-text("Tiếp theo")', 'button[type="submit"]'],
-    MANUAL_VERIFICATION_SELECTORS: ['iframe[src*="recaptcha"]', 'input[name="ca"]', "text=Verify it's you", "text=Xác minh danh tính", "text=Confirm it's you", "text=Couldn't sign you in", "text=Không thể đăng nhập"],
+    MANUAL_VERIFICATION_SELECTORS: [
+      'iframe[src*="recaptcha"]',
+      'input[name="ca"]',
+      "text=Verify it's you",
+      "text=Xác minh danh tính",
+      "text=Confirm it's you",
+      "text=Couldn't sign you in",
+      "text=Không thể đăng nhập",
+    ],
   },
   LOGS: {
     START_LOGIN: "Bắt đầu đăng nhập tài khoản: ",

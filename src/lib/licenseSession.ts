@@ -37,4 +37,5 @@ export const invalidateBrowserLicenseSession = (): void => {
   window.dispatchEvent(new CustomEvent(SecurityConstants.LICENSE_INVALIDATED_EVENT));
 };
 
-export const isLicenseFailureCode = (code: unknown): boolean => _.includes([SecurityConstants.LICENSE_MISSING_CODE, SecurityConstants.LICENSE_INVALID_CODE, SecurityConstants.LICENSE_INACTIVE_CODE], code);
+export const isLicenseFailureCode = (code: unknown): boolean =>
+  _.includes([SecurityConstants.LICENSE_MISSING_CODE, SecurityConstants.LICENSE_INVALID_CODE, SecurityConstants.LICENSE_INACTIVE_CODE], code);

@@ -62,18 +62,35 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({ re
 
       <div className={cn("flex flex-wrap items-center gap-2.5")} onDragOver={handleDragOver} onDrop={handleDrop}>
         <Tooltip content={T.sceneReferenceUploadSub} position="top">
-          <label className={cn("group relative flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500/80 dark:hover:border-blue-400 bg-white dark:bg-slate-900/60 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 cursor-pointer transition-all duration-200 shadow-sm hover:shadow shrink-0")}>
-            <div className={cn("w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1 transition-transform group-hover:scale-110")}>
+          <label
+            className={cn(
+              "group relative flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500/80 dark:hover:border-blue-400 bg-white dark:bg-slate-900/60 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 cursor-pointer transition-all duration-200 shadow-sm hover:shadow shrink-0",
+            )}>
+            <div
+              className={cn(
+                "w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1 transition-transform group-hover:scale-110",
+              )}>
               <Plus className={cn("w-4 h-4")} />
             </div>
-            <span className={cn("text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400")}>{T.addPhoto || T.sceneReferenceUploadTitle}</span>
+            <span className={cn("text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400")}>
+              {T.addPhoto || T.sceneReferenceUploadTitle}
+            </span>
             <span className={cn("text-[9px] font-medium text-slate-400 dark:text-slate-400")}>{T.uploadDragOrSelect}</span>
             <input type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} multiple className={cn("hidden")} onChange={handleFileInputChange} />
           </label>
         </Tooltip>
 
         {_.map(referenceImages, (imgSrc, idx) => (
-          <ReferenceImageCard key={idx} imageSrc={imgSrc} index={idx} badgePrefix={REFACTOR_CONSTANTS.HASH_PREFIX} deleteTooltip={T.deleteSceneReferenceTooltip || T.deletePhotoTooltip} previewTooltip={T.viewLargeImage} onPreview={setPreviewImage} onDelete={handleRemoveImage} />
+          <ReferenceImageCard
+            key={idx}
+            imageSrc={imgSrc}
+            index={idx}
+            badgePrefix={REFACTOR_CONSTANTS.HASH_PREFIX}
+            deleteTooltip={T.deleteSceneReferenceTooltip || T.deletePhotoTooltip}
+            previewTooltip={T.viewLargeImage}
+            onPreview={setPreviewImage}
+            onDelete={handleRemoveImage}
+          />
         ))}
       </div>
 

@@ -92,7 +92,10 @@ export const generateContentWithRetry = async (
           config: geminiConfigForRequest,
         }),
         new Promise((_, reject) => {
-          timeoutHandle = setTimeout(() => reject(Object.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: "ETIMEDOUT" })), GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS);
+          timeoutHandle = setTimeout(
+            () => reject(Object.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: "ETIMEDOUT" })),
+            GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS,
+          );
         }),
       ]);
     } finally {
@@ -108,7 +111,13 @@ export const generateContentWithRetry = async (
   const contentEstimate = estimateGeminiContents(params.contents);
   let route: ReturnType<typeof routeAiTask>;
   try {
-    route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens: contentEstimate.estimatedTextTokens, mediaInputCount: contentEstimate.mediaInputCount, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
+    route = routeAiTask({
+      capability: params.task?.capability,
+      estimatedInputTokens: contentEstimate.estimatedTextTokens,
+      mediaInputCount: contentEstimate.mediaInputCount,
+      maxOutputTokens: params.config?.maxOutputTokens,
+      budgetUsd: params.task?.budgetUsd,
+    });
   } catch (routeError: any) {
     routeError.rotationLogs = rotationLogs;
     throw routeError;
@@ -118,7 +127,10 @@ export const generateContentWithRetry = async (
   const tryToollessFreeFallback = async (category: string): Promise<any> => {
     if (!_.includes(FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_CATEGORIES, category as never) || _.isEmpty(params.config?.tools) || !_.isString(params.contents)) return null;
     appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);
-    const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    const fallback = await generateWithFreeProviders(
+      { ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) },
+      { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey },
+    );
     if (!fallback.response) return null;
     fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];
     return fallback.response;

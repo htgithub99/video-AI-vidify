@@ -24,7 +24,40 @@ const SUPPORTED_MEDIA_PATTERN = /\.(?:jpe?g|png|webp)(?:\?|$)/i;
 const MINIMUM_IMAGE_BYTES = 20_000;
 const DOWNLOAD_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36";
 const GENERIC_SEARCH_TERMS = /\b(?:historic(?:al)?|archive|archival|photograph|photo|image|exterior|interior|real|authentic|documentary|view)\b/gi;
-const SEARCH_STOP_WORDS = new Set(["chien", "thang", "lich", "hinh", "anh", "the", "and", "with", "from", "photo", "image", "history", "historic", "view", "real", "tran", "quan", "manh", "thoi", "thanh", "pho", "xay", "dung", "quyet", "dinh", "chien", "luoc", "nha", "vua", "nguoi", "viet", "nam"]);
+const SEARCH_STOP_WORDS = new Set([
+  "chien",
+  "thang",
+  "lich",
+  "hinh",
+  "anh",
+  "the",
+  "and",
+  "with",
+  "from",
+  "photo",
+  "image",
+  "history",
+  "historic",
+  "view",
+  "real",
+  "tran",
+  "quan",
+  "manh",
+  "thoi",
+  "thanh",
+  "pho",
+  "xay",
+  "dung",
+  "quyet",
+  "dinh",
+  "chien",
+  "luoc",
+  "nha",
+  "vua",
+  "nguoi",
+  "viet",
+  "nam",
+]);
 const MISLEADING_CONTEXT_PATTERN = /(?:\b(?:street|road|avenue|address|pharmacy|shop|hotel|restaurant)\b|\b(?:duong|pho|hieu thuoc|cua hang|khach san|nha hang)\b)/i;
 const VERIFIED_STOCK_LICENSES: Array<{ host: RegExp; license: string }> = [
   { host: /(?:^|\.)pexels\.com$/i, license: "Pexels License" },
@@ -77,7 +110,9 @@ const downloadCandidate = async (context: BrowserContext, candidate: SearchCandi
   let mimeType = _.toLower(response?.headers()["content-type"] || "").split(";")[0];
   if (response?.ok()) body = await response.body();
   if (!body) {
-    const directResponse = await fetch(candidate.mediaUrl, { headers: { "user-agent": DOWNLOAD_USER_AGENT, referer: candidate.sourceUrl || "https://www.google.com/" } }).catch(() => null);
+    const directResponse = await fetch(candidate.mediaUrl, { headers: { "user-agent": DOWNLOAD_USER_AGENT, referer: candidate.sourceUrl || "https://www.google.com/" } }).catch(
+      () => null,
+    );
     if (directResponse?.ok) {
       mimeType = _.toLower(directResponse.headers.get("content-type") || "").split(";")[0];
       body = Buffer.from(await directResponse.arrayBuffer());
@@ -182,16 +217,34 @@ const searchWikimediaCommons = async (context: BrowserContext, page: Page, query
       const mimeType = _.toLower(_.toString(info?.mime));
       const sourceUrl = _.toString(info?.descriptionurl);
       const candidate = { mediaUrl, sourceUrl, title: _.toString(item.title) };
-      if (excludedSources.has(sourceUrl) || !isArchivalSearchCandidateRelevant(candidate, query) || !SUPPORTED_MEDIA_PATTERN.test(mediaUrl) || !mimeType.startsWith("image/") || mimeType.includes("svg")) continue;
+      if (
+        excludedSources.has(sourceUrl) ||
+        !isArchivalSearchCandidateRelevant(candidate, query) ||
+        !SUPPORTED_MEDIA_PATTERN.test(mediaUrl) ||
+        !mimeType.startsWith("image/") ||
+        mimeType.includes("svg")
+      )
+        continue;
       const downloaded = await downloadCandidate(context, candidate);
       if (!downloaded) continue;
-      return { success: true, ...downloaded, sourceUrl, license: _.trim(_.toString(info?.extmetadata?.LicenseShortName?.value || info?.extmetadata?.UsageTerms?.value || "Wikimedia Commons source page")), provider: "wikimedia_commons" };
+      return {
+        success: true,
+        ...downloaded,
+        sourceUrl,
+        license: _.trim(_.toString(info?.extmetadata?.LicenseShortName?.value || info?.extmetadata?.UsageTerms?.value || "Wikimedia Commons source page")),
+        provider: "wikimedia_commons",
+      };
     }
   }
   return null;
 };
 
-export const searchArchivalImageWithChrome = async (query: string, headless: boolean = true, sharedContext?: BrowserContext, excludeSourceUrls: string[] = []): Promise<ArchivalImageResult> => {
+export const searchArchivalImageWithChrome = async (
+  query: string,
+  headless: boolean = true,
+  sharedContext?: BrowserContext,
+  excludeSourceUrls: string[] = [],
+): Promise<ArchivalImageResult> => {
   const cleanQuery = _.trim(query);
   if (_.isEmpty(cleanQuery)) return { success: false, warning: "archival_search_query_missing" };
   const excludedSources = new Set(_.map(excludeSourceUrls, _.toString));

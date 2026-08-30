@@ -16,7 +16,8 @@ const FACTUAL_ARCHIVAL_RATIOS: Record<string, number> = {
   [VideoGenre.CHARACTER_PSYCHOLOGY]: 0.15,
 };
 
-const AUTHENTIC_EVIDENCE_PATTERN = /(?:\b(?:năm|year)\s+\d{3,4}\b|\b\d{3,4}\b|Nhà Trần|Đại Việt|nhà Lý|Trần Hưng Đạo|Trần Nhân Tông|Bạch Đằng|Thăng Long|Diên Hồng|Vạn Kiếp|Đông Bộ Đầu|Hồ Quý Ly|Trần Thủ Độ|Nguyên Mông|Mongol|historic(?:al)? (?:site|map|document|artifact|building|person)|bản đồ|sắc phong|chiếu|ấn triều|di tích|đền|lăng|thành cổ|hiện vật|tài liệu|công trình)/i;
+const AUTHENTIC_EVIDENCE_PATTERN =
+  /(?:\b(?:năm|year)\s+\d{3,4}\b|\b\d{3,4}\b|Nhà Trần|Đại Việt|nhà Lý|Trần Hưng Đạo|Trần Nhân Tông|Bạch Đằng|Thăng Long|Diên Hồng|Vạn Kiếp|Đông Bộ Đầu|Hồ Quý Ly|Trần Thủ Độ|Nguyên Mông|Mongol|historic(?:al)? (?:site|map|document|artifact|building|person)|bản đồ|sắc phong|chiếu|ấn triều|di tích|đền|lăng|thành cổ|hiện vật|tài liệu|công trình)/i;
 
 const getAuthenticEvidenceScore = (scene: StoryboardScene): number => {
   const text = _.join(_.compact([scene.storyEvidence, scene.archivalSearchQuery]), " ");
@@ -46,7 +47,10 @@ export const ensureMediaSourcePlan = (scenes: StoryboardScene[], genre?: string)
           ...scene,
           assetStrategy: "ai_generated" as const,
           archivalSearchQuery: "",
-          archivalRationale: minimumRatio > 0 ? "Authentic evidence was not fully specified by AI; use an explicit reconstruction instead of unrelated source media" : "AI visual planning did not request authentic source media for this scene",
+          archivalRationale:
+            minimumRatio > 0
+              ? "Authentic evidence was not fully specified by AI; use an explicit reconstruction instead of unrelated source media"
+              : "AI visual planning did not request authentic source media for this scene",
         },
   );
 };

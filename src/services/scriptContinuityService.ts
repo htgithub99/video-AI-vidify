@@ -79,7 +79,9 @@ export const removeAdjacentRepeatedNarrationSentences = (text: string): string =
     (accepted: string[], sentence) => {
       const recentNarration = _.join(_.takeRight(accepted, RECENT_NARRATION_WINDOW), " ");
       const repeatsPreviousSentence = !_.isEmpty(accepted) && _.gte(getNarrationSentenceSimilarity(sentence, _.last(accepted) || ""), SIMILARITY_THRESHOLD);
-      const restatesRecentNarration = (!_.isEmpty(recentNarration) && _.gte(getNarrationCoverage(sentence, recentNarration), CUMULATIVE_COVERAGE_THRESHOLD)) || substantiallyRestatesRecentNarration(sentence, recentNarration);
+      const restatesRecentNarration =
+        (!_.isEmpty(recentNarration) && _.gte(getNarrationCoverage(sentence, recentNarration), CUMULATIVE_COVERAGE_THRESHOLD)) ||
+        substantiallyRestatesRecentNarration(sentence, recentNarration);
       if (!repeatsPreviousSentence && !restatesRecentNarration) accepted.push(sentence);
       return accepted;
     },
@@ -98,7 +100,10 @@ export const removeAdjacentRepeatedStoryboardScenes = (scenes: StoryboardScene[]
         _.map(_.takeRight(accepted, RECENT_NARRATION_WINDOW), (item) => _.trim(item.script || item.subtitle || "")),
         " ",
       );
-      const isRepeated = _.gte(getNarrationSentenceSimilarity(currentText, previousText), SIMILARITY_THRESHOLD) || _.gte(getNarrationCoverage(currentText, recentText), CUMULATIVE_COVERAGE_THRESHOLD) || substantiallyRestatesRecentNarration(currentText, recentText);
+      const isRepeated =
+        _.gte(getNarrationSentenceSimilarity(currentText, previousText), SIMILARITY_THRESHOLD) ||
+        _.gte(getNarrationCoverage(currentText, recentText), CUMULATIVE_COVERAGE_THRESHOLD) ||
+        substantiallyRestatesRecentNarration(currentText, recentText);
       if (!isRepeated) accepted.push(scene);
       return accepted;
     },

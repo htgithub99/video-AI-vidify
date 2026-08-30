@@ -42,7 +42,27 @@ import { WizardStep } from "../../types";
 import PipelineStep3 from "./PipelineStep3.js";
 
 export default function PipelineStep2(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, setZoomedImage, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleApplyThumbnailStyle, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, handleRenderAllThumbnailImages, handleAnalyzeCharacter, handleCharacterImagesUpload, handleExtractCharacter, handleApplyCharacterToThumbnails, handleTriggerSEOBoost, currentLang } = props;
+  const {
+    t,
+    project,
+    setProject,
+    setCurrentStep,
+    loadingStates,
+    setInfoMsg,
+    setZoomedImage,
+    handleThumbnailReferenceImagesUpload,
+    handleExtractThumbnailStyle,
+    handleApplyThumbnailStyle,
+    handleTriggerAssetAndThumbnail,
+    handleRenderThumbnailImage,
+    handleRenderAllThumbnailImages,
+    handleAnalyzeCharacter,
+    handleCharacterImagesUpload,
+    handleExtractCharacter,
+    handleApplyCharacterToThumbnails,
+    handleTriggerSEOBoost,
+    currentLang,
+  } = props;
 
   const stepTexts = PIPELINE_STEP2_TEXTS[currentLang as keyof typeof PIPELINE_STEP2_TEXTS] || PIPELINE_STEP2_TEXTS.en;
 
@@ -111,7 +131,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 }))
               }
               placeholder={t.Empty_script_Paste_here}
-              className={cn("flex-1 bg-slate-900 border border-slate-800 rounded-lg p-3 w-full text-xs text-slate-300 leading-relaxed font-sans outline-none focus:border-rose-500 min-h-[120px] custom-scrollbar resize-none")}
+              className={cn(
+                "flex-1 bg-slate-900 border border-slate-800 rounded-lg p-3 w-full text-xs text-slate-300 leading-relaxed font-sans outline-none focus:border-rose-500 min-h-[120px] custom-scrollbar resize-none",
+              )}
             />
           </div>
           <div className={cn("lg:col-span-2 space-y-4 flex flex-col")}>
@@ -125,7 +147,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-1")}>
                   {t.Batch_Count} {stepTexts.BATCH_COUNT_LABEL ? `(${stepTexts.BATCH_COUNT_LABEL})` : ""}
                 </span>
-                <div className={cn("relative flex items-center bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 transition-all shadow-sm focus-within:border-rose-500/80 min-w-[120px]")}>
+                <div
+                  className={cn(
+                    "relative flex items-center bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 transition-all shadow-sm focus-within:border-rose-500/80 min-w-[120px]",
+                  )}>
                   <select
                     value={project.visualConfig.thumbnailCount || 2}
                     onChange={(e) => {
@@ -171,7 +196,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block mb-2")}>{t.Reference_Image_Optional}</span>
               <div className={cn("flex flex-col gap-3 flex-1")}>
                 <div
-                  className={cn("relative w-full border border-dashed border-slate-700/80 hover:border-rose-500/50 bg-slate-900/40 hover:bg-rose-955/20 rounded-xl flex flex-col items-center justify-center py-4 cursor-pointer transition-all group overflow-hidden flex-1")}
+                  className={cn(
+                    "relative w-full border border-dashed border-slate-700/80 hover:border-rose-500/50 bg-slate-900/40 hover:bg-rose-955/20 rounded-xl flex flex-col items-center justify-center py-4 cursor-pointer transition-all group overflow-hidden flex-1",
+                  )}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.add("border-rose-500", "bg-rose-955/30");
@@ -197,7 +224,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     }}
                     className={cn("absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10")}
                   />
-                  <div className={cn("p-2 bg-slate-950 rounded-xl border border-slate-800 group-hover:scale-110 group-hover:border-rose-500/30 transition-all duration-300 mb-1 shadow-lg")}>
+                  <div
+                    className={cn(
+                      "p-2 bg-slate-950 rounded-xl border border-slate-800 group-hover:scale-110 group-hover:border-rose-500/30 transition-all duration-300 mb-1 shadow-lg",
+                    )}>
                     <Upload className={cn("w-4 h-4 text-slate-400 group-hover:text-rose-450 transition-colors")} />
                   </div>
                   <span className={cn("text-[10px] font-bold text-slate-200")}>{t.Upload_style_images}</span>
@@ -208,8 +238,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     {_.map(project.visualConfig.thumbnailReferenceImages, (imgBase64, idx) => (
                       <div key={idx} className={cn("relative w-16 h-16 rounded-lg group shadow-sm")}>
                         <div className={cn("w-full h-full border border-slate-800 bg-black rounded-lg overflow-hidden")}>
-                          <img src={imgBase64} alt={`Style reference ${idx + 1}`} className={cn("w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100")} />
-                          <div className={cn("absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg")}></div>
+                          <img
+                            src={imgBase64}
+                            alt={`Style reference ${idx + 1}`}
+                            className={cn("w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100")}
+                          />
+                          <div
+                            className={cn(
+                              "absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg",
+                            )}></div>
                         </div>
                         <Button
                           variant="primary"
@@ -232,7 +269,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               };
                             });
                           }}
-                          className={cn("absolute -top-2 -right-2 w-5 h-5 bg-rose-500 hover:bg-rose-600 border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-md p-0")}
+                          className={cn(
+                            "absolute -top-2 -right-2 w-5 h-5 bg-rose-500 hover:bg-rose-600 border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-md p-0",
+                          )}
                           title={t.Remove}>
                           <X className={cn("w-3 h-3")} />
                         </Button>
@@ -260,19 +299,37 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             navigator.clipboard.writeText(project.visualConfig.thumbnailReferencePrompt || "");
                             setInfoMsg(t.Style_copied);
                           }}
-                          className={cn("shrink-0 p-1 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 rounded text-rose-450 transition-colors h-auto w-auto hover:text-rose-400 shadow-none")}
+                          className={cn(
+                            "shrink-0 p-1 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 rounded text-rose-450 transition-colors h-auto w-auto hover:text-rose-400 shadow-none",
+                          )}
                           title={t.Copy_style}>
                           <Copy className={cn("w-3 h-3")} />
                         </Button>
                       </div>
                     )}
                     <div className={cn("flex flex-col sm:flex-row sm:items-center gap-2")}>
-                      <Button variant="primary" size="sm" onClick={handleExtractThumbnailStyle} disabled={!!loadingStates["extractThumbnailStyle"]} isLoading={!!loadingStates["extractThumbnailStyle"]} className={cn("flex-1 text-white font-bold text-[10px] active:scale-95")} title={t.System_extracts_Style_Art || t.Extract_Style}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleExtractThumbnailStyle}
+                        disabled={!!loadingStates["extractThumbnailStyle"]}
+                        isLoading={!!loadingStates["extractThumbnailStyle"]}
+                        className={cn("flex-1 text-white font-bold text-[10px] active:scale-95")}
+                        title={t.System_extracts_Style_Art || t.Extract_Style}>
                         <Sparkles className={cn("w-3 h-3 text-rose-100")} />
                         <span>{t.Extract_Style}</span>
                       </Button>
                       {project.visualConfig?.thumbnailReferencePrompt && project?.thumbnails?.length && (
-                        <Button variant="ghost" type="button" onClick={handleApplyThumbnailStyle} disabled={!!loadingStates["applyThumbnailStyle"]} isLoading={!!loadingStates["applyThumbnailStyle"]} className={cn("flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto")} title={t.Apply_Style}>
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          onClick={handleApplyThumbnailStyle}
+                          disabled={!!loadingStates["applyThumbnailStyle"]}
+                          isLoading={!!loadingStates["applyThumbnailStyle"]}
+                          className={cn(
+                            "flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto",
+                          )}
+                          title={t.Apply_Style}>
                           <Check className={cn("w-3 h-3 text-amber-100")} />
                           <span>{t.Apply_Style}</span>
                         </Button>
@@ -284,7 +341,14 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 {_.isEmpty(project.visualConfig?.thumbnailReferenceImages) && (
                   <div className={cn("pt-2 flex flex-col gap-2 border-t border-slate-800/50")}>
                     <div className={cn("flex flex-col sm:flex-row sm:items-center gap-2")}>
-                      <Button variant="primary" size="sm" onClick={handleExtractThumbnailStyle} disabled={true} isLoading={!!loadingStates["extractThumbnailStyle"]} className={cn("flex-1 text-white font-bold text-[10px] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed")} title={t.System_extracts_Style_Art || t.Extract_Style}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleExtractThumbnailStyle}
+                        disabled={true}
+                        isLoading={!!loadingStates["extractThumbnailStyle"]}
+                        className={cn("flex-1 text-white font-bold text-[10px] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed")}
+                        title={t.System_extracts_Style_Art || t.Extract_Style}>
                         <Sparkles className={cn("w-3 h-3 text-rose-100")} />
                         <span>{t.Extract_Style}</span>
                       </Button>
@@ -301,7 +365,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
           <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-2.5")}>
             <h4 className={cn("text-xs font-mono font-bold uppercase tracking-wider text-rose-450 flex items-center gap-1.5 select-none")}>
               <span>{t.charConsistencyTitle}</span>
-              <span className={cn("text-[9px] bg-emerald-950/45 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal flex items-center gap-1")}>
+              <span
+                className={cn("text-[9px] bg-emerald-950/45 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal flex items-center gap-1")}>
                 <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse")}></div>
                 {stepTexts.CHAR_REF_NODE}
               </span>
@@ -327,7 +392,16 @@ export default function PipelineStep2(props: PipelineWizardState) {
                       {t.charReAnalyze}
                     </Button>
                     {_.some(project.visualConfig.characters, (c) => c.prompt || c.description) && !_.isEmpty(project.thumbnails) && (
-                      <Button type="button" variant="primary" onClick={handleApplyCharacterToThumbnails} disabled={!!loadingStates["applyCharacter"]} isLoading={!!loadingStates["applyCharacter"]} className={cn("bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto")} title={t.Apply_Character_Thumbnails}>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleApplyCharacterToThumbnails}
+                        disabled={!!loadingStates["applyCharacter"]}
+                        isLoading={!!loadingStates["applyCharacter"]}
+                        className={cn(
+                          "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto",
+                        )}
+                        title={t.Apply_Character_Thumbnails}>
                         <Check className={cn("w-2.5 h-2.5 text-amber-100")} />
                         <span>{t.Apply_Character_Thumbnails}</span>
                       </Button>
@@ -346,7 +420,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               <div className={cn("flex items-center justify-between gap-1")}>
                                 <h4 className={cn("text-[11px] font-bold text-rose-350 flex items-center gap-1 min-w-0 flex-1")}>
                                   <User className={cn("w-3 h-3 text-rose-500 shrink-0")} />
-                                  <input type="text" value={char.name} onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)} className={cn("bg-slate-900 hover:bg-slate-850 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all")} placeholder={t.charNamePlaceholder} />
+                                  <input
+                                    type="text"
+                                    value={char.name}
+                                    onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)}
+                                    className={cn(
+                                      "bg-slate-900 hover:bg-slate-850 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all",
+                                    )}
+                                    placeholder={t.charNamePlaceholder}
+                                  />
                                 </h4>
                                 <Button
                                   variant="ghost"
@@ -356,11 +438,21 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     setTemporaryState(setInfoMsg, t.charDescCopied, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
                                   }}
                                   title={t.charCopyDesc}
-                                  className={cn("shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto")}>
+                                  className={cn(
+                                    "shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto",
+                                  )}>
                                   <Copy className={cn("w-2.5 h-2.5")} />
                                 </Button>
                               </div>
-                              <textarea value={char.description} onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)} className={cn("w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800")} placeholder={t.charBioPlaceholder} title={char.description} />
+                              <textarea
+                                value={char.description}
+                                onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
+                                className={cn(
+                                  "w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800",
+                                )}
+                                placeholder={t.charBioPlaceholder}
+                                title={char.description}
+                              />
                             </div>
                           </div>
 
@@ -368,7 +460,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
                           <div className={cn("w-24 sm:w-28 shrink-0 flex flex-col gap-1.5 justify-between")}>
                             <div
-                              className={cn("bg-slate-900/40 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded p-1.5 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer h-[42px]")}
+                              className={cn(
+                                "bg-slate-900/40 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded p-1.5 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer h-[42px]",
+                              )}
                               onDragOver={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -391,7 +485,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                 className={cn("absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10")}
                               />
                               <Upload className={cn("w-2.5 h-2.5 text-slate-500 group-hover:text-emerald-400 mb-0.5")} />
-                              <span className={cn("text-[7px] font-bold text-slate-350 block leading-tight truncate max-w-[80px]")}>{t.charUploadFor.replace("{name}", char.name)}</span>
+                              <span className={cn("text-[7px] font-bold text-slate-350 block leading-tight truncate max-w-[80px]")}>
+                                {t.charUploadFor.replace("{name}", char.name)}
+                              </span>
                             </div>
 
                             <div className={cn("min-w-0 w-full")}>
@@ -400,7 +496,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   {_.map(char.images, (imgBase64, idx) => (
                                     <div key={idx} className={cn("relative w-6 h-6 rounded group shadow-sm")}>
                                       <div className={cn("w-full h-full border border-slate-800 bg-black rounded overflow-hidden")}>
-                                        <img src={imgBase64} alt={`${char.name} ref ${idx + 1}`} className={cn("w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100")} />
+                                        <img
+                                          src={imgBase64}
+                                          alt={`${char.name} ref ${idx + 1}`}
+                                          className={cn("w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100")}
+                                        />
                                       </div>
                                       <Button
                                         variant="ghost"
@@ -426,7 +526,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                             };
                                           });
                                         }}
-                                        className={cn("absolute -top-1 -right-1 w-3 h-3 bg-rose-500 hover:bg-rose-600 hover:text-white border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-none p-0 cursor-pointer h-auto min-w-0")}
+                                        className={cn(
+                                          "absolute -top-1 -right-1 w-3 h-3 bg-rose-500 hover:bg-rose-600 hover:text-white border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-none p-0 cursor-pointer h-auto min-w-0",
+                                        )}
                                         title={t.Remove || "Xóa"}>
                                         <X className={cn("w-1.5 h-1.5")} />
                                       </Button>
@@ -434,7 +536,12 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   ))}
                                 </div>
                               ) : (
-                                <div className={cn("flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap")}>{t.noImageYet}</div>
+                                <div
+                                  className={cn(
+                                    "flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap",
+                                  )}>
+                                  {t.noImageYet}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -454,16 +561,34 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     navigator.clipboard.writeText(char.prompt || "");
                                     setTemporaryState(setInfoMsg, t.charCopied, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
                                   }}
-                                  className={cn("shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto")}
+                                  className={cn(
+                                    "shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto",
+                                  )}
                                   title={t.Copy || "Sao chép"}>
                                   <Copy className={cn("w-2.5 h-2.5")} />
                                 </Button>
                               </div>
-                              <textarea value={char.prompt} onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)} className={cn("w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900")} placeholder={t.charFeaturePlaceholder} title={char.prompt} />
+                              <textarea
+                                value={char.prompt}
+                                onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
+                                className={cn(
+                                  "w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900",
+                                )}
+                                placeholder={t.charFeaturePlaceholder}
+                                title={char.prompt}
+                              />
                             </div>
                           )}
 
-                          <Button type="button" variant="ghost" onClick={() => handleExtractCharacter(char.id)} disabled={isExtracting || !char.images?.length} className={cn("w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto")} title={t.charExtractBtn || "Trích xuất đặc tả"}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => handleExtractCharacter(char.id)}
+                            disabled={isExtracting || !char.images?.length}
+                            className={cn(
+                              "w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto",
+                            )}
+                            title={t.charExtractBtn || "Trích xuất đặc tả"}>
                             {isExtracting ? (
                               <>
                                 <RefreshCw className={cn("w-2.5 h-2.5 animate-spin")} />
@@ -498,7 +623,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 {t.thumbnailHeader}
               </h4>
               {project.thumbnails && project.thumbnails.length > 0 && (
-                <Button variant="primary" onClick={handleRenderAllThumbnailImages} disabled={!!loadingStates["renderAllThumbs_loading"]} isLoading={!!loadingStates["renderAllThumbs_loading"]} className={cn("flex items-center gap-1.5 shadow-md text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 border border-rose-500/30 active:scale-95 transition-all text-white py-2 h-auto")} title={t.bulkRenderThumbnails_loading}>
+                <Button
+                  variant="primary"
+                  onClick={handleRenderAllThumbnailImages}
+                  disabled={!!loadingStates["renderAllThumbs_loading"]}
+                  isLoading={!!loadingStates["renderAllThumbs_loading"]}
+                  className={cn(
+                    "flex items-center gap-1.5 shadow-md text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 border border-rose-500/30 active:scale-95 transition-all text-white py-2 h-auto",
+                  )}
+                  title={t.bulkRenderThumbnails_loading}>
                   <Sparkles className={cn("w-3.5 h-3.5 text-amber-300 animate-pulse")} />
                   <span>{t.bulkRenderThumbnails}</span>
                 </Button>
@@ -523,8 +656,14 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   ))}
                 </div>
               ) : (
-                <div className={cn("bg-slate-900/40 border border-slate-800/50 rounded-xl p-10 text-center flex flex-col items-center justify-center w-full h-full flex-1 space-y-4 group hover:border-slate-700/60 transition-all duration-300")}>
-                  <div className={cn("w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse")}>
+                <div
+                  className={cn(
+                    "bg-slate-900/40 border border-slate-800/50 rounded-xl p-10 text-center flex flex-col items-center justify-center w-full h-full flex-1 space-y-4 group hover:border-slate-700/60 transition-all duration-300",
+                  )}>
+                  <div
+                    className={cn(
+                      "w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse",
+                    )}>
                     <ImageIcon className={cn("w-5 h-5 text-rose-500")} />
                   </div>
                   <div className={cn("space-y-1")}>
@@ -539,7 +678,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     }}
                     disabled={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
                     isLoading={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
-                    className={cn("bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5")}
+                    className={cn(
+                      "bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5",
+                    )}
                     title={t.Draft_visual_arrangements}>
                     <Sparkles className={cn("w-3.5 h-3.5 text-amber-300 animate-pulse")} />
                     <span>{t.Generate_Thumbnails}</span>
@@ -549,7 +690,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
             ) : (
               <div className={cn("relative")}>
                 {loadingStates["assetAndThumbnail_loading"] && (
-                  <div className={cn("absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10")}>
+                  <div
+                    className={cn(
+                      "absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10",
+                    )}>
                     <div className={cn("p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin")}>
                       <Sparkles className={cn("w-8 h-8 text-rose-500")} />
                     </div>
@@ -563,7 +707,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   {_.map(project.thumbnails || [], (thumb) => {
                     const displayStyle = deduplicateVisualStyleText(thumb.style);
                     return (
-                      <div key={thumb.id} className={cn("bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5")}>
+                      <div
+                        key={thumb.id}
+                        className={cn(
+                          "bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5",
+                        )}>
                         <div className={cn("aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center")}>
                           {thumb.imageUrl ? (
                             <>
@@ -582,22 +730,35 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               />
                             </>
                           ) : (
-                            <div className={cn("absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none")}>
+                            <div
+                              className={cn("absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none")}>
                               <ImageIcon className={cn("w-8 h-8 text-rose-500/50 mb-2")} />
                               <span className={cn("text-slate-500/50 font-mono text-[10px] tracking-widest uppercase")}>{t.No_Render_Done}</span>
                             </div>
                           )}
                           <div className={cn("absolute top-3 left-3 flex gap-2 flex-wrap z-10")}>
-                            <span className={cn("block max-w-[min(70vw,18rem)] overflow-hidden whitespace-nowrap text-ellipsis bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg")} title={displayStyle}>
+                            <span
+                              className={cn(
+                                "block max-w-[min(70vw,18rem)] overflow-hidden whitespace-nowrap text-ellipsis bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg",
+                              )}
+                              title={displayStyle}>
                               {displayStyle}
                             </span>
-                            {thumb.hasText && <span className={cn("bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg")}>{t.withText}</span>}
+                            {thumb.hasText && (
+                              <span className={cn("bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg")}>
+                                {t.withText}
+                              </span>
+                            )}
                           </div>
                           <div className={cn("absolute inset-x-0 -bottom-2 h-2/3 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent pointer-events-none z-10")}></div>
                         </div>
                         <div className={cn("px-5 pb-5 pt-4 flex-1 flex flex-col relative z-20 bg-slate-900 rounded-b-xl -mt-1")}>
                           {thumb.hasText && thumb.textText && (
-                            <h3 className={cn("text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-rose-500 font-black text-[15px] uppercase tracking-tight mb-3 line-clamp-2 drop-shadow-md")} title={thumb.textText}>
+                            <h3
+                              className={cn(
+                                "text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-rose-500 font-black text-[15px] uppercase tracking-tight mb-3 line-clamp-2 drop-shadow-md",
+                              )}
+                              title={thumb.textText}>
                               "{thumb.textText}"
                             </h3>
                           )}
@@ -612,7 +773,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                 navigator.clipboard.writeText(thumb.prompt);
                                 setInfoMsg(t.Copied_thumbnail_prompt);
                               }}
-                              className={cn("absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-850 shadow-xl h-auto w-auto hover:text-white")}
+                              className={cn(
+                                "absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-850 shadow-xl h-auto w-auto hover:text-white",
+                              )}
                               title={t.Copy_Prompt}>
                               <Copy className={cn("w-3.5 h-3.5")} />
                             </Button>
@@ -620,7 +783,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
                           <div className={cn("mt-auto mb-5 space-y-2.5 pt-4 border-t border-slate-800/50")}>
                             <div className={cn("flex items-center gap-3 text-[10.5px]")}>
-                              <div className={cn("w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-rose-500/80 shadow-inner")}>
+                              <div
+                                className={cn(
+                                  "w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-rose-500/80 shadow-inner",
+                                )}>
                                 <Layout className={cn("w-3.5 h-3.5")} />
                               </div>
                               <div className={cn("flex-1 min-w-0 flex flex-col justify-center gap-0.5")}>
@@ -633,7 +799,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             {thumb.hasText ? (
                               <>
                                 <div className={cn("flex items-center gap-3 text-[10.5px]")}>
-                                  <div className={cn("w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-indigo-400/80 shadow-inner")}>
+                                  <div
+                                    className={cn(
+                                      "w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-indigo-400/80 shadow-inner",
+                                    )}>
                                     <Type className={cn("w-3.5 h-3.5")} />
                                   </div>
                                   <div className={cn("flex-1 min-w-0 flex flex-col justify-center gap-0.5")}>
@@ -644,7 +813,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   </div>
                                 </div>
                                 <div className={cn("flex items-center gap-3 text-[10.5px]")}>
-                                  <div className={cn("w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-amber-400/80 shadow-inner")}>
+                                  <div
+                                    className={cn(
+                                      "w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-amber-400/80 shadow-inner",
+                                    )}>
                                     <Palette className={cn("w-3.5 h-3.5")} />
                                   </div>
                                   <div className={cn("flex-1 min-w-0 flex flex-col justify-center gap-0.5")}>
@@ -657,7 +829,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               </>
                             ) : (
                               <div className={cn("flex items-center gap-3 text-[10.5px]")}>
-                                <div className={cn("w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-emerald-400/80 shadow-inner")}>
+                                <div
+                                  className={cn(
+                                    "w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-emerald-400/80 shadow-inner",
+                                  )}>
                                   <Focus className={cn("w-3.5 h-3.5")} />
                                 </div>
                                 <div className={cn("flex-1 min-w-0 flex flex-col justify-center gap-0.5")}>
@@ -670,7 +845,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             )}
                           </div>
                           <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
-                            <Button variant="primary" onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)} disabled={!!loadingStates["renderThumb_" + thumb.id]} isLoading={!!loadingStates["renderThumb_" + thumb.id]} className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"} active:scale-95`)} title={t.Render_YouTube_mockup_thu}>
+                            <Button
+                              variant="primary"
+                              onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
+                              disabled={!!loadingStates["renderThumb_" + thumb.id]}
+                              isLoading={!!loadingStates["renderThumb_" + thumb.id]}
+                              className={cn(
+                                `flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"} active:scale-95`,
+                              )}
+                              title={t.Render_YouTube_mockup_thu}>
                               <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
                               <span className={cn("relative z-10")}>{thumb.imageUrl ? t.Recreate_Mockup : t.Render_Mockup}</span>
                             </Button>
@@ -681,7 +864,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   e.stopPropagation();
                                   handleDownloadImage(thumb.imageUrl!, `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`);
                                 }}
-                                className={cn("shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow")}
+                                className={cn(
+                                  "shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow",
+                                )}
                                 title={t.downloadImage}>
                                 <Download className={cn("w-4 h-4")} />
                               </Button>

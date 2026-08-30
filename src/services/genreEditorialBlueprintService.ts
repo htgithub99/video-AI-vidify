@@ -17,19 +17,26 @@ export interface GenreEditorialBlueprint {
 const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
   cinematic_episode: {
     id: "cinematic_episode",
-    narrativeEngine: "Write an original screen story in playable sequences: a concrete objective, opposing force, escalating choices, irreversible turn, climax and earned aftermath. Let character action and dialogue carry meaning instead of explanatory narration.",
-    visualGrammar: "Direct sequence-level geography, master/coverage/reaction/insert shots, stable eyelines and screen direction, motivated blocking, action handoffs and exact location, wardrobe and prop continuity.",
-    pacing: "Alternate tension, release and discovery at sequence level; enter late, leave after the consequence, and preserve performance holds instead of cutting on every sentence.",
-    sourcePolicy: "Use original fictional world assets or supplied canon. Never imitate protected characters, franchises, logos, costumes or a living creator's signature world design.",
+    narrativeEngine:
+      "Write an original screen story in playable sequences: a concrete objective, opposing force, escalating choices, irreversible turn, climax and earned aftermath. Let character action and dialogue carry meaning instead of explanatory narration.",
+    visualGrammar:
+      "Direct sequence-level geography, master/coverage/reaction/insert shots, stable eyelines and screen direction, motivated blocking, action handoffs and exact location, wardrobe and prop continuity.",
+    pacing:
+      "Alternate tension, release and discovery at sequence level; enter late, leave after the consequence, and preserve performance holds instead of cutting on every sentence.",
+    sourcePolicy:
+      "Use original fictional world assets or supplied canon. Never imitate protected characters, franchises, logos, costumes or a living creator's signature world design.",
     voiceDirection: "Prefer short playable dialogue, subtext and character-specific rhythm. Use narration only when the chosen story form genuinely requires it.",
-    audioDirection: "Build scene-specific room tone, footsteps, cloth, machinery, weapons, vehicles and selective silence; music follows the dramatic arc and never replaces production sound.",
-    motionPolicy: "One coherent action and at most one motivated camera move per shot; preserve start/end pose, axis, eyeline, identity, geometry and prop ownership across coverage.",
+    audioDirection:
+      "Build scene-specific room tone, footsteps, cloth, machinery, weapons, vehicles and selective silence; music follows the dramatic arc and never replaces production sound.",
+    motionPolicy:
+      "One coherent action and at most one motivated camera move per shot; preserve start/end pose, axis, eyeline, identity, geometry and prop ownership across coverage.",
     thumbnailPromise: "One original protagonist, one immediate threat or objective and one unmistakable world detail without copying an existing franchise.",
     musicProfile: "cinematic_episode",
   },
   satirical_story: {
     id: "satirical_story",
-    narrativeEngine: "Follow one concrete contradiction through escalating choices, observable consequences and a changed-meaning callback; humor must reveal the mechanism and punch up.",
+    narrativeEngine:
+      "Follow one concrete contradiction through escalating choices, observable consequences and a changed-meaning callback; humor must reveal the mechanism and punch up.",
     visualGrammar: "Stage lived interactions, transactions, rules, reactions and ironic evidence; avoid generic sad portraits and detachable visual jokes.",
     pacing: "Alternate compact setups, medium consequence beats and short landings; give serious human-cost moments room to breathe.",
     sourcePolicy: "Use authentic evidence for factual institutions, places and documents; use clearly illustrative scenes for representative characters.",
@@ -44,7 +51,8 @@ const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
     narrativeEngine: "Build from a consequential question through chronology, material evidence, competing explanations and a sourced conclusion.",
     visualGrammar: "Move from place to artifact/document/map/detail to consequence; distinguish authentic evidence from reconstruction.",
     pacing: "Measured but progressive; use chapter turns when evidence changes the viewer's understanding, not artificial cliffhangers.",
-    sourcePolicy: "Prioritize licensed photographs, footage, maps, plans, documents, artifacts and present-day locations; AI only for labeled reconstruction or unavailable transitions.",
+    sourcePolicy:
+      "Prioritize licensed photographs, footage, maps, plans, documents, artifacts and present-day locations; AI only for labeled reconstruction or unavailable transitions.",
     voiceDirection: "Confident, precise and vivid without propaganda, faux mystery or unsupported certainty.",
     audioDirection: "Restrained documentary bed, location ambience where meaningful, sparse impacts only on evidence reveals.",
     motionPolicy: "Clean cuts, slow map/detail moves and subtle push-ins; dissolves only for genuine time or location transitions.",
@@ -113,7 +121,8 @@ const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
   },
   reflective_analysis: {
     id: "reflective_analysis",
-    narrativeEngine: "Begin with a relatable dilemma, introduce the framework through a concrete case, test its limits and end with a precise reframing rather than a generic lesson.",
+    narrativeEngine:
+      "Begin with a relatable dilemma, introduce the framework through a concrete case, test its limits and end with a precise reframing rather than a generic lesson.",
     visualGrammar: "Ground ideas in behavior, environments, objects and observable experiments; use symbolism sparingly and never repeat mirror/maze imagery by default.",
     pacing: "Calm but purposeful, alternating examples and interpretation with visual resets before dense concepts.",
     sourcePolicy: "Use authentic thinkers, studies, artworks and contexts where identifiable; conceptual AI imagery must remain clearly illustrative.",

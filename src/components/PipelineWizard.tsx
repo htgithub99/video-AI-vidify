@@ -7,8 +7,29 @@ import PipelineStep2 from "./pipeline/PipelineStep2";
 import PipelineStep3 from "./pipeline/PipelineStep3";
 import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
-import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
-import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage, VOICE_PROVIDER_MAPPINGS, VOICE_DESCRIPTION_KEYS, MEDIA_MIX_CONFIG, MEDIA_MIX_TEXTS } from "../constants";
+import {
+  PipelineWizardProps,
+  WizardStep,
+  GenerateType,
+  PromptInputMethod,
+  ImageGeneratorEngine,
+  ImageGenerationMode,
+  GeminiChatSpeed,
+  AspectRatio,
+  BatchDelayOption,
+} from "../types";
+import {
+  APP_TEXTS,
+  GEMINI_CHAT_SPEED_OPTIONS,
+  BATCH_DELAY_OPTIONS,
+  COMMON_STRINGS,
+  APP_CONFIG,
+  AppLanguage,
+  VOICE_PROVIDER_MAPPINGS,
+  VOICE_DESCRIPTION_KEYS,
+  MEDIA_MIX_CONFIG,
+  MEDIA_MIX_TEXTS,
+} from "../constants";
 import { VOICE_MODIFIERS } from "../constants/defaultConfigs";
 import _ from "lodash";
 
@@ -20,12 +41,63 @@ import { Tooltip } from "./ui/Tooltip";
 import { AlertCircle, Download, Pause, Terminal, Workflow } from "lucide-react";
 import { PipelineConstants } from "../constants/pipelineConstants";
 import { getUserLogBadges } from "../lib/userLogFormatter";
+import { PipelineWizardSkeleton } from "./ui/Skeleton";
 
-const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Volume2, Play, User, Layers, Check, Sparkles, Search, X, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
+const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Volume2, Play, User, Layers, Check, Sparkles, Search, X, Heart, Trash, Copy, Pencil, Palette } =
+  LucideIcons as any;
 
 export default function PipelineWizard(props: PipelineWizardProps) {
   const wizard = usePipelineWizard(props);
-  const { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, errorMsg, setErrorMsg, infoMsg, setInfoMsg, zoomedImage, setZoomedImage, systemLogs, showLogsModal, setShowLogsModal, systemVoices, voiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, playVoicePreview, currentLang, getVoiceGender, isPremiumVoice, favoriteStyles, showFavStyles, setShowFavStyles, handleAddFavoriteStyle, handleDeleteFavoriteStyle, handleSaveEditStyle, handleSaveCurrentStyle, handleApplyFavoriteStyle, favoriteVoices, showFavVoices, setShowFavVoices, handleAddFavoriteVoice, handleDeleteFavoriteVoice, handleSaveEditVoice } = wizard;
+  const {
+    t,
+    project,
+    setProject,
+    currentStep,
+    setCurrentStep,
+    leftSidebarOpen,
+    setLeftSidebarOpen,
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    errorMsg,
+    setErrorMsg,
+    infoMsg,
+    setInfoMsg,
+    zoomedImage,
+    setZoomedImage,
+    systemLogs,
+    showLogsModal,
+    setShowLogsModal,
+    systemVoices,
+    voiceDropdownOpen,
+    handleCloseVoiceModal,
+    voiceSearch,
+    setVoiceSearch,
+    voiceTypeFilter,
+    setVoiceTypeFilter,
+    voiceLangFilter,
+    setVoiceLangFilter,
+    selectedGenderFilter,
+    setSelectedGenderFilter,
+    playingVoiceURI,
+    playVoicePreview,
+    currentLang,
+    getVoiceGender,
+    isPremiumVoice,
+    favoriteStyles,
+    showFavStyles,
+    setShowFavStyles,
+    handleAddFavoriteStyle,
+    handleDeleteFavoriteStyle,
+    handleSaveEditStyle,
+    handleSaveCurrentStyle,
+    handleApplyFavoriteStyle,
+    favoriteVoices,
+    showFavVoices,
+    setShowFavVoices,
+    handleAddFavoriteVoice,
+    handleDeleteFavoriteVoice,
+    handleSaveEditVoice,
+  } = wizard;
   const userLogBadges = getUserLogBadges(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang];
 
@@ -117,12 +189,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     }
   }, [systemLogs, showLogsModal]);
 
+  if (!project) {
+    return <PipelineWizardSkeleton />;
+  }
+
   return (
     <div className={cn("flex-1 w-full h-full flex flex-col min-h-0 bg-slate-950 text-slate-100 font-sans overflow-hidden select-none")}>
       <div className={cn("h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm relative")}>
         <div className={cn("flex items-center gap-3")}>
           <Tooltip content={t.Back_to_projects} position="bottom">
-            <Button variant="ghost" size="sm" onClick={props.onBackToDashboard} className={cn("flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-slate-900 hover:bg-slate-850 px-3 py-1.5 rounded-lg border border-transparent shadow-none h-auto")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={props.onBackToDashboard}
+              className={cn(
+                "flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-slate-900 hover:bg-slate-850 px-3 py-1.5 rounded-lg border border-transparent shadow-none h-auto",
+              )}>
               <ArrowLeft className={cn("w-3.5 h-3.5 text-rose-500")} />
               <span>{t.Projects}</span>
             </Button>
@@ -167,7 +249,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowFavStyles(false);
                 setShowLogsModal(false);
               }}
-              className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <ImageIcon className={cn("w-4 h-4")} />
             </Button>
           </Tooltip>
@@ -183,7 +267,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowGenSettings(false);
                 setShowLogsModal(false);
               }}
-              className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <Heart className={cn(`w-4 h-4 ${showFavVoices ? "fill-rose-500 text-rose-500" : ""}`)} />
             </Button>
           </Tooltip>
@@ -199,14 +285,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowGenSettings(false);
                 setShowLogsModal(false);
               }}
-              className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${showFavStyles ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${showFavStyles ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <Palette className={cn(`w-4 h-4 ${showFavStyles ? "fill-rose-500 text-rose-500" : ""}`)} />
             </Button>
           </Tooltip>
 
           <AnimatePresence>
             {showFavVoices && (
-              <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className={cn("absolute top-full right-0 mt-2 w-[340px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
+              <motion.div
+                initial={{ opacity: 0, y: -15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ transformOrigin: "top right" }}
+                className={cn("absolute top-full right-0 mt-2 w-[340px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
                 <div className={cn("p-4 space-y-4 text-left")}>
                   <div className={cn("flex items-center justify-between border-b border-slate-850 pb-2")}>
                     <span className={cn("text-xs font-bold text-slate-200 flex items-center gap-1.5 font-mono")}>
@@ -214,7 +308,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       {t.favVoicesTitle}
                     </span>
                     {project.voiceConfig?.voiceURI && (
-                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentVoice} className={cn("px-2 py-1 text-[9px] font-bold rounded flex items-center gap-1")}>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        type="button"
+                        onClick={handleSaveCurrentVoice}
+                        className={cn("px-2 py-1 text-[9px] font-bold rounded flex items-center gap-1")}>
                         <Volume2 className={cn("w-2.5 h-2.5 text-rose-500")} />
                         {t.saveCurrentVoice}
                       </Button>
@@ -229,19 +328,59 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         const isCurrent = project.voiceConfig?.voiceURI === item.voiceURI;
                         const isEditing = editingId === item.id;
                         return (
-                          <div key={item.id} className={cn(`group flex flex-col justify-between p-2 rounded-lg border transition-all ${isCurrent ? "bg-rose-550/[0.04] border-rose-500/30" : "bg-slate-950/40 border-slate-850 hover:border-slate-700 hover:bg-slate-900/30"}`)}>
+                          <div
+                            key={item.id}
+                            className={cn(
+                              `group flex flex-col justify-between p-2 rounded-lg border transition-all ${isCurrent ? "bg-rose-550/[0.04] border-rose-500/30" : "bg-slate-950/40 border-slate-850 hover:border-slate-700 hover:bg-slate-900/30"}`,
+                            )}>
                             {isEditing ? (
                               <div className={cn("space-y-2 w-full text-left")}>
                                 <div className={cn("grid grid-cols-2 gap-1.5")}>
-                                  <input type="text" value={editFormName} onChange={(e) => setEditFormName(e.target.value)} placeholder={t.voiceNamePlaceholder} className={cn("w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
-                                  <input type="text" value={editFormChannel} onChange={(e) => setEditFormChannel(e.target.value)} placeholder={t.channelNamePlaceholder} className={cn("w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
+                                  <input
+                                    type="text"
+                                    value={editFormName}
+                                    onChange={(e) => setEditFormName(e.target.value)}
+                                    placeholder={t.voiceNamePlaceholder}
+                                    className={cn(
+                                      "w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                                    )}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editFormChannel}
+                                    onChange={(e) => setEditFormChannel(e.target.value)}
+                                    placeholder={t.channelNamePlaceholder}
+                                    className={cn(
+                                      "w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                                    )}
+                                  />
                                 </div>
                                 <div className={cn("flex gap-1.5")}>
-                                  <input type="text" value={editFormURI} onChange={(e) => setEditFormURI(e.target.value)} placeholder={t.voiceIdPlaceholder} className={cn("flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
-                                  <Button variant="primary" size="xs" type="button" onClick={() => handleSaveEdit(item.id)} className={cn("px-2 py-1 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white flex items-center justify-center h-auto w-auto")}>
+                                  <input
+                                    type="text"
+                                    value={editFormURI}
+                                    onChange={(e) => setEditFormURI(e.target.value)}
+                                    placeholder={t.voiceIdPlaceholder}
+                                    className={cn(
+                                      "flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                                    )}
+                                  />
+                                  <Button
+                                    variant="primary"
+                                    size="xs"
+                                    type="button"
+                                    onClick={() => handleSaveEdit(item.id)}
+                                    className={cn(
+                                      "px-2 py-1 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white flex items-center justify-center h-auto w-auto",
+                                    )}>
                                     <Check className={cn("w-3.5 h-3.5")} />
                                   </Button>
-                                  <Button variant="secondary" size="xs" type="button" onClick={handleCancelEdit} className={cn("px-2 py-1 text-slate-355 text-[9px] font-bold flex items-center justify-center h-auto w-auto")}>
+                                  <Button
+                                    variant="secondary"
+                                    size="xs"
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className={cn("px-2 py-1 text-slate-355 text-[9px] font-bold flex items-center justify-center h-auto w-auto")}>
                                     <X className={cn("w-3.5 h-3.5")} />
                                   </Button>
                                 </div>
@@ -264,7 +403,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       className={cn("p-0.5 hover:bg-slate-850 rounded text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto")}>
                                       <Copy className={cn("w-2.5 h-2.5")} />
                                     </Button>
-                                    <span className={cn("shrink-0 text-[8px] bg-slate-950 px-1 py-0.2 rounded border border-slate-850 font-mono text-slate-500")}>{item.channelName}</span>
+                                    <span className={cn("shrink-0 text-[8px] bg-slate-950 px-1 py-0.2 rounded border border-slate-850 font-mono text-slate-500")}>
+                                      {item.channelName}
+                                    </span>
                                   </div>
                                   <div className={cn("flex items-center gap-1.5 mt-0.5")}>
                                     <span className={cn("block text-[8px] text-slate-500 truncate font-mono select-all")}>{item.voiceURI}</span>
@@ -284,10 +425,26 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   </div>
                                 </div>
                                 <div className={cn("flex items-center gap-1 shrink-0 ml-2")}>
-                                  <Button variant="ghost" size="xs" type="button" onClick={() => handleStartEdit(item)} className={cn("p-1 hover:bg-slate-850 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto")} title={t.editVoice}>
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    type="button"
+                                    onClick={() => handleStartEdit(item)}
+                                    className={cn(
+                                      "p-1 hover:bg-slate-850 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto",
+                                    )}
+                                    title={t.editVoice}>
                                     <Pencil className={cn("w-3 h-3")} />
                                   </Button>
-                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavorite(item.id, e)} className={cn("p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto")} title={t.deleteVoice}>
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    type="button"
+                                    onClick={(e) => handleDeleteFavorite(item.id, e)}
+                                    className={cn(
+                                      "p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto",
+                                    )}
+                                    title={t.deleteVoice}>
                                     <Trash className={cn("w-3 h-3")} />
                                   </Button>
                                 </div>
@@ -301,11 +458,35 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
                   <div className={cn("border-t border-slate-850 pt-3 space-y-2")}>
                     <div className={cn("grid grid-cols-2 gap-2")}>
-                      <input type="text" value={favFormName} onChange={(e) => setFavFormName(e.target.value)} placeholder={t.voiceNamePlaceholder} className={cn("w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
-                      <input type="text" value={favFormChannel} onChange={(e) => setFavFormChannel(e.target.value)} placeholder={t.channelNamePlaceholder} className={cn("w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
+                      <input
+                        type="text"
+                        value={favFormName}
+                        onChange={(e) => setFavFormName(e.target.value)}
+                        placeholder={t.voiceNamePlaceholder}
+                        className={cn(
+                          "w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                        )}
+                      />
+                      <input
+                        type="text"
+                        value={favFormChannel}
+                        onChange={(e) => setFavFormChannel(e.target.value)}
+                        placeholder={t.channelNamePlaceholder}
+                        className={cn(
+                          "w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                        )}
+                      />
                     </div>
                     <div className={cn("flex gap-2")}>
-                      <input type="text" value={favFormURI} onChange={(e) => setFavFormURI(e.target.value)} placeholder={t.voiceIdPlaceholder} className={cn("flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50")} />
+                      <input
+                        type="text"
+                        value={favFormURI}
+                        onChange={(e) => setFavFormURI(e.target.value)}
+                        placeholder={t.voiceIdPlaceholder}
+                        className={cn(
+                          "flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50",
+                        )}
+                      />
                       <Button variant="primary" size="sm" type="button" onClick={handleAddFavorite} className={cn("px-3 text-white text-[10px] font-bold rounded")}>
                         {t.addFavVoiceBtn}
                       </Button>
@@ -318,7 +499,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
           <AnimatePresence>
             {showFavStyles && (
-              <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className={cn("absolute top-full right-0 mt-2 w-[340px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
+              <motion.div
+                initial={{ opacity: 0, y: -15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ transformOrigin: "top right" }}
+                className={cn("absolute top-full right-0 mt-2 w-[340px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
                 <div className={cn("p-4 space-y-4 text-left")}>
                   <div className={cn("flex items-center justify-between border-b border-slate-800 pb-2")}>
                     <span className={cn("text-xs font-bold text-slate-200 flex items-center gap-1.5 font-mono")}>
@@ -326,7 +513,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       {t.favStylesTitle}
                     </span>
                     {project.visualConfig?.referencePrompt && (
-                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentStyle} className={cn("px-2.5 py-1 text-[10px] font-bold rounded-lg flex items-center gap-1")}>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        type="button"
+                        onClick={handleSaveCurrentStyle}
+                        className={cn("px-2.5 py-1 text-[10px] font-bold rounded-lg flex items-center gap-1")}>
                         <Sparkles className={cn("w-2.5 h-2.5 text-rose-500")} />
                         {t.saveCurrentStyle}
                       </Button>
@@ -341,12 +533,32 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         const isCurrent = project.visualConfig?.referencePrompt === item.prompt;
                         const isEditing = editingStyleId === item.id;
                         return (
-                          <div key={item.id} className={cn(`group flex flex-col justify-between p-2.5 rounded-lg border transition-all ${isCurrent ? "bg-rose-500/[0.04] border-rose-500/30" : "bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-850"}`)}>
+                          <div
+                            key={item.id}
+                            className={cn(
+                              `group flex flex-col justify-between p-2.5 rounded-lg border transition-all ${isCurrent ? "bg-rose-500/[0.04] border-rose-500/30" : "bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-850"}`,
+                            )}>
                             {isEditing ? (
                               <div className={cn("space-y-2 w-full text-left")}>
-                                <input type="text" value={editStyleFormName} onChange={(e) => setEditStyleFormName(e.target.value)} placeholder={t.styleNamePlaceholder} className={cn("w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all")} />
+                                <input
+                                  type="text"
+                                  value={editStyleFormName}
+                                  onChange={(e) => setEditStyleFormName(e.target.value)}
+                                  placeholder={t.styleNamePlaceholder}
+                                  className={cn(
+                                    "w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all",
+                                  )}
+                                />
                                 <div className={cn("flex gap-1.5")}>
-                                  <input type="text" value={editStyleFormPrompt} onChange={(e) => setEditStyleFormPrompt(e.target.value)} placeholder={t.stylePromptPlaceholder} className={cn("flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all")} />
+                                  <input
+                                    type="text"
+                                    value={editStyleFormPrompt}
+                                    onChange={(e) => setEditStyleFormPrompt(e.target.value)}
+                                    placeholder={t.stylePromptPlaceholder}
+                                    className={cn(
+                                      "flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all",
+                                    )}
+                                  />
                                   <Button
                                     variant="primary"
                                     size="xs"
@@ -355,10 +567,17 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       handleSaveEditStyle(item.id, editStyleFormName, editStyleFormPrompt);
                                       setEditingStyleId(null);
                                     }}
-                                    className={cn("px-2 py-1 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto")}>
+                                    className={cn(
+                                      "px-2 py-1 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto",
+                                    )}>
                                     <Check className={cn("w-3.5 h-3.5")} />
                                   </Button>
-                                  <Button variant="secondary" size="xs" type="button" onClick={() => setEditingStyleId(null)} className={cn("px-2 py-1 text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto")}>
+                                  <Button
+                                    variant="secondary"
+                                    size="xs"
+                                    type="button"
+                                    onClick={() => setEditingStyleId(null)}
+                                    className={cn("px-2 py-1 text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto")}>
                                     <X className={cn("w-3.5 h-3.5")} />
                                   </Button>
                                 </div>
@@ -382,7 +601,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setTimeout(() => setInfoMsg(""), APP_CONFIG.TOAST_DURATION);
                                       }}
                                       title={t.copyStyleDesc}
-                                      className={cn("shrink-0 p-1.5 bg-slate-900 hover:bg-slate-850 border border-transparent hover:border-slate-700 rounded-lg text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto transition-all")}>
+                                      className={cn(
+                                        "shrink-0 p-1.5 bg-slate-900 hover:bg-slate-850 border border-transparent hover:border-slate-700 rounded-lg text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto transition-all",
+                                      )}>
                                       <Copy className={cn("w-3 h-3")} />
                                     </Button>
                                   </div>
@@ -397,11 +618,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       setEditStyleFormName(item.name);
                                       setEditStyleFormPrompt(item.prompt);
                                     }}
-                                    className={cn("p-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg shadow-sm h-auto w-auto transition-all")}
+                                    className={cn(
+                                      "p-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg shadow-sm h-auto w-auto transition-all",
+                                    )}
                                     title={t.editStyle}>
                                     <Pencil className={cn("w-3 h-3")} />
                                   </Button>
-                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavoriteStyle(item.id, e)} className={cn("p-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/30 hover:border-rose-500/30 text-rose-400 hover:text-rose-300 rounded-lg shadow-sm h-auto w-auto transition-all")} title={t.deleteStyle}>
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    type="button"
+                                    onClick={(e) => handleDeleteFavoriteStyle(item.id, e)}
+                                    className={cn(
+                                      "p-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/30 hover:border-rose-500/30 text-rose-400 hover:text-rose-300 rounded-lg shadow-sm h-auto w-auto transition-all",
+                                    )}
+                                    title={t.deleteStyle}>
                                     <Trash className={cn("w-3 h-3")} />
                                   </Button>
                                 </div>
@@ -414,9 +645,25 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   </div>
 
                   <div className={cn("border-t border-slate-800 pt-3 space-y-2 mt-2")}>
-                    <input type="text" value={favStyleFormName} onChange={(e) => setFavStyleFormName(e.target.value)} placeholder={t.styleNamePlaceholder} className={cn("w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all shadow-inner")} />
+                    <input
+                      type="text"
+                      value={favStyleFormName}
+                      onChange={(e) => setFavStyleFormName(e.target.value)}
+                      placeholder={t.styleNamePlaceholder}
+                      className={cn(
+                        "w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all shadow-inner",
+                      )}
+                    />
                     <div className={cn("flex gap-2")}>
-                      <input type="text" value={favStyleFormPrompt} onChange={(e) => setFavStyleFormPrompt(e.target.value)} placeholder={t.stylePromptPlaceholder} className={cn("flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all shadow-inner")} />
+                      <input
+                        type="text"
+                        value={favStyleFormPrompt}
+                        onChange={(e) => setFavStyleFormPrompt(e.target.value)}
+                        placeholder={t.stylePromptPlaceholder}
+                        className={cn(
+                          "flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-medium placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all shadow-inner",
+                        )}
+                      />
                       <Button
                         variant="primary"
                         size="sm"
@@ -426,7 +673,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           setFavStyleFormName("");
                           setFavStyleFormPrompt("");
                         }}
-                        className={cn("px-4 py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-500/50 text-white text-[11px] font-bold rounded-lg shrink-0 shadow-md transition-all active:scale-95")}>
+                        className={cn(
+                          "px-4 py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-500/50 text-white text-[11px] font-bold rounded-lg shrink-0 shadow-md transition-all active:scale-95",
+                        )}>
                         {t.addFavStyleBtn}
                       </Button>
                     </div>
@@ -438,15 +687,33 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
           <AnimatePresence>
             {showGenSettings && (
-              <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className={cn("absolute top-full right-[50px] mt-2 w-[300px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
+              <motion.div
+                initial={{ opacity: 0, y: -15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ transformOrigin: "top right" }}
+                className={cn("absolute top-full right-[50px] mt-2 w-[300px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden")}>
                 <div className={cn("p-4 space-y-4")}>
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Generation_Mode}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })}
+                        className={cn(
+                          `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         {t.Labs_Flow_Mode}
                       </Button>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })}
+                        className={cn(
+                          `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         {t.Gemini_Chat_Mode}
                       </Button>
                     </div>
@@ -455,13 +722,31 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Generate_Type}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${!project.visualConfig.generateType || project.visualConfig.generateType === GenerateType.Image ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ generateType: GenerateType.Image })}
+                        className={cn(
+                          `flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${!project.visualConfig.generateType || project.visualConfig.generateType === GenerateType.Image ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         <ImageIcon className={cn("w-3.5 h-3.5")} /> {t.Image}
                       </Button>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ generateType: GenerateType.Video })}
+                        className={cn(
+                          `flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         <Video className={cn("w-3.5 h-3.5")} /> {t.Video}
                       </Button>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Mixed })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Mixed ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ generateType: GenerateType.Mixed })}
+                        className={cn(
+                          `flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Mixed ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         <LucideIcons.Film className={cn("w-3.5 h-3.5")} /> {mediaMixTexts.mixed}
                       </Button>
                     </div>
@@ -472,7 +757,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")} title={mediaMixTexts.maxVideosTooltip}>
                         {mediaMixTexts.maxVideos}
                       </div>
-                      <select value={project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS} onChange={(event) => updateVisualConfig({ maxVideoScenes: _.toInteger(event.target.value) })} className={cn("w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 px-2 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner")}>
+                      <select
+                        value={project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS}
+                        onChange={(event) => updateVisualConfig({ maxVideoScenes: _.toInteger(event.target.value) })}
+                        className={cn(
+                          "w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 px-2 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner",
+                        )}>
                         {_.map(MEDIA_MIX_CONFIG.VIDEO_COUNT_OPTIONS, (count) => (
                           <option key={count} value={count} className={cn("bg-slate-900 text-slate-200")}>
                             {count}
@@ -486,7 +776,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Aspect_Ratio}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                       {Object.values(AspectRatio).map((ratio) => (
-                        <Button variant="unstyled" type="button" key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <Button
+                          variant="unstyled"
+                          type="button"
+                          key={ratio}
+                          onClick={() => updateVisualConfig({ aspectRatio: ratio })}
+                          className={cn(
+                            `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                          )}>
                           {ratio}
                         </Button>
                       ))}
@@ -496,10 +793,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Input_Method_Labs}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })}
+                        className={cn(
+                          `flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         <Type className={cn("w-3 h-3")} /> {t.Type_Text}
                       </Button>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })}
+                        className={cn(
+                          `flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         <ClipboardPaste className={cn("w-3 h-3")} /> {t.Quick_Paste}
                       </Button>
                     </div>
@@ -509,33 +818,60 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Sample_Count}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                       {[1, 2, 3, 4].map((count) => (
-                        <Button variant="unstyled" type="button" key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <Button
+                          variant="unstyled"
+                          type="button"
+                          key={count}
+                          onClick={() => updateVisualConfig({ generateCount: count })}
+                          className={cn(
+                            `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                          )}>
                           {count === 1 ? "1x" : `x${count}`}
                         </Button>
                       ))}
                     </div>
                   </div>
 
-                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow && _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType) && (
-                    <div className={cn("space-y-1.5")}>
-                      <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Video_Duration}</div>
-                      <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                        {["4s", "6s", "8s", "10s"].map((dur) => (
-                          <Button variant="unstyled" type="button" key={dur} onClick={() => updateVisualConfig({ videoDuration: dur })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
-                            {t[`Duration_${dur}` as keyof typeof t] || dur}
-                          </Button>
-                        ))}
+                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow &&
+                    _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType) && (
+                      <div className={cn("space-y-1.5")}>
+                        <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Video_Duration}</div>
+                        <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
+                          {["4s", "6s", "8s", "10s"].map((dur) => (
+                            <Button
+                              variant="unstyled"
+                              type="button"
+                              key={dur}
+                              onClick={() => updateVisualConfig({ videoDuration: dur })}
+                              className={cn(
+                                `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                              )}>
+                              {t[`Duration_${dur}` as keyof typeof t] || dur}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Chrome_Mode}</div>
                     <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ chromeHeadless: true })}
+                        className={cn(
+                          `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         {t.Chrome_Hidden}
                       </Button>
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button
+                        variant="unstyled"
+                        type="button"
+                        onClick={() => updateVisualConfig({ chromeHeadless: false })}
+                        className={cn(
+                          `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                        )}>
                         {t.Chrome_Visible}
                       </Button>
                     </div>
@@ -548,7 +884,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
                           const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
                           return (
-                            <Button variant="unstyled" type="button" key={opt.value} onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button
+                              variant="unstyled"
+                              type="button"
+                              key={opt.value}
+                              onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })}
+                              className={cn(
+                                `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                              )}>
                               {label}
                             </Button>
                           );
@@ -558,11 +901,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   )}
 
                   <div className={cn("space-y-1.5")}>
-                    <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Batch_Delay || (currentLang === AppLanguage.VI ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}</div>
+                    <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>
+                      {t.Batch_Delay || (currentLang === AppLanguage.VI ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}
+                    </div>
                     <div className={cn("relative")}>
-                      <select value={project.visualConfig.batchDelay || BatchDelayOption.Default} onChange={(e) => updateVisualConfig({ batchDelay: e.target.value as BatchDelayOption })} className={cn("w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner")}>
+                      <select
+                        value={project.visualConfig.batchDelay || BatchDelayOption.Default}
+                        onChange={(e) => updateVisualConfig({ batchDelay: e.target.value as BatchDelayOption })}
+                        className={cn(
+                          "w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner",
+                        )}>
                         {BATCH_DELAY_OPTIONS.map((opt) => {
-                          const label = t[opt.labelKey as keyof typeof t] || (currentLang === AppLanguage.VI ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) || opt.value;
+                          const label =
+                            t[opt.labelKey as keyof typeof t] ||
+                            (currentLang === AppLanguage.VI ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) ||
+                            opt.value;
                           return (
                             <option key={opt.value} value={opt.value} className={cn("bg-slate-900 text-slate-200")}>
                               {label}
@@ -576,7 +929,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className={cn("space-y-1.5")}>
                     <div className={cn("text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1")}>{t.Drawing_Model}</div>
                     <div className={cn("relative")}>
-                      <select value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3} onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })} className={cn("w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner")}>
+                      <select
+                        value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3}
+                        onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })}
+                        className={cn(
+                          "w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner",
+                        )}>
                         {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat
                           ? [
                               <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className={cn("bg-slate-900 text-slate-200")}>
@@ -635,19 +993,35 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowFavVoices(false);
                 setShowFavStyles(false);
               }}
-              className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <Terminal className={cn("w-4 h-4")} />
             </Button>
           </Tooltip>
 
           <Tooltip content={t.Step_Flow_L_key} position="bottom">
-            <Button variant="ghost" size="sm" type="button" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${leftSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${leftSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <Workflow className={cn("w-4 h-4")} />
             </Button>
           </Tooltip>
 
           <Tooltip content={t.Settings_R_key} position="bottom">
-            <Button variant="ghost" size="sm" type="button" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${rightSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+              className={cn(
+                `p-2 rounded-lg border shadow-none h-auto w-auto ${rightSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`,
+              )}>
               <Settings2 className={cn("w-4 h-4")} />
             </Button>
           </Tooltip>
@@ -726,7 +1100,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             if (idx === -1) idx = 0;
             const progressPercent = ((idx + 1) / _.size(PipelineConstants.FLOW_STEPS)) * 100;
             return (
-              <div className={cn("h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(244,63,94,0.8)] relative")} style={{ width: `${progressPercent}%` }}>
+              <div
+                className={cn("h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(244,63,94,0.8)] relative")}
+                style={{ width: `${progressPercent}%` }}>
                 <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)] translate-x-1/2")} />
               </div>
             );
@@ -734,7 +1110,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         </div>
       </div>
       <div className={cn("flex-grow w-full flex overflow-hidden min-h-0 relative select-none bg-slate-955")}>
-        <div className={cn(`transition-all duration-300 flex flex-col bg-slate-900 border-r border-slate-800 shrink-0 h-full overflow-hidden ${leftSidebarOpen ? "w-60" : "w-0 border-r-0"}`)}>
+        <div
+          className={cn(
+            `transition-all duration-300 flex flex-col bg-slate-900 border-r border-slate-800 shrink-0 h-full overflow-hidden ${leftSidebarOpen ? "w-60" : "w-0 border-r-0"}`,
+          )}>
           <div className={cn("p-3 border-b border-slate-800 bg-slate-950/30 flex items-center justify-between shrink-0 select-none")}>
             <span className={cn("text-[9px] font-bold text-slate-400 tracking-wider font-mono uppercase")}>{t.FLOW_WORKSPACE}</span>
             <span className={cn("text-[8px] font-mono text-slate-500 bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded-md font-bold")}>{t.NODES}</span>
@@ -749,8 +1128,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 <div key={stepIdx} className={cn("relative")}>
                   {arrayIdx < 3 && <div className={cn("absolute left-[22px] top-11 bottom-[-22px] w-[2px] bg-gradient-to-b from-rose-500/20 to-slate-800 z-0")} />}
 
-                  <Button variant="unstyled" onClick={() => setCurrentStep(stepIdx)} title={tooltip} className={cn(`w-full text-left p-2.5 rounded-xl relative z-10 flex items-center gap-3 select-none h-auto justify-start transition-all ${isCurrent ? "bg-rose-500/10 text-rose-500 font-extrabold ring-1 ring-rose-500/30" : isCompleted ? "bg-slate-900/40 text-slate-400 hover:bg-slate-900" : "bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-850"}`)}>
-                    <div className={cn(`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 ring-2 ring-rose-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`)}>0{arrayIdx + 1}</div>
+                  <Button
+                    variant="unstyled"
+                    onClick={() => setCurrentStep(stepIdx)}
+                    title={tooltip}
+                    className={cn(
+                      `w-full text-left p-2.5 rounded-xl relative z-10 flex items-center gap-3 select-none h-auto justify-start transition-all ${isCurrent ? "bg-rose-500/10 text-rose-500 font-extrabold ring-1 ring-rose-500/30" : isCompleted ? "bg-slate-900/40 text-slate-400 hover:bg-slate-900" : "bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-850"}`,
+                    )}>
+                    <div
+                      className={cn(
+                        `w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 ring-2 ring-rose-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`,
+                      )}>
+                      0{arrayIdx + 1}
+                    </div>
 
                     <div className={cn("flex-1 min-w-0")}>
                       <div className={cn(`text-[8px] font-mono leading-none tracking-wider uppercase ${isCurrent ? "text-rose-400" : "text-slate-500"}`)}>
@@ -768,38 +1158,42 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
         <div className={cn("flex-1 h-full min-w-0 flex flex-col relative select-none bg-slate-955 overflow-hidden")}>
           <div className={cn("absolute top-3 right-3 z-10 flex items-center gap-1.5 pointer-events-none select-none")}>
-            <span className={cn("text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur font-bold")}>{t.FPS_24_COMPLIANT}</span>
-            <span className={cn("text-[9px] bg-rose-600 text-white font-extrabold border border-rose-500 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm")}>{t.stepShortLabels?.[currentStep]}</span>
+            <span className={cn("text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur font-bold")}>
+              {t.FPS_24_COMPLIANT}
+            </span>
+            <span className={cn("text-[9px] bg-rose-600 text-white font-extrabold border border-rose-500 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm")}>
+              {t.stepShortLabels?.[currentStep]}
+            </span>
           </div>
 
-          <div className={cn("flex-1 flex flex-col min-h-0 relative z-0 overflow-hidden")}>
+          <div className={cn("flex-1 flex flex-col min-h-0 relative z-0 overflow-hidden w-full")}>
             {visitedSteps[WizardStep.SourceInput] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SourceInput ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.SourceInput ? "" : "hidden"}`)}>
                 <PipelineStep0 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.Storyboard] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.Storyboard ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.Storyboard ? "" : "hidden"}`)}>
                 <PipelineStep1 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.AssetManager] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.AssetManager ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.AssetManager ? "" : "hidden"}`)}>
                 <PipelineStep2 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.SEOBoost] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SEOBoost ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.SEOBoost ? "" : "hidden"}`)}>
                 <PipelineStep3 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.Export] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.Export ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.Export ? "" : "hidden"}`)}>
                 <PipelineStep4 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.IndependentGenerator] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.IndependentGenerator ? "" : "hidden"}`)}>
+              <div className={cn(`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar w-full ${currentStep === WizardStep.IndependentGenerator ? "" : "hidden"}`)}>
                 <PipelineStep5 {...wizard} />
               </div>
             )}
@@ -808,7 +1202,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               {zoomedImage && (
                 <div className={cn("flex flex-col md:flex-row h-full min-h-[50vh] bg-slate-900")}>
                   <div className={cn("flex-1 bg-slate-950 p-4 flex flex-col justify-center items-center relative overflow-hidden group")}>
-                    <img referrerPolicy="no-referrer" src={zoomedImage.url} alt={zoomedImage.title} className={cn("max-w-full max-h-[50vh] md:max-h-[75vh] object-contain rounded-xl shadow-2xl ring-1 ring-slate-800")} />
+                    <img
+                      referrerPolicy="no-referrer"
+                      src={zoomedImage.url}
+                      alt={zoomedImage.title}
+                      className={cn("max-w-full max-h-[50vh] md:max-h-[75vh] object-contain rounded-xl shadow-2xl ring-1 ring-slate-800")}
+                    />
                   </div>
                   <div className={cn("w-full md:w-80 p-6 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col bg-slate-900")}>
                     <div className={cn("flex-1 flex flex-col min-h-0")}>
@@ -818,13 +1217,25 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                             <Sparkles className={cn("w-3 h-3")} />
                             {t.Generation_Prompt}
                           </div>
-                          <p className={cn("flex-1 text-[11px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800 leading-relaxed overflow-y-auto custom-scrollbar select-all min-h-[150px]")}>{zoomedImage.prompt}</p>
+                          <p
+                            className={cn(
+                              "flex-1 text-[11px] text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800 leading-relaxed overflow-y-auto custom-scrollbar select-all min-h-[150px]",
+                            )}>
+                            {zoomedImage.prompt}
+                          </p>
                         </div>
                       )}
                     </div>
 
                     <div className={cn("mt-6 pt-6 border-t border-slate-800 flex flex-row gap-2.5 shrink-0")}>
-                      <a href={zoomedImage.url} download={`${zoomedImage.title.replace(/\s+/g, "_").toLowerCase()}_artwork.jpg`} target="_blank" rel="noopener noreferrer" className={cn("flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-450 hover:to-rose-550 active:from-rose-600 active:to-rose-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm")}>
+                      <a
+                        href={zoomedImage.url}
+                        download={`${zoomedImage.title.replace(/\s+/g, "_").toLowerCase()}_artwork.jpg`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-450 hover:to-rose-550 active:from-rose-600 active:to-rose-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm",
+                        )}>
                         <Download className={cn("w-3.5 h-3.5")} />
                         <span>{t.download}</span>
                       </a>
@@ -854,9 +1265,23 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className={cn("flex flex-col md:flex-row gap-3.5")}>
                       <div className={cn("relative flex-1")}>
                         <Search className={cn("absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4")} />
-                        <input type="text" value={voiceSearch} onChange={(e) => setVoiceSearch(e.target.value)} placeholder={t.Search_voices_registry_by} className={cn("w-full bg-slate-100 hover:bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-9 py-2 text-xs text-slate-200 font-semibold placeholder-slate-550 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all h-10")} />
+                        <input
+                          type="text"
+                          value={voiceSearch}
+                          onChange={(e) => setVoiceSearch(e.target.value)}
+                          placeholder={t.Search_voices_registry_by}
+                          className={cn(
+                            "w-full bg-slate-100 hover:bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-9 py-2 text-xs text-slate-200 font-semibold placeholder-slate-550 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all h-10",
+                          )}
+                        />
                         {voiceSearch && (
-                          <Button variant="unstyled" type="button" onClick={() => setVoiceSearch("")} className={cn("absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-850 text-slate-400 hover:text-slate-200 rounded-full hover:scale-105 transition shadow-none h-auto w-auto")}>
+                          <Button
+                            variant="unstyled"
+                            type="button"
+                            onClick={() => setVoiceSearch("")}
+                            className={cn(
+                              "absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-850 text-slate-400 hover:text-slate-200 rounded-full hover:scale-105 transition shadow-none h-auto w-auto",
+                            )}>
                             <X className={cn("w-3 h-3")} />
                           </Button>
                         )}
@@ -881,7 +1306,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                               onClick={() => {
                                 setVoiceTypeFilter(tab.id as any);
                               }}
-                              className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center gap-1.5 ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                              className={cn(
+                                `flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center gap-1.5 ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                              )}>
                               {tab.id === "premium" ? <Sparkles className={cn("w-3 h-3 text-amber-500 shrink-0")} /> : <Layers className={cn("w-3 h-3 text-sky-400 shrink-0")} />}
                               <span>{tab.label}</span>
                             </Button>
@@ -907,7 +1334,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((loc) => {
                           const isActive = voiceLangFilter === loc.id;
                           return (
-                            <Button variant="unstyled" key={loc.id} type="button" onClick={() => setVoiceLangFilter(loc.id as any)} className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button
+                              variant="unstyled"
+                              key={loc.id}
+                              type="button"
+                              onClick={() => setVoiceLangFilter(loc.id as any)}
+                              className={cn(
+                                `px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                              )}>
                               {loc.label}
                             </Button>
                           );
@@ -937,7 +1371,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((gen) => {
                           const isActive = selectedGenderFilter === gen.id;
                           return (
-                            <Button variant="unstyled" key={gen.id} type="button" onClick={() => setSelectedGenderFilter(gen.id as any)} className={cn(`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            <Button
+                              variant="unstyled"
+                              key={gen.id}
+                              type="button"
+                              onClick={() => setSelectedGenderFilter(gen.id as any)}
+                              className={cn(
+                                `px-4 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                              )}>
                               {gen.label}
                             </Button>
                           );
@@ -1006,19 +1447,47 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
                                   playVoicePreview(voice.voiceURI, gender, voice.lang, speed, pitch);
                                 }}
-                                className={cn(`group border rounded-xl p-4.5 text-left transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[145px] ${isSelected ? "bg-rose-500/[0.04] bg-rose-550/[0.02] border-rose-500/80 ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-200 hover:border-slate-700"}`)}>
+                                className={cn(
+                                  `group border rounded-xl p-4.5 text-left transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[145px] ${isSelected ? "bg-rose-500/[0.04] bg-rose-550/[0.02] border-rose-500/80 ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-200 hover:border-slate-700"}`,
+                                )}>
                                 {isSelected && <div className={cn("absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg")} />}
 
                                 <div className={cn("space-y-2.5")}>
                                   <div className={cn("flex items-center gap-1.5 flex-wrap")}>
-                                    {isPremium ? <span className={cn("bg-amber-500/10 text-amber-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-amber-500/15")}>{t.CLOUD_AI}</span> : <span className={cn("bg-slate-950 text-slate-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-slate-850")}>{t.NATIVE_TTS}</span>}
+                                    {isPremium ? (
+                                      <span
+                                        className={cn(
+                                          "bg-amber-500/10 text-amber-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-amber-500/15",
+                                        )}>
+                                        {t.CLOUD_AI}
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className={cn("bg-slate-950 text-slate-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-slate-850")}>
+                                        {t.NATIVE_TTS}
+                                      </span>
+                                    )}
 
-                                    {voice.lang && <span className={cn("bg-slate-950 text-slate-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-slate-850 select-all font-mono")}>{voice.lang}</span>}
+                                    {voice.lang && (
+                                      <span
+                                        className={cn(
+                                          "bg-slate-950 text-slate-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-slate-850 select-all font-mono",
+                                        )}>
+                                        {voice.lang}
+                                      </span>
+                                    )}
 
-                                    <span className={cn("text-[8px] font-mono font-black text-rose-450 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/10")}>{isFemale ? t.FEMALE : isMale ? t.MALE : t.NEUTRAL}</span>
+                                    <span
+                                      className={cn(
+                                        "text-[8px] font-mono font-black text-rose-450 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/10",
+                                      )}>
+                                      {isFemale ? t.FEMALE : isMale ? t.MALE : t.NEUTRAL}
+                                    </span>
                                   </div>
                                   <div>
-                                    <h4 className={cn("text-xs font-black text-slate-100 truncate leading-snug group-hover:text-rose-450 transition-colors shadow-sm")}>{voice.name?.replace("✨ Giọng", "") || voice.voiceURI}</h4>
+                                    <h4 className={cn("text-xs font-black text-slate-100 truncate leading-snug group-hover:text-rose-450 transition-colors shadow-sm")}>
+                                      {voice.name?.replace("✨ Giọng", "") || voice.voiceURI}
+                                    </h4>
                                     <p className={cn("text-[10px] text-slate-450 italic font-medium leading-relaxed mt-1 line-clamp-2")}>
                                       {(() => {
                                         const descKey = VOICE_DESCRIPTION_KEYS[voice.voiceURI];
@@ -1028,7 +1497,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   </div>
                                 </div>
                                 <div className={cn("pt-2 border-t border-slate-800/80 mt-3 flex items-center justify-between gap-2.5")}>
-                                  <span className={cn("text-[9px] font-mono text-slate-500 font-bold uppercase truncate max-w-[125px]")}>{voice.localService ? t.Offline_Supported : t.Online_API_Required}</span>
+                                  <span className={cn("text-[9px] font-mono text-slate-500 font-bold uppercase truncate max-w-[125px]")}>
+                                    {voice.localService ? t.Offline_Supported : t.Online_API_Required}
+                                  </span>
 
                                   <div className={cn("flex items-center gap-1.5 shrink-0")}>
                                     <Button
@@ -1041,12 +1512,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         const pitch = project.voiceConfig.pitch || 1.0;
                                         playVoicePreview(voice.voiceURI, gender, voice.lang, speed, pitch);
                                       }}
-                                      className={cn(`w-8 h-8 rounded-xl border flex items-center justify-center shadow-none p-0 ${playingVoiceURI === voice.voiceURI ? "bg-rose-600 border-rose-600 hover:bg-rose-500 hover:text-white text-white" : "bg-slate-100 hover:bg-slate-850 border-slate-800 text-slate-350"}`)}
+                                      className={cn(
+                                        `w-8 h-8 rounded-xl border flex items-center justify-center shadow-none p-0 ${playingVoiceURI === voice.voiceURI ? "bg-rose-600 border-rose-600 hover:bg-rose-500 hover:text-white text-white" : "bg-slate-100 hover:bg-slate-850 border-slate-800 text-slate-350"}`,
+                                      )}
                                       title={playingVoiceURI === voice.voiceURI ? t.Stop_preview : t.Listen_sample}>
                                       {playingVoiceURI === voice.voiceURI ? <Pause className={cn("w-3 h-3 animate-pulse")} /> : <Play className={cn("w-3 h-3")} />}
                                     </Button>
 
-                                    <span className={cn(`px-2.5 py-1 rounded-lg text-[9px] font-mono font-black uppercase transition-all shrink-0 border ${isSelected ? "bg-rose-500 text-white border-rose-500" : "bg-slate-950 text-slate-400 border-slate-850"}`)}>{isSelected ? t.ACTIVE : t.SELECT}</span>
+                                    <span
+                                      className={cn(
+                                        `px-2.5 py-1 rounded-lg text-[9px] font-mono font-black uppercase transition-all shrink-0 border ${isSelected ? "bg-rose-500 text-white border-rose-500" : "bg-slate-950 text-slate-400 border-slate-850"}`,
+                                      )}>
+                                      {isSelected ? t.ACTIVE : t.SELECT}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -1067,7 +1545,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </Modal>
           </div>
         </div>
-        <div className={cn(`transition-all duration-300 flex flex-col bg-slate-950 border-l border-slate-850 shrink-0 h-full overflow-hidden ${rightSidebarOpen ? "w-72" : "w-0 border-l-0"}`)}>
+        <div
+          className={cn(
+            `transition-all duration-300 flex flex-col bg-slate-950 border-l border-slate-850 shrink-0 h-full overflow-hidden ${rightSidebarOpen ? "w-72" : "w-0 border-l-0"}`,
+          )}>
           <div className={cn("p-3 border-b border-slate-900 bg-slate-900/40 flex items-center justify-between shrink-0 select-none")}>
             <span className={cn("text-[10px] font-bold text-slate-400 tracking-wider font-mono")}>{t.WORKSPACE}</span>
             <span className={cn("text-[9px] font-mono text-slate-650 bg-slate-900 px-1.5 py-0.5 rounded")}>{t.PROPS}</span>
@@ -1128,14 +1609,20 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     duration: 0.15,
                   },
                 }}
-                className={cn("bg-slate-900 shadow-2xl shadow-rose-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden")}>
+                className={cn(
+                  "bg-slate-900 shadow-2xl shadow-rose-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden",
+                )}>
                 <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500")} />
                 <AlertCircle className={cn("w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5 ml-1")} />
                 <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
                   <span className={cn("text-[10px] uppercase font-mono font-bold text-rose-500 tracking-wider")}>{t.System_Error}</span>
                   <p className={cn("leading-snug text-slate-300 font-medium")}>{errorMsg}</p>
                 </div>
-                <Button variant="ghost" size="xs" onClick={() => setErrorMsg("")} className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setErrorMsg("")}
+                  className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
                   <X className={cn("w-3.5 h-3.5")} />
                 </Button>
                 <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500/10")}>
@@ -1163,14 +1650,20 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     duration: 0.15,
                   },
                 }}
-                className={cn("bg-slate-900 shadow-2xl shadow-emerald-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden")}>
+                className={cn(
+                  "bg-slate-900 shadow-2xl shadow-emerald-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden",
+                )}>
                 <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500")} />
                 <Check className={cn("w-4.5 h-4.5 text-emerald-500 shrink-0 mt-0.5 ml-1 animate-pulse")} />
                 <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
                   <span className={cn("text-[10px] uppercase font-mono font-bold text-emerald-500 tracking-wider")}>{t.Success}</span>
                   <p className={cn("leading-snug text-slate-300 font-medium")}>{infoMsg}</p>
                 </div>
-                <Button variant="ghost" size="xs" onClick={() => setInfoMsg("")} className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setInfoMsg("")}
+                  className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
                   <X className={cn("w-3.5 h-3.5")} />
                 </Button>
                 <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500/10")}>

@@ -27,11 +27,24 @@ interface ProviderCandidate {
   models: readonly string[];
 }
 
-const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] => (requiresTools ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels : capability === AiTaskCapability.ScriptWriting ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels : FREE_AI_PROVIDER_CONFIG.GROQ.models);
-const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({ id: FREE_AI_PROVIDER_CONFIG.GROQ.id, url: FREE_AI_PROVIDER_CONFIG.GROQ.url, models: resolveGroqModels(requiresTools, capability), apiKey });
+const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] =>
+  requiresTools
+    ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels
+    : capability === AiTaskCapability.ScriptWriting
+      ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels
+      : FREE_AI_PROVIDER_CONFIG.GROQ.models;
+const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({
+  id: FREE_AI_PROVIDER_CONFIG.GROQ.id,
+  url: FREE_AI_PROVIDER_CONFIG.GROQ.url,
+  models: resolveGroqModels(requiresTools, capability),
+  apiKey,
+});
 const createProviderCandidates = ({ cerebrasKey, groqKey }: FreeProviderKeys, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate[] => {
   if (requiresTools) return _.isEmpty(groqKey) ? [] : [createGroqCandidate(groqKey, true, capability)];
-  return _.compact([_.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey }, _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability)]) as ProviderCandidate[];
+  return _.compact([
+    _.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey },
+    _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability),
+  ]) as ProviderCandidate[];
 };
 const createRequestBody = (model: string, request: FreeProviderRequest) => ({
   model,
@@ -91,7 +104,10 @@ const requestModel = async (provider: ProviderCandidate, model: string, request:
   try {
     const response = await fetch(provider.url, {
       method: "POST",
-      headers: { [FREE_AI_PROVIDER_CONFIG.AUTHORIZATION_HEADER]: `${FREE_AI_PROVIDER_CONFIG.BEARER_PREFIX}${provider.apiKey}`, [FREE_AI_PROVIDER_CONFIG.CONTENT_TYPE_HEADER]: FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE },
+      headers: {
+        [FREE_AI_PROVIDER_CONFIG.AUTHORIZATION_HEADER]: `${FREE_AI_PROVIDER_CONFIG.BEARER_PREFIX}${provider.apiKey}`,
+        [FREE_AI_PROVIDER_CONFIG.CONTENT_TYPE_HEADER]: FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE,
+      },
       body: jsonUtils.safeStringify(createRequestBody(model, request)),
       signal: controller.signal,
     });

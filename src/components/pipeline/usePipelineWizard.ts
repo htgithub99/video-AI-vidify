@@ -10,14 +10,71 @@ import _ from "lodash";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS, PRODUCTION_AUDIO_CONFIG, normalizeGenreValue } from "../../constants";
+import {
+  APP_LOCALES,
+  DEFAULT_PROVIDER,
+  API_QUERY_PARAMS,
+  API_ROUTES,
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+  VOICE_GENDER,
+  MEDIA_MIX_CONFIG,
+  UI_MESSAGE_DURATION,
+  PIPELINE_CLIENT_ERRORS,
+  PRODUCTION_AUDIO_CONFIG,
+  normalizeGenreValue,
+} from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
-import { fetchSystemApi, formatRoundedTime, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
+import {
+  fetchSystemApi,
+  formatRoundedTime,
+  getVoiceGender,
+  getVoiceModifiers,
+  isPremiumVoice,
+  isProjectContentEqual,
+  safeFetchJsonWithAuth,
+  safeResponseJson,
+} from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
-import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender, StyleReferencePurpose } from "../../types";
+import {
+  CONSOLE_LOG_IGNORED_MESSAGES,
+  LOG_SUCCESS_KEYWORDS,
+  LOG_PENDING_KEYWORDS,
+  LOG_WARN_KEYWORDS,
+  LOG_ERROR_KEYWORDS,
+  VITE_CONNECTED_KEYWORD,
+  VITE_CONNECTION_LOST_KEYWORDS,
+  VITE_FAILED_RELOAD_KEYWORD,
+  VITE_HOT_UPDATE_KEYWORDS,
+} from "../../constants/data";
+import {
+  APP_TEXTS,
+  AUDIO_MIME_TYPE,
+  BLOB_PREFIX,
+  RESTORE_SCENE_BLOB_ERR,
+  RESTORE_BLOB_ERR,
+  COMMON_STRINGS,
+  EXTERNAL_AUDIO_TEXTS,
+  ERROR_MESSAGES,
+  VITE_HMR_LOGS,
+  AUTO_GENERATE_TEXTS,
+} from "../../constants/texts";
+import {
+  VideoProject,
+  HookVersion,
+  StoryboardScene,
+  ThumbnailItem,
+  WizardStep,
+  ImageGeneratorEngine,
+  ProjectLanguage,
+  HookPosition,
+  ImageGenerationMode,
+  GenerateType,
+  AudioType,
+  Gender,
+  StyleReferencePurpose,
+} from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
@@ -28,7 +85,14 @@ import { delayAsync } from "../../lib/shared-utils.js";
 import { applyVoiceSelection } from "../../lib/voiceRouting";
 import { formatUserFacingLog } from "../../lib/userLogFormatter";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
-import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
+import {
+  createProjectImageUrl,
+  generateProjectImages,
+  hasSceneAsset,
+  resolveSceneGenerateType,
+  selectVideoSceneIds,
+  type ProjectImageResult,
+} from "../../services/projectImageGenerationService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../../services/thumbnailPromptService";
 import { acceptGeneratedThumbnail } from "../../services/thumbnailQualityPipelineService";
 import { createCharacterIdentityDescription, createSceneGenerationContext } from "../../services/sceneReferenceService";
@@ -112,7 +176,9 @@ export function usePipelineWizard(props: any) {
           });
         }
 
-        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig ? _.some(["audioUrl", "audioBase64", "timingLog"], (key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any]) : false;
+        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig
+          ? _.some(["audioUrl", "audioBase64", "timingLog"], (key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any])
+          : false;
 
         const syncField = (key: keyof VideoProject, fallback: any = undefined, checkEmptyArray = false) => {
           const serverVal = normalizedInitialProject[key];
@@ -156,7 +222,21 @@ export function usePipelineWizard(props: any) {
 
         if (!hasChanges) return prev;
 
-        return { ...prev, storyboard: mergedStoryboard, thumbnails: mergedThumbnails, voiceConfig, scriptRewritten, chapters, seoConfig, seo, assets, name: normalizedInitialProject.name, description: normalizedInitialProject.description, currentStep: normalizedInitialProject.currentStep, creditsUsed: normalizedInitialProject.creditsUsed };
+        return {
+          ...prev,
+          storyboard: mergedStoryboard,
+          thumbnails: mergedThumbnails,
+          voiceConfig,
+          scriptRewritten,
+          chapters,
+          seoConfig,
+          seo,
+          assets,
+          name: normalizedInitialProject.name,
+          description: normalizedInitialProject.description,
+          currentStep: normalizedInitialProject.currentStep,
+          creditsUsed: normalizedInitialProject.creditsUsed,
+        };
       });
     }
   }, [normalizedInitialProject]);
@@ -427,7 +507,10 @@ export function usePipelineWizard(props: any) {
 
   const scenesPerPage = 12;
 
-  const paginatedStoryboard = useMemo(() => (project.storyboard || []).slice((storyboardPage - 1) * scenesPerPage, storyboardPage * scenesPerPage), [project.storyboard, storyboardPage, scenesPerPage]);
+  const paginatedStoryboard = useMemo(
+    () => (project.storyboard || []).slice((storyboardPage - 1) * scenesPerPage, storyboardPage * scenesPerPage),
+    [project.storyboard, storyboardPage, scenesPerPage],
+  );
 
   useEffect(() => {
     const totalScenes = (project.storyboard || []).length;
@@ -670,7 +753,16 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     setRenderedVideoBlob(null);
-  }, [project.storyboard, project.voiceConfig?.audioUrl, project.voiceConfig?.speed, project.voiceConfig?.pitch, project.voiceConfig?.volume, project.scriptRewritten, ttsAudioUrl, activeSlideIndices]);
+  }, [
+    project.storyboard,
+    project.voiceConfig?.audioUrl,
+    project.voiceConfig?.speed,
+    project.voiceConfig?.pitch,
+    project.voiceConfig?.volume,
+    project.scriptRewritten,
+    ttsAudioUrl,
+    activeSlideIndices,
+  ]);
 
   const playVoicePreview = async (voiceURI: string, gender: string, lang: string, speed?: number, pitch?: number, previewUrl?: string) => {
     activePreviewToken = Date.now();
@@ -804,7 +896,13 @@ export function usePipelineWizard(props: any) {
         const mappedVoices = _.map(voices, (voice) => {
           const voiceName = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, SecurityConstants.EMPTY_STRING);
           const voiceGender = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH, SecurityConstants.EMPTY_STRING);
-          return { voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY), name: _.isEmpty(voiceGender) ? voiceName : _.join([voiceName, voiceGender], REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_SEPARATOR), lang: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_LANGUAGE_PATH, APP_LOCALES.VI), localService: REFACTOR_CONSTANTS.VOICE_CATALOG_REMOTE_SERVICE, default: REFACTOR_CONSTANTS.VOICE_CATALOG_NOT_DEFAULT };
+          return {
+            voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+            name: _.isEmpty(voiceGender) ? voiceName : _.join([voiceName, voiceGender], REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_SEPARATOR),
+            lang: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_LANGUAGE_PATH, APP_LOCALES.VI),
+            localService: REFACTOR_CONSTANTS.VOICE_CATALOG_REMOTE_SERVICE,
+            default: REFACTOR_CONSTANTS.VOICE_CATALOG_NOT_DEFAULT,
+          };
         });
         setSystemVoices(mappedVoices);
       })
@@ -1245,7 +1343,14 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleRenderSceneImage = async (sceneId: string, customPrompt: string, force = false, isBatch = false, requestedGenerateType?: GenerateType.Image | GenerateType.Video, rewriteBeforeGeneration = false) => {
+  const handleRenderSceneImage = async (
+    sceneId: string,
+    customPrompt: string,
+    force = false,
+    isBatch = false,
+    requestedGenerateType?: GenerateType.Image | GenerateType.Video,
+    rewriteBeforeGeneration = false,
+  ) => {
     logAction("handleRenderSceneImage");
     const isForce = force === true;
     if (!isBatch) {
@@ -1264,7 +1369,10 @@ export function usePipelineWizard(props: any) {
       const cleanStyle = resolveStylePreset(project.visualConfig.stylePreset || project.visualConfig.style).positivePrompt;
 
       if (rewriteBeforeGeneration && sourceScene) {
-        const characterSourceContext = _.join(_.compact([project.input?.content, _.get(project.narrativePlan, "centralQuestion"), _.get(project.narrativePlan, "viewerPromise")]), "\n");
+        const characterSourceContext = _.join(
+          _.compact([project.input?.content, _.get(project.narrativePlan, "centralQuestion"), _.get(project.narrativePlan, "viewerPromise")]),
+          "\n",
+        );
         if (hasStyleContaminatedCharacterLibrary(generationCharacters) || hasSourceGenderConflict(characterSourceContext, generationCharacters)) {
           const characterResult = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
             script: project.scriptRewritten || _.join(_.map(project.storyboard, "script"), " "),
@@ -1325,7 +1433,9 @@ export function usePipelineWizard(props: any) {
         });
       }
 
-      const generationContext = plannedScene ? createSceneGenerationContext({ ...plannedScene, prompt: customPrompt }, { ...project.visualConfig, characters: generationCharacters }) : { prompt: customPrompt, referenceImages: project.visualConfig.referenceImages || [] };
+      const generationContext = plannedScene
+        ? createSceneGenerationContext({ ...plannedScene, prompt: customPrompt }, { ...project.visualConfig, characters: generationCharacters })
+        : { prompt: customPrompt, referenceImages: project.visualConfig.referenceImages || [] };
       const finalPrompt = appendImagePromptAspectRatio(generationContext.prompt, project.visualConfig.aspectRatio);
       const sceneGenerateType = requestedGenerateType || (_.isEqual(project.visualConfig.generateType, GenerateType.Video) ? GenerateType.Video : GenerateType.Image);
       const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
@@ -1357,7 +1467,10 @@ export function usePipelineWizard(props: any) {
 
       let imageUrl = "";
       if (data.success && data.base64) {
-        imageUrl = _.join([_.isEqual(sceneGenerateType, GenerateType.Video) ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, data.base64], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        imageUrl = _.join(
+          [_.isEqual(sceneGenerateType, GenerateType.Video) ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, data.base64],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        );
         trackOperationCost(40, 0.03);
       } else if (_.every([data.fallbackUrl, _.isEqual(sceneGenerateType, GenerateType.Image)], Boolean)) {
         imageUrl = data.fallbackUrl;
@@ -1369,7 +1482,15 @@ export function usePipelineWizard(props: any) {
       setProject((prev) => {
         const updated = (prev.storyboard || []).map((sc) => {
           if (sc.id === sceneId) {
-            return { ...(plannedScene || sc), prompt: customPrompt, generationPrompt: finalPrompt, assetUrl: imageUrl, assetUrls: [imageUrl], isGenerated: true, assetType: sceneGenerateType };
+            return {
+              ...(plannedScene || sc),
+              prompt: customPrompt,
+              generationPrompt: finalPrompt,
+              assetUrl: imageUrl,
+              assetUrls: [imageUrl],
+              isGenerated: true,
+              assetType: sceneGenerateType,
+            };
           }
           return sc;
         });
@@ -1471,7 +1592,15 @@ export function usePipelineWizard(props: any) {
     setLoading(true);
     setErrorMsg("");
     try {
-      const payload = { originalInput: project.input?.content || "", config: project.config, hookType: hookStrategy, duration: hookDuration, count: hookCount, language: project.config.language || ProjectLanguage.VI, bypassCache: force === true };
+      const payload = {
+        originalInput: project.input?.content || "",
+        config: project.config,
+        hookType: hookStrategy,
+        duration: hookDuration,
+        count: hookCount,
+        language: project.config.language || ProjectLanguage.VI,
+        bypassCache: force === true,
+      };
 
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_HOOKS, payload);
 
@@ -1676,7 +1805,10 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.optimizingPrompts || txt.OPTIMIZING_PROMPTS_FALLBACK);
 
     try {
-      const characterSourceContext = _.join(_.compact([project.input?.content, _.get(project.narrativePlan, "centralQuestion"), _.get(project.narrativePlan, "viewerPromise")]), "\n");
+      const characterSourceContext = _.join(
+        _.compact([project.input?.content, _.get(project.narrativePlan, "centralQuestion"), _.get(project.narrativePlan, "viewerPromise")]),
+        "\n",
+      );
       let optimizedCharacters = _.defaultTo(project.visualConfig.characters, []);
       if (hasStyleContaminatedCharacterLibrary(optimizedCharacters) || hasSourceGenderConflict(characterSourceContext, optimizedCharacters)) {
         const characterResult = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
@@ -2422,7 +2554,13 @@ export function usePipelineWizard(props: any) {
           const generationContext = createSceneGenerationContext(scene, project.visualConfig);
           const prompt = appendImagePromptAspectRatio(generationContext.prompt, project.visualConfig.aspectRatio);
           generationPrompts.set(scene.id, prompt);
-          return { sceneId: scene.id, prompt, referenceImages: generationContext.referenceImages, continuityKey: createSceneContinuityKey(scene, project.visualConfig.characters), generateType: resolveSceneGenerateType(scene.id, configuredGenerateType, videoSceneIds) };
+          return {
+            sceneId: scene.id,
+            prompt,
+            referenceImages: generationContext.referenceImages,
+            continuityKey: createSceneContinuityKey(scene, project.visualConfig.characters),
+            generateType: resolveSceneGenerateType(scene.id, configuredGenerateType, videoSceneIds),
+          };
         });
         const applyResult = (result: ProjectImageResult) => {
           const imageUrl = createProjectImageUrl(result);
@@ -2432,7 +2570,14 @@ export function usePipelineWizard(props: any) {
           setProject((prev) => {
             const updated = _.map(prev.storyboard || [], (sc) => {
               if (_.eq(sc.id, result.sceneId)) {
-                return { ...sc, generationPrompt: generationPrompts.get(sc.id), assetUrl: imageUrl, assetUrls: [imageUrl], isGenerated: true, assetType: result.assetType || GenerateType.Image };
+                return {
+                  ...sc,
+                  generationPrompt: generationPrompts.get(sc.id),
+                  assetUrl: imageUrl,
+                  assetUrls: [imageUrl],
+                  isGenerated: true,
+                  assetType: result.assetType || GenerateType.Image,
+                };
               }
               return sc;
             });
@@ -2458,10 +2603,19 @@ export function usePipelineWizard(props: any) {
             if (result.success) applyResult(result);
             else {
               logger.error(LogEvent.BATCH_SCENE_FAILED, result.sceneId, result.warning);
-              setErrorMsg(t.errorRenderingSceneBatch.replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId).replace(REFACTOR_CONSTANTS.TEMPLATE_ERROR, result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING));
+              setErrorMsg(
+                t.errorRenderingSceneBatch
+                  .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                  .replace(REFACTOR_CONSTANTS.TEMPLATE_ERROR, result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING),
+              );
             }
 
-            setBatchProgressMsg(t.generatingSceneBatch.replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId).replace(REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX, _.toString(completedCount)).replace(REFACTOR_CONSTANTS.TEMPLATE_TOTAL, _.toString(totalToProcess)));
+            setBatchProgressMsg(
+              t.generatingSceneBatch
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX, _.toString(completedCount))
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_TOTAL, _.toString(totalToProcess)),
+            );
           },
         });
       } else {
@@ -2554,7 +2708,19 @@ export function usePipelineWizard(props: any) {
     setIsGeneratingDetailedPrompt(true);
     setErrorMsg("");
     try {
-      const payload = { sceneScript: sceneEditScript, setting: promptSetting, time: promptTime, character: promptCharacter, costume: promptCostume, camera: promptCameraAngle, style: project.visualConfig?.stylePreset, aspectRatio: project.visualConfig.aspectRatio, characterPrompt: project.visualConfig?.characterPrompt, referencePrompt: project.visualConfig?.referencePrompt, currentPrompt: sceneEditPrompt };
+      const payload = {
+        sceneScript: sceneEditScript,
+        setting: promptSetting,
+        time: promptTime,
+        character: promptCharacter,
+        costume: promptCostume,
+        camera: promptCameraAngle,
+        style: project.visualConfig?.stylePreset,
+        aspectRatio: project.visualConfig.aspectRatio,
+        characterPrompt: project.visualConfig?.characterPrompt,
+        referencePrompt: project.visualConfig?.referencePrompt,
+        currentPrompt: sceneEditPrompt,
+      };
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_DETAILED_PROMPT, payload);
       if (!success || data?.error || data?.warning) throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
       if (data.prompt) {
@@ -2587,7 +2753,18 @@ export function usePipelineWizard(props: any) {
       const updated = (prev.storyboard || []).map((sc) => {
         if (sc.id === activeSceneId) {
           const changed = [sc.script !== sceneEditScript, sc.subtitle !== sceneEditSubtitle].some(Boolean);
-          return { ...sc, script: sceneEditScript, subtitle: sceneEditSubtitle, prompt: sceneEditPrompt, textAllowed: sceneEditTextAllowed, cameraMotion: sceneEditMotion, effects: sceneEditFx, transition: sceneEditTransition, audioUrl: changed ? undefined : sc.audioUrl, audioBase64: changed ? undefined : sc.audioBase64 };
+          return {
+            ...sc,
+            script: sceneEditScript,
+            subtitle: sceneEditSubtitle,
+            prompt: sceneEditPrompt,
+            textAllowed: sceneEditTextAllowed,
+            cameraMotion: sceneEditMotion,
+            effects: sceneEditFx,
+            transition: sceneEditTransition,
+            audioUrl: changed ? undefined : sc.audioUrl,
+            audioBase64: changed ? undefined : sc.audioBase64,
+          };
         }
         return sc;
       });
@@ -2963,7 +3140,16 @@ export function usePipelineWizard(props: any) {
     return scenes.map((sc: any) => {
       const align = alignData.alignments.find((a: any) => a.id === sc.id);
       if (align) {
-        return { ...sc, duration: align.duration, startTime: formatTimeHelper(align.start), endTime: formatTimeHelper(align.end), _start: align.start, _end: align.end, audioUrl: undefined, audioBase64: undefined };
+        return {
+          ...sc,
+          duration: align.duration,
+          startTime: formatTimeHelper(align.start),
+          endTime: formatTimeHelper(align.end),
+          _start: align.start,
+          _end: align.end,
+          audioUrl: undefined,
+          audioBase64: undefined,
+        };
       }
       return { ...sc, audioUrl: undefined, audioBase64: undefined };
     });
@@ -3397,6 +3583,242 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  return { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, loading, setLoading, isVoiceDialogOpen, setIsVoiceDialogOpen, selectVoiceForProject, loadingStates, setLoadingStates, errorMsg, setErrorMsg, infoMsg, setInfoMsg, hooksDraft, setHooksDraft, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookCount, setHookCount, hookPosition, setHookPosition, activeSceneId, setActiveSceneId, sceneEditScript, setSceneEditScript, sceneEditSubtitle, setSceneEditSubtitle, sceneEditPrompt, sceneEditTextAllowed, setSceneEditTextAllowed, setSceneEditPrompt, sceneEditMotion, setSceneEditMotion, sceneEditFx, setSceneEditFx, sceneEditTransition, setSceneEditTransition, isDeletingImage, isUploadingImage, promptSetting, setPromptSetting, promptTime, setPromptTime, promptCharacter, setPromptCharacter, promptCostume, setPromptCostume, promptCameraAngle, setPromptCameraAngle, isGeneratingDetailedPrompt, setIsGeneratingDetailedPrompt, showPromptGeneratorPanel, setShowPromptGeneratorPanel, activeSlideIndices, setActiveSlideIndices, copiedAll, setCopiedAll, showGlobalConfig, setShowGlobalConfig, showAdvancedVisualConfig, setShowAdvancedVisualConfig, bulkUploadWarning, setBulkUploadWarning, isBatchGenerating, setIsBatchGenerating, isCancellingBatch, setIsCancellingBatch, batchProgressMsg, setBatchProgressMsg, zoomedImage, setZoomedImage, storyboardPage, setStoryboardPage, scenesPerPage, paginatedStoryboard, getMotionLabel, sandboxConfig, setSandboxConfig, systemLogs, setSystemLogs, showLogsModal, setShowLogsModal, ttsAudioUrl, setTtsAudioUrl, ttsAudioBytes, setTtsAudioBytes, alignmentsLog, setAlignmentsLog, bulkVoiceStatus, setBulkVoiceStatus, audioPreviewRef, voicePlayerSectionRef, systemVoices, setSystemVoices, voiceDropdownOpen, setVoiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceHealth, setVoiceHealth, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, setPlayingVoiceURI, voiceAudioDuration, setVoiceAudioDuration, storyboardSourceMode, setStoryboardSourceMode, isAudioDragging, setIsAudioDragging, step2AudioRef, step2IsPlaying, setStep2IsPlaying, step2CurrentTime, setStep2CurrentTime, step2Duration, setStep2Duration, audioCurrentTime, setAudioCurrentTime, audioDurationState, setAudioDurationState, isPlayingRealAudio, setIsPlayingRealAudio, audioVolume, setAudioVolume, isOfflineRendering, setIsOfflineRendering, offlineRenderProgress, setOfflineRenderProgress, loadingExportType, setLoadingExportType, renderedVideoBlob, setRenderedVideoBlob, playVoicePreview, isPlayingSim, setIsPlayingSim, currentSimTime, setCurrentSimTime, simActiveScene, setSimActiveScene, simAudioRef, lastProjectIdRef, trackOperationCost, handleProcessInputAndConfig, handleTriggerStoryboardSplit, handleRenderSceneImage, handleUploadSceneImage, handleCopyPrompt, handleGenerateHooks, handleCopyHook, handleCopyAllPrompts, handleReferenceImagesUpload, handleExtractStyle, handleApplyStyleToScenes, handleOptimizeAllPrompts, handleBulkUploadImages, handlePrevSlide, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleApplyThumbnailStyle, handleNextSlide, handleDeleteSceneImage, handleDeleteAllSceneImages, handleBatchGenerateAllImages, handleCancelBatchGenerate, openSceneModal, handleGenerateDetailedPrompt, handleSaveSceneEdits, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, handleRenderAllThumbnailImages, handleDownloadVoice, handleRegenerateUnifiedVoice, handleTriggerVoiceGenerate, handleTriggerAllSceneVoices, handleTriggerStoryboardAndVoices, handleAutoGenerateVideo, handleProcessExternalAudio, handleTriggerSEOBoost, onSaveProject, handleOpenExportCenter, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleAnalyzeCharacter, handleCharacterImagesUpload, handleExtractCharacter, handleApplyCharacterToScenes, handleApplyCharacterToThumbnails, theme, currentLang, handleNextStep, handlePrevStep, getVoiceGender, isPremiumVoice, activeCloudPreviewAudio, audioRef, videoRef, simVideoRef, workspaceRef, costTracker, setCostTracker, credits, setCredits, favoriteStyles, setFavoriteStyles, showFavStyles, setShowFavStyles, handleAddFavoriteStyle, handleDeleteFavoriteStyle, handleSaveEditStyle, handleSaveCurrentStyle, handleApplyFavoriteStyle, favoriteVoices, showFavVoices, setShowFavVoices, handleAddFavoriteVoice, handleDeleteFavoriteVoice, handleSaveEditVoice, handleToggleFavoriteVoice };
+  return {
+    t,
+    project,
+    setProject,
+    currentStep,
+    setCurrentStep,
+    leftSidebarOpen,
+    setLeftSidebarOpen,
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    loading,
+    setLoading,
+    isVoiceDialogOpen,
+    setIsVoiceDialogOpen,
+    selectVoiceForProject,
+    loadingStates,
+    setLoadingStates,
+    errorMsg,
+    setErrorMsg,
+    infoMsg,
+    setInfoMsg,
+    hooksDraft,
+    setHooksDraft,
+    hookStrategy,
+    setHookStrategy,
+    hookDuration,
+    setHookDuration,
+    hookCount,
+    setHookCount,
+    hookPosition,
+    setHookPosition,
+    activeSceneId,
+    setActiveSceneId,
+    sceneEditScript,
+    setSceneEditScript,
+    sceneEditSubtitle,
+    setSceneEditSubtitle,
+    sceneEditPrompt,
+    sceneEditTextAllowed,
+    setSceneEditTextAllowed,
+    setSceneEditPrompt,
+    sceneEditMotion,
+    setSceneEditMotion,
+    sceneEditFx,
+    setSceneEditFx,
+    sceneEditTransition,
+    setSceneEditTransition,
+    isDeletingImage,
+    isUploadingImage,
+    promptSetting,
+    setPromptSetting,
+    promptTime,
+    setPromptTime,
+    promptCharacter,
+    setPromptCharacter,
+    promptCostume,
+    setPromptCostume,
+    promptCameraAngle,
+    setPromptCameraAngle,
+    isGeneratingDetailedPrompt,
+    setIsGeneratingDetailedPrompt,
+    showPromptGeneratorPanel,
+    setShowPromptGeneratorPanel,
+    activeSlideIndices,
+    setActiveSlideIndices,
+    copiedAll,
+    setCopiedAll,
+    showGlobalConfig,
+    setShowGlobalConfig,
+    showAdvancedVisualConfig,
+    setShowAdvancedVisualConfig,
+    bulkUploadWarning,
+    setBulkUploadWarning,
+    isBatchGenerating,
+    setIsBatchGenerating,
+    isCancellingBatch,
+    setIsCancellingBatch,
+    batchProgressMsg,
+    setBatchProgressMsg,
+    zoomedImage,
+    setZoomedImage,
+    storyboardPage,
+    setStoryboardPage,
+    scenesPerPage,
+    paginatedStoryboard,
+    getMotionLabel,
+    sandboxConfig,
+    setSandboxConfig,
+    systemLogs,
+    setSystemLogs,
+    showLogsModal,
+    setShowLogsModal,
+    ttsAudioUrl,
+    setTtsAudioUrl,
+    ttsAudioBytes,
+    setTtsAudioBytes,
+    alignmentsLog,
+    setAlignmentsLog,
+    bulkVoiceStatus,
+    setBulkVoiceStatus,
+    audioPreviewRef,
+    voicePlayerSectionRef,
+    systemVoices,
+    setSystemVoices,
+    voiceDropdownOpen,
+    setVoiceDropdownOpen,
+    handleCloseVoiceModal,
+    voiceSearch,
+    setVoiceSearch,
+    voiceTypeFilter,
+    setVoiceTypeFilter,
+    voiceHealth,
+    setVoiceHealth,
+    voiceLangFilter,
+    setVoiceLangFilter,
+    selectedGenderFilter,
+    setSelectedGenderFilter,
+    playingVoiceURI,
+    setPlayingVoiceURI,
+    voiceAudioDuration,
+    setVoiceAudioDuration,
+    storyboardSourceMode,
+    setStoryboardSourceMode,
+    isAudioDragging,
+    setIsAudioDragging,
+    step2AudioRef,
+    step2IsPlaying,
+    setStep2IsPlaying,
+    step2CurrentTime,
+    setStep2CurrentTime,
+    step2Duration,
+    setStep2Duration,
+    audioCurrentTime,
+    setAudioCurrentTime,
+    audioDurationState,
+    setAudioDurationState,
+    isPlayingRealAudio,
+    setIsPlayingRealAudio,
+    audioVolume,
+    setAudioVolume,
+    isOfflineRendering,
+    setIsOfflineRendering,
+    offlineRenderProgress,
+    setOfflineRenderProgress,
+    loadingExportType,
+    setLoadingExportType,
+    renderedVideoBlob,
+    setRenderedVideoBlob,
+    playVoicePreview,
+    isPlayingSim,
+    setIsPlayingSim,
+    currentSimTime,
+    setCurrentSimTime,
+    simActiveScene,
+    setSimActiveScene,
+    simAudioRef,
+    lastProjectIdRef,
+    trackOperationCost,
+    handleProcessInputAndConfig,
+    handleTriggerStoryboardSplit,
+    handleRenderSceneImage,
+    handleUploadSceneImage,
+    handleCopyPrompt,
+    handleGenerateHooks,
+    handleCopyHook,
+    handleCopyAllPrompts,
+    handleReferenceImagesUpload,
+    handleExtractStyle,
+    handleApplyStyleToScenes,
+    handleOptimizeAllPrompts,
+    handleBulkUploadImages,
+    handlePrevSlide,
+    handleThumbnailReferenceImagesUpload,
+    handleExtractThumbnailStyle,
+    handleApplyThumbnailStyle,
+    handleNextSlide,
+    handleDeleteSceneImage,
+    handleDeleteAllSceneImages,
+    handleBatchGenerateAllImages,
+    handleCancelBatchGenerate,
+    openSceneModal,
+    handleGenerateDetailedPrompt,
+    handleSaveSceneEdits,
+    handleTriggerAssetAndThumbnail,
+    handleRenderThumbnailImage,
+    handleRenderAllThumbnailImages,
+    handleDownloadVoice,
+    handleRegenerateUnifiedVoice,
+    handleTriggerVoiceGenerate,
+    handleTriggerAllSceneVoices,
+    handleTriggerStoryboardAndVoices,
+    handleAutoGenerateVideo,
+    handleProcessExternalAudio,
+    handleTriggerSEOBoost,
+    onSaveProject,
+    handleOpenExportCenter,
+    startPlaybackSim,
+    stopPlaybackSim,
+    getSceneImageUrl,
+    handleDownloadJSONProject,
+    handleAnalyzeCharacter,
+    handleCharacterImagesUpload,
+    handleExtractCharacter,
+    handleApplyCharacterToScenes,
+    handleApplyCharacterToThumbnails,
+    theme,
+    currentLang,
+    handleNextStep,
+    handlePrevStep,
+    getVoiceGender,
+    isPremiumVoice,
+    activeCloudPreviewAudio,
+    audioRef,
+    videoRef,
+    simVideoRef,
+    workspaceRef,
+    costTracker,
+    setCostTracker,
+    credits,
+    setCredits,
+    favoriteStyles,
+    setFavoriteStyles,
+    showFavStyles,
+    setShowFavStyles,
+    handleAddFavoriteStyle,
+    handleDeleteFavoriteStyle,
+    handleSaveEditStyle,
+    handleSaveCurrentStyle,
+    handleApplyFavoriteStyle,
+    favoriteVoices,
+    showFavVoices,
+    setShowFavVoices,
+    handleAddFavoriteVoice,
+    handleDeleteFavoriteVoice,
+    handleSaveEditVoice,
+    handleToggleFavoriteVoice,
+  };
 }
 export type PipelineWizardState = ReturnType<typeof usePipelineWizard>;

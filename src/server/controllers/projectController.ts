@@ -1,11 +1,35 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
-import { ProjectKind, VideoProject } from "../../types.js";
+import { GenerateType, ProjectKind, SceneAssetStatus, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from "lodash";
 
-import { REFACTOR_CONSTANTS, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP } from "../../constants/index.js";
+import {
+  REFACTOR_CONSTANTS,
+  ASSETS_DIR_NAME,
+  PROJECTS_DIR_NAME,
+  IMAGES_DIR_NAME,
+  VOICES_DIR_NAME,
+  THUMBNAILS_DIR_NAME,
+  VIDEOS_DIR_NAME,
+  getBackendMsg,
+  ERROR_MESSAGES,
+  COMMON_STRINGS,
+  LOG_MESSAGES,
+  VIETNAMESE_ACCENT_MARKS_REGEX,
+  VIETNAMESE_D_LETTER_REGEX,
+  SAFE_FOLDER_CHARS_REGEX,
+  MULTIPLE_SPACES_REGEX,
+  BASE64_IMAGE_MIME_REGEX,
+  BASE64_VIDEO_MIME_REGEX,
+  ASSET_PROJECT_PATH_REGEX,
+  SecurityConstants,
+  ALIGN_CONFIG,
+  PROJECT_VISUAL_ASSET_CONFIG,
+  REFERENCE_ASSET_GROUP,
+  FLOW_VIDEO_MEDIA_CONFIG,
+} from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -25,7 +49,14 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
 export function getSafeFolderName(name: string): string {
   if (_.isEmpty(name)) return COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 
-  const safeName = name.normalize(COMMON_STRINGS.NORMALIZATION_FORM).replace(VIETNAMESE_ACCENT_MARKS_REGEX, "").replace(VIETNAMESE_D_LETTER_REGEX, "d").replace(SAFE_FOLDER_CHARS_REGEX, "").trim().replace(MULTIPLE_SPACES_REGEX, "_").toUpperCase();
+  const safeName = name
+    .normalize(COMMON_STRINGS.NORMALIZATION_FORM)
+    .replace(VIETNAMESE_ACCENT_MARKS_REGEX, "")
+    .replace(VIETNAMESE_D_LETTER_REGEX, "d")
+    .replace(SAFE_FOLDER_CHARS_REGEX, "")
+    .trim()
+    .replace(MULTIPLE_SPACES_REGEX, "_")
+    .toUpperCase();
 
   return safeName || COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 }
@@ -318,12 +349,64 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   });
 }
 
+const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
+  if (!_.isArray(project.storyboard)) return project;
+  let changed = false;
+  const storyboard = _.map(project.storyboard, (scene) => {
+    if (!_.isEqual(scene.assetType, GenerateType.Video) || _.isEmpty(scene.assetUrl)) return scene;
+    const assetUrl = _.toString(scene.assetUrl);
+    const relativeAssetPath = _.trimStart(_.first(_.split(assetUrl, "?")) || "", "/\\");
+    const resolvedAssetPath = path.resolve(getDataDirectory(), relativeAssetPath);
+    const projectsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
+    const isInsideProjectsRoot = !path.relative(projectsRoot, resolvedAssetPath).startsWith("..") && !path.isAbsolute(path.relative(projectsRoot, resolvedAssetPath));
+    const hasValidLocalFile =
+      FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(assetUrl) &&
+      isInsideProjectsRoot &&
+      fs.existsSync(resolvedAssetPath) &&
+      _.gte(fs.statSync(resolvedAssetPath).size, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES);
+    if (hasValidLocalFile) return scene;
+    if (isInsideProjectsRoot && fs.existsSync(resolvedAssetPath) && fs.statSync(resolvedAssetPath).isFile()) {
+      try {
+        fs.unlinkSync(resolvedAssetPath);
+      } catch (error) {
+        appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${resolvedAssetPath}`, error);
+      }
+    }
+    changed = true;
+    return { ...scene, assetUrl: undefined, assetUrls: [], assetStatus: SceneAssetStatus.Failed, assetError: FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR };
+  });
+  if (!project.generationCheckpoint) return changed ? { ...project, storyboard } : project;
+  const completedSceneIds = _.map(
+    _.filter(storyboard, (scene) => !_.isEmpty(scene.assetUrl)),
+    "id",
+  );
+  const pendingSceneIds = _.map(
+    _.filter(storyboard, (scene) => _.isEmpty(scene.assetUrl)),
+    "id",
+  );
+  const failedSceneIds = _.map(
+    _.filter(storyboard, (scene) => _.isEqual(scene.assetStatus, SceneAssetStatus.Failed)),
+    "id",
+  );
+  return {
+    ...project,
+    storyboard,
+    generationCheckpoint: { ...project.generationCheckpoint, completedSceneIds, pendingSceneIds, failedSceneIds },
+  };
+};
+
 function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   if (!newProject.allowBulkDeleteImages) {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
       if (_.get(oldScene, "assetUrl") && !_.get(newScene, "assetUrl")) {
-        return { ...newScene, assetUrl: oldScene.assetUrl, assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl], assetName: newScene.assetName || oldScene?.assetName, assetType: newScene.assetType || oldScene?.assetType };
+        return {
+          ...newScene,
+          assetUrl: oldScene.assetUrl,
+          assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl],
+          assetName: newScene.assetName || oldScene?.assetName,
+          assetType: newScene.assetType || oldScene?.assetType,
+        };
       }
       return newScene;
     });
@@ -534,7 +617,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, 
 async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
   try {
     const cleanedProjects = convertBase64AssetsToFiles([project]);
-    const cleanedProject = cleanedProjects[0];
+    const cleanedProject = validatePersistedVideoAssets(cleanedProjects[0]);
     await saveProjectDetailToDb(cleanedProject);
     return cleanedProject;
   } catch (error) {
@@ -576,7 +659,12 @@ const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<
     }
     if (!inferredKind) continue;
 
-    const suffix = inferredKind === ProjectKind.Studio ? COMMON_STRINGS.STUDIO_CHILD_SUFFIX : inferredKind === ProjectKind.Cinematic ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
+    const suffix =
+      inferredKind === ProjectKind.Studio
+        ? COMMON_STRINGS.STUDIO_CHILD_SUFFIX
+        : inferredKind === ProjectKind.Cinematic
+          ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX
+          : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
     const parentName = _.trim(project.name.slice(0, -suffix.length));
     const inferredParent = rootProjectsByName[parentName];
     const targetParentId = project.parentId || inferredParent?.id;
@@ -705,10 +793,18 @@ export const updateProject = async (request: Request, response: Response) => {
         if (_.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard)) newProject.storyboard = oldProject.storyboard;
         if (_.isEmpty(newProject.thumbnails) && !_.isEmpty(oldProject.thumbnails)) newProject.thumbnails = oldProject.thumbnails;
         if (_.isEmpty(newProject.renderedVideoUrl) && !_.isEmpty(oldProject.renderedVideoUrl)) newProject.renderedVideoUrl = oldProject.renderedVideoUrl;
-        if (_.isEmpty(newProject.voiceConfig?.audioUrl) && _.isEmpty(newProject.voiceConfig?.audioBase64) && (!_.isEmpty(oldProject.voiceConfig?.audioUrl) || !_.isEmpty(oldProject.voiceConfig?.audioBase64))) newProject.voiceConfig = oldProject.voiceConfig;
+        if (
+          _.isEmpty(newProject.voiceConfig?.audioUrl) &&
+          _.isEmpty(newProject.voiceConfig?.audioBase64) &&
+          (!_.isEmpty(oldProject.voiceConfig?.audioUrl) || !_.isEmpty(oldProject.voiceConfig?.audioBase64))
+        )
+          newProject.voiceConfig = oldProject.voiceConfig;
       }
 
-      const failedBeforeProducingStoryboard = _.includes([REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED], newProject.status) && _.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard);
+      const failedBeforeProducingStoryboard =
+        _.includes([REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED], newProject.status) &&
+        _.isEmpty(newProject.storyboard) &&
+        !_.isEmpty(oldProject.storyboard);
       if (failedBeforeProducingStoryboard && !newProject.isRecreatingStoryboard) {
         newProject = {
           ...newProject,

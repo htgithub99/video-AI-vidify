@@ -2,7 +2,7 @@ import { cn } from "../lib/utils";
 import { useState, useEffect, FC } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { API_ROUTES, STORAGE_KEYS, SETTINGS_VIEW_TEXTS, REFACTOR_CONSTANTS } from "../constants";
-import { Key, Users, Save, Plus, X, LogOut, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
+import { Key, Users, Save, Plus, X, LogOut, KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { storageUtils } from "../lib/storage";
@@ -14,8 +14,11 @@ import _ from "lodash";
 import { jsonUtils } from "../lib/json";
 import { toast } from "sonner";
 
+import { SettingsSkeleton } from "./ui/Skeleton";
+
 interface SettingsViewProps {
   currentLang: Lang;
+  isLoading?: boolean;
 }
 
 interface ApiKeyFieldProps {
@@ -30,7 +33,15 @@ const ApiKeyField: FC<ApiKeyFieldProps> = ({ label, value, placeholder, onChange
     <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider truncate")} title={label}>
       {label}
     </label>
-    <input type={SecurityConstants.INPUT_TYPE_TEXT} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cn("w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500/80 rounded-xl p-2.5 text-xs text-slate-100 font-mono focus:outline-none transition-all")} />
+    <input
+      type={SecurityConstants.INPUT_TYPE_TEXT}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cn(
+        "w-full h-10 bg-slate-955/90 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 text-xs text-slate-100 font-mono focus:outline-none transition-all",
+      )}
+    />
   </div>
 );
 
@@ -54,10 +65,11 @@ const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) =
   </div>
 );
 
-export default function SettingsView({ currentLang }: SettingsViewProps) {
+export default function SettingsView({ currentLang, isLoading = false }: SettingsViewProps) {
+  const { licenseKey, licenseInfo, logoutLicense } = useLicense();
+
   const t = translations[currentLang];
   const texts = _.get(SETTINGS_VIEW_TEXTS, currentLang, SETTINGS_VIEW_TEXTS.en);
-  const { licenseKey, licenseInfo, logoutLicense } = useLicense();
   const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
 
   const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
@@ -65,6 +77,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [groqKey, setGroqKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [isSavingKeys, setIsSavingKeys] = useState(false);
+
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [newEmail, setNewEmail] = useState(SecurityConstants.EMPTY_STRING);
+  const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
+  const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
 
   useEffect(() => {
     const migrateKeys = async () => {
@@ -81,7 +98,6 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     void migrateKeys();
   }, []);
 
-  const [accounts, setAccounts] = useState<any[]>([]);
   useEffect(() => {
     const loadAccounts = async () => {
       try {
@@ -101,9 +117,9 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     void loadAccounts();
   }, []);
 
-  const [newEmail, setNewEmail] = useState(SecurityConstants.EMPTY_STRING);
-  const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
-  const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
+  if (!licenseInfo || isLoading) {
+    return <SettingsSkeleton />;
+  }
 
   const handleSaveKeys = async () => {
     setIsSavingKeys(true);
@@ -183,7 +199,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const systemShort = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_VI;
 
   return (
-    <div className={cn("flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left")}>
+    <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 space-y-6 text-left")}>
       <div className={cn("glass-card p-6 sm:p-7 rounded-3xl shadow-lg flex items-center justify-between gap-4 relative overflow-hidden")}>
         <div className={cn("absolute top-0 right-0 w-72 h-72 bg-rose-500/5 rounded-full blur-3xl pointer-events-none")} />
         <div className={cn("flex items-center gap-4 relative z-10 min-w-0")}>
@@ -191,9 +207,12 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             <KeyRound className={cn("w-7 h-7")} />
           </div>
           <div className={cn("min-w-0")}>
-            <h2 className={cn("text-base font-extrabold tracking-tight text-white uppercase font-mono flex items-center gap-2 truncate")} title={licenseTooltip}>
+            <h2 className={cn("text-base font-extrabold tracking-tight text-slate-100 uppercase font-mono flex items-center gap-2 truncate")} title={licenseTooltip}>
               <span className={cn("truncate")}>{licenseTitle}</span>
-              <span className={cn("px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black tracking-normal flex items-center gap-1 shrink-0")}>
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black tracking-normal flex items-center gap-1 shrink-0",
+                )}>
                 <ShieldCheck className={cn("w-3 h-3")} />
                 Active
               </span>
@@ -237,8 +256,17 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           </div>
 
           <div className={cn("pt-4 mt-4 border-t border-slate-800/80 flex justify-end")}>
-            <Button variant={SecurityConstants.BTN_VARIANT_PRIMARY} onClick={handleSaveKeys} disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))} title={texts.SAVE_BTN_TOOLTIP} className={cn("rounded-xl flex items-center gap-2 font-bold")}>
-              {isSavingKeys ? <div className={cn("w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin")} /> : <Save className={cn("w-3.5 h-3.5 shrink-0")} />}
+            <Button
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
+              onClick={handleSaveKeys}
+              disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))}
+              title={texts.SAVE_BTN_TOOLTIP}
+              className={cn("rounded-xl flex items-center gap-2 font-bold")}>
+              {isSavingKeys ? (
+                <div className={cn("w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin")} />
+              ) : (
+                <Save className={cn("w-3.5 h-3.5 shrink-0")} />
+              )}
               <span className={cn("truncate")}>{texts.SAVE_BTN}</span>
             </Button>
           </div>
@@ -265,17 +293,49 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
           <div className={cn("space-y-3 flex-1 flex flex-col")}>
             <div className={cn("grid grid-cols-2 gap-2")}>
-              <input type={SecurityConstants.INPUT_TYPE_TEXT} placeholder={texts.EMAIL_PLACEHOLDER} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={cn("bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500/80")} />
-              <input type={SecurityConstants.INPUT_TYPE_PASSWORD} placeholder={texts.PWD_PLACEHOLDER} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={cn("bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500/80")} />
+              <input
+                type={SecurityConstants.INPUT_TYPE_TEXT}
+                placeholder={texts.EMAIL_PLACEHOLDER}
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className={cn("h-10 bg-slate-955/90 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 outline-none focus:border-blue-500/80")}
+              />
+              <input
+                type={SecurityConstants.INPUT_TYPE_PASSWORD}
+                placeholder={texts.PWD_PLACEHOLDER}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className={cn("h-10 bg-slate-955/90 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 outline-none focus:border-blue-500/80")}
+              />
             </div>
             <div className={cn("flex gap-2")}>
-              <input type={SecurityConstants.INPUT_TYPE_TEXT} placeholder={recoveryPlaceholder} title={recoveryTooltip} value={newRecovery} onChange={(e) => setNewRecovery(e.target.value)} className={cn("bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500/80 flex-1")} />
-              <Button variant="primary" onClick={handleAddAccount} disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))} title={texts.ADD_BTN_TOOLTIP} className={cn("rounded-xl px-4 disabled:opacity-50 shrink-0")}>
+              <input
+                type={SecurityConstants.INPUT_TYPE_TEXT}
+                placeholder={recoveryPlaceholder}
+                title={recoveryTooltip}
+                value={newRecovery}
+                onChange={(e) => setNewRecovery(e.target.value)}
+                className={cn("h-10 bg-slate-955/90 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 outline-none focus:border-blue-500/80 flex-1")}
+              />
+              <Button
+                variant="primary"
+                onClick={handleAddAccount}
+                disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))}
+                title={texts.ADD_BTN_TOOLTIP}
+                className={cn("h-10 rounded-xl px-4 disabled:opacity-50 shrink-0 flex items-center justify-center")}>
                 <Plus className={cn("w-4 h-4")} />
               </Button>
             </div>
 
-            <div className={cn("mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar")}>{_.isEmpty(accounts) ? <div className={cn("text-center text-xs text-slate-500 py-6 italic truncate")}>{texts.NO_ACCOUNTS}</div> : _.map(accounts, (acc) => <AccountItem key={acc.id} email={_.get(acc, SecurityConstants.PROP_EMAIL)} hiddenPwdText={texts.HIDDEN_PWD} onRemove={() => handleRemoveAccount(acc.id)} />)}</div>
+            <div className={cn("mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar")}>
+              {_.isEmpty(accounts) ? (
+                <div className={cn("text-center text-xs text-slate-500 py-6 italic truncate")}>{texts.NO_ACCOUNTS}</div>
+              ) : (
+                _.map(accounts, (acc) => (
+                  <AccountItem key={acc.id} email={_.get(acc, SecurityConstants.PROP_EMAIL)} hiddenPwdText={texts.HIDDEN_PWD} onRemove={() => handleRemoveAccount(acc.id)} />
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

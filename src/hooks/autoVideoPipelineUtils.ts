@@ -32,9 +32,16 @@ export interface PipelineInvalidationState {
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;
 
-export const preserveInterruptedStoryboardCheckpoint = (project: VideoProject | null, config: PipelineConfig, invalidationState: PipelineInvalidationState): PipelineInvalidationState => {
+export const preserveInterruptedStoryboardCheckpoint = (
+  project: VideoProject | null,
+  config: PipelineConfig,
+  invalidationState: PipelineInvalidationState,
+): PipelineInvalidationState => {
   const hasReusableSceneAssets = !_.isEmpty(project?.storyboard) && _.every(project?.storyboard, (scene) => !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls));
-  const canResumeCheckpoint = _.every([config.resumeMode, !config.forceRegenerateScenes, !invalidationState.regenerateScript, hasReusableSceneAssets, _.includes(INTERRUPTED_PIPELINE_STATUSES, project?.status)], Boolean);
+  const canResumeCheckpoint = _.every(
+    [config.resumeMode, !config.forceRegenerateScenes, !invalidationState.regenerateScript, hasReusableSceneAssets, _.includes(INTERRUPTED_PIPELINE_STATUSES, project?.status)],
+    Boolean,
+  );
   return canResumeCheckpoint ? { ...invalidationState, regenerateStoryboard: false, regenerateSceneAssets: false } : invalidationState;
 };
 
@@ -58,7 +65,14 @@ export interface ResolvedTargetProject {
   existingTargetProject: VideoProject | null;
 }
 
-export const resolveTargetProject = (projects: VideoProject[], selectedProjectId: string | null | undefined, activeProject: VideoProject | null, projectName: string, scriptContent: string, cinematicMode = false): ResolvedTargetProject => {
+export const resolveTargetProject = (
+  projects: VideoProject[],
+  selectedProjectId: string | null | undefined,
+  activeProject: VideoProject | null,
+  projectName: string,
+  scriptContent: string,
+  cinematicMode = false,
+): ResolvedTargetProject => {
   const selectedProject = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
   const targetChildSuffix = cinematicMode ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
   const selectedAutoProject = selectedProject
@@ -85,12 +99,23 @@ export const resolveTargetProject = (projects: VideoProject[], selectedProjectId
   return { selectedAutoProject, existingTargetProject };
 };
 
-export const getReferenceChangeState = (project: VideoProject | null, styleImages: string[], sceneImages: string[], thumbnailImages: string[], characterImages: string[]): ReferenceChangeState => {
+export const getReferenceChangeState = (
+  project: VideoProject | null,
+  styleImages: string[],
+  sceneImages: string[],
+  thumbnailImages: string[],
+  characterImages: string[],
+): ReferenceChangeState => {
   const styleChanged = !_.isEqual(styleImages, _.defaultTo(project?.visualConfig?.styleReferenceImages, []));
   const sceneChanged = !_.isEqual(sceneImages, _.defaultTo(project?.visualConfig?.sceneReferenceImages, []));
   const thumbnailChanged = !_.isEqual(thumbnailImages, _.defaultTo(project?.visualConfig?.thumbnailReferenceImages, []));
   const characterChanged = !_.isEqual(characterImages, _.defaultTo(project?.visualConfig?.characters?.[0]?.images, []));
-  return { shouldRegenerateStoryboard: styleChanged || characterChanged, hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]), shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged, shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged };
+  return {
+    shouldRegenerateStoryboard: styleChanged || characterChanged,
+    hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]),
+    shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged,
+    shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged,
+  };
 };
 
 const buildComparisonConfigs = (config: PipelineConfig) => ({
@@ -106,7 +131,14 @@ const buildComparisonConfigs = (config: PipelineConfig) => ({
     writingStyle: config.writingStyle,
     splitStrategy: config.splitStrategy,
   },
-  voiceConfig: { provider: config.voiceProvider, voiceURI: config.voiceURI, voiceName: config.voiceName, speed: config.voiceSpeed, pitch: config.voicePitch, volume: config.voiceVolume },
+  voiceConfig: {
+    provider: config.voiceProvider,
+    voiceURI: config.voiceURI,
+    voiceName: config.voiceName,
+    speed: config.voiceSpeed,
+    pitch: config.voicePitch,
+    volume: config.voiceVolume,
+  },
   visualConfig: {
     generationMode: config.generationMode,
     imageGeneratorEngine: config.imageGeneratorEngine,
@@ -131,11 +163,26 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
 
   const { projectConfig: currentProjectConfig, voiceConfig: currentVoiceConfig, visualConfig: currentVisualConfig } = buildComparisonConfigs(config);
   const inputChanged = !_.isEqual(project.input?.type, config.inputType) || !_.isEqual(_.trim(project.input?.content), _.trim(config.scriptContent));
-  const scriptConfigChanged = !_.isEqual(_.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS), _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS));
-  const storyboardConfigChanged = !_.isEqual(_.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS), _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS));
-  const storyboardVisualConfigChanged = !_.isEqual(_.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS), _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS));
-  const voiceConfigChanged = !_.isEqual(_.pick(project.voiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS), _.pick(currentVoiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS));
-  const visualConfigChanged = !_.isEqual(_.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS), _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS));
+  const scriptConfigChanged = !_.isEqual(
+    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
+    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
+  );
+  const storyboardConfigChanged = !_.isEqual(
+    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
+    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
+  );
+  const storyboardVisualConfigChanged = !_.isEqual(
+    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
+    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
+  );
+  const voiceConfigChanged = !_.isEqual(
+    _.pick(project.voiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
+    _.pick(currentVoiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
+  );
+  const visualConfigChanged = !_.isEqual(
+    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
+    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
+  );
   const hasScript = !_.isEmpty(project.scriptRewritten),
     hasStoryboard = !_.isEmpty(project.storyboard),
     hasVoice = !_.isEmpty(project.voiceConfig?.audioUrl) || !_.isEmpty(project.voiceConfig?.audioBase64);
@@ -159,11 +206,41 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
     regenerateSceneAssets = false;
   }
 
-  return { regenerateScript, regenerateStoryboard, regenerateVoice, regenerateSceneAssets, regenerateSeo: regenerateScript, regenerateThumbnails: regenerateScript || Boolean(config.forceRegenerateScenes) || references.shouldRegenerateThumbnails || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount) || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode) || !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode) || !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode) || !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle) };
+  return {
+    regenerateScript,
+    regenerateStoryboard,
+    regenerateVoice,
+    regenerateSceneAssets,
+    regenerateSeo: regenerateScript,
+    regenerateThumbnails:
+      regenerateScript ||
+      Boolean(config.forceRegenerateScenes) ||
+      references.shouldRegenerateThumbnails ||
+      !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount) ||
+      !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode) ||
+      !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode) ||
+      !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode) ||
+      !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle),
+  };
 };
 
-export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean => _.every(scenes, (scene, index) => _.every([!_.isEmpty(scene.startTime), !_.isEmpty(scene.endTime), !_.isUndefined(scene.duration), _.isFinite(scene._start), _.isFinite(scene._end), _.gte(_.toNumber(scene._end), _.toNumber(scene._start)), index === 0 || Math.abs(_.toNumber(scene._start) - _.toNumber(scenes[index - 1]._end)) < ALIGNMENT_CONFIG.EPSILON_SECONDS, hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio))]));
+export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean =>
+  _.every(scenes, (scene, index) =>
+    _.every([
+      !_.isEmpty(scene.startTime),
+      !_.isEmpty(scene.endTime),
+      !_.isUndefined(scene.duration),
+      _.isFinite(scene._start),
+      _.isFinite(scene._end),
+      _.gte(_.toNumber(scene._end), _.toNumber(scene._start)),
+      index === 0 || Math.abs(_.toNumber(scene._start) - _.toNumber(scenes[index - 1]._end)) < ALIGNMENT_CONFIG.EPSILON_SECONDS,
+      hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio)),
+    ]),
+  );
 
-export const applyGeneratedMediaLanguage = (prompt: string, directive: string): string => (_.includes(prompt, AUTO_VIDEO_PIPELINE_CONFIG.GENERATED_MEDIA_LANGUAGE_MARKER) ? prompt : _.join([prompt, directive], REFACTOR_CONSTANTS.AVG_BLANK));
-export const calculateSceneDuration = (scenes: StoryboardScene[]): number => _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
-export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = "auto"): string => _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);
+export const applyGeneratedMediaLanguage = (prompt: string, directive: string): string =>
+  _.includes(prompt, AUTO_VIDEO_PIPELINE_CONFIG.GENERATED_MEDIA_LANGUAGE_MARKER) ? prompt : _.join([prompt, directive], REFACTOR_CONSTANTS.AVG_BLANK);
+export const calculateSceneDuration = (scenes: StoryboardScene[]): number =>
+  _.sumBy(scenes, (scene) => _.max([0, (_.toNumber(scene.duration) || 0) - (_.toNumber(scene.sourceTrimStartSeconds) || 0) - (_.toNumber(scene.sourceTrimEndSeconds) || 0)]) || 0);
+export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = "auto"): string =>
+  _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);

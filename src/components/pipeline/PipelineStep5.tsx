@@ -253,22 +253,41 @@ export default function PipelineStep5(props: PipelineWizardState) {
               <div className={cn("flex items-center gap-2")}>
                 <Tooltip content="Nhập danh sách Prompts, mỗi prompt một dòng. AI sẽ đọc và sinh ra ảnh/video hàng loạt." position="bottom" align="start">
                   <span className={cn("flex items-center gap-2 cursor-help")}>
-                    <FileText className={cn("w-4 h-4 text-rose-500 shrink-0")} /> <h4 className={cn("font-bold text-slate-100 text-xs font-mono uppercase tracking-wider")}>{t.node6_prompts_list}</h4>
+                    <FileText className={cn("w-4 h-4 text-rose-500 shrink-0")} />{" "}
+                    <h4 className={cn("font-bold text-slate-100 text-xs font-mono uppercase tracking-wider")}>{t.node6_prompts_list}</h4>
                   </span>
                 </Tooltip>
               </div>
               {!isRunning && (
                 <div className={cn("flex gap-2")}>
-                  <Button variant="outline" size="xs" onClick={handlePasteSamples} className={cn("font-mono text-rose-400 border-slate-700 font-bold")} title={t.pasteSamplePrompts}>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={handlePasteSamples}
+                    className={cn("font-mono text-rose-400 border-slate-700 font-bold")}
+                    title={t.pasteSamplePrompts}>
                     {t.node6_sample_prompts}
                   </Button>
-                  <Button variant="outline" size="xs" onClick={handleClearAll} className={cn("text-slate-550 hover:text-rose-400 hover:bg-rose-955/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none")} title={t.clearAll}>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={handleClearAll}
+                    className={cn("text-slate-550 hover:text-rose-400 hover:bg-rose-955/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none")}
+                    title={t.clearAll}>
                     <Trash className={cn("w-2.5 h-2.5")} />
                   </Button>
                 </div>
               )}
             </div>
-            <textarea disabled={isRunning} value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={t.node6_placeholder} className={cn("w-full flex-1 min-h-[180px] bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-3.5 rounded-xl text-xs leading-relaxed focus:outline-none transition-all font-sans resize-none")} />
+            <textarea
+              disabled={isRunning}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={t.node6_placeholder}
+              className={cn(
+                "w-full flex-1 min-h-[180px] bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-3.5 rounded-xl text-xs leading-relaxed focus:outline-none transition-all font-sans resize-none",
+              )}
+            />
             <div className={cn("flex items-center justify-between text-[10px] font-mono text-slate-500")}>
               <span>{t.node6_detected_prompts.replace("{count}", String(prompts.length))}</span>
             </div>
@@ -290,7 +309,13 @@ export default function PipelineStep5(props: PipelineWizardState) {
             )}
 
             <Tooltip content="Tải về toàn bộ thư mục chứa các assets đã render thành công." position="top" align="end">
-              <Button variant="secondary" size="lg" onClick={handleDownloadAllZip} disabled={!_.some(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS)} className={cn("px-4 relative z-20")} title={t.node6_zip_tooltip}>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={handleDownloadAllZip}
+                disabled={!_.some(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS)}
+                className={cn("px-4 relative z-20")}
+                title={t.node6_zip_tooltip}>
                 <Download className={cn("w-4 h-4")} />
               </Button>
             </Tooltip>
@@ -337,9 +362,15 @@ export default function PipelineStep5(props: PipelineWizardState) {
                   {_.map(prompts, (item, idx) => {
                     const isCurrent = idx === currentIndex;
                     return (
-                      <div key={item.id} className={cn(`border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : _.includes([PromptStatus.SUCCESS], item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : _.includes([PromptStatus.ERROR], item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"}`)}>
+                      <div
+                        key={item.id}
+                        className={cn(
+                          `border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : _.includes([PromptStatus.SUCCESS], item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : _.includes([PromptStatus.ERROR], item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"}`,
+                        )}>
                         <div className={cn("flex items-center justify-between mb-2")}>
-                          <span className={cn("text-[9px] font-mono font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-slate-450 uppercase tracking-widest")}>{t.node6_prompt_label.replace("{id}", String(item.id))}</span>
+                          <span className={cn("text-[9px] font-mono font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-slate-450 uppercase tracking-widest")}>
+                            {t.node6_prompt_label.replace("{id}", String(item.id))}
+                          </span>
 
                           <div className={cn("flex items-center gap-1.5")}>
                             {item.elapsedTime !== undefined && <span className={cn("text-[8px] font-mono text-slate-500")}>{item.elapsedTime}s</span>}
@@ -349,8 +380,16 @@ export default function PipelineStep5(props: PipelineWizardState) {
                                 <span className={cn("relative inline-flex rounded-full h-2 w-2 bg-rose-500")}></span>
                               </span>
                             )}
-                            {_.includes([PromptStatus.SUCCESS], item.status) && <span className={cn("bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15")}>{t.node6_badge_done}</span>}
-                            {_.includes([PromptStatus.ERROR], item.status) && <span className={cn("bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15")}>{t.node6_badge_error}</span>}
+                            {_.includes([PromptStatus.SUCCESS], item.status) && (
+                              <span className={cn("bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15")}>
+                                {t.node6_badge_done}
+                              </span>
+                            )}
+                            {_.includes([PromptStatus.ERROR], item.status) && (
+                              <span className={cn("bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15")}>
+                                {t.node6_badge_error}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -364,14 +403,34 @@ export default function PipelineStep5(props: PipelineWizardState) {
                             </div>
                           ) : _.includes([PromptStatus.SUCCESS], item.status) && item.resultBase64 ? (
                             <>
-                              {currentGenerateType === GenerateType.Video ? <video src={item.resultUrl} controls className={cn("w-full h-full object-cover")} /> : <img src={item.resultUrl} alt={t.node6_prompt_label.replace("{id}", String(item.id))} className={cn("w-full h-full object-cover")} />}
+                              {currentGenerateType === GenerateType.Video ? (
+                                <video src={item.resultUrl} controls className={cn("w-full h-full object-cover")} />
+                              ) : (
+                                <img src={item.resultUrl} alt={t.node6_prompt_label.replace("{id}", String(item.id))} className={cn("w-full h-full object-cover")} />
+                              )}
 
                               {currentGenerateType === GenerateType.Image && (
-                                <div className={cn("absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3")}>
-                                  <Button type="button" variant="ghost" onClick={() => handleZoomResult(item)} className={cn("p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow-none h-auto w-auto transition-all")} title={t.Image_Lightbox_Preview}>
+                                <div
+                                  className={cn(
+                                    "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3",
+                                  )}>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => handleZoomResult(item)}
+                                    className={cn(
+                                      "p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow-none h-auto w-auto transition-all",
+                                    )}
+                                    title={t.Image_Lightbox_Preview}>
                                     <Eye className={cn("w-4 h-4")} />
                                   </Button>
-                                  <a href={item.resultUrl} download={`${COMMON_STRINGS.ARTWORK_PREFIX}${item.id}.${COMMON_STRINGS.JPG_EXT}`} className={cn("p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all")} title={t.download}>
+                                  <a
+                                    href={item.resultUrl}
+                                    download={`${COMMON_STRINGS.ARTWORK_PREFIX}${item.id}.${COMMON_STRINGS.JPG_EXT}`}
+                                    className={cn(
+                                      "p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all",
+                                    )}
+                                    title={t.download}>
                                     <Download className={cn("w-4 h-4")} />
                                   </a>
                                 </div>

@@ -11,7 +11,11 @@ const runFrameExtraction = (inputPath: string, outputPattern: string): Promise<v
   new Promise((resolve, reject) => {
     const bundledFfmpeg = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
     const executable = fs.existsSync(bundledFfmpeg) ? bundledFfmpeg : VISUAL_QA_MEDIA_CONFIG.FFMPEG_FALLBACK_COMMAND;
-    const process = spawn(executable, ["-y", "-i", inputPath, "-vf", VISUAL_QA_MEDIA_CONFIG.FRAME_FILTER, "-frames:v", _.toString(VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES), outputPattern], { windowsHide: true, stdio: "ignore" });
+    const process = spawn(
+      executable,
+      ["-y", "-i", inputPath, "-vf", VISUAL_QA_MEDIA_CONFIG.FRAME_FILTER, "-frames:v", _.toString(VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES), outputPattern],
+      { windowsHide: true, stdio: "ignore" },
+    );
     process.once("error", reject);
     process.once("exit", (code) => (_.isEqual(code, 0) ? resolve() : reject(new Error(VISUAL_QA_MEDIA_CONFIG.EXTRACTION_FAILED))));
   });
@@ -26,10 +30,13 @@ const extractVideoFrames = async (assetUrl: string): Promise<EncodedImageAsset[]
     if (dataUrlMatch) fs.writeFileSync(inputPath, Buffer.from(dataUrlMatch[2], REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding));
     const outputPattern = path.join(tempDir, VISUAL_QA_MEDIA_CONFIG.FRAME_FILE_PATTERN);
     await runFrameExtraction(inputPath, outputPattern);
-    return _.map(_.take(_.sortBy(_.filter(fs.readdirSync(tempDir), (file) => _.endsWith(file, VISUAL_QA_MEDIA_CONFIG.FRAME_EXTENSION))), VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES), (file) => ({
-      mimeType: VISUAL_QA_MEDIA_CONFIG.FRAME_MIME_TYPE,
-      data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
-    }));
+    return _.map(
+      _.take(_.sortBy(_.filter(fs.readdirSync(tempDir), (file) => _.endsWith(file, VISUAL_QA_MEDIA_CONFIG.FRAME_EXTENSION))), VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES),
+      (file) => ({
+        mimeType: VISUAL_QA_MEDIA_CONFIG.FRAME_MIME_TYPE,
+        data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
+      }),
+    );
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

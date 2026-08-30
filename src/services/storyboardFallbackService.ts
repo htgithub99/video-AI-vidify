@@ -1,5 +1,14 @@
 import _ from "lodash";
-import { DEFAULT_SCENE_CAMERA_MOTION, DEFAULT_SCENE_EFFECTS, DEFAULT_SCENE_LIGHTING_EFFECT, DEFAULT_SCENE_TRANSITION, IMAGE_PROMPT_METADATA_CONFIG, SecurityConstants, SplitStrategy, STORYBOARD_FALLBACK_CONFIG } from "../constants";
+import {
+  DEFAULT_SCENE_CAMERA_MOTION,
+  DEFAULT_SCENE_EFFECTS,
+  DEFAULT_SCENE_LIGHTING_EFFECT,
+  DEFAULT_SCENE_TRANSITION,
+  IMAGE_PROMPT_METADATA_CONFIG,
+  SecurityConstants,
+  SplitStrategy,
+  STORYBOARD_FALLBACK_CONFIG,
+} from "../constants";
 import { FANTASY_LEAK_REGEX, FANTASY_STORY_REGEX } from "../constants/regexes";
 import { smartSplitSentences, splitSentenceSafely } from "../lib/textProcessor";
 import { Chapter, ShotPurpose, StoryboardScene, VisualBible } from "../types";
@@ -24,8 +33,14 @@ const isUnsupportedFantasyLeak = (value: unknown, script: string): boolean => FA
 const createNarrationSegments = (script: string, splitStrategy: SplitStrategy): string[] => {
   const maxWords = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy) ? STORYBOARD_FALLBACK_CONFIG.SHORT_SCENE_MAX_WORDS : STORYBOARD_FALLBACK_CONFIG.LONG_SCENE_MAX_WORDS;
   const completeSentences = smartSplitSentences(script);
-  const sentenceFragments = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy) ? _.flatMap(completeSentences, (sentence) => splitSentenceSafely(sentence, maxWords)) : completeSentences;
-  const sentenceCount = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy) ? SecurityConstants.DEFAULT_AMOUNT : _.includes(PARAGRAPH_SPLIT_STRATEGIES, splitStrategy) ? STORYBOARD_FALLBACK_CONFIG.PARAGRAPH_SCENE_SENTENCE_COUNT : STORYBOARD_FALLBACK_CONFIG.STANDARD_SCENE_SENTENCE_COUNT;
+  const sentenceFragments = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy)
+    ? _.flatMap(completeSentences, (sentence) => splitSentenceSafely(sentence, maxWords))
+    : completeSentences;
+  const sentenceCount = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy)
+    ? SecurityConstants.DEFAULT_AMOUNT
+    : _.includes(PARAGRAPH_SPLIT_STRATEGIES, splitStrategy)
+      ? STORYBOARD_FALLBACK_CONFIG.PARAGRAPH_SCENE_SENTENCE_COUNT
+      : STORYBOARD_FALLBACK_CONFIG.STANDARD_SCENE_SENTENCE_COUNT;
   return _.map(_.chunk(sentenceFragments, sentenceCount), (segment) => _.join(segment, " "));
 };
 
@@ -76,16 +91,42 @@ const hydrateScriptGroundedScene = (scene: StoryboardScene, index: number): Stor
   const visibleAction = isUnsupportedFantasyLeak(scene.visibleAction, script) ? baseline.visibleAction : scene.visibleAction || baseline.visibleAction;
   const reaction = isUnsupportedFantasyLeak(scene.reaction, script) ? baseline.reaction : scene.reaction || baseline.reaction;
   const lighting = isUnsupportedFantasyLeak(scene.lighting, script) ? undefined : scene.lighting;
-  return { ...baseline, ...scene, script, subtitle: _.trim(scene.subtitle || script), visualIntent, visibleAction, reaction, lighting, shotSize: scene.shotSize || baseline.shotSize, cameraAngle: scene.cameraAngle || baseline.cameraAngle, composition: scene.composition || baseline.composition, cameraMotion: scene.cameraMotion || baseline.cameraMotion, effects: scene.effects || baseline.effects, lightingEffect: scene.lightingEffect || baseline.lightingEffect, transition: scene.transition || baseline.transition };
+  return {
+    ...baseline,
+    ...scene,
+    script,
+    subtitle: _.trim(scene.subtitle || script),
+    visualIntent,
+    visibleAction,
+    reaction,
+    lighting,
+    shotSize: scene.shotSize || baseline.shotSize,
+    cameraAngle: scene.cameraAngle || baseline.cameraAngle,
+    composition: scene.composition || baseline.composition,
+    cameraMotion: scene.cameraMotion || baseline.cameraMotion,
+    effects: scene.effects || baseline.effects,
+    lightingEffect: scene.lightingEffect || baseline.lightingEffect,
+    transition: scene.transition || baseline.transition,
+  };
 };
 
-export const ensureScriptGroundedSceneDetails = (scenes: StoryboardScene[], options: Omit<StoryboardFallbackOptions, "rewrittenScript" | "chapters" | "splitStrategy"> = {}): StoryboardScene[] =>
+export const ensureScriptGroundedSceneDetails = (
+  scenes: StoryboardScene[],
+  options: Omit<StoryboardFallbackOptions, "rewrittenScript" | "chapters" | "splitStrategy"> = {},
+): StoryboardScene[] =>
   _.map(scenes, (scene, index) => {
     const hydratedScene = hydrateScriptGroundedScene(scene, index);
     return _.isEmpty(_.trim(scene.prompt)) ? { ...hydratedScene, prompt: compileImagePrompt(hydratedScene, options) } : hydratedScene;
   });
 
-export const createScriptGroundedStoryboard = ({ rewrittenScript, chapters = [], splitStrategy = SplitStrategy.LONG_SENTENCE, aspectRatio, targetStyle, visualBible }: StoryboardFallbackOptions): StoryboardScene[] => {
+export const createScriptGroundedStoryboard = ({
+  rewrittenScript,
+  chapters = [],
+  splitStrategy = SplitStrategy.LONG_SENTENCE,
+  aspectRatio,
+  targetStyle,
+  visualBible,
+}: StoryboardFallbackOptions): StoryboardScene[] => {
   const scenes = _.map(createNarrationSegments(_.trim(rewrittenScript), splitStrategy), createScriptGroundedScene);
   const chapteredScenes = assignStoryboardChapterIds(scenes, chapters);
   return compileStoryboardPrompts(chapteredScenes, {

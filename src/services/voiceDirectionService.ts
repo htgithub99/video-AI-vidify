@@ -37,7 +37,12 @@ const createDirectedPayload = (text: string, direction: VoiceDirection, basePayl
   pauseScale: direction.pauseScale,
 });
 
-const requestVoiceChunk = async (text: string, direction: VoiceDirection, basePayload: Record<string, unknown>, signal?: AbortSignal): Promise<{ audioBase64: string; provider: string }> => {
+const requestVoiceChunk = async (
+  text: string,
+  direction: VoiceDirection,
+  basePayload: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<{ audioBase64: string; provider: string }> => {
   let lastError: string = AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED;
   for (let attempt = 0; attempt < VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS; attempt++) {
     const response = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, createDirectedPayload(text, direction, basePayload), signal);

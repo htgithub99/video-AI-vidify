@@ -7,7 +7,8 @@ export enum ResponseContractName {
   Chapter = "chapter",
 }
 
-const createContractError = (template: string, replacements: Record<string, string>): Error => new Error(_.reduce(replacements, (message, value, key) => message.replace(`{${key}}`, value), template));
+const createContractError = (template: string, replacements: Record<string, string>): Error =>
+  new Error(_.reduce(replacements, (message, value, key) => message.replace(`{${key}}`, value), template));
 
 export const assertResponseContract = (value: unknown, contract: ResponseContractName): void => {
   if (!_.isPlainObject(value)) {

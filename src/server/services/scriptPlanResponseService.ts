@@ -28,7 +28,8 @@ interface ValidScriptPlanResult {
 
 type GenerateContent = (request: ScriptPlanRequest) => Promise<AiResponse>;
 
-export const resolveScriptPlanChapterCount = (targetWordCount: number): number => _.clamp(_.ceil(targetWordCount / SCRIPT_PLAN_CONFIG.TARGET_WORDS_PER_CHAPTER), SCRIPT_PLAN_CONFIG.MIN_CHAPTERS, SCRIPT_PLAN_CONFIG.MAX_CHAPTERS);
+export const resolveScriptPlanChapterCount = (targetWordCount: number): number =>
+  _.clamp(_.ceil(targetWordCount / SCRIPT_PLAN_CONFIG.TARGET_WORDS_PER_CHAPTER), SCRIPT_PLAN_CONFIG.MIN_CHAPTERS, SCRIPT_PLAN_CONFIG.MAX_CHAPTERS);
 
 const parseScriptPlan = (responseText: string): Record<string, unknown> => {
   const value = tryParseJSON(responseText);
@@ -39,13 +40,16 @@ const parseScriptPlan = (responseText: string): Record<string, unknown> => {
 
 const assertCompleteScriptPlan = (value: Record<string, unknown>, chapterCount: number): void => {
   const chapters = _.castArray(_.get(value, "chapters"));
-  const hasUsableChapterContent = _.every(chapters, (chapter) => _.every(SCRIPT_PLAN_CONFIG.REQUIRED_CHAPTER_CONTENT_FIELDS, (field) => !_.isEmpty(_.trim(_.toString(_.get(chapter, field))))));
+  const hasUsableChapterContent = _.every(chapters, (chapter) =>
+    _.every(SCRIPT_PLAN_CONFIG.REQUIRED_CHAPTER_CONTENT_FIELDS, (field) => !_.isEmpty(_.trim(_.toString(_.get(chapter, field))))),
+  );
   if (_.size(chapters) !== chapterCount || !hasUsableChapterContent) {
     throw new Error(SCRIPT_PLAN_CONFIG.INVALID_CHAPTERS_ERROR);
   }
 };
 
-const createRetryContents = (contents: string, chapterCount: number): string => _.join([contents, _.replace(SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE, SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN, _.toString(chapterCount))], "\n\n");
+const createRetryContents = (contents: string, chapterCount: number): string =>
+  _.join([contents, _.replace(SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE, SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN, _.toString(chapterCount))], "\n\n");
 
 const createSourceScopes = (sourceText: string, chapterCount: number): string[] => {
   const sentences = smartSplitSentences(sourceText);
@@ -130,7 +134,12 @@ export const createSourceGroundedScriptPlan = (sourceText: string, chapterCount:
   };
 };
 
-export const requestValidScriptPlan = async (request: ScriptPlanRequest, chapterCount: number, generateContent: GenerateContent, sourceText?: string): Promise<ValidScriptPlanResult> => {
+export const requestValidScriptPlan = async (
+  request: ScriptPlanRequest,
+  chapterCount: number,
+  generateContent: GenerateContent,
+  sourceText?: string,
+): Promise<ValidScriptPlanResult> => {
   const aiMetadata: unknown[] = [];
   const rotationLogs: string[] = [];
   let lastError: unknown;

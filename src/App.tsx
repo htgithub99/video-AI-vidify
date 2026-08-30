@@ -1,31 +1,59 @@
 import { cn } from "./lib/utils";
 import { ErrorMessage } from "./constants";
-import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Toaster } from "sonner";
 import Header from "./components/Header.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
-import TabContentLoading from "./components/TabContentLoading.tsx";
 
-import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGenerationMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
+import {
+  VideoProject,
+  ProjectInputType,
+  ProjectKind,
+  ProjectLanguage,
+  HookPosition,
+  AudioType,
+  Gender,
+  AgeGroup,
+  AssetsMode,
+  ImageGenerationMode,
+  ImageGeneratorEngine,
+  GenerateType,
+  PromptInputMethod,
+  AspectRatio,
+} from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS, CINEMATIC_CONFIG, STYLE_PRESET_CONFIG } from "./constants";
+import {
+  API_ROUTES,
+  STORAGE_KEYS,
+  LOADING_CONFIG,
+  HTTP_METHODS,
+  CONTENT_TYPES,
+  ERROR_MESSAGES,
+  CONTENT_TYPE_HEADER,
+  THEME_VALUES,
+  COMMON_STRINGS,
+  DEFAULT_PROJECT_CONFIGS,
+  REFACTOR_CONSTANTS,
+  PROJECT_LIST_CONSTANTS,
+  CINEMATIC_CONFIG,
+  STYLE_PRESET_CONFIG,
+} from "./constants";
 import { AppTab, VideoGenre } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
 import { storageUtils } from "./lib/storage";
 
-const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
-const PROJECT_WORKSPACE_TABS = [AppTab.AUTO_GENERATOR, AppTab.CINEMATIC_FILM, AppTab.STUDIO];
-const PipelineWizard = lazy(() => import("./components/PipelineWizard.tsx"));
-const AutoVideoGenerator = lazy(() => import("./components/AutoVideoGenerator.tsx"));
-const CinematicFilmStudio = lazy(() => import("./components/CinematicFilmStudio.tsx"));
+import PipelineWizard from "./components/PipelineWizard.tsx";
+import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
+import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
+import { MinimalSpinnerLoading } from "./components/ui/Skeleton.tsx";
 
-const isProjectWorkspaceTab = (tab: string): boolean => _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab);
+const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
   if (_.isEqual(tab, AppTab.STUDIO)) return ProjectKind.Studio;
@@ -43,7 +71,8 @@ const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefine
   return project.parentId ? undefined : ProjectKind.Container;
 };
 
-const findWorkspaceChild = (projects: VideoProject[], parentId: string, kind: ProjectKind): VideoProject | undefined => _.find(projects, (project) => _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind));
+const findWorkspaceChild = (projects: VideoProject[], parentId: string, kind: ProjectKind): VideoProject | undefined =>
+  _.find(projects, (project) => _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind));
 
 const findProjectForWorkspaceTab = (projects: VideoProject[], selectedProjectId: string | null, tab: string): VideoProject | undefined => {
   const targetKind = getProjectKindForTab(tab);
@@ -55,10 +84,16 @@ const findProjectForWorkspaceTab = (projects: VideoProject[], selectedProjectId:
 };
 
 const convertToSlug = (text: string): string => {
-  return _.trim(_.toLower(text).normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D).replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN).replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
+  return _.trim(
+    _.toLower(text)
+      .normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM)
+      .replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN),
+  ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
 };
-
-const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([_.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.CINEMATIC_FILM), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic), _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean)], Boolean);
 
 const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
   const response = await fetch(API_ROUTES.PROJECTS, {
@@ -103,8 +138,6 @@ export default function App() {
   }, [currentLang]);
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [isSwitchingWorkspaceTab, setIsSwitchingWorkspaceTab] = useState(false);
-  const workspaceTabLoadingStartedAtRef = useRef<number | null>(null);
   const pendingSavesRef = useRef<Record<string, NodeJS.Timeout>>({});
   const projectsRef = useRef<VideoProject[]>([]);
   const creatingChildRef = useRef<Record<string, boolean>>({});
@@ -278,39 +311,6 @@ export default function App() {
       }
     }
   }, [activeTab, selectedProjectId, projects]);
-
-  useEffect(() => {
-    if (!isSwitchingWorkspaceTab) return;
-    const activeWorkspaceProject = _.find(projects, { id: selectedProjectId });
-    if (!isProjectReadyForTab(activeWorkspaceProject, activeTab)) {
-      return;
-    }
-    const startedAt = workspaceTabLoadingStartedAtRef.current || Date.now();
-    const elapsedMs = _.subtract(Date.now(), startedAt);
-    const remainingMs = _.max([_.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs), REFACTOR_CONSTANTS.ZERO_FLOAT]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
-    let frameId: number | undefined;
-    const timeoutId = setTimeout(() => {
-      frameId = requestAnimationFrame(() => {
-        workspaceTabLoadingStartedAtRef.current = null;
-        setIsSwitchingWorkspaceTab(false);
-      });
-    }, remainingMs);
-    return () => {
-      clearTimeout(timeoutId);
-      if (!_.isUndefined(frameId)) {
-        cancelAnimationFrame(frameId);
-      }
-    };
-  }, [activeTab, isSwitchingWorkspaceTab, projects, selectedProjectId]);
-
-  useEffect(() => {
-    if (!isSwitchingWorkspaceTab) return;
-    const timeoutId = setTimeout(() => {
-      workspaceTabLoadingStartedAtRef.current = null;
-      setIsSwitchingWorkspaceTab(false);
-    }, TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS);
-    return () => clearTimeout(timeoutId);
-  }, [isSwitchingWorkspaceTab]);
 
   useEffect(() => {
     if (_.includes([AppTab.AUTO_GENERATOR, AppTab.CINEMATIC_FILM], activeTab as AppTab) && selectedProjectId) {
@@ -534,7 +534,11 @@ export default function App() {
 
     try {
       const parentData = await createProjectRecord(parentProject);
-      const [studioData, autoData, filmData] = await Promise.all([createProjectRecord(studioChildProject), createProjectRecord(autoChildProject), createProjectRecord(filmChildProject)]);
+      const [studioData, autoData, filmData] = await Promise.all([
+        createProjectRecord(studioChildProject),
+        createProjectRecord(autoChildProject),
+        createProjectRecord(filmChildProject),
+      ]);
 
       setProjects((prev) => [...prev, parentData, studioData, autoData, filmData]);
       setSelectedProjectId(parentData.id);
@@ -600,15 +604,11 @@ export default function App() {
 
   const handleActiveTabChange = useCallback(
     (tab: string) => {
-      if (_.some([isSwitchingWorkspaceTab, _.isEqual(tab, activeTab), _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean)], Boolean)) {
+      if (_.some([_.isEqual(tab, activeTab), _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean)], Boolean)) {
         return;
       }
 
       const targetWorkspaceProject = findProjectForWorkspaceTab(projectsRef.current, selectedProjectId, tab);
-      const switchesBetweenWorkspaceTabs = _.every([activeTab, tab], isProjectWorkspaceTab);
-      const shouldShowLoading = switchesBetweenWorkspaceTabs && !targetWorkspaceProject;
-      workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
-      setIsSwitchingWorkspaceTab(shouldShowLoading);
 
       if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
         setSelectedProjectId(null);
@@ -617,7 +617,7 @@ export default function App() {
       }
       setActiveTab(tab);
     },
-    [activeTab, isSwitchingWorkspaceTab, selectedProjectId],
+    [activeTab, selectedProjectId],
   );
 
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
@@ -646,19 +646,88 @@ export default function App() {
   };
 
   return (
-    <div className={cn("h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden")}>
-      <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} isMobileMenuOpen={isMobileMenuOpen} onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+    <div className={cn("app-shell h-screen w-screen max-h-screen max-w-screen flex flex-row font-sans antialiased text-slate-205 bg-slate-955 overflow-hidden")}>
+      <Sidebar
+        currentLang={currentLang}
+        activeTab={activeTab}
+        setActiveTab={handleActiveTabChange}
+        selectedProjectId={selectedProjectId}
+        activeProjectName={activeProject?.name || null}
+        theme={theme as any}
+        toggleTheme={toggleTheme}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+      />
 
-      <Toaster position="top-right" theme={theme as any} richColors />
+      <div className={cn("flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden relative")}>
+        <Header
+          currentLang={currentLang}
+          setLang={setLang}
+          theme={theme as any}
+          toggleTheme={toggleTheme}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        />
 
-      <div className={cn("flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955")}>
-        <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
+        <Toaster position="top-right" theme={theme as any} richColors />
 
-        <main className={cn("flex-1 min-h-0 overflow-hidden relative bg-slate-955")}>
-          <Suspense fallback={<TabContentLoading activeTab={activeTab} />}>
-            {isSwitchingWorkspaceTab ? (
-              <TabContentLoading activeTab={activeTab} />
-            ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
+        <main className={cn("app-main flex-1 min-h-0 h-full w-full overflow-hidden relative bg-slate-955 self-stretch")}>
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.DASHBOARD) && "hidden")}>
+            <DashboardView
+              currentLang={currentLang}
+              projects={projects}
+              isLoading={isLoadingProjects}
+              onSelectProject={handleSelectProject}
+              onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
+            />
+          </div>
+
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.PROJECTS) && "hidden")}>
+            <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6")}>
+              <ProjectList
+                currentLang={currentLang}
+                projects={projects}
+                isLoading={isLoadingProjects}
+                onSelectProject={(project) => handleSelectProject(project.id)}
+                onCreateProject={handleCreateProject}
+                onUpdateProject={handleUpdateProjectDetails}
+                onDeleteProject={handleDeleteProject}
+              />
+            </div>
+          </div>
+
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && "hidden")}>
+            <AutoVideoGenerator
+              currentLang={currentLang}
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleCreateProject}
+              onUpdateProject={handleUpdateProject}
+              theme={theme as any}
+            />
+          </div>
+
+          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col", !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && "hidden")}>
+            <CinematicFilmStudio
+              currentLang={currentLang}
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleCreateProject}
+              onUpdateProject={handleUpdateProject}
+              theme={theme as any}
+            />
+          </div>
+
+          {_.isEqual(activeTab, AppTab.SETTINGS) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col")}>
+              <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />
+            </div>
+          )}
+
+          {_.isEqual(activeTab, AppTab.STUDIO) &&
+            (selectedProjectId && activeProject ? (
               <PipelineWizard
                 key={selectedProjectId}
                 theme={theme as any}
@@ -676,20 +745,11 @@ export default function App() {
                 credits={credits}
                 setCredits={() => {}}
               />
-            ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
-              <AutoVideoGenerator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
-            ) : _.isEqual(activeTab, AppTab.CINEMATIC_FILM) ? (
-              <CinematicFilmStudio currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
-            ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
-              <SettingsView currentLang={currentLang} />
-            ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
-              <DashboardView currentLang={currentLang} projects={projects} onSelectProject={handleSelectProject} onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)} />
             ) : (
-              <div className={cn("flex-grow h-full overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 w-full max-w-7xl mx-auto")}>
-                <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 space-y-4">
+                <MinimalSpinnerLoading />
               </div>
-            )}
-          </Suspense>
+            ))}
         </main>
       </div>
     </div>

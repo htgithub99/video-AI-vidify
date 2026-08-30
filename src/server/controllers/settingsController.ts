@@ -82,7 +82,9 @@ export const saveApiKeys = async (req: Request, res: Response) => {
     res.json({ [SecurityConstants.SUCCESS_KEY]: true, [SecurityConstants.REQ_BODY_MESSAGE]: SecurityMessages.SAVE_API_KEYS_SUCCESS });
   } catch (error: any) {
     appError(SecurityConstants.LOG_SAVE_API_KEYS_ERROR, error);
-    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ [SecurityConstants.ERROR_KEY]: _.get(error, SecurityConstants.REQ_BODY_MESSAGE, SecurityMessages.SAVE_API_KEYS_ERROR) });
+    res
+      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
+      .json({ [SecurityConstants.ERROR_KEY]: _.get(error, SecurityConstants.REQ_BODY_MESSAGE, SecurityMessages.SAVE_API_KEYS_ERROR) });
   }
 };
 
@@ -110,12 +112,17 @@ export const updateGoogleAccountStatus = async (req: Request, res: Response) => 
   try {
     const rowIndex = _.get(req.body, SecurityConstants.REQ_BODY_ROW_INDEX);
     const status = _.get(req.body, SecurityConstants.REQ_BODY_STATUS);
-    if (_.isNil(rowIndex) || _.isEmpty(status)) return res.status(SecurityConstants.HTTP_BAD_REQUEST).json({ [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO });
+    if (_.isNil(rowIndex) || _.isEmpty(status))
+      return res.status(SecurityConstants.HTTP_BAD_REQUEST).json({ [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO });
 
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: jsonUtils.safeStringify({ [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_ACCOUNT_STATUS, [SecurityConstants.REQ_BODY_ROW_INDEX]: rowIndex, [SecurityConstants.REQ_BODY_STATUS]: status }),
+      body: jsonUtils.safeStringify({
+        [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_ACCOUNT_STATUS,
+        [SecurityConstants.REQ_BODY_ROW_INDEX]: rowIndex,
+        [SecurityConstants.REQ_BODY_STATUS]: status,
+      }),
     });
     const data: any = await response.json();
 
@@ -123,6 +130,8 @@ export const updateGoogleAccountStatus = async (req: Request, res: Response) => 
     res.json({ [SecurityConstants.SUCCESS_KEY]: true, [SecurityConstants.REQ_BODY_MESSAGE]: SecurityMessages.UPDATE_STATUS_SUCCESS });
   } catch (error: any) {
     appError(SecurityConstants.LOG_UPDATE_ACCOUNT_ERROR, error);
-    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ [SecurityConstants.ERROR_KEY]: _.get(error, SecurityConstants.REQ_BODY_MESSAGE, SecurityMessages.UPDATE_ACCOUNT_ERROR) });
+    res
+      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
+      .json({ [SecurityConstants.ERROR_KEY]: _.get(error, SecurityConstants.REQ_BODY_MESSAGE, SecurityMessages.UPDATE_ACCOUNT_ERROR) });
   }
 };

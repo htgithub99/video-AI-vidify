@@ -1,3 +1,4 @@
+import { Settings2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
@@ -25,6 +26,7 @@ import { LogPanelSection } from "./auto-video/LogPanelSection";
 import { PresetSection } from "./auto-video/PresetSection";
 import { PreviewPanelSection } from "./auto-video/PreviewPanelSection";
 import { ProjectInputSection } from "./auto-video/ProjectInputSection";
+import { ScriptSettingsCard } from "./auto-video/ScriptSettingsCard";
 import { ProjectSettingsSection } from "./auto-video/ProjectSettingsSection";
 import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
@@ -32,6 +34,7 @@ import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
 import CinematicFilmSetupSection from "./cinematic/CinematicFilmSetupSection";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
 import { genreLabels } from "../constants/data";
+import { AutoVideoStudioSkeleton } from "./ui/Skeleton";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -44,7 +47,15 @@ interface AutoVideoGeneratorProps {
   cinematicMode?: boolean;
 }
 
-export default function AutoVideoGenerator({ currentLang, projects, selectedProjectId, onSelectProject, onUpdateProject, theme = AppTheme.DARK, cinematicMode = false }: AutoVideoGeneratorProps) {
+export default function AutoVideoGenerator({
+  currentLang,
+  projects,
+  selectedProjectId,
+  onSelectProject,
+  onUpdateProject,
+  theme = AppTheme.DARK,
+  cinematicMode = false,
+}: AutoVideoGeneratorProps) {
   const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
   const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
   const splitLabelMap = useMemo(() => getSplitLabels(T), [T]);
@@ -53,15 +64,107 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang, stateScope);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
-  const { inputType, scriptContent, genre, language, duration, splitStrategy, voiceProvider, voiceURI, voiceName, isVoiceDialogOpen, generationMode, imageGeneratorEngine, generateType, maxVideoScenes, aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages, characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages, thumbnailSceneReferenceImages, projectName, resumeMode, showAdvancedImageSettings, rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle, hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume, promptInputMethod, sampleCount, videoDuration, videoResolution, geminiChatSpeed, batchDelay, ffmpegQuality, isConfigLoaded, musicAssetUrl } = state;
+  const {
+    inputType,
+    scriptContent,
+    genre,
+    language,
+    duration,
+    splitStrategy,
+    voiceProvider,
+    voiceURI,
+    voiceName,
+    isVoiceDialogOpen,
+    generationMode,
+    imageGeneratorEngine,
+    generateType,
+    maxVideoScenes,
+    aspectRatio,
+    chromeHeadless,
+    stylePreset,
+    styleBackgroundMode,
+    styleTextInImageMode,
+    imageFocusMode,
+    referenceImages,
+    sceneReferenceImages,
+    characterImages,
+    thumbnailCount,
+    thumbnailStylePreset,
+    thumbnailBackgroundMode,
+    thumbnailTextInImageMode,
+    thumbnailImageFocusMode,
+    thumbnailReferenceImages,
+    thumbnailSceneReferenceImages,
+    projectName,
+    resumeMode,
+    showAdvancedImageSettings,
+    rewriteLevel,
+    similarityReduction,
+    creativityLevel,
+    factCheck,
+    audience,
+    writingStyle,
+    hookStrategy,
+    hookDuration,
+    hookPosition,
+    voiceSpeed,
+    voicePitch,
+    voiceVolume,
+    promptInputMethod,
+    sampleCount,
+    videoDuration,
+    videoResolution,
+    geminiChatSpeed,
+    batchDelay,
+    ffmpegQuality,
+    isConfigLoaded,
+    musicAssetUrl,
+  } = state;
 
-  const { setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy, setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen, setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes, setAspectRatio, setVideoDuration, setVideoResolution, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode, setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setProjectName, setResumeMode, setShowAdvancedImageSettings, setMusicAssetUrl } = actions;
+  const {
+    setInputType,
+    setScriptContent,
+    setGenre,
+    setLanguage,
+    setDuration,
+    setSplitStrategy,
+    setVoiceProvider,
+    setVoiceURI,
+    setVoiceName,
+    setIsVoiceDialogOpen,
+    setGenerationMode,
+    setImageGeneratorEngine,
+    setGenerateType,
+    setMaxVideoScenes,
+    setAspectRatio,
+    setVideoDuration,
+    setVideoResolution,
+    setChromeHeadless,
+    setStylePreset,
+    setStyleBackgroundMode,
+    setStyleTextInImageMode,
+    setImageFocusMode,
+    setThumbnailCount,
+    setThumbnailStylePreset,
+    setThumbnailBackgroundMode,
+    setThumbnailTextInImageMode,
+    setThumbnailImageFocusMode,
+    setProjectName,
+    setResumeMode,
+    setShowAdvancedImageSettings,
+    setMusicAssetUrl,
+  } = actions;
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
 
   const presentationProject = activeCreatedProject;
   const canContinueProject = useMemo(
-    () => Boolean(presentationProject && !_.isEqual(presentationProject.status, REFACTOR_CONSTANTS.STATUS_COMPLETED) && (presentationProject.generationCheckpoint || !_.isEmpty(presentationProject.storyboard))),
+    () =>
+      Boolean(
+        presentationProject &&
+          !_.isEqual(presentationProject.status, REFACTOR_CONSTANTS.STATUS_COMPLETED) &&
+          (presentationProject.generationCheckpoint || !_.isEmpty(presentationProject.storyboard)),
+      ),
     [presentationProject],
   );
 
@@ -115,7 +218,29 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS, videoDuration)) setVideoDuration(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION);
       if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION);
     }
-  }, [cinematicMode, duration, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, videoDuration, videoResolution, setDuration, setGenre, setInputType, setGenerateType, setGenerationMode, setImageGeneratorEngine, setVideoDuration, setVideoResolution, setStylePreset, setThumbnailStylePreset]);
+  }, [
+    cinematicMode,
+    duration,
+    genre,
+    generationMode,
+    generateType,
+    imageGeneratorEngine,
+    inputType,
+    stylePreset,
+    thumbnailStylePreset,
+    videoDuration,
+    videoResolution,
+    setDuration,
+    setGenre,
+    setInputType,
+    setGenerateType,
+    setGenerationMode,
+    setImageGeneratorEngine,
+    setVideoDuration,
+    setVideoResolution,
+    setStylePreset,
+    setThumbnailStylePreset,
+  ]);
 
   useEffect(() => {
     if (!cinematicMode && _.includes([GenerateType.Video, GenerateType.Mixed], generateType) && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
@@ -208,7 +333,9 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     reader.readAsDataURL(file);
   };
 
-  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean; runIntent?: "new" | "continue" | "render_only" } = {}): Promise<void> =>
+  const handleStartAutoGenerate = (
+    overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean; runIntent?: "new" | "continue" | "render_only" } = {},
+  ): Promise<void> =>
     startPipeline({
       scriptContent,
       inputType: cinematicMode ? ProjectInputType.Idea : inputType,
@@ -219,7 +346,11 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       similarityReduction: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.SIMILARITY_REDUCTION : similarityReduction,
       creativityLevel: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.CREATIVITY_LEVEL : creativityLevel,
       factCheck: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.FACT_CHECK : factCheck,
-      audience: cinematicMode ? (_.isEqual(language, ProjectLanguage.VI) ? CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_VI : CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_EN) : audience,
+      audience: cinematicMode
+        ? _.isEqual(language, ProjectLanguage.VI)
+          ? CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_VI
+          : CINEMATIC_CONFIG.PIPELINE_PROFILE.AUDIENCE_EN
+        : audience,
       writingStyle: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.WRITING_STYLE : writingStyle,
       splitStrategy: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.SPLIT_STRATEGY : splitStrategy,
       hookStrategy: cinematicMode ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : hookStrategy,
@@ -331,41 +462,200 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
 
   const lockedGenreLabel = useMemo(() => (cinematicMode ? genreLabels[VideoGenre.CINEMATIC_EPISODE] : undefined), [cinematicMode]);
 
+  if (!isConfigLoaded) {
+    return <AutoVideoStudioSkeleton />;
+  }
+
   return (
-    <div className={cn("h-full flex flex-col overflow-y-auto bg-slate-955 font-sans text-slate-100")}>
-      <div className={cn("flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0")}>
-        <div className={cn("lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 scrollbar-none")}>
-          {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
+    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible w-full")}>
+        <div className={cn("border-b border-slate-800 pb-4 relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3")}>
+          <div>
+            <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2")}>
+              <Settings2 className={cn("w-5 h-5 text-rose-500")} />
+              {cinematicMode ? "Làm Phim Điện Ảnh AI" : "Tạo Video Tự Động"}
+              <span className={cn("px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[10px] font-black")}>{cinematicMode ? "Cinematic Engine" : "Auto Pipeline"}</span>
+            </h3>
+            <p className={cn("text-slate-400 text-xs mt-1")}>
+              {cinematicMode ? "Thiết lập ý tưởng kịch bản, quy mô tập và phong cách điện ảnh." : "Nhập kịch bản, thiết lập giọng đọc AI và tự động sinh toàn bộ video."}
+            </p>
+          </div>
+          {!cinematicMode && (
+            <PresetSection
+              presets={presets}
+              selectedPresetId={selectedPresetId}
+              presetNameInputState={presetNameInputState}
+              setPresetNameInputState={setPresetNameInputState}
+              handleSavePreset={handleSavePreset}
+              handleApplyPreset={handleApplyPreset}
+              handleDeletePreset={handleDeletePreset}
+              T={T}
+              truncateWords={truncateWords}
+            />
+          )}
+        </div>
 
-          <div className={cn("space-y-4")}>
-            {cinematicMode ? <CinematicFilmSetupSection idea={scriptContent} setIdea={setScriptContent} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} seriesMode={filmSeriesMode} setSeriesMode={setFilmSeriesMode} episodeCount={filmEpisodeCount} setEpisodeCount={setFilmEpisodeCount} currentLang={currentLang} /> : <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} genre={genre} setGenre={setGenre} language={language} setLanguage={setLanguage} duration={duration} setDuration={setDuration} splitStrategy={splitStrategy} setSplitStrategy={setSplitStrategy} splitLabelMap={splitLabelMap} T={T} lockedGenreLabel={lockedGenreLabel} />}
+        <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6")}>
+          <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full justify-stretch min-w-0")}>
+            {cinematicMode ? (
+              <CinematicFilmSetupSection
+                idea={scriptContent}
+                setIdea={setScriptContent}
+                language={language}
+                setLanguage={setLanguage}
+                duration={duration}
+                setDuration={setDuration}
+                seriesMode={filmSeriesMode}
+                setSeriesMode={setFilmSeriesMode}
+                episodeCount={filmEpisodeCount}
+                setEpisodeCount={setFilmEpisodeCount}
+                currentLang={currentLang}
+              />
+            ) : (
+              <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} T={T} />
+            )}
 
-            {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
+            {!cinematicMode && (
+              <VoiceSelectionSection
+                voiceName={voiceName}
+                voiceURI={voiceURI}
+                voiceProvider={voiceProvider}
+                isVoiceDialogOpen={isVoiceDialogOpen}
+                setIsVoiceDialogOpen={setIsVoiceDialogOpen}
+                voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE}
+                currentLang={currentLang}
+                handleVoiceSelect={handleVoiceSelectAndClose}
+                truncateWords={truncateWords}
+                T={T}
+              />
+            )}
 
-            <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
-              <GenerationSettingsSection generationMode={generationMode} setGenerationMode={setGenerationMode} imageGeneratorEngine={imageGeneratorEngine} setImageGeneratorEngine={setImageGeneratorEngine} generateType={generateType} setGenerateType={setGenerateType} maxVideoScenes={maxVideoScenes} setMaxVideoScenes={setMaxVideoScenes} aspectRatio={aspectRatio} setAspectRatio={setAspectRatio} T={T} getImageEngineOptions={getImageEngineOptions} mediaMixTexts={mediaMixTexts} forceVideoOnly={cinematicMode} chromeHeadless={chromeHeadless} setChromeHeadless={setChromeHeadless} videoDuration={videoDuration} setVideoDuration={setVideoDuration} videoResolution={videoResolution} setVideoResolution={setVideoResolution} />
+            <div className={cn("bg-slate-955/50 rounded-xl p-5 space-y-5 shadow-inner w-full")}>
+              <GenerationSettingsSection
+                generationMode={generationMode}
+                setGenerationMode={setGenerationMode}
+                imageGeneratorEngine={imageGeneratorEngine}
+                setImageGeneratorEngine={setImageGeneratorEngine}
+                generateType={generateType}
+                setGenerateType={setGenerateType}
+                maxVideoScenes={maxVideoScenes}
+                setMaxVideoScenes={setMaxVideoScenes}
+                aspectRatio={aspectRatio}
+                setAspectRatio={setAspectRatio}
+                T={T}
+                getImageEngineOptions={getImageEngineOptions}
+                mediaMixTexts={mediaMixTexts}
+                forceVideoOnly={cinematicMode}
+                chromeHeadless={chromeHeadless}
+                setChromeHeadless={setChromeHeadless}
+                videoDuration={videoDuration}
+                setVideoDuration={setVideoDuration}
+                videoResolution={videoResolution}
+                setVideoResolution={setVideoResolution}
+              />
 
-              {!cinematicMode && <AdvancedImageSettingsSection showAdvancedImageSettings={showAdvancedImageSettings} setShowAdvancedImageSettings={setShowAdvancedImageSettings} chromeHeadless={chromeHeadless} setChromeHeadless={setChromeHeadless} resumeMode={resumeMode} setResumeMode={setResumeMode} backgroundMode={styleBackgroundMode} setBackgroundMode={setStyleBackgroundMode} textMode={styleTextInImageMode} setTextMode={setStyleTextInImageMode} imageFocusMode={imageFocusMode} setImageFocusMode={setImageFocusMode} language={currentLang as AppLanguage} T={T} />}
+              {!cinematicMode && (
+                <AdvancedImageSettingsSection
+                  showAdvancedImageSettings={showAdvancedImageSettings}
+                  setShowAdvancedImageSettings={setShowAdvancedImageSettings}
+                  chromeHeadless={chromeHeadless}
+                  setChromeHeadless={setChromeHeadless}
+                  resumeMode={resumeMode}
+                  setResumeMode={setResumeMode}
+                  backgroundMode={styleBackgroundMode}
+                  setBackgroundMode={setStyleBackgroundMode}
+                  textMode={styleTextInImageMode}
+                  setTextMode={setStyleTextInImageMode}
+                  imageFocusMode={imageFocusMode}
+                  setImageFocusMode={setImageFocusMode}
+                  language={currentLang as AppLanguage}
+                  T={T}
+                />
+              )}
 
               <div className={cn("pt-2 border-t border-slate-800/80")}>
-                <StylePresetSelector selectedStyle={stylePreset} onSelectStyle={setStylePreset} language={currentLang} accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE} genre={genre} allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
+                <StylePresetSelector
+                  selectedStyle={stylePreset}
+                  onSelectStyle={setStylePreset}
+                  language={currentLang}
+                  accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE}
+                  genre={genre}
+                  allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined}
+                />
               </div>
             </div>
 
-            <ProjectSettingsSection genre={genre} projectName={projectName} setProjectName={setProjectName} thumbnailCount={thumbnailCount} setThumbnailCount={setThumbnailCount} thumbnailStylePreset={thumbnailStylePreset} setThumbnailStylePreset={setThumbnailStylePreset} backgroundMode={thumbnailBackgroundMode} setBackgroundMode={setThumbnailBackgroundMode} textInImageMode={thumbnailTextInImageMode} setTextInImageMode={setThumbnailTextInImageMode} imageFocusMode={thumbnailImageFocusMode} setImageFocusMode={setThumbnailImageFocusMode} language={currentLang as AppLanguage} T={T} musicAssetUrl={musicAssetUrl} onMusicUpload={handleMusicUpload} onRemoveMusic={() => setMusicAssetUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING)} allowedStylePresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
+            <ProjectSettingsSection
+              genre={genre}
+              projectName={projectName}
+              setProjectName={setProjectName}
+              thumbnailCount={thumbnailCount}
+              setThumbnailCount={setThumbnailCount}
+              thumbnailStylePreset={thumbnailStylePreset}
+              setThumbnailStylePreset={setThumbnailStylePreset}
+              backgroundMode={thumbnailBackgroundMode}
+              setBackgroundMode={setThumbnailBackgroundMode}
+              textInImageMode={thumbnailTextInImageMode}
+              setTextInImageMode={setThumbnailTextInImageMode}
+              imageFocusMode={thumbnailImageFocusMode}
+              setImageFocusMode={setThumbnailImageFocusMode}
+              language={currentLang as AppLanguage}
+              T={T}
+              musicAssetUrl={musicAssetUrl}
+              onMusicUpload={handleMusicUpload}
+              onRemoveMusic={() => setMusicAssetUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
+              allowedStylePresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined}
+            />
           </div>
-        </div>
 
-        <div className={cn("lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none")}>
-          <ActionPanelSection scriptContent={scriptContent} isProcessing={isProcessing} isCancelling={isCancelling} currentStepIndex={currentStepIndex} stepProgress={stepProgress} handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false, runIntent: "new" })} handleContinueAutoGenerate={() => handleStartAutoGenerate({ resumeMode: true, runIntent: "continue" })} canContinue={canContinueProject} cancelPipeline={cancelPipeline} T={T} />
+          <div className={cn("space-y-6 flex flex-col min-w-0")}>
+            <ActionPanelSection
+              scriptContent={scriptContent}
+              isProcessing={isProcessing}
+              isCancelling={isCancelling}
+              currentStepIndex={currentStepIndex}
+              stepProgress={stepProgress}
+              handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false, runIntent: "new" })}
+              handleContinueAutoGenerate={() => handleStartAutoGenerate({ resumeMode: true, runIntent: "continue" })}
+              canContinue={canContinueProject}
+              cancelPipeline={cancelPipeline}
+              T={T}
+            />
 
-          <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
+            {!cinematicMode && (
+              <ScriptSettingsCard
+                genre={genre}
+                setGenre={setGenre}
+                language={language}
+                setLanguage={setLanguage}
+                duration={duration}
+                setDuration={setDuration}
+                splitStrategy={splitStrategy}
+                setSplitStrategy={setSplitStrategy}
+                splitLabelMap={splitLabelMap}
+                T={T}
+                lockedGenreLabel={lockedGenreLabel}
+              />
+            )}
 
-          <PreviewPanelSection renderedVideoUrl={renderedVideoUrl} projectName={projectName} activeCreatedProject={presentationProject} isProcessing={isProcessing} regeneratingTarget={regeneratingTarget} handleRegenerate={handleRegenerate} onSelectProject={onSelectProject} T={T} regenerationTexts={regenerationTexts} />
+            <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
 
-          <ThumbnailsPreviewSection activeCreatedProject={presentationProject} />
+            <PreviewPanelSection
+              renderedVideoUrl={renderedVideoUrl}
+              projectName={projectName}
+              activeCreatedProject={presentationProject}
+              isProcessing={isProcessing}
+              regeneratingTarget={regeneratingTarget}
+              handleRegenerate={handleRegenerate}
+              onSelectProject={onSelectProject}
+              T={T}
+              regenerationTexts={regenerationTexts}
+            />
 
-          <SeoPanelSection activeCreatedProject={presentationProject} />
+            <ThumbnailsPreviewSection activeCreatedProject={presentationProject} />
+
+            <SeoPanelSection activeCreatedProject={presentationProject} />
+          </div>
         </div>
       </div>
     </div>

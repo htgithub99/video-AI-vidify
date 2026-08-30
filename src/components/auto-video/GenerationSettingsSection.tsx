@@ -31,7 +31,28 @@ interface GenerationSettingsSectionProps {
   setVideoResolution: (value: string) => void;
 }
 
-export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({ generationMode, setGenerationMode, imageGeneratorEngine, setImageGeneratorEngine, aspectRatio, setAspectRatio, generateType, setGenerateType, maxVideoScenes, setMaxVideoScenes, getImageEngineOptions, T, mediaMixTexts, forceVideoOnly = false, chromeHeadless = false, setChromeHeadless, videoDuration, setVideoDuration, videoResolution, setVideoResolution }) => {
+export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({
+  generationMode,
+  setGenerationMode,
+  imageGeneratorEngine,
+  setImageGeneratorEngine,
+  aspectRatio,
+  setAspectRatio,
+  generateType,
+  setGenerateType,
+  maxVideoScenes,
+  setMaxVideoScenes,
+  getImageEngineOptions,
+  T,
+  mediaMixTexts,
+  forceVideoOnly = false,
+  chromeHeadless = false,
+  setChromeHeadless,
+  videoDuration,
+  setVideoDuration,
+  videoResolution,
+  setVideoResolution,
+}) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
   const maxVideosLabel = mediaMixTexts?.maxVideos || uiTexts.maxVideos;
@@ -40,7 +61,11 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
   const allEngineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
   const isGrokProvider = forceVideoOnly && _.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine);
-  const engineOptions = forceVideoOnly ? _.filter(allEngineOptions, (option) => (isGrokProvider ? _.isEqual(option.value, ImageGeneratorEngine.GrokImagine) : !_.isEqual(option.value, ImageGeneratorEngine.GrokImagine))) : allEngineOptions;
+  const engineOptions = forceVideoOnly
+    ? _.filter(allEngineOptions, (option) =>
+        isGrokProvider ? _.isEqual(option.value, ImageGeneratorEngine.GrokImagine) : !_.isEqual(option.value, ImageGeneratorEngine.GrokImagine),
+      )
+    : allEngineOptions;
   const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
   const aspectRatioOptions = forceVideoOnly && !isGrokProvider ? FLOW_AGENT_VIDEO_ASPECT_RATIOS : _.values(AspectRatio);
   const videoDurationOptions = isGrokProvider ? REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS : REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS;
@@ -50,8 +75,15 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
     <div className={cn("space-y-4")}>
       <div className={cn("flex items-center justify-between")}>
         <div className={cn("flex items-center gap-2")}>
-          <span className={cn("w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20")}>{PIPELINE_STEPS.STEP_3}</span>
-          <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} title={forceVideoOnly ? uiTexts.cinematicSetupTooltip : T.sec3TitleTooltip}>
+          <span
+            className={cn(
+              "w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20",
+            )}>
+            {PIPELINE_STEPS.STEP_3}
+          </span>
+          <h3
+            className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}
+            title={forceVideoOnly ? uiTexts.cinematicSetupTooltip : T.sec3TitleTooltip}>
             <Wand2 className={cn("w-3.5 h-3.5 text-blue-400")} /> {forceVideoOnly ? uiTexts.cinematicSetupTitle : T.sec3Title}
           </h3>
         </div>
@@ -69,7 +101,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {!forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={generationMode}
@@ -94,7 +126,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={isGrokProvider ? ImageGeneratorEngine.GrokImagine : ImageGenerationMode.LabsFlow}
@@ -126,9 +158,12 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{forceVideoOnly ? uiTexts.videoModelLabel : T.lblEngine}</span>
-            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
+            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
               <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <select
+                value={imageGeneratorEngine}
+                onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)}
+                className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(engineOptions, (opt) => (
                   <option key={opt.value + opt.label} value={opt.value} className={cn("bg-slate-955 text-slate-300")}>
                     {opt.label}
@@ -142,9 +177,14 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {forceVideoOnly && setChromeHeadless && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblChromeHeadless}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")} title={T.lblChromeHeadlessTooltip}>
+              <div
+                className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}
+                title={T.lblChromeHeadlessTooltip}>
                 <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                <select value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                <select
+                  value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue}
+                  onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))}
+                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                   <option value={uiTexts.windowedModeValue} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionWindowed}
                   </option>
@@ -161,9 +201,12 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <>
               <div className={cn("space-y-1")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblDuration}</span>
-                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5")}>
+                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
                   <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                  <select value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                  <select
+                    value={videoDuration}
+                    onChange={(event) => setVideoDuration(event.target.value)}
+                    className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                     {_.map(videoDurationOptions, (duration) => (
                       <option key={duration} value={duration} className={cn("bg-slate-955 text-slate-300")}>
                         {duration}
@@ -175,9 +218,12 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               </div>
               <div className={cn("space-y-1")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblVideoResolution}</span>
-                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5")}>
+                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
                   <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                  <select value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                  <select
+                    value={videoResolution}
+                    onChange={(event) => setVideoResolution(event.target.value)}
+                    className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                     {_.map(videoResolutionOptions, (resolution) => (
                       <option key={resolution} value={resolution} className={cn("bg-slate-955 text-slate-300")}>
                         {resolution}
@@ -192,12 +238,20 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblAspectRatio}</span>
-            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
+            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
               <Layout className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value as AspectRatio)}
+                className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(aspectRatioOptions, (r) => (
                   <option key={r} value={r} className={cn("bg-slate-955 text-slate-300")}>
-                    {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
+                    {r}{" "}
+                    {_.isEqual(r, AspectRatio.NineSixteen)
+                      ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX
+                      : _.isEqual(r, AspectRatio.SixteenNine)
+                        ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX
+                        : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
                   </option>
                 ))}
               </select>
@@ -208,7 +262,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {!forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenType || uiTexts.contentToGenerate}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
                 <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={forceVideoOnly ? GenerateType.Video : generateType}
@@ -222,7 +276,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                       if (fallback) setImageGeneratorEngine(fallback as ImageGeneratorEngine);
                     }
                   }}
-                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5")}>
+                  className={cn(
+                    "flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5",
+                  )}>
                   <option value={GenerateType.Image} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionImage || uiTexts.imageOnly}
                   </option>
@@ -255,7 +311,14 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </p>
             <div className={cn("flex items-center gap-3 pt-1")}>
               <span className={cn("text-[10px] text-slate-400 whitespace-nowrap")}>{maxVideosLabel}</span>
-              <input type="range" min={MEDIA_MIX_CONFIG.MIN_VIDEOS} max={MEDIA_MIX_CONFIG.MAX_VIDEOS} value={maxVideoScenes} onChange={(e) => setMaxVideoScenes(Number(e.target.value))} className={cn("flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer")} />
+              <input
+                type="range"
+                min={MEDIA_MIX_CONFIG.MIN_VIDEOS}
+                max={MEDIA_MIX_CONFIG.MAX_VIDEOS}
+                value={maxVideoScenes}
+                onChange={(e) => setMaxVideoScenes(Number(e.target.value))}
+                className={cn("flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer")}
+              />
               <span className={cn("text-xs font-mono font-bold text-purple-300 w-6 text-right")}>{maxVideoScenes}</span>
             </div>
           </div>

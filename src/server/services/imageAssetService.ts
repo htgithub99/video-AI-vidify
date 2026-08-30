@@ -1,7 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import _ from "lodash";
-import { ASSETS_DIR_NAME, BASE64_DATA_URL_REGEX, CONTENT_TYPE_HEADER, CONTENT_TYPES, getBackendMsg, MimeType, REFACTOR_CONSTANTS, STYLE_EXTRACTION_CONFIG } from "../../constants/index.js";
+import {
+  ASSETS_DIR_NAME,
+  BASE64_DATA_URL_REGEX,
+  CONTENT_TYPE_HEADER,
+  CONTENT_TYPES,
+  getBackendMsg,
+  MimeType,
+  REFACTOR_CONSTANTS,
+  STYLE_EXTRACTION_CONFIG,
+} from "../../constants/index.js";
 import { getDataDirectory } from "../utils/paths.js";
 
 export interface EncodedImageAsset {

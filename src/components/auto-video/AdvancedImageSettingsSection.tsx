@@ -57,7 +57,22 @@ const buildOptionGroups = (lang: AppLanguage) => {
   return { chromeGroups, resumeGroups };
 };
 
-export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSectionProps> = ({ showAdvancedImageSettings, setShowAdvancedImageSettings, chromeHeadless, setChromeHeadless, resumeMode, setResumeMode, backgroundMode, setBackgroundMode, textMode, setTextMode, imageFocusMode, setImageFocusMode, language, T }) => {
+export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSectionProps> = ({
+  showAdvancedImageSettings,
+  setShowAdvancedImageSettings,
+  chromeHeadless,
+  setChromeHeadless,
+  resumeMode,
+  setResumeMode,
+  backgroundMode,
+  setBackgroundMode,
+  textMode,
+  setTextMode,
+  imageFocusMode,
+  setImageFocusMode,
+  language,
+  T,
+}) => {
   const { chromeGroups, resumeGroups } = buildOptionGroups(language);
 
   const currentChromeValue = chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED;
@@ -66,7 +81,12 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
 
   return (
     <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
-      <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)} aria-expanded={showAdvancedImageSettings} className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}>
+      <Button
+        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+        onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
+        aria-expanded={showAdvancedImageSettings}
+        className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}>
         <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS}>
           <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS}>
             <Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} />
@@ -93,9 +113,14 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")} title={T.lblChromeHeadlessTooltip}>
               {T.lblChromeHeadless}
             </span>
-            <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors")} title={T.lblChromeHeadlessTooltip}>
+            <div
+              className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 h-10 focus-within:border-rose-500/50 transition-colors")}
+              title={T.lblChromeHeadlessTooltip}>
               <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <select
+                value={currentChromeValue}
+                onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))}
+                className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(chromeGroups, (group) => (
                   <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (
@@ -114,9 +139,14 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")} title={T.lblResumeModeTooltip}>
               {T.lblResumeMode}
             </span>
-            <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors")} title={T.lblResumeModeTooltip}>
+            <div
+              className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 h-10 focus-within:border-rose-500/50 transition-colors")}
+              title={T.lblResumeModeTooltip}>
               <RefreshCw className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <select
+                value={currentResumeValue}
+                onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))}
+                className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(resumeGroups, (group) => (
                   <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (

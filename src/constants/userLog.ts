@@ -13,7 +13,8 @@ export const USER_LOG_CONFIG = {
   MULTIPLE_SPACES_PATTERN: /\s{2,}/g,
   SELECTOR_PATTERN: /(?:input|button|form|iframe|div|span|label)[#.\[][^\s,>]+/gi,
   CODE_KEYWORD_PATTERN: /\b(?:const|let|var|function|async|await|return|import|export|typeof|instanceof|throw|catch|try|promise|null|undefined|NaN)\b/gi,
-  TECHNICAL_TERMS_PATTERN: /\b(?:api|database|sqlite|json|function|class|stack|trace|exception|endpoint|request|response|payload|router|model|provider|token|task[_ -]?id|dom|selector|mutex|room|tab|gemini|cerebras|groq|ai33|gpt(?:-oss)?|qwen|playwright|puppeteer|ffmpeg|bytenode|obfuscator|webpack|vite|esbuild)\b/i,
+  TECHNICAL_TERMS_PATTERN:
+    /\b(?:api|database|sqlite|json|function|class|stack|trace|exception|endpoint|request|response|payload|router|model|provider|token|task[_ -]?id|dom|selector|mutex|room|tab|gemini|cerebras|groq|ai33|gpt(?:-oss)?|qwen|playwright|puppeteer|ffmpeg|bytenode|obfuscator|webpack|vite|esbuild)\b/i,
   CONNECTION_ERROR_PATTERN: /\b(?:401|403|unauthorized|forbidden|invalid[_ -]?key|missing[_ -]?(?:api[_ -]?)?key|chưa có khóa|thiếu khóa|sai khóa)\b/i,
   CAPACITY_ERROR_PATTERN: /\b(?:429|quota|rate[_ -]?limit|too many requests|limit:\s*0|hết hạn mức|đạt giới hạn|vượt quá)\b/i,
   TRANSIENT_ERROR_PATTERN: /\b(?:timeout|timed out|network|fetch failed|econn|socket|service unavailable|500|502|503|504|kết nối thất bại)\b/i,

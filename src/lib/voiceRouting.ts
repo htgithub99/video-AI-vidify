@@ -15,7 +15,13 @@ export const resolveVoiceRouting = ({ voiceId }: VoiceRoutingInput): VoiceRoutin
   const requestedVoiceId = _.trim(voiceId);
   const mappedVoiceId = VOICE_PRESET_MAP[requestedVoiceId] || requestedVoiceId;
   const hasKnownPrefix = _.some(REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES, (prefix) => _.startsWith(mappedVoiceId, prefix));
-  const finalVoiceId = _.isEmpty(mappedVoiceId) ? REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID : hasKnownPrefix ? mappedVoiceId : requestedVoiceId === mappedVoiceId ? mappedVoiceId : `${REFACTOR_CONSTANTS.EDGE_PREFIX}${mappedVoiceId}`;
+  const finalVoiceId = _.isEmpty(mappedVoiceId)
+    ? REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID
+    : hasKnownPrefix
+      ? mappedVoiceId
+      : requestedVoiceId === mappedVoiceId
+        ? mappedVoiceId
+        : `${REFACTOR_CONSTANTS.EDGE_PREFIX}${mappedVoiceId}`;
   return { finalVoiceId };
 };
 

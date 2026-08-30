@@ -18,7 +18,8 @@ export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene =
   dependencyHash: undefined,
 });
 
-const clearMatchingSceneAssets = (scenes: StoryboardScene[] | undefined, predicate: (scene: StoryboardScene) => boolean): StoryboardScene[] => _.map(_.defaultTo(scenes, []), (scene) => (predicate(scene) ? clearSceneVisualAsset(scene) : scene));
+const clearMatchingSceneAssets = (scenes: StoryboardScene[] | undefined, predicate: (scene: StoryboardScene) => boolean): StoryboardScene[] =>
+  _.map(_.defaultTo(scenes, []), (scene) => (predicate(scene) ? clearSceneVisualAsset(scene) : scene));
 
 const clearFinalRenderState = (project: VideoProject): VideoProject => ({
   ...project,
@@ -64,7 +65,11 @@ export const clearProjectVideoOutputs = (project: VideoProject): VideoProject =>
 export const clearAllProjectVisualOutputs = (project: VideoProject): VideoProject => clearProjectVideoOutputs(clearProjectImageOutputs(project));
 
 export const deleteProjectRegenerationAssets = async (projectId: string, target: string): Promise<boolean> => {
-  const groups = _.isEqual(target, REGENERATION_TARGET.VOICE) ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS] : _.isEqual(target, REGENERATION_TARGET.IMAGES) ? [PROJECT_ASSET_GROUP.VISUALS] : [PROJECT_ASSET_GROUP.VIDEOS];
+  const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
+    ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
+    : _.isEqual(target, REGENERATION_TARGET.IMAGES)
+      ? [PROJECT_ASSET_GROUP.VISUALS]
+      : [PROJECT_ASSET_GROUP.VIDEOS];
 
   for (const group of groups) {
     const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${projectId}/${group}`, {

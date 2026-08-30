@@ -1,7 +1,26 @@
-import { ABBREVIATIONS, CONJUNCTIONS, boundaries, VIETNAMESE_VALID_CHARS_REGEX, TEXT_PROCESSOR_CONFIGS, LAST_WORD_IN_SENTENCE_REGEX, SENTENCE_PUNCTUATION_END_REGEX, DIGIT_REGEX, ENDS_WITH_DIGIT_REGEX, STARTS_WITH_DIGIT_REGEX, NEWLINE_CHAR, SPACE_CHAR, SINGLE_WHITESPACE_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
+import {
+  ABBREVIATIONS,
+  CONJUNCTIONS,
+  boundaries,
+  VIETNAMESE_VALID_CHARS_REGEX,
+  TEXT_PROCESSOR_CONFIGS,
+  LAST_WORD_IN_SENTENCE_REGEX,
+  SENTENCE_PUNCTUATION_END_REGEX,
+  DIGIT_REGEX,
+  ENDS_WITH_DIGIT_REGEX,
+  STARTS_WITH_DIGIT_REGEX,
+  NEWLINE_CHAR,
+  SPACE_CHAR,
+  SINGLE_WHITESPACE_REGEX,
+  WHITESPACE_REGEX,
+} from "../constants/index.js";
 import _ from "lodash";
 
-export const smartChunkScript = (script: string, maxChunkSize: number = TEXT_PROCESSOR_CONFIGS.MAX_CHUNK_SIZE, minChunkSize: number = TEXT_PROCESSOR_CONFIGS.MIN_CHUNK_SIZE): string[] => {
+export const smartChunkScript = (
+  script: string,
+  maxChunkSize: number = TEXT_PROCESSOR_CONFIGS.MAX_CHUNK_SIZE,
+  minChunkSize: number = TEXT_PROCESSOR_CONFIGS.MIN_CHUNK_SIZE,
+): string[] => {
   if (_.isEmpty(_.trim(script))) return [];
   if (_.lte(script.length, maxChunkSize)) return [_.trim(script)];
 

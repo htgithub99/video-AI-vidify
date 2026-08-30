@@ -15,7 +15,15 @@ interface StylePresetSelectorProps {
   allowedPresetIds?: readonly string[];
 }
 
-export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ selectedStyle, onSelectStyle, language = "vi", label, accentColor = "blue", genre, allowedPresetIds }) => {
+export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
+  selectedStyle,
+  onSelectStyle,
+  language = "vi",
+  label,
+  accentColor = "blue",
+  genre,
+  allowedPresetIds,
+}) => {
   const isVi = _.isEqual(language, "vi");
   const isPurple = _.isEqual(accentColor, "purple");
   const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, language, AUTO_VIDEO_UI_TEXTS.vi);
@@ -51,12 +59,21 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
         </div>
 
         <div className={cn("flex items-center gap-2 shrink-0")}>
-          <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono max-w-[200px]", isPurple ? "bg-purple-950 border-purple-800 text-purple-300" : "bg-blue-950 border-blue-800 text-blue-300")} title={isVi ? currentPreset.nameVi : currentPreset.name}>
+          <div
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono max-w-[200px]",
+              isPurple ? "bg-purple-950 border-purple-800 text-purple-300" : "bg-blue-950 border-blue-800 text-blue-300",
+            )}
+            title={isVi ? currentPreset.nameVi : currentPreset.name}>
             <span className={cn("text-sm shrink-0")}>{currentPreset.icon}</span>
             <span className={cn("truncate")}>{isVi ? currentPreset.nameVi : currentPreset.name}</span>
           </div>
 
-          <button type="button" onClick={() => setIsDetailOpen(!isDetailOpen)} className={cn("p-1 rounded-lg border border-slate-800 bg-slate-955 text-slate-400 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors")} title={uiTexts.toggleRulesTooltip}>
+          <button
+            type="button"
+            onClick={() => setIsDetailOpen(!isDetailOpen)}
+            className={cn("p-1 rounded-lg border border-slate-800 bg-slate-955 text-slate-400 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors")}
+            title={uiTexts.toggleRulesTooltip}>
             {isDetailOpen ? <ChevronUp className={cn("w-3.5 h-3.5 text-amber-400")} /> : <ChevronDown className={cn("w-3.5 h-3.5")} />}
           </button>
         </div>
@@ -69,7 +86,19 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
             const isActive = _.isEqual(activeCategory, cat.id);
             const catName = isVi ? cat.nameVi : cat.nameEn;
             return (
-              <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)} title={catName} className={cn("px-3 py-1.5 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase whitespace-nowrap cursor-pointer select-none transition-colors border truncate", isActive ? (isPurple ? "bg-purple-600 border-purple-600 text-white shadow-xs" : "bg-blue-600 border-blue-600 text-white shadow-xs") : "bg-slate-955 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-slate-100")}>
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                title={catName}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase whitespace-nowrap cursor-pointer select-none transition-colors border truncate",
+                  isActive
+                    ? isPurple
+                      ? "bg-purple-600 border-purple-600 text-white shadow-xs"
+                      : "bg-blue-600 border-blue-600 text-white shadow-xs"
+                    : "bg-slate-955 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-slate-100",
+                )}>
                 {catName}
               </button>
             );
@@ -84,21 +113,58 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
           const tagline = preset.tagline || preset.description;
 
           return (
-            <button key={preset.id} type="button" onClick={() => onSelectStyle(preset.id)} title={`${name} - ${tagline}`} className={cn("relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group", isSelected ? (isPurple ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30") : isPurple ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40" : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40")}>
-              <div className={cn("p-1.5 sm:p-2 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 border", isPurple ? (isSelected ? "bg-purple-900 border-purple-700 text-purple-300" : "bg-purple-950/80 border-purple-800/80 text-purple-400") : isSelected ? "bg-blue-900 border-blue-700 text-blue-300" : "bg-blue-950/80 border-blue-800/80 text-blue-400")}>{preset.icon}</div>
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onSelectStyle(preset.id)}
+              title={`${name} - ${tagline}`}
+              className={cn(
+                "relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 text-left cursor-pointer select-none transition-all min-h-[66px] overflow-hidden group",
+                isSelected
+                  ? isPurple
+                    ? "bg-purple-950/80 border-purple-500 shadow-md ring-1 ring-purple-500/30"
+                    : "bg-blue-950/80 border-blue-500 shadow-md ring-1 ring-blue-500/30"
+                  : isPurple
+                    ? "bg-slate-900/90 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40"
+                    : "bg-slate-900/90 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40",
+              )}>
+              <div
+                className={cn(
+                  "p-1.5 sm:p-2 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 border",
+                  isPurple
+                    ? isSelected
+                      ? "bg-purple-900 border-purple-700 text-purple-300"
+                      : "bg-purple-950/80 border-purple-800/80 text-purple-400"
+                    : isSelected
+                      ? "bg-blue-900 border-blue-700 text-blue-300"
+                      : "bg-blue-950/80 border-blue-800/80 text-blue-400",
+                )}>
+                {preset.icon}
+              </div>
 
               <div className={cn("min-w-0 flex-1 flex flex-col justify-center overflow-hidden pr-1")}>
                 <div className={cn("flex items-center gap-1.5 min-w-0")}>
-                  <span className={cn("text-xs block leading-tight truncate font-bold", isSelected ? (isPurple ? "text-purple-300 font-extrabold" : "text-blue-300 font-extrabold") : "text-slate-100")} title={name}>
+                  <span
+                    className={cn(
+                      "text-xs block leading-tight truncate font-bold",
+                      isSelected ? (isPurple ? "text-purple-300 font-extrabold" : "text-blue-300 font-extrabold") : "text-slate-100",
+                    )}
+                    title={name}>
                     {name}
                   </span>
                   {recommendedIds.has(preset.id) && (
-                    <span className={cn("text-[8px] uppercase tracking-wider text-amber-400 font-bold bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded font-mono shrink-0")} title={uiTexts.recommendedBadge}>
+                    <span
+                      className={cn(
+                        "text-[8px] uppercase tracking-wider text-amber-400 font-bold bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded font-mono shrink-0",
+                      )}
+                      title={uiTexts.recommendedBadge}>
                       {uiTexts.recommendedBadge}
                     </span>
                   )}
                 </div>
-                <span className={cn("text-[10px] block truncate leading-tight mt-0.5 font-medium", isSelected ? (isPurple ? "text-purple-400" : "text-blue-400") : "text-slate-400")} title={tagline}>
+                <span
+                  className={cn("text-[10px] block truncate leading-tight mt-0.5 font-medium", isSelected ? (isPurple ? "text-purple-400" : "text-blue-400") : "text-slate-400")}
+                  title={tagline}>
                   {tagline}
                 </span>
               </div>
@@ -116,8 +182,14 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({ select
       </div>
 
       {isDetailOpen && (
-        <div className={cn("border rounded-2xl p-3 space-y-1.5 text-xs shadow-xs", isPurple ? "bg-purple-950 border-purple-800 text-slate-100" : "bg-blue-950 border-blue-800 text-slate-100")}>
-          <div className={cn("flex items-center gap-1.5 font-bold font-mono text-[10px] uppercase tracking-wider truncate", isPurple ? "text-purple-400" : "text-blue-400")} title={`${uiTexts.styleRulesPrefix}${isVi ? currentPreset.nameVi : currentPreset.name}`}>
+        <div
+          className={cn(
+            "border rounded-2xl p-3 space-y-1.5 text-xs shadow-xs",
+            isPurple ? "bg-purple-950 border-purple-800 text-slate-100" : "bg-blue-950 border-blue-800 text-slate-100",
+          )}>
+          <div
+            className={cn("flex items-center gap-1.5 font-bold font-mono text-[10px] uppercase tracking-wider truncate", isPurple ? "text-purple-400" : "text-blue-400")}
+            title={`${uiTexts.styleRulesPrefix}${isVi ? currentPreset.nameVi : currentPreset.name}`}>
             <Sparkles className={cn("w-3.5 h-3.5 text-amber-400 shrink-0")} />
             <span className={cn("truncate")}>
               {uiTexts.styleRulesPrefix}

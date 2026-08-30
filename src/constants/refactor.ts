@@ -468,4 +468,26 @@ export const REFACTOR_CONSTANTS = {
   DATA_URL_PREFIX: "data:",
 } as const;
 
-export const ROUTER_PATHS = { EXTRACT_STYLE: "/extract-style", REWRITE_PROMPTS: "/rewrite-prompts", OPTIMIZE_PROMPTS: "/optimize-prompts", REWRITE_THUMBNAILS: "/rewrite-thumbnails", REWRITE_THUMBNAILS_CHARACTER: "/rewrite-thumbnails-character", ANALYZE_CHARACTER: "/analyze-character", EXTRACT_CHARACTER: "/extract-character", REWRITE_PROMPTS_CHARACTER: "/rewrite-prompts-character", HOOKS: "/hooks", SCRIPT: "/script", ALIGN_VOICE: "/align-voice", VALIDATE_AUDIO: "/validate-audio", VALIDATE_FINAL_VIDEO: "/validate-final-video", ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips", REPAIR_VIDEO_PROMPT: "/repair-video-prompt", EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame", REFERENCE_ASSETS: "/reference-assets/:projectId/:group", REFERENCE_AUDIO: "/reference-audio/:projectId", SELECT_VIDEO_SCENES: "/select-video-scenes", VALIDATE_SCENE_IMAGE: "/validate-scene-image", SEARCH_ARCHIVAL_IMAGE: "/search-archival-image" } as const;
+export const ROUTER_PATHS = {
+  EXTRACT_STYLE: "/extract-style",
+  REWRITE_PROMPTS: "/rewrite-prompts",
+  OPTIMIZE_PROMPTS: "/optimize-prompts",
+  REWRITE_THUMBNAILS: "/rewrite-thumbnails",
+  REWRITE_THUMBNAILS_CHARACTER: "/rewrite-thumbnails-character",
+  ANALYZE_CHARACTER: "/analyze-character",
+  EXTRACT_CHARACTER: "/extract-character",
+  REWRITE_PROMPTS_CHARACTER: "/rewrite-prompts-character",
+  HOOKS: "/hooks",
+  SCRIPT: "/script",
+  ALIGN_VOICE: "/align-voice",
+  VALIDATE_AUDIO: "/validate-audio",
+  VALIDATE_FINAL_VIDEO: "/validate-final-video",
+  ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips",
+  REPAIR_VIDEO_PROMPT: "/repair-video-prompt",
+  EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame",
+  REFERENCE_ASSETS: "/reference-assets/:projectId/:group",
+  REFERENCE_AUDIO: "/reference-audio/:projectId",
+  SELECT_VIDEO_SCENES: "/select-video-scenes",
+  VALIDATE_SCENE_IMAGE: "/validate-scene-image",
+  SEARCH_ARCHIVAL_IMAGE: "/search-archival-image",
+} as const;

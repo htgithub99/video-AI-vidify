@@ -22,25 +22,25 @@ export function compactCode(content: string): string {
     prev = current;
 
     // Gộp export const X = { ... } as const;
-    current = current.replace(/export\s+const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^;{}]+)\s*\n\s*\}\s*as\s+const;/g, (match, name, body) => {
+    current = current.replace(/export\s+const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^;{}]+)\s*\n\s*\}\s*as\s+const;/g, (_match, name, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `export const ${name} = { ${oneLine} } as const;`;
     });
 
     // Gộp const X = { ... } as const;
-    current = current.replace(/const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^;{}]+)\s*\n\s*\}\s*as\s+const;/g, (match, name, body) => {
+    current = current.replace(/const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^;{}]+)\s*\n\s*\}\s*as\s+const;/g, (_match, name, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `const ${name} = { ${oneLine} } as const;`;
     });
 
     // Gộp return { ... };
-    current = current.replace(/return\s*\{\s*\n\s*([^{}]+)\s*\n\s*\};/g, (match, body) => {
+    current = current.replace(/return\s*\{\s*\n\s*([^{}]+)\s*\n\s*\};/g, (_match, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `return { ${oneLine} };`;
     });
 
     // Gộp const X = { ... };
-    current = current.replace(/const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^{}]+)\s*\n\s*\};/g, (match, name, body) => {
+    current = current.replace(/const\s+([A-Za-z0-9_]+)\s*=\s*\{\s*\n\s*([^{}]+)\s*\n\s*\};/g, (_match, name, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `const ${name} = { ${oneLine} };`;
     });
@@ -55,13 +55,13 @@ export function compactCode(content: string): string {
     current = current.replace(/\[\s*\n\s*([^;\n\[\]]+(?:,\s*[^;\n\[\]]+)*,?)\s*\n\s*\]/g, "[ $1 ]");
 
     // Gộp short interface
-    current = current.replace(/interface\s+([A-Za-z0-9_]+(?:\s*<[^>]+>)?)\s*\{\s*\n\s*([^;{}]+;\s*(?:[^;{}]+;\s*)*)\s*\}/g, (match, name, body) => {
+    current = current.replace(/interface\s+([A-Za-z0-9_]+(?:\s*<[^>]+>)?)\s*\{\s*\n\s*([^;{}]+;\s*(?:[^;{}]+;\s*)*)\s*\}/g, (_match, name, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `interface ${name} { ${oneLine} }`;
     });
 
     // Gộp short type object
-    current = current.replace(/type\s+([A-Za-z0-9_]+(?:\s*<[^>]+>)?)\s*=\s*\{\s*\n\s*([^;{}]+;\s*(?:[^;{}]+;\s*)*)\s*\};/g, (match, name, body) => {
+    current = current.replace(/type\s+([A-Za-z0-9_]+(?:\s*<[^>]+>)?)\s*=\s*\{\s*\n\s*([^;{}]+;\s*(?:[^;{}]+;\s*)*)\s*\};/g, (_match, name, body) => {
       const oneLine = body.split("\n").map((l: string) => l.trim()).filter(Boolean).join(" ");
       return `type ${name} = { ${oneLine} };`;
     });

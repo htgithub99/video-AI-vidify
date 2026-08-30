@@ -51,7 +51,8 @@ const rotateDiagnosticFile = (filePath: string, maxFileBytes: number, retainedFi
   }
 };
 
-const sanitizeOuterHtml = (html: string, maxLength: number): string => _.truncate(_.replace(html, /(value|data-value)=("[^"]*"|'[^']*')/gi, '$1="[redacted]"'), { length: maxLength, omission: "" });
+const sanitizeOuterHtml = (html: string, maxLength: number): string =>
+  _.truncate(_.replace(html, /(value|data-value)=("[^"]*"|'[^']*')/gi, '$1="[redacted]"'), { length: maxLength, omission: "" });
 
 export const captureDomDiagnostics = async (page: Page, state: string, options: DomDiagnosticCaptureOptions): Promise<void> => {
   try {

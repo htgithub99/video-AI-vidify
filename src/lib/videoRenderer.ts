@@ -133,13 +133,30 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
 
     const actualDuration = end - start;
     elapsed = end;
-    return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script, assetName: sc.assetName };
+    return {
+      id: sc.id,
+      start,
+      end,
+      duration: actualDuration,
+      cameraMotion: sc.cameraMotion,
+      transition: sc.transition,
+      subtitle: sc.subtitle || sc.script,
+      assetName: sc.assetName,
+    };
   });
 };
 
 const TRANSITION_DURATION = 0.4;
 
-export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, imgElement: HTMLImageElement | undefined, elapsedTimeInScene: number, totalSceneDuration: number, nextImgElement?: HTMLImageElement | undefined, transitionProgress?: number) => {
+export const drawSceneFrameToContext = (
+  ctx: CanvasRenderingContext2D,
+  sc: any,
+  imgElement: HTMLImageElement | undefined,
+  elapsedTimeInScene: number,
+  totalSceneDuration: number,
+  nextImgElement?: HTMLImageElement | undefined,
+  transitionProgress?: number,
+) => {
   const w = 1280;
   const h = 720;
 
@@ -274,7 +291,13 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
   ctx.restore();
 };
 
-export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImageUrl: (sc: StoryboardScene) => string, voiceConfig: any, ttsAudioUrl: string, onProgress: (percent: number) => void): Promise<Blob> => {
+export const compileVideoToBlob = async (
+  scenes: StoryboardScene[],
+  getSceneImageUrl: (sc: StoryboardScene) => string,
+  voiceConfig: any,
+  ttsAudioUrl: string,
+  onProgress: (percent: number) => void,
+): Promise<Blob> => {
   if (_.eq(scenes.length, 0)) {
     throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }

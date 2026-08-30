@@ -3,9 +3,17 @@ import { API_ROUTES, REFACTOR_CONSTANTS } from "../constants";
 import { safeSystemFetch } from "../lib/shared-utils";
 import { StoryboardScene } from "../types";
 
-export const SCENE_VISUAL_QUALITY_CONFIG = { TARGET_SCORE: 85, TECHNICAL_ANATOMY_SCORE: 82, TECHNICAL_SUBJECT_COUNT_SCORE: 82, SEVERE_ALIGNMENT_SCORE: 70, MAX_REGENERATION_ATTEMPTS: 2, SCORE_FIELDS: ["anatomy", "subjectCount", "narrativeAlignment", "environmentRelevance", "characterConsistency", "composition", "styleConsistency", "editability"] } as const;
+export const SCENE_VISUAL_QUALITY_CONFIG = {
+  TARGET_SCORE: 85,
+  TECHNICAL_ANATOMY_SCORE: 82,
+  TECHNICAL_SUBJECT_COUNT_SCORE: 82,
+  SEVERE_ALIGNMENT_SCORE: 70,
+  MAX_REGENERATION_ATTEMPTS: 2,
+  SCORE_FIELDS: ["anatomy", "subjectCount", "narrativeAlignment", "environmentRelevance", "characterConsistency", "composition", "styleConsistency", "editability"],
+} as const;
 
-const TECHNICAL_DEFECT_PATTERN = /(?:anatom|limb|arm|hand|finger|leg|foot|head|face|body|merged|duplicate|anachron|wrong[_\s-]*(?:flag|uniform|era|period)|extra[_\s-]*(?:person|people|character|subject|arm|hand|finger|limb|leg|head)|missing[_\s-]*(?:person|character|subject|arm|hand|finger|limb|leg|head)|subject[_\s-]*count|wrong[_\s-]*(?:subject|character|action)|unwanted[_\s-]*text|gibberish|multi[_\s-]*(?:panel|frame)|collage|crop)/i;
+const TECHNICAL_DEFECT_PATTERN =
+  /(?:anatom|limb|arm|hand|finger|leg|foot|head|face|body|merged|duplicate|anachron|wrong[_\s-]*(?:flag|uniform|era|period)|extra[_\s-]*(?:person|people|character|subject|arm|hand|finger|limb|leg|head)|missing[_\s-]*(?:person|character|subject|arm|hand|finger|limb|leg|head)|subject[_\s-]*count|wrong[_\s-]*(?:subject|character|action)|unwanted[_\s-]*text|gibberish|multi[_\s-]*(?:panel|frame)|collage|crop)/i;
 
 export interface SceneVisualQuality {
   anatomy: number;
@@ -58,11 +66,32 @@ const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuali
   warnings: _.uniq(_.compact(_.castArray(source.warnings))),
 });
 
-export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boolean => _.every([quality.usableForVideo, _.isEmpty(quality.blockingErrors), _.every(SCENE_VISUAL_QUALITY_CONFIG.SCORE_FIELDS, (field) => _.toNumber(_.get(quality, field)) >= SCENE_VISUAL_QUALITY_CONFIG.TARGET_SCORE)], Boolean);
+export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boolean =>
+  _.every(
+    [
+      quality.usableForVideo,
+      _.isEmpty(quality.blockingErrors),
+      _.every(SCENE_VISUAL_QUALITY_CONFIG.SCORE_FIELDS, (field) => _.toNumber(_.get(quality, field)) >= SCENE_VISUAL_QUALITY_CONFIG.TARGET_SCORE),
+    ],
+    Boolean,
+  );
 
-export const getSceneVisualRegenerationReasons = (quality: SceneVisualQuality, textAllowed: boolean = false): string[] => _.uniq(_.compact([quality.anatomy < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_ANATOMY_SCORE && "invalid_anatomy_or_extra_limbs", quality.subjectCount < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_SUBJECT_COUNT_SCORE && "wrong_or_duplicated_subject_count", quality.duplicatedSubjects && "duplicated_primary_subjects", quality.multiPanelLayout && "unwanted_multi_panel_layout", quality.unwantedText && !textAllowed && "unwanted_readable_text", quality.narrativeAlignment! < SCENE_VISUAL_QUALITY_CONFIG.SEVERE_ALIGNMENT_SCORE && "material_narrative_mismatch", !quality.usableForVideo && "image_not_usable_for_video", ..._.filter(quality.blockingErrors, (error) => TECHNICAL_DEFECT_PATTERN.test(error))])) as string[];
+export const getSceneVisualRegenerationReasons = (quality: SceneVisualQuality, textAllowed: boolean = false): string[] =>
+  _.uniq(
+    _.compact([
+      quality.anatomy < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_ANATOMY_SCORE && "invalid_anatomy_or_extra_limbs",
+      quality.subjectCount < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_SUBJECT_COUNT_SCORE && "wrong_or_duplicated_subject_count",
+      quality.duplicatedSubjects && "duplicated_primary_subjects",
+      quality.multiPanelLayout && "unwanted_multi_panel_layout",
+      quality.unwantedText && !textAllowed && "unwanted_readable_text",
+      quality.narrativeAlignment! < SCENE_VISUAL_QUALITY_CONFIG.SEVERE_ALIGNMENT_SCORE && "material_narrative_mismatch",
+      !quality.usableForVideo && "image_not_usable_for_video",
+      ..._.filter(quality.blockingErrors, (error) => TECHNICAL_DEFECT_PATTERN.test(error)),
+    ]),
+  ) as string[];
 
-export const shouldRegenerateSceneImage = (quality: SceneVisualQuality, textAllowed: boolean = false): boolean => !_.isEmpty(getSceneVisualRegenerationReasons(quality, textAllowed));
+export const shouldRegenerateSceneImage = (quality: SceneVisualQuality, textAllowed: boolean = false): boolean =>
+  !_.isEmpty(getSceneVisualRegenerationReasons(quality, textAllowed));
 
 export const createTechnicalQaRegenerationPrompt = (prompt: string, reasons: string[]): string => {
   const correction = `Fresh regeneration of the same exact scene; preserve all story, character, style, camera and composition requirements while correcting only these detected technical defects: ${_.join(reasons, ", ")}. Produce one coherent single-frame image with natural complete anatomy and exactly the requested primary subjects.`;
@@ -71,7 +100,27 @@ export const createTechnicalQaRegenerationPrompt = (prompt: string, reasons: str
   return `${_.trim(prompt.slice(0, aspectMatch.index))} ${correction}${aspectMatch[0]}`;
 };
 
-export const validateSceneImage = async (projectId: string, scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "generationPrompt" | "assetUrl" | "expectedSubjectCount" | "allowBackgroundPeople" | "visualIntent" | "visibleAction" | "storyEvidence" | "archivalSourceUrl" | "archivalLicense">, referenceAssetUrl?: string, referenceAssetUrls: string[] = [], context: SceneVisualValidationContext = {}): Promise<SceneVisualQualityResult> => {
+export const validateSceneImage = async (
+  projectId: string,
+  scene: Pick<
+    StoryboardScene,
+    | "id"
+    | "script"
+    | "prompt"
+    | "generationPrompt"
+    | "assetUrl"
+    | "expectedSubjectCount"
+    | "allowBackgroundPeople"
+    | "visualIntent"
+    | "visibleAction"
+    | "storyEvidence"
+    | "archivalSourceUrl"
+    | "archivalLicense"
+  >,
+  referenceAssetUrl?: string,
+  referenceAssetUrls: string[] = [],
+  context: SceneVisualValidationContext = {},
+): Promise<SceneVisualQualityResult> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_SCENE_IMAGE, {
     bypassCache: true,
     projectId,

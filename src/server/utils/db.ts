@@ -3,7 +3,16 @@ import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
-import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg, SQL_STATEMENTS, MIGRATION_DEFAULTS, REFACTOR_CONSTANTS } from "../../constants/index.js";
+import {
+  PROJECTS_FILE_NAME,
+  ENCODING_UTF8,
+  SQLITE_DB_NAME,
+  PROJECTS_BACKUP_DIR_NAME,
+  getBackendMsg,
+  SQL_STATEMENTS,
+  MIGRATION_DEFAULTS,
+  REFACTOR_CONSTANTS,
+} from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import _ from "lodash";
 import { getDataDirectory } from "./paths.js";
@@ -108,7 +117,19 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         };
       }
 
-      return { id: row.id, name: row.name, description: row.description, createdAt: row.createdAt, updatedAt: row.updatedAt, currentStep: row.currentStep, creditsUsed: row.creditsUsed, parentId: detail.parentId, projectKind: detail.projectKind, config, storyboard: _.defaultTo(detail.storyboard, []) };
+      return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        currentStep: row.currentStep,
+        creditsUsed: row.creditsUsed,
+        parentId: detail.parentId,
+        projectKind: detail.projectKind,
+        config,
+        storyboard: _.defaultTo(detail.storyboard, []),
+      };
     });
   } catch (error) {
     appError(getBackendMsg("SQLITE_LIST_ERR"), error);
@@ -133,7 +154,16 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
   try {
     const db = await initDb();
 
-    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [project.id, project.name, _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING), _.defaultTo(project.createdAt, new Date().toISOString()), _.defaultTo(project.updatedAt, new Date().toISOString()), _.defaultTo(project.currentStep, 0), _.defaultTo(project.creditsUsed, 0), jsonUtils.safeStringify(project)]);
+    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
+      project.id,
+      project.name,
+      _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+      _.defaultTo(project.createdAt, new Date().toISOString()),
+      _.defaultTo(project.updatedAt, new Date().toISOString()),
+      _.defaultTo(project.currentStep, 0),
+      _.defaultTo(project.creditsUsed, 0),
+      jsonUtils.safeStringify(project),
+    ]);
   } catch (error) {
     appError(_.join([getBackendMsg("SQLITE_WRITE_ERR"), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
@@ -240,7 +270,16 @@ export async function migrateJsonToSqlite(): Promise<void> {
         } as any;
       }
 
-      await db.run(SQL_STATEMENTS.INSERT_PROJECT, [projectDetail!.id, projectDetail!.name, _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING), _.defaultTo(projectDetail!.createdAt, new Date().toISOString()), _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()), _.defaultTo(projectDetail!.currentStep, 0), _.defaultTo(projectDetail!.creditsUsed, 0), jsonUtils.safeStringify(projectDetail)]);
+      await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
+        projectDetail!.id,
+        projectDetail!.name,
+        _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+        _.defaultTo(projectDetail!.createdAt, new Date().toISOString()),
+        _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()),
+        _.defaultTo(projectDetail!.currentStep, 0),
+        _.defaultTo(projectDetail!.creditsUsed, 0),
+        jsonUtils.safeStringify(projectDetail),
+      ]);
 
       if (_.isEqual(fs.existsSync(detailFile), true)) {
         try {

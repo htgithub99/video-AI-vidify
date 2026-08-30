@@ -74,7 +74,10 @@ export const createMasterStyleSuffix = (profile?: VisualStyleProfile, background
 
 export const createSoftStyleDirective = (profile: VisualStyleProfile, backgroundMode?: string): string => {
   const normalizedWorldRendering = resolveWorldRendering(normalizeField(profile.worldRendering), backgroundMode);
-  return _.join(_.compact([createCharacterConstructionDirective(profile), normalizedWorldRendering]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR) || IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE;
+  return (
+    _.join(_.compact([createCharacterConstructionDirective(profile), normalizedWorldRendering]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR) ||
+    IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE
+  );
 };
 
 export const createThumbnailStyleDirective = (sceneProfile?: VisualStyleProfile, thumbnailProfile?: VisualStyleProfile, backgroundMode?: string): string => {
@@ -103,4 +106,12 @@ export const resolveReferenceLockedStyle = (style: unknown, _hasReferences: bool
   return preset.positivePrompt;
 };
 
-export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string => (referenceLocked ? _.trim(value.replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING).replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ").replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1")) : value);
+export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string =>
+  referenceLocked
+    ? _.trim(
+        value
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING)
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ")
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1"),
+      )
+    : value;

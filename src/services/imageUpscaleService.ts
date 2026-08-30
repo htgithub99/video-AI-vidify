@@ -4,7 +4,8 @@ import { QualityMode, SceneAssetStatus, StoryboardScene } from "../types";
 import { appendAssetRevision } from "./dependencyHashService";
 import { selectScenesForUpscale } from "./qualityProfileService";
 
-const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string => _.reduce(values, (message, value, key) => message.replace(`{${key}}`, _.toString(value)), template);
+const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string =>
+  _.reduce(values, (message, value, key) => message.replace(`{${key}}`, _.toString(value)), template);
 
 export interface ImageUpscaleResult {
   assetUrl: string;
@@ -64,7 +65,14 @@ export const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleR
   return { assetUrl: upscaledAssetUrl, changed: true, sourceWidth, sourceHeight, outputWidth: output.width, outputHeight: output.height };
 };
 
-export const upscaleApprovedSceneAssets = async ({ scenes, validatedSceneIds, qualityMode, persistAsset, persistCheckpoint, onLog }: ApprovedSceneUpscaleOptions): Promise<number> => {
+export const upscaleApprovedSceneAssets = async ({
+  scenes,
+  validatedSceneIds,
+  qualityMode,
+  persistAsset,
+  persistCheckpoint,
+  onLog,
+}: ApprovedSceneUpscaleOptions): Promise<number> => {
   const targets = selectScenesForUpscale(scenes, validatedSceneIds, qualityMode);
   if (_.isEmpty(targets)) return 0;
   onLog(formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.START_LOG_TEMPLATE, { count: _.size(targets) }));

@@ -40,7 +40,16 @@ const buildVoiceQueryParams = (filters: UseVoicesFilters): URLSearchParams => {
 };
 
 const getVoiceCacheKey = (filters: UseVoicesFilters): string => {
-  const parts = [REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX, filters.provider, filters.page, filters.pageSize, filters.language || REFACTOR_CONSTANTS.VD_EMPTY_STRING, filters.gender || REFACTOR_CONSTANTS.VD_EMPTY_STRING, filters.age || REFACTOR_CONSTANTS.VD_EMPTY_STRING, filters.search || REFACTOR_CONSTANTS.VD_EMPTY_STRING];
+  const parts = [
+    REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX,
+    filters.provider,
+    filters.page,
+    filters.pageSize,
+    filters.language || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.gender || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.age || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.search || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  ];
   return _.join(parts, REFACTOR_CONSTANTS.VOICES_JOIN_CHAR);
 };
 

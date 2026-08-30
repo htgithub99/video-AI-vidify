@@ -27,9 +27,11 @@ export interface AlignVoiceTimelineOptions {
   signal?: AbortSignal;
 }
 
-export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] => _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
+export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] =>
+  _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
 
-export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGlobalNarration: boolean): StoryboardScene[] => (hasGlobalNarration ? _.map(scenes, (scene) => _.omit(scene, "audioBase64") as StoryboardScene) : scenes);
+export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGlobalNarration: boolean): StoryboardScene[] =>
+  hasGlobalNarration ? _.map(scenes, (scene) => _.omit(scene, "audioBase64") as StoryboardScene) : scenes;
 
 export const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignment[]): StoryboardScene[] =>
   _.map(scenes, (scene) => {
@@ -48,7 +50,8 @@ export const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: Voic
       : scene;
   });
 
-export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number => _.max(_.map(scenes, (scene) => _.toNumber(_.get(scene, "_end", 0)))) || _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
+export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number =>
+  _.max(_.map(scenes, (scene) => _.toNumber(_.get(scene, "_end", 0)))) || _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
 
 export const decodeAudioDuration = async (audioBase64: string): Promise<number> => {
   const AudioContextConstructor = window.AudioContext;
@@ -102,7 +105,11 @@ export const alignVoiceTimeline = async ({ audioBase64, scenes, projectId, proje
   try {
     const audioDuration = await decodeAudioDuration(audioBase64);
     if (audioDuration >= VOICE_ALIGNMENT_CONFIG.MIN_AUDIO_DURATION_SECONDS) {
-      return { scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration), backendAligned: false, warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING) };
+      return {
+        scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration),
+        backendAligned: false,
+        warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING),
+      };
     }
   } catch {
     return { scenes: cleanScenes, backendAligned: false, warning: VOICE_ALIGNMENT_CONFIG.DURATION_WARNING };

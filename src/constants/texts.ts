@@ -70,12 +70,14 @@ export const SCENE_SPLIT_PROMPTS = {
   VN: {
     DEFAULT_SCRIPT: (idx: number) => `Chi tiết cốt truyện hấp dẫn phần ${idx} tiếp nối mạch truyện đầy lôi cuốn.`,
     EFFECTS: (style: string) => `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${style}`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
   EN: {
     DEFAULT_SCRIPT: (idx: number) => `Interesting plot detail part ${idx} continuing the engaging narrative.`,
     EFFECTS: (style: string) => `Soft light leaks overlays adhering to ${style} feel`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
 };
 
@@ -114,7 +116,23 @@ export const TRANSFER_ENCODINGS = { CHUNKED: "chunked" };
 
 export const HTTP_STATUS_CODES = { OK: 200, BAD_REQUEST: 400, NOT_FOUND: 404, INTERNAL_SERVER_ERROR: 500, SERVICE_UNAVAILABLE: 503 };
 
-export const TEMPLATE_CONFIG = { PAYLOAD_LIMIT: "50mb", DIR_NAME: "templates/capcut", JSON_EXT: ".json", SORT_FIELD_CREATED_AT: "createdAt", SORT_ORDER_DESC: SortOrder.DESC, UTF8: "utf8" as BufferEncoding, JSON_SPACE: 2, REGEX_NFD: /[\u0300-\u036f]/g, REGEX_SAFE_NAME: /[^a-zA-Z0-9 -]/g, REGEX_SPACE: /\s+/g, ID_LENGTH: 8, MAX_TEMPLATES: 2, DRAFT_CONTENT_FILE: "draft_content.json", MAX_TEMPLATES_ERROR: "EXCEED_MAX_TEMPLATES", INVALID_TEMPLATE_ERROR: "INVALID_CAPCUT_TEMPLATE" };
+export const TEMPLATE_CONFIG = {
+  PAYLOAD_LIMIT: "50mb",
+  DIR_NAME: "templates/capcut",
+  JSON_EXT: ".json",
+  SORT_FIELD_CREATED_AT: "createdAt",
+  SORT_ORDER_DESC: SortOrder.DESC,
+  UTF8: "utf8" as BufferEncoding,
+  JSON_SPACE: 2,
+  REGEX_NFD: /[\u0300-\u036f]/g,
+  REGEX_SAFE_NAME: /[^a-zA-Z0-9 -]/g,
+  REGEX_SPACE: /\s+/g,
+  ID_LENGTH: 8,
+  MAX_TEMPLATES: 2,
+  DRAFT_CONTENT_FILE: "draft_content.json",
+  MAX_TEMPLATES_ERROR: "EXCEED_MAX_TEMPLATES",
+  INVALID_TEMPLATE_ERROR: "INVALID_CAPCUT_TEMPLATE",
+};
 
 export const AUDIO_MIME_TYPE = "audio/wav";
 export const BLOB_PREFIX = "blob:";
@@ -167,11 +185,65 @@ export const COMMON_STRINGS = {
   CINEMATIC_CHILD_SUFFIX: " - Phim AI",
 } as const;
 
-export const ERROR_MESSAGES = { HTTP_ERROR_PREFIX: "HTTP Error ", AUTO_SAVE_ERR: "ERROR_AUTO_SAVING_PROJECT", PARSING_PROJECTS: "ERROR_PARSING_PROJECTS", FETCHING_PROJECTS: "ERROR_FETCHING_PROJECTS", CREATING_PROJECT: "ERROR_CREATING_PROJECT", DELETING_PROJECT: "ERROR_DELETING_PROJECT", UPDATING_PROJECT: "ERROR_UPDATING_PROJECT", FLUSH_SAVE_ON_UNMOUNT: "ERROR_FLUSH_SAVE_ON_UNMOUNT", PROJECT_READ_ERR: "PROJECT_READ_ERR", PROJECT_WRITE_ERR: "PROJECT_WRITE_ERR", PROJECT_NOT_FOUND: "PROJECT_NOT_FOUND", WRITE_SCENE_IMAGE_ERR: "Lỗi ghi file ảnh scene: ", WRITE_SCENE_VIDEO_ERR: "Lỗi ghi file video scene: ", WRITE_SCENE_AUDIO_ERR: "Lỗi ghi file âm thanh scene: ", WRITE_THUMB_IMAGE_ERR: "Lỗi ghi file ảnh thumbnail: ", WRITE_UNIFIED_AUDIO_ERR: "Lỗi ghi file âm thanh hợp nhất dự án ", RENAME_ASSETS_DIR_ERR: "Lỗi đổi tên folder assets", DELETE_SCENE_IMAGE_DISK_ERR: "Lỗi khi xóa file ảnh phân cảnh trên đĩa: ", READ_IMAGES_DIR_CLEAN_ERR: "Lỗi đọc thư mục ảnh để dọn dẹp: ", DELETE_PROJECT_ASSETS_ERR: "Lỗi xóa thư mục assets của dự án", DELETE_SCENE_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice phân cảnh cũ: ", READ_AUDIO_DIR_CLEAN_ERR: "[Dọn dẹp Audio] Không thể đọc thư mục audio để dọn dẹp: ", DELETE_UNIFIED_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ", BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ", LLM_EXECUTION_FAILED: "Unable to execute LLM request.", FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR", RENAME_ASSETS_DIR_ERR_FALLBACK: "(Đang thử copy đệ quy...)", COPY_ASSETS_DIR_ERR: "Lỗi không thể copy thư mục mới", STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.", STREAM_INACTIVITY_TIMEOUT: "Quá trình tạo ảnh không có tiến triển. Hệ thống sẽ chuyển sang phương án dự phòng.", SYSTEM_FLOW_ERROR: "SYSTEM_FLOW_ERROR", STREAM_FLOW_ERROR: "STREAM_FLOW_ERROR", API_ERROR_PREFIX: "API Error: ", MIGRATE_PROJECT_DIR_ERR: "Lỗi chuyển đổi thư mục dự án từ tên cũ sang ID: " } as const;
+export const ERROR_MESSAGES = {
+  HTTP_ERROR_PREFIX: "HTTP Error ",
+  AUTO_SAVE_ERR: "ERROR_AUTO_SAVING_PROJECT",
+  PARSING_PROJECTS: "ERROR_PARSING_PROJECTS",
+  FETCHING_PROJECTS: "ERROR_FETCHING_PROJECTS",
+  CREATING_PROJECT: "ERROR_CREATING_PROJECT",
+  DELETING_PROJECT: "ERROR_DELETING_PROJECT",
+  UPDATING_PROJECT: "ERROR_UPDATING_PROJECT",
+  FLUSH_SAVE_ON_UNMOUNT: "ERROR_FLUSH_SAVE_ON_UNMOUNT",
+  PROJECT_READ_ERR: "PROJECT_READ_ERR",
+  PROJECT_WRITE_ERR: "PROJECT_WRITE_ERR",
+  PROJECT_NOT_FOUND: "PROJECT_NOT_FOUND",
+  WRITE_SCENE_IMAGE_ERR: "Lỗi ghi file ảnh scene: ",
+  WRITE_SCENE_VIDEO_ERR: "Lỗi ghi file video scene: ",
+  WRITE_SCENE_AUDIO_ERR: "Lỗi ghi file âm thanh scene: ",
+  WRITE_THUMB_IMAGE_ERR: "Lỗi ghi file ảnh thumbnail: ",
+  WRITE_UNIFIED_AUDIO_ERR: "Lỗi ghi file âm thanh hợp nhất dự án ",
+  RENAME_ASSETS_DIR_ERR: "Lỗi đổi tên folder assets",
+  DELETE_SCENE_IMAGE_DISK_ERR: "Lỗi khi xóa file ảnh phân cảnh trên đĩa: ",
+  READ_IMAGES_DIR_CLEAN_ERR: "Lỗi đọc thư mục ảnh để dọn dẹp: ",
+  DELETE_PROJECT_ASSETS_ERR: "Lỗi xóa thư mục assets của dự án",
+  DELETE_SCENE_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice phân cảnh cũ: ",
+  READ_AUDIO_DIR_CLEAN_ERR: "[Dọn dẹp Audio] Không thể đọc thư mục audio để dọn dẹp: ",
+  DELETE_UNIFIED_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ",
+  BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
+  LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
+  FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
+  RENAME_ASSETS_DIR_ERR_FALLBACK: "(Đang thử copy đệ quy...)",
+  COPY_ASSETS_DIR_ERR: "Lỗi không thể copy thư mục mới",
+  STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
+  STREAM_INACTIVITY_TIMEOUT: "Quá trình tạo ảnh không có tiến triển. Hệ thống sẽ chuyển sang phương án dự phòng.",
+  SYSTEM_FLOW_ERROR: "SYSTEM_FLOW_ERROR",
+  STREAM_FLOW_ERROR: "STREAM_FLOW_ERROR",
+  API_ERROR_PREFIX: "API Error: ",
+  MIGRATE_PROJECT_DIR_ERR: "Lỗi chuyển đổi thư mục dự án từ tên cũ sang ID: ",
+} as const;
 
-export const LOG_MESSAGES = { DELETE_SCENE_IMAGE_DISK_SUCCESS: "Đã xóa file ảnh phân cảnh trên đĩa (dọn dẹp prefix): ", DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ", DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ", BULK_DELETE_PROJECT_DIR_SUCCESS: "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ", DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ", MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi thư mục dự án từ tên cũ sang ID: " } as const;
+export const LOG_MESSAGES = {
+  DELETE_SCENE_IMAGE_DISK_SUCCESS: "Đã xóa file ảnh phân cảnh trên đĩa (dọn dẹp prefix): ",
+  DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ",
+  DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
+  BULK_DELETE_PROJECT_DIR_SUCCESS: "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
+  DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ",
+  MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi thư mục dự án từ tên cũ sang ID: ",
+} as const;
 
-export const DEFAULT_PROJECT_CONFIGS = { GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, DURATION: "2m", AUDIENCE: "General Audience", WRITING_STYLE: "Professional", HOOK_TYPE: "Auto", VOICE_PROVIDER: "Gemini Speech", VOICE_EMOTION: "Normal", VOICE_URI: "preset-vi-bac", VISUAL_SOURCE: "AI Auto", VISUAL_STYLE: "Realistic", VISUAL_QUALITY: "Standard" } as const;
+export const DEFAULT_PROJECT_CONFIGS = {
+  GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
+  DURATION: "2m",
+  AUDIENCE: "General Audience",
+  WRITING_STYLE: "Professional",
+  HOOK_TYPE: "Auto",
+  VOICE_PROVIDER: "Gemini Speech",
+  VOICE_EMOTION: "Normal",
+  VOICE_URI: "preset-vi-bac",
+  VISUAL_SOURCE: "AI Auto",
+  VISUAL_STYLE: "Realistic",
+  VISUAL_QUALITY: "Standard",
+} as const;
 
 export const EXPORT_LOADING_TEXTS = {
   vi: {
@@ -521,13 +593,86 @@ export const PROJECT_LIST_TEXTS = {
   },
 } as const;
 
-export const PROJECT_LIST_CONSTANTS = { FILTER_ALL: "all", LANG_VI: "vi", LANG_EN: "en", SLEEP_DURATION_MS: 1000, CREATE_REQUEST_TIMEOUT_MS: 15000, SKELETON_ITEMS: [1, 2, 3], ITEMS_PER_PAGE: 5, PAGE_ONE: 1, PAGINATION_DELIMITER: "/", DASH_DELIMITER: "-" } as const;
+export const PROJECT_LIST_CONSTANTS = {
+  FILTER_ALL: "all",
+  LANG_VI: "vi",
+  LANG_EN: "en",
+  SLEEP_DURATION_MS: 1000,
+  CREATE_REQUEST_TIMEOUT_MS: 15000,
+  SKELETON_ITEMS: [1, 2, 3],
+  ITEMS_PER_PAGE: 5,
+  PAGE_ONE: 1,
+  PAGINATION_DELIMITER: "/",
+  DASH_DELIMITER: "-",
+} as const;
 
 export const INPUT_MODES = { ZIP: "zip", SPLIT: "split", CURRENT: "current" } as const;
 
 export const FOLDER_TYPES = { PARENT: "parent", SFX: "sfx", IMAGES: "images", VOICES: "voices", VIDEO_OUTPUT: "video_output" } as const;
 
-export const PIPELINE_STEP6_UI_TEXTS = { TITLE_TEMPLATE: "Dự Án Mẫu", TOOLTIP_TEMPLATE: "Chọn một dự án CapCut mẫu để áp dụng cấu trúc", NO_TEMPLATE: "Chưa có mẫu nào. Hãy tải lên!", BTN_UPLOAD: "Tải mẫu", TITLE_MEDIA: "Nguồn Media", TOOLTIP_MEDIA: "Nguồn chứa hình ảnh và âm thanh", BTN_MODE_ZIP: "Chung (ZIP)", BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP", BTN_MODE_SPLIT: "Tách riêng", BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh", BTN_MODE_CURRENT: "Dự án hiện tại", BTN_MODE_CURRENT_TOOLTIP: "Sử dụng hình ảnh và âm thanh từ dự án đang mở", PLACEHOLDER_ZIP: "Đường dẫn thư mục hoặc File ZIP...", PLACEHOLDER_IMAGES: "Thư mục Hình ảnh...", PLACEHOLDER_VOICES: "Thư mục Âm thanh...", TITLE_MOTION: "Hiệu ứng", TOOLTIP_MOTION: "Hiệu ứng chuyển động của camera và hình ảnh", TITLE_TRANSITION: "Chuyển tiếp", TOOLTIP_TRANSITION: "Hiệu ứng chuyển tiếp giữa các phân cảnh", BTN_AUTO: "Auto Mode (Tự Tạo Mới)", BTN_MANUAL: "Manual (Sửa File Cũ)", BTN_RUN_AUTO: "TỰ ĐỘNG TẠO DỰ ÁN & TỐI ƯU", ERR_SELECT_TEMPLATE: "Vui lòng chọn Dự án Mẫu (Template)!", ERR_SELECT_ZIP: "Vui lòng chọn Thư mục Cha chứa ảnh/audio hoặc File ZIP!", ERR_SELECT_SPLIT: "Vui lòng chọn đủ Thư mục Ảnh và Thư mục Âm Thanh!", LOG_UPLOADING: "Đang tải lên mẫu: ", LOG_UPLOAD_SUCCESS: "Tải lên mẫu thành công!", LOG_UPLOAD_ERROR: "Lỗi tải lên mẫu: ", LOG_SELECT_PARENT: "Đã chọn thư mục cha: ", LOG_SELECT_IMAGES: "Đã chọn thư mục ảnh: ", LOG_SELECT_VOICES: "Đã chọn thư mục audio: ", LOG_ERR_TEMPLATE: "Lỗi tải lên mẫu.", MODAL_TITLE_DELETE: "Xóa mẫu", MODAL_MSG_DELETE: "Bạn có chắc chắn muốn xoá mẫu này không?", MODAL_TITLE_RENAME: "Đổi tên mẫu", MODAL_MSG_RENAME: "Nhập tên mới cho mẫu này:", MODAL_TITLE_UPLOAD: "Tải Mẫu Lên", MODAL_MSG_UPLOAD: "Nhập tên cho mẫu dự án này:", LOG_DELETE_SUCCESS: "Đã xoá mẫu thành công.", LOG_DELETE_ERROR: "Xoá mẫu thất bại.", LOG_RENAME_SUCCESS: "Đã đổi tên mẫu thành công.", LOG_RENAME_ERROR: "Đổi tên mẫu thất bại.", BTN_CONFIRM: "Xác nhận", BTN_CANCEL: "Hủy", TITLE_PROJECT_NAME: "TÊN DỰ ÁN CAPCUT", TOOLTIP_PROJECT_NAME: "Tên dự án CapCut sẽ được sinh ra", PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY", NO_TEMPLATE_FOUND: "Chưa có mẫu nào", SELECT_TEMPLATE: "Chọn mẫu...", TITLE_EXPORT_VIDEO: "XUẤT VIDEO CAPCUT", TOOLTIP_EXPORT_VIDEO: "Tự động xuất video sau khi tạo dự án CapCut thành công", LABEL_EXPORT_VIDEO: "Tự động xuất video sau khi tạo xong", TITLE_VIDEO_OUTPUT_DIR: "Thư mục lưu video", TOOLTIP_VIDEO_OUTPUT_DIR: "Chọn thư mục để lưu file video xuất ra", PLACEHOLDER_VIDEO_OUTPUT_DIR: "Đường dẫn thư mục lưu video...", LOG_SELECT_VIDEO_OUTPUT: "Đã chọn thư mục xuất video: ", ERR_SELECT_VIDEO_OUTPUT: "Vui lòng chọn thư mục lưu video!", LOG_ERROR_PREFIX: "Lỗi: ", DEFAULT_TEMPLATE_NAME: "Template Mới", ERR_NO_TEMPLATE_NAME: "Vui lòng nhập tên template!", AUTO_GET_MEDIA: "Tự động lấy ảnh và giọng nói từ dự án hiện tại." } as const;
+export const PIPELINE_STEP6_UI_TEXTS = {
+  TITLE_TEMPLATE: "Dự Án Mẫu",
+  TOOLTIP_TEMPLATE: "Chọn một dự án CapCut mẫu để áp dụng cấu trúc",
+  NO_TEMPLATE: "Chưa có mẫu nào. Hãy tải lên!",
+  BTN_UPLOAD: "Tải mẫu",
+  TITLE_MEDIA: "Nguồn Media",
+  TOOLTIP_MEDIA: "Nguồn chứa hình ảnh và âm thanh",
+  BTN_MODE_ZIP: "Chung (ZIP)",
+  BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
+  BTN_MODE_SPLIT: "Tách riêng",
+  BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh",
+  BTN_MODE_CURRENT: "Dự án hiện tại",
+  BTN_MODE_CURRENT_TOOLTIP: "Sử dụng hình ảnh và âm thanh từ dự án đang mở",
+  PLACEHOLDER_ZIP: "Đường dẫn thư mục hoặc File ZIP...",
+  PLACEHOLDER_IMAGES: "Thư mục Hình ảnh...",
+  PLACEHOLDER_VOICES: "Thư mục Âm thanh...",
+  TITLE_MOTION: "Hiệu ứng",
+  TOOLTIP_MOTION: "Hiệu ứng chuyển động của camera và hình ảnh",
+  TITLE_TRANSITION: "Chuyển tiếp",
+  TOOLTIP_TRANSITION: "Hiệu ứng chuyển tiếp giữa các phân cảnh",
+  BTN_AUTO: "Auto Mode (Tự Tạo Mới)",
+  BTN_MANUAL: "Manual (Sửa File Cũ)",
+  BTN_RUN_AUTO: "TỰ ĐỘNG TẠO DỰ ÁN & TỐI ƯU",
+  ERR_SELECT_TEMPLATE: "Vui lòng chọn Dự án Mẫu (Template)!",
+  ERR_SELECT_ZIP: "Vui lòng chọn Thư mục Cha chứa ảnh/audio hoặc File ZIP!",
+  ERR_SELECT_SPLIT: "Vui lòng chọn đủ Thư mục Ảnh và Thư mục Âm Thanh!",
+  LOG_UPLOADING: "Đang tải lên mẫu: ",
+  LOG_UPLOAD_SUCCESS: "Tải lên mẫu thành công!",
+  LOG_UPLOAD_ERROR: "Lỗi tải lên mẫu: ",
+  LOG_SELECT_PARENT: "Đã chọn thư mục cha: ",
+  LOG_SELECT_IMAGES: "Đã chọn thư mục ảnh: ",
+  LOG_SELECT_VOICES: "Đã chọn thư mục audio: ",
+  LOG_ERR_TEMPLATE: "Lỗi tải lên mẫu.",
+  MODAL_TITLE_DELETE: "Xóa mẫu",
+  MODAL_MSG_DELETE: "Bạn có chắc chắn muốn xoá mẫu này không?",
+  MODAL_TITLE_RENAME: "Đổi tên mẫu",
+  MODAL_MSG_RENAME: "Nhập tên mới cho mẫu này:",
+  MODAL_TITLE_UPLOAD: "Tải Mẫu Lên",
+  MODAL_MSG_UPLOAD: "Nhập tên cho mẫu dự án này:",
+  LOG_DELETE_SUCCESS: "Đã xoá mẫu thành công.",
+  LOG_DELETE_ERROR: "Xoá mẫu thất bại.",
+  LOG_RENAME_SUCCESS: "Đã đổi tên mẫu thành công.",
+  LOG_RENAME_ERROR: "Đổi tên mẫu thất bại.",
+  BTN_CONFIRM: "Xác nhận",
+  BTN_CANCEL: "Hủy",
+  TITLE_PROJECT_NAME: "TÊN DỰ ÁN CAPCUT",
+  TOOLTIP_PROJECT_NAME: "Tên dự án CapCut sẽ được sinh ra",
+  PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
+  NO_TEMPLATE_FOUND: "Chưa có mẫu nào",
+  SELECT_TEMPLATE: "Chọn mẫu...",
+  TITLE_EXPORT_VIDEO: "XUẤT VIDEO CAPCUT",
+  TOOLTIP_EXPORT_VIDEO: "Tự động xuất video sau khi tạo dự án CapCut thành công",
+  LABEL_EXPORT_VIDEO: "Tự động xuất video sau khi tạo xong",
+  TITLE_VIDEO_OUTPUT_DIR: "Thư mục lưu video",
+  TOOLTIP_VIDEO_OUTPUT_DIR: "Chọn thư mục để lưu file video xuất ra",
+  PLACEHOLDER_VIDEO_OUTPUT_DIR: "Đường dẫn thư mục lưu video...",
+  LOG_SELECT_VIDEO_OUTPUT: "Đã chọn thư mục xuất video: ",
+  ERR_SELECT_VIDEO_OUTPUT: "Vui lòng chọn thư mục lưu video!",
+  LOG_ERROR_PREFIX: "Lỗi: ",
+  DEFAULT_TEMPLATE_NAME: "Template Mới",
+  ERR_NO_TEMPLATE_NAME: "Vui lòng nhập tên template!",
+  AUTO_GET_MEDIA: "Tự động lấy ảnh và giọng nói từ dự án hiện tại.",
+} as const;
 
 export const PIPELINE_MODAL_TYPES = { CONFIRM: "confirm", PROMPT: "prompt" } as const;
 
@@ -556,11 +701,81 @@ export const TRANSITION_OPTIONS = [
 
 export const URL_CONSTANTS = { IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"], ID_PARAMS: ["id", "docid", "name"] } as const;
 
-export const PIPELINE_STEP4_TEXTS = { LBL_QUALITY: "Chất lượng Video:", LBL_QUALITY_DESC: "Độ nét của video xuất ra.", QUALITY_480P: "Thấp (480p) - Render siêu tốc", QUALITY_720P: "Chuẩn (720p HD) - Cân bằng", QUALITY_1080P: "Cao (1080p FHD) - Sắc nét", QUALITY_4K: "Tuyệt đỉnh (4K) - Điện ảnh", BTN_RENDER_FFMPEG: "Tạo Video Ngay (FFmpeg)", BTN_DOWNLOAD: "Tải Video Xuống", RENDERING: "Đang xuất video (FFmpeg)...", RENDER_SUCCESS: "Kết xuất video FFmpeg thành công!", RENDER_ERROR: "Kết xuất video thất bại.", NO_SCENES_ERROR: "Không có phân cảnh nào để xuất video.", SELECT_QUALITY: "Chọn chất lượng", FOLDER_SELECT_ERR: "Lỗi chọn thư mục: ", ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi render.", ERR_REQUIRE_IMAGES: "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.", ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.", ERR_REQUIRE_QA: "Kiểm tra chất lượng chưa hoàn tất. Hãy xử lý toàn bộ mục bị chặn rồi thử lại.", FINAL_QA_RUNNING: "Đang kiểm tra bản dựng cuối...", FINAL_QA_REJECTED: "Đã xuất video. Nên xem cảnh báo chất lượng trước khi đăng.", RENDERING_WAIT: "Đang render video FFmpeg, vui lòng chờ...", RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!", RENDER_FFMPEG_ERR: "Lỗi render: ", NO_FFMPEG_VIDEO: "Chưa có video FFmpeg.", USE_CREATE_BTN_HINT: 'Vui lòng sử dụng tính năng "Tạo Video Ngay" ở khung bên phải.', EXPORTING_FFMPEG: "Đang xuất video FFmpeg...", BTN_DOWNLOAD_HINT: "Tải video về máy", PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...", ZIP_DIR_PLACEHOLDER: "Nhập đường dẫn thư mục chứa file dự án ZIP...", IMG_DIR_PLACEHOLDER: "Thư mục Hình ảnh...", AUDIO_DIR_PLACEHOLDER: "Thư mục Âm thanh...", AUTO_GATHER_MEDIA_HINT: "Tự động thu thập ảnh và âm thanh từ dự án hiện tại" } as const;
+export const PIPELINE_STEP4_TEXTS = {
+  LBL_QUALITY: "Chất lượng Video:",
+  LBL_QUALITY_DESC: "Độ nét của video xuất ra.",
+  QUALITY_480P: "Thấp (480p) - Render siêu tốc",
+  QUALITY_720P: "Chuẩn (720p HD) - Cân bằng",
+  QUALITY_1080P: "Cao (1080p FHD) - Sắc nét",
+  QUALITY_4K: "Tuyệt đỉnh (4K) - Điện ảnh",
+  BTN_RENDER_FFMPEG: "Tạo Video Ngay (FFmpeg)",
+  BTN_DOWNLOAD: "Tải Video Xuống",
+  RENDERING: "Đang xuất video (FFmpeg)...",
+  RENDER_SUCCESS: "Kết xuất video FFmpeg thành công!",
+  RENDER_ERROR: "Kết xuất video thất bại.",
+  NO_SCENES_ERROR: "Không có phân cảnh nào để xuất video.",
+  SELECT_QUALITY: "Chọn chất lượng",
+  FOLDER_SELECT_ERR: "Lỗi chọn thư mục: ",
+  ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi render.",
+  ERR_REQUIRE_IMAGES: "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.",
+  ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.",
+  ERR_REQUIRE_QA: "Kiểm tra chất lượng chưa hoàn tất. Hãy xử lý toàn bộ mục bị chặn rồi thử lại.",
+  FINAL_QA_RUNNING: "Đang kiểm tra bản dựng cuối...",
+  FINAL_QA_REJECTED: "Đã xuất video. Nên xem cảnh báo chất lượng trước khi đăng.",
+  RENDERING_WAIT: "Đang render video FFmpeg, vui lòng chờ...",
+  RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!",
+  RENDER_FFMPEG_ERR: "Lỗi render: ",
+  NO_FFMPEG_VIDEO: "Chưa có video FFmpeg.",
+  USE_CREATE_BTN_HINT: 'Vui lòng sử dụng tính năng "Tạo Video Ngay" ở khung bên phải.',
+  EXPORTING_FFMPEG: "Đang xuất video FFmpeg...",
+  BTN_DOWNLOAD_HINT: "Tải video về máy",
+  PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...",
+  ZIP_DIR_PLACEHOLDER: "Nhập đường dẫn thư mục chứa file dự án ZIP...",
+  IMG_DIR_PLACEHOLDER: "Thư mục Hình ảnh...",
+  AUDIO_DIR_PLACEHOLDER: "Thư mục Âm thanh...",
+  AUTO_GATHER_MEDIA_HINT: "Tự động thu thập ảnh và âm thanh từ dự án hiện tại",
+} as const;
 
-export const PIPELINE_STEP3_TEXTS = { SEO_RESULT: "Kết quả Tối ưu SEO", NO_SEO_DATA: "Không có dữ liệu SEO.", CLICK_OPTIMIZE_HINT: "Bấm tối ưu SEO để tạo.", COPIED_TITLE: "Đã copy tiêu đề", COPY_TITLE: "Copy tiêu đề", COPIED_DESC: "Đã copy mô tả", COPY_DESC: "Copy mô tả", DESCRIPTIONS_EMPTY: "Chưa có mô tả", COPIED_HASHTAGS: "Đã copy hashtags", COPY_HASHTAGS: "Copy hashtags", NO_HASHTAGS: "Chưa có hashtags", COPIED_TAGS: "Đã copy từ khóa", COPY_TAGS: "Copy từ khóa", NO_TAGS: "Chưa có từ khóa", SEARCH_TITLE: "Tìm kiếm", CTR_TITLE: "CTR", COMPETITION_TITLE: "Cạnh tranh", SEO_SCORE_TITLE: "Điểm SEO", TITLES_OPTIONS: "Tiêu đề gợi ý", DESC_OPTIONS: "Mô tả gợi ý", HASHTAGS: "HASHTAGS", TAGS: "TỪ KHÓA" } as const;
+export const PIPELINE_STEP3_TEXTS = {
+  SEO_RESULT: "Kết quả Tối ưu SEO",
+  NO_SEO_DATA: "Không có dữ liệu SEO.",
+  CLICK_OPTIMIZE_HINT: "Bấm tối ưu SEO để tạo.",
+  COPIED_TITLE: "Đã copy tiêu đề",
+  COPY_TITLE: "Copy tiêu đề",
+  COPIED_DESC: "Đã copy mô tả",
+  COPY_DESC: "Copy mô tả",
+  DESCRIPTIONS_EMPTY: "Chưa có mô tả",
+  COPIED_HASHTAGS: "Đã copy hashtags",
+  COPY_HASHTAGS: "Copy hashtags",
+  NO_HASHTAGS: "Chưa có hashtags",
+  COPIED_TAGS: "Đã copy từ khóa",
+  COPY_TAGS: "Copy từ khóa",
+  NO_TAGS: "Chưa có từ khóa",
+  SEARCH_TITLE: "Tìm kiếm",
+  CTR_TITLE: "CTR",
+  COMPETITION_TITLE: "Cạnh tranh",
+  SEO_SCORE_TITLE: "Điểm SEO",
+  TITLES_OPTIONS: "Tiêu đề gợi ý",
+  DESC_OPTIONS: "Mô tả gợi ý",
+  HASHTAGS: "HASHTAGS",
+  TAGS: "TỪ KHÓA",
+} as const;
 
-export const AUTO_GENERATE_TEXTS = { EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.", DRAFTING_SCRIPT: "Đang soạn kịch bản...", SCRIPT_ERR: "Không thể tạo kịch bản.", STORYBOARDING: "Đang phân tích và tách cảnh...", STORYBOARD_ERR: "Không thể phân tách cảnh.", VOICEOVER: "Đang tạo giọng đọc...", IMAGES: "Đang khởi tạo tạo ảnh hàng loạt...", SUCCESS: "Đã hoàn thành tạo video tự động.", GENERIC_ERR: "Lỗi tự động tạo video.", BTN_AUTO: "Tự động", BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh", ERR_CODE: "AUTO_GENERATE_ERROR", POSITION_TOP: "top" } as const;
+export const AUTO_GENERATE_TEXTS = {
+  EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.",
+  DRAFTING_SCRIPT: "Đang soạn kịch bản...",
+  SCRIPT_ERR: "Không thể tạo kịch bản.",
+  STORYBOARDING: "Đang phân tích và tách cảnh...",
+  STORYBOARD_ERR: "Không thể phân tách cảnh.",
+  VOICEOVER: "Đang tạo giọng đọc...",
+  IMAGES: "Đang khởi tạo tạo ảnh hàng loạt...",
+  SUCCESS: "Đã hoàn thành tạo video tự động.",
+  GENERIC_ERR: "Lỗi tự động tạo video.",
+  BTN_AUTO: "Tự động",
+  BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
+  ERR_CODE: "AUTO_GENERATE_ERROR",
+  POSITION_TOP: "top",
+} as const;
 
 export const MEDIA_MIX_TEXTS = {
   vi: {
@@ -696,19 +911,27 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeProject: (name: string) => `♻️ Sử dụng lại dự án [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
     logResumeScript: "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
     logResumeVoice: "♻️ Sử dụng lại Giọng đọc (TTS) đã tạo từ phiên chạy trước.",
-    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") => `♻️ Phân cảnh ${idx}/${total} đã có ${mediaType === "video" ? "video" : "hình ảnh"} hợp lệ, giữ lại và không tạo lại.`,
+    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") =>
+      `♻️ Phân cảnh ${idx}/${total} đã có ${mediaType === "video" ? "video" : "hình ảnh"} hợp lệ, giữ lại và không tạo lại.`,
     logResumeThumbnails: "♻️ Sử dụng lại ảnh bìa (Thumbnails) đã tạo.",
     logResumeAlignment: "♻️ Sử dụng lại Căn khớp & Phân đoạn âm thanh đã tạo.",
     logResumeSeo: "♻️ Sử dụng lại dữ liệu SEO đã tạo từ phiên chạy trước.",
-    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Đang gửi ${count || "các"} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} tới Gemini; tài nguyên sẽ được tải ngay khi từng phân cảnh hoàn tất.`,
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") => `✅ Đã tải ${mediaType === "video" ? "video" : "hình ảnh"} của ${sceneId} về dự án (${completed}/${total} phân cảnh).`,
-    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} đồng thời bị gián đoạn (${msg}). Đang chuyển các phân cảnh còn thiếu sang 3 tab dự phòng.`,
+    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) =>
+      `🚀 Đang gửi ${count || "các"} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} tới Gemini; tài nguyên sẽ được tải ngay khi từng phân cảnh hoàn tất.`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
+      `✅ Đã tải ${mediaType === "video" ? "video" : "hình ảnh"} của ${sceneId} về dự án (${completed}/${total} phân cảnh).`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") =>
+      `⚠️ Chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") =>
+      `⚠️ Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} đồng thời bị gián đoạn (${msg}). Đang chuyển các phân cảnh còn thiếu sang 3 tab dự phòng.`,
     fallbackThreeTabsReason: "tạo đồng thời bằng 3 tab",
     logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ Tab dự phòng chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${id}.`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") => `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng 3 tab dự phòng.`,
-    logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
-    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") => `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
+      `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng 3 tab dự phòng.`,
+    logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
+      `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
+      `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
     startBtnProcessing: "Đang Tạo Video...",
     startBtnStart: " Bắt Đầu Tạo",
     startBtnTooltip: "Khởi động luồng tạo video tự động 1-Click",
@@ -737,7 +960,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Mở dự án này trong AI Studio",
     alertEmptyScript: "Vui lòng nhập Kịch bản hoặc Ý tưởng ở phần Cấu hình.",
     logPipelineStart: "🚀 KHỞI ĐỘNG QUY TRÌNH TẠO VIDEO TỰ ĐỘNG",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
+      `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
     logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Đang đọc và phân tích dữ liệu đầu vào để chuẩn bị kịch bản...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Kịch bản đã hoàn thành (${words} từ, ${chapters} chương).`,
@@ -745,8 +969,12 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logStoryboardResultDetail: (scenes: number) => `✓ Đã chia xong nội dung thành ${scenes} phân cảnh.`,
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
     logVoiceResultDetail: (_source: string) => `✓ Giọng đọc thuyết minh đã thu âm xong.`,
-    logReferenceSummary: (style: number, scene: number, character: number) => (style + scene + character > 0 ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.` : `🖼️ Không sử dụng ảnh tham chiếu; tính nhất quán sẽ dựa trên Visual Bible và prompt.`),
-    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
+    logReferenceSummary: (style: number, scene: number, character: number) =>
+      style + scene + character > 0
+        ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.`
+        : `🖼️ Không sử dụng ảnh tham chiếu; tính nhất quán sẽ dựa trên Visual Bible và prompt.`,
+    logMediaPlan: (generate: number, reused: number, type: string) =>
+      `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Đã căn khớp chính xác thời gian cho ${aligned} phân cảnh.`,
@@ -900,19 +1128,27 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeProject: (name: string) => `♻️ Reusing project: [${name}]. Resume mode is active.`,
     logResumeScript: "♻️ Reusing Script & Storyboard from previous session.",
     logResumeVoice: "♻️ Reusing Voice (TTS) from previous session.",
-    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") => `♻️ Scene ${idx}/${total} already has a valid ${mediaType === "video" ? "video" : "image"}; keeping it without regeneration.`,
+    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") =>
+      `♻️ Scene ${idx}/${total} already has a valid ${mediaType === "video" ? "video" : "image"}; keeping it without regeneration.`,
     logResumeThumbnails: "♻️ Reusing generated thumbnails.",
     logResumeAlignment: "♻️ Reusing generated voice alignments.",
     logResumeSeo: "♻️ Reusing SEO data from previous session.",
-    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Sending ${count || "the"} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} scenes to Gemini; each asset will be downloaded as soon as it finishes.`,
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") => `✅ Downloaded the ${mediaType === "video" ? "video" : "image"} for ${sceneId} (${completed}/${total} scenes).`,
-    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Concurrent ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} generation was interrupted (${msg}). Sending only the missing scenes to the three-tab fallback.`,
+    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) =>
+      `🚀 Sending ${count || "the"} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} scenes to Gemini; each asset will be downloaded as soon as it finishes.`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
+      `✅ Downloaded the ${mediaType === "video" ? "video" : "image"} for ${sceneId} (${completed}/${total} scenes).`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") =>
+      `⚠️ Could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") =>
+      `⚠️ Concurrent ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} generation was interrupted (${msg}). Sending only the missing scenes to the three-tab fallback.`,
     fallbackThreeTabsReason: "three concurrent tabs",
     logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ The fallback tab could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${id}.`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") => `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
-    logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
-    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") => `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
+      `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
+    logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
+      `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
+      `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
     startBtnProcessing: "Creating Video...",
     startBtnStart: "🚀 Start Creating",
     startBtnTooltip: "Launch 1-Click automated video creation pipeline",
@@ -941,7 +1177,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Open this project in AI Studio",
     alertEmptyScript: "Please enter Script or Idea in configuration.",
     logPipelineStart: "🚀 LAUNCHING ONE-CLICK AUTOMATED VIDEO PIPELINE",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
+      `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
     logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Reading and analyzing input data to prepare script...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Script is ready (${words} words, ${chapters} chapters).`,
@@ -950,7 +1187,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Synthesizing AI voiceover...`,
     logVoiceResultDetail: (_source: string) => `✓ AI voiceover is fully generated.`,
     logReferenceSummary: (_style: number, _scene: number, _character: number) => `🖼️ Analyzing provided references to learn your style...`,
-    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Media plan: generate ${generate} scenes as ${type === "video" ? "video" : type === "mixed" ? "images and video" : "images"}; reuse ${reused} existing scenes.`,
+    logMediaPlan: (generate: number, reused: number, type: string) =>
+      `🎨 Media plan: generate ${generate} scenes as ${type === "video" ? "video" : type === "mixed" ? "images and video" : "images"}; reuse ${reused} existing scenes.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Synchronizing voiceover with visual scenes...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Flawlessly aligned audio for ${aligned} scenes.`,
@@ -1084,7 +1322,20 @@ export const PIPELINE_STEP4_SHORT_TEXTS = {
   },
 } as const;
 
-export const PRESET_CONSTANTS = { ID_PREFIX: "preset_", DEFAULT_VOICE_NAME: "Preset Voice VI", DEFAULT_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting", EXTRACTED_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors", DEFAULT_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Vibrant Colors", EXTRACTED_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography", CHARACTER_NAME: "Nhân vật chính", CHARACTER_BIO: "Một nhân vật hoạt hình thiết kế sắc nét...", PROJECT_NAME_PREFIX: "Video_Auto_", SAMPLE_VIDEO_URL: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", DEFAULT_CAMERA_MOTION: "default", DEFAULT_TRANSITION: "default" } as const;
+export const PRESET_CONSTANTS = {
+  ID_PREFIX: "preset_",
+  DEFAULT_VOICE_NAME: "Preset Voice VI",
+  DEFAULT_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting",
+  EXTRACTED_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors",
+  DEFAULT_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Vibrant Colors",
+  EXTRACTED_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography",
+  CHARACTER_NAME: "Nhân vật chính",
+  CHARACTER_BIO: "Một nhân vật hoạt hình thiết kế sắc nét...",
+  PROJECT_NAME_PREFIX: "Video_Auto_",
+  SAMPLE_VIDEO_URL: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  DEFAULT_CAMERA_MOTION: "default",
+  DEFAULT_TRANSITION: "default",
+} as const;
 
 export const ADVANCED_SETTING_GROUPS = {
   vi: {
@@ -1335,7 +1586,8 @@ export const CINEMATIC_SETUP_TEXTS = {
   vi: {
     TITLE: "Tiền kỳ Phim Điện Ảnh AI",
     SUBTITLE: "Nhập ý tưởng; AI tự động phát triển Screenplay, Nhân vật, Shot list và Continuity chuẩn điện ảnh.",
-    PLACEHOLDER: "Ví dụ: Một thợ săn tiền thưởng mắc kẹt trên thuộc địa khai khoáng ngoài vũ trụ phải lựa chọn giữa món tiền thưởng khổng lồ và việc cứu những người từng phản bội cô...",
+    PLACEHOLDER:
+      "Ví dụ: Một thợ săn tiền thưởng mắc kẹt trên thuộc địa khai khoáng ngoài vũ trụ phải lựa chọn giữa món tiền thưởng khổng lồ và việc cứu những người từng phản bội cô...",
     FORMAT_LABEL: "Định dạng",
     EPISODES_LABEL: "Số tập",
     LANGUAGE_LABEL: "Ngôn ngữ thoại",

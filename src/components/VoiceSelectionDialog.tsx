@@ -11,7 +11,21 @@ import { logger } from "../utils/logger";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { VOICE_DIALOG_TEXTS } from "../constants/texts";
-import { VOICE_PROVIDER_OPTIONS, VOICE_LANGUAGE_OPTIONS, VOICE_AGE_OPTIONS, VOICE_PAGE_SIZE, GENDER_OPTIONS, AUDIO_PLAYBACK_FAILED_ERR, APP_LOCALES, DEFAULT_PROVIDER, REFACTOR_CONSTANTS, SecurityConstants, COMMON_STRINGS, STORAGE_KEYS, VOICE_GENDER } from "../constants";
+import {
+  VOICE_PROVIDER_OPTIONS,
+  VOICE_LANGUAGE_OPTIONS,
+  VOICE_AGE_OPTIONS,
+  VOICE_PAGE_SIZE,
+  GENDER_OPTIONS,
+  AUDIO_PLAYBACK_FAILED_ERR,
+  APP_LOCALES,
+  DEFAULT_PROVIDER,
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+  COMMON_STRINGS,
+  STORAGE_KEYS,
+  VOICE_GENDER,
+} from "../constants";
 
 export interface Voice {
   voice_id: string;
@@ -106,7 +120,16 @@ const AGE_LABEL_MAP: Record<string, Record<"vi" | "en", string>> = {
   old: { vi: "Cao tuổi", en: "Elderly" },
 };
 
-export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOpen, onClose, onSelectVoice, currentLang, selectedVoiceId, favoriteVoices = [], onToggleFavoriteVoice, persistenceScope }) => {
+export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
+  isOpen,
+  onClose,
+  onSelectVoice,
+  currentLang,
+  selectedVoiceId,
+  favoriteVoices = [],
+  onToggleFavoriteVoice,
+  persistenceScope,
+}) => {
   const filterStorageKey = getFilterStorageKey(persistenceScope);
   const initialFilters = useMemo(() => getStoredFilters(filterStorageKey), [filterStorageKey]);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -287,8 +310,16 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 {dialogTexts.searchLabel}
               </label>
               <div className={cn("relative")}>
-                <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className={cn("w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 focus:border-rose-500 outline-none transition-all shadow-inner font-sans")} />
-                <Search className={cn("absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500")} />
+                <input
+                  type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
+                  value={search}
+                  onChange={handleSearchChange}
+                  placeholder={dialogTexts.searchPlaceholder}
+                  className={cn(
+                    "w-full h-10 bg-slate-955 border border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-100 focus:border-rose-500 outline-none transition-all shadow-inner font-sans",
+                  )}
+                />
+                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500")} />
               </div>
             </div>
 
@@ -297,8 +328,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 <Globe2 className={cn("w-3.5 h-3.5 text-sky-400")} />
                 {dialogTexts.providerLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
-                <select value={provider} onChange={(e) => setProvider(_.get(e, "target.value"))} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(_.get(e, "target.value"))}
+                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {_.get(opt, "value")}
@@ -314,8 +348,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 <Globe2 className={cn("w-3.5 h-3.5 text-emerald-400")} />
                 {dialogTexts.languageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {LANGUAGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
@@ -331,7 +368,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 <User className={cn("w-3.5 h-3.5 text-amber-400")} />
                 {dialogTexts.genderLabel}
               </label>
-              <div className={cn("flex gap-1 bg-slate-950 rounded-xl p-1 border border-slate-800")}>
+              <div className={cn("flex gap-1 bg-slate-955 rounded-xl p-1 border border-slate-800 h-10 items-center")}>
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
@@ -339,7 +376,8 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                       variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                       key={g}
                       type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                      className={cn("flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all select-none cursor-pointer flex items-center justify-center", {
+                      onClick={() => setGender(g)}
+                      className={cn("flex-1 h-8 rounded-lg text-[10px] font-bold transition-all select-none cursor-pointer flex items-center justify-center", {
                         "bg-rose-600 text-white shadow-sm shadow-rose-600/30": isActive,
                         "text-slate-400 hover:text-slate-200 hover:bg-slate-900": !isActive,
                       })}>
@@ -355,8 +393,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 <Activity className={cn("w-3.5 h-3.5 text-purple-400")} />
                 {dialogTexts.ageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-0.5")}>
-                <select value={age} onChange={(e) => setAge(e.target.value)} className={cn("w-full bg-transparent py-2 text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+                <select
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
                       {AGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
@@ -428,10 +469,20 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                               }}
                               className={cn("w-7 h-7 rounded-xl flex items-center justify-center p-0 text-slate-400 hover:text-rose-500")}
                               title={dialogTexts.favoriteTooltip}>
-                              <Heart className={cn("w-3.5 h-3.5 transition-all duration-200", _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-500 hover:text-rose-400")} />
+                              <Heart
+                                className={cn(
+                                  "w-3.5 h-3.5 transition-all duration-200",
+                                  _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id")))
+                                    ? "text-rose-500 fill-rose-500 scale-110"
+                                    : "text-slate-500 hover:text-rose-400",
+                                )}
+                              />
                             </Button>
                             {isSelected && (
-                              <span className={cn("shrink-0 flex items-center gap-1 text-[9px] font-black text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30")}>
+                              <span
+                                className={cn(
+                                  "shrink-0 flex items-center gap-1 text-[9px] font-black text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-500/30",
+                                )}>
                                 <Check className={cn("w-2.5 h-2.5")} />
                                 {dialogTexts.selectedLabel}
                               </span>
@@ -441,7 +492,14 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
 
                         <div className={cn("flex flex-wrap gap-1 mb-1.5")}>
                           {(() => {
-                            const rawTags = [_.get(voice, "language") && getReadableLanguage(_.get(voice, "language"), currentLang), _.get(voice, "locale") && getReadableLanguage(_.get(voice, "locale"), currentLang, true), _.get(voice, "gender"), _.get(voice, "age"), _.get(voice, "accent"), ...(_.get(voice, "tags") || [])];
+                            const rawTags = [
+                              _.get(voice, "language") && getReadableLanguage(_.get(voice, "language"), currentLang),
+                              _.get(voice, "locale") && getReadableLanguage(_.get(voice, "locale"), currentLang, true),
+                              _.get(voice, "gender"),
+                              _.get(voice, "age"),
+                              _.get(voice, "accent"),
+                              ...(_.get(voice, "tags") || []),
+                            ];
                             const displayTags = _.uniq(_.filter(rawTags, Boolean) as string[]);
 
                             return _.map(
@@ -452,14 +510,20 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                                 return !_.includes([lowerLocale, lowerLang], lowerTag);
                               }),
                               (tag, idx) => (
-                                <span key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn("text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap")}>
+                                <span
+                                  key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
+                                  className={cn(
+                                    "text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap",
+                                  )}>
                                   {tag}
                                 </span>
                               ),
                             );
                           })()}
                           {_.map(_.take(_.get(voice, "descriptives"), REFACTOR_CONSTANTS.TAKE_DESC_COUNT), (desc, idx) => (
-                            <span key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn("text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400 capitalize whitespace-nowrap")}>
+                            <span
+                              key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
+                              className={cn("text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400 capitalize whitespace-nowrap")}>
                               {desc}
                             </span>
                           ))}

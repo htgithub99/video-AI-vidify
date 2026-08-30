@@ -2,14 +2,32 @@ import React from "react";
 import _ from "lodash";
 import { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders, Info } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { genreLabels, audLabels, styleLabels, GENRE_OPTION_GROUPS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
+import {
+  genreLabels,
+  audLabels,
+  styleLabels,
+  GENRE_OPTION_GROUPS,
+  AUDIENCE_OPTIONS,
+  WRITING_STYLE_OPTIONS,
+  HOOK_STRATEGY_OPTIONS,
+  HOOK_POSITION_OPTIONS,
+  DURATION_OPTIONS,
+  PROJECT_LANGUAGE_OPTIONS,
+  SPLIT_STRATEGY_OPTIONS,
+  SplitStrategy,
+} from "../../constants";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
 
-const STEP0_TEXTS = { TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.", TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.", TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.", CHAPTER_PLACEHOLDER: "Nhập tên chương..." } as const;
+const STEP0_TEXTS = {
+  TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.",
+  TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.",
+  TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.",
+  CHAPTER_PLACEHOLDER: "Nhập tên chương...",
+} as const;
 
 interface SettingSliderProps {
   label: string;
@@ -28,12 +46,34 @@ const SettingSlider: React.FC<SettingSliderProps> = ({ label, value, displayValu
       <span className={cn("text-slate-450")}>{label}</span>
       <span className={cn("px-2 py-0.5 rounded-full border", colorClass)}>{displayValue}</span>
     </div>
-    <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(_.toNumber(e.target.value))} className={cn("w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer focus:outline-none", accentClass)} />
+    <input
+      type="range"
+      min={min}
+      max={max}
+      value={value}
+      onChange={(e) => onChange(_.toNumber(e.target.value))}
+      className={cn("w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer focus:outline-none", accentClass)}
+    />
   </div>
 );
 
 export default function PipelineStep0(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition, handleAutoGenerateVideo } = props;
+  const {
+    t,
+    project,
+    setProject,
+    setCurrentStep,
+    loadingStates,
+    setInfoMsg,
+    handleProcessInputAndConfig,
+    hookStrategy,
+    setHookStrategy,
+    hookDuration,
+    setHookDuration,
+    hookPosition,
+    setHookPosition,
+    handleAutoGenerateVideo,
+  } = props;
 
   const currentInputType = project.input?.type || ProjectInputType.Script;
   const isInputEmpty = _.isEmpty(_.trim(project.input?.content));
@@ -78,9 +118,18 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn("p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full", _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30" : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850")}>
+                className={cn(
+                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
+                  _.isEqual(currentInputType, ProjectInputType.Script)
+                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850",
+                )}>
                 <div className={cn("flex items-center gap-3")}>
-                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors", _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400")}>
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                      _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400",
+                    )}>
                     <FileText className={cn("w-4 h-4")} />
                   </div>
                   <div>
@@ -103,9 +152,18 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn("p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full", _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30" : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850")}>
+                className={cn(
+                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
+                  _.isEqual(currentInputType, ProjectInputType.Idea)
+                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850",
+                )}>
                 <div className={cn("flex items-center gap-3")}>
-                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors", _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400")}>
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                      _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400",
+                    )}>
                     <Sparkles className={cn("w-4 h-4")} />
                   </div>
                   <div>
@@ -132,7 +190,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 }))
               }
               placeholder={t.Nh_p_n_i_dung_k_ch_b_n_nh}
-              className={cn("w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-none min-h-[250px]")}
+              className={cn(
+                "w-full flex-1 bg-slate-955/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/20 text-slate-100 p-4 rounded-xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-y min-h-[300px] sm:min-h-[360px] shadow-inner",
+              )}
             />
           </div>
         </div>
@@ -153,7 +213,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Th_lo_i_video}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Layers className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.genre}
@@ -180,7 +243,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Ng_n_ng_u_ra}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Check className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.language}
@@ -203,7 +269,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.C_u_h_nh_S_l_ng_t_Th_i_l_}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Clock className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.duration}
@@ -227,7 +296,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.txt_2_Split_Density}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Sliders className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.splitStrategy || SplitStrategy.MIXED_SENTENCES}
@@ -250,7 +322,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Kh_n_gi_m_c_ti_u}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Layout className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.audience}
@@ -273,7 +348,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-450 font-mono font-bold uppercase tracking-wider block")}>{t.Phong_c_ch_h_nh_v_n}</span>
-              <div className={cn("relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm")}>
+              <div
+                className={cn(
+                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
+                )}>
                 <Sparkles className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.writingStyle}
@@ -360,8 +438,16 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn("w-11 h-6 flex items-center justify-start rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 shrink-0", project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850")}>
-                <div className={cn("bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 shrink-0", project.config.factCheck ? "translate-x-5" : "translate-x-0")} />
+                className={cn(
+                  "w-11 h-6 flex items-center justify-start rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 shrink-0",
+                  project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850",
+                )}>
+                <div
+                  className={cn(
+                    "bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 shrink-0",
+                    project.config.factCheck ? "translate-x-5" : "translate-x-0",
+                  )}
+                />
               </Button>
             </div>
 
@@ -373,9 +459,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
               <div className={cn("space-y-1.5")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.hookType}</span>
-                <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm")}>
+                <div
+                  className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm")}>
                   <Sparkles className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
-                  <select value={hookStrategy} onChange={(e) => setHookStrategy(e.target.value)} className={cn("flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
+                  <select
+                    value={hookStrategy}
+                    onChange={(e) => setHookStrategy(e.target.value)}
+                    className={cn("flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
                     {_.map(HOOK_STRATEGY_OPTIONS, (opt) => (
                       <option key={opt.value} value={opt.value} className={cn("bg-slate-950 text-slate-300")}>
                         {opt.label}
@@ -386,13 +476,26 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 </div>
               </div>
 
-              <SettingSlider label={t.hookDuration} value={hookDuration} displayValue={`${hookDuration}s`} min={3} max={30} colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10" accentClass="accent-rose-600" onChange={setHookDuration} />
+              <SettingSlider
+                label={t.hookDuration}
+                value={hookDuration}
+                displayValue={`${hookDuration}s`}
+                min={3}
+                max={30}
+                colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10"
+                accentClass="accent-rose-600"
+                onChange={setHookDuration}
+              />
 
               <div className={cn("space-y-1.5")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.hookPositions}</span>
-                <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm")}>
+                <div
+                  className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm")}>
                   <Layout className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
-                  <select value={hookPosition} onChange={(e) => setHookPosition(e.target.value as any)} className={cn("flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
+                  <select
+                    value={hookPosition}
+                    onChange={(e) => setHookPosition(e.target.value as any)}
+                    className={cn("flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
                     {_.map(HOOK_POSITION_OPTIONS, (opt) => (
                       <option key={opt.value} value={opt.value} className={cn("bg-slate-950 text-slate-300")}>
                         {opt.label}
@@ -409,14 +512,31 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
       <div className={cn("pt-4 border-t border-slate-800 flex items-center justify-end relative z-20 gap-3")}>
         <Tooltip content={STEP0_TEXTS.TOOLTIP_AUTO_GENERATE} position="top" align="end">
-          <Button type="button" variant="secondary" size="lg" onClick={() => handleAutoGenerateVideo()} disabled={isInputEmpty || isAutoGenerating || isProcessingInput} isLoading={isAutoGenerating} className={cn("px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300")}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            onClick={() => handleAutoGenerateVideo()}
+            disabled={isInputEmpty || isAutoGenerating || isProcessingInput}
+            isLoading={isAutoGenerating}
+            className={cn(
+              "px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300",
+            )}>
             <Sparkles className={cn("w-4 h-4 text-emerald-400")} />
             <span>{AUTO_GENERATE_TEXTS.BTN_AUTO}</span>
           </Button>
         </Tooltip>
 
         <Tooltip content={STEP0_TEXTS.TOOLTIP_AUTO_GENERATE} position="top" align="end">
-          <Button type="button" variant="primary" size="lg" onClick={() => handleProcessInputAndConfig(true)} disabled={isInputEmpty || isAutoGenerating || isProcessingInput} isLoading={isProcessingInput && !isAutoGenerating} title={t.Ph_n_t_ch_t_ng_v_bi_n_so_} className={cn("px-6 py-3.5")}>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            onClick={() => handleProcessInputAndConfig(true)}
+            disabled={isInputEmpty || isAutoGenerating || isProcessingInput}
+            isLoading={isProcessingInput && !isAutoGenerating}
+            title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
+            className={cn("px-6 py-3.5")}>
             <Sparkles className={cn("w-4 h-4 text-amber-300")} />
             <span>{t.Generate_Script}</span>
           </Button>
@@ -468,7 +588,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </div>
 
               {isProcessingInput ? (
-                <div className={cn("w-full flex-1 bg-slate-955 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between min-h-[380px] lg:min-h-[440px] h-full relative overflow-hidden animate-pulse")}>
+                <div
+                  className={cn(
+                    "w-full flex-1 bg-slate-955 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between min-h-[380px] lg:min-h-[440px] h-full relative overflow-hidden animate-pulse",
+                  )}>
                   <div className={cn("space-y-3")}>
                     <div className={cn("h-4 bg-slate-900 rounded w-3/4 animate-pulse")} />
                     <div className={cn("h-4 bg-slate-900 rounded w-5/6 animate-pulse")} />
@@ -497,7 +620,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       scriptRewritten: e.target.value,
                     }))
                   }
-                  className={cn("w-full flex-1 bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm leading-relaxed focus:outline-none transition-all font-sans min-h-[380px] lg:min-h-[440px] h-full")}
+                  className={cn(
+                    "w-full flex-1 bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm leading-relaxed focus:outline-none transition-all font-sans min-h-[380px] lg:min-h-[440px] h-full",
+                  )}
                 />
               )}
             </div>
@@ -536,7 +661,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   ) : (
                     _.map(project.chapters || [], (ch) => (
                       <div key={ch.id} className={cn("bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl space-y-2 shadow-sm hover:border-rose-500/20 transition-all group")}>
-                        <span className={cn("inline-flex items-center text-[9px] text-rose-500 font-mono font-bold uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20 shadow-inner")}>
+                        <span
+                          className={cn(
+                            "inline-flex items-center text-[9px] text-rose-500 font-mono font-bold uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20 shadow-inner",
+                          )}>
                           {t.Chapter}: {ch.id}
                         </span>
                         <input
@@ -549,7 +677,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                               chapters: _.map(prev.chapters || [], (item) => (_.isEqual(item.id, ch.id) ? { ...item, title: val } : item)),
                             }));
                           }}
-                          className={cn("w-full bg-transparent hover:bg-slate-850 focus:bg-slate-800 border border-transparent focus:border-rose-500/40 rounded-lg px-2 py-1.5 text-slate-100 font-bold text-xs focus:outline-none transition-all placeholder-slate-500/50 -ml-2")}
+                          className={cn(
+                            "w-full bg-transparent hover:bg-slate-850 focus:bg-slate-800 border border-transparent focus:border-rose-500/40 rounded-lg px-2 py-1.5 text-slate-100 font-bold text-xs focus:outline-none transition-all placeholder-slate-500/50 -ml-2",
+                          )}
                           placeholder={STEP0_TEXTS.CHAPTER_PLACEHOLDER}
                         />
                         <div className={cn("text-[11px] text-slate-400 leading-relaxed font-sans")}>{ch.scriptSegment}</div>

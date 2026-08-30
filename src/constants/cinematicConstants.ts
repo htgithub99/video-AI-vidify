@@ -1,4 +1,41 @@
-export const CINEMATIC_POLICY_CONFIG = { MIN_BEAT_COUNT: 3, MAX_BEAT_COUNT: 5, CLIP_DURATION_SECONDS: 10, MIN_CLIP_DURATION_SECONDS: 3, MAX_CLIP_DURATION_SECONDS: 15, PLANNING_CHUNK_SIZE: 2, EPSILON_TOLERANCE: 0.25, MIN_DIALOGUE_SCENE_RATIO: 0.3 } as const;
+export const CINEMATIC_POLICY_CONFIG = {
+  MIN_BEAT_COUNT: 3,
+  MAX_BEAT_COUNT: 5,
+  CLIP_DURATION_SECONDS: 10,
+  MIN_CLIP_DURATION_SECONDS: 3,
+  MAX_CLIP_DURATION_SECONDS: 15,
+  PLANNING_CHUNK_SIZE: 2,
+  CLIENT_PLANNING_ATTEMPTS: 3,
+  EPSILON_TOLERANCE: 0.25,
+  MIN_DIALOGUE_SCENE_RATIO: 0.3,
+} as const;
+
+export const CINEMATIC_PLANNING_MESSAGES = {
+  VI_RETRY: "[Đạo diễn phim] Kế hoạch chưa đủ shot, continuity hoặc thoại; AI đang viết lại toàn bộ.",
+  EN_RETRY: "[Film direction] The plan is missing shots, continuity, or dialogue; AI is rewriting the complete plan.",
+  VI_REQUIRED: "AI chưa trả đủ kế hoạch phim có shot, continuity và thoại nhân vật. Đã dừng trước khi tạo clip để tránh xuất một bộ phim sai nội dung.",
+  EN_REQUIRED: "AI did not return a complete film plan with shots, continuity, and character dialogue. Production stopped before clip generation to prevent an incoherent film.",
+  VI_PREFLIGHT_START: "[Kiểm tra trước khi tạo] Đang duyệt toàn bộ prompt, 3–5 shot, thoại, continuity và an toàn nội dung.",
+  EN_PREFLIGHT_START: "[Preflight] Reviewing every prompt, 3–5 shots, dialogue, continuity, and content safety.",
+  VI_PREFLIGHT_PASSED: "[Kiểm tra trước khi tạo] Toàn bộ clip đã đạt yêu cầu; mỗi clip chỉ được gửi tạo đúng một lần.",
+  EN_PREFLIGHT_PASSED: "[Preflight] Every clip passed; each clip will be submitted for generation exactly once.",
+  VI_PREFLIGHT_FAILED: "Kế hoạch phim chưa vượt qua kiểm tra bắt buộc trước khi tạo. Không clip nào được gửi đi nên chưa sử dụng credit video.",
+  EN_PREFLIGHT_FAILED: "The film plan did not pass the mandatory preflight. No clip was submitted, so no video credit was used.",
+  VI_CHARACTER_PACK_START: "[Character Pack] Đang tạo ảnh nhận diện chuẩn cho từng nhân vật trước khi dùng credit video.",
+  EN_CHARACTER_PACK_START: "[Character Pack] Creating canonical identity references before any video credit is used.",
+  VI_CHARACTER_PACK_READY: "[Character Pack] Ảnh nhân vật đã được lưu; mỗi cảnh sẽ chỉ tải lên các nhân vật thực sự xuất hiện.",
+  EN_CHARACTER_PACK_READY: "[Character Pack] Character references are saved; each scene will upload only its visible characters.",
+  VI_CHARACTER_PACK_FAILED: "Không thể hoàn thành ảnh nhận diện nhân vật. Đã dừng trước khi tạo clip để tránh video sai nhân vật.",
+  EN_CHARACTER_PACK_FAILED: "The character identity pack could not be completed. Production stopped before clip generation to avoid inconsistent characters.",
+} as const;
+
+export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 1, MAX_CHARACTERS: 3 } as const;
+
+export const CINEMATIC_PROMPT_PREFLIGHT_CONFIG = {
+  MIN_WORDS: 180,
+  MAX_WORDS: 520,
+  FORBIDDEN_PATTERN: /one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take|Video motion direction:|--ar\s/i,
+} as const;
 
 export const resolveCinematicClipDuration = (value?: string | number): number => {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));
@@ -6,9 +43,23 @@ export const resolveCinematicClipDuration = (value?: string | number): number =>
   return Math.min(CINEMATIC_POLICY_CONFIG.MAX_CLIP_DURATION_SECONDS, Math.max(CINEMATIC_POLICY_CONFIG.MIN_CLIP_DURATION_SECONDS, parsed));
 };
 
-export const CINEMATIC_POLICY_REQUIRED_FIELDS = ["sequenceId", "shotId", "shotRole", "dialogueMode", "characterBlocking", "eyelineDirection", "screenDirection", "actionStartState", "actionEndState", "locationState", "wardrobeState", "propState"] as const;
+export const CINEMATIC_POLICY_REQUIRED_FIELDS = [
+  "sequenceId",
+  "shotId",
+  "shotRole",
+  "dialogueMode",
+  "characterBlocking",
+  "eyelineDirection",
+  "screenDirection",
+  "actionStartState",
+  "actionEndState",
+  "locationState",
+  "wardrobeState",
+  "propState",
+] as const;
 
-export const CINEMATIC_TECHNICAL_FOUNDATION = "Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur.";
+export const CINEMATIC_TECHNICAL_FOUNDATION =
+  "Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur.";
 
 export const CINEMATIC_DEFAULT_SCENE_CONTEXT = "The scene takes place in a grounded cinematic environment with realistic atmospheric depth.";
 
@@ -16,9 +67,28 @@ export const CINEMATIC_DEFAULT_DIEGETIC_SFX = "natural footsteps, physical movem
 
 export const CINEMATIC_DEFAULT_SOUND_CUES = ["diegetic room tone ambience", "subtle footsteps and environmental movement", "cinematic atmosphere soundscape"] as const;
 
-export const CINEMATIC_TEXT_FREE_POLICY = "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.";
+export const CINEMATIC_TEXT_FREE_POLICY =
+  "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.";
 
-export const CINEMATIC_DEFAULTS = { CHARACTER_BLOCKING: "Subject positions into the scene", EYELINE_DIRECTION: "Looking forward", SCREEN_DIRECTION: "Left to right", ACTION_START_STATE: "Opening scene position", ACTION_END_STATE: "Completed action aftermath", LOCATION_STATE: "Established cinematic environment", WARDROBE_STATE: "Established character costume and gear", PROP_STATE: "Established character props", VISIBLE_ACTION: "Action unfolds", REACTION: "Visible reaction", LOCATION_LOCK: "unchanged set geography", WARDROBE_LOCK: "unchanged wardrobe and wear state", PROP_LOCK: "unchanged prop ownership, hand and condition", LIGHTING_LOCK: "unchanged motivated light direction and time", STATIC_AXIS: "static_axis", ESTABLISHED_EYELINE: "established eyeline", PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip" } as const;
+export const CINEMATIC_DEFAULTS = {
+  CHARACTER_BLOCKING: "Subject positions into the scene",
+  EYELINE_DIRECTION: "Looking forward",
+  SCREEN_DIRECTION: "Left to right",
+  ACTION_START_STATE: "Opening scene position",
+  ACTION_END_STATE: "Completed action aftermath",
+  LOCATION_STATE: "Established cinematic environment",
+  WARDROBE_STATE: "Established character costume and gear",
+  PROP_STATE: "Established character props",
+  VISIBLE_ACTION: "Action unfolds",
+  REACTION: "Visible reaction",
+  LOCATION_LOCK: "unchanged set geography",
+  WARDROBE_LOCK: "unchanged wardrobe and wear state",
+  PROP_LOCK: "unchanged prop ownership, hand and condition",
+  LIGHTING_LOCK: "unchanged motivated light direction and time",
+  STATIC_AXIS: "static_axis",
+  ESTABLISHED_EYELINE: "established eyeline",
+  PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip",
+} as const;
 
 export const CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE = (language: string, targetDuration: string): string => `
 [DEDICATED AI FILM SCREENPLAY CONTRACT]

@@ -369,7 +369,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_REQUEST_PACING: "[Gemini Chat] Pacing request for {0}ms...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
-    GEMINI_CAPTCHA_DETECTED: "[Batch Gemini] Tab {0}: Verification screen/Captcha detected. Please solve the Captcha on your browser, system will automatically resume immediately.",
+    GEMINI_CAPTCHA_DETECTED:
+      "[Batch Gemini] Tab {0}: Verification screen/Captcha detected. Please solve the Captcha on your browser, system will automatically resume immediately.",
     GEMINI_CAPTCHA_SOLVED_RESUMING: "[Batch Gemini] Tab {0}: Verification completed! Resuming image generation automatically...",
     SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
     API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
@@ -492,9 +493,11 @@ export const PIPELINE_LOGS_LOCALIZED = {
 export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
 export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
 
-export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => (isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key]);
+export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string =>
+  isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key];
 
-export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => (isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key]);
+export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string =>
+  isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key];
 
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
   get(_, prop: string) {
@@ -1270,4 +1273,17 @@ export const LOG_DICTIONARY = {
 
 export type LogKey = keyof typeof LOG_DICTIONARY;
 
-export const VOICE_ALIGN_LOGS = { ALIGN_SUCCESS: "[Whisper Alignment] ✅ Đồng bộ thành công:", ALIGN_FAILED: "[Whisper Alignment] ❌ Đồng bộ thất bại:", CHECK_WHISPER: "Checking if openai-whisper is installed...", WHISPER_NOT_INSTALLED: "openai-whisper is not installed. Attempting to install automatically via pip...", WHISPER_INSTALL_SUCCESS: "Successfully installed openai-whisper. Running voice aligner...", WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...", ERR_DELETE_TEMP_FILES: "Error deleting temp files", ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE", ERR_RUNNING_SCRIPT: "Error running python_scripts/voice_aligner.py: ", FFMPEG_REQUIRED: "ffmpeg is required for alignment.", PYTHON_STDOUT: "Python script stdout: ", PYTHON_STDERR: "Python script stderr: " };
+export const VOICE_ALIGN_LOGS = {
+  ALIGN_SUCCESS: "[Whisper Alignment] ✅ Đồng bộ thành công:",
+  ALIGN_FAILED: "[Whisper Alignment] ❌ Đồng bộ thất bại:",
+  CHECK_WHISPER: "Checking if openai-whisper is installed...",
+  WHISPER_NOT_INSTALLED: "openai-whisper is not installed. Attempting to install automatically via pip...",
+  WHISPER_INSTALL_SUCCESS: "Successfully installed openai-whisper. Running voice aligner...",
+  WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...",
+  ERR_DELETE_TEMP_FILES: "Error deleting temp files",
+  ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE",
+  ERR_RUNNING_SCRIPT: "Error running python_scripts/voice_aligner.py: ",
+  FFMPEG_REQUIRED: "ffmpeg is required for alignment.",
+  PYTHON_STDOUT: "Python script stdout: ",
+  PYTHON_STDERR: "Python script stderr: ",
+};

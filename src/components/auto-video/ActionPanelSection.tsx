@@ -19,16 +19,30 @@ interface ActionPanelSectionProps {
   T: ReturnType<typeof getAutoVideoTexts>;
 }
 
-export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptContent, isProcessing, isCancelling, currentStepIndex, stepProgress, handleStartAutoGenerate, handleContinueAutoGenerate, canContinue, cancelPipeline, T }) => {
+export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
+  scriptContent,
+  isProcessing,
+  isCancelling,
+  currentStepIndex,
+  stepProgress,
+  handleStartAutoGenerate,
+  handleContinueAutoGenerate,
+  canContinue,
+  cancelPipeline,
+  T,
+}) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
 
   return (
-    <div className={cn("bg-slate-900/90 dark:bg-slate-900/90 border border-slate-700/60 dark:border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl transition-all duration-300")}>
+    <div
+      className={cn(
+        "action-panel glass-card bg-slate-900/90 border border-slate-800/80 p-4 space-y-4 text-center relative overflow-hidden shrink-0 backdrop-blur-xl rounded-3xl shadow-xl",
+      )}>
       <div className={cn("flex items-center gap-3 w-full relative z-10")}>
         <Button
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-          size={REFACTOR_CONSTANTS.SIZE_LG}
+          size={REFACTOR_CONSTANTS.SIZE_MD}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -36,23 +50,32 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           }}
           disabled={isProcessing || !isReady}
           isLoading={isProcessing && !isCancelling}
-          className={`flex-1 py-4 text-sm font-extrabold text-white rounded-2xl shadow-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border ${isProcessing ? "bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 border-amber-300/40 shadow-rose-500/30" : !isReady ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none" : "bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 hover:from-amber-400 hover:via-rose-450 hover:to-pink-500 active:scale-95 border-rose-400/40 shadow-rose-500/35 hover:shadow-rose-500/50"}`}
+          className={cn(
+            "flex-1 h-10 min-h-[40px] px-4 text-xs font-extrabold text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 border",
+            isProcessing
+              ? "bg-rose-600 border-rose-500 shadow-md shadow-rose-500/20"
+              : !isReady
+                ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
+                : "bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:to-rose-400 border-rose-400/40 shadow-lg shadow-rose-600/30 active:scale-98 text-white",
+          )}
           title={T.startBtnTooltip}>
-          <Zap className={`w-5 h-5 shrink-0 ${isReady ? "text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]" : "text-slate-500"}`} />
-          <span className={cn("truncate tracking-wide font-black text-white drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+          <Zap className={`w-4 h-4 shrink-0 ${isReady ? "text-white fill-white" : "text-slate-500"}`} />
+          <span className={cn("truncate font-extrabold text-white tracking-wide")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
         </Button>
 
         {!isProcessing && canContinue && (
           <Button
             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
             variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-            size={REFACTOR_CONSTANTS.SIZE_LG}
+            size={REFACTOR_CONSTANTS.SIZE_MD}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
               void handleContinueAutoGenerate();
             }}
-            className={cn("flex-1 py-4 text-sm font-extrabold text-white rounded-2xl border border-emerald-400/40 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500")}
+            className={cn(
+              "flex-1 h-10 min-h-[40px] px-4 text-xs font-bold rounded-xl border border-slate-700 bg-slate-850 hover:bg-slate-800 text-slate-100 flex items-center justify-center gap-2",
+            )}
             title={T.continueBtnTooltip}>
             <Play className={cn("w-4 h-4 shrink-0")} />
             <span className={cn("truncate")}>{T.continueBtn}</span>
@@ -63,7 +86,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           <Button
             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
             variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
-            size={REFACTOR_CONSTANTS.SIZE_LG}
+            size={REFACTOR_CONSTANTS.SIZE_MD}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -71,7 +94,9 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
             }}
             disabled={isCancelling}
             isLoading={isCancelling}
-            className={cn("flex-1 py-4 text-sm font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xl shadow-red-600/30 active:scale-95")}
+            className={cn(
+              "flex-1 h-10 min-h-[40px] px-4 text-xs font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-600/30 active:scale-95",
+            )}
             title={T.cancelBtnTooltip}>
             <X className={cn("w-4 h-4 text-white shrink-0 drop-shadow-sm")} />
             <span className={cn("truncate font-extrabold text-white tracking-wide")}>{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
@@ -89,7 +114,10 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
             <span className={cn("text-emerald-400 font-black tracking-wider text-sm")}>{stepProgress}%</span>
           </div>
           <div className={cn("w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5 shadow-inner")}>
-            <div className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-[width] duration-500 shadow-md shadow-emerald-500/50")} style={{ width: `${stepProgress}%` }} />
+            <div
+              className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-[width] duration-500 shadow-md shadow-emerald-500/50")}
+              style={{ width: `${stepProgress}%` }}
+            />
           </div>
         </div>
       )}

@@ -38,11 +38,25 @@ export function extractApiKeyFromResponse(data: any, keyNames: string[]): string
   return extractFirstNonEmptyString(candidatePaths);
 }
 
-const API_KEY_ALIASES = { gemini: [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY, "GEMINI_KEY", "GEMINI_API_KEY"], cerebras: [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY, "CEREBRAS_KEY", "CEREBRAS_API_KEY"], groq: [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY, "GROQ_KEY", "GROQ_API_KEY"], ai33: [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY, "AI33_KEY", "AI33_API_KEY", "AI3_KEY"] } as const;
+const API_KEY_ALIASES = {
+  gemini: [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY, "GEMINI_KEY", "GEMINI_API_KEY"],
+  cerebras: [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY, "CEREBRAS_KEY", "CEREBRAS_API_KEY"],
+  groq: [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY, "GROQ_KEY", "GROQ_API_KEY"],
+  ai33: [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY, "AI33_KEY", "AI33_API_KEY", "AI3_KEY"],
+} as const;
 
 export function getResolvedLicenseKey(req?: any): string {
   const ctx = requestContext.getStore();
-  const sources = [process.env.VIDIFY_LICENSE_KEY, process.env.VITE_LICENSE_KEY, process.env.LICENSE_KEY, _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_HEADERS, SecurityConstants.HEADER_LICENSE_KEY]), _.get(ctx, SecurityConstants.STORE_LICENSE_KEY), _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.STORE_LICENSE_KEY]), _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.PROP_LICENSE_KEY_GAS]), SecurityConstants.DEFAULT_LICENSE_KEY];
+  const sources = [
+    process.env.VIDIFY_LICENSE_KEY,
+    process.env.VITE_LICENSE_KEY,
+    process.env.LICENSE_KEY,
+    _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_HEADERS, SecurityConstants.HEADER_LICENSE_KEY]),
+    _.get(ctx, SecurityConstants.STORE_LICENSE_KEY),
+    _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.STORE_LICENSE_KEY]),
+    _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.PROP_LICENSE_KEY_GAS]),
+    SecurityConstants.DEFAULT_LICENSE_KEY,
+  ];
   return extractFirstNonEmptyString(sources);
 }
 
@@ -114,10 +128,26 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
     };
   }
 
-  appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ hasLicenseKey: !_.isEmpty(licenseKey), planType, hasUserGeminiKey: isGeminiUserKey, hasUserCerebrasKey: isCerebrasUserKey, hasUserGroqKey: isGroqUserKey, hasUserAi33Key: isAi33UserKey, isMissingAnyKey }));
+  appLog(
+    SecurityMessages.LOG_RESOLVER_CTX,
+    jsonUtils.safeStringify({
+      hasLicenseKey: !_.isEmpty(licenseKey),
+      planType,
+      hasUserGeminiKey: isGeminiUserKey,
+      hasUserCerebrasKey: isCerebrasUserKey,
+      hasUserGroqKey: isGroqUserKey,
+      hasUserAi33Key: isAi33UserKey,
+      isMissingAnyKey,
+    }),
+  );
 
   try {
-    const payload = { [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS, [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey, [SecurityConstants.PROP_PLAN_ID_GAS]: planType, [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType };
+    const payload = {
+      [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS,
+      [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey,
+      [SecurityConstants.PROP_PLAN_ID_GAS]: planType,
+      [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType,
+    };
     appLog(
       SecurityMessages.LOG_RESOLVER_FETCH,
       jsonUtils.safeStringify({
@@ -134,7 +164,12 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
     });
 
     const data: any = await response.json();
-    const keyAvailability = { hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])) };
+    const keyAvailability = {
+      hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])),
+      hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])),
+      hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])),
+      hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])),
+    };
     appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify(keyAvailability));
 
     const fetchedGemini = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini]);

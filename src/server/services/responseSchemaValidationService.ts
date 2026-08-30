@@ -23,7 +23,8 @@ const matchesObjectSchema = (value: unknown, schema: ResponseSchema): boolean =>
   return _.every(properties, (propertySchema, key) => !_.has(source, key) || matchesResponseSchema(_.get(source, key), propertySchema));
 };
 
-const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean => _.isArray(value) && _.size(value) >= _.defaultTo(schema.minItems, 0) && (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
+const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean =>
+  _.isArray(value) && _.size(value) >= _.defaultTo(schema.minItems, 0) && (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
 
 export const matchesResponseSchema = (value: unknown, schema: ResponseSchema): boolean => {
   if (schema.enum && !_.includes(schema.enum, value)) return false;

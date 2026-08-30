@@ -20,7 +20,10 @@ export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[], op
   const repairedSceneIds: string[] = [];
 
   if (options.cinematicVideoOnly) {
-    const usableFilmScenes = _.filter(scenes, (scene) => !_.isEmpty(scene.assetUrl) && _.isEqual(scene.assetType, GenerateType.Video) && !_.startsWith(scene.assetError, "completion_fallback_"));
+    const usableFilmScenes = _.filter(
+      scenes,
+      (scene) => !_.isEmpty(scene.assetUrl) && _.isEqual(scene.assetType, GenerateType.Video) && !_.startsWith(scene.assetError, "completion_fallback_"),
+    );
     const removedSceneIds = _.map(_.differenceBy(scenes, usableFilmScenes, "id"), "id");
     return { scenes: usableFilmScenes, repairedSceneIds: removedSceneIds, usedNeutralFallback: _.isEmpty(usableFilmScenes) };
   }

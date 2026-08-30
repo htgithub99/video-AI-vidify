@@ -127,7 +127,9 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     ))}
                   </div>
                 ) : (
-                  <div className={cn("text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center")}>{t.Descriptions_are_empty || PIPELINE_STEP3_TEXTS.DESCRIPTIONS_EMPTY}</div>
+                  <div className={cn("text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center")}>
+                    {t.Descriptions_are_empty || PIPELINE_STEP3_TEXTS.DESCRIPTIONS_EMPTY}
+                  </div>
                 ))}
               {_.map(project.seo?.descriptions || [], (desc, i) => (
                 <div key={i} className={cn("bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2")}>

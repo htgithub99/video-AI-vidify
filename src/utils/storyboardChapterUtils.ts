@@ -2,7 +2,10 @@ import _ from "lodash";
 
 const countWords = (value: unknown): number => _.size(_.words(_.toString(value)));
 
-export const assignStoryboardChapterIds = <T extends { chapterId?: string; script?: string; subtitle?: string }>(scenes: T[], chapters: Array<{ id?: string; scriptSegment?: string }>): Array<T & { chapterId?: string }> => {
+export const assignStoryboardChapterIds = <T extends { chapterId?: string; script?: string; subtitle?: string }>(
+  scenes: T[],
+  chapters: Array<{ id?: string; scriptSegment?: string }>,
+): Array<T & { chapterId?: string }> => {
   const validChapters = _.filter(chapters, (chapter) => !_.isEmpty(chapter.id));
   if (_.isEmpty(scenes) || _.isEmpty(validChapters)) return scenes;
 

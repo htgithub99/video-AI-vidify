@@ -1,5 +1,13 @@
 import _ from "lodash";
-import { CINEMATIC_DEFAULT_DIEGETIC_SFX, CINEMATIC_DEFAULT_SCENE_CONTEXT, CINEMATIC_POLICY_CONFIG, CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE, CINEMATIC_TECHNICAL_FOUNDATION, CINEMATIC_TEXT_FREE_POLICY, resolveCinematicClipDuration } from "../constants/cinematicConstants";
+import {
+  CINEMATIC_DEFAULT_DIEGETIC_SFX,
+  CINEMATIC_DEFAULT_SCENE_CONTEXT,
+  CINEMATIC_POLICY_CONFIG,
+  CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE,
+  CINEMATIC_TECHNICAL_FOUNDATION,
+  CINEMATIC_TEXT_FREE_POLICY,
+  resolveCinematicClipDuration,
+} from "../constants/cinematicConstants";
 import { GenerateType, StoryboardScene } from "../types";
 
 const resolveBeatCount = (beats: StoryboardScene["cinematicBeats"]): number => {
@@ -12,7 +20,8 @@ const buildSceneContextBlock = (scene: StoryboardScene): string => {
   return !_.isEmpty(contextParts) ? _.join(contextParts, " ") : CINEMATIC_DEFAULT_SCENE_CONTEXT;
 };
 
-const buildSequenceHeader = (beatCount: number, cutCount: number, clipDurationSeconds: number): string => `Create one continuous ${clipDurationSeconds}-second cinematic sequence with exactly ${beatCount} chronological shots and exactly ${cutCount} motivated cuts.`;
+const buildSequenceHeader = (beatCount: number, cutCount: number, clipDurationSeconds: number): string =>
+  `Create one continuous ${clipDurationSeconds}-second cinematic sequence with exactly ${beatCount} chronological shots and exactly ${cutCount} motivated cuts.`;
 
 const formatSingleBeat = (beat: NonNullable<StoryboardScene["cinematicBeats"]>[number], index: number, beatCount: number, clipDurationSeconds: number): string => {
   const duration = clipDurationSeconds;
@@ -23,7 +32,8 @@ const formatSingleBeat = (beat: NonNullable<StoryboardScene["cinematicBeats"]>[n
   const shotLabel = `**${start}s–${end}s — Shot ${index + 1}: ${shotSize}, ${cameraAngle}**`;
   const actionDesc = _.trim(beat.visibleAction) || `Execute continuous narrative action for shot ${index + 1}.`;
   const reactionDesc = beat.reaction ? ` ${beat.reaction}.` : "";
-  return `${shotLabel}\n${actionDesc}${reactionDesc}`;
+  const continuityHandoff = index > 0 ? `Continue directly from Shot ${index}. ` : "";
+  return `${shotLabel}\n${continuityHandoff}${actionDesc}${reactionDesc}`;
 };
 
 const buildShotDescriptionsBlock = (beats: StoryboardScene["cinematicBeats"], beatCount: number, clipDurationSeconds: number): string => {
@@ -43,7 +53,8 @@ const buildContinuityBlock = (scene: StoryboardScene): string => {
   return `Maintain identical character identity, face, hairstyle, wardrobe${wardLock}, weapon and props${propLock}, lighting direction, geography${locLock}${eyeline}${screenDir} across all shots.`;
 };
 
-const buildNegativeConstraintsBlock = (beatCount: number, cutCount: number): string => `Exactly ${beatCount} shots. Exactly ${cutCount} clean motivated cuts. No extra shots, montage, location reset, repeated action, camera shake, whip-pan, dissolve, flash transition, crash zoom, morphing, duplicated characters, extra limbs, distorted face, wardrobe or weapon changes.`;
+const buildNegativeConstraintsBlock = (beatCount: number, cutCount: number): string =>
+  `Exactly ${beatCount} shots. Exactly ${cutCount} clean motivated cuts. No extra shots, montage, location reset, repeated action, camera shake, whip-pan, dissolve, flash transition, crash zoom, morphing, duplicated characters, extra limbs, distorted face, wardrobe or weapon changes.`;
 
 const buildAudioBlock = (scene: StoryboardScene, beats: StoryboardScene["cinematicBeats"]): string => {
   const dialogueBeat = _.find(beats, (b) => _.isEqual(b.dialogueMode, "on_screen_dialogue") && b.lipSyncRequired);
@@ -67,5 +78,17 @@ export const createCinematicVideoPrompt = (scene: StoryboardScene, basePrompt: s
   const cutCount = beatCount - 1;
   const clipDurationSeconds = resolveCinematicClipDuration(requestedDuration || scene.duration);
 
-  return _.join([CINEMATIC_TECHNICAL_FOUNDATION, buildSceneContextBlock(scene), buildSequenceHeader(beatCount, cutCount, clipDurationSeconds), buildShotDescriptionsBlock(beats, beatCount, clipDurationSeconds), buildContinuityBlock(scene), buildNegativeConstraintsBlock(beatCount, cutCount), buildAudioBlock(scene, beats), CINEMATIC_TEXT_FREE_POLICY], "\n\n");
+  return _.join(
+    [
+      CINEMATIC_TECHNICAL_FOUNDATION,
+      buildSceneContextBlock(scene),
+      buildSequenceHeader(beatCount, cutCount, clipDurationSeconds),
+      buildShotDescriptionsBlock(beats, beatCount, clipDurationSeconds),
+      buildContinuityBlock(scene),
+      buildNegativeConstraintsBlock(beatCount, cutCount),
+      buildAudioBlock(scene, beats),
+      CINEMATIC_TEXT_FREE_POLICY,
+    ],
+    "\n\n",
+  );
 };

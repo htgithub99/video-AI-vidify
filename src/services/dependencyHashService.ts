@@ -21,7 +21,9 @@ export const createDependencyHash = (value: unknown): string => {
     hash ^= input.charCodeAt(index);
     hash = Math.imul(hash, DEPENDENCY_HASH_CONFIG.FNV_PRIME);
   }
-  const hexadecimalHash = (hash >>> 0).toString(DEPENDENCY_HASH_CONFIG.RADIX_HEXADECIMAL).padStart(DEPENDENCY_HASH_CONFIG.HASH_PADDING_LENGTH, DEPENDENCY_HASH_CONFIG.HASH_PADDING_CHARACTER);
+  const hexadecimalHash = (hash >>> 0)
+    .toString(DEPENDENCY_HASH_CONFIG.RADIX_HEXADECIMAL)
+    .padStart(DEPENDENCY_HASH_CONFIG.HASH_PADDING_LENGTH, DEPENDENCY_HASH_CONFIG.HASH_PADDING_CHARACTER);
   return `${DEPENDENCY_HASH_CONFIG.HASH_PREFIX}${hexadecimalHash}`;
 };
 

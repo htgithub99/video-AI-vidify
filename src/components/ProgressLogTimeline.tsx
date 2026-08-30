@@ -15,7 +15,17 @@ interface ProgressLogTimelineProps {
 const resolveProgressLogTone = (message: string): ProgressLogTone => {
   const normalizedMessage = _.toLower(message);
 
-  const tones = [ProgressLogTone.Error, ProgressLogTone.Warning, ProgressLogTone.Success, ProgressLogTone.Script, ProgressLogTone.Voice, ProgressLogTone.Image, ProgressLogTone.Render, ProgressLogTone.SEO, ProgressLogTone.Thumbnails];
+  const tones = [
+    ProgressLogTone.Error,
+    ProgressLogTone.Warning,
+    ProgressLogTone.Success,
+    ProgressLogTone.Script,
+    ProgressLogTone.Voice,
+    ProgressLogTone.Image,
+    ProgressLogTone.Render,
+    ProgressLogTone.SEO,
+    ProgressLogTone.Thumbnails,
+  ];
 
   const matchedTone = _.find(tones, (tone) => {
     const keywords = _.get(PROGRESS_LOG_CONFIG.KEYWORDS, tone);
@@ -34,7 +44,11 @@ const parseProgressLog = (log: string) => {
   const rawCleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
   const cleanMessage = formatSeamlessMessage(rawCleanMessage);
 
-  return { time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE), message: cleanMessage, tone: resolveProgressLogTone(messageWithoutTime) };
+  return {
+    time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
+    message: cleanMessage,
+    tone: resolveProgressLogTone(messageWithoutTime),
+  };
 };
 
 const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {
@@ -94,12 +108,23 @@ export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelinePro
 
             <div className={cn("flex items-center gap-1.5 ml-auto flex-shrink-0")}>
               {isError && (
-                <button type="button" onClick={() => handleCopy(entry.message, index)} className={cn("p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm cursor-pointer", isCopied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20")} title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(entry.message, index)}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm cursor-pointer",
+                    isCopied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20",
+                  )}
+                  title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}>
                   {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5 text-rose-400")} />}
                 </button>
               )}
 
-              {!_.isEmpty(entry.time) && <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.TIME, isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK)}>{entry.time}</span>}
+              {!_.isEmpty(entry.time) && (
+                <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.TIME, isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK)}>
+                  {entry.time}
+                </span>
+              )}
             </div>
           </div>
         );

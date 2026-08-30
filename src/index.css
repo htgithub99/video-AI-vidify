@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
-  --font-logo: "Merienda", cursive;
+  --font-sans: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-logo: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --radius-xs: 0.75rem;
@@ -49,42 +49,34 @@
   --color-rose-450: #fcd34d;
   --color-rose-400: #fde68a;
   --color-rose-350: #fef08a;
-  --color-rose-300: #fef3c7;
-  --color-rose-200: #fffbeb;
-  --color-rose-100: #ffffff;
+  --animate-fadeIn: none;
+  --animate-shrinkWidth: none;
+  --animate-shimmer: none;
+}
 
-  --animate-fadeIn: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-shrinkWidth: shrinkWidth 5s linear forwards;
-  --animate-shimmer: shimmer 1.6s infinite linear;
+/* VÔ HIỆU HÓA ANIMATION CHUYỂN ĐỘNG NẶNG NỀ */
+.animate-pulse,
+.animate-bounce,
+.skeleton-shimmer {
+  animation: none !important;
+}
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+.animate-spin {
+  animation: spin 0.8s linear infinite !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-
-  @keyframes shrinkWidth {
-    from {
-      width: 100%;
-    }
-    to {
-      width: 0%;
-    }
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  @keyframes shimmer {
-    from {
-      background-position: -200% 0;
-    }
-    to {
-      background-position: 200% 0;
-    }
-  }
+/* ĐỒNG NHẤT CHIỀU CAO BUTTON TRÊN TOÀN BỘ CÁC MÀN HÌNH */
+button:not(.btn-icon-tiny):not(.btn-tag) {
+  min-height: 40px !important;
 }
 
 ::-webkit-scrollbar {
@@ -114,102 +106,90 @@ body {
 :root.light {
   color-scheme: light;
 
-  --color-slate-955: #f4f4f5;
-  --color-slate-950: #f4f4f5;
+  --color-slate-955: #f8fafc;
+  --color-slate-950: #f1f5f9;
   --color-slate-900: #ffffff;
-  --color-slate-880: #fafafa;
-  --color-slate-850: #e4e4e7;
-  --color-slate-800: #d4d4d8;
-  --color-slate-750: #a1a1aa;
-  --color-slate-700: #71717a;
-  --color-slate-650: #52525b;
-  --color-slate-600: #3f3f46;
-  --color-slate-550: #27272a;
-  --color-slate-500: #18181b;
-  --color-slate-450: #09090b;
-  --color-slate-400: #000000;
-  --color-slate-355: #000000;
-  --color-slate-350: #000000;
-  --color-slate-300: #000000;
-  --color-slate-250: #000000;
-  --color-slate-205: #000000;
-  --color-slate-200: #000000;
-  --color-slate-100: #000000;
+  --color-slate-880: #f8fafc;
+  --color-slate-850: #e2e8f0;
+  --color-slate-800: #cbd5e1;
+  --color-slate-750: #94a3b8;
+  --color-slate-700: #64748b;
+  --color-slate-650: #475569;
+  --color-slate-600: #475569;
+  --color-slate-550: #334155;
+  --color-slate-500: #64748b;
+  --color-slate-450: #334155;
+  --color-slate-400: #334155;
+  --color-slate-355: #1e293b;
+  --color-slate-350: #1e293b;
+  --color-slate-300: #1e293b;
+  --color-slate-250: #0f172a;
+  --color-slate-205: #0f172a;
+  --color-slate-200: #0f172a;
+  --color-slate-100: #0f172a;
 
   --color-blue-950: #eff6ff;
   --color-blue-900: #dbeafe;
-  --color-blue-800: #3b82f6;
-  --color-blue-700: #2563eb;
-  --color-blue-600: #1d4ed8;
-  --color-blue-500: #1e40af;
+  --color-blue-800: #bfdbfe;
+  --color-blue-700: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-500: #1d4ed8;
   --color-blue-400: #2563eb;
-  --color-blue-300: #1e3a8a;
+  --color-blue-300: #1e40af;
   --color-blue-200: #172554;
-  --color-blue-100: #0f172a;
+  --color-blue-100: #ffffff;
 
-  --color-rose-955: #fffbeb;
-  --color-rose-950: #fffbeb;
-  --color-rose-900: #fef3c7;
-  --color-rose-800: #78350f;
-  --color-rose-705: #92400e;
-  --color-rose-700: #92400e;
-  --color-rose-600: #b45309;
-  --color-rose-550: #78350f;
-  --color-rose-500: #d97706;
-  --color-rose-455: #92400e;
-  --color-rose-450: #b45309;
-  --color-rose-400: #b45309;
-  --color-rose-350: #fef3c7;
-  --color-rose-300: #fffbeb;
-  --color-rose-200: #ffffff;
+  --color-rose-955: #fff1f2;
+  --color-rose-950: #fff1f2;
+  --color-rose-900: #ffe4e6;
+  --color-rose-800: #fecdd3;
+  --color-rose-705: #fda4af;
+  --color-rose-700: #fb7185;
+  --color-rose-600: #e11d48;
+  --color-rose-550: #e11d48;
+  --color-rose-500: #f43f5e;
+  --color-rose-455: #f43f5e;
+  --color-rose-450: #e11d48;
+  --color-rose-400: #e11d48;
+  --color-rose-350: #be123c;
+  --color-rose-300: #9f1239;
+  --color-rose-200: #881337;
   --color-rose-100: #ffffff;
-}
 
-.shimmer-bg {
-  background: linear-gradient(90deg, var(--color-slate-900) 25%, var(--color-slate-800) 50%, var(--color-slate-900) 75%) !important;
-  background-size: 200% 100% !important;
-  animation: shimmer 1.6s infinite linear !important;
-}
-:root.light .shimmer-bg {
-  background: linear-gradient(90deg, #f1f3f4 25%, #e8eaed 50%, #f1f3f4 75%) !important;
-  background-size: 200% 100% !important;
-}
-
-:root.light {
   --color-emerald-950: #ecfdf5;
   --color-emerald-900: #d1fae5;
-  --color-emerald-800: #34d399;
-  --color-emerald-500: #059669;
-  --color-emerald-400: #047857;
-  --color-emerald-300: #064e3b;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-500: #10b981;
+  --color-emerald-400: #059669;
+  --color-emerald-300: #047857;
 
   --color-amber-950: #fffbeb;
   --color-amber-900: #fef3c7;
-  --color-amber-800: #fbbf24;
-  --color-amber-500: #d97706;
-  --color-amber-400: #b45309;
-  --color-amber-300: #78350f;
+  --color-amber-800: #fde68a;
+  --color-amber-500: #f59e0b;
+  --color-amber-400: #d97706;
+  --color-amber-300: #b45309;
 
   --color-purple-950: #faf5ff;
   --color-purple-900: #f3e8ff;
-  --color-purple-800: #c084fc;
-  --color-purple-500: #7e22ce;
-  --color-purple-400: #6b21a8;
-  --color-purple-300: #4c1d95;
+  --color-purple-800: #e9d5ff;
+  --color-purple-500: #a855f7;
+  --color-purple-400: #9333ea;
+  --color-purple-300: #7e22ce;
 
-  --color-bg-05: #f8f9fa;
+  --color-bg-05: #f8fafc;
   --color-bg-0a: #ffffff;
-  --color-bg-0e: #f3f4f6;
-  --color-bg-11: #f3f4f6;
-  --color-bg-12: #f9fafb;
-  --color-border-22: #e5e7eb;
-  --color-border-1b: #e5e7eb;
-  --color-border-1e: #e5e7eb;
+  --color-bg-0e: #f1f5f9;
+  --color-bg-11: #f1f5f9;
+  --color-bg-12: #f8fafc;
+  --color-border-22: #e2e8f0;
+  --color-border-1b: #e2e8f0;
+  --color-border-1e: #e2e8f0;
   --color-text-e0: #0f172a;
-  --color-text-88: #6b7280;
-  --color-text-66: #4b5563;
-  --color-text-55: #374151;
-  --color-text-aa: #4b5563;
+  --color-text-88: #64748b;
+  --color-text-66: #475569;
+  --color-text-55: #334155;
+  --color-text-aa: #475569;
 }
 
 @layer utilities {
@@ -231,7 +211,9 @@ input[type="reset"],
 input[type="button"],
 select {
   cursor: pointer !important;
-  transition: all 0.2s ease-in-out !important;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform !important;
+  transition-duration: 160ms !important;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 button:active,
@@ -250,7 +232,17 @@ a:disabled,
 input,
 textarea,
 select {
-  transition: all 0.2s ease-in-out !important;
+  transition-property: color, background-color, border-color, box-shadow !important;
+  transition-duration: 160ms !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="color"]):not([type="file"]),
+select:not([multiple]),
+.input-control,
+.select-control {
+  min-height: 2.5rem !important;
+  height: 2.5rem !important;
+  box-sizing: border-box !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
@@ -638,8 +630,444 @@ input[type="range"]::-webkit-slider-thumb:hover {
   animation: button-shimmer 1.4s infinite;
 }
 
-@keyframes button-shimmer {
-  100% {
-    transform: translateX(100%);
+.app-shell {
+  background: radial-gradient(circle at 78% -12%, rgba(245, 158, 11, 0.08), transparent 30rem), var(--color-slate-955);
+}
+
+.app-header {
+  min-height: 64px;
+  background: color-mix(in srgb, var(--color-slate-950) 88%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-slate-800) 76%, transparent) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.025),
+    0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.app-sidebar {
+  background: color-mix(in srgb, var(--color-slate-950) 94%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-slate-800) 72%, transparent) !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  flex-shrink: 0 !important;
+  align-self: stretch !important;
+}
+
+.app-sidebar nav {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.app-sidebar .app-sidebar-footer,
+.app-sidebar > div:last-child {
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.app-sidebar-project {
+  background: color-mix(in srgb, var(--color-slate-900) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-slate-800) 76%, transparent);
+}
+
+.app-nav-item {
+  min-height: 44px;
+  border-radius: 12px !important;
+}
+
+.app-nav-item[data-active="true"] {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06)) !important;
+  border-color: rgba(245, 158, 11, 0.28) !important;
+  box-shadow: inset 3px 0 0 #f59e0b !important;
+}
+
+.app-nav-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 9px !important;
+}
+
+.app-main {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-slate-955) 96%, transparent), var(--color-slate-955)), var(--color-slate-955) !important;
+}
+
+.workspace-card,
+.glass-card,
+.glass-panel {
+  background: color-mix(in srgb, var(--color-slate-900) 88%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--color-slate-800) 82%, transparent) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 12px 34px rgba(0, 0, 0, 0.06) !important;
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--color-slate-700) 80%, transparent) !important;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 16px 42px rgba(0, 0, 0, 0.08) !important;
+}
+
+.creation-workspace {
+  background: transparent !important;
+}
+
+.creation-workspace-grid {
+  width: 100%;
+  max-width: 1560px;
+  margin-inline: auto;
+  gap: 0;
+}
+
+.creation-config-column,
+.creation-status-column {
+  scrollbar-gutter: stable;
+}
+
+.creation-config-column {
+  padding: 24px clamp(20px, 2.2vw, 36px) 56px !important;
+}
+
+.creation-status-column {
+  padding: 24px clamp(18px, 1.7vw, 28px) 56px !important;
+  background: color-mix(in srgb, var(--color-slate-950) 48%, transparent) !important;
+}
+
+.action-panel {
+  background: color-mix(in srgb, var(--color-slate-900) 94%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--color-slate-800) 84%, transparent) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08) !important;
+}
+
+.log-panel {
+  min-height: 280px;
+  border-radius: 16px !important;
+}
+
+.section-title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.font-logo {
+  letter-spacing: -0.025em !important;
+}
+
+select,
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+textarea {
+  min-height: 40px;
+}
+
+textarea {
+  line-height: 1.65;
+}
+
+:root.light .app-shell {
+  background: linear-gradient(135deg, #f8f3ea 0%, #f4ede2 50%, #f0e6d6 100%) !important;
+}
+
+:root.light .app-header,
+:root.light .app-sidebar {
+  background: rgba(253, 249, 242, 0.96) !important;
+}
+
+:root.light .app-main,
+:root.light .creation-workspace {
+  background: transparent !important;
+}
+
+:root.light .creation-status-column {
+  background: transparent !important;
+}
+
+:root.light .workspace-card,
+:root.light .glass-card,
+:root.light .glass-panel,
+:root.light .action-panel,
+:root.light .log-panel {
+  background: rgba(255, 253, 249, 0.96) !important;
+  box-shadow:
+    0 12px 36px -4px rgba(180, 130, 60, 0.1),
+    0 2px 10px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+@media (max-width: 1023px) {
+  .creation-config-column,
+  .creation-status-column {
+    padding: 18px 16px 32px !important;
   }
+
+  .creation-status-column {
+    border-top: 1px solid var(--color-slate-800);
+  }
+}
+
+@media (max-width: 767px) {
+  .project-table,
+  .project-table tbody,
+  .project-table tr,
+  .project-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .project-table thead,
+  .project-table td:nth-child(2),
+  .project-table td:nth-child(3),
+  .project-table td:nth-child(4) {
+    display: none;
+  }
+
+  .project-table tr {
+    padding: 12px;
+  }
+
+  .project-table td:first-child {
+    padding: 0 0 10px !important;
+  }
+
+  .project-table td:last-child {
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  .project-table td:last-child > div {
+    justify-content: flex-start !important;
+    padding-left: 40px;
+  }
+
+  .project-table td:first-child .w-14 {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .project-table th:nth-child(2),
+  .project-table td:nth-child(2),
+  .project-table th:nth-child(4),
+  .project-table td:nth-child(4) {
+    display: none;
+  }
+
+  .project-table th,
+  .project-table td {
+    padding-inline: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* KHÓA KHÍT CHIỀU CAO 100VH TOÀN DIỆN & KHÔNG SCROLL KHUNG NGOÀI */
+html,
+body,
+#root {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-shell {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.app-main {
+  flex: 1 1 0% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.creation-workspace {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* BORDER-FREE FRAMELESS AESTHETIC & BẢNG MÀU PHONG THỦY TUỔI 1999 (KỶ MÃO - MỆNH THÀNH ĐẦU THỔ) */
+.creation-workspace,
+.creation-workspace *,
+.workspace-card,
+.workspace-card *,
+.glass-card,
+.glass-card *,
+.glass-panel,
+.glass-panel *,
+.log-panel,
+.log-panel *,
+.action-panel,
+.action-panel *,
+.app-header,
+.app-header *,
+.app-sidebar,
+.app-sidebar *,
+input,
+select,
+textarea,
+button,
+table,
+th,
+td,
+tr {
+  border: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+}
+
+/* THẺ SELECT VÀ KHUNG CHỨA SELECT TRONG SUỐT HOÀN TOÀN KHÔNG CÓ NỀN ĐỤC */
+select,
+.custom-select-trigger,
+div:has(> select) {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* Nổi khối sang trọng bằng Soft Ambient Shadows & Tonal Depth thay cho Border */
+.glass-card,
+.workspace-card,
+.glass-panel,
+.log-panel,
+.action-panel {
+  background: rgba(22, 17, 28, 0.88) !important;
+  box-shadow:
+    0 12px 36px -4px rgba(0, 0, 0, 0.5),
+    0 4px 16px -2px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+:root.light .glass-card,
+:root.light .workspace-card,
+:root.light .glass-panel,
+:root.light .log-panel,
+:root.light .action-panel {
+  background: rgba(255, 253, 248, 0.96) !important;
+  box-shadow:
+    0 10px 30px -4px rgba(190, 140, 60, 0.12),
+    0 2px 10px -1px rgba(0, 0, 0, 0.04) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+/* Inputs, Textarea: Borderless sang trọng với nền chìm */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+textarea {
+  background: rgba(12, 10, 17, 0.88) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+  color: #f8fafc !important;
+}
+
+:root.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+:root.light textarea {
+  background: rgba(245, 238, 226, 0.9) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06) !important;
+  color: #241a10 !important;
+}
+
+select option,
+select optgroup {
+  background: #18121f !important;
+  color: #f8fafc !important;
+  border: none !important;
+}
+
+:root.light select option,
+:root.light select optgroup {
+  background: #fbf7ee !important;
+  color: #241a10 !important;
+  border: none !important;
+}
+
+/* BẢNG MÀU CHUẨN PHONG THỦY TUỔI 1999 (KỶ MÃO - MỆNH THÀNH ĐẦU THỔ - HỎA SINH THỔ) */
+:root {
+  --color-slate-955: #0c0a0f;
+  --color-slate-950: #120e17;
+  --color-slate-900: #1a1422;
+  --color-slate-880: #221b2d;
+  --color-slate-850: #2c233a;
+  --color-slate-800: #382d49;
+  --color-slate-750: #4a3c61;
+  --color-slate-700: #62507e;
+  --color-slate-650: #7e67a0;
+  --color-slate-600: #9b81c2;
+  --color-slate-550: #b89fe0;
+  --color-slate-500: #d0bdf4;
+  --color-slate-450: #e2d4fc;
+  --color-slate-400: #ede3fe;
+  --color-slate-355: #f5efff;
+  --color-slate-350: #faf7ff;
+  --color-slate-300: #ffffff;
+  --color-slate-250: #ffffff;
+  --color-slate-205: #ffffff;
+  --color-slate-200: #ffffff;
+  --color-slate-100: #ffffff;
+
+  --color-rose-955: #210d14;
+  --color-rose-950: #35121e;
+  --color-rose-900: #55162d;
+  --color-rose-800: #7d1c3e;
+  --color-rose-705: #a41f4f;
+  --color-rose-700: #c21d5b;
+  --color-rose-600: #e11d48;
+  --color-rose-550: #f43f5e;
+  --color-rose-500: #f59e0b;
+  --color-rose-455: #fbbf24;
+  --color-rose-450: #fcd34d;
+  --color-rose-400: #fde68a;
+  --color-rose-350: #fef08a;
+  --color-rose-300: #fef3c7;
+  --color-rose-200: #fffbeb;
+  --color-rose-100: #ffffff;
+}
+
+:root.light {
+  --color-slate-955: #f9f5ec;
+  --color-slate-950: #f4eee2;
+  --color-slate-900: #ebe2d3;
+  --color-slate-880: #dfd4c3;
+  --color-slate-850: #d0c2ae;
+  --color-slate-800: #b9a891;
+  --color-slate-750: #9e8b72;
+  --color-slate-700: #7d6b53;
+  --color-slate-650: #5f4f3b;
+  --color-slate-600: #46392a;
+  --color-slate-550: #33291d;
+  --color-slate-500: #261e15;
+  --color-slate-450: #1d160f;
+  --color-slate-400: #15100a;
+  --color-slate-355: #0f0b07;
+  --color-slate-350: #0a0704;
+  --color-slate-300: #000000;
 }

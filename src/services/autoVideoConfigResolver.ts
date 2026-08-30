@@ -30,7 +30,8 @@ const VIDEO_ENGINES = [ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Lite,
 
 const IMAGE_ENGINES = [ImageGeneratorEngine.Imagen] as const;
 
-const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([!_.isEmpty(config.characterPrompt), _.some(config.characters, (character) => !_.isEmpty(character.prompt || character.description))], Boolean);
+const hasCharacterIdentity = (config: VisualConfig): boolean =>
+  _.some([!_.isEmpty(config.characterPrompt), _.some(config.characters, (character) => !_.isEmpty(character.prompt || character.description))], Boolean);
 
 export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolean = false): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
@@ -72,7 +73,11 @@ export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolea
     }
   }
 
-  if (_.some([_.isEqual(config.generateType, GenerateType.Video), _.isEqual(config.generateType, GenerateType.Mixed)]) && !usesGeminiModelPicker && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as (typeof IMAGE_ENGINES)[number])) {
+  if (
+    _.some([_.isEqual(config.generateType, GenerateType.Video), _.isEqual(config.generateType, GenerateType.Mixed)]) &&
+    !usesGeminiModelPicker &&
+    _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as (typeof IMAGE_ENGINES)[number])
+  ) {
     config.generateType = GenerateType.Image;
     issues.push({
       code: ConfigIssueCode.VideoModeImageEngineUnsupported,

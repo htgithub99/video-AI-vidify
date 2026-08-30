@@ -22,7 +22,11 @@ const readPersistedDeviceId = (): string => {
   const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
   if (!fs.existsSync(deviceIdFile)) return SecurityConstants.EMPTY_STRING;
   try {
-    return _.get(jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {}), SecurityConstants.DEVICE_ID_KEY, SecurityConstants.EMPTY_STRING);
+    return _.get(
+      jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {}),
+      SecurityConstants.DEVICE_ID_KEY,
+      SecurityConstants.EMPTY_STRING,
+    );
   } catch {
     return SecurityConstants.EMPTY_STRING;
   }
@@ -31,7 +35,11 @@ const readPersistedDeviceId = (): string => {
 const generateAndPersistDeviceId = (): string => {
   const rawId = crypto.randomUUID();
   try {
-    fs.writeFileSync(path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME), jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
+    fs.writeFileSync(
+      path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME),
+      jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }),
+      SecurityConstants.UTF8_ENCODING as BufferEncoding,
+    );
   } catch {}
   return rawId;
 };
@@ -84,7 +92,8 @@ const createDefaultLicenseInfo = (): LicenseInfo => ({
   limits: { video: SecurityConstants.ZERO, image: SecurityConstants.ZERO, voice: SecurityConstants.ZERO, unlimited: true },
 });
 
-const isRecognizedServerLicenseKey = (key: string): boolean => _.includes(_.compact([SecurityConstants.DEFAULT_LICENSE_KEY, process.env.VIDIFY_LICENSE_KEY, process.env.VITE_LICENSE_KEY, process.env.LICENSE_KEY]), key);
+const isRecognizedServerLicenseKey = (key: string): boolean =>
+  _.includes(_.compact([SecurityConstants.DEFAULT_LICENSE_KEY, process.env.VIDIFY_LICENSE_KEY, process.env.VITE_LICENSE_KEY, process.env.LICENSE_KEY]), key);
 
 const parseLicenseInfoFromGasResponse = (data: Record<string, unknown>): LicenseInfo => ({
   status: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.STATUS_KEY)))) as LicenseStatus,
@@ -165,7 +174,14 @@ export class LicenseService {
       const response = await fetch(SecurityConstants.GAS_API_URL, {
         method: SecurityConstants.HTTP_POST,
         headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: jsonUtils.safeStringify({ action: GasActions.UPDATE_USAGE, admin_key: SecurityConstants.ADMIN_APP_KEY, license_key: licenseKey, device_id: deviceId, feature, amount }),
+        body: jsonUtils.safeStringify({
+          action: GasActions.UPDATE_USAGE,
+          admin_key: SecurityConstants.ADMIN_APP_KEY,
+          license_key: licenseKey,
+          device_id: deviceId,
+          feature,
+          amount,
+        }),
       });
       const data = (await response.json()) as Record<string, unknown>;
       if (_.has(data, SecurityConstants.ERROR_KEY)) {

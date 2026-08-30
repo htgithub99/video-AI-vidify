@@ -27,7 +27,11 @@ export const distributeItemsByContinuity = <T extends ContinuityBatchItem>(items
   const totalItems = _.size(items);
   if (totalItems === 0) return [];
 
-  const workerCount = _.clamp(_.toInteger(requestedWorkerCount), IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT, _.max([totalItems, IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT])!);
+  const workerCount = _.clamp(
+    _.toInteger(requestedWorkerCount),
+    IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT,
+    _.max([totalItems, IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT])!,
+  );
 
   const workerQueues = _.times(workerCount, () => [] as T[]);
 

@@ -7,7 +7,17 @@ import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { ManualReviewStatus, SceneAssetStatus, WizardStep } from "../../types";
-import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS, FFMPEG_RENDER_CONSTANTS, PIPELINE_COMPLETION_CONFIG } from "../../constants";
+import {
+  EXPORT_TYPES,
+  PLAYER_SIMULATION_CONFIG,
+  API_ROUTES,
+  PIPELINE_STEP4_TEXTS,
+  REFACTOR_CONSTANTS,
+  STORAGE_KEYS,
+  API_HEADERS,
+  FFMPEG_RENDER_CONSTANTS,
+  PIPELINE_COMPLETION_CONFIG,
+} from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
@@ -22,9 +32,11 @@ import { createSubtitleCues } from "../../services/subtitleService";
 import { createAdvisoryFinalVideoReport } from "../../services/finalMultimodalQualityService";
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
 import { getRenderReadiness } from "../../services/pipelineCompletionPolicyService";
+import { usePausedVideoPreview } from "../../hooks/usePausedVideoPreview";
 
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, setCurrentStep, isPlayingSim, currentSimTime, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
+  const { t, setCurrentStep, isPlayingSim, currentSimTime, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } =
+    props;
   const currentLang = (props as any).currentLang === "en" ? "en" : "vi";
   const shortTexts = PIPELINE_STEP4_SHORT_TEXTS[currentLang];
 
@@ -32,6 +44,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewVideoUrl, setPreviewVideoUrl] = useState("");
+  usePausedVideoPreview(videoRef, previewVideoUrl);
   const [ffmpegQuality, setFfmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
   const [projectName, setProjectName] = useState(props.project?.name || "");
   const [inputMode, setInputMode] = useState<ResourceSourceMode>(ResourceSourceMode.CURRENT);
@@ -43,7 +56,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const handleRollback = (sceneId: string) => {
     const scene = _.find(props.project.storyboard, { id: sceneId });
     const revision = _.findLast(scene?.assetRevisions, { status: SceneAssetStatus.Approved });
-    if (scene && revision) props.setProject({ ...props.project, storyboard: _.map(props.project.storyboard, (item) => (item.id === sceneId ? rollbackSceneAssetRevision(item, revision.id) : item)) });
+    if (scene && revision)
+      props.setProject({ ...props.project, storyboard: _.map(props.project.storyboard, (item) => (item.id === sceneId ? rollbackSceneAssetRevision(item, revision.id) : item)) });
   };
 
   const handleSelectFolder = async (type: string) => {
@@ -177,12 +191,22 @@ export default function PipelineStep4(props: PipelineWizardState) {
   };
   const sceneRanges = getSceneTimeRanges(props.project.storyboard || []);
   const previewDuration = _.last(sceneRanges)?.end || PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
-  const playbackProgress = previewDuration > PLAYER_SIMULATION_CONFIG.MIN_PROGRESS ? _.clamp((currentSimTime / previewDuration) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, PLAYER_SIMULATION_CONFIG.MIN_PROGRESS, PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT) : PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
+  const playbackProgress =
+    previewDuration > PLAYER_SIMULATION_CONFIG.MIN_PROGRESS
+      ? _.clamp(
+          (currentSimTime / previewDuration) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT,
+          PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
+          PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT,
+        )
+      : PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const percentage = Math.max(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS, Math.min(PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT));
+    const percentage = Math.max(
+      PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
+      Math.min(PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT),
+    );
     const targetTime = (percentage / PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT) * previewDuration;
     props.setCurrentSimTime(targetTime);
     if (props.simAudioRef.current) props.simAudioRef.current.currentTime = targetTime;
@@ -262,8 +286,16 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </Tooltip>
           </h3>
 
-          <div ref={playerRef} className={cn("bg-black border border-slate-800/80 relative overflow-hidden group shadow-2xl flex flex-col", isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen flex items-center justify-center" : "aspect-[16/9] rounded-xl ring-1 ring-white/5")}>
-            <div className={cn("absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300")}></div>
+          <div
+            ref={playerRef}
+            className={cn(
+              "bg-black border border-slate-800/80 relative overflow-hidden group shadow-2xl flex flex-col",
+              isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen flex items-center justify-center" : "aspect-[16/9] rounded-xl ring-1 ring-white/5",
+            )}>
+            <div
+              className={cn(
+                "absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+              )}></div>
 
             <div className={cn("absolute inset-0 flex items-center justify-center z-0")}>
               {isRenderLoading ? (
@@ -272,7 +304,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   <span className={cn("text-xs font-mono tracking-widest uppercase")}>{PIPELINE_STEP4_TEXTS.EXPORTING_FFMPEG}</span>
                 </div>
               ) : previewVideoUrl ? (
-                <video ref={videoRef} src={previewVideoUrl} controls className={cn("w-full h-full object-cover z-20")} autoPlay />
+                <video ref={videoRef} src={previewVideoUrl} controls preload="metadata" className={cn("w-full h-full object-cover z-20")} />
               ) : (
                 <div className={cn("text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex flex-col items-center justify-center bg-slate-950")}>
                   <div className={cn("mb-4")}>{t.Nothing_to_simulate || PIPELINE_STEP4_TEXTS.NO_FFMPEG_VIDEO}</div>
@@ -283,24 +315,41 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
             {!isPlayingSim && simActiveScene && (
               <div className={cn("absolute inset-0 flex items-center justify-center z-10 bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none")}>
-                <div className={cn("w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500")} onClick={startPlaybackSim}>
+                <div
+                  className={cn(
+                    "w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500",
+                  )}
+                  onClick={startPlaybackSim}>
                   <Play className={cn("w-8 h-8 fill-current ml-1")} />
                 </div>
               </div>
             )}
 
-            <div className={cn("absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300")}></div>
+            <div
+              className={cn(
+                "absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+              )}></div>
 
             <div className={cn("absolute bottom-0 left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end px-3 pb-2 pt-6")}>
-              <div className={cn("w-full h-[3px] group-hover/progress:h-[5px] bg-white/20 cursor-pointer mb-3 relative group/progress flex items-center transition-all duration-150 ease-out")} onClick={handleSeek}>
+              <div
+                className={cn(
+                  "w-full h-[3px] group-hover/progress:h-[5px] bg-white/20 cursor-pointer mb-3 relative group/progress flex items-center transition-all duration-150 ease-out",
+                )}
+                onClick={handleSeek}>
                 <div className={cn("h-full bg-rose-600 relative z-10 transition-none")} style={{ width: `${playbackProgress}%` }}>
-                  <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity translate-x-1/2 shadow-[0_0_5px_rgba(225,29,72,0.8)]")}></div>
+                  <div
+                    className={cn(
+                      "absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity translate-x-1/2 shadow-[0_0_5px_rgba(225,29,72,0.8)]",
+                    )}></div>
                 </div>
               </div>
 
               <div className={cn("flex items-center justify-between")}>
                 <div className={cn("flex items-center gap-4")}>
-                  <button onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim} className={cn("text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1")} title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}>
+                  <button
+                    onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim}
+                    className={cn("text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1")}
+                    title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}>
                     {isPlayingSim ? <Pause className={cn("w-6 h-6 fill-current")} /> : <Play className={cn("w-6 h-6 fill-current")} />}
                   </button>
 
@@ -314,7 +363,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     ) : (
                       <span className={cn("text-white/60")}>{t.PAUSED}</span>
                     )}
-                    <span className={cn("ml-4 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm", isPlayingSim ? "bg-rose-600 text-white" : "bg-white/20 text-white")}>{isPlayingSim ? t.ACTIVE_RUNNING : t.PAUSED}</span>
+                    <span
+                      className={cn(
+                        "ml-4 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm",
+                        isPlayingSim ? "bg-rose-600 text-white" : "bg-white/20 text-white",
+                      )}>
+                      {isPlayingSim ? t.ACTIVE_RUNNING : t.PAUSED}
+                    </span>
                   </div>
                 </div>
 
@@ -378,7 +433,15 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     </span>
                   </Tooltip>
                 </label>
-                <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.PROJECT_NAME_PLACEHOLDER} className={cn("w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner transition-all outline-none")} />
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder={PIPELINE_STEP4_TEXTS.PROJECT_NAME_PLACEHOLDER}
+                  className={cn(
+                    "w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner transition-all outline-none",
+                  )}
+                />
               </div>
 
               <div>
@@ -391,13 +454,33 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </label>
                 <div className={cn("grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1")}>
                   {[
-                    { id: ResourceSourceMode.ZIP, label: "File ZIP", tooltip: "Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.", align: "start" as const },
-                    { id: ResourceSourceMode.SPLIT, label: "Thư mục Riêng", tooltip: "Trỏ đường dẫn thủ công đến 2 thư mục riêng biệt: Một chứa ảnh, một chứa âm thanh.", align: "center" as const },
-                    { id: ResourceSourceMode.CURRENT, label: "Dự Án Hiện Tại", tooltip: "Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.", align: "end" as const },
+                    {
+                      id: ResourceSourceMode.ZIP,
+                      label: "File ZIP",
+                      tooltip: "Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.",
+                      align: "start" as const,
+                    },
+                    {
+                      id: ResourceSourceMode.SPLIT,
+                      label: "Thư mục Riêng",
+                      tooltip: "Trỏ đường dẫn thủ công đến 2 thư mục riêng biệt: Một chứa ảnh, một chứa âm thanh.",
+                      align: "center" as const,
+                    },
+                    {
+                      id: ResourceSourceMode.CURRENT,
+                      label: "Dự Án Hiện Tại",
+                      tooltip: "Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.",
+                      align: "end" as const,
+                    },
                   ].map((mode) => (
                     <div key={mode.id} className={cn("flex [&>div]:w-full")}>
                       <Tooltip content={mode.tooltip} position="top" align={mode.align}>
-                        <button onClick={() => setInputMode(mode.id)} className={cn("w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200", inputMode === mode.id ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50")}>
+                        <button
+                          onClick={() => setInputMode(mode.id)}
+                          className={cn(
+                            "w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200",
+                            inputMode === mode.id ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50",
+                          )}>
                           {mode.label}
                         </button>
                       </Tooltip>
@@ -407,22 +490,58 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
                 {inputMode === ResourceSourceMode.ZIP ? (
                   <div className={cn("flex gap-2 animate-fadeIn mt-3")}>
-                    <input type="text" value={parentFolder} onChange={(e) => setParentFolder(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER} className={cn("flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
-                    <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.PARENT)} className={cn("px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors")}>
+                    <input
+                      type="text"
+                      value={parentFolder}
+                      onChange={(e) => setParentFolder(e.target.value)}
+                      placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER}
+                      className={cn(
+                        "flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none",
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handleSelectFolder(FolderSelectionType.PARENT)}
+                      className={cn("px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors")}>
                       <FolderOpen className={cn("w-4 h-4 text-rose-500")} />
                     </Button>
                   </div>
                 ) : inputMode === ResourceSourceMode.SPLIT ? (
                   <div className={cn("grid grid-cols-1 xl:grid-cols-2 gap-3 animate-fadeIn mt-3")}>
                     <div className={cn("flex gap-1.5")}>
-                      <input type="text" value={imagesDir} onChange={(e) => setImagesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER} className={cn("flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
-                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)} className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
+                      <input
+                        type="text"
+                        value={imagesDir}
+                        onChange={(e) => setImagesDir(e.target.value)}
+                        placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER}
+                        className={cn(
+                          "flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none",
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)}
+                        className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
                         <FolderOpen className={cn("w-4 h-4")} />
                       </Button>
                     </div>
                     <div className={cn("flex gap-1.5")}>
-                      <input type="text" value={voicesDir} onChange={(e) => setVoicesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER} className={cn("flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none")} />
-                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.VOICES)} className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
+                      <input
+                        type="text"
+                        value={voicesDir}
+                        onChange={(e) => setVoicesDir(e.target.value)}
+                        placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER}
+                        className={cn(
+                          "flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none",
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleSelectFolder(FolderSelectionType.VOICES)}
+                        className={cn("px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors")}>
                         <FolderOpen className={cn("w-4 h-4")} />
                       </Button>
                     </div>
@@ -444,7 +563,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     </Tooltip>
                   </label>
                   <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-inner")}>
-                    <select value={ffmpegQuality} onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
+                    <select
+                      value={ffmpegQuality}
+                      onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)}
+                      className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6")}>
                       <option value={VideoQuality.LOW} className={cn("bg-slate-955 text-slate-200")}>
                         {PIPELINE_STEP4_TEXTS.QUALITY_480P}
                       </option>
@@ -464,14 +586,28 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
                 <div className={cn("w-full [&>div]:w-full")}>
                   <Tooltip content="Tiến hành ghép nối hình ảnh, âm thanh thành một video hoàn chỉnh với độ phân giải mong muốn sử dụng công nghệ FFmpeg." position="top">
-                    <Button variant="ghost" onClick={handleOfflineRenderFFmpeg} disabled={isRenderLoading} className={cn("w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300 bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100")}>
+                    <Button
+                      variant="ghost"
+                      onClick={handleOfflineRenderFFmpeg}
+                      disabled={isRenderLoading}
+                      className={cn(
+                        "w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300 bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100",
+                      )}>
                       <div className={cn("text-left flex-1")}>
                         <span className={cn("font-bold flex items-center gap-2 text-amber-400 block whitespace-nowrap")}>
-                          {isRenderLoading ? <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse")} /> : <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]")} />}
+                          {isRenderLoading ? (
+                            <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse")} />
+                          ) : (
+                            <span className={cn("inline-block w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]")} />
+                          )}
                           {isRenderLoading ? PIPELINE_STEP4_TEXTS.RENDERING : PIPELINE_STEP4_TEXTS.BTN_RENDER_FFMPEG}
                         </span>
                       </div>
-                      {isRenderLoading ? <div className={cn("w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0")} /> : <Video className={cn("w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110")} />}
+                      {isRenderLoading ? (
+                        <div className={cn("w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0")} />
+                      ) : (
+                        <Video className={cn("w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110")} />
+                      )}
                     </Button>
                   </Tooltip>
                 </div>
@@ -489,15 +625,36 @@ export default function PipelineStep4(props: PipelineWizardState) {
               {_.map(exportButtons, (btn, index) => {
                 const Icon = btn.icon;
                 return (
-                  <Button key={index} variant="ghost" onClick={btn.handler} disabled={btn.isLoading} className={cn("w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300", btn.isPrimary ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]") : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100")} title={btn.desc}>
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    onClick={btn.handler}
+                    disabled={btn.isLoading}
+                    className={cn(
+                      "w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300",
+                      btn.isPrimary
+                        ? btn.isLoading
+                          ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950"
+                          : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]"
+                        : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100",
+                    )}
+                    title={btn.desc}>
                     <div className={cn("text-left flex-1")}>
                       <span className={cn("font-bold block flex items-center gap-2", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
-                        {btn.isLoading ? <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse")} /> : btn.isPrimary && <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]")} />}
+                        {btn.isLoading ? (
+                          <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse")} />
+                        ) : (
+                          btn.isPrimary && <span className={cn("inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]")} />
+                        )}
                         {btn.isLoading ? btn.loadingLabel : btn.label}
                       </span>
                       <span className={cn("text-[10px] text-slate-500 block mt-1 font-normal text-left leading-relaxed")}>{btn.desc}</span>
                     </div>
-                    {btn.isLoading ? <div className={cn("w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0")} /> : <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
+                    {btn.isLoading ? (
+                      <div className={cn("w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0")} />
+                    ) : (
+                      <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />
+                    )}
                   </Button>
                 );
               })}

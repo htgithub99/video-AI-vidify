@@ -23,9 +23,14 @@ export const BackgroundModeSelect: React.FC<BackgroundModeSelectProps> = ({ valu
       <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")} title={currentDesc}>
         {label}
       </span>
-      <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors")} title={currentDesc}>
+      <div
+        className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 h-10 focus-within:border-rose-500/50 transition-colors")}
+        title={currentDesc}>
         <Layers className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-        <select value={value} onChange={(event) => onChange(event.target.value as BackgroundMode)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value as BackgroundMode)}
+          className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
           {_.map(groups, (group) => (
             <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
               {_.map(group.options, (option) => (

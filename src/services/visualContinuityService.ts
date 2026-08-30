@@ -7,9 +7,15 @@ export interface VisualContinuityReport {
   passed: boolean;
 }
 
-const STYLE_CONTAMINATED_CHARACTER_PATTERN = /\b(?:rendering language|visual language|graphic outlines?|flat color fills?|cel shading|deadpan|anime-influenced|dot nose|rounded facial plane|chibi|stick[- ]figure|panda|mascot|donghua|xianxia|cinematic lighting)\b/i;
+const STYLE_CONTAMINATED_CHARACTER_PATTERN =
+  /\b(?:rendering language|visual language|graphic outlines?|flat color fills?|cel shading|deadpan|anime-influenced|dot nose|rounded facial plane|chibi|stick[- ]figure|panda|mascot|donghua|xianxia|cinematic lighting)\b/i;
 
-export const hasStyleContaminatedCharacterLibrary = (characters?: CharacterConfig[]): boolean => _.some(_.defaultTo(characters, []), (character) => STYLE_CONTAMINATED_CHARACTER_PATTERN.test(_.join(_.compact([character.description, character.prompt, character.faceShape, character.eyes, character.nose, character.hair, character.silhouette]), " ")));
+export const hasStyleContaminatedCharacterLibrary = (characters?: CharacterConfig[]): boolean =>
+  _.some(_.defaultTo(characters, []), (character) =>
+    STYLE_CONTAMINATED_CHARACTER_PATTERN.test(
+      _.join(_.compact([character.description, character.prompt, character.faceShape, character.eyes, character.nose, character.hair, character.silhouette]), " "),
+    ),
+  );
 
 const EXPLICIT_FEMALE_SOURCE_PATTERN = /\b(?:female|woman|women|girl|girls|mother|wife|daughter|girlfriend)\b|(?:nữ|phụ nữ|cô gái|các cô gái|con gái|người mẹ|người vợ|gái ngành)/i;
 const EXPLICIT_MALE_SOURCE_PATTERN = /\b(?:male|man|men|boy|boys|father|husband|son|boyfriend)\b|(?:nam giới|đàn ông|chàng trai|con trai|người cha|người chồng)/i;
@@ -34,13 +40,19 @@ const isSecondPersonProtagonist = (character: CharacterConfig): boolean => {
 
 const getFallbackProperName = (character: CharacterConfig, index: number): string => {
   const presentation = _.toLower(_.trim(character.genderPresentation));
-  const baseName = _.includes(presentation, VISUAL_CONTINUITY_CONFIG.GENDER_FEMALE_KEYWORD) ? VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.FEMALE : _.includes(presentation, VISUAL_CONTINUITY_CONFIG.GENDER_MALE_KEYWORD) ? VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.MALE : VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.DEFAULT;
+  const baseName = _.includes(presentation, VISUAL_CONTINUITY_CONFIG.GENDER_FEMALE_KEYWORD)
+    ? VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.FEMALE
+    : _.includes(presentation, VISUAL_CONTINUITY_CONFIG.GENDER_MALE_KEYWORD)
+      ? VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.MALE
+      : VISUAL_CONTINUITY_CONFIG.FALLBACK_NAMES.DEFAULT;
   return _.isEqual(index, 0) ? baseName : `${baseName} ${_.add(index, 1)}`;
 };
 
 const resolveStableCharacterName = (character: CharacterConfig, index: number): string => {
   const name = _.trim(character.name);
-  return _.isEmpty(name) || VISUAL_CONTINUITY_CONFIG.GENERIC_CHARACTER_NAME_PATTERN.test(name) || isSecondPersonProtagonist(character) ? getFallbackProperName(character, index) : name;
+  return _.isEmpty(name) || VISUAL_CONTINUITY_CONFIG.GENERIC_CHARACTER_NAME_PATTERN.test(name) || isSecondPersonProtagonist(character)
+    ? getFallbackProperName(character, index)
+    : name;
 };
 
 export const normalizeCharacterLibrary = (characters: CharacterConfig[]): CharacterConfig[] =>
@@ -49,7 +61,9 @@ export const normalizeCharacterLibrary = (characters: CharacterConfig[]): Charac
     (character, index) => {
       const secondPersonProtagonist = isSecondPersonProtagonist(character);
       const stableName = resolveStableCharacterName(character, index);
-      const sourceTimelineStages = (_.isEmpty(character.timelineStages) ? VISUAL_CONTINUITY_CONFIG.TIMELINE_STAGES : character.timelineStages) as ReadonlyArray<Partial<NonNullable<CharacterConfig["timelineStages"]>[number]>>;
+      const sourceTimelineStages = (_.isEmpty(character.timelineStages) ? VISUAL_CONTINUITY_CONFIG.TIMELINE_STAGES : character.timelineStages) as ReadonlyArray<
+        Partial<NonNullable<CharacterConfig["timelineStages"]>[number]>
+      >;
       return {
         ...character,
         id: _.trim(character.id) || normalizeIdentifier(stableName, VISUAL_CONTINUITY_CONFIG.CHARACTER_ID_PREFIX, index),

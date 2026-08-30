@@ -23,7 +23,8 @@ export enum ThumbnailTypographyId {
 export const THUMBNAIL_LAYOUT_CATALOG = [
   {
     id: ThumbnailLayoutId.SoloLeftArrowRight,
-    composition: "One dominant illustrated subject occupies the left side; a seamless natural environment continues across the right side without solid white blocks; place a compact headline at center-right with one curved hand-drawn arrow pointing toward the subject.",
+    composition:
+      "One dominant illustrated subject occupies the left side; a seamless natural environment continues across the right side without solid white blocks; place a compact headline at center-right with one curved hand-drawn arrow pointing toward the subject.",
     bestFor: "a single character holding or revealing one dangerous or unusual object",
     textPosition: "right",
     maximumSubjects: 2,
@@ -32,7 +33,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.DuoCenterTitleTop,
-    composition: "Two friendly illustrated characters form one large centered pair across the lower area; a large outlined story title sits directly over the natural background at top center without solid white box cutouts.",
+    composition:
+      "Two friendly illustrated characters form one large centered pair across the lower area; a large outlined story title sits directly over the natural background at top center without solid white box cutouts.",
     bestFor: "couples, literary characters, relationships, friendship, or a two-person folk story",
     textPosition: "top",
     maximumSubjects: 2,
@@ -41,7 +43,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.InteractionArrowHeadline,
-    composition: "Two large characters occupy the lower and right frame in one readable interaction; keep the upper-left area uncluttered with seamless background scenery for bold headline overlay, with no solid white boxes or blank rectangles; place one thick curved arrow under the headline pointing to the exchanged object or consequence.",
+    composition:
+      "Two large characters occupy the lower and right frame in one readable interaction; keep the upper-left area uncluttered with seamless background scenery for bold headline overlay, with no solid white boxes or blank rectangles; place one thick curved arrow under the headline pointing to the exchanged object or consequence.",
     bestFor: "temptation, payment, confrontation, transaction, rescue, betrayal, or cause-and-effect action",
     textPosition: "top_left",
     maximumSubjects: 2,
@@ -50,7 +53,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.SoloActionLeftCaptionRight,
-    composition: "One tightly cropped action subject occupies the left side; reserve an uncluttered field on the center-right against the natural backdrop, with no blank white rectangles, for a one-line caption; add a small curved arrow below the caption pointing back toward the action.",
+    composition:
+      "One tightly cropped action subject occupies the left side; reserve an uncluttered field on the center-right against the natural backdrop, with no blank white rectangles, for a one-line caption; add a small curved arrow below the caption pointing back toward the action.",
     bestFor: "a single decisive action, mistake, experiment, challenge, or surprising physical evidence",
     textPosition: "right",
     maximumSubjects: 1,
@@ -59,7 +63,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.SportsBannerSubject,
-    composition: "Place a large action subject on the right side; build a crisp branded geometric information banner on the left while preserving the full subject silhouette and motion direction.",
+    composition:
+      "Place a large action subject on the right side; build a crisp branded geometric information banner on the left while preserving the full subject silhouette and motion direction.",
     bestFor: "sports, highlights, competition, technology, events, and fast factual content",
     textPosition: "left",
     maximumSubjects: 2,
@@ -68,7 +73,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.FantasyCastLogo,
-    composition: "A large decorative fantasy logo occupies the upper area; arrange three to five outlined cartoon cast members as overlapping cutouts across the lower half; use a story-world background and a strong white character keyline.",
+    composition:
+      "A large decorative fantasy logo occupies the upper area; arrange three to five outlined cartoon cast members as overlapping cutouts across the lower half; use a story-world background and a strong white character keyline.",
     bestFor: "fantasy, magic, games, mythology, parody worlds, or an ensemble adventure",
     textPosition: "top",
     maximumSubjects: 5,
@@ -77,7 +83,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.EditorialMontage,
-    composition: "Build a layered editorial montage with one dominant person, supporting faces, one oversized story-defining object, and clear foreground-middle-background depth; place a compact title in the upper band.",
+    composition:
+      "Build a layered editorial montage with one dominant person, supporting faces, one oversized story-defining object, and clear foreground-middle-background depth; place a compact title in the upper band.",
     bestFor: "travel, food, comedy, investigation, reality, adventure, or stories with several linked elements",
     textPosition: "top",
     maximumSubjects: 6,
@@ -86,7 +93,8 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.CastLineupTitle,
-    composition: "Arrange three to five simplified characters in one balanced shoulder-to-shoulder lineup across the bottom area; keep a minimal plain or gradient background; place a friendly handwritten title centered in the upper band.",
+    composition:
+      "Arrange three to five simplified characters in one balanced shoulder-to-shoulder lineup across the bottom area; keep a minimal plain or gradient background; place a friendly handwritten title centered in the upper band.",
     bestFor: "classic tales, families, historical casts, educational cartoons, or a gentle ensemble story",
     textPosition: "top",
     maximumSubjects: 5,
@@ -95,7 +103,14 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
 ] as const;
 
-export const LEGACY_THUMBNAIL_LAYOUT_MAP = { layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage, subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight, subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight, interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline, emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight, before_after_split: ThumbnailLayoutId.EditorialMontage } as const;
+export const LEGACY_THUMBNAIL_LAYOUT_MAP = {
+  layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage,
+  subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight,
+  subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight,
+  interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline,
+  emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight,
+  before_after_split: ThumbnailLayoutId.EditorialMontage,
+} as const;
 
 export const THUMBNAIL_TYPOGRAPHY_CATALOG = [
   {
@@ -250,8 +265,10 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   NO_TEXT_MODE: "no_text",
   MAX_TEXT_WORDS: 5,
   MAX_TEXT_CHARACTERS: 32,
-  WEAK_HEADLINE_PREFIX_PATTERN: /^(?:bạn có biết(?: rằng)?|có thể bạn chưa biết|mở trang sử cũ|trong video này|hãy cùng tìm hiểu|câu chuyện kể rằng|did you know(?: that)?|in this video|let'?s find out)\s*[,.:;!?-]*\s*/i,
-  STRONG_HEADLINE_PHRASE_PATTERN: /\b(?:bí mật chưa được công khai|bí mật bị chôn giấu|âm mưu lật đổ|sự thật bị che giấu|cái giá phải trả|ai đã phản bội|vì sao sụp đổ|the hidden truth|the final betrayal|why it collapsed)\b/i,
+  WEAK_HEADLINE_PREFIX_PATTERN:
+    /^(?:bạn có biết(?: rằng)?|có thể bạn chưa biết|mở trang sử cũ|trong video này|hãy cùng tìm hiểu|câu chuyện kể rằng|did you know(?: that)?|in this video|let'?s find out)\s*[,.:;!?-]*\s*/i,
+  STRONG_HEADLINE_PHRASE_PATTERN:
+    /\b(?:bí mật chưa được công khai|bí mật bị chôn giấu|âm mưu lật đổ|sự thật bị che giấu|cái giá phải trả|ai đã phản bội|vì sao sụp đổ|the hidden truth|the final betrayal|why it collapsed)\b/i,
   MAX_REFERENCE_IMAGES: 3,
   MAX_GENERATION_STYLE_REFERENCES: 2,
   MAX_GENERATION_CHARACTER_REFERENCES: 1,
@@ -276,9 +293,11 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   SUBJECT_LABEL: "Primary focus",
   TEXT_LABEL: "Visible headline",
   NO_TEXT_DIRECTIVE: "no generated text, letters, numbers, labels, logo, signature, or watermark",
-  REWRITE_HEADLINE_DIRECTIVE: "Render the exact supplied headline directly in the image using the selected template's locked typography, line count, placement, colors, stroke and shadow.",
+  REWRITE_HEADLINE_DIRECTIVE:
+    "Render the exact supplied headline directly in the image using the selected template's locked typography, line count, placement, colors, stroke and shadow.",
   TEXT_DIRECTIVE: "render the exact supplied headline once in clean, correctly spelled typography",
-  REFERENCE_DIRECTIVE: "Use attached thumbnail reference images only for medium, shared character construction, line, color, and rendering DNA. Follow the selected closed template for geometry. Never copy sample people, locations, objects, words, logos, lighting situations, or arrangements.",
+  REFERENCE_DIRECTIVE:
+    "Use attached thumbnail reference images only for medium, shared character construction, line, color, and rendering DNA. Follow the selected closed template for geometry. Never copy sample people, locations, objects, words, logos, lighting situations, or arrangements.",
   SOURCE_FALLBACK_PROMPT_TEMPLATE: "Professional YouTube thumbnail grounded in this exact script moment: {source}. Composition: {composition}. Visual style: {style}",
   SOURCE_TOKEN: "{source}",
   COMPOSITION_TOKEN: "{composition}",
@@ -291,11 +310,13 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   PROTAGONIST_LOCK_TEMPLATE: "Protagonist visual lock: {dna}.",
   REFERENCE_LOCK_DIRECTIVE: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image.",
   LAYOUT_DIRECTIVE_TEMPLATE: "Thumbnail layout: {layout}.",
-  HEADLINE_DIRECTIVE_TEMPLATE: 'Render exactly one visible text string, copied character-for-character with complete Vietnamese diacritics: "{headline}". Use large bold uppercase heavy condensed typography with high visual contrast. Do not render any other words, letters, numbers, percentages, measurements, template labels, layout annotations, or supporting copy.',
+  HEADLINE_DIRECTIVE_TEMPLATE:
+    'Render exactly one visible text string, copied character-for-character with complete Vietnamese diacritics: "{headline}". Use large bold uppercase heavy condensed typography with high visual contrast. Do not render any other words, letters, numbers, percentages, measurements, template labels, layout annotations, or supporting copy.',
   TEXT_FREE_DIRECTIVE: "Completely text-free thumbnail image, no readable words or letters.",
   ACCENT_WORDS_TEMPLATE: "Key visual accent words: {words}.",
   SUBJECT_FOCUS_PREFIX: "Focus subject: ",
-  COMPOSITION_DIRECTIVE: "Single continuous composition, single frame, vibrant saturated colors, seamless atmospheric background with NO solid white boxes, NO blank rectangles, and NO artificial white patches.",
+  COMPOSITION_DIRECTIVE:
+    "Single continuous composition, single frame, vibrant saturated colors, seamless atmospheric background with NO solid white boxes, NO blank rectangles, and NO artificial white patches.",
   SAFE_ZONE_DIRECTIVE: "Ensure bottom-right area keeps uncluttered ambient background for timestamp readability without adding white blocks.",
   CHARACTER_NAME_TEMPLATE: "character {name}",
   GENDER_SUBJECT_TEMPLATE: "{gender} subject",

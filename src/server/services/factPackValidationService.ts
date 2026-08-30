@@ -9,7 +9,14 @@ const REACHABLE_HTTP_STATUSES = new Set([401, 403]);
 const isPrivateIpAddress = (address: string): boolean => {
   if (net.isIPv4(address)) {
     const octets = _.map(_.split(address, "."), Number);
-    return octets[0] === 10 || octets[0] === 127 || (octets[0] === 169 && octets[1] === 254) || (octets[0] === 172 && _.inRange(octets[1], 16, 32)) || (octets[0] === 192 && octets[1] === 168) || octets[0] === 0;
+    return (
+      octets[0] === 10 ||
+      octets[0] === 127 ||
+      (octets[0] === 169 && octets[1] === 254) ||
+      (octets[0] === 172 && _.inRange(octets[1], 16, 32)) ||
+      (octets[0] === 192 && octets[1] === 168) ||
+      octets[0] === 0
+    );
   }
   const normalized = _.toLower(address);
   return normalized === "::1" || normalized === "::" || _.startsWith(normalized, "fc") || _.startsWith(normalized, "fd") || _.startsWith(normalized, "fe80:");

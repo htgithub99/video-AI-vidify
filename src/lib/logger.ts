@@ -107,7 +107,8 @@ export const appLogStep = (message: string, logsArray?: string[]): void => {
 };
 
 export const createAppError = (keyOrMessage: LogKey | string, ...args: any[]): Error => {
-  const errMsg = typeof keyOrMessage === "string" && LOG_DICTIONARY[keyOrMessage as LogKey] ? getMessage(keyOrMessage, undefined, ...args) : formatLogMessage(String(keyOrMessage), ...args);
+  const errMsg =
+    typeof keyOrMessage === "string" && LOG_DICTIONARY[keyOrMessage as LogKey] ? getMessage(keyOrMessage, undefined, ...args) : formatLogMessage(String(keyOrMessage), ...args);
 
   appError(errMsg);
   return new Error(errMsg);
