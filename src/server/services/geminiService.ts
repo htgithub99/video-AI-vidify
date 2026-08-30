@@ -49,6 +49,11 @@ export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate
   return { textCharacters, estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS), mediaInputCount };
 };
 
+const isSchemaCompatibilityError = (error: unknown): boolean => {
+  const normalizedError = _.toLower(_.join([_.toString(_.get(error, "message")), _.toString(error), _.toString(_.get(error, "status"))], " "));
+  return _.some(GEMINI_REQUEST_POLICY.INVALID_ARGUMENT_PATTERNS, (pattern) => _.includes(normalizedError, _.toLower(pattern)));
+};
+
 let currentModelIndex = 0;
 
 export const generateContentWithRetry = async (
@@ -148,6 +153,7 @@ export const generateContentWithRetry = async (
     const model = route.models[modelIndex];
     activeModelForRequest = model;
     geminiConfigForRequest = geminiConfig;
+    let usedRelaxedConfig = false;
 
     appLog(SecurityConstants.DIVIDER_LINE);
     logStep("GEMINI_CALLING_MODEL", i + 1, route.models.length, model, modelIndex);
@@ -179,6 +185,13 @@ export const generateContentWithRetry = async (
         const errorMessage = error?.message || "";
 
         logStep("GEMINI_ERROR", model, attempt, errorMessage);
+
+        if (!usedRelaxedConfig && _.has(geminiConfigForRequest, "responseJsonSchema") && isSchemaCompatibilityError(error)) {
+          geminiConfigForRequest = _.omit(geminiConfigForRequest, GEMINI_REQUEST_POLICY.RELAXED_CONFIG_KEYS);
+          usedRelaxedConfig = true;
+          attempt = _.max([SecurityConstants.ZERO, _.subtract(attempt, SecurityConstants.DEFAULT_AMOUNT)]) || SecurityConstants.ZERO;
+          continue;
+        }
 
         const decision = classifyGeminiError(error);
         const toolFreeResponse = await tryToollessFreeFallback(decision.category);

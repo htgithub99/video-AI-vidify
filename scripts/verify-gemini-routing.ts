@@ -2,7 +2,7 @@ import { writeVerificationLog } from "./verificationLogger.ts";
 import { AVAILABLE_MODELS } from "../src/constants/data.ts";
 import { classifyGeminiError, GeminiErrorCategory, getGeminiUserMessage } from "../src/server/services/geminiErrorClassifier.ts";
 import { estimateGeminiContents } from "../src/server/services/geminiService.ts";
-import { AiTaskCapability, routeAiTask } from "../src/server/services/taskRouterService.ts";
+import { AiTaskCapability, blockModel, recordModelSuccess, routeAiTask } from "../src/server/services/taskRouterService.ts";
 
 const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
@@ -22,6 +22,10 @@ const textRoute = routeAiTask({ capability: AiTaskCapability.FactualReview, esti
 assert(textRoute.models[0] === "gemini-3.7-flash" && textRoute.models.includes("gemini-3.5-flash-lite"), "text routing excluded stable production models");
 const visualRoute = routeAiTask({ capability: AiTaskCapability.StyleExtraction, estimatedInputTokens: 100, mediaInputCount: 1, maxOutputTokens: 100 });
 assert(visualRoute.models[0] === "gemini-3.7-flash" && visualRoute.models.length === 3, "visual routing excluded the preferred model or fallback");
+AVAILABLE_MODELS.forEach((model) => blockModel(model, 60_000));
+const recoveryRoute = routeAiTask({ capability: AiTaskCapability.TextPlanning, estimatedInputTokens: 100, maxOutputTokens: 100 });
+assert(recoveryRoute.models.length === AVAILABLE_MODELS.length, "open circuits prevented the mandatory recovery route");
+AVAILABLE_MODELS.forEach(recordModelSuccess);
 
 const estimate = estimateGeminiContents([
   { inlineData: { mimeType: "image/png", data: "A".repeat(2_500_000) } },

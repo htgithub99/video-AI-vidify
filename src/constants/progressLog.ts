@@ -47,9 +47,9 @@ export const PROGRESS_LOG_CONFIG = {
   },
   CLASSES: {
     ICON: "w-3.5 h-3.5 shrink-0",
-    ITEM: "flex items-center gap-4 relative group",
-    ICON_CONTAINER: "w-7 h-7 rounded-full flex items-center justify-center shrink-0 border z-10 transition-all duration-300",
-    MESSAGE: "min-w-0 flex-1 whitespace-pre-wrap break-words leading-relaxed text-[11px] font-medium",
+    ITEM: "flex items-start gap-3 relative group py-0.5",
+    ICON_CONTAINER: "w-6 h-6 rounded-full flex items-center justify-center shrink-0 border z-10 transition-all duration-300 mt-0.5",
+    MESSAGE: "min-w-0 flex-1 whitespace-pre-wrap break-words leading-relaxed text-[11px] font-medium pt-0.5",
     TIME: "shrink-0 text-[10px] font-mono tabular-nums select-none",
     TIME_LIGHT: "text-slate-400",
     TIME_DARK: "text-slate-400",

@@ -106,17 +106,17 @@ export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelinePro
 
             <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, isLightTheme ? style.textLight : style.textDark)}>{entry.message}</span>
 
-            <div className={cn("flex items-center gap-1.5 ml-auto flex-shrink-0")}>
+            <div className={cn("flex items-center gap-1.5 ml-2 shrink-0 pt-0.5")}>
               {isError && (
                 <button
                   type="button"
                   onClick={() => handleCopy(entry.message, index)}
                   className={cn(
-                    "p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm cursor-pointer",
-                    isCopied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20",
+                    "w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent transition-colors",
+                    isCopied ? "text-emerald-500 bg-emerald-500/10" : "text-slate-400 hover:text-rose-500 hover:bg-rose-500/10",
                   )}
                   title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}>
-                  {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5 text-rose-400")} />}
+                  {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-500")} /> : <Copy className={cn("w-3.5 h-3.5")} />}
                 </button>
               )}
 

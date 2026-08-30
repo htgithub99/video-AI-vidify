@@ -57,6 +57,7 @@ import {
   AUTO_GENERATOR_CONSTANTS,
   AUTO_VIDEO_PIPELINE_PROGRESS,
   CINEMATIC_EDIT_ANALYSIS_CONFIG,
+  CINEMATIC_CONFIG,
   FFMPEG_RENDER_CONSTANTS,
   FLOW_VIDEO_MEDIA_CONFIG,
   PROJECT_IMAGE_FALLBACK_CONFIG,
@@ -380,6 +381,7 @@ export function useAutoVideoPipeline(
       _.some([!_.isEqual(presentationTarget?.input?.type, config.inputType), !_.isEqual(_.trim(presentationTarget?.input?.content), _.trim(config.scriptContent))], Boolean);
     const runIntent = config.runIntent || (config.resumeMode ? "continue" : "new");
     const isContinuation = _.includes(["continue", "render_only"], runIntent);
+    const isCinematicPipeline = isCinematicEpisodeGenre(config.genre);
     config.resumeMode = isContinuation;
     const resetDerivedPresentation = !isContinuation || startsDifferentContent;
 
@@ -525,9 +527,11 @@ export function useAutoVideoPipeline(
           },
           hookConfig: {
             ...existingTargetProj.hookConfig,
-            type: config.hookStrategy,
-            duration: config.hookDuration,
-            positions: config.hookPosition as HookPosition,
+            type: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : config.hookStrategy,
+            duration: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_DURATION : config.hookDuration,
+            count: isCinematicPipeline ? SecurityConstants.ZERO : existingTargetProj.hookConfig.count,
+            positions: isCinematicPipeline ? HookPosition.Start : (config.hookPosition as HookPosition),
+            versions: isCinematicPipeline ? [] : existingTargetProj.hookConfig.versions,
           },
           voiceConfig: {
             ...existingTargetProj.voiceConfig,
@@ -627,10 +631,10 @@ export function useAutoVideoPipeline(
             seriesBibleRequired: _.isEqual(config.filmFormat, "series"),
           },
           hookConfig: {
-            type: config.hookStrategy,
-            duration: config.hookDuration,
-            count: 3,
-            positions: config.hookPosition as HookPosition,
+            type: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : config.hookStrategy,
+            duration: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_DURATION : config.hookDuration,
+            count: isCinematicPipeline ? SecurityConstants.ZERO : 3,
+            positions: isCinematicPipeline ? HookPosition.Start : (config.hookPosition as HookPosition),
             versions: [],
           },
           voiceConfig: {
@@ -815,7 +819,7 @@ export function useAutoVideoPipeline(
         const scriptPayload = {
           originalInput: config.scriptContent,
           inputType: config.inputType,
-          config: { ...newProj.config, hookConfig: newProj.hookConfig },
+          config: { ...newProj.config, hookConfig: isCinematicPipeline ? undefined : newProj.hookConfig },
           selectedHookText: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           bypassCache: !config.resumeMode,
         };
@@ -855,7 +859,7 @@ export function useAutoVideoPipeline(
           selected: _.isEqual(index, SecurityConstants.ZERO),
           score: hook.score,
         }));
-        if (_.every([_.gt(newProj.hookConfig.count, SecurityConstants.ZERO), _.isEmpty(hookVersions)], Boolean)) {
+        if (_.every([!isCinematicPipeline, _.gt(newProj.hookConfig.count, SecurityConstants.ZERO), _.isEmpty(hookVersions)], Boolean)) {
           appendLog(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
         }
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);

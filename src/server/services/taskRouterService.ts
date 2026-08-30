@@ -92,11 +92,10 @@ export const routeAiTask = (request: AiTaskRequest) => {
   );
   const budgetUsd = _.defaultTo(request.budgetUsd, AI_TASK_ROUTER_CONFIG.DEFAULT_BUDGET_USD);
   if (estimatedCostUsd > budgetUsd) throw createCostExceededError(estimatedCostUsd, budgetUsd);
-  const models = _.map(
-    _.filter(AI_MODEL_REGISTRY, (model) => model.freeEligible && supports(model.id, capability) && !isCircuitOpen(model.id)),
-    "id",
-  );
-  if (_.isEmpty(models)) throw createUnsupportedCapabilityError(capability);
+  const supportedModels = _.filter(AI_MODEL_REGISTRY, (model) => model.freeEligible && supports(model.id, capability));
+  if (_.isEmpty(supportedModels)) throw createUnsupportedCapabilityError(capability);
+  const healthyModels = _.reject(supportedModels, (model) => isCircuitOpen(model.id));
+  const models = _.map(_.isEmpty(healthyModels) ? supportedModels : healthyModels, "id");
   return { capability, models, estimatedCostUsd, maxOutputTokens, promptVersion: AI_TASK_ROUTER_CONFIG.PROMPT_VERSION };
 };
 

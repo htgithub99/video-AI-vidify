@@ -541,10 +541,12 @@ export const GEMINI_REQUEST_POLICY = {
   WAIT_BACKOFF_MULTIPLIER: 1.2,
   TOKEN_ESTIMATE_CHARACTERS: 4,
   MODEL_INDEX_RESET_MS: 180_000,
+  INVALID_ARGUMENT_PATTERNS: ["invalid_argument", "invalid argument", "400"],
+  RELAXED_CONFIG_KEYS: ["responseJsonSchema"],
 } as const;
 
 export const FREE_AI_PROVIDER_CONFIG = {
-  MAX_MODELS_PER_PROVIDER: 1,
+  MAX_MODELS_PER_PROVIDER: 3,
   CEREBRAS: {
     id: "cerebras",
     url: "https://api.cerebras.ai/v1/chat/completions",
