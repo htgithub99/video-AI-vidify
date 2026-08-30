@@ -791,9 +791,18 @@ export const PROVIDER_REFERENCE_UPLOAD_CONFIG = {
     '[data-testid*="attachment" i], [data-test-id*="attachment" i], [data-testid*="ingredient" i], [data-test-id*="ingredient" i], .attachment-container, .image-preview',
   FLOW_UPLOAD_BUTTON: /upload|tải ảnh|tải tệp|thêm ảnh|add image|ingredient|reference/i,
   GROK_UPLOAD_BUTTON: /upload|tải ảnh|thêm ảnh|add image|attach|đính kèm/i,
+  FLOW_COMPOSER_MEDIA_BUTTON: /add_2\s*tạo|thêm.*câu lệnh|add.*prompt/i,
+  FLOW_DIALOG_UPLOAD_BUTTON: /tải nội dung nghe nhìn lên|upload media/i,
+  FLOW_UPLOAD_CONSENT_BUTTON: /tôi đồng ý|i agree/i,
+  FLOW_ADD_TO_PROMPT_BUTTON: /thêm vào câu lệnh|add to prompt/i,
+  GROK_TOOLBOX_BUTTON: /tải lên|upload/i,
+  GROK_MEDIA_UPLOAD_BUTTON: /tải đa phương tiện lên|upload media/i,
+  GROK_UPLOAD_TAB: /tải lên|uploads?/i,
+  FLOW_UPLOADED_OPTION_ROLE: "option",
   FILE_CHOOSER_TIMEOUT_MS: 5000,
   UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   POST_ACTION_DELAY_MS: 600,
+  PROVIDER_PANEL_DELAY_MS: 800,
 } as const;
 
 export const PROVIDER_REFERENCE_UPLOAD_MESSAGES = {

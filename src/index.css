@@ -894,7 +894,7 @@ body,
   width: 100vw !important;
   overflow: hidden !important;
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
 }
 
 .app-main {

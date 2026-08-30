@@ -124,6 +124,97 @@ const removeProviderReferenceAttachments = async (page: Page): Promise<void> => 
   }
 };
 
+type ProviderReferenceFile = { name: string; mimeType: string; buffer: Buffer };
+
+const uploadFilesFromButton = async (page: Page, button: Locator, files: ProviderReferenceFile[]): Promise<boolean> => {
+  if (!(await button.isVisible().catch(() => false))) return false;
+  const chooser = await Promise.all([
+    page.waitForEvent("filechooser", { timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.FILE_CHOOSER_TIMEOUT_MS }).catch(() => null),
+    button.click().catch(() => undefined),
+  ]).then(([fileChooser]) => fileChooser);
+  if (!chooser) return false;
+  await chooser.setFiles(files);
+  return true;
+};
+
+const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<boolean> => {
+  const openMediaDialog = async (): Promise<boolean> => {
+    const button = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_COMPOSER_MEDIA_BUTTON }).last();
+    if (!(await button.isVisible().catch(() => false))) return false;
+    await button.click();
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
+    return true;
+  };
+
+  if (!(await openMediaDialog())) return false;
+  const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_DIALOG_UPLOAD_BUTTON }).last();
+  if (!(await uploadFilesFromButton(page, uploadButton, files))) return false;
+
+  const consentButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_CONSENT_BUTTON }).last();
+  if (await consentButton.isVisible().catch(() => false)) await consentButton.click();
+
+  for (const file of files) {
+    const optionName = new RegExp(_.escapeRegExp(file.name), "i");
+    let option = page.getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: optionName }).last();
+    if (!(await option.isVisible().catch(() => false))) {
+      if (!(await openMediaDialog())) return false;
+      option = page.getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: optionName }).last();
+    }
+    await option.waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS }).catch(() => undefined);
+    if (!(await option.isVisible().catch(() => false))) return false;
+    await option.click();
+    const addButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_ADD_TO_PROMPT_BUTTON }).last();
+    if (await addButton.isVisible().catch(() => false)) await addButton.click();
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
+  }
+  return true;
+};
+
+const attachGrokReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<boolean> => {
+  const toolboxButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_TOOLBOX_BUTTON }).last();
+  if (!(await toolboxButton.isVisible().catch(() => false))) return false;
+  await toolboxButton.click();
+  await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
+  const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_MEDIA_UPLOAD_BUTTON }).last();
+  if (!(await uploadFilesFromButton(page, uploadButton, files))) return false;
+  await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
+  const uploadsTab = page.getByRole("tab", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_TAB }).last();
+  if (await uploadsTab.isVisible().catch(() => false)) await uploadsTab.click();
+  for (const file of files) {
+    const fileNamePattern = new RegExp(_.escapeRegExp(file.name), "i");
+    const namedButton = page.getByRole("button", { name: fileNamePattern }).last();
+    await namedButton.waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS }).catch(() => undefined);
+    if (!(await namedButton.isVisible().catch(() => false))) return false;
+    await namedButton.click();
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
+  }
+  return true;
+};
+
+const countAttachedProviderReferences = async (page: Page, provider: "flow" | "grok", files: ProviderReferenceFile[]): Promise<number> => {
+  if (_.isEqual(provider, "flow")) {
+    return page
+      .getByRole("button", { name: /nội dung nghe nhìn do bạn tạo hoặc tải lên|media.*collection/i })
+      .count()
+      .catch(() => SecurityConstants.ZERO);
+  }
+  const visibilityChecks = await Promise.all(
+    _.map(files, async (file) =>
+      page
+        .getByRole("img", { name: new RegExp(_.escapeRegExp(file.name), "i") })
+        .last()
+        .isVisible()
+        .catch(() => false),
+    ),
+  );
+  const namedImageCount = _.filter(visibilityChecks, Boolean).length;
+  const attachmentPreviewCount = await page
+    .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW)
+    .count()
+    .catch(() => SecurityConstants.ZERO);
+  return _.max([namedImageCount, attachmentPreviewCount]) || SecurityConstants.ZERO;
+};
+
 const uploadProviderCharacterReferences = async (page: Page, referenceImages: string[] | undefined, provider: "flow" | "grok"): Promise<void> => {
   const normalizedReferences = _.take(_.uniq(_.filter(_.castArray(referenceImages || []), _.isString)), GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES);
   const signatureMap = _.isEqual(provider, "flow") ? flowReferenceSignatureMap : grokReferenceSignatureMap;
@@ -143,33 +234,9 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
   const referenceFiles = createGeminiReferenceFiles(normalizedReferences);
   if (!_.isEqual(referenceFiles.length, normalizedReferences.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.READ_FAILED, provider));
 
-  const previewCountBeforeUpload = await page
-    .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW)
-    .count()
-    .catch(() => SecurityConstants.ZERO);
-  let uploaded = false;
-  const fileInputs = page.locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.FILE_INPUT);
-  const fileInputCount = await fileInputs.count().catch(() => SecurityConstants.ZERO);
-  for (let index = SecurityConstants.ZERO; index < fileInputCount; index++) {
-    try {
-      const input = fileInputs.nth(index);
-      const acceptsMultiple = await input.getAttribute("multiple");
-      if (!_.isNull(acceptsMultiple) || _.isEqual(referenceFiles.length, SecurityConstants.DEFAULT_AMOUNT)) {
-        await input.setInputFiles(referenceFiles);
-      } else {
-        for (const referenceFile of referenceFiles) {
-          const currentInputs = page.locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.FILE_INPUT);
-          const currentInputCount = await currentInputs.count();
-          if (!_.gt(currentInputCount, SecurityConstants.ZERO)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.CONTINUE_FAILED, provider));
-          const currentInput = currentInputs.nth(_.min([index, _.subtract(currentInputCount, SecurityConstants.DEFAULT_AMOUNT)]) || SecurityConstants.ZERO);
-          await currentInput.setInputFiles([referenceFile]);
-          await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
-        }
-      }
-      uploaded = true;
-      break;
-    } catch {}
-  }
+  let uploaded = _.isEqual(provider, "flow")
+    ? await attachFlowReferenceFiles(page, referenceFiles)
+    : await attachGrokReferenceFiles(page, referenceFiles);
 
   if (!uploaded) {
     const uploadPattern = _.isEqual(provider, "flow") ? PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_BUTTON : PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_BUTTON;
@@ -187,25 +254,14 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
   }
 
   if (!uploaded) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.CONTROL_MISSING, provider));
-  await page
-    .waitForFunction(
-      ({ selector, expected, initialCount }) =>
-        document.querySelectorAll(selector).length >= initialCount + expected ||
-        Array.from(document.querySelectorAll('input[type="file"]')).some((input) => ((input as HTMLInputElement).files?.length || 0) >= expected),
-      { selector: PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW, expected: referenceFiles.length, initialCount: previewCountBeforeUpload },
-      { timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
-    )
-    .catch(() => undefined);
-  const verifiedPreviewCount = await page
-    .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW)
-    .count()
-    .catch(() => SecurityConstants.ZERO);
-  const verifiedInputCount = await page
-    .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.FILE_INPUT)
-    .evaluateAll((inputs) => inputs.reduce((total, input) => total + ((input as HTMLInputElement).files?.length || 0), 0))
-    .catch(() => SecurityConstants.ZERO);
-  const newlyVisiblePreviews = _.max([_.subtract(verifiedPreviewCount, previewCountBeforeUpload), SecurityConstants.ZERO]) || SecurityConstants.ZERO;
-  if (_.lt(_.max([newlyVisiblePreviews, verifiedInputCount]) || SecurityConstants.ZERO, referenceFiles.length))
+  const verificationStartedAt = Date.now();
+  let attachedCount = SecurityConstants.ZERO;
+  while (_.lt(Date.now() - verificationStartedAt, PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS)) {
+    attachedCount = await countAttachedProviderReferences(page, provider, referenceFiles);
+    if (_.gte(attachedCount, referenceFiles.length)) break;
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
+  }
+  if (_.lt(attachedCount, referenceFiles.length))
     throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.VERIFY_FAILED, provider));
   signatureMap.set(page, nextSignature);
   appLog(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.SUCCESS, provider, referenceFiles.length));
