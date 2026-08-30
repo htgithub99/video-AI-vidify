@@ -151,7 +151,7 @@ export enum ManualReviewStatus {
 
 export type TooltipPosition = "top" | "bottom" | "left" | "right";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "outline" | "unstyled";
+export type ButtonVariant = "primary" | "secondary" | "success" | "info" | "purple" | "amber" | "danger" | "ghost" | "outline" | "unstyled";
 
 export interface ProjectInput {
   type: ProjectInputType;

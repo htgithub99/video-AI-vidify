@@ -96,22 +96,22 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
       {!_.isEmpty(renderedVideoUrl) && (
         <div className={cn("grid grid-cols-2 gap-2 pt-1")}>
           <Button
-            variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+            variant="success"
             size={REFACTOR_CONSTANTS.SIZE_MD}
             onClick={handleDownload}
-            className={cn("h-10 min-h-[40px] px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm")}
+            className={cn("h-10 min-h-[40px] px-3 font-bold text-xs rounded-xl flex items-center justify-center gap-2")}
             title={T.downloadVideoTooltip}>
             <Download className={cn("w-4 h-4")} /> {T.downloadVideoBtn}
           </Button>
 
           {activeCreatedProject && (
             <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+              variant="primary"
               size={REFACTOR_CONSTANTS.SIZE_MD}
               onClick={() => onSelectProject(activeCreatedProject.id)}
-              className={cn("h-10 min-h-[40px] px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm")}
+              className={cn("h-10 min-h-[40px] px-3 text-xs font-bold rounded-xl flex items-center justify-center gap-2")}
               title={T.openStudioTooltip}>
-              <Sliders className={cn("w-4 h-4 text-rose-400")} /> {T.openStudioBtn}
+              <Sliders className={cn("w-4 h-4")} /> {T.openStudioBtn}
             </Button>
           )}
         </div>
@@ -121,38 +121,32 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
         <div className={cn("grid grid-cols-3 gap-2 pt-1")}>
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
-            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+            variant="info"
             disabled={isAnyDisabled}
             onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
             title={regenerationTexts.voice}
-            className={cn(
-              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            )}>
-            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-cyan-200 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5 text-cyan-200")} />}
+            className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
+            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5")} />}
             <span className={cn("truncate")}>{regenerationTexts.voice}</span>
           </Button>
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
-            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+            variant="purple"
             disabled={isAnyDisabled}
             onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)}
             title={regenerationTexts.images}
-            className={cn(
-              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            )}>
-            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 text-pink-200 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5 text-pink-200")} />}
+            className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
+            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5")} />}
             <span className={cn("truncate")}>{regenerationTexts.images}</span>
           </Button>
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
-            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+            variant="success"
             disabled={isAnyDisabled}
             onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)}
             title={regenerationTexts.render}
-            className={cn(
-              "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 border-none bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            )}>
-            <RefreshCw className={cn("w-3.5 h-3.5 text-teal-200", { "animate-spin": isRenderActive })} />
+            className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
+            <RefreshCw className={cn("w-3.5 h-3.5", { "animate-spin": isRenderActive })} />
             <span className={cn("truncate")}>{regenerationTexts.render}</span>
           </Button>
         </div>

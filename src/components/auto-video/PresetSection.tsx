@@ -93,14 +93,12 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
         />
         <Button
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-          variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+          variant="success"
           size={REFACTOR_CONSTANTS.SIZE_MD}
           onClick={handleSavePreset}
           title={T.savePresetTooltip}
-          className={cn(
-            "bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 font-bold text-xs rounded-xl px-3.5 h-9 shrink-0 shadow-none flex items-center gap-1.5 cursor-pointer min-h-[36px] max-h-[36px]",
-          )}>
-          <Save className={cn("w-3.5 h-3.5 text-purple-400")} />
+          className={cn("h-9 min-h-[36px] max-h-[36px] px-3.5 text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0")}>
+          <Save className={cn("w-3.5 h-3.5")} />
           <span className={cn("hidden sm:inline")}>{T.savePresetBtn}</span>
         </Button>
       </div>
