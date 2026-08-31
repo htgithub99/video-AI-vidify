@@ -28,6 +28,8 @@ export const PROGRESS_LOG_CONFIG = {
   TOOLTIPS: {
     COPY_ERROR: "Sao chép nội dung lỗi",
     COPIED_ERROR: "Đã sao chép lỗi!",
+    COPY_WARNING: "Sao chép nội dung cảnh báo",
+    COPIED_WARNING: "Đã sao chép cảnh báo!",
   },
   SEAMLESS_REPLACEMENTS: [
     { pattern: /:\s*quá trình/gi, replacement: " do quá trình" },

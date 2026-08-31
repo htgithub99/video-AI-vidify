@@ -1,5 +1,6 @@
 export {
   createVisualCharacterCards as createPromptCharacterCards,
+  createScopedVisualBibleContext,
   createVisualPlanningPayload,
   getVisualShotPlanIssues,
   normalizeVisualShotPlan,

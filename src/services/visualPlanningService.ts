@@ -198,3 +198,15 @@ export const createVisualPlanningPayload = (scenes: StoryboardScene[]): Record<s
     previousNarration: _.toString(scenes[index - 1]?.script || scenes[index - 1]?.subtitle),
     nextNarration: _.toString(scenes[index + 1]?.script || scenes[index + 1]?.subtitle),
   }));
+
+export const createScopedVisualBibleContext = (visualBible: VisualBible, scenes: StoryboardScene[]): Partial<VisualBible> => {
+  const locationIds = new Set(_.compact(_.map(scenes, "locationId")));
+  const propIds = new Set(_.flatMap(scenes, (scene) => scene.propIds || []));
+  const locations = _.defaultTo(visualBible.locations, []);
+  const props = _.defaultTo(visualBible.props, []);
+  return {
+    ..._.pick(visualBible, ["colorPalette", "landscapeSpecs", "lightingMood", "visualStyle", "background", "colorMode", "shading", "textPolicy", "negativeStylePrompt"]),
+    locations: _.isEmpty(locationIds) ? locations : _.filter(locations, (location) => locationIds.has(location.id)),
+    props: _.isEmpty(propIds) ? props : _.filter(props, (prop) => propIds.has(prop.id)),
+  };
+};

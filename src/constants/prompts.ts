@@ -262,6 +262,8 @@ export const getCinematicVideoPlanningPrompt = (
   continuityContext: string = "",
   correctionIssuesJson: string = "",
   clipDurationSeconds: number = 10,
+  dialogueDirective?: string,
+  dialogueLanguage?: string,
 ): string => `You are a senior film director and continuity supervisor. Create the complete production plan for every input scene. Return ONLY one raw JSON array with exactly the supplied scene IDs and no Markdown or commentary.
 
 ${UNTRUSTED_INPUT_RULE}
@@ -271,7 +273,10 @@ Visual Bible: ${visualBibleJson || "Not supplied"}
 Neighbor continuity: ${continuityContext || "Not supplied"}
 ${correctionIssuesJson ? `The previous answer failed these checks. Rewrite the COMPLETE array and resolve every issue: ${correctionIssuesJson}` : ""}
 
-For each scene, preserve its literal story event and write every required field yourself. Use natural cinematic English for technical fields. Use exact character dialogue from the screenplay when available; never use narration or voice-over. Across the finished story, make at least one third of character-led clips contain a short playable on-screen or same-location off-screen exchange when the screenplay supports speech. Silent action is valid when speech would be unnatural.
+For each scene, preserve its literal story event and write every required field yourself. Use natural cinematic English for technical fields. Use exact character dialogue from the screenplay when available; never use narration or voice-over. Across the finished story, make at least one third of character-led clips contain a short playable on-screen or same-location off-screen exchange when the screenplay supports speech. Silent action is valid when speech would be unnatural.${dialogueDirective && dialogueLanguage ? `
+Dialogue assignment for this request: ${dialogueDirective}
+Dialogue language lock: every spokenDialogue value and the exact quoted line inside generationPrompt must use natural ${dialogueLanguage}. Keep all technical and directorial fields in English.
+` : ""}
 
 Each scene represents one paid ${clipDurationSeconds}-second video. Plan 3 to 5 chronological shots that cover 0 through ${clipDurationSeconds} seconds without gaps. Choose timings from the action and dialogue rather than equal intervals. Shot 1 establishes geography and objective; middle shots add one readable cause, obstacle, evidence, decision, or contact; the final shot must be payoff, reaction, or reveal and visibly prove a consequence. Every later shot begins with the exact phrase "Continue directly from Shot X." in generationPrompt and starts from the previous shot's observable end state. Use simple physically playable actions, stable screen direction, persistent wardrobe, props, damage, lighting, and geography.
 
@@ -285,10 +290,33 @@ Then state the scene premise. Include exactly: "Create one continuous ${clipDura
 Return every field in this shape. Empty strings and arrays are allowed only where semantically valid:
 [{"id":"exact_scene_id","prompt":"60-95 word image planning paragraph","generationPrompt":"complete final video prompt","visualIntent":"viewer understanding","visibleAction":"observable subject verb object and result","reaction":"visible caused response","storyEvidence":"specific physical evidence","visualHook":"story-grounded focal event","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"","shotPurpose":"setup|obstacle|decision|escalation|reveal|climax|reaction|payoff|transition","shotSize":"motivated shot size","cameraAngle":"motivated angle","composition":"clear foreground midground background hierarchy","locationId":"location ID or empty","propIds":[],"continuityFrom":"previous scene ID or empty","continuityNotes":"exact handoff and locks","lighting":"motivated practical light","sequenceId":"continuous event group","shotId":"unique clip ID","shotRole":"master|coverage|reaction|insert|transition|payoff","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact short line or empty","speakerCharacterId":"character ID or empty","lipSyncRequired":false,"characterBlocking":"positions facing and movement","eyelineDirection":"stable gaze direction or not_applicable","screenDirection":"left_to_right|right_to_left|static_axis|not_applicable","actionStartState":"exact observable opening state","actionEndState":"exact observable changed end state","locationState":"locked geography time weather and damage","wardrobeState":"exact current clothing and damage","propState":"owner hand position and condition","soundDesignCues":[],"cinematicBeats":[{"sourceSceneId":"exact_scene_id","shotId":"unique internal shot ID","shotRole":"master|coverage|reaction|insert|transition|payoff","shotSize":"shot size","cameraAngle":"angle","visibleAction":"one new physical action and result","reaction":"caused response","transition":"hard_cut|match_cut|motivated_reframe","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact line or empty","speakerCharacterId":"character ID or empty","lipSyncRequired":false,"startSecond":0,"endSecond":3}],"assetStrategy":"ai_generated","archivalSearchQuery":"","archivalRationale":"fictional cinematic scene"}]
 
-Field agreement is mandatory: generationPrompt and cinematicBeats must have identical shot count, timings, actions, dialogue, speaker, handoffs, and final consequence. on_screen_dialogue requires lipSyncRequired=true; all other modes require false. A silent beat has empty spokenDialogue and speakerCharacterId. Never omit generationPrompt or any field. Do not return until every scene object is complete.
+Field agreement is mandatory: generationPrompt and cinematicBeats must have identical shot count, timings, actions, dialogue, speaker, handoffs, and final consequence. on_screen_dialogue requires lipSyncRequired=true; all other modes require false. A silent beat has empty spokenDialogue and speakerCharacterId. Never omit generationPrompt or any field. Do not return until every scene object is complete.${dialogueDirective ? "\nUse 1 to 5 concise soundDesignCues, limited to sounds that can be heard in this exact clip." : ""}
 
 Input scenes:
 ${chunkJson}`;
+
+export const getCinematicVideoPlanningRepairPrompt = (
+  sourceSceneJson: string,
+  previousResponseJson: string,
+  issuesJson: string,
+  continuityContext: string,
+  clipDurationSeconds: number = 10,
+  dialogueDirective: string = "Dialogue is optional when it is not naturally supported by this story beat.",
+  dialogueLanguage: string = "the source screenplay language",
+): string => `Continue as the film director in this same room. The last JSON response did not pass preflight. Rewrite the COMPLETE scene object yourself; do not return a patch and do not omit fields that were already correct.
+
+Exact validation failures: ${issuesJson}
+Dialogue assignment: ${dialogueDirective}
+Dialogue language lock: every spokenDialogue value and the exact quoted line inside generationPrompt must use natural ${dialogueLanguage}. Keep all technical and directorial fields in English.
+Source scene: ${sourceSceneJson}
+Neighbor continuity: ${continuityContext || "Not supplied"}
+Current response to replace: ${previousResponseJson}
+
+Return exactly one raw JSON array containing one complete corrected object for every supplied source scene ID. Preserve the original story event and character identities. All technical planning fields must be natural English. visibleAction must use an observable physical verb. If dialogue is required, author one short natural line faithful to the scene intent, assign its character speaker, use on_screen_dialogue or same-location off_screen_dialogue, and never turn narration into voice-over.
+
+generationPrompt must be a complete self-contained 180-500 word video prompt, not a summary. It must start with the required cinematic live-action technical foundation, contain 3-5 chronological timed shots covering exactly 0-${clipDurationSeconds} seconds, state the exact N-shot/N-1-cut contract, and make every shot after Shot 1 start with the exact sentence "Continue directly from Shot X." It must include the same actions, timing, speaker and exact dialogue as cinematicBeats, then end with the continuity lock, strict cut constraints, diegetic audio rule, and complete text-free/full-bleed policy from the original contract. Check every field and every beat before answering.
+
+Output only the complete valid JSON array. No Markdown, explanation, placeholders, ellipses, or references to earlier text.`;
 
 export const getOptimizePromptsBatchPrompt = (
   visualStyle: string,

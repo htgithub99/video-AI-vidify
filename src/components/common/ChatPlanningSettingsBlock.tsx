@@ -1,5 +1,4 @@
 import _ from "lodash";
-import React from "react";
 import { Bot, ChevronDown, Cpu, Eye, Sparkles } from "lucide-react";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
 import { CINEMATIC_SETUP_TEXTS } from "../../constants/texts";
@@ -175,6 +174,5 @@ export default function ChatPlanningSettingsBlock({
     </div>
   );
 }
-
 
 

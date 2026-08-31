@@ -969,10 +969,12 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logStoryboardResultDetail: (scenes: number) => `✓ Đã chia xong nội dung thành ${scenes} phân cảnh.`,
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
     logVoiceResultDetail: (_source: string) => `✓ Giọng đọc thuyết minh đã thu âm xong.`,
-    logReferenceSummary: (style: number, scene: number, character: number) =>
+    logReferenceSummary: (style: number, scene: number, character: number, cinematic: boolean = false) =>
       style + scene + character > 0
         ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.`
-        : `🖼️ Không sử dụng ảnh tham chiếu; tính nhất quán sẽ dựa trên Visual Bible và prompt.`,
+        : cinematic
+          ? `🧬 Không có ảnh tham chiếu do người dùng tải lên; hệ thống sẽ tạo Character Pack và tải đúng ảnh nhân vật xuất hiện lên công cụ tạo video.`
+          : `🖼️ Không có ảnh tham chiếu do người dùng tải lên; tính nhất quán sẽ dựa trên Visual Bible và prompt.`,
     logMediaPlan: (generate: number, reused: number, type: string) =>
       `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
@@ -1186,7 +1188,12 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logStoryboardResultDetail: (scenes: number) => `✓ Successfully split into ${scenes} scenes.`,
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Synthesizing AI voiceover...`,
     logVoiceResultDetail: (_source: string) => `✓ AI voiceover is fully generated.`,
-    logReferenceSummary: (_style: number, _scene: number, _character: number) => `🖼️ Analyzing provided references to learn your style...`,
+    logReferenceSummary: (style: number, scene: number, character: number, cinematic: boolean = false) =>
+      style + scene + character > 0
+        ? `🖼️ Using ${style} style, ${scene} scene, and ${character} character reference images for continuity.`
+        : cinematic
+          ? `🧬 No user-uploaded reference image; the system will create a Character Pack and upload only the characters visible in each video clip.`
+          : `🖼️ No user-uploaded reference image; continuity will rely on the Visual Bible and prompt.`,
     logMediaPlan: (generate: number, reused: number, type: string) =>
       `🎨 Media plan: generate ${generate} scenes as ${type === "video" ? "video" : type === "mixed" ? "images and video" : "images"}; reuse ${reused} existing scenes.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,

@@ -1285,7 +1285,7 @@ export function useAutoVideoPipeline(
         }
       }
 
-      appendLog(T.logReferenceSummary(_.size(config.referenceImages), _.size(config.sceneReferenceImages), SecurityConstants.ZERO));
+      appendLog(T.logReferenceSummary(_.size(config.referenceImages), _.size(config.sceneReferenceImages), SecurityConstants.ZERO, isCinematicPipeline));
       if (isCinematicEpisodeGenre(config.genre)) setCurrentStepIndex(2);
 
       if (

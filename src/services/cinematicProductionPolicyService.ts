@@ -85,11 +85,12 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
 
 export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number): string[] => {
   const issues = _.flatMap(scenes, (scene) => getCinematicSceneContractIssues(scene, requestedDuration));
+  const characterLedScenes = _.filter(scenes, (scene) => !_.isEmpty(scene.characterIds));
   const dialogueSceneCount = _.size(
-    _.filter(scenes, (scene) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode) && !_.isEmpty(_.trim(scene.spokenDialogue))),
+    _.filter(characterLedScenes, (scene) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode) && !_.isEmpty(_.trim(scene.spokenDialogue))),
   );
-  const minimumDialogueScenes = Math.max(1, Math.ceil(scenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
-  if (_.gt(scenes.length, 1) && _.lt(dialogueSceneCount, minimumDialogueScenes))
+  const minimumDialogueScenes = Math.max(1, Math.ceil(characterLedScenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
+  if (_.gt(characterLedScenes.length, 1) && _.lt(dialogueSceneCount, minimumDialogueScenes))
     issues.push(`storyboard:dialogue_coverage:requires_at_least_${minimumDialogueScenes}_playable_dialogue_scenes`);
   _.forEach(_.tail(scenes), (scene, index) => {
     const previous = scenes[index];

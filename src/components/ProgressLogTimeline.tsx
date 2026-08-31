@@ -48,6 +48,7 @@ const parseProgressLog = (log: string) => {
   return {
     time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
     message: cleanMessage,
+    rawMessage: rawLog,
     tone: resolveProgressLogTone(messageWithoutTime),
   };
 };
@@ -104,7 +105,11 @@ export const ProgressLogTimeline = memo(({ logs, theme, context = ProgressLogCon
       {_.map(entries, (entry, index) => {
         const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
         const isError = _.isEqual(entry.tone, ProgressLogTone.Error);
+        const isWarning = _.isEqual(entry.tone, ProgressLogTone.Warning);
+        const isCopyable = isError || isWarning;
         const isCopied = _.isEqual(copiedIndex, index);
+        const copyTooltip = isWarning ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_WARNING : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR;
+        const copiedTooltip = isWarning ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_WARNING : PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR;
 
         return (
           <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, "group/log relative")}>
@@ -115,15 +120,16 @@ export const ProgressLogTimeline = memo(({ logs, theme, context = ProgressLogCon
             <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, isLightTheme ? style.textLight : style.textDark)}>{entry.message}</span>
 
             <div className={cn("flex items-center gap-1.5 ml-2 shrink-0 pt-0.5")}>
-              {isError && (
+              {isCopyable && (
                 <button
                   type="button"
-                  onClick={() => handleCopy(entry.message, index)}
+                  onClick={() => handleCopy(entry.rawMessage, index)}
                   className={cn(
                     "w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent transition-colors",
                     isCopied ? "text-emerald-500 bg-emerald-500/10" : "text-slate-400 hover:text-rose-500 hover:bg-rose-500/10",
                   )}
-                  title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}>
+                  title={isCopied ? copiedTooltip : copyTooltip}
+                  aria-label={isCopied ? copiedTooltip : copyTooltip}>
                   {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-500")} /> : <Copy className={cn("w-3.5 h-3.5")} />}
                 </button>
               )}

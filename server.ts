@@ -16,6 +16,7 @@ import { requestContext } from "./src/server/utils/requestContext.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { SecurityConstants } from "./src/constants/security.js";
 import { getResolvedLicenseKey } from "./src/server/services/apiKeyResolver.js";
+import { closeActiveBrowser } from "./src/server/services/imageGeneratorService.js";
 
 const SERVER_CONFIG = {
   PORT: 3002,
@@ -124,7 +125,7 @@ const shutdownGracefully = async () => {
   logger.log(SecurityConstants.LOG_PLAYWRIGHT_CLEANING);
   setTimeout(() => process.exit(0), SERVER_CONFIG.TIMEOUT_SHUTDOWN);
   try {
-    await closePlaywright();
+    await Promise.allSettled([closePlaywright(), closeActiveBrowser()]);
   } catch (e) {}
 
   const killCmd = _.isEqual(process.platform, SERVER_CONFIG.WIN32)

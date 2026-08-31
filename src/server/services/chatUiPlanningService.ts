@@ -3,8 +3,8 @@ import _ from "lodash";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
 import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS } from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
-import { appLog } from "../../lib/logger.js";
-import { getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
+import { appLog, appWarn } from "../../lib/logger.js";
+import { getOrLaunchGlobalBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
 interface ChatPlanningRequest {
   provider: AiPlanningFallbackProvider;
@@ -19,6 +19,15 @@ const planningMutex = new SimpleMutex();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
+
+const normalizeRoomPrompt = (prompt: string): string =>
+  _.trim(
+    _.replace(
+      _.replace(prompt, CINEMATIC_CHAT_PLANNING_CONFIG.WINDOWS_LINE_ENDING_PATTERN, "\n"),
+      CINEMATIC_CHAT_PLANNING_CONFIG.EXCESS_BLANK_LINES_PATTERN,
+      "\n\n",
+    ),
+  );
 
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
   const room = rooms.get(projectId);
@@ -73,6 +82,8 @@ const extractPlanningJsonFromBody = (text: string, expectedSceneIds: string[]): 
     ]),
   ) || "";
 
+const extractLatestJsonArray = (text: string): string => _.last(extractBalancedJsonArrays(text)) || "";
+
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
   try {
@@ -91,13 +102,15 @@ const waitForStableResponse = async (
   busySelector: string,
   initialCount: number,
   expectedSceneIds: string[],
-  useBodyJsonFallback: boolean,
-  previousBodyResponse: string,
   previousLastResponse: string,
 ): Promise<string> => {
   const startedAt = Date.now();
   let previousText = "";
   let stablePolls = 0;
+  let lastResponseCount = initialCount;
+  let lastCandidateLength = 0;
+  let lastBusyState = false;
+  let lastIdentityMatch = false;
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) {
     const responses = page.locator(responseSelector);
     const count = await responses.count().catch(() => 0);
@@ -108,16 +121,17 @@ const waitForStableResponse = async (
     const responseCandidates = _.compact([...newResponseTexts, changedLastResponse]);
     const selectedResponse =
       _.findLast(_.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)), (value) => !_.isEmpty(value)) ||
+      _.findLast(_.map(responseCandidates, extractLatestJsonArray), (value) => !_.isEmpty(value)) ||
       _.last(responseCandidates) ||
       "";
-    const extractedBodyResponse = useBodyJsonFallback
-      ? extractPlanningJsonFromBody(await page.locator("body").innerText().catch(() => ""), expectedSceneIds)
-      : "";
-    const bodyResponse = !_.isEqual(extractedBodyResponse, previousBodyResponse) ? extractedBodyResponse : "";
-    const latestText = bodyResponse || selectedResponse;
+    const latestText = selectedResponse;
     const isBusy = await page.locator(busySelector).first().isVisible().catch(() => false);
     const belongsToCurrentRequest = _.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds);
-    if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && belongsToCurrentRequest && !isBusy) {
+    lastResponseCount = count;
+    lastCandidateLength = latestText.length;
+    lastBusyState = isBusy;
+    lastIdentityMatch = belongsToCurrentRequest;
+    if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) return latestText;
@@ -127,7 +141,9 @@ const waitForStableResponse = async (
     }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
-  throw new Error("AI Chat chưa hoàn tất phản hồi kế hoạch phim trong thời gian cho phép.");
+  throw new Error(
+    `AI Chat chưa hoàn tất phản hồi kế hoạch phim trong thời gian cho phép (responses=${lastResponseCount}, initial=${initialCount}, candidateLength=${lastCandidateLength}, busy=${lastBusyState}, identityMatch=${lastIdentityMatch}).`,
+  );
 };
 
 const submitPrompt = async (
@@ -138,20 +154,24 @@ const submitPrompt = async (
   responseSelector: string,
   busySelector: string,
   expectedSceneIds: string[],
-  useBodyJsonFallback = false,
 ): Promise<string> => {
   const input = page.locator(inputSelector).last();
-  await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  try {
+    await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  } catch (error) {
+    const title = await page.title().catch(() => "");
+    throw new Error(
+      `AI Chat chưa tìm thấy ô nhập (url=${page.url()}, title=${title}, selectorMatches=${await page.locator(inputSelector).count().catch(() => 0)}): ${_.toString(_.get(error, "message", error))}`,
+    );
+  }
   const initialCount = await page.locator(responseSelector).count().catch(() => 0);
   const previousLastResponse = _.trim(await page.locator(responseSelector).last().innerText().catch(() => ""));
-  const previousBodyResponse = useBodyJsonFallback
-    ? extractPlanningJsonFromBody(await page.locator("body").innerText().catch(() => ""), expectedSceneIds)
-    : "";
-  await input.fill(`${prompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+  const normalizedPrompt = normalizeRoomPrompt(prompt);
+  await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
   const sendButton = page.locator(sendSelector).last();
   if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
   else await input.press("Enter");
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, useBodyJsonFallback, previousBodyResponse, previousLastResponse);
+  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse);
 };
 
 const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
@@ -159,10 +179,43 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
   const modelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
   const button = page.locator(buttonSelector).first();
   await button.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const currentModelLabel = _.trim(await button.innerText().catch(() => ""));
+  if (modelLabel.test(currentModelLabel)) return;
   await button.click();
   const option = page.getByRole("menuitem", { name: modelLabel }).or(page.getByRole("menuitemradio", { name: modelLabel })).first();
   await option.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   await option.click();
+};
+
+const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<void> => {
+  const input = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR).last();
+  if (await input.isVisible().catch(() => false)) return;
+  const cookieRejectControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_COOKIE_REJECT_SELECTOR).first();
+  const cookieFallbackControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_COOKIE_ACTION_SELECTOR).last();
+  if (await cookieRejectControl.isVisible().catch(() => false)) await cookieRejectControl.click();
+  else if (await cookieFallbackControl.isVisible().catch(() => false)) await cookieFallbackControl.click();
+  const loginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_LOGIN_SELECTOR).first();
+  if (await loginControl.isVisible().catch(() => false)) {
+    await loginControl.evaluate((element: HTMLElement) => element.click());
+    await page.waitForLoadState("domcontentloaded").catch(() => {});
+  }
+  const googleLoginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GOOGLE_LOGIN_SELECTOR).first();
+  if (await googleLoginControl.isVisible().catch(() => false)) {
+    const popupPromise = page.context().waitForEvent("page", { timeout: 5000 }).catch(() => undefined);
+    await googleLoginControl.evaluate((element: HTMLElement) => element.click());
+    const authPage = (await popupPromise) || page;
+    await authPage.waitForLoadState("domcontentloaded").catch(() => {});
+    const accountControl = authPage.getByText(accountEmail, { exact: false }).first();
+    if (await accountControl.isVisible().catch(() => false)) await accountControl.click();
+    if (authPage !== page) await authPage.waitForEvent("close", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS }).catch(() => {});
+  }
+  try {
+    await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  } catch (error) {
+    throw new Error(
+      `ChatGPT chưa hoàn tất đăng nhập (url=${page.url()}, title=${await page.title().catch(() => "")}): ${_.toString(_.get(error, "message", error))}`,
+    );
+  }
 };
 
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
@@ -177,17 +230,16 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
     request.expectedSceneIds || [],
-    true,
   );
   scheduleGlobalBrowserCleanup();
   return response;
 };
 
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {
-  const browser = await getOrLaunchGrokBrowser(request.chromeHeadless);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, request.projectId);
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
-  return submitPrompt(
+  const response = await submitPrompt(
     room,
     request.prompt,
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_INPUT_SELECTOR,
@@ -195,13 +247,15 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
     request.expectedSceneIds || [],
-    true,
   );
+  scheduleGlobalBrowserCleanup();
+  return response;
 };
 
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, request.projectId);
+  await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
     room,
     request.prompt,
@@ -210,7 +264,6 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
     request.expectedSceneIds || [],
-    true,
   );
   scheduleGlobalBrowserCleanup();
   return response;
@@ -238,6 +291,9 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     if (!generator) throw new Error("AI Chat dự phòng chưa được hỗ trợ.");
     const text = await generator(request);
     return { text, provider: request.provider };
+  } catch (error) {
+    appWarn(`[AI Chat Planning] ${providerNames[request.provider]} chưa hoàn tất: ${_.toString(_.get(error, "message", error))}`);
+    throw error;
   } finally {
     release();
   }
