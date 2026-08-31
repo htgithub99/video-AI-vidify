@@ -1,7 +1,7 @@
 import React, { useState, useEffect, FC, FormEvent, useCallback, useMemo } from "react";
 import { useLicense } from "../contexts/LicenseContext";
 import { KeyRound, Loader2, AlertCircle, Check, X } from "lucide-react";
-import { SecurityMessages, PlanType, SecurityConstants, LicenseStatus, getClientEnvironmentLicenseKey } from "../constants/security";
+import { SecurityMessages, SecurityConstants, LicenseStatus, getClientEnvironmentLicenseKey } from "../constants/security";
 import _ from "lodash";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -47,7 +47,7 @@ const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
 };
 
 export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { licenseInfo, isLoading, activateLicense, logoutLicense } = useLicense();
+  const { licenseInfo, isLoading, activateLicense } = useLicense();
   const [inputKey, setInputKey] = useState<string>(getClientEnvironmentLicenseKey);
   const [errorMsg, setErrorMsg] = useState<string>(SecurityConstants.EMPTY_STRING);
   const [successMsg, setSuccessMsg] = useState<string>(SecurityConstants.EMPTY_STRING);
@@ -85,8 +85,6 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
     },
     [activateLicense, inputKey],
   );
-
-  const isProPlan = useMemo(() => _.includes(_.get(licenseInfo, "plan_type", SecurityConstants.EMPTY_STRING), PlanType.PRO), [licenseInfo]);
 
   const isRevoked = useMemo(() => _.isEqual(_.get(licenseInfo, "status"), LicenseStatus.REVOKED), [licenseInfo]);
 
@@ -176,26 +174,16 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <>
-      <div className={cn("fixed top-0 right-0 z-50 p-4 pointer-events-none flex flex-col gap-2 items-end")}>
-        {licenseInfo.status !== LicenseStatus.ACTIVE && (
+      {licenseInfo.status !== LicenseStatus.ACTIVE && (
+        <div className={cn("fixed top-0 right-0 z-50 p-4 pointer-events-none flex flex-col gap-2 items-end")}>
           <div
             className={cn("pointer-events-auto px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center gap-2 shadow-sm")}
             title={isRevoked ? SecurityMessages.REVOKED_STATUS : SecurityMessages.EXPIRED_STATUS}>
             <AlertCircle className={cn("w-3.5 h-3.5")} />
             <span className={cn("text-xs font-bold tracking-wide")}>{isRevoked ? SecurityMessages.REVOKED_STATUS_SHORT : SecurityMessages.EXPIRED_STATUS_SHORT}</span>
           </div>
-        )}
-        <div
-          className={`pointer-events-auto px-4 py-2 rounded-full border flex items-center gap-3 transition-all ${isProPlan ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-slate-850 border-transparent text-slate-400"}`}>
-          <span className={cn("text-xs font-bold tracking-wide")}>{isProPlan ? SecurityMessages.PRO_VERSION : SecurityMessages.FREE_VERSION}</span>
-          <button
-            onClick={logoutLicense}
-            title={SecurityMessages.CHANGE_KEY}
-            className={cn("text-xs font-medium px-2 py-1 bg-slate-955 rounded hover:bg-slate-900 transition-colors")}>
-            {SecurityMessages.CHANGE_KEY}
-          </button>
         </div>
-      </div>
+      )}
       {children}
     </>
   );

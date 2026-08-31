@@ -13,6 +13,12 @@ export enum ProgressLogTone {
   Info = "info",
 }
 
+export enum ProgressLogContext {
+  Automatic = "automatic",
+  Cinematic = "cinematic",
+  Editor = "editor",
+}
+
 export const PROGRESS_LOG_CONFIG = {
   TIME_PATTERN: /^\[([^\]]+)\]\s*/,
   PREFIX_PATTERN: /^(?:🚀|📌|✅|✓|⚠️?|❌|🎨|♻️?)\s*/u,
@@ -29,6 +35,19 @@ export const PROGRESS_LOG_CONFIG = {
     { pattern: /:\s*không thể/gi, replacement: " do không thể" },
     { pattern: /:\s*lỗi/gi, replacement: " vì lỗi" },
   ],
+  EXCLUDED_PATTERNS: {
+    [ProgressLogContext.Automatic]: [/\b3[–-]5 shot\b/i, /native video audio/i, /character pack/i, /cinematic continuity/i],
+    [ProgressLogContext.Cinematic]: [
+      /tạo voice/i,
+      /tạo giọng đọc/i,
+      /giọng thuyết minh/i,
+      /\btts\b/i,
+      /căn khớp.*(?:voice|giọng|thuyết minh)/i,
+      /tạo hook/i,
+      /hook.*(?:câu mở đầu|kịch bản)/i,
+    ],
+    [ProgressLogContext.Editor]: [/tạo hook/i, /viết lại kịch bản/i, /tạo giọng đọc/i, /phân tích nhân vật/i, /tạo ảnh bìa/i, /seo/i],
+  },
   MARKERS: {
     [ProgressLogTone.Error]: ["❌", "gặp sự cố", "thất bại", "failed completely"],
     [ProgressLogTone.Warning]: ["⚠", "cảnh báo", "warning"],
@@ -145,3 +164,6 @@ export const PROGRESS_LOG_CONFIG = {
     },
   },
 } as const;
+
+export const isProgressLogVisible = (log: unknown, context: ProgressLogContext): boolean =>
+  !PROGRESS_LOG_CONFIG.EXCLUDED_PATTERNS[context].some((pattern) => pattern.test(String(log)));

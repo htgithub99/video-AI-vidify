@@ -1019,7 +1019,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   return { context, page: grokPage };
 };
 
-const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
   if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) {
     const duplicateGrokPages = _.filter(grokPage.context().pages(), (page) => page !== grokPage && _.includes(page.url(), "grok.com/imagine"));
     await Promise.allSettled(_.map(duplicateGrokPages, (page) => page.close()));

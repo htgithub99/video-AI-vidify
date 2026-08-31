@@ -1,3 +1,5 @@
+import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
+
 export const CINEMATIC_POLICY_CONFIG = {
   MIN_BEAT_COUNT: 3,
   MAX_BEAT_COUNT: 5,
@@ -9,6 +11,66 @@ export const CINEMATIC_POLICY_CONFIG = {
   EPSILON_TOLERANCE: 0.25,
   MIN_DIALOGUE_SCENE_RATIO: 0.3,
 } as const;
+
+export const CINEMATIC_CHAT_PLANNING_CONFIG = {
+  RESPONSE_TIMEOUT_MS: 240000,
+  RESPONSE_POLL_MS: 1000,
+  RESPONSE_STABLE_POLLS: 3,
+  MIN_RESPONSE_CHARACTERS: 20,
+  PAGE_READY_TIMEOUT_MS: 45000,
+  NAVIGATION_TIMEOUT_MS: 60000,
+  GEMINI_RESPONSE_SELECTOR: "model-response",
+  GEMINI_INPUT_SELECTOR: 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
+  GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
+  GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, .model-response-label-announcer[aria-busy="true"]',
+  GROK_INPUT_SELECTOR: '[contenteditable="true"][role="textbox"]:visible, textarea:visible, [contenteditable="true"]:visible',
+  GROK_RESPONSE_SELECTOR: "pre, code, article",
+  GROK_SEND_SELECTOR: 'button[type="submit"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
+  GROK_BUSY_SELECTOR: 'button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  CHATGPT_INPUT_SELECTOR: '#prompt-textarea, textarea[data-id="root"], div[contenteditable="true"][data-virtualkeyboard]',
+  CHATGPT_RESPONSE_SELECTOR: '[data-message-author-role="assistant"]',
+  CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
+  CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  GEMINI_MODEL_BUTTON_SELECTOR: 'button[aria-label*="chọn chế độ" i], button[aria-label*="select mode" i]',
+  GROK_MODEL_BUTTON_SELECTOR:
+    'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
+  JSON_ONLY_DIRECTIVE:
+    "Return only the complete raw JSON array required by the request. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.",
+  DEFAULT_PROJECT_SCOPE: "cinematic-planning",
+} as const;
+
+export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
+  [AiPlanningFallbackProvider.GeminiChat]: [
+    { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
+    { value: AiPlanningChatModel.GeminiFlash, label: "3.7 Flash" },
+    { value: AiPlanningChatModel.GeminiPro, label: "3.1 Pro" },
+    { value: AiPlanningChatModel.GeminiThinking, label: "Tư duy mở rộng" },
+    { value: AiPlanningChatModel.GeminiDeepThink, label: "Deep Think" },
+  ],
+  [AiPlanningFallbackProvider.GrokChat]: [
+    { value: AiPlanningChatModel.GrokFast, label: "Nhanh" },
+    { value: AiPlanningChatModel.GrokBuild, label: "Build" },
+    { value: AiPlanningChatModel.GrokAuto, label: "Tự động" },
+    { value: AiPlanningChatModel.GrokExpert, label: "Chuyên gia" },
+    { value: AiPlanningChatModel.GrokHeavy, label: "Nặng" },
+  ],
+  [AiPlanningFallbackProvider.ChatGptUi]: [{ value: AiPlanningChatModel.ChatGptAuto, label: "Mặc định" }],
+  [AiPlanningFallbackProvider.Disabled]: [],
+};
+
+export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
+  [AiPlanningChatModel.GeminiFlashLite]: /3\.5\s*Flash-Lite/i,
+  [AiPlanningChatModel.GeminiFlash]: /3\.7\s*Flash/i,
+  [AiPlanningChatModel.GeminiPro]: /3\.1\s*Pro/i,
+  [AiPlanningChatModel.GeminiThinking]: /Tư duy mở rộng|Extended thinking/i,
+  [AiPlanningChatModel.GeminiDeepThink]: /Deep Think/i,
+  [AiPlanningChatModel.GrokFast]: /Nhanh|Fast/i,
+  [AiPlanningChatModel.GrokBuild]: /Build/i,
+  [AiPlanningChatModel.GrokAuto]: /Tự động|Auto/i,
+  [AiPlanningChatModel.GrokExpert]: /Chuyên gia|Expert/i,
+  [AiPlanningChatModel.GrokHeavy]: /Nặng|Heavy/i,
+  [AiPlanningChatModel.ChatGptAuto]: /Auto|Mặc định|Default/i,
+};
 
 export const CINEMATIC_PLANNING_MESSAGES = {
   VI_RETRY: "[Đạo diễn phim] Kế hoạch chưa đủ shot, continuity hoặc thoại; AI đang viết lại toàn bộ.",

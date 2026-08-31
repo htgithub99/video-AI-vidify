@@ -63,6 +63,8 @@ export const EXTERNAL_URLS = {
   GEMINI_CHAT: "https://gemini.google.com/app",
   GEMINI_CHAT_BASE: "https://gemini.google.com",
   GROK_IMAGINE: "https://grok.com/imagine",
+  GROK_CHAT: "https://grok.com/",
+  CHATGPT: "https://chatgpt.com/",
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",

@@ -39,6 +39,9 @@ import {
   AssetAcceptance,
   QaStatus,
   ProjectKind,
+  AiPlanningFallbackProvider,
+  AiPlanningChatModel,
+  AiPlanningExecutionMode,
 } from "../types";
 import { PIPELINE_STEPS, VideoQuality } from "../constants/enums";
 import {
@@ -220,6 +223,10 @@ export interface PipelineConfig {
   filmFormat?: "single" | "series";
   episodeCount?: number;
   cinematicMode?: boolean;
+  planningFallbackProvider?: AiPlanningFallbackProvider;
+  planningChatModel?: AiPlanningChatModel;
+  planningExecutionMode?: AiPlanningExecutionMode;
+  planningChromeHeadless?: boolean;
 }
 
 export interface PipelineState {
@@ -381,7 +388,12 @@ export function useAutoVideoPipeline(
       _.some([!_.isEqual(presentationTarget?.input?.type, config.inputType), !_.isEqual(_.trim(presentationTarget?.input?.content), _.trim(config.scriptContent))], Boolean);
     const runIntent = config.runIntent || (config.resumeMode ? "continue" : "new");
     const isContinuation = _.includes(["continue", "render_only"], runIntent);
-    const isCinematicPipeline = isCinematicEpisodeGenre(config.genre);
+    const isCinematicPipeline = Boolean(
+      config.cinematicMode ||
+        isCinematicEpisodeGenre(config.genre) ||
+        _.isEqual(presentationTarget?.projectKind, ProjectKind.Cinematic) ||
+        _.endsWith(_.toString(presentationTarget?.name), " - Phim AI"),
+    );
     config.resumeMode = isContinuation;
     const resetDerivedPresentation = !isContinuation || startsDifferentContent;
 
@@ -571,6 +583,10 @@ export function useAutoVideoPipeline(
             thumbnailReferenceImages: config.thumbnailReferenceImages,
             thumbnailSceneReferenceImages: config.thumbnailSceneReferenceImages,
             referenceImages: _.take(_.uniq(_.concat(config.referenceImages || [], config.sceneReferenceImages || [])), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
+            planningFallbackProvider: config.planningFallbackProvider,
+            planningChatModel: config.planningChatModel,
+            planningExecutionMode: config.planningExecutionMode,
+            planningChromeHeadless: config.planningChromeHeadless,
           },
           generationCheckpoint: {
             intent: runIntent,
@@ -683,6 +699,10 @@ export function useAutoVideoPipeline(
             referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
             referencePrompt: config.stylePreset,
             characters: [],
+            planningFallbackProvider: config.planningFallbackProvider,
+            planningChatModel: config.planningChatModel,
+            planningExecutionMode: config.planningExecutionMode,
+            planningChromeHeadless: config.planningChromeHeadless,
           },
           seoConfig: { numTitles: 3, numDescriptions: 1, numHashtags: 5, numTags: 10 },
           creditsUsed: 0,
@@ -846,7 +866,7 @@ export function useAutoVideoPipeline(
           );
         }
         if (_.isEqual(scriptData.scriptQa?.passed, false)) {
-          appendLog(REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED);
+          appendLog(isCinematicPipeline ? REFACTOR_CONSTANTS.WARN_CINEMATIC_SCRIPT_QA_CONTINUED : REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED);
         }
 
         realScript = scriptData.rewrittenScript || config.scriptContent;
@@ -1150,7 +1170,7 @@ export function useAutoVideoPipeline(
 
       let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      const nativeFilmAudio = isCinematicEpisodeGenre(config.genre);
+      const nativeFilmAudio = isCinematicPipeline;
       let isVoiceCached = nativeFilmAudio;
       const voicePayload = {
         text: realScript,
@@ -1173,7 +1193,7 @@ export function useAutoVideoPipeline(
           signal: requestSignal,
         });
 
-      if (config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !invalidationState.regenerateVoice && !didRepairRepeatedNarration) {
+      if (!nativeFilmAudio && config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !invalidationState.regenerateVoice && !didRepairRepeatedNarration) {
         const cachedVoiceAudio = await fetchCachedVoiceAudio(newProj.voiceConfig);
         if (cachedVoiceAudio.isCached) {
           globalAudioBase64 = cachedVoiceAudio.audioBase64;
@@ -1324,13 +1344,19 @@ export function useAutoVideoPipeline(
           genre: config.genre,
           promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
           bypassCache: true,
+          projectId: newProjectId,
+          planningFallbackProvider: config.planningFallbackProvider,
+          planningChatModel: config.planningChatModel,
+          planningExecutionMode: config.planningExecutionMode,
+          planningChromeHeadless: config.planningChromeHeadless,
+          chromeHeadless: config.chromeHeadless,
         };
         let optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, optimizePayload, requestSignal);
         if (isCinematicEpisodeGenre(config.genre)) {
           for (let attempt = 1; attempt < CINEMATIC_POLICY_CONFIG.CLIENT_PLANNING_ATTEMPTS; attempt++) {
             const candidateScenes = _.castArray(optimizeRes.data?.storyboard || []);
             const contractIssues = getCinematicStoryboardContractIssues(candidateScenes, config.videoDuration);
-            const planNeedsRewrite = !optimizeRes.success || !optimizeRes.data?.promptQa?.passed || !_.isEmpty(optimizeRes.data?.planningWarnings) || !_.isEmpty(contractIssues);
+            const planNeedsRewrite = !optimizeRes.success || !_.isEmpty(optimizeRes.data?.planningWarnings) || !_.isEmpty(contractIssues);
             if (!planNeedsRewrite) break;
             appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_RETRY : CINEMATIC_PLANNING_MESSAGES.EN_RETRY);
             optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, { ...optimizePayload, planningAttempt: attempt + 1 }, requestSignal);
@@ -1356,7 +1382,7 @@ export function useAutoVideoPipeline(
                 ? `✅ AI completed ${realScenes.length} video prompts with 3–5 story-driven shots.`
                 : `✅ AI completed image prompts for ${realScenes.length} scenes.`,
           );
-          if (!optimizeRes.data?.promptQa?.passed || !_.isEmpty(optimizeRes.data?.planningWarnings)) {
+          if ((!isCinematicEpisodeGenre(config.genre) && !optimizeRes.data?.promptQa?.passed) || !_.isEmpty(optimizeRes.data?.planningWarnings)) {
             appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
           }
         } else {

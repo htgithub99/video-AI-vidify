@@ -1,20 +1,23 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import _ from "lodash";
 import { Activity, ArrowDown } from "lucide-react";
 import { ProgressLogTimeline } from "../ProgressLogTimeline";
 import { cn } from "../../lib/utils";
 import { AppTheme } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { isProgressLogVisible, ProgressLogContext } from "../../constants/progressLog";
 
 interface LogPanelSectionProps {
   logs: string[];
   theme: AppTheme;
   T: ReturnType<typeof getAutoVideoTexts>;
   language?: string;
+  context?: ProgressLogContext;
 }
 
-export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T, language }) => {
+export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T, language, context = ProgressLogContext.Automatic }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const visibleLogs = useMemo(() => _.filter(logs, (log) => isProgressLogVisible(log, context)), [context, logs]);
 
   const scrollToLatest = () => {
     if (scrollContainerRef.current) {
@@ -42,7 +45,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
           {T.logHeaderTitle}
         </span>
         <div className={cn("flex items-center gap-2")}>
-          {!_.isEmpty(logs) && (
+          {!_.isEmpty(visibleLogs) && (
             <button
               type="button"
               onClick={scrollToLatest}
@@ -55,7 +58,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
             </button>
           )}
           <span className={cn("header-badge inline-flex items-center text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-300")}>
-            {T.logEventsCount(logs.length)}
+            {T.logEventsCount(visibleLogs.length)}
           </span>
         </div>
       </div>
@@ -65,7 +68,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
         className={cn(
           "flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent",
         )}>
-        {_.isEmpty(logs) ? (
+        {_.isEmpty(visibleLogs) ? (
           <div
             className={cn(
               "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
@@ -75,7 +78,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
             <span>{T.logEmpty}</span>
           </div>
         ) : (
-          <ProgressLogTimeline logs={logs} theme={theme} language={language} />
+          <ProgressLogTimeline logs={visibleLogs} theme={theme} language={language} context={context} />
         )}
       </div>
     </div>

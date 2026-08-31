@@ -138,6 +138,14 @@ export function usePipelineWizard(props: any) {
   }, [initialProject]);
 
   const [project, setProject] = useState<VideoProject>(normalizedInitialProject);
+  const systemLogsStorageKey = useMemo(
+    () =>
+      _.join(
+        [REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, normalizedInitialProject?.id || REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_DRAFT_SCOPE],
+        REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY_SEPARATOR,
+      ),
+    [normalizedInitialProject?.id],
+  );
 
   useEffect(() => {
     if (normalizedInitialProject) {
@@ -593,24 +601,42 @@ export function usePipelineWizard(props: any) {
 
   const [systemLogs, setSystemLogs] = useState<{ time: string; type: ConsoleLogType; msg: string }[]>(() => {
     try {
-      const savedLogs = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY);
+      const savedLogs = sessionStorage.getItem(systemLogsStorageKey);
       if (savedLogs) return jsonUtils.safeParse<any[]>(savedLogs, []);
     } catch {}
     return [];
   });
+  const loadedSystemLogsKeyRef = useRef(systemLogsStorageKey);
+  const skipSystemLogsPersistRef = useRef(false);
 
   useEffect(() => {
+    if (_.isEqual(loadedSystemLogsKeyRef.current, systemLogsStorageKey)) return;
+    loadedSystemLogsKeyRef.current = systemLogsStorageKey;
+    skipSystemLogsPersistRef.current = true;
     try {
-      sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(systemLogs));
+      const savedLogs = sessionStorage.getItem(systemLogsStorageKey);
+      setSystemLogs(savedLogs ? jsonUtils.safeParse<any[]>(savedLogs, []) : []);
+    } catch {
+      setSystemLogs([]);
+    }
+  }, [systemLogsStorageKey]);
+
+  useEffect(() => {
+    if (skipSystemLogsPersistRef.current) {
+      skipSystemLogsPersistRef.current = false;
+      return;
+    }
+    try {
+      sessionStorage.setItem(systemLogsStorageKey, jsonUtils.safeStringify(systemLogs));
     } catch (e: any) {
       if (_.isEqual(e.name, REFACTOR_CONSTANTS.STORAGE_QUOTA_ERROR_NAME)) {
         const reduced = _.slice(systemLogs, REFACTOR_CONSTANTS.SYSTEM_LOG_REDUCED_START);
         try {
-          sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(reduced));
+          sessionStorage.setItem(systemLogsStorageKey, jsonUtils.safeStringify(reduced));
         } catch {}
       }
     }
-  }, [systemLogs]);
+  }, [systemLogs, systemLogsStorageKey]);
 
   const [showLogsModal, setShowLogsModal] = useState(false);
 
@@ -1419,6 +1445,10 @@ export function usePipelineWizard(props: any) {
           aspectRatio: project.visualConfig.aspectRatio,
           language: project.config.language,
           genre: project.config.genre,
+          planningFallbackProvider: project.visualConfig.planningFallbackProvider,
+          planningChatModel: project.visualConfig.planningChatModel,
+          planningExecutionMode: project.visualConfig.planningExecutionMode,
+          planningChromeHeadless: project.visualConfig.planningChromeHeadless,
           bypassCache: true,
         });
         if (!optimizeResult.success || !_.first(optimizeResult.data?.storyboard)) {
@@ -1842,6 +1872,10 @@ export function usePipelineWizard(props: any) {
         aspectRatio: project.visualConfig.aspectRatio,
         language: project.config.language,
         genre: project.config.genre,
+        planningFallbackProvider: project.visualConfig.planningFallbackProvider,
+        planningChatModel: project.visualConfig.planningChatModel,
+        planningExecutionMode: project.visualConfig.planningExecutionMode,
+        planningChromeHeadless: project.visualConfig.planningChromeHeadless,
       };
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, payload);
 

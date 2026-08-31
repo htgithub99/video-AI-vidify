@@ -19,6 +19,7 @@ interface PreviewPanelSectionProps {
   handleRegenerate: (target: string) => Promise<void>;
   T: ReturnType<typeof getAutoVideoTexts>;
   regenerationTexts: Record<string, string>;
+  showVoiceRegeneration?: boolean;
 }
 
 export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
@@ -31,6 +32,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   handleRegenerate,
   T,
   regenerationTexts,
+  showVoiceRegeneration = true,
 }) => {
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -118,17 +120,19 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
       )}
 
       {activeCreatedProject && (
-        <div className={cn("grid grid-cols-3 gap-2 pt-1")}>
-          <Button
-            size={REFACTOR_CONSTANTS.SIZE_MD}
-            variant="info"
-            disabled={isAnyDisabled}
-            onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
-            title={regenerationTexts.voice}
-            className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
-            {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5")} />}
-            <span className={cn("truncate")}>{regenerationTexts.voice}</span>
-          </Button>
+        <div className={cn("grid gap-2 pt-1", showVoiceRegeneration ? "grid-cols-3" : "grid-cols-2")}>
+          {showVoiceRegeneration && (
+            <Button
+              size={REFACTOR_CONSTANTS.SIZE_MD}
+              variant="info"
+              disabled={isAnyDisabled}
+              onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
+              title={regenerationTexts.voice}
+              className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
+              {isVoiceActive ? <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} /> : <Mic className={cn("w-3.5 h-3.5")} />}
+              <span className={cn("truncate")}>{regenerationTexts.voice}</span>
+            </Button>
+          )}
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
             variant="purple"

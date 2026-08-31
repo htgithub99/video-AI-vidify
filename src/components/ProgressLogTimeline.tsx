@@ -1,7 +1,7 @@
 import { memo, useMemo, useState } from "react";
 import _ from "lodash";
 import { FileText, Mic, Palette, Film, Search, Sparkles, Trophy, AlertTriangle, XCircle, Activity, Copy, Check } from "lucide-react";
-import { PROGRESS_LOG_CONFIG, ProgressLogTone } from "../constants/progressLog";
+import { isProgressLogVisible, PROGRESS_LOG_CONFIG, ProgressLogContext, ProgressLogTone } from "../constants/progressLog";
 import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
@@ -10,6 +10,7 @@ interface ProgressLogTimelineProps {
   logs: string[];
   theme: AppTheme;
   language?: string;
+  context?: ProgressLogContext;
 }
 
 const resolveProgressLogTone = (message: string): ProgressLogTone => {
@@ -76,8 +77,15 @@ const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: A
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
 
-export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelineProps) => {
-  const entries = useMemo(() => _.map(logs, (log) => parseProgressLog(log)), [logs]);
+export const ProgressLogTimeline = memo(({ logs, theme, context = ProgressLogContext.Automatic }: ProgressLogTimelineProps) => {
+  const entries = useMemo(
+    () =>
+      _.chain(logs)
+        .filter((log) => isProgressLogVisible(log, context))
+        .map((log) => parseProgressLog(log))
+        .value(),
+    [context, logs],
+  );
   const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 

@@ -1,7 +1,8 @@
 import { cn } from "../../lib/utils";
 import { Clapperboard, Film, Globe, Layers3, Sparkles } from "lucide-react";
-import { ProjectLanguage } from "../../types";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../../types";
 import { CINEMATIC_SETUP_TEXTS, UI_COMMON_TEXTS } from "../../constants/texts";
+import ChatPlanningSettingsBlock from "../common/ChatPlanningSettingsBlock";
 import { Lang } from "../../lib/lang";
 import _ from "lodash";
 
@@ -16,6 +17,14 @@ interface Props {
   setSeriesMode: (value: "single" | "series") => void;
   episodeCount: number;
   setEpisodeCount: (value: number) => void;
+  planningFallbackProvider: AiPlanningFallbackProvider;
+  setPlanningFallbackProvider: (value: AiPlanningFallbackProvider) => void;
+  planningChatModel: AiPlanningChatModel;
+  setPlanningChatModel: (value: AiPlanningChatModel) => void;
+  planningExecutionMode: AiPlanningExecutionMode;
+  setPlanningExecutionMode: (value: AiPlanningExecutionMode) => void;
+  planningChromeHeadless: boolean;
+  setPlanningChromeHeadless: (value: boolean) => void;
   currentLang?: Lang;
 }
 
@@ -30,6 +39,14 @@ export default function CinematicFilmSetupSection({
   setSeriesMode,
   episodeCount,
   setEpisodeCount,
+  planningFallbackProvider,
+  setPlanningFallbackProvider,
+  planningChatModel,
+  setPlanningChatModel,
+  planningExecutionMode,
+  setPlanningExecutionMode,
+  planningChromeHeadless,
+  setPlanningChromeHeadless,
   currentLang = "vi",
 }: Props) {
   const texts = _.get(CINEMATIC_SETUP_TEXTS, currentLang, CINEMATIC_SETUP_TEXTS.vi);
@@ -132,6 +149,18 @@ export default function CinematicFilmSetupSection({
           </div>
         </div>
       </div>
+
+      <ChatPlanningSettingsBlock
+        provider={planningFallbackProvider}
+        model={planningChatModel}
+        onProviderChange={setPlanningFallbackProvider}
+        onModelChange={setPlanningChatModel}
+        executionMode={planningExecutionMode}
+        onExecutionModeChange={setPlanningExecutionMode}
+        chromeHeadless={planningChromeHeadless}
+        onChromeHeadlessChange={setPlanningChromeHeadless}
+        currentLang={currentLang}
+      />
 
       {seriesMode === "series" && (
         <div

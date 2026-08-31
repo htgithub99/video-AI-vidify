@@ -5,12 +5,13 @@ import { toast } from "sonner";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
 import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
-import { VideoProject, ProjectInputType, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, TextInImageMode } from "../types";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, TextInImageMode } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
 import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG } from "../constants/config";
+import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../constants/cinematicConstants";
 import { deleteProjectRegenerationAssets, applyProjectRegenerationReset } from "../services/projectRegenerationService";
 import { Lang } from "../lib/lang";
 import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords, buildPresetPayload, applyPresetConfigToState } from "./auto-video/autoVideoGeneratorUtils";
@@ -31,9 +32,11 @@ import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
 import CinematicFilmSetupSection from "./cinematic/CinematicFilmSetupSection";
+import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
 import { genreLabels } from "../constants/data";
 import { AutoVideoStudioSkeleton } from "./ui/Skeleton";
+import { ProgressLogContext } from "../constants/progressLog";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -171,10 +174,36 @@ export default function AutoVideoGenerator({
 
   const [filmSeriesMode, setFilmSeriesMode] = useState<"single" | "series">(CINEMATIC_CONFIG.DEFAULT_SERIES_MODE);
   const [filmEpisodeCount, setFilmEpisodeCount] = useState<number>(CINEMATIC_CONFIG.DEFAULT_EPISODE_COUNT);
+  const [planningFallbackProvider, setPlanningFallbackProvider] = useState<AiPlanningFallbackProvider>(AiPlanningFallbackProvider.GeminiChat);
+  const [planningChatModel, setPlanningChatModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
+  const [planningExecutionMode, setPlanningExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
+  const [planningChromeHeadless, setPlanningChromeHeadless] = useState(true);
 
   useEffect(() => {
     syncSelectedProject(selectedProjectId);
   }, [selectedProjectId, projects, syncSelectedProject]);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const savedProvider = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningFallbackProvider;
+    const savedModel = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningChatModel;
+    const savedMode = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningExecutionMode;
+    const savedHeadless = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningChromeHeadless;
+    if (savedProvider && !_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) && _.includes(Object.values(AiPlanningFallbackProvider), savedProvider)) {
+      setPlanningFallbackProvider(savedProvider);
+    } else {
+      setPlanningFallbackProvider(AiPlanningFallbackProvider.GeminiChat);
+    }
+    if (savedModel && _.includes(Object.values(AiPlanningChatModel), savedModel)) setPlanningChatModel(savedModel);
+    if (savedMode && _.includes(Object.values(AiPlanningExecutionMode), savedMode)) setPlanningExecutionMode(savedMode);
+    else setPlanningExecutionMode(_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly);
+    setPlanningChromeHeadless(_.isBoolean(savedHeadless) ? savedHeadless : true);
+  }, [projects, selectedProjectId]);
+
+  useEffect(() => {
+    const availableModels = CINEMATIC_CHAT_MODEL_OPTIONS[planningFallbackProvider];
+    if (!_.some(availableModels, { value: planningChatModel }) && !_.isEmpty(availableModels)) setPlanningChatModel(availableModels[0].value);
+  }, [planningChatModel, planningFallbackProvider]);
 
   useEffect(() => {
     if (!cinematicMode) {
@@ -398,11 +427,18 @@ export default function AutoVideoGenerator({
       cinematicMode,
       filmFormat: cinematicMode ? filmSeriesMode : undefined,
       episodeCount: cinematicMode ? (_.isEqual(filmSeriesMode, CINEMATIC_CONFIG.SERIES_MODE.SERIES) ? filmEpisodeCount : CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT) : undefined,
+      planningFallbackProvider,
+      planningChatModel,
+      planningExecutionMode,
+      planningChromeHeadless,
     });
 
   const recoveredPipelineProjectIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!isConfigLoaded || isProcessing || !activeCreatedProject) return;
+    const activeProjectIsCinematic =
+      _.isEqual(activeCreatedProject.projectKind, ProjectKind.Cinematic) || _.endsWith(_.toString(activeCreatedProject.name), " - Phim AI");
+    if (!_.isEqual(cinematicMode, activeProjectIsCinematic)) return;
     if (!_.isEqual(activeCreatedProject.status, REFACTOR_CONSTANTS.STATUS_GENERATING)) return;
     if (_.isEmpty(activeCreatedProject.activeRunId)) return;
     if (recoveredPipelineProjectIdsRef.current.has(activeCreatedProject.id)) return;
@@ -411,7 +447,7 @@ export default function AutoVideoGenerator({
 
     recoveredPipelineProjectIdsRef.current.add(activeCreatedProject.id);
     void handleStartAutoGenerate({ resumeMode: true });
-  }, [activeCreatedProject, isConfigLoaded, isProcessing, scriptContent, selectedProjectId]);
+  }, [activeCreatedProject, cinematicMode, isConfigLoaded, isProcessing, scriptContent, selectedProjectId]);
 
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);
@@ -496,10 +532,32 @@ export default function AutoVideoGenerator({
                 setSeriesMode={setFilmSeriesMode}
                 episodeCount={filmEpisodeCount}
                 setEpisodeCount={setFilmEpisodeCount}
+                planningFallbackProvider={planningFallbackProvider}
+                setPlanningFallbackProvider={setPlanningFallbackProvider}
+                planningChatModel={planningChatModel}
+                setPlanningChatModel={setPlanningChatModel}
+                planningExecutionMode={planningExecutionMode}
+                setPlanningExecutionMode={setPlanningExecutionMode}
+                planningChromeHeadless={planningChromeHeadless}
+                setPlanningChromeHeadless={setPlanningChromeHeadless}
                 currentLang={currentLang}
               />
             ) : (
               <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} T={T} />
+            )}
+
+            {!cinematicMode && (
+              <ChatPlanningSettingsBlock
+                provider={planningFallbackProvider}
+                model={planningChatModel}
+                onProviderChange={setPlanningFallbackProvider}
+                onModelChange={setPlanningChatModel}
+                executionMode={planningExecutionMode}
+                onExecutionModeChange={setPlanningExecutionMode}
+                chromeHeadless={planningChromeHeadless}
+                onChromeHeadlessChange={setPlanningChromeHeadless}
+                currentLang={currentLang}
+              />
             )}
 
             {!cinematicMode && (
@@ -625,7 +683,13 @@ export default function AutoVideoGenerator({
               />
             )}
 
-            <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
+            <LogPanelSection
+              logs={logs}
+              theme={theme}
+              T={T}
+              language={currentLang}
+              context={cinematicMode ? ProgressLogContext.Cinematic : ProgressLogContext.Automatic}
+            />
 
             <PreviewPanelSection
               renderedVideoUrl={renderedVideoUrl}
@@ -637,6 +701,7 @@ export default function AutoVideoGenerator({
               onSelectProject={onSelectProject}
               T={T}
               regenerationTexts={regenerationTexts}
+              showVoiceRegeneration={!cinematicMode}
             />
 
             <ThumbnailsPreviewSection activeCreatedProject={presentationProject} />

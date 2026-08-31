@@ -255,6 +255,41 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes:
 ${chunkJson}`;
 
+export const getCinematicVideoPlanningPrompt = (
+  chunkJson: string,
+  charactersJson: string = "",
+  visualBibleJson: string = "",
+  continuityContext: string = "",
+  correctionIssuesJson: string = "",
+  clipDurationSeconds: number = 10,
+): string => `You are a senior film director and continuity supervisor. Create the complete production plan for every input scene. Return ONLY one raw JSON array with exactly the supplied scene IDs and no Markdown or commentary.
+
+${UNTRUSTED_INPUT_RULE}
+
+Characters: ${charactersJson || "No character cards supplied"}
+Visual Bible: ${visualBibleJson || "Not supplied"}
+Neighbor continuity: ${continuityContext || "Not supplied"}
+${correctionIssuesJson ? `The previous answer failed these checks. Rewrite the COMPLETE array and resolve every issue: ${correctionIssuesJson}` : ""}
+
+For each scene, preserve its literal story event and write every required field yourself. Use natural cinematic English for technical fields. Use exact character dialogue from the screenplay when available; never use narration or voice-over. Across the finished story, make at least one third of character-led clips contain a short playable on-screen or same-location off-screen exchange when the screenplay supports speech. Silent action is valid when speech would be unnatural.
+
+Each scene represents one paid ${clipDurationSeconds}-second video. Plan 3 to 5 chronological shots that cover 0 through ${clipDurationSeconds} seconds without gaps. Choose timings from the action and dialogue rather than equal intervals. Shot 1 establishes geography and objective; middle shots add one readable cause, obstacle, evidence, decision, or contact; the final shot must be payoff, reaction, or reveal and visibly prove a consequence. Every later shot begins with the exact phrase "Continue directly from Shot X." in generationPrompt and starts from the previous shot's observable end state. Use simple physically playable actions, stable screen direction, persistent wardrobe, props, damage, lighting, and geography.
+
+generationPrompt is the final 180-500 word English prompt sent unchanged to the video model. It MUST start exactly with:
+"Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur."
+Then state the scene premise. Include exactly: "Create one continuous ${clipDurationSeconds}-second cinematic sequence with exactly N chronological shots and exactly N-1 motivated cuts." Replace N with 3, 4, or 5. Add explicitly timed headings named Shot 1 through Shot N. Add the exact spoken line and named speaker when dialogue exists. End with continuity, cut, audio, and text policies including these exact sentences:
+"Maintain identical character identity, face, hairstyle, wardrobe" followed by scene-specific locks.
+"Exactly N shots. Exactly N-1 clean motivated cuts. No extra shots, montage, location reset, repeated action, camera shake, whip-pan, dissolve, flash transition, crash zoom, morphing, duplicated characters, extra limbs, distorted face, wardrobe or weapon changes."
+"Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing."
+
+Return every field in this shape. Empty strings and arrays are allowed only where semantically valid:
+[{"id":"exact_scene_id","prompt":"60-95 word image planning paragraph","generationPrompt":"complete final video prompt","visualIntent":"viewer understanding","visibleAction":"observable subject verb object and result","reaction":"visible caused response","storyEvidence":"specific physical evidence","visualHook":"story-grounded focal event","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"","shotPurpose":"setup|obstacle|decision|escalation|reveal|climax|reaction|payoff|transition","shotSize":"motivated shot size","cameraAngle":"motivated angle","composition":"clear foreground midground background hierarchy","locationId":"location ID or empty","propIds":[],"continuityFrom":"previous scene ID or empty","continuityNotes":"exact handoff and locks","lighting":"motivated practical light","sequenceId":"continuous event group","shotId":"unique clip ID","shotRole":"master|coverage|reaction|insert|transition|payoff","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact short line or empty","speakerCharacterId":"character ID or empty","lipSyncRequired":false,"characterBlocking":"positions facing and movement","eyelineDirection":"stable gaze direction or not_applicable","screenDirection":"left_to_right|right_to_left|static_axis|not_applicable","actionStartState":"exact observable opening state","actionEndState":"exact observable changed end state","locationState":"locked geography time weather and damage","wardrobeState":"exact current clothing and damage","propState":"owner hand position and condition","soundDesignCues":[],"cinematicBeats":[{"sourceSceneId":"exact_scene_id","shotId":"unique internal shot ID","shotRole":"master|coverage|reaction|insert|transition|payoff","shotSize":"shot size","cameraAngle":"angle","visibleAction":"one new physical action and result","reaction":"caused response","transition":"hard_cut|match_cut|motivated_reframe","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact line or empty","speakerCharacterId":"character ID or empty","lipSyncRequired":false,"startSecond":0,"endSecond":3}],"assetStrategy":"ai_generated","archivalSearchQuery":"","archivalRationale":"fictional cinematic scene"}]
+
+Field agreement is mandatory: generationPrompt and cinematicBeats must have identical shot count, timings, actions, dialogue, speaker, handoffs, and final consequence. on_screen_dialogue requires lipSyncRequired=true; all other modes require false. A silent beat has empty spokenDialogue and speakerCharacterId. Never omit generationPrompt or any field. Do not return until every scene object is complete.
+
+Input scenes:
+${chunkJson}`;
+
 export const getOptimizePromptsBatchPrompt = (
   visualStyle: string,
   referenceStyle: string,

@@ -73,6 +73,33 @@ export enum ImageGenerationMode {
   GeminiChat = "gemini-chat",
 }
 
+export enum AiPlanningFallbackProvider {
+  GeminiChat = "gemini-chat",
+  GrokChat = "grok-chat",
+  ChatGptUi = "chatgpt-ui",
+  Disabled = "disabled",
+}
+
+export enum AiPlanningExecutionMode {
+  RoomOnly = "room-only",
+  Hybrid = "hybrid",
+  ApiOnly = "api-only",
+}
+
+export enum AiPlanningChatModel {
+  GeminiFlashLite = "gemini-flash-lite",
+  GeminiFlash = "gemini-flash",
+  GeminiPro = "gemini-pro",
+  GeminiThinking = "gemini-thinking",
+  GeminiDeepThink = "gemini-deep-think",
+  GrokFast = "grok-fast",
+  GrokBuild = "grok-build",
+  GrokAuto = "grok-auto",
+  GrokExpert = "grok-expert",
+  GrokHeavy = "grok-heavy",
+  ChatGptAuto = "chatgpt-auto",
+}
+
 export enum GenerateType {
   Image = "image",
   Video = "video",
@@ -417,6 +444,10 @@ export interface VisualConfig {
   batchTabCount?: number;
   preserveVideoAudio?: boolean;
   flowProjectId?: string;
+  planningFallbackProvider?: AiPlanningFallbackProvider;
+  planningChatModel?: AiPlanningChatModel;
+  planningExecutionMode?: AiPlanningExecutionMode;
+  planningChromeHeadless?: boolean;
 }
 
 export interface CharacterConfig {

@@ -8,6 +8,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
+import { generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -76,6 +77,7 @@ import {
   PROMPT_CONTEXT,
   getStyleRewriteBatchPrompt,
   getOptimizePromptsBatchPrompt,
+  getCinematicVideoPlanningPrompt,
   getChapterWriterPrompt,
   getChapterExpansionPrompt,
   getFinalScriptEditorialPrompt,
@@ -173,6 +175,9 @@ import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 
 import {
   AspectRatio,
+  AiPlanningChatModel,
+  AiPlanningExecutionMode,
+  AiPlanningFallbackProvider,
   AssetAcceptance,
   ContentSafetyReport,
   GenerateType,
@@ -211,7 +216,7 @@ import {
 } from "../services/imagePromptPlanningService.js";
 import { CINEMATIC_PRODUCTION_POLICY, getCinematicStoryboardContractIssues, isCinematicEpisodeGenre } from "../../services/cinematicProductionPolicyService.js";
 import { createCinematicScreenplayDirective } from "../../services/cinematicEpisodeService.js";
-import { resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
+import { CINEMATIC_CHAT_PLANNING_CONFIG, resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
@@ -231,6 +236,9 @@ const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
 if (fs.existsSync(ffmpegBinary)) {
   ffmpeg.setFfmpegPath(ffmpegBinary);
 }
+
+const isVietnameseRequest = (req: Request): boolean =>
+  !_.isEqual(_.toString(req.body?.language || req.query?.lang || ProjectLanguage.VI), ProjectLanguage.EN);
 
 const waitForNextTtsPoll = async (attempts: number): Promise<void> => {
   if (_.lt(attempts, TTS_POLLING_CONFIG.MAX_ATTEMPTS)) {
@@ -312,7 +320,7 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
 };
 
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   try {
     const { visualConfig, style } = req.body;
 
@@ -361,7 +369,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
 });
 
 router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const { storyboard, newStyle, aspectRatio, visualConfig } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
@@ -441,7 +449,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
 });
 
 router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const { storyboard, visualConfig, visualBible, aspectRatio } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
@@ -461,8 +469,27 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const promptCharacters = createPromptCharacterCards(characters);
     const charactersJson = !_.isEmpty(promptCharacters) ? jsonUtils.safeStringify(promptCharacters) : undefined;
     const isCinematicPlanning = isCinematicEpisodeGenre(_.toString(req.body?.genre || req.body?.config?.genre));
+    const requestedPlanningProvider = _.toString(req.body?.planningFallbackProvider);
+    const planningFallbackProvider = _.includes(Object.values(AiPlanningFallbackProvider), requestedPlanningProvider as AiPlanningFallbackProvider)
+      ? (requestedPlanningProvider as AiPlanningFallbackProvider)
+      : AiPlanningFallbackProvider.GeminiChat;
+    const requestedPlanningModel = _.toString(req.body?.planningChatModel);
+    const planningChatModel = _.includes(Object.values(AiPlanningChatModel), requestedPlanningModel as AiPlanningChatModel)
+      ? (requestedPlanningModel as AiPlanningChatModel)
+      : undefined;
+    const requestedExecutionMode = _.toString(req.body?.planningExecutionMode);
+    const planningExecutionMode = _.includes(Object.values(AiPlanningExecutionMode), requestedExecutionMode as AiPlanningExecutionMode)
+      ? (requestedExecutionMode as AiPlanningExecutionMode)
+      : _.isEqual(planningFallbackProvider, AiPlanningFallbackProvider.Disabled)
+        ? AiPlanningExecutionMode.ApiOnly
+        : AiPlanningExecutionMode.RoomOnly;
+    const planningChromeHeadless = _.isBoolean(req.body?.planningChromeHeadless) ? req.body.planningChromeHeadless : req.body?.chromeHeadless;
     const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
-    const chunkSize = isCinematicPlanning ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE : PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
+    const chunkSize = isCinematicPlanning && _.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)
+      ? 1
+      : isCinematicPlanning
+        ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE
+        : PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
     const backgroundDirective = resolvedVisualConfig.styleBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleBackgroundMode) : undefined;
     const textDirective = resolvedVisualConfig.styleTextInImageMode ? _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleTextInImageMode) : undefined;
     const focusDirective = resolvedVisualConfig.imageFocusMode
@@ -489,7 +516,16 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const chunkItem = chunks[chunkIndex];
       const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
       const createPlanningPrompt = (correctionIssuesJson: string = "") =>
-        getOptimizePromptsBatchPrompt(
+        isCinematicPlanning
+          ? getCinematicVideoPlanningPrompt(
+              jsonUtils.safeStringify(chunkItem),
+              charactersJson,
+              jsonUtils.safeStringify(resolvedVisualBible),
+              jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)),
+              correctionIssuesJson,
+              clipDurationSeconds,
+            )
+          : getOptimizePromptsBatchPrompt(
           visualStyle,
           targetStyle,
           jsonUtils.safeStringify(chunkItem),
@@ -509,8 +545,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           jsonUtils.safeStringify(resolvedVisualBible.props || []),
           correctionIssuesJson,
           _.toString(req.body?.genre || req.body?.config?.genre),
-          clipDurationSeconds,
-        );
+              clipDurationSeconds,
+            );
       const sceneIds = _.map(chunkItem, (item) => _.toString(_.get(item, "id")));
       const planningString = { type: "string" } as const;
       const planningSchema = {
@@ -677,7 +713,19 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           },
         },
       } as const;
-      const requestVisualPlan = async (contents: string): Promise<any[]> => {
+      const requestChatUiPlan = async (contents: string): Promise<any[]> => {
+        const response = await generatePlanningWithChatUi({
+          provider: planningFallbackProvider,
+          model: planningChatModel,
+          prompt: contents,
+          projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
+          chromeHeadless: planningChromeHeadless,
+          expectedSceneIds: sceneIds,
+        });
+        const parsed = safeParseJSON(response.text, []);
+        return _.isArray(parsed) ? parsed : [];
+      };
+      const requestApiPlan = async (contents: string): Promise<any[]> => {
         const response = await generateContentWithRetry({
           contents,
           config: {
@@ -688,6 +736,23 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         });
         const parsed = safeParseJSON(response.text, []);
         return _.isArray(parsed) ? parsed : [];
+      };
+      const requestVisualPlan = async (contents: string, preferChatUi = false): Promise<any[]> => {
+        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)) return requestApiPlan(contents);
+        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)) return requestChatUiPlan(contents);
+        if (preferChatUi) {
+          try {
+            return await requestChatUiPlan(contents);
+          } catch {
+            appWarn("AI Chat dự phòng chưa trả được kế hoạch; hệ thống quay lại tuyến API.");
+          }
+        }
+        try {
+          return await requestApiPlan(contents);
+        } catch (apiError) {
+          appWarn("API lập kế hoạch chưa khả dụng; chuyển sang AI Chat trong Chrome.");
+          return requestChatUiPlan(contents);
+        }
       };
       const collectPlanningIssues = (items: any[]): string[] => {
         const issues: string[] = [];
@@ -979,7 +1044,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const firstPlanningIssues = collectPlanningIssues(firstParsedItems);
       let planningIssues = firstPlanningIssues;
       if (!_.isEmpty(planningIssues)) {
-        parsedItems = await requestVisualPlan(createPlanningPrompt(jsonUtils.safeStringify(planningIssues)));
+        parsedItems = await requestVisualPlan(createPlanningPrompt(jsonUtils.safeStringify(planningIssues)), isCinematicPlanning);
         planningIssues = collectPlanningIssues(parsedItems);
       }
       if (!_.isEmpty(planningIssues)) {
@@ -1046,7 +1111,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
 });
 
 router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const { thumbnails, newStyle, aspectRatio, visualConfig } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
@@ -1113,7 +1178,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
   }
 });
 router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const { thumbnails, characters, aspectRatio, visualConfig } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
@@ -1179,7 +1244,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
   }
 });
 router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   try {
     const { script, visualStyle, sourceContext } = req.body;
     if (!script) {
@@ -1205,7 +1270,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     setCache(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, req.body, result);
     return res.json(result);
   } catch (error: any) {
-    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+    const isVi = isVietnameseRequest(req);
     logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
@@ -1215,7 +1280,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
 });
 
 router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   try {
     const { images, characterDescription } = req.body;
     if (!images || !_.isArray(images) || _.isEmpty(images)) {
@@ -1260,7 +1325,7 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
       throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
     }
   } catch (error: any) {
-    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+    const isVi = isVietnameseRequest(req);
     logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
@@ -1270,7 +1335,7 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
 });
 
 router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const { storyboard, characterPrompt, characters, aspectRatio, visualConfig } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
@@ -1442,10 +1507,10 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
 
 router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   const { originalInput, inputType = "idea", config = {}, selectedHookText, bypassCache } = req.body;
-  const isVietnameseRequest = config.language === ProjectLanguage.VI;
+  const isVietnameseScript = config.language === ProjectLanguage.VI;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
-  if (cached && validateChapterLanguage(cached.rewrittenScript, isVietnameseRequest).valid) {
+  if (cached && validateChapterLanguage(cached.rewrittenScript, isVietnameseScript).valid) {
     return res.json({ ...cached, cached: true });
   }
 
@@ -3475,7 +3540,7 @@ router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => 
 });
 
 router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   try {
     const { audioBase64, scenes, segment, projectId, projectName } = req.body;
     if (!audioBase64) {
@@ -3664,7 +3729,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
 });
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const {
     filePath,
     geminiApiKey,
@@ -3870,7 +3935,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 });
 
 router.post("/select-file", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
   const cmd = `"${pyCmd}" "${scriptPath}" select-file`;
@@ -3886,7 +3951,7 @@ router.post("/select-file", async (req: Request, res: Response) => {
 });
 
 router.post("/select-folder", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
   const cmd = `"${pyCmd}" "${scriptPath}" select-folder`;

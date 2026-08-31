@@ -19,8 +19,10 @@ import {
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { PipelineWizardState } from "./usePipelineWizard";
-import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
+import ChatPlanningSettingsBlock from "../common/ChatPlanningSettingsBlock";
+import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
 
 const STEP0_TEXTS = {
   TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.",
@@ -100,6 +102,34 @@ export default function PipelineStep0(props: PipelineWizardState) {
           <p className={cn("text-slate-400 text-xs mt-1")}>{t.Select_your_story_materia}</p>
         </div>
       </div>
+
+      <ChatPlanningSettingsBlock
+        provider={project.visualConfig.planningFallbackProvider || AiPlanningFallbackProvider.GeminiChat}
+        model={project.visualConfig.planningChatModel || AiPlanningChatModel.GeminiFlash}
+        executionMode={project.visualConfig.planningExecutionMode || AiPlanningExecutionMode.RoomOnly}
+        chromeHeadless={project.visualConfig.planningChromeHeadless ?? true}
+        onProviderChange={(provider) => {
+          const availableModels = CINEMATIC_CHAT_MODEL_OPTIONS[provider];
+          setProject({
+            ...project,
+            visualConfig: {
+              ...project.visualConfig,
+              planningFallbackProvider: provider,
+              planningChatModel: _.first(availableModels)?.value || AiPlanningChatModel.ChatGptAuto,
+            },
+          });
+        }}
+        onModelChange={(planningChatModel) =>
+          setProject({ ...project, visualConfig: { ...project.visualConfig, planningChatModel } })
+        }
+        onExecutionModeChange={(planningExecutionMode) =>
+          setProject({ ...project, visualConfig: { ...project.visualConfig, planningExecutionMode } })
+        }
+        onChromeHeadlessChange={(planningChromeHeadless) =>
+          setProject({ ...project, visualConfig: { ...project.visualConfig, planningChromeHeadless } })
+        }
+        currentLang={props.currentLang}
+      />
 
       <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6")}>
         <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full")}>
