@@ -866,7 +866,14 @@ export function useAutoVideoPipeline(
           );
         }
         if (_.isEqual(scriptData.scriptQa?.passed, false)) {
-          appendLog(isCinematicPipeline ? REFACTOR_CONSTANTS.WARN_CINEMATIC_SCRIPT_QA_CONTINUED : REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED);
+          const hasBlockingScriptIssue = !_.isEmpty(scriptData.scriptQa?.blockingErrors);
+          appendLog(
+            isCinematicPipeline && !hasBlockingScriptIssue
+              ? REFACTOR_CONSTANTS.INFO_CINEMATIC_SCRIPT_QA_CONTINUED
+              : isCinematicPipeline
+                ? REFACTOR_CONSTANTS.WARN_CINEMATIC_SCRIPT_QA_CONTINUED
+                : REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED,
+          );
         }
 
         realScript = scriptData.rewrittenScript || config.scriptContent;

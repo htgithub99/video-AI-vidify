@@ -231,6 +231,8 @@ export const REFACTOR_CONSTANTS = {
   ERR_HOOK_QUALITY_REJECTED: "Các phương án câu mở đầu được tạo ra không đạt tiêu chuẩn về chất lượng và độ an toàn nội dung.",
   WARN_SCRIPT_QA_CONTINUED: "Kịch bản còn cảnh báo biên tập; hệ thống vẫn tiếp tục tạo voice, phân cảnh và hoàn thành video.",
   WARN_CINEMATIC_SCRIPT_QA_CONTINUED: "Kịch bản còn cảnh báo biên tập; hệ thống vẫn tiếp tục hoàn thiện cảnh quay, thoại nhân vật và bản dựng phim.",
+  INFO_CINEMATIC_SCRIPT_QA_CONTINUED:
+    "Kịch bản đã hoàn tất. QA biên tập đề xuất cải thiện thêm về nhịp kể hoặc thời lượng; kết quả này không ảnh hưởng bước đạo diễn cảnh và không chặn tạo phim.",
   WARN_STORYBOARD_QA_RESULT: "Phân cảnh có điểm cần xem lại về tính liên tục hoặc độ đa dạng; hệ thống giữ nguyên nội dung.",
   IMAGE_DATA_URL_CAPTURE_REGEX: /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i,
   AUDIO_DATA_URL_CAPTURE_REGEX: /^data:(audio\/(?:mpeg|mp3|wav|ogg));base64,(.+)$/i,

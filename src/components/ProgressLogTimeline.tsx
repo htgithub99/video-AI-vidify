@@ -126,7 +126,7 @@ export const ProgressLogTimeline = memo(({ logs, theme, context = ProgressLogCon
                   onClick={() => handleCopy(entry.rawMessage, index)}
                   className={cn(
                     "w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent transition-colors",
-                    isCopied ? "text-emerald-500 bg-emerald-500/10" : "text-slate-400 hover:text-rose-500 hover:bg-rose-500/10",
+                    isCopied ? "text-emerald-500" : isWarning ? "text-slate-400 hover:text-amber-400" : "text-slate-400 hover:text-rose-500",
                   )}
                   title={isCopied ? copiedTooltip : copyTooltip}
                   aria-label={isCopied ? copiedTooltip : copyTooltip}>
