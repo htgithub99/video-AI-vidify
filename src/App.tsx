@@ -686,14 +686,7 @@ export default function App() {
       />
 
       <div className={cn("flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden relative")}>
-        <Header
-          currentLang={currentLang}
-          setLang={setLang}
-          theme={theme as any}
-          toggleTheme={toggleTheme}
-          isMobileMenuOpen={isMobileMenuOpen}
-          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        />
+        <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} />
 
         <Toaster position="top-right" theme={theme as any} richColors />
 

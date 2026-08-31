@@ -1,7 +1,7 @@
 import { FC, ReactNode } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
-import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Menu, X } from "lucide-react";
+import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles } from "lucide-react";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
 import { UIConstants, SecurityConstants } from "../constants/security";
@@ -34,7 +34,7 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colo
   return (
     <div
       className={cn(
-        "header-control-item hidden lg:flex items-center gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-2.5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-900/60 cursor-default shrink-0",
+        "header-control-item hidden lg:flex items-center gap-2 bg-slate-955/60 border border-slate-800/80 rounded-xl px-2.5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-900/60 cursor-default shrink-0",
       )}
       title={tooltip}>
       {icon}
@@ -47,7 +47,7 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colo
   );
 };
 
-export default function Header({ currentLang, setLang, theme, toggleTheme, isMobileMenuOpen = false, onToggleMobileMenu }: HeaderProps) {
+export default function Header({ currentLang, setLang, theme, toggleTheme }: HeaderProps) {
   const t = translations[currentLang as Lang];
   const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
   const langKey = isVietnamese ? UIConstants.LANG_VI : UIConstants.LANG_EN;
@@ -71,18 +71,6 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
     <header className={cn("app-header bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 text-slate-200 sticky top-0 z-50 flex-shrink-0")}>
       <div className={cn("w-full px-3 sm:px-5 lg:px-6 py-2 flex items-center justify-between gap-3 sm:gap-5 relative")}>
         <div className={cn("flex items-center gap-2 sm:gap-3 min-w-0")}>
-          {onToggleMobileMenu && (
-            <button
-              type="button"
-              onClick={onToggleMobileMenu}
-              className={cn(
-                "header-action-btn xl:hidden w-8 h-8 p-0 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors shrink-0 flex items-center justify-center",
-              )}
-              title="Menu">
-              {isMobileMenuOpen ? <X className={cn("w-4 h-4 text-rose-400")} /> : <Menu className={cn("w-4 h-4")} />}
-            </button>
-          )}
-
           <div className={cn("w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-white/15 shrink-0")}>
             <Video className={cn("w-4 h-4 text-white")} />
           </div>

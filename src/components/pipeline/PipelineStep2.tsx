@@ -86,9 +86,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
   return (
     <>
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible")}>
-        <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none")} />
-        <div className={cn("border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full text-left")}>
+        <div className={cn("border-b border-slate-800/80 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20")}>
           <div>
             <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20")}>
               <Tooltip content="Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề." position="bottom" align="start">
@@ -882,12 +881,22 @@ export default function PipelineStep2(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className={cn("pt-4 border-t border-slate-800 flex items-center justify-between mt-6")}>
-          <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.Storyboard)} className={cn("flex items-center gap-1.5 px-5 py-3 shadow")} title={t.Back}>
+        <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-between mt-6 relative z-10")}>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setCurrentStep(WizardStep.Storyboard)}
+            className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold")}
+            title={t.Back}>
             <ArrowLeft className={cn("w-4 h-4")} />
             {t.Back}
           </Button>
-          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.Export)} className={cn("flex items-center gap-1.5 px-5 py-3 shadow")} title={t.Continue}>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setCurrentStep(WizardStep.Export)}
+            className={cn("flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-white tracking-wide shadow-lg")}
+            title={t.Continue}>
             {t.Continue}
             <ArrowRight className={cn("w-4 h-4")} />
           </Button>

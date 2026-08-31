@@ -245,7 +245,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   ];
 
   return (
-    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible")}>
+    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full text-left")}>
       {!_.isEmpty(props.project.manualReviewItems) && (
         <div className={cn("rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200")}>
           <div className={cn("font-bold mb-2")}>Manual review</div>
@@ -663,8 +663,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
         </div>
       </div>
 
-      <div className={cn("flex items-center justify-start mt-2 border-t border-slate-800/60 pt-4 relative z-10")}>
-        <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className={cn("flex items-center gap-1.5 px-5 py-3 shadow")} title={t.Back}>
+      <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-start mt-6 relative z-10")}>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={() => setCurrentStep(WizardStep.SEOBoost)}
+          className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold")}
+          title={t.Back}>
           <ArrowLeft className={cn("w-4 h-4")} />
           {t.Back}
         </Button>

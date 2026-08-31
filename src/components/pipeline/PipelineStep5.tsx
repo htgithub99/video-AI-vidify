@@ -244,7 +244,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
   };
 
   return (
-    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-hidden")}>
+    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full text-left")}>
       <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none")} />
       <div className={cn("relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
         <div className={cn("lg:col-span-1 space-y-5 flex flex-col justify-stretch")}>

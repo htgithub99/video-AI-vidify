@@ -85,120 +85,122 @@ export default function PipelineStep0(props: PipelineWizardState) {
   const estimatedMinutes = Math.ceil(wordCount / 130);
 
   return (
-    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible")}>
-      <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none")} />
-
-      <div className={cn("border-b border-slate-800 pb-4 relative z-20")}>
-        <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20")}>
-          <Tooltip content={STEP0_TEXTS.TOOLTIP_INPUT_METHOD} position="bottom" align="start">
-            <span className={cn("flex items-center gap-2 cursor-help")}>
-              <Settings2 className={cn("w-5 h-5 text-rose-500")} />
-              {t.stepInput}
-              <Info className={cn("w-4 h-4 text-slate-500")} />
-            </span>
-          </Tooltip>
-        </h3>
-        <p className={cn("text-slate-400 text-xs mt-1 relative z-10")}>{t.Select_your_story_materia}</p>
+    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full text-left")}>
+      <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4 relative z-20")}>
+        <div>
+          <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2")}>
+            <Tooltip content={STEP0_TEXTS.TOOLTIP_INPUT_METHOD} position="bottom" align="start">
+              <span className={cn("flex items-center gap-2 cursor-help")}>
+                <Settings2 className={cn("w-5 h-5 text-rose-500")} />
+                {t.stepInput}
+                <Info className={cn("w-4 h-4 text-slate-500")} />
+              </span>
+            </Tooltip>
+          </h3>
+          <p className={cn("text-slate-400 text-xs mt-1")}>{t.Select_your_story_materia}</p>
+        </div>
       </div>
 
       <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6")}>
-        <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full justify-stretch")}>
-          <div className={cn("space-y-2")}>
-            <label className={cn("text-xs font-semibold text-slate-300 block font-mono uppercase tracking-wider")}>{t.sourceType}</label>
-            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3")}>
-              <Button
-                type="button"
-                variant="unstyled"
-                onClick={() =>
-                  setProject((prev) => ({
-                    ...prev,
-                    input: {
-                      type: ProjectInputType.Script,
-                      content: prev.input?.content || "",
-                    },
-                  }))
-                }
-                className={cn(
-                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
-                  _.isEqual(currentInputType, ProjectInputType.Script)
-                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
-                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850",
-                )}>
-                <div className={cn("flex items-center gap-3")}>
-                  <div
-                    className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                      _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400",
-                    )}>
-                    <FileText className={cn("w-4 h-4")} />
+        <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full")}>
+          <div className={cn("glass-card bg-slate-900/80 border border-slate-800/80 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col")}>
+            <div className={cn("space-y-2")}>
+              <label className={cn("text-xs font-bold text-slate-300 block font-mono uppercase tracking-wider")}>{t.sourceType}</label>
+              <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3")}>
+                <Button
+                  type="button"
+                  variant="unstyled"
+                  onClick={() =>
+                    setProject((prev) => ({
+                      ...prev,
+                      input: {
+                        type: ProjectInputType.Script,
+                        content: prev.input?.content || "",
+                      },
+                    }))
+                  }
+                  className={cn(
+                    "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
+                    _.isEqual(currentInputType, ProjectInputType.Script)
+                      ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                      : "bg-slate-955/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-900",
+                  )}>
+                  <div className={cn("flex items-center gap-3")}>
+                    <div
+                      className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                        _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400",
+                      )}>
+                      <FileText className={cn("w-4 h-4")} />
+                    </div>
+                    <div>
+                      <span className={cn("font-bold text-xs block uppercase tracking-wider")}>{t.originalScript}</span>
+                      <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.originalScriptDesc}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className={cn("font-bold text-xs block uppercase tracking-wider")}>{t.originalScript}</span>
-                    <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.originalScriptDesc}</span>
-                  </div>
-                </div>
-                {_.isEqual(currentInputType, ProjectInputType.Script) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
-              </Button>
+                  {_.isEqual(currentInputType, ProjectInputType.Script) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
+                </Button>
 
-              <Button
-                type="button"
-                variant="unstyled"
-                onClick={() =>
-                  setProject((prev) => ({
-                    ...prev,
-                    input: {
-                      type: ProjectInputType.Idea,
-                      content: prev.input?.content || "",
-                    },
-                  }))
-                }
-                className={cn(
-                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
-                  _.isEqual(currentInputType, ProjectInputType.Idea)
-                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
-                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850",
-                )}>
-                <div className={cn("flex items-center gap-3")}>
-                  <div
-                    className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                      _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400",
-                    )}>
-                    <Sparkles className={cn("w-4 h-4")} />
+                <Button
+                  type="button"
+                  variant="unstyled"
+                  onClick={() =>
+                    setProject((prev) => ({
+                      ...prev,
+                      input: {
+                        type: ProjectInputType.Idea,
+                        content: prev.input?.content || "",
+                      },
+                    }))
+                  }
+                  className={cn(
+                    "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
+                    _.isEqual(currentInputType, ProjectInputType.Idea)
+                      ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                      : "bg-slate-955/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-900",
+                  )}>
+                  <div className={cn("flex items-center gap-3")}>
+                    <div
+                      className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                        _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400",
+                      )}>
+                      <Sparkles className={cn("w-4 h-4")} />
+                    </div>
+                    <div>
+                      <span className={cn("font-bold text-xs block uppercase tracking-wider")}>{t.storyIdea}</span>
+                      <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.storyIdeaDesc}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className={cn("font-bold text-xs block uppercase tracking-wider")}>{t.storyIdea}</span>
-                    <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.storyIdeaDesc}</span>
-                  </div>
-                </div>
-                {_.isEqual(currentInputType, ProjectInputType.Idea) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
-              </Button>
+                  {_.isEqual(currentInputType, ProjectInputType.Idea) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className={cn("space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]")}>
-            <label className={cn("text-xs font-semibold text-slate-300 block font-mono uppercase")}>{t.N_i_dung_c_t_truy_n}</label>
-            <textarea
-              value={project.input?.content || ""}
-              onChange={(e) =>
-                setProject((prev) => ({
-                  ...prev,
-                  input: {
-                    type: prev.input?.type || ProjectInputType.Script,
-                    content: e.target.value,
-                  },
-                }))
-              }
-              placeholder={t.Nh_p_n_i_dung_k_ch_b_n_nh}
-              className={cn(
-                "w-full flex-1 bg-slate-955/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/20 text-slate-100 p-4 rounded-xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-y min-h-[300px] sm:min-h-[360px] shadow-inner",
-              )}
-            />
+            <div className={cn("space-y-1.5 flex-1 flex flex-col min-h-[300px]")}>
+              <label className={cn("text-xs font-bold text-slate-300 block font-mono uppercase")}>{t.N_i_dung_c_t_truy_n}</label>
+              <textarea
+                value={project.input?.content || ""}
+                onChange={(e) =>
+                  setProject((prev) => ({
+                    ...prev,
+                    input: {
+                      type: prev.input?.type || ProjectInputType.Script,
+                      content: e.target.value,
+                    },
+                  }))
+                }
+                placeholder={t.Nh_p_n_i_dung_k_ch_b_n_nh}
+                className={cn(
+                  "w-full flex-1 bg-slate-955/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/20 text-slate-100 p-4 rounded-2xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-y min-h-[260px] shadow-inner",
+                )}
+              />
+            </div>
           </div>
         </div>
 
         <div className={cn("space-y-6")}>
-          <div className={cn("bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5 shadow-xl relative overflow-hidden")}>
+          <div className={cn("glass-card bg-slate-900/80 border border-slate-800/80 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden")}>
             <div className={cn("absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none")} />
             <div className={cn("border-b border-slate-800 pb-3 flex items-center gap-2 relative z-20")}>
               <Tooltip content={STEP0_TEXTS.TOOLTIP_CONFIG_DETAIL} position="bottom" align="start">
@@ -693,8 +695,19 @@ export default function PipelineStep0(props: PipelineWizardState) {
         </div>
       )}
 
-      <div className={cn("pt-4 border-t border-slate-800 flex items-center justify-end mt-6")}>
-        <Button variant="primary" size="lg" onClick={() => setCurrentStep(WizardStep.Storyboard)} className={cn("flex items-center gap-1.5 px-5 py-3 shadow")}>
+      <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-between mt-6 relative z-10")}>
+        <div className={cn("flex items-center gap-2")}>
+          {project.scriptRewritten && (
+            <span className={cn("text-xs font-mono text-slate-400 font-bold")}>
+              {wordCount} {t.words} • ~{estimatedMinutes} {t.min}
+            </span>
+          )}
+        </div>
+        <Button
+          variant="primary"
+          size="md"
+          onClick={() => setCurrentStep(WizardStep.Storyboard)}
+          className={cn("flex items-center gap-2 px-6 h-10 rounded-xl font-extrabold text-white tracking-wide")}>
           {t.Continue}
           <ArrowRight className={cn("w-4 h-4")} />
         </Button>

@@ -228,9 +228,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
   return (
     <>
       <audio ref={voiceTestAudioRef} onEnded={() => setTestingVoiceURI(null)} className={cn("hidden")} />
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible")}>
-        <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none")} />
-        <div className={cn("border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full text-left")}>
+        <div className={cn("border-b border-slate-800/80 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20")}>
           <div>
             <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20")}>
               <Tooltip
@@ -2461,12 +2460,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </Modal>
 
-        <div className={cn("pt-4 border-t border-slate-800 flex items-center justify-between")}>
+        <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-between mt-6 relative z-10")}>
           <Button
             variant="ghost"
             onClick={() => setCurrentStep(WizardStep.SourceInput)}
             className={cn(
-              "flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-100 font-bold text-xs px-5 py-3 rounded-lg shadow-none h-auto",
+              "flex items-center gap-2 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-none h-auto",
             )}>
             <ArrowLeft className={cn("w-4 h-4")} />
             {t.Back}
@@ -2474,7 +2473,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           <Button
             variant="primary"
             onClick={() => setCurrentStep(WizardStep.AssetManager)}
-            className={cn("flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-5 py-3 rounded-lg shadow-lg shadow-rose-600/15 h-auto")}>
+            className={cn("flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-white tracking-wide shadow-lg")}>
             {t.Continue}
             <ArrowRight className={cn("w-4 h-4")} />
           </Button>
