@@ -327,15 +327,6 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                                   title={project.name}>
                                   {project.name}
                                 </h3>
-                                {project.config.genre && (
-                                  <span
-                                    className={cn(
-                                      "px-1.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-[9px] font-bold font-mono text-rose-400 uppercase shrink-0 truncate max-w-[140px]",
-                                    )}
-                                    title={getGenreLabel(project.config.genre, currentLang)}>
-                                    {getGenreLabel(project.config.genre, currentLang)}
-                                  </span>
-                                )}
                               </div>
                               <p className={cn("text-slate-400 text-[11px] font-medium truncate leading-relaxed max-w-md")} title={project.description || t.No_description_1}>
                                 {project.description || t.No_description_1}

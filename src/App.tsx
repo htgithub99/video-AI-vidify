@@ -620,7 +620,7 @@ export default function App() {
 
       const targetWorkspaceProject = findProjectForWorkspaceTab(projectsRef.current, selectedProjectId, tab);
 
-      if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
+      if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD, AppTab.SETTINGS], tab as AppTab)) {
         setSelectedProjectId(null);
       } else if (targetWorkspaceProject) {
         setSelectedProjectId(targetWorkspaceProject.id);

@@ -71,6 +71,10 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const { licenseInfo } = useLicense();
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
 
+  const hasSelectedProject = Boolean(selectedProjectId);
+  const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab;
+
   const menuItems: MenuItemConfig[] = [
     {
       id: AppTab.DASHBOARD,
@@ -89,18 +93,21 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       label: texts.AUTO_CREATOR,
       icon: Zap,
       requiresProject: true,
+      hide: shouldHideProjectTabs,
     },
     {
       id: AppTab.CINEMATIC_FILM,
       label: texts.CINEMATIC_FILM,
       icon: Clapperboard,
       requiresProject: true,
+      hide: shouldHideProjectTabs,
     },
     {
       id: AppTab.STUDIO,
       label: texts.AI_STUDIO,
       icon: Sliders,
       requiresProject: true,
+      hide: shouldHideProjectTabs,
     },
     {
       id: AppTab.SETTINGS,
