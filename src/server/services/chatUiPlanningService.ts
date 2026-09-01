@@ -13,12 +13,51 @@ interface ChatPlanningRequest {
   projectId: string;
   chromeHeadless?: boolean;
   expectedSceneIds?: string[];
+  signal?: AbortSignal;
 }
 
 const planningMutex = new SimpleMutex();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
+let activePlanningController: AbortController | undefined;
+let activePlanningStartedAt = 0;
+let activePlanningRunId = "";
+
+export const beginChatPlanningRun = (runId: string, startedAt: number): { signal: AbortSignal; cancel: () => void } => {
+  if (_.isEmpty(_.trim(runId)) || startedAt <= 0) {
+    const unversionedController = new AbortController();
+    unversionedController.abort();
+    return { signal: unversionedController.signal, cancel: _.noop };
+  }
+  const hasActiveDifferentRun = activePlanningStartedAt > 0 && !_.isEqual(activePlanningRunId, runId);
+  const isOlderOrUnversionedRun = startedAt <= 0 || activePlanningStartedAt > startedAt;
+  if (hasActiveDifferentRun && isOlderOrUnversionedRun) {
+    const rejectedController = new AbortController();
+    rejectedController.abort();
+    return { signal: rejectedController.signal, cancel: _.noop };
+  }
+  activePlanningController?.abort();
+  const controller = new AbortController();
+  activePlanningController = controller;
+  activePlanningStartedAt = startedAt > 0 ? startedAt : Date.now();
+  activePlanningRunId = runId;
+  return { signal: controller.signal, cancel: () => controller.abort() };
+};
+
+export const cancelChatPlanningRun = (runId?: string): boolean => {
+  if (!activePlanningController) return false;
+  if (!_.isEmpty(_.trim(runId)) && !_.isEqual(activePlanningRunId, runId)) return false;
+  activePlanningController.abort();
+  activePlanningController = undefined;
+  activePlanningStartedAt = 0;
+  activePlanningRunId = "";
+  return true;
+};
+
+const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
+  if (signal?.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
+};
 
 const normalizeRoomPrompt = (prompt: string): string =>
   _.trim(
@@ -103,6 +142,7 @@ const waitForStableResponse = async (
   initialCount: number,
   expectedSceneIds: string[],
   previousLastResponse: string,
+  signal?: AbortSignal,
 ): Promise<string> => {
   const startedAt = Date.now();
   let previousText = "";
@@ -112,6 +152,7 @@ const waitForStableResponse = async (
   let lastBusyState = false;
   let lastIdentityMatch = false;
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) {
+    throwIfPlanningCancelled(signal);
     const responses = page.locator(responseSelector);
     const count = await responses.count().catch(() => 0);
     const responseTexts = _.map(await responses.allTextContents().catch(() => []), (value) => _.trim(value));
@@ -154,7 +195,9 @@ const submitPrompt = async (
   responseSelector: string,
   busySelector: string,
   expectedSceneIds: string[],
+  signal?: AbortSignal,
 ): Promise<string> => {
+  throwIfPlanningCancelled(signal);
   const input = page.locator(inputSelector).last();
   try {
     await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
@@ -171,7 +214,7 @@ const submitPrompt = async (
   const sendButton = page.locator(sendSelector).last();
   if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
   else await input.press("Enter");
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse);
+  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse, signal);
 };
 
 const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
@@ -219,6 +262,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 };
 
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, request.projectId);
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
@@ -230,12 +274,14 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.signal,
   );
   scheduleGlobalBrowserCleanup();
   return response;
 };
 
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, request.projectId);
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
@@ -247,12 +293,14 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.signal,
   );
   scheduleGlobalBrowserCleanup();
   return response;
 };
 
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, request.projectId);
   await ensureChatGptReady(room, browser.account.email);
@@ -264,6 +312,7 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.signal,
   );
   scheduleGlobalBrowserCleanup();
   return response;
@@ -284,15 +333,19 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
 
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error("AI Chat dự phòng đang tắt.");
+  throwIfPlanningCancelled(request.signal);
   const release = await planningMutex.acquire();
   try {
+    throwIfPlanningCancelled(request.signal);
     appLog(`[AI Chat Planning] Đang sử dụng ${providerNames[request.provider]} cho project ${request.projectId}.`);
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error("AI Chat dự phòng chưa được hỗ trợ.");
     const text = await generator(request);
     return { text, provider: request.provider };
   } catch (error) {
-    appWarn(`[AI Chat Planning] ${providerNames[request.provider]} chưa hoàn tất: ${_.toString(_.get(error, "message", error))}`);
+    if (!_.isEqual(_.toString(_.get(error, "message", error)), CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR)) {
+      appWarn(`[AI Chat Planning] ${providerNames[request.provider]} chưa hoàn tất: ${_.toString(_.get(error, "message", error))}`);
+    }
     throw error;
   } finally {
     release();

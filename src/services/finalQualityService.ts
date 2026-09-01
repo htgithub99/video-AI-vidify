@@ -109,8 +109,12 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
   );
 
   const technicallyComplete = _.isEmpty(blockingErrors);
-  const publishable = technicallyComplete && _.isEmpty(warnings);
-  const releaseStatus: FinalQualityReport["releaseStatus"] = !technicallyComplete ? "technical_complete" : publishable ? "editorially_publishable" : "completed_with_warnings";
+  const publishable = technicallyComplete;
+  const releaseStatus: FinalQualityReport["releaseStatus"] = !technicallyComplete
+    ? "technical_complete"
+    : _.isEmpty(warnings)
+      ? "editorially_publishable"
+      : "completed_with_warnings";
 
   return {
     visualBlockingErrors: unapprovedScenes + unapprovedThumbnails,

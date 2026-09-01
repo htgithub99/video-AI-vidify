@@ -20,6 +20,7 @@ interface PreviewPanelSectionProps {
   T: ReturnType<typeof getAutoVideoTexts>;
   regenerationTexts: Record<string, string>;
   showVoiceRegeneration?: boolean;
+  regenerateVideoClips?: boolean;
 }
 
 export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
@@ -33,6 +34,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   T,
   regenerationTexts,
   showVoiceRegeneration = true,
+  regenerateVideoClips = false,
 }) => {
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -52,9 +54,10 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   }, [isProcessing]);
 
   const isVoiceActive = _.isEqual(loadingTarget, REGENERATION_TARGET.VOICE) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.VOICE));
-  const isImagesActive = _.isEqual(loadingTarget, REGENERATION_TARGET.IMAGES) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.IMAGES));
+  const isSceneMediaActive = _.isEqual(loadingTarget, REGENERATION_TARGET.IMAGES) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.IMAGES));
   const isRenderActive = _.isEqual(loadingTarget, REGENERATION_TARGET.RENDER) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.RENDER));
   const isAnyDisabled = isProcessing || !_.isNull(loadingTarget) || !_.isNull(regeneratingTarget);
+  const sceneMediaRegenerationText = regenerateVideoClips ? regenerationTexts.clips : regenerationTexts.images;
 
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -138,10 +141,16 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             variant="purple"
             disabled={isAnyDisabled}
             onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)}
-            title={regenerationTexts.images}
+            title={sceneMediaRegenerationText}
             className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
-            {isImagesActive ? <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} /> : <ImageIcon className={cn("w-3.5 h-3.5")} />}
-            <span className={cn("truncate")}>{regenerationTexts.images}</span>
+            {isSceneMediaActive ? (
+              <RefreshCw className={cn("w-3.5 h-3.5 animate-spin")} />
+            ) : regenerateVideoClips ? (
+              <Video className={cn("w-3.5 h-3.5")} />
+            ) : (
+              <ImageIcon className={cn("w-3.5 h-3.5")} />
+            )}
+            <span className={cn("truncate")}>{sceneMediaRegenerationText}</span>
           </Button>
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}

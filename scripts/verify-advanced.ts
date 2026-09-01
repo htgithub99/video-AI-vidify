@@ -26,5 +26,8 @@ const restored = rollbackSceneAssetRevision(scene, "r1");
 assert(restored.assetUrl === "approved" && restored.assetRevisions.at(-1)?.operation === "rollback" && restored.assetRevisions.at(-1)?.parentRevisionId === "r2", "asset rollback lineage failed");
 assert(resolveQualityProfile(QualityMode.Premium).draftCandidates === 1 && resolveQualityProfile().draftCandidates === 1, "single image generation policy failed");
 const rollout = resolveRolloutConfig("project_1");
-assert(!rollout.flags.finalQc && !rollout.flags.visualQa && ["stable", "canary"].includes(rollout.releaseChannel), "advisory rollout config failed");
+assert(
+  rollout.flags.finalQc && rollout.flags.visualQa && rollout.qaMode === "advisory" && ["stable", "canary"].includes(rollout.releaseChannel),
+  "advisory rollout config failed",
+);
 writeVerificationLog("Advanced safety/rollback/rollout assertions passed");

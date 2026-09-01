@@ -27,7 +27,7 @@ export const defaultHookConfig = { type: "Auto", duration: 10, positions: "start
 
 export const defaultVisualConfig = { referenceImages: [], globalStyleReference: null, colorPalette: "" };
 
-export const AUTO_VIDEO_DEFAULTS = { CONFIG_VERSION: 3, CHROME_HEADLESS: false, RESUME_MODE: true } as const;
+export const AUTO_VIDEO_DEFAULTS = { CONFIG_VERSION: 3, CHROME_HEADLESS: true, RESUME_MODE: true } as const;
 
 export const VOICE_MODIFIERS: Record<string, { speed: number; pitch: number }> = {
   [VoicePresetId.PRESET_VI_BAC_FEMALE]: { speed: 1.0, pitch: 1.04 },

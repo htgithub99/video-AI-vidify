@@ -29,8 +29,8 @@ const plannerPrompt = getOptimizePromptsBatchPrompt(
 assert.match(plannerPrompt, /PROJECT STYLE LOCK/i);
 assert.match(plannerPrompt, /STRICT PROMPT PURITY/i);
 assert.match(plannerPrompt, /one continuous 60-95 word English paragraph/i);
-assert.match(plannerPrompt, /"storyEvidence":"specific drawable evidence proving the current narration"/i);
-assert.match(plannerPrompt, /"visualHook":"one story-grounded focal contrast/i);
+assert.match(plannerPrompt, /"storyEvidence":"specific drawable evidence"/i);
+assert.match(plannerPrompt, /"visualHook":"story-grounded focal event"/i);
 
 const correctionPrompt = getOptimizePromptsBatchPrompt(
   "flat 2D cartoon",

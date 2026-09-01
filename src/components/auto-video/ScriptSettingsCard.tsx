@@ -71,19 +71,19 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
   ];
 
   return (
-    <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border-none bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <div className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border-none bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center gap-2.5 relative z-10 border-b border-slate-800/80 pb-3")}>
-        <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20")}>
+        <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20 shrink-0")}>
           <Settings2 className={cn("w-3.5 h-3.5 text-rose-400")} />
         </span>
-        <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono")}>Cài đặt kịch bản</h3>
+        <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")}>Cài đặt kịch bản</h3>
       </div>
 
-      <div className={cn("grid grid-cols-1 gap-3.5 relative z-10")}>
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-10")}>
         {_.map(selectFields, ({ label, icon, value, onChange, options, optionGroups }, fieldIndex) => (
-          <div key={label} className={cn("space-y-1.5")}>
+          <div key={label} className={cn("space-y-1.5 min-w-0")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block truncate")}>{label}</span>
-            <div className={cn("relative flex items-center bg-slate-955/80 rounded-xl px-3 h-10 transition-all border-none")}>
+            <div className={cn("relative flex items-center bg-slate-955/80 rounded-xl px-3 h-10 transition-all border-none focus-within:ring-1 focus-within:ring-rose-500/30")}>
               {icon}
               {fieldIndex === 0 && lockedGenreLabel ? (
                 <span className={cn("flex-1 text-amber-400 text-xs font-semibold truncate")}>{lockedGenreLabel}</span>
@@ -91,7 +91,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
                 <select
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
-                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none")}>
+                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none truncate")}>
                   {optionGroups
                     ? _.map(optionGroups, (group) => (
                         <optgroup key={group.label} label={group.label} className={cn("bg-slate-950 text-slate-400")}>

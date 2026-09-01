@@ -101,8 +101,16 @@ assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regenerat
 assert(/finally \{\s*setLoadingTarget\(null\)/.test(previewSource), "regeneration loading state can remain stuck");
 assert(!/mediaMixTexts\.badge\s*\(/.test(generationSettingsSource), "mixed-mode settings call a missing translation function");
 assert(/mediaMixTexts\?\.maxVideos/.test(generationSettingsSource), "mixed-mode settings do not use the declared translation contract");
-assert(/finalCleanScript = removeAdjacentRepeatedNarrationSentences/.test(pipelineControllerSource), "server script output bypasses the narration continuity gate");
-assert(/const rewrittenScript = removeAdjacentRepeatedNarrationSentences/.test(pipelineControllerSource), "server storyboard input bypasses the narration continuity gate");
+assert(
+  /finalCleanScript = isCinematicScript \? fullScript\.trim\(\) : removeAdjacentRepeatedNarrationSentences/.test(pipelineControllerSource),
+  "server script output does not isolate screenplay dialogue from narration cleanup",
+);
+assert(
+  /const rewrittenScript = isCinematicStoryboard \? rawRewrittenScript : removeAdjacentRepeatedNarrationSentences/.test(pipelineControllerSource),
+  "server storyboard input does not isolate cinematic screenplay from narration cleanup",
+);
+assert(/regenerateVideoClips=\{cinematicMode\}/.test(autoGeneratorSource), "cinematic preview does not expose clip regeneration");
+assert(/regenerateVideoClips \? regenerationTexts\.clips : regenerationTexts\.images/.test(previewSource), "cinematic preview still labels clip regeneration as images");
 assert(/hasGlobalNarration[\s\S]*audioPath = hasGlobalNarration \? undefined/.test(ffmpegRenderSource), "global narration does not suppress per-scene audio sources");
 
 const editScenes = applyProfessionalEditingPolicy([

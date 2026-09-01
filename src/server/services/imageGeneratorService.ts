@@ -97,6 +97,9 @@ const FLOW_PROMPT_SELECTORS = [
 
 const flowReferenceSignatureMap = new WeakMap<Page, string>();
 const grokReferenceSignatureMap = new WeakMap<Page, string>();
+let mediaGenerationRevision = SecurityConstants.ZERO;
+
+const isMediaGenerationCancelled = (revision: number): boolean => !_.isEqual(revision, mediaGenerationRevision);
 
 const createReferenceSignature = (referenceImages: string[]): string => crypto.createHash("sha256").update(referenceImages.join("\n")).digest("hex");
 
@@ -319,6 +322,13 @@ const locateFlowPromptInput = async (page: Page, timeoutMs = 60000): Promise<Loc
   return null;
 };
 
+const isFlowProjectUnavailable = async (page: Page): Promise<boolean> =>
+  page
+    .getByRole("heading", { name: FLOW_DIRECT_VIDEO_CONFIG.PROJECT_ERROR_HEADING })
+    .last()
+    .isVisible()
+    .catch(() => false);
+
 const parseConfiguredVideoDuration = (duration?: string): number => {
   const parsed = _.toNumber(_.replace(_.defaultTo(duration, FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION), /[^0-9.]/g, ""));
   return _.gt(parsed, 0) ? parsed : _.toNumber(_.replace(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION, /[^0-9.]/g, ""));
@@ -444,6 +454,15 @@ const createFlowProject = async (page: Page): Promise<string> => {
   const match = page.url().match(/\/project\/([a-zA-Z0-9-]+)/);
   if (!match?.[1]) throw createAppError(ImageGenMessages.LABS_CREATE_ERR);
   return match[1];
+};
+
+const replaceUnavailableFlowProject = async (page: Page): Promise<string> => {
+  appLog(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_UNAVAILABLE_LOG);
+  const projectId = await createFlowProject(page);
+  lastPlaywrightConfigState = null;
+  flowReferenceSignatureMap.delete(page);
+  appLog(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_REPLACED_LOG.replace("{0}", projectId));
+  return projectId;
 };
 
 const configureFlowAgentSettings = async (page: Page, visualConfig?: ImageGeneratorOptions["visualConfig"]): Promise<boolean> => {
@@ -1042,8 +1061,10 @@ export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<
 };
 
 const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Promise<ImageGeneratorResult> => {
+  const generationRevision = mediaGenerationRevision;
   const release = await grokGenerationMutex.acquire();
   try {
+    if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
     const { context, page } = await getOrLaunchGrokBrowser(options.visualConfig?.chromeHeadless);
     await page.goto(EXTERNAL_URLS.GROK_IMAGINE, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForTimeout(1500);
@@ -1177,6 +1198,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
 };
 
 export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+  const generationRevision = mediaGenerationRevision;
   const { prompt, visualConfig, sandboxConfig = {} } = options;
 
   if (visualConfig?.imageGeneratorEngine === ImageGeneratorEngine.GrokImagine) return generateMediaWithGrokImagine(options);
@@ -1189,6 +1211,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   const release = await imageGenMutex.acquire();
 
   let responseText = "";
+  let lastGenerationError = BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR;
   let success = false;
   let attempts = 0;
   const maxAttempts = SecurityConstants.DEFAULT_AMOUNT;
@@ -1198,7 +1221,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   let activePage: Page | null = null;
 
   try {
-    while (attempts < maxAttempts && !success) {
+    while (attempts < maxAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
       attempts++;
       appLog(`${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`);
       const flowResponseUrls: string[] = [];
@@ -1268,6 +1291,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           }
         }
 
+        if (currentProjectId && (await isFlowProjectUnavailable(activePage))) {
+          currentProjectId = await replaceUnavailableFlowProject(activePage);
+        }
+
         await dismissFlowOnboarding(activePage);
 
         appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
@@ -1284,6 +1311,11 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           await activePage.goto(currentRoomUrl, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => undefined);
           await dismissFlowOnboarding(activePage);
           inputEl = await locateFlowPromptInput(activePage);
+          if (!inputEl && currentProjectId) {
+            currentProjectId = await replaceUnavailableFlowProject(activePage);
+            await dismissFlowOnboarding(activePage);
+            inputEl = await locateFlowPromptInput(activePage);
+          }
         }
         if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
 
@@ -1579,6 +1611,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         responseText = jsonUtils.safeStringify({ directBase64: finalBase64 });
         success = true;
       } catch (error: unknown) {
+        lastGenerationError = getErrorMessage(error);
         appError(ImageGenMessages.IMAGE_RENDER_ERR.replace("{0}", attempts.toString()).replace("{1}", getErrorMessage(error)));
 
         const browserSessionUnavailable = !browserInstance || !activePage || activePage.isClosed() || browserInstance.context.pages().length === 0;
@@ -1596,6 +1629,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       }
     }
   } catch (error: unknown) {
+    lastGenerationError = getErrorMessage(error);
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${getErrorMessage(error)}`);
   } finally {
     if (browserInstance) {
@@ -1625,7 +1659,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     success: false,
     base64: null,
     fallbackUrl: SecurityConstants.EMPTY_STRING,
-    warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
+    warning: lastGenerationError,
     newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
   };
 }
@@ -1683,6 +1717,7 @@ const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number):
 const roomReferenceUploadedMap = new WeakMap<Page, boolean>();
 
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+  const generationRevision = mediaGenerationRevision;
   const { prompt, visualConfig } = options;
 
   const finalPrompt = prompt || "";
@@ -1697,7 +1732,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let activePage: Page | null = null;
 
   try {
-    while (roomAttempts < maxRoomAttempts && !success) {
+    while (roomAttempts < maxRoomAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
       roomAttempts++;
 
       let detectedRatio = visualConfig?.aspectRatio;
@@ -1939,6 +1974,35 @@ export async function closeAllBatchPages() {
   globalBatchPages = [];
 }
 
+export async function cancelAllActiveMediaGeneration(): Promise<void> {
+  mediaGenerationRevision = _.add(mediaGenerationRevision, SecurityConstants.DEFAULT_AMOUNT);
+  if (activeBrowserTimeout) {
+    clearTimeout(activeBrowserTimeout);
+    activeBrowserTimeout = null;
+  }
+  const pages = _.uniq(
+    _.compact([
+      ...globalBatchPages,
+      activeBrowserInstance?.page,
+      grokPage,
+    ]),
+  );
+  await Promise.allSettled(
+    _.map(pages, async (page) => {
+      if (!page.isClosed()) await page.close();
+    }),
+  );
+  if (activeBrowserInstance?.ownsContext !== false) {
+    await activeBrowserInstance?.context.close().catch(() => undefined);
+  }
+  globalBatchPages = [];
+  activeBrowserInstance = null;
+  activeBrowserHeadless = undefined;
+  grokPage = null;
+  grokBrowser = null;
+  activeGrokLocalProjectId = null;
+}
+
 async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number> {
   const ms = getBatchDelayMs(visualConfig?.batchDelay);
   await delayAsync(ms);
@@ -1987,6 +2051,7 @@ export async function generateBatchImagesWithGeminiChat(
   onProgress?: (result: BatchImageResult) => void,
   retainBrowserSession = false,
 ): Promise<BatchImageResult[]> {
+  const generationRevision = mediaGenerationRevision;
   if (!items || items.length === 0) return [];
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Fast;
@@ -1997,6 +2062,7 @@ export async function generateBatchImagesWithGeminiChat(
     const results: BatchImageResult[] = [];
     try {
       for (let i = 0; i < items.length; i++) {
+        if (isMediaGenerationCancelled(generationRevision)) break;
         const item = items[i];
         const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
         const result = await generateImageWithGeminiChat({
@@ -2025,6 +2091,7 @@ export async function generateBatchImagesWithGeminiChat(
   let batchWorkerPages: Page[] = [];
 
   try {
+    if (isMediaGenerationCancelled(generationRevision)) return results;
     browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
     const context = browserInstance.context;
 
@@ -2271,7 +2338,7 @@ export async function generateBatchImagesWithGeminiChat(
 
     const runWorker = async (page: Page, tabIndex: number) => {
       let workerPage = page;
-      while (sharedQueue.length > 0) {
+      while (sharedQueue.length > 0 && !isMediaGenerationCancelled(generationRevision)) {
         const item = sharedQueue.shift();
         if (!item) break;
         let itemSucceeded = false;

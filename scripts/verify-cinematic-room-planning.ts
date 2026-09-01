@@ -3,8 +3,12 @@ import { readFileSync } from "node:fs";
 import _ from "lodash";
 import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt } from "../src/constants/prompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
-import { getCinematicStoryboardContractIssues } from "../src/services/cinematicProductionPolicyService";
-import { createScopedVisualBibleContext } from "../src/services/visualPlanningService";
+import {
+  getBlockingCinematicPlanningIssues,
+  getBlockingCinematicStoryboardContractIssues,
+  getCinematicStoryboardContractIssues,
+} from "../src/services/cinematicProductionPolicyService";
+import { createScopedVisualBibleContext, getVisualShotPlanIssues } from "../src/services/visualPlanningService";
 import type { StoryboardScene, VisualBible } from "../src/types";
 
 const TEST_CONSTANTS = {
@@ -123,6 +127,57 @@ const verifyDialogueContractExemption = () => {
   assert.equal(_.some(contractIssues, (issue) => _.includes(issue, "dialogue_coverage")), false);
 };
 
+const verifyEnvironmentalActionRecognition = () => {
+  const issues = getVisualShotPlanIssues(
+    {
+      visualIntent: "Establish the hazardous route.",
+      visibleAction: "Toxic demonic mist swirls through the canyon and obscures the passage.",
+      reaction: "The route disappears behind the moving haze.",
+      storyEvidence: "Black vapor gathers between the rock walls.",
+      visualHook: "The canyon is visibly swallowed by the advancing mist.",
+      composition: "Layered canyon walls frame the moving vapor.",
+    },
+    { id: "sc_environment", script: "The canyon is covered in demonic mist." } as StoryboardScene,
+  );
+  assert.equal(_.some(issues, (issue) => _.includes(issue, "no_observable_physical_verb")), false);
+};
+
+const verifyBlockingContractClassification = () => {
+  const firstScene = {
+    ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE),
+    id: "sc_1",
+    screenDirection: "left_to_right",
+  } as StoryboardScene;
+  const secondScene = {
+    ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE),
+    id: "sc_2",
+    continuityFrom: "incorrect_scene",
+    actionStartState: "A different action state.",
+    screenDirection: "right_to_left",
+  } as StoryboardScene;
+  const advisoryIssues = getCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
+  assert.equal(advisoryIssues.length, 3);
+  assert.deepEqual(getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS), []);
+
+  const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), soundDesignCues: [] } as StoryboardScene;
+  assert.match(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS)[0], /soundDesignCues:missing$/);
+
+  assert.deepEqual(
+    getBlockingCinematicPlanningIssues([
+      "sc_2:screenDirection:continuity_break",
+      "sc_2:neighbor_visual_repetition",
+      "sc_2:editorial_rhythm:shotSize_repeated_three_times",
+      "sc_2:prompt:incomplete_or_outside_global_length_contract",
+      "sc_2:textOverlay:must_be_empty_when_text_forbidden",
+    ]),
+    [],
+  );
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), [
+    "sc_2:generationPrompt:missing",
+    "sc_2:soundDesignCues:invalid",
+  ]);
+};
+
 const verifyScopedVisualBibleIsolation = () => {
   const mockVisualBible = {
     visualStyle: "cinematic",
@@ -156,6 +211,10 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /maxItems: CINEMATIC_CHAT_PLANNING_CONFIG\.API_MAX_SOUND_DESIGN_CUES/);
   assert.match(controllerSource, /planningExecutionMode, AiPlanningExecutionMode\.ApiOnly\)[\s\S]*firstParsedItems[\s\S]*firstPlanningIssues/);
   assert.match(controllerSource, /else \{[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
+  assert.match(controllerSource, /CINEMATIC_CHAT_PLANNING_CONFIG\.ROOM_RESPONSE_ATTEMPTS/);
+  assert.match(controllerSource, /getBlockingCinematicStoryboardContractIssues/);
+  assert.match(controllerSource, /getBlockingCinematicPlanningIssues\(planningIssues\)/);
+  assert.match(controllerSource, /candidateBlockingCount[\s\S]*currentBlockingCount/);
 };
 
 const runAllVerificationSuites = () => {
@@ -163,10 +222,11 @@ const runAllVerificationSuites = () => {
   verifyInitialAndApiPlanningPrompts(continuity);
   verifyRepairPromptGeneration(continuity);
   verifyDialogueContractExemption();
+  verifyEnvironmentalActionRecognition();
+  verifyBlockingContractClassification();
   verifyScopedVisualBibleIsolation();
   verifyPipelineControllerSourceInvariants();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);
 };
 
 runAllVerificationSuites();
-

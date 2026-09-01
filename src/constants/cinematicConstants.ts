@@ -13,11 +13,13 @@ export const CINEMATIC_POLICY_CONFIG = {
 } as const;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
+  ROOM_RESPONSE_ATTEMPTS: 2,
   RESPONSE_TIMEOUT_MS: 240000,
   RESPONSE_POLL_MS: 1000,
   RESPONSE_STABLE_POLLS: 3,
   MIN_RESPONSE_CHARACTERS: 20,
   MAX_CORRECTION_ATTEMPTS: 4,
+  FINAL_FULL_REWRITE_ATTEMPTS: 1,
   API_MAX_SOUND_DESIGN_CUES: 3,
   ROOM_MAX_SOUND_DESIGN_CUES: 5,
   PAGE_READY_TIMEOUT_MS: 45000,
@@ -45,8 +47,23 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
     "Return only the complete raw JSON array required by the request. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.",
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
   EXCESS_BLANK_LINES_PATTERN: /\n[ \t]*\n(?:[ \t]*\n)+/g,
+  CANCELLED_ERROR: "chat_planning_cancelled",
+  INVALID_RESPONSE_ERROR: "chat_planning_invalid_response",
   DEFAULT_PROJECT_SCOPE: "cinematic-planning",
 } as const;
+
+export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
+  /:actionStartState:must_match_previous_end_state$/,
+  /:actionStartState:must_match_previous_clip_end_state$/,
+  /:screenDirection:continuity_break$/,
+  /:continuityFrom:must_reference_previous_clip$/,
+  /:editorial_role:must_advance_from_previous_clip$/,
+  /:neighbor_visual_repetition$/,
+  /:scene_meaning:too_similar_to:/,
+  /:editorial_rhythm:/,
+  /:(?:prompt|visualIntent|reaction|storyEvidence|visualHook|shotPurpose|shotSize|cameraAngle|composition|continuityNotes|lighting):/,
+  /:(?:expectedSubjectCount|allowBackgroundPeople|layout|propIds|assetStrategy|archivalSearchQuery|archivalRationale|textAllowed|textOverlay):/,
+] as const;
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
   [AiPlanningFallbackProvider.GeminiChat]: [
@@ -86,6 +103,12 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_RETRY: "[Film direction] The plan is missing shots, continuity, or dialogue; AI is rewriting the complete plan.",
   VI_REQUIRED: "AI chưa trả đủ kế hoạch phim có shot, continuity và thoại nhân vật. Đã dừng trước khi tạo clip để tránh xuất một bộ phim sai nội dung.",
   EN_REQUIRED: "AI did not return a complete film plan with shots, continuity, and character dialogue. Production stopped before clip generation to prevent an incoherent film.",
+  VI_ADVISORY: "[Đạo diễn phim] Kế hoạch đã đủ dữ liệu tạo clip; một số ghi chú dàn cảnh phụ sẽ được rà soát ở bước dựng.",
+  EN_ADVISORY: "[Film direction] The clip plan is complete; optional staging notes will be reviewed during editing.",
+  VI_START_NEW: "🎬 BẮT ĐẦU SẢN XUẤT PHIM MỚI",
+  EN_START_NEW: "🎬 STARTING A NEW FILM PRODUCTION",
+  VI_CONTINUE: "🎬 TIẾP TỤC SẢN XUẤT PHIM",
+  EN_CONTINUE: "🎬 CONTINUING FILM PRODUCTION",
   VI_PREFLIGHT_START: "[Kiểm tra trước khi tạo] Đang duyệt toàn bộ prompt, 3–5 shot, thoại, continuity và an toàn nội dung.",
   EN_PREFLIGHT_START: "[Preflight] Reviewing every prompt, 3–5 shots, dialogue, continuity, and content safety.",
   VI_PREFLIGHT_PASSED: "[Kiểm tra trước khi tạo] Toàn bộ clip đã đạt yêu cầu; mỗi clip chỉ được gửi tạo đúng một lần.",

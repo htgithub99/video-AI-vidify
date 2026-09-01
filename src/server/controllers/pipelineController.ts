@@ -8,7 +8,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -167,7 +167,13 @@ import {
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
 
-import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages, getOrLaunchGlobalBrowser } from "../services/imageGeneratorService.js";
+import {
+  generateImageWithPlaywright,
+  generateBatchImagesWithGeminiChat,
+  closeAllBatchPages,
+  cancelAllActiveMediaGeneration,
+  getOrLaunchGlobalBrowser,
+} from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
 import { validateFactPack } from "../services/factPackValidationService.js";
@@ -216,7 +222,13 @@ import {
   getVisualShotPlanIssues,
   normalizeVisualShotPlan,
 } from "../services/imagePromptPlanningService.js";
-import { CINEMATIC_PRODUCTION_POLICY, getCinematicStoryboardContractIssues, isCinematicEpisodeGenre } from "../../services/cinematicProductionPolicyService.js";
+import {
+  CINEMATIC_PRODUCTION_POLICY,
+  getBlockingCinematicPlanningIssues,
+  getBlockingCinematicStoryboardContractIssues,
+  getCinematicStoryboardContractIssues,
+  isCinematicEpisodeGenre,
+} from "../../services/cinematicProductionPolicyService.js";
 import { createCinematicScreenplayDirective } from "../../services/cinematicEpisodeService.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_POLICY_CONFIG, resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
@@ -453,6 +465,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
 router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const { storyboard, visualConfig, visualBible, aspectRatio } = req.body;
+  let planningFailureIssues: string[] = [];
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
@@ -486,6 +499,11 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         ? AiPlanningExecutionMode.ApiOnly
         : AiPlanningExecutionMode.RoomOnly;
     const usesChatPlanning = !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly);
+    const planningRun = beginChatPlanningRun(_.toString(req.body?.pipelineRunId), _.toFinite(req.body?.pipelineStartedAt));
+    req.once("aborted", planningRun.cancel);
+    res.once("close", () => {
+      if (!res.writableEnded) planningRun.cancel();
+    });
     const planningChromeHeadless = _.isBoolean(req.body?.planningChromeHeadless) ? req.body.planningChromeHeadless : req.body?.chromeHeadless;
     const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
     const chunkSize = isCinematicPlanning && _.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)
@@ -750,16 +768,28 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         },
       } as const;
       const requestChatUiPlan = async (contents: string): Promise<any[]> => {
-        const response = await generatePlanningWithChatUi({
-          provider: planningFallbackProvider,
-          model: planningChatModel,
-          prompt: contents,
-          projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
-          chromeHeadless: planningChromeHeadless,
-          expectedSceneIds: sceneIds,
-        });
-        const parsed = safeParseJSON(response.text, []);
-        return _.isArray(parsed) ? parsed : [];
+        let lastError: unknown;
+        for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_RESPONSE_ATTEMPTS; attempt++) {
+          if (planningRun.signal.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
+          try {
+            const response = await generatePlanningWithChatUi({
+              provider: planningFallbackProvider,
+              model: planningChatModel,
+              prompt: contents,
+              projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
+              chromeHeadless: planningChromeHeadless,
+              expectedSceneIds: sceneIds,
+              signal: planningRun.signal,
+            });
+            const parsed = safeParseJSON(response.text, null);
+            if (_.isArray(parsed) && !_.isEmpty(parsed)) return parsed;
+            lastError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+          } catch (error) {
+            if (planningRun.signal.aborted) throw error;
+            lastError = error;
+          }
+        }
+        throw lastError instanceof Error ? lastError : new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
       };
       const requestApiPlan = async (contents: string): Promise<any[]> => {
         const response = await generateContentWithRetry({
@@ -1114,12 +1144,19 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           planningIssues = collectPlanningIssues(parsedItems);
         }
       } else {
-        for (let correctionAttempt = 0; correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(planningIssues); correctionAttempt++) {
-          const correctionIssuesJson = jsonUtils.safeStringify(planningIssues);
+        const getCorrectablePlanningIssues = (issues: string[]): string[] =>
+          isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : issues;
+        for (
+          let correctionAttempt = 0;
+          correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
+          correctionAttempt++
+        ) {
+          const correctionIssues = getCorrectablePlanningIssues(planningIssues);
+          const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
           const apiCorrectionPrompt = createPlanningPrompt(correctionIssuesJson);
           const candidateItems = await requestVisualPlan(
             apiCorrectionPrompt,
-            isCinematicPlanning ? createRepairPrompt(parsedItems, planningIssues) : createPlanningPrompt(correctionIssuesJson, true),
+            isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues) : createPlanningPrompt(correctionIssuesJson, true),
             isCinematicPlanning,
           );
           const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
@@ -1131,17 +1168,46 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               const candidateItem = candidateById[sceneId];
               if (!candidateItem) return currentItem;
               if (!currentItem) return candidateItem;
-              const currentIssueCount = _.filter(planningIssues, (issue) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:")).length;
-              const candidateIssueCount = _.filter(candidatePlanningIssues, (issue) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:")).length;
-              return _.lte(candidateIssueCount, currentIssueCount) ? candidateItem : currentItem;
+              const belongsToScene = (issue: string) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:") || _.startsWith(issue, "result:");
+              const currentSceneIssues = _.filter(planningIssues, belongsToScene);
+              const candidateSceneIssues = _.filter(candidatePlanningIssues, belongsToScene);
+              const currentBlockingCount = getBlockingCinematicPlanningIssues(currentSceneIssues).length;
+              const candidateBlockingCount = getBlockingCinematicPlanningIssues(candidateSceneIssues).length;
+              if (!_.isEqual(candidateBlockingCount, currentBlockingCount)) return _.lt(candidateBlockingCount, currentBlockingCount) ? candidateItem : currentItem;
+              return _.lte(candidateSceneIssues.length, currentSceneIssues.length) ? candidateItem : currentItem;
             }),
           );
           planningIssues = collectPlanningIssues(parsedItems);
+        }
+        if (isCinematicPlanning && !_.isEmpty(getCorrectablePlanningIssues(planningIssues))) {
+          for (let rewriteAttempt = 0; rewriteAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.FINAL_FULL_REWRITE_ATTEMPTS; rewriteAttempt++) {
+            const blockingIssues = getCorrectablePlanningIssues(planningIssues);
+            const fullRewriteIssuesJson = jsonUtils.safeStringify(blockingIssues);
+            const fullRewriteItems = await requestVisualPlan(
+              createPlanningPrompt(fullRewriteIssuesJson),
+              createPlanningPrompt(fullRewriteIssuesJson, true),
+              true,
+            );
+            const fullRewriteIssues = collectPlanningIssues(fullRewriteItems);
+            if (_.lt(getCorrectablePlanningIssues(fullRewriteIssues).length, blockingIssues.length)) {
+              parsedItems = fullRewriteItems;
+              planningIssues = fullRewriteIssues;
+            }
+            if (_.isEmpty(getCorrectablePlanningIssues(planningIssues))) break;
+          }
         }
       }
       if (!_.isEmpty(planningIssues)) {
         planningWarnings.push(...planningIssues);
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: continuing_after_final_correction: ${_.join(planningIssues, ", ")}`);
+      }
+      if (
+        isCinematicPlanning &&
+        !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) &&
+        !_.isEmpty(getBlockingCinematicPlanningIssues(planningIssues))
+      ) {
+        planningFailureIssues = getBlockingCinematicPlanningIssues(planningIssues);
+        throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
       }
       const returnedById = _.keyBy(parsedItems, (item) => _.toString(item.id));
       _.forEach(chunkItem, (sourceItem) => {
@@ -1163,8 +1229,13 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     plannedScenes = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
     if (isCinematicPlanning) {
       const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds);
+      const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds);
       if (!_.isEmpty(unresolvedCinematicIssues)) {
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: unresolved_cinematic_contract: ${_.join(unresolvedCinematicIssues, ", ")}`);
+        planningWarnings.push(...unresolvedCinematicIssues);
+      }
+      if (!_.isEmpty(blockingCinematicIssues)) {
+        planningFailureIssues = blockingCinematicIssues;
         throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
       }
     }
@@ -1188,7 +1259,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED, retryable: false, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED,
+      retryable: false,
+      planningIssues: planningFailureIssues,
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 
@@ -1850,7 +1926,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       let cleanedSegment = await requestValidChapterSegment(
         `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\n${cinematicScreenplayDirective}\n\nChapter Prompt:\n${chapterPrompt}`,
       );
-      cleanedSegment = removeRepeatedNarrationOpening(cleanedSegment, fullScript);
+      if (!isCinematicScript) cleanedSegment = removeRepeatedNarrationOpening(cleanedSegment, fullScript);
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       for (
@@ -1863,7 +1939,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           `${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi)}\n\n${cinematicScreenplayDirective}`,
         );
         if (_.isEmpty(continuation)) break;
-        const deduplicatedContinuation = removeRepeatedNarrationOpening(continuation, `${fullScript} ${cleanedSegment}`);
+        const deduplicatedContinuation = isCinematicScript ? continuation : removeRepeatedNarrationOpening(continuation, `${fullScript} ${cleanedSegment}`);
         cleanedSegment = _.trim(`${cleanedSegment} ${deduplicatedContinuation}`);
       }
 
@@ -1880,7 +1956,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    let finalCleanScript = removeAdjacentRepeatedNarrationSentences(fullScript.trim());
+    let finalCleanScript = isCinematicScript ? fullScript.trim() : removeAdjacentRepeatedNarrationSentences(fullScript.trim());
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     let editorialQa: Record<string, unknown> = {};
     try {
@@ -1898,7 +1974,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const polishedWordRatio = _.size(_.words(polishedScript)) / (_.max([1, targetWordCount]) || 1);
       const languageValidation = validateChapterLanguage(polishedScript, isVi);
       if (!_.isEmpty(polishedScript) && _.inRange(polishedWordRatio, 0.9, 1.100001) && languageValidation.valid) {
-        finalCleanScript = removeAdjacentRepeatedNarrationSentences(polishedScript);
+        finalCleanScript = isCinematicScript ? polishedScript : removeAdjacentRepeatedNarrationSentences(polishedScript);
         editorialQa = editorialResult;
       } else {
         multiStepLogs.push("final_script_editor_output_rejected");
@@ -2250,7 +2326,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     voiceDuration,
     cinematicClipCount: requestedCinematicClipCount,
   } = req.body;
-  const rewrittenScript = removeAdjacentRepeatedNarrationSentences(_.toString(req.body.rewrittenScript));
+  const normalizedRequestedClipCount = _.toInteger(requestedCinematicClipCount);
+  const isCinematicStoryboard =
+    _.gt(normalizedRequestedClipCount, 0) || isCinematicEpisodeGenre(config?.genre) || _.includes(["single", "series"], _.toString(config?.filmFormat));
+  const rawRewrittenScript = _.toString(req.body.rewrittenScript);
+  const rewrittenScript = isCinematicStoryboard ? rawRewrittenScript : removeAdjacentRepeatedNarrationSentences(rawRewrittenScript);
 
   let syncedChapters = chapters;
   if (chapters && chapters.length > 0 && rewrittenScript) syncedChapters = syncChaptersWithScript(rewrittenScript, chapters);
@@ -2299,8 +2379,6 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     const genre = config?.genre || VideoGenre.STORYTELLING;
-    const normalizedRequestedClipCount = _.toInteger(requestedCinematicClipCount);
-    const isCinematicStoryboard = _.gt(normalizedRequestedClipCount, 0) || isCinematicEpisodeGenre(genre) || _.includes(["single", "series"], _.toString(config?.filmFormat));
     if (isCinematicStoryboard) {
       const configuredDurationSeconds = parseTargetDurationSeconds(config?.duration);
       if (_.gt(configuredDurationSeconds, 0)) chosenDuration = configuredDurationSeconds;
@@ -2542,26 +2620,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
     if (_.isEmpty(allScenes)) {
       if (cinematicClipCount) {
-        const screenplaySentences = smartSplitSentences(rewrittenScript);
-        const clipBuckets = _.times(cinematicClipCount, () => [] as string[]);
-        let sentenceCursor = 0;
-        _.forEach(screenplaySentences, (sentence) => {
-          const targetBucket = _.min([cinematicClipCount - 1, Math.floor((sentenceCursor * cinematicClipCount) / _.max([1, screenplaySentences.length])!)])!;
-          clipBuckets[targetBucket].push(sentence);
-          sentenceCursor = _.add(sentenceCursor, 1);
-        });
-        const screenplayWords = _.filter(rewrittenScript.split(/\s+/), Boolean);
-        allScenes = _.map(clipBuckets, (bucket, index) => {
-          const startWord = Math.floor((index * screenplayWords.length) / cinematicClipCount);
-          const endWord = Math.floor(((index + 1) * screenplayWords.length) / cinematicClipCount);
-          const sourceText = _.gte(screenplaySentences.length, cinematicClipCount) ? _.trim(bucket.join(" ")) : screenplayWords.slice(startWord, endWord).join(" ");
-          return {
-            id: `sc_${index + 1}`,
-            chapterId: _.toString(_.get(syncedChapters, [Math.floor((index * _.size(syncedChapters)) / cinematicClipCount), "id"], "chapter_1")),
-            script: sourceText,
-            subtitle: sourceText,
-          };
-        });
+        throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
       } else {
         allScenes = createScriptGroundedStoryboard({
           rewrittenScript,
@@ -2573,7 +2632,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         });
       }
       storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.FALLBACK_WARNING);
-    } else {
+    } else if (!isCinematicStoryboard) {
       allScenes = ensureScriptGroundedSceneDetails(allScenes, {
         aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
         targetStyle: activeStyle || visualStyle,
@@ -2587,10 +2646,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     if (data?.scenes?.length) {
-      const diversifiedScenes = diversifyDuplicatePrompts(data.scenes);
-      data.scenes = isCinematicStoryboard
-        ? diversifiedScenes
-        : ensureStoryboardScriptCoverage(diversifiedScenes, {
+      if (!isCinematicStoryboard) {
+        const diversifiedScenes = diversifyDuplicatePrompts(data.scenes);
+        data.scenes = ensureStoryboardScriptCoverage(diversifiedScenes, {
             rewrittenScript,
             chapters: syncedChapters,
             splitStrategy,
@@ -2598,7 +2656,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             targetStyle: activeStyle || visualStyle,
             visualBible,
           });
-      data.scenes = removeAdjacentRepeatedStoryboardScenes(data.scenes);
+        data.scenes = removeAdjacentRepeatedStoryboardScenes(data.scenes);
+      }
       data.scenes = assignStoryboardChapterIds(data.scenes, syncedChapters);
     }
 
@@ -4748,6 +4807,16 @@ router.post(ROUTER_PATHS.REFERENCE_AUDIO, async (req: Request, res: Response) =>
 router.post(RENDER_QUEUE_CONFIG.CANCEL_ROUTE, async (req: Request, res: Response) => {
   const cancelled = await renderQueueService.cancelJob(req.params.jobId);
   if (!cancelled) return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
+  return res.json({ success: true });
+});
+
+router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+  const pipelineRunId = _.trim(_.toString(req.body?.pipelineRunId));
+  const renderJobId = _.trim(_.toString(req.body?.renderJobId));
+  cancelChatPlanningRun(pipelineRunId);
+  const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
+  if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
+  await Promise.allSettled(cleanupTasks);
   return res.json({ success: true });
 });
 

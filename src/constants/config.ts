@@ -695,8 +695,8 @@ export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
 export const REGENERATION_TARGET = { VOICE: "voice", IMAGES: "images", RENDER: "render" } as const;
 
 export const REGENERATION_TEXTS = {
-  vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
-  en: { voice: "Redo voice", images: "Redo images", render: "Render again", failed: "Could not remove old assets. Please try again." },
+  vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", clips: "Tạo lại clip", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
+  en: { voice: "Redo voice", images: "Redo images", clips: "Redo clips", render: "Render again", failed: "Could not remove old assets. Please try again." },
 } as const;
 
 export const FFMPEG_RESOLUTIONS = {
@@ -780,6 +780,7 @@ export const GEMINI_BATCH_SETUP_CONFIG = {
   WORKER_REPLACEMENT_MAX_ATTEMPTS: 2,
 } as const;
 export const GEMINI_CHAT_RECOVERY_CONFIG = {
+  CANCELLED_ERROR: "media_generation_cancelled",
   MAX_ROOMS_PER_ITEM: 3,
   MAX_ATTEMPTS_PER_ROOM: 3,
   FIRST_ATTEMPT: 1,
@@ -1057,7 +1058,7 @@ export const AUTO_GENERATOR_CONSTANTS = {
   IMAGE_ACCEPT: "image/*",
   PROJECT_NAME_PREFIX: "Video_Auto_",
   EXPORT_SUFFIX: "_Export.mp4",
-  API_GEN_FALLBACK_WARN: "⚠️ Cảnh {0} chuyển sang chế độ dự phòng do có sự cố vẽ ảnh.",
+  API_GEN_FALLBACK_WARN: "⚠️ Cảnh {0} chưa tạo được tài nguyên; trạng thái đã được lưu để có thể tiếp tục xử lý.",
   API_SCRIPT_SUCCESS: "✅ Đã xây dựng kịch bản & phân chia thành {0} phân cảnh!",
   API_VOICE_SUCCESS: "✅ Đã hoàn tất tạo giọng đọc cho tất cả các phân cảnh!",
   API_IMAGE_SUCCESS: "✅ Đã hoàn tất vẽ toàn bộ hình ảnh minh họa cho video!",
@@ -1472,6 +1473,9 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   DEFAULT_RESOLUTION: "360p",
   DEFAULT_DURATION: "8s",
   SINGLE_OUTPUT: "x1",
+  PROJECT_ERROR_HEADING: /Đã xảy ra lỗi|Something went wrong/i,
+  PROJECT_UNAVAILABLE_LOG: "[Google Flow] Room hiện tại không khả dụng; hệ thống đang tạo room mới cho dự án.",
+  PROJECT_REPLACED_LOG: "[Google Flow] Đã thay room lỗi bằng room mới: {0}.",
 } as const;
 
 export const FLOW_VIDEO_MEDIA_CONFIG = {
@@ -1660,7 +1664,7 @@ export const CINEMATIC_CONFIG = {
   GENERATION_DEFAULTS: {
     MODE: ImageGenerationMode.LabsFlow,
     ENGINE: ImageGeneratorEngine.Veo3,
-    CHROME_HEADLESS: false,
+    CHROME_HEADLESS: true,
     CLIP_DURATION: "10s",
     RESOLUTION: "360p",
     ASPECT_RATIO: AspectRatio.SixteenNine,

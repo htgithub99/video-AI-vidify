@@ -14,7 +14,12 @@ const resolvedVideoConfig = resolveVisualConfig({
   generateType: GenerateType.Video,
   imageGeneratorEngine: ImageGeneratorEngine.Imagen,
 } as any);
-assert(!resolvedVideoConfig.blocked && resolvedVideoConfig.config.generateType === GenerateType.Image, "unsupported video/image-engine conflict was not recovered");
+assert(
+  !resolvedVideoConfig.blocked &&
+    resolvedVideoConfig.config.generateType === GenerateType.Video &&
+    resolvedVideoConfig.config.generationMode === ImageGenerationMode.GeminiChat,
+  "unsupported video route was not recovered through browser generation",
+);
 const geminiConfig = resolveVisualConfig({
   generationMode: ImageGenerationMode.GeminiChat,
   generateType: GenerateType.Image,

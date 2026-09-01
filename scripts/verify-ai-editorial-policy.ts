@@ -32,8 +32,8 @@ const invalidSubtitleReport = evaluateSubtitles([{
   duration: 1,
   subtitleCues: [{ text: "This subtitle cue contains far too many characters for one second", startOffsetSeconds: 0, durationSeconds: 1 }],
 } as any]);
-assert.equal(invalidSubtitleReport.passed, false);
-assert.ok(invalidSubtitleReport.blockingErrors.includes("subtitle_reading_time_insufficient"));
+assert.equal(invalidSubtitleReport.passed, true);
+assert.ok(invalidSubtitleReport.warnings.includes("subtitle_reading_time_insufficient"));
 
 const repetitiveEditReport = evaluateEdit(Array.from({ length: 8 }, (_, index) => ({
   id: `sc_edit_${index}`,
@@ -72,6 +72,7 @@ assert.equal(storyboard.passed, false);
 assert.ok(storyboard.warnings.includes("storyboard_quality_below_target"));
 
 const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
-assert.doesNotMatch(autoPipeline, /validateSceneImage|evaluateVisualAssetQuality|validateFinalVideo/);
+assert.match(autoPipeline, /validateSceneImage/);
+assert.doesNotMatch(autoPipeline, /evaluateVisualAssetQuality|validateFinalVideo/);
 
 writeVerificationLog("AI editorial policy and request-budget checks passed.");

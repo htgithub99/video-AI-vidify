@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { exec } from "child_process";
+import { createServer, type Server } from "node:http";
+import type { ViteDevServer } from "vite";
 import _ from "lodash";
 
 import { logger } from "./src/lib/logger.js";
@@ -51,9 +53,44 @@ const SERVER_CONFIG = {
   KILL_CHROME_WIN: `wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`,
   KILL_CHROME_UNIX: `pkill -f "chrome.*--remote-debugging-port=9222"`,
   TIMEOUT_SHUTDOWN: 3000,
+  LISTEN_RETRY_ATTEMPTS: 15,
+  LISTEN_RETRY_DELAY_MS: 1000,
+  ADDRESS_IN_USE_ERROR: "EADDRINUSE",
 } as const;
 
 const app = express();
+let httpServer: Server | undefined;
+let viteDevServer: ViteDevServer | undefined;
+let isShuttingDown = false;
+
+const waitForListenRetry = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, SERVER_CONFIG.LISTEN_RETRY_DELAY_MS));
+
+const listenForRequests = async (): Promise<void> => {
+  httpServer = createServer(app);
+  for (let attempt = 0; attempt < SERVER_CONFIG.LISTEN_RETRY_ATTEMPTS; attempt++) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const handleError = (error: NodeJS.ErrnoException) => {
+          httpServer?.removeListener("listening", handleListening);
+          reject(error);
+        };
+        const handleListening = () => {
+          httpServer?.removeListener("error", handleError);
+          logger.log(SecurityConstants.LOG_SERVER_RUNNING, SERVER_CONFIG.PORT);
+          resolve();
+        };
+        httpServer?.once("error", handleError);
+        httpServer?.once("listening", handleListening);
+        httpServer?.listen(SERVER_CONFIG.PORT, SERVER_CONFIG.HOST);
+      });
+      return;
+    } catch (error) {
+      const isAddressInUse = _.isEqual((error as NodeJS.ErrnoException).code, SERVER_CONFIG.ADDRESS_IN_USE_ERROR);
+      if (!isAddressInUse || _.isEqual(attempt, SERVER_CONFIG.LISTEN_RETRY_ATTEMPTS - 1)) throw error;
+      await waitForListenRetry();
+    }
+  }
+};
 
 app.use(
   cors({
@@ -99,11 +136,11 @@ const startServer = async () => {
 
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
     const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
+    viteDevServer = await createViteServer({
       server: { middlewareMode: true },
       appType: SERVER_CONFIG.SPA_TYPE,
     });
-    app.use(vite.middlewares);
+    app.use(viteDevServer.middlewares);
   } else {
     const distPath = __dirname;
     app.use(express.static(distPath));
@@ -112,9 +149,7 @@ const startServer = async () => {
     });
   }
 
-  app.listen(SERVER_CONFIG.PORT, SERVER_CONFIG.HOST, () => {
-    logger.log(SecurityConstants.LOG_SERVER_RUNNING, SERVER_CONFIG.PORT);
-  });
+  await listenForRequests();
 };
 
 startServer().catch((error) => {
@@ -122,10 +157,18 @@ startServer().catch((error) => {
 });
 
 const shutdownGracefully = async () => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   logger.log(SecurityConstants.LOG_PLAYWRIGHT_CLEANING);
-  setTimeout(() => process.exit(0), SERVER_CONFIG.TIMEOUT_SHUTDOWN);
+  const forcedExitTimer = setTimeout(() => process.exit(0), SERVER_CONFIG.TIMEOUT_SHUTDOWN);
+  forcedExitTimer.unref();
   try {
-    await Promise.allSettled([closePlaywright(), closeActiveBrowser()]);
+    const closeHttpServer = new Promise<void>((resolve) => {
+      if (!httpServer) return resolve();
+      httpServer.close(() => resolve());
+      httpServer.closeAllConnections();
+    });
+    await Promise.allSettled([closeHttpServer, viteDevServer?.close(), closePlaywright(), closeActiveBrowser()]);
   } catch (e) {}
 
   const killCmd = _.isEqual(process.platform, SERVER_CONFIG.WIN32)
@@ -133,6 +176,7 @@ const shutdownGracefully = async () => {
     : SERVER_CONFIG.KILL_CHROME_UNIX;
 
   exec(killCmd, () => {
+    clearTimeout(forcedExitTimer);
     process.exit(0);
   });
 };

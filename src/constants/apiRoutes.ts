@@ -28,6 +28,7 @@ export const API_ROUTES = {
   PIPELINE_REPAIR_VIDEO_PROMPT: "/api/pipeline/repair-video-prompt",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
+  PIPELINE_CANCEL_ACTIVE_RUN: "/api/pipeline/cancel-active-run",
   PIPELINE_PROJECT_ASSETS: "/api/pipeline/project-assets",
   PIPELINE_REFERENCE_ASSETS: "/api/pipeline/reference-assets",
   PIPELINE_REFERENCE_AUDIO: "/api/pipeline/reference-audio",

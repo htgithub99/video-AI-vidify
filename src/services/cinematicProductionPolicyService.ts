@@ -1,5 +1,6 @@
 import _ from "lodash";
 import {
+  CINEMATIC_ADVISORY_ISSUE_PATTERNS,
   CINEMATIC_DEFAULT_SOUND_CUES,
   CINEMATIC_DEFAULTS,
   CINEMATIC_POLICY_CONFIG,
@@ -110,6 +111,14 @@ export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], 
   });
   return _.uniq(issues);
 };
+
+export const getBlockingCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number): string[] =>
+  _.reject(getCinematicStoryboardContractIssues(scenes, requestedDuration), (issue) =>
+    _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)),
+  );
+
+export const getBlockingCinematicPlanningIssues = (issues: string[]): string[] =>
+  _.reject(issues, (issue) => _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)));
 
 const normalizedCharacterSet = (scene: StoryboardScene): string => _.join(_.sortBy(_.uniq(scene.characterIds || [])), "|");
 

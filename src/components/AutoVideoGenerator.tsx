@@ -64,7 +64,12 @@ export default function AutoVideoGenerator({
 
   const stateScope = cinematicMode ? CINEMATIC_CONFIG.STATE_SCOPE : "auto";
   const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang, stateScope);
-  const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
+  const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang, stateScope);
+  const selectedProjectStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_SELECTED_CINEMATIC_PROJECT : REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT;
+  const currentLogsStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_CURRENT_LOGS : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS;
+  const projectLogsStoragePrefix = cinematicMode
+    ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_PROJECT_LOGS_PREFIX
+    : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX;
 
   const {
     inputType,
@@ -281,9 +286,9 @@ export default function AutoVideoGenerator({
     const foundProj = _.find(projects, { id: selectedProjectId });
     if (foundProj) {
       setActiveCreatedProject(foundProj);
-      storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
+      storageUtils.setAsync(selectedProjectStorageKey, selectedProjectId);
       setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
+      const cachedLogsStr = storageUtils.get(`${projectLogsStoragePrefix}${foundProj.id}`);
       const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
       const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
       setLogs(projectLogs || []);
@@ -301,7 +306,7 @@ export default function AutoVideoGenerator({
     const formatted = `[${timestamp}] ${msg}`;
     pipelineActions.setLogs((prev) => {
       const updated = [...prev, formatted];
-      storageUtils.set(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS, jsonUtils.safeStringify(updated));
+      storageUtils.set(currentLogsStorageKey, jsonUtils.safeStringify(updated));
       return updated;
     });
   };
@@ -702,6 +707,7 @@ export default function AutoVideoGenerator({
               T={T}
               regenerationTexts={regenerationTexts}
               showVoiceRegeneration={!cinematicMode}
+              regenerateVideoClips={cinematicMode}
             />
 
             <ThumbnailsPreviewSection activeCreatedProject={presentationProject} />

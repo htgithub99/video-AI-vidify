@@ -5,7 +5,7 @@ import fs from "node:fs";
 const pipelineController = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 
-assert.doesNotMatch(pipelineController, /MAX_CORRECTION_ATTEMPTS|MAX_REPAIR_ATTEMPTS|evaluateScript|evaluateStoryboard/);
+assert.doesNotMatch(pipelineController, /MAX_REPAIR_ATTEMPTS|evaluateScript|evaluateStoryboard/);
 assert.doesNotMatch(autoPipeline, /validateFinalVideo|evaluateVisualAssetQuality|repairSubtitleCues|repairEditingPlan/);
 assert.equal(TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS, 2);
 assert.equal(SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS, 2);

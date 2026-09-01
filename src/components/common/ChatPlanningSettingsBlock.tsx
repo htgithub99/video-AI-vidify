@@ -121,54 +121,45 @@ export default function ChatPlanningSettingsBlock({
       </div>
 
       <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3")}>
-        <div className={cn("space-y-1")}>
-          <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{texts.PLANNING_AI_LABEL}</span>
-          <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.PLANNING_AI_LABEL}>
-            <Bot className={cn("w-3.5 h-3.5 text-violet-400 mr-2 shrink-0")} />
-            <select value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
-              <option value={AiPlanningFallbackProvider.GeminiChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GEMINI_CHAT_OPTION}</option>
-              <option value={AiPlanningFallbackProvider.GrokChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GROK_CHAT_OPTION}</option>
-              <option value={AiPlanningFallbackProvider.ChatGptUi} className={cn("bg-slate-955 text-slate-200")}>{texts.CHATGPT_UI_OPTION}</option>
-              <option value={AiPlanningExecutionMode.Hybrid} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_HYBRID}</option>
-              <option value={AiPlanningExecutionMode.ApiOnly} className={cn("bg-slate-955 text-slate-400")}>{texts.DISABLED_CHAT_OPTION}</option>
-            </select>
-            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-          </div>
+        <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.PLANNING_AI_LABEL}>
+          <Bot className={cn("w-3.5 h-3.5 text-violet-400 mr-2 shrink-0")} />
+          <select value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
+            <option value={AiPlanningFallbackProvider.GeminiChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GEMINI_CHAT_OPTION}</option>
+            <option value={AiPlanningFallbackProvider.GrokChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GROK_CHAT_OPTION}</option>
+            <option value={AiPlanningFallbackProvider.ChatGptUi} className={cn("bg-slate-955 text-slate-200")}>{texts.CHATGPT_UI_OPTION}</option>
+            <option value={AiPlanningExecutionMode.Hybrid} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_HYBRID}</option>
+            <option value={AiPlanningExecutionMode.ApiOnly} className={cn("bg-slate-955 text-slate-400")}>{texts.DISABLED_CHAT_OPTION}</option>
+          </select>
+          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
         </div>
 
-        <div className={cn("space-y-1")}>
-          <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{texts.PLANNING_MODEL_LABEL}</span>
-          <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_MODEL_LABEL}>
-            <Cpu className={cn("w-3.5 h-3.5 text-purple-400 mr-2 shrink-0")} />
-            <select
-              disabled={isApiOnly || _.isEmpty(availableModels)}
-              value={model}
-              onChange={(e) => onModelChange(e.target.value as AiPlanningChatModel)}
-              className={cn(SELECT_BASE_CLASSNAME)}>
-              {_.map(availableModels, (item) => (
-                <option key={item.value} value={item.value} className={cn("bg-slate-955 text-slate-200")}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-          </div>
+        <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_MODEL_LABEL}>
+          <Cpu className={cn("w-3.5 h-3.5 text-purple-400 mr-2 shrink-0")} />
+          <select
+            disabled={isApiOnly || _.isEmpty(availableModels)}
+            value={model}
+            onChange={(e) => onModelChange(e.target.value as AiPlanningChatModel)}
+            className={cn(SELECT_BASE_CLASSNAME)}>
+            {_.map(availableModels, (item) => (
+              <option key={item.value} value={item.value} className={cn("bg-slate-955 text-slate-200")}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
         </div>
 
-        <div className={cn("space-y-1")}>
-          <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{texts.PLANNING_CHROME_LABEL}</span>
-          <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_CHROME_LABEL}>
-            <Eye className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
-            <select
-              disabled={isApiOnly}
-              value={chromeHeadless ? CHROME_WINDOW_MODE.HIDDEN : CHROME_WINDOW_MODE.VISIBLE}
-              onChange={(e) => handleChromeModeChange(e.target.value)}
-              className={cn(SELECT_BASE_CLASSNAME)}>
-              <option value={CHROME_WINDOW_MODE.HIDDEN} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_CHROME_HIDDEN}</option>
-              <option value={CHROME_WINDOW_MODE.VISIBLE} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_CHROME_VISIBLE}</option>
-            </select>
-            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-          </div>
+        <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_CHROME_LABEL}>
+          <Eye className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
+          <select
+            disabled={isApiOnly}
+            value={chromeHeadless ? CHROME_WINDOW_MODE.HIDDEN : CHROME_WINDOW_MODE.VISIBLE}
+            onChange={(e) => handleChromeModeChange(e.target.value)}
+            className={cn(SELECT_BASE_CLASSNAME)}>
+            <option value={CHROME_WINDOW_MODE.HIDDEN} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_CHROME_HIDDEN}</option>
+            <option value={CHROME_WINDOW_MODE.VISIBLE} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_CHROME_VISIBLE}</option>
+          </select>
+          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
         </div>
       </div>
     </div>

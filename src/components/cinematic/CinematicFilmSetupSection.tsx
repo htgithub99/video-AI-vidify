@@ -1,10 +1,16 @@
 import { cn } from "../../lib/utils";
-import { Clapperboard, Film, Globe, Layers3, Sparkles } from "lucide-react";
+import { ChevronDown, Clapperboard, Clock, Film, Globe, Layers3, Sparkles } from "lucide-react";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../../types";
 import { CINEMATIC_SETUP_TEXTS, UI_COMMON_TEXTS } from "../../constants/texts";
 import ChatPlanningSettingsBlock from "../common/ChatPlanningSettingsBlock";
 import { Lang } from "../../lib/lang";
 import _ from "lodash";
+
+const SELECT_BASE_CLASSNAME =
+  "flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 truncate disabled:text-slate-500 disabled:cursor-not-allowed";
+
+const FIELD_BASE_CLASSNAME =
+  "relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-3 h-10 transition-all hover:border-violet-500/50 focus-within:border-violet-500/80 focus-within:ring-1 focus-within:ring-violet-500/20 shadow-sm";
 
 interface Props {
   idea: string;
@@ -87,65 +93,75 @@ export default function CinematicFilmSetupSection({
 
       <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
         <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider truncate")} title={texts.FORMAT_LABEL}>
-            <Film className={cn("w-3 h-3 text-amber-400 shrink-0")} /> <span className={cn("truncate")}>{texts.FORMAT_LABEL}</span>
+          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.FORMAT_LABEL}>
+            {texts.FORMAT_LABEL}
           </span>
-          <div className={cn("relative flex items-center w-full h-10 bg-slate-955 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors")}>
+          <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.FORMAT_LABEL}>
+            <Film className={cn("w-3.5 h-3.5 text-amber-400 mr-2 shrink-0")} />
             <select
               value={seriesMode}
               onChange={(event) => setSeriesMode(event.target.value as "single" | "series")}
-              className={cn("w-full h-full bg-transparent px-3 text-xs text-slate-200 outline-none cursor-pointer truncate flex items-center")}>
-              <option value="single">{texts.SINGLE_EPISODE}</option>
-              <option value="series">{texts.SERIES_EPISODE}</option>
+              className={cn(SELECT_BASE_CLASSNAME)}>
+              <option value="single" className={cn("bg-slate-955 text-slate-200")}>{texts.SINGLE_EPISODE}</option>
+              <option value="series" className={cn("bg-slate-955 text-slate-200")}>{texts.SERIES_EPISODE}</option>
             </select>
+            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
         </div>
+
         <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider truncate")} title={texts.EPISODES_LABEL}>
-            <Layers3 className={cn("w-3 h-3 text-rose-400 shrink-0")} /> <span className={cn("truncate")}>{texts.EPISODES_LABEL}</span>
+          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.EPISODES_LABEL}>
+            {texts.EPISODES_LABEL}
           </span>
-          <input
-            type="number"
-            min={1}
-            max={24}
-            disabled={seriesMode === "single"}
-            value={seriesMode === "single" ? 1 : episodeCount}
-            onChange={(event) => setEpisodeCount(Math.max(2, Math.min(24, Number(event.target.value))))}
-            className={cn(
-              "w-full h-10 bg-slate-955 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 disabled:text-slate-600 outline-none hover:border-slate-700 transition-colors",
-            )}
-          />
+          <div className={cn(FIELD_BASE_CLASSNAME, seriesMode === "single" && "opacity-40")} title={texts.EPISODES_LABEL}>
+            <Layers3 className={cn("w-3.5 h-3.5 text-rose-400 mr-2 shrink-0")} />
+            <input
+              type="number"
+              min={1}
+              max={24}
+              disabled={seriesMode === "single"}
+              value={seriesMode === "single" ? 1 : episodeCount}
+              onChange={(event) => setEpisodeCount(Math.max(2, Math.min(24, Number(event.target.value))))}
+              className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none disabled:text-slate-500 disabled:cursor-not-allowed")}
+            />
+          </div>
         </div>
+
         <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider truncate")} title={texts.LANGUAGE_LABEL}>
-            <Globe className={cn("w-3 h-3 text-sky-400 shrink-0")} /> <span className={cn("truncate")}>{texts.LANGUAGE_LABEL}</span>
+          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.LANGUAGE_LABEL}>
+            {texts.LANGUAGE_LABEL}
           </span>
-          <div className={cn("relative flex items-center w-full h-10 bg-slate-955 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors")}>
+          <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.LANGUAGE_LABEL}>
+            <Globe className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
             <select
               value={language}
               onChange={(event) => setLanguage(event.target.value as ProjectLanguage)}
-              className={cn("w-full h-full bg-transparent px-3 text-xs text-slate-200 outline-none cursor-pointer truncate flex items-center")}>
-              <option value={ProjectLanguage.VI}>Tiếng Việt</option>
-              <option value={ProjectLanguage.EN}>English</option>
+              className={cn(SELECT_BASE_CLASSNAME)}>
+              <option value={ProjectLanguage.VI} className={cn("bg-slate-955 text-slate-200")}>Tiếng Việt</option>
+              <option value={ProjectLanguage.EN} className={cn("bg-slate-955 text-slate-200")}>English</option>
             </select>
+            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
         </div>
+
         <div className={cn("space-y-1.5 min-w-0")}>
           <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.DURATION_LABEL}>
             {texts.DURATION_LABEL}
           </span>
-          <div className={cn("relative flex items-center w-full h-10 bg-slate-955 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors")}>
+          <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.DURATION_LABEL}>
+            <Clock className={cn("w-3.5 h-3.5 text-emerald-400 mr-2 shrink-0")} />
             <select
               value={duration}
               onChange={(event) => setDuration(event.target.value)}
-              className={cn("w-full h-full bg-transparent px-3 text-xs text-slate-200 outline-none cursor-pointer truncate flex items-center")}>
-              <option value="1 minute">{texts.DURATIONS.ONE_MIN}</option>
-              <option value="2 minutes">{texts.DURATIONS.TWO_MIN}</option>
-              <option value="3 minutes">{texts.DURATIONS.THREE_MIN}</option>
-              <option value="3-5 minutes">{texts.DURATIONS.THREE_FIVE_MIN}</option>
-              <option value="5-10 minutes">{texts.DURATIONS.FIVE_TEN_MIN}</option>
-              <option value="10-15 minutes">{texts.DURATIONS.TEN_FIFTEEN_MIN}</option>
+              className={cn(SELECT_BASE_CLASSNAME)}>
+              <option value="1 minute" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.ONE_MIN}</option>
+              <option value="2 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TWO_MIN}</option>
+              <option value="3 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.THREE_MIN}</option>
+              <option value="3-5 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.THREE_FIVE_MIN}</option>
+              <option value="5-10 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.FIVE_TEN_MIN}</option>
+              <option value="10-15 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TEN_FIFTEEN_MIN}</option>
             </select>
+            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
         </div>
       </div>
