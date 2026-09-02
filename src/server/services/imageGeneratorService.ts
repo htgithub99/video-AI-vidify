@@ -927,6 +927,7 @@ const batchPagesConfigs = new WeakMap<Page, string>();
 let activeBrowserInstance: BrowserSession | null = null;
 let activeBrowserTimeout: NodeJS.Timeout | null = null;
 let activeBrowserHeadless: boolean | undefined = undefined;
+let activeBrowserLaunchPromise: Promise<BrowserSession> | null = null;
 
 export async function closeActiveBrowser() {
   if (activeBrowserTimeout) {
@@ -965,6 +966,11 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 
   const requestedHeadless = chromeHeadless !== false;
 
+  if (activeBrowserLaunchPromise) {
+    const launchedBrowser = await activeBrowserLaunchPromise;
+    if (activeBrowserHeadless === requestedHeadless) return launchedBrowser;
+  }
+
   if (activeBrowserInstance) {
     if (activeBrowserHeadless !== requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
@@ -982,18 +988,25 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
   }
 
   appLog(ImageGenMessages.LAUNCHING_GLOBAL_CHROME);
-  activeBrowserInstance = await launchBrowserForAccount(chromeHeadless);
-  activeBrowserHeadless = requestedHeadless;
-
+  activeBrowserLaunchPromise = (async () => {
+    const launchedBrowser = await launchBrowserForAccount(chromeHeadless);
+    activeBrowserInstance = launchedBrowser;
+    activeBrowserHeadless = requestedHeadless;
+    try {
+      launchedBrowser.context.on("close", () => {
+        if (!_.isEqual(activeBrowserInstance, launchedBrowser)) return;
+        appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
+        activeBrowserInstance = null;
+        activeBrowserHeadless = undefined;
+      });
+    } catch (err) {}
+    return launchedBrowser;
+  })();
   try {
-    activeBrowserInstance.context.on("close", () => {
-      appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
-      activeBrowserInstance = null;
-      activeBrowserHeadless = undefined;
-    });
-  } catch (err) {}
-
-  return activeBrowserInstance;
+    return await activeBrowserLaunchPromise;
+  } finally {
+    activeBrowserLaunchPromise = null;
+  }
 }
 
 let grokPage: Page | null = null;

@@ -1,4 +1,4 @@
-import { appLog, appError, createAppError } from "./logger";
+import { appLog, appError } from "./logger";
 import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES, API_HEADERS, REFACTOR_CONSTANTS, SYSTEM_FETCH_CONFIG, SecurityConstants } from "../constants";
 import { BatchDelayOption } from "../types";
 import _ from "lodash";
@@ -40,7 +40,11 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
     }
 
     if (_.eq(response.ok, false)) {
-      throw createAppError(data?.error || `${ERROR_MESSAGES.API_ERROR_PREFIX}${response.status}`);
+      return {
+        success: false,
+        error: data?.error || `${ERROR_MESSAGES.API_ERROR_PREFIX}${response.status}`,
+        data,
+      };
     }
 
     return { success: true, data };

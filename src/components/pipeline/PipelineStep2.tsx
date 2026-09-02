@@ -39,7 +39,6 @@ const handleDownloadImage = async (url: string, filename: string) => {
 };
 
 import { WizardStep } from "../../types";
-import PipelineStep3 from "./PipelineStep3.js";
 
 export default function PipelineStep2(props: PipelineWizardState) {
   const {
@@ -610,17 +609,12 @@ export default function PipelineStep2(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className={cn("grid grid-cols-1 xl:grid-cols-2 gap-6 border-t border-slate-800 pt-5 mt-5")}>
-          <div className={cn("h-full")}>
-            <PipelineStep3 {...props} />
-          </div>
-
-          <div className={cn("space-y-4 h-full flex flex-col")}>
-            <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0")}>
-              <h4 className={cn("text-base font-bold text-slate-100 flex items-center gap-2")}>
-                <Layout className={cn("w-5 h-5 text-rose-500")} />
-                {t.thumbnailHeader}
-              </h4>
+        <div className={cn("space-y-4 w-full flex flex-col border-t border-slate-800/80 pt-5 mt-5")}>
+          <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0")}>
+            <h4 className={cn("text-base font-bold text-slate-100 flex items-center gap-2")}>
+              <Layout className={cn("w-5 h-5 text-rose-500")} />
+              {t.thumbnailHeader}
+            </h4>
               {project.thumbnails && project.thumbnails.length > 0 && (
                 <Button
                   variant="primary"
@@ -879,7 +873,6 @@ export default function PipelineStep2(props: PipelineWizardState) {
               </div>
             )}
           </div>
-        </div>
 
         <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-between mt-6 relative z-10")}>
           <Button
@@ -894,7 +887,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
           <Button
             variant="primary"
             size="md"
-            onClick={() => setCurrentStep(WizardStep.Export)}
+            onClick={() => setCurrentStep(WizardStep.SEOBoost)}
             className={cn("flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-white tracking-wide shadow-lg")}
             title={t.Continue}>
             {t.Continue}

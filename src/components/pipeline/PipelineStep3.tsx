@@ -2,59 +2,106 @@ import { cn } from "../../lib/utils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import _ from "lodash";
-import { LEADING_HASHTAGS_REGEX, PIPELINE_STEP3_TEXTS } from "../../constants";
+import { LEADING_HASHTAGS_REGEX, PIPELINE_STEP3_TEXTS, ThumbnailActionPosition } from "../../constants";
+import { WizardStep } from "../../types";
 
-const { Search, Copy, Target } = LucideIcons as any;
+const { Search, Copy, Target, RefreshCw, ArrowLeft, ArrowRight, Sparkles, Hash, Tag, FileText } = LucideIcons as any;
 
 export default function PipelineStep3(props: PipelineWizardState) {
-  const { t, project, loadingStates, setInfoMsg } = props;
+  const { t, project, loadingStates, setInfoMsg, setCurrentStep, handleTriggerSEOBoost } = props;
+
   const hasMeasuredScore = (score: unknown): boolean => _.isFinite(score) && _.gte(_.toNumber(score), 0);
   const showScore = (score: unknown): string => (hasMeasuredScore(score) ? `${score}%` : "Chưa đo");
   const scoreWidth = (score: unknown): string => `${hasMeasuredScore(score) ? score : 0}%`;
+
+  const isGenerating = !!loadingStates["seoBoost_loading"];
+
   return (
-    <div className={cn("space-y-6 relative overflow-visible h-full flex flex-col")}>
-      <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1 shrink-0")}>
-        <h4 className={cn("text-base font-bold text-slate-100 flex items-center gap-2")}>
-          <Target className={cn("w-5 h-5 text-rose-500")} />
-          {t.seoOptimizer || PIPELINE_STEP3_TEXTS.SEO_RESULT}
-        </h4>
+    <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full text-left")}>
+      <div className={cn("border-b border-slate-800/80 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20")}>
+        <div>
+          <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20")}>
+            <Tooltip content="Tự động phân tích kịch bản và tối ưu bộ từ khóa, tiêu đề cuốn hút và hashtags chuẩn SEO." position="bottom" align="start">
+              <span className={cn("flex items-center gap-2 cursor-help")}>
+                <Target className={cn("w-5 h-5 text-rose-500")} /> {t.seoOptimizer || PIPELINE_STEP3_TEXTS.SEO_RESULT}
+              </span>
+            </Tooltip>
+          </h3>
+          <p className={cn("text-slate-400 text-xs mt-1 relative z-10")}>
+            Tối ưu hóa tiêu đề, mô tả và hashtags giúp video đạt tỷ lệ click (CTR) cao trên YouTube &amp; TikTok.
+          </p>
+        </div>
+
+        <Tooltip content="Kích hoạt AI phân tích kịch bản để tạo ra các biến thể tiêu đề và thẻ hashtags tối ưu." position="top" align="end">
+          <Button
+            variant="primary"
+            onClick={() => {
+              if (handleTriggerSEOBoost) handleTriggerSEOBoost(true, ThumbnailActionPosition.TOP);
+            }}
+            disabled={isGenerating}
+            isLoading={isGenerating}
+            className={cn("self-start sm:self-auto relative z-20 shadow-lg shadow-rose-600/25 px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2")}
+            title={t.Create_prompt_guides_and_}>
+            {isGenerating ? <RefreshCw className={cn("w-4 h-4 animate-spin")} /> : <Sparkles className={cn("w-4 h-4 text-amber-200 animate-pulse")} />}
+            <span>{isGenerating ? t.Processing || "Đang xử lý..." : "Tối ưu SEO AI"}</span>
+          </Button>
+        </Tooltip>
       </div>
 
-      <div className={cn("flex flex-col gap-5 items-stretch flex-1")}>
-        <div className={cn("space-y-5 flex flex-col bg-slate-900/40 p-5 rounded-xl border border-slate-800/50 flex-1")}>
-          <div className={cn("space-y-3")}>
-            <span className={cn("text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Titles_Options_Group || PIPELINE_STEP3_TEXTS.TITLES_OPTIONS}</span>
-            <div className={cn("space-y-4")}>
+      <div className={cn("grid grid-cols-1 lg:grid-cols-5 gap-6")}>
+        <div className={cn("lg:col-span-3 space-y-6 flex flex-col")}>
+          <div className={cn("bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 border border-slate-800/80 p-5 rounded-2xl space-y-4 shadow-xl backdrop-blur-md relative overflow-hidden")}>
+            <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
+              <div className={cn("flex items-center gap-2")}>
+                <FileText className={cn("w-4 h-4 text-rose-500")} />
+                <span className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono")}>
+                  {t.Titles_Options_Group || PIPELINE_STEP3_TEXTS.TITLES_OPTIONS}
+                </span>
+              </div>
+              <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20")}>
+                {project.seo?.titles?.length || 0} Gợi ý
+              </span>
+            </div>
+
+            <div className={cn("space-y-3.5")}>
               {_.isEmpty(project.seo?.titles) &&
-                (loadingStates["seoBoost_loading"] ? (
-                  <div className={cn("space-y-4 w-full")}>
+                (isGenerating ? (
+                  <div className={cn("space-y-3")}>
                     {_.map(_.range(1, 4), (idx) => (
-                      <div key={idx} className={cn("bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-3 animate-pulse")}>
-                        <div className={cn("h-4 bg-slate-900 rounded-md w-3/4")}></div>
-                        <div className={cn("grid grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs")}>
-                          <div className={cn("h-2 bg-slate-900 rounded-full")}></div>
-                          <div className={cn("h-2 bg-slate-900 rounded-full")}></div>
-                          <div className={cn("h-2 bg-slate-900 rounded-full")}></div>
-                          <div className={cn("h-2 bg-slate-900 rounded-full")}></div>
+                      <div key={idx} className={cn("bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl space-y-3 animate-pulse")}>
+                        <div className={cn("h-4 bg-slate-800 rounded w-3/4")} />
+                        <div className={cn("grid grid-cols-4 gap-3 pt-2")}>
+                          <div className={cn("h-2 bg-slate-800 rounded-full")} />
+                          <div className={cn("h-2 bg-slate-800 rounded-full")} />
+                          <div className={cn("h-2 bg-slate-800 rounded-full")} />
+                          <div className={cn("h-2 bg-slate-800 rounded-full")} />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className={cn("bg-slate-950/40 border border-slate-800 rounded-xl p-8 text-center flex flex-col items-center justify-center space-y-3")}>
-                    <div className={cn("w-10 h-10 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-500")}>
-                      <Search className={cn("w-4 h-4 text-rose-500")} />
+                  <div className={cn("bg-slate-950/40 border border-slate-800/80 rounded-xl p-8 text-center flex flex-col items-center justify-center space-y-3")}>
+                    <div className={cn("w-10 h-10 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-full flex items-center justify-center")}>
+                      <Search className={cn("w-5 h-5")} />
                     </div>
                     <div className={cn("space-y-1")}>
-                      <p className={cn("text-xs font-semibold text-slate-300")}>{t.No_SEO_Data || PIPELINE_STEP3_TEXTS.NO_SEO_DATA}</p>
-                      <p className={cn("text-[11px] text-slate-500 max-w-xs leading-relaxed")}>{t.Click_Optimize_Boost_at_t || PIPELINE_STEP3_TEXTS.CLICK_OPTIMIZE_HINT}</p>
+                      <p className={cn("text-xs font-bold text-slate-200")}>{t.No_SEO_Data || PIPELINE_STEP3_TEXTS.NO_SEO_DATA}</p>
+                      <p className={cn("text-[11px] text-slate-400 max-w-xs leading-relaxed")}>
+                        {t.Click_Optimize_Boost_at_t || PIPELINE_STEP3_TEXTS.CLICK_OPTIMIZE_HINT}
+                      </p>
                     </div>
                   </div>
                 ))}
+
               {_.map(project.seo?.titles || [], (title, i) => (
-                <div key={i} className={cn("bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-3")}>
-                  <div className={cn("flex items-start justify-between gap-4")}>
+                <div
+                  key={i}
+                  className={cn(
+                    "bg-slate-950/50 hover:border-rose-500/40 transition-all border border-slate-800/80 p-4 rounded-xl space-y-3 group",
+                  )}>
+                  <div className={cn("flex items-start justify-between gap-3")}>
                     <p className={cn("font-bold text-slate-100 text-sm leading-snug")}>{title.text}</p>
                     <Button
                       variant="ghost"
@@ -63,49 +110,50 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         navigator.clipboard.writeText(title.text);
                         setInfoMsg(t.Copied_title_to_clipboard || PIPELINE_STEP3_TEXTS.COPIED_TITLE);
                       }}
-                      className={cn("text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto w-auto shadow-none")}
+                      className={cn("toast-close-btn p-1.5 text-slate-400 hover:text-rose-500 shrink-0")}
                       title={t.Copy_title || PIPELINE_STEP3_TEXTS.COPY_TITLE}>
                       <Copy className={cn("w-4 h-4")} />
                     </Button>
                   </div>
-                  <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono")}>
+
+                  <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-xs font-mono")}>
                     <div>
-                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400")}>
+                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400 font-bold")}>
                         <span>{t.Search || PIPELINE_STEP3_TEXTS.SEARCH_TITLE}</span>
-                        <span className={cn("text-rose-600 dark:text-rose-300 font-bold")}>{showScore(title.searchScore)}</span>
+                        <span className={cn("text-rose-400 font-bold")}>{showScore(title.searchScore)}</span>
                       </div>
-                      <div className={cn("w-full bg-slate-900 h-1 rounded-full overflow-hidden")}>
-                        <div className={cn("bg-rose-500 dark:bg-rose-300 h-full")} style={{ width: scoreWidth(title.searchScore) }}></div>
+                      <div className={cn("w-full bg-slate-800 h-1.5 rounded-full overflow-hidden")}>
+                        <div className={cn("bg-rose-500 h-full rounded-full transition-all")} style={{ width: scoreWidth(title.searchScore) }} />
                       </div>
                     </div>
 
                     <div>
-                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400")}>
+                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400 font-bold")}>
                         <span>{t.CTR || PIPELINE_STEP3_TEXTS.CTR_TITLE}</span>
-                        <span className={cn("text-rose-600 dark:text-rose-400 font-bold")}>{showScore(title.ctrScore)}</span>
+                        <span className={cn("text-amber-400 font-bold")}>{showScore(title.ctrScore)}</span>
                       </div>
-                      <div className={cn("w-full bg-slate-900 h-1 rounded-full overflow-hidden")}>
-                        <div className={cn("bg-rose-600 dark:bg-rose-400 h-full")} style={{ width: scoreWidth(title.ctrScore) }}></div>
+                      <div className={cn("w-full bg-slate-800 h-1.5 rounded-full overflow-hidden")}>
+                        <div className={cn("bg-amber-500 h-full rounded-full transition-all")} style={{ width: scoreWidth(title.ctrScore) }} />
                       </div>
                     </div>
 
                     <div>
-                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400")}>
+                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400 font-bold")}>
                         <span>{t.Compet || PIPELINE_STEP3_TEXTS.COMPETITION_TITLE}</span>
-                        <span className={cn("text-rose-600 dark:text-rose-500 font-bold")}>{showScore(title.compScore)}</span>
+                        <span className={cn("text-blue-400 font-bold")}>{showScore(title.compScore)}</span>
                       </div>
-                      <div className={cn("w-full bg-slate-900 h-1 rounded-full overflow-hidden")}>
-                        <div className={cn("bg-rose-600 dark:bg-rose-500 h-full")} style={{ width: scoreWidth(title.compScore) }}></div>
+                      <div className={cn("w-full bg-slate-800 h-1.5 rounded-full overflow-hidden")}>
+                        <div className={cn("bg-blue-500 h-full rounded-full transition-all")} style={{ width: scoreWidth(title.compScore) }} />
                       </div>
                     </div>
 
                     <div>
-                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400")}>
+                      <div className={cn("flex justify-between mb-1 text-[10px] text-slate-400 font-bold")}>
                         <span>{t.SEO_Score || PIPELINE_STEP3_TEXTS.SEO_SCORE_TITLE}</span>
-                        <span className={cn("text-rose-700 dark:text-rose-600 font-bold")}>{showScore(title.seoScore)}</span>
+                        <span className={cn("text-emerald-400 font-bold")}>{showScore(title.seoScore)}</span>
                       </div>
-                      <div className={cn("w-full bg-slate-900 h-1 rounded-full overflow-hidden")}>
-                        <div className={cn("bg-rose-700 dark:bg-rose-600 h-full")} style={{ width: scoreWidth(title.seoScore) }}></div>
+                      <div className={cn("w-full bg-slate-800 h-1.5 rounded-full overflow-hidden")}>
+                        <div className={cn("bg-emerald-500 h-full rounded-full transition-all")} style={{ width: scoreWidth(title.seoScore) }} />
                       </div>
                     </div>
                   </div>
@@ -113,28 +161,45 @@ export default function PipelineStep3(props: PipelineWizardState) {
               ))}
             </div>
           </div>
-          <div className={cn("space-y-3")}>
-            <span className={cn("text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Description_Options || PIPELINE_STEP3_TEXTS.DESC_OPTIONS}</span>
-            <div className={cn("space-y-4")}>
+
+          <div className={cn("bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 border border-slate-800/80 p-5 rounded-2xl space-y-4 shadow-xl backdrop-blur-md relative overflow-hidden")}>
+            <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
+              <div className={cn("flex items-center gap-2")}>
+                <FileText className={cn("w-4 h-4 text-emerald-500")} />
+                <span className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono")}>
+                  {t.Description_Options || PIPELINE_STEP3_TEXTS.DESC_OPTIONS}
+                </span>
+              </div>
+              <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20")}>
+                {project.seo?.descriptions?.length || 0} Đoạn
+              </span>
+            </div>
+
+            <div className={cn("space-y-3")}>
               {_.isEmpty(project.seo?.descriptions) &&
-                (loadingStates["seoBoost_loading"] ? (
-                  <div className={cn("space-y-4 w-full")}>
+                (isGenerating ? (
+                  <div className={cn("space-y-3 w-full")}>
                     {_.map(_.range(1, 3), (idx) => (
-                      <div key={idx} className={cn("bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-2 animate-pulse")}>
-                        <div className={cn("h-3 bg-slate-900 rounded-md w-full")}></div>
-                        <div className={cn("h-3 bg-slate-900 rounded-md w-5/6")}></div>
+                      <div key={idx} className={cn("bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl space-y-2 animate-pulse")}>
+                        <div className={cn("h-3 bg-slate-800 rounded w-full")} />
+                        <div className={cn("h-3 bg-slate-800 rounded w-5/6")} />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className={cn("text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center")}>
+                  <div className={cn("text-[11px] text-slate-400 border border-slate-800/80 bg-slate-950/40 p-5 rounded-xl text-center")}>
                     {t.Descriptions_are_empty || PIPELINE_STEP3_TEXTS.DESCRIPTIONS_EMPTY}
                   </div>
                 ))}
+
               {_.map(project.seo?.descriptions || [], (desc, i) => (
-                <div key={i} className={cn("bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2")}>
+                <div
+                  key={i}
+                  className={cn(
+                    "bg-slate-950/50 hover:border-emerald-500/40 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2 group",
+                  )}>
                   <div className={cn("flex items-start justify-between gap-4")}>
-                    <p className={cn("text-xs text-slate-300 leading-relaxed font-sans")}>{desc.text}</p>
+                    <p className={cn("text-xs text-slate-200 leading-relaxed font-sans")}>{desc.text}</p>
                     <Button
                       variant="ghost"
                       size="xs"
@@ -142,7 +207,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         navigator.clipboard.writeText(desc.text);
                         setInfoMsg(t.Copied_description_to_cli || PIPELINE_STEP3_TEXTS.COPIED_DESC);
                       }}
-                      className={cn("text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none")}
+                      className={cn("toast-close-btn p-1.5 text-slate-400 hover:text-emerald-500 shrink-0")}
                       title={t.Copy || PIPELINE_STEP3_TEXTS.COPY_DESC}>
                       <Copy className={cn("w-4 h-4")} />
                     </Button>
@@ -152,10 +217,16 @@ export default function PipelineStep3(props: PipelineWizardState) {
             </div>
           </div>
         </div>
-        <div className={cn("bg-slate-900/40 border border-slate-800/50 p-5 rounded-xl space-y-4")}>
-          <div className={cn("space-y-2")}>
-            <div className={cn("flex items-center justify-between")}>
-              <span className={cn("text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold")}>{t.hashtags || PIPELINE_STEP3_TEXTS.HASHTAGS}</span>
+
+        <div className={cn("lg:col-span-2 space-y-6 flex flex-col")}>
+          <div className={cn("bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 border border-slate-800/80 p-5 rounded-2xl space-y-4 shadow-xl backdrop-blur-md relative overflow-hidden")}>
+            <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
+              <div className={cn("flex items-center gap-2")}>
+                <Hash className={cn("w-4 h-4 text-amber-500")} />
+                <span className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono")}>
+                  {t.hashtags || PIPELINE_STEP3_TEXTS.HASHTAGS}
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="xs"
@@ -167,32 +238,45 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   navigator.clipboard.writeText(hashtagsText);
                   setInfoMsg(t.Copied_Hashtags_to_clipbo || PIPELINE_STEP3_TEXTS.COPIED_HASHTAGS);
                 }}
-                className={cn("text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none")}
+                disabled={_.isEmpty(project.seo?.hashtags)}
+                className={cn("toast-close-btn text-slate-400 hover:text-amber-500")}
                 title={t.Copy_Hashtags || PIPELINE_STEP3_TEXTS.COPY_HASHTAGS}>
-                <Copy className={cn("w-3.5 h-3.5")} />
+                <Copy className={cn("w-4 h-4")} />
               </Button>
             </div>
+
             <div className={cn("flex flex-wrap gap-2")}>
               {_.isEmpty(project.seo?.hashtags) &&
-                (loadingStates["seoBoost_loading"] ? (
+                (isGenerating ? (
                   <div className={cn("flex gap-2 flex-wrap w-full")}>
                     {_.map(_.range(1, 5), (idx) => (
-                      <div key={idx} className={cn("bg-slate-900/60 border border-slate-800/80 animate-pulse h-7 w-16 rounded-md")}></div>
+                      <div key={idx} className={cn("bg-slate-800/80 animate-pulse h-7 w-20 rounded-lg")} />
                     ))}
                   </div>
                 ) : (
-                  <span className={cn("text-[10px] text-slate-500 font-mono tracking-tight")}>{t.No_hashtags || PIPELINE_STEP3_TEXTS.NO_HASHTAGS}</span>
+                  <span className={cn("text-[11px] text-slate-400 font-sans")}>{t.No_hashtags || PIPELINE_STEP3_TEXTS.NO_HASHTAGS}</span>
                 ))}
+
               {_.map(project.seo?.hashtags || [], (tag, i) => (
-                <span key={i} className={cn("bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm")}>
+                <span
+                  key={i}
+                  className={cn(
+                    "bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm transition hover:scale-105",
+                  )}>
                   #{tag.replace(LEADING_HASHTAGS_REGEX, "")}
                 </span>
               ))}
             </div>
           </div>
-          <div className={cn("space-y-2 pt-3 border-t border-slate-900")}>
-            <div className={cn("flex items-center justify-between")}>
-              <span className={cn("text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold")}>{t.tags || PIPELINE_STEP3_TEXTS.TAGS}</span>
+
+          <div className={cn("bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 border border-slate-800/80 p-5 rounded-2xl space-y-4 shadow-xl backdrop-blur-md relative overflow-hidden")}>
+            <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
+              <div className={cn("flex items-center gap-2")}>
+                <Tag className={cn("w-4 h-4 text-blue-500")} />
+                <span className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono")}>
+                  {t.tags || PIPELINE_STEP3_TEXTS.TAGS}
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="xs"
@@ -201,30 +285,59 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   navigator.clipboard.writeText(tagsText);
                   setInfoMsg(t.Copied_Tags_to_clipboard || PIPELINE_STEP3_TEXTS.COPIED_TAGS);
                 }}
-                className={cn("text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none")}
+                disabled={_.isEmpty(project.seo?.tags)}
+                className={cn("toast-close-btn text-slate-400 hover:text-blue-500")}
                 title={t.Copy_Tags || PIPELINE_STEP3_TEXTS.COPY_TAGS}>
-                <Copy className={cn("w-3.5 h-3.5")} />
+                <Copy className={cn("w-4 h-4")} />
               </Button>
             </div>
-            <div className={cn("flex flex-wrap gap-1.5")}>
+
+            <div className={cn("flex flex-wrap gap-2")}>
               {_.isEmpty(project.seo?.tags) &&
-                (loadingStates["seoBoost_loading"] ? (
+                (isGenerating ? (
                   <div className={cn("flex gap-2 flex-wrap w-full")}>
                     {_.map(_.range(1, 7), (idx) => (
-                      <div key={idx} className={cn("bg-slate-900/60 border border-slate-800/80 animate-pulse h-6 w-12 rounded-md")}></div>
+                      <div key={idx} className={cn("bg-slate-800/80 animate-pulse h-6 w-16 rounded-lg")} />
                     ))}
                   </div>
                 ) : (
-                  <span className={cn("text-[10px] text-slate-500 font-mono tracking-tight")}>{t.No_keywords || PIPELINE_STEP3_TEXTS.NO_TAGS}</span>
+                  <span className={cn("text-[11px] text-slate-400 font-sans")}>{t.No_keywords || PIPELINE_STEP3_TEXTS.NO_TAGS}</span>
                 ))}
+
               {_.map(project.seo?.tags || [], (tag, i) => (
-                <span key={i} className={cn("bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm")}>
+                <span
+                  key={i}
+                  className={cn(
+                    "bg-slate-950 border border-slate-800 text-slate-200 font-sans font-medium text-xs px-3 py-1.5 rounded-xl shadow-sm transition hover:border-slate-700",
+                  )}>
                   {tag}
                 </span>
               ))}
             </div>
           </div>
         </div>
+      </div>
+
+      <div className={cn("pt-4 border-t border-slate-800/80 flex items-center justify-between mt-6 relative z-10")}>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={() => setCurrentStep(WizardStep.AssetManager)}
+          className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold")}
+          title={t.Back}>
+          <ArrowLeft className={cn("w-4 h-4")} />
+          <span>{t.Back}</span>
+        </Button>
+
+        <Button
+          variant="primary"
+          size="md"
+          onClick={() => setCurrentStep(WizardStep.Export)}
+          className={cn("flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-white tracking-wide shadow-lg")}
+          title={t.Continue}>
+          <span>{t.Continue}</span>
+          <ArrowRight className={cn("w-4 h-4")} />
+        </Button>
       </div>
     </div>
   );

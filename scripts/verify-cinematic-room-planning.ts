@@ -16,6 +16,10 @@ const TEST_CONSTANTS = {
   LANGUAGE_VIETNAMESE: "Vietnamese",
   DIRECTIVE_DIALOGUE_REQUIRED: "Dialogue is REQUIRED for sc_2.",
   PIPELINE_CONTROLLER_PATH: "../src/server/controllers/pipelineController.ts",
+  CHAT_UI_PLANNING_SERVICE_PATH: "../src/server/services/chatUiPlanningService.ts",
+  IMAGE_GENERATOR_SERVICE_PATH: "../src/server/services/imageGeneratorService.ts",
+  APP_HEADER_PATH: "../src/components/Header.tsx",
+  AUTO_VIDEO_PIPELINE_PATH: "../src/hooks/useAutoVideoPipeline.ts",
   SUCCESS_MESSAGE: "Cinematic room planning assertions passed.\n",
 } as const;
 
@@ -203,9 +207,9 @@ const verifyScopedVisualBibleIsolation = () => {
 const verifyPipelineControllerSourceInvariants = () => {
   const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
   assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents\)/);
-  assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents\)/);
-  assert.match(controllerSource, /return await requestApiPlan\(apiContents\)[\s\S]*return requestChatUiPlan\(chatUiContents\)/);
-  assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents\)[\s\S]*return requestApiPlan\(apiContents\)/);
+  assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
+  assert.match(controllerSource, /return await requestApiPlan\(apiContents\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
+  assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents\)/);
   assert.match(controllerSource, /forChatUi \? chunkCharactersJson : charactersJson/);
   assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
   assert.match(controllerSource, /maxItems: CINEMATIC_CHAT_PLANNING_CONFIG\.API_MAX_SOUND_DESIGN_CUES/);
@@ -215,6 +219,55 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /getBlockingCinematicStoryboardContractIssues/);
   assert.match(controllerSource, /getBlockingCinematicPlanningIssues\(planningIssues\)/);
   assert.match(controllerSource, /candidateBlockingCount[\s\S]*currentBlockingCount/);
+  assert.match(controllerSource, /chunkSize = isCinematicPlanning \? CINEMATIC_PRODUCTION_POLICY\.PLANNING_CHUNK_SIZE/);
+  assert.match(controllerSource, /targetRepairSceneIds[\s\S]*createRepairPrompt\(parsedItems, correctionIssues, targetRepairSceneIds\)/);
+  assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
+  assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
+  assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
+};
+
+const verifyPlanningRunIsolation = () => {
+  const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
+  const imageGeneratorSource = readFileSync(new URL(TEST_CONSTANTS.IMAGE_GENERATOR_SERVICE_PATH, import.meta.url), "utf8");
+  assert.match(planningServiceSource, /activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>/);
+  assert.match(planningServiceSource, /runControllers\.get\(workerId\)\?\.controller\.abort\(\)/);
+  assert.match(planningServiceSource, /planningMutexes = new Map<string, SimpleMutex>/);
+  assert.match(planningServiceSource, /getPlanningRoomKey\(request\)/);
+  assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
+  assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
+  assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
+};
+
+const verifyProviderRoomCleanup = () => {
+  const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
+  const headerSource = readFileSync(new URL(TEST_CONSTANTS.APP_HEADER_PATH, import.meta.url), "utf8");
+  assert.match(planningServiceSource, /clearChatPlanningRooms/);
+  assert.match(planningServiceSource, /deleteProviderConversationHistory/);
+  assert.match(planningServiceSource, /CONVERSATION_DELETE_FALLBACK_PATTERN/);
+  assert.match(planningServiceSource, /deletedConversationCount/);
+  assert.match(planningServiceSource, /sidebarOpenButton[\s\S]*sidebarReady/);
+  assert.match(planningServiceSource, /record\.provider[\s\S]*record\.controller\.abort\(\)/);
+  assert.match(planningServiceSource, /AiPlanningFallbackProvider\.GeminiChat[\s\S]*geminiRooms/);
+  assert.match(planningServiceSource, /AiPlanningFallbackProvider\.GrokChat[\s\S]*grokRooms/);
+  assert.match(planningServiceSource, /AiPlanningFallbackProvider\.ChatGptUi[\s\S]*chatGptRooms/);
+  assert.match(headerSource, /CLEAR_GEMINI_ROOMS/);
+  assert.match(headerSource, /CLEAR_GROK_ROOMS/);
+  assert.match(headerSource, /CLEAR_CHATGPT_ROOMS/);
+  assert.match(headerSource, /PIPELINE_CLEAR_CHAT_ROOMS/);
+  assert.match(headerSource, /CLEAR_ROOM_CONFIRM/);
+  assert.match(headerSource, /CINEMATIC_SETUP_TEXTS\[currentLang as Lang\] \|\| CINEMATIC_SETUP_TEXTS\.vi/);
+  assert.doesNotMatch(headerSource, /CINEMATIC_SETUP_TEXTS\[isVietnamese \? UIConstants\.LANG_VI/);
+};
+
+const verifyCinematicPlanningCheckpointing = () => {
+  const pipelineSource = readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8");
+  assert.match(pipelineSource, /scenesToPlan = shouldReuseCompletedPlans \? _.filter\(realScenes, \(scene\) => _.isEmpty\(_.trim\(scene\.generationPrompt\)\)\) : realScenes/);
+  assert.match(pipelineSource, /planningBatches = _.chunk\(scenesToPlan, CINEMATIC_POLICY_CONFIG\.PLANNING_CHUNK_SIZE\)/);
+  assert.match(pipelineSource, /storyboard: pendingPlanningScenes/);
+  assert.match(pipelineSource, /issueSceneIds[\s\S]*pendingPlanningScenes = _.filter\(pendingPlanningScenes/);
+  assert.match(pipelineSource, /completedResponseScenes[\s\S]*checkpointCompletedScenes/);
+  assert.match(pipelineSource, /PLANNING_WORKER_COUNT[\s\S]*Promise\.all/);
+  assert.match(pipelineSource, /checkpointProject[\s\S]*await syncProject\(checkpointProject\)/);
 };
 
 const runAllVerificationSuites = () => {
@@ -226,6 +279,9 @@ const runAllVerificationSuites = () => {
   verifyBlockingContractClassification();
   verifyScopedVisualBibleIsolation();
   verifyPipelineControllerSourceInvariants();
+  verifyPlanningRunIsolation();
+  verifyProviderRoomCleanup();
+  verifyCinematicPlanningCheckpointing();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);
 };
 

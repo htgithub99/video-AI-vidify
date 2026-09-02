@@ -33,6 +33,7 @@ import { createAdvisoryFinalVideoReport } from "../../services/finalMultimodalQu
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
 import { getRenderReadiness } from "../../services/pipelineCompletionPolicyService";
 import { usePausedVideoPreview } from "../../hooks/usePausedVideoPreview";
+import { parseTargetDurationSeconds } from "../../services/scriptQualityService";
 
 export default function PipelineStep4(props: PipelineWizardState) {
   const { t, setCurrentStep, isPlayingSim, currentSimTime, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } =
@@ -98,6 +99,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
     try {
       const payload = {
         projectId: props.project.id,
+        expectedSourceSceneIds: _.map(props.project.storyboard, "id"),
+        expectedDurationSeconds: parseTargetDurationSeconds(props.project.config.duration),
         scenes: _.map(scenesWithSubtitles, (sc) => ({
           id: sc.id,
           duration: sc.duration,
@@ -346,12 +349,14 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
               <div className={cn("flex items-center justify-between")}>
                 <div className={cn("flex items-center gap-4")}>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim}
-                    className={cn("text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1")}
+                    className={cn("toast-close-btn text-white hover:text-rose-500 transition-colors p-1")}
                     title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}>
                     {isPlayingSim ? <Pause className={cn("w-6 h-6 fill-current")} /> : <Play className={cn("w-6 h-6 fill-current")} />}
-                  </button>
+                  </Button>
 
                   <div className={cn("text-[12px] md:text-sm font-bold font-sans text-white flex items-center gap-1.5 drop-shadow-md")}>
                     {simActiveScene ? (
@@ -373,13 +378,22 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   </div>
                 </div>
 
-                <div className={cn("flex items-center gap-4 text-white")}>
-                  <button className={cn("p-1 hover:bg-white/10 rounded-full transition-colors outline-none")} title={t.Settings || "Cấu hình"}>
+                <div className={cn("flex items-center gap-2 text-white")}>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className={cn("toast-close-btn p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors")}
+                    title={t.Settings || "Cấu hình"}>
                     <Settings2 className={cn("w-5 h-5 cursor-pointer")} />
-                  </button>
-                  <button onClick={toggleFullscreen} className={cn("p-1 hover:bg-white/10 rounded-full transition-colors outline-none")} title={t.Fullscreen || "Toàn màn hình"}>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={toggleFullscreen}
+                    className={cn("toast-close-btn p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors")}
+                    title={t.Fullscreen || "Toàn màn hình"}>
                     <Maximize className={cn("w-5 h-5 cursor-pointer")} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -475,14 +489,15 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   ].map((mode) => (
                     <div key={mode.id} className={cn("flex [&>div]:w-full")}>
                       <Tooltip content={mode.tooltip} position="top" align={mode.align}>
-                        <button
+                        <Button
+                          variant="unstyled"
                           onClick={() => setInputMode(mode.id)}
                           className={cn(
                             "w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200",
                             inputMode === mode.id ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50",
                           )}>
                           {mode.label}
-                        </button>
+                        </Button>
                       </Tooltip>
                     </div>
                   ))}

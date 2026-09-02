@@ -8,7 +8,22 @@ import {
   resolveCinematicClipDuration,
 } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
-import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, StoryboardScene, VisualConfig } from "../types";
+import {
+  AssetAcceptance,
+  Chapter,
+  ContentSafetyReport,
+  GenerateType,
+  ImageGenerationMode,
+  ImageGeneratorEngine,
+  QaStatus,
+  SceneAssetStatus,
+  ScriptQualityReport,
+  StoryboardQualityReport,
+  StoryboardScene,
+  VisualConfig,
+} from "../types";
+import { ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config";
+import { hasSceneAsset } from "./projectImageGenerationService";
 
 export const CINEMATIC_PRODUCTION_POLICY = { PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS } as const;
 
@@ -119,6 +134,60 @@ export const getBlockingCinematicStoryboardContractIssues = (scenes: StoryboardS
 
 export const getBlockingCinematicPlanningIssues = (issues: string[]): string[] =>
   _.reject(issues, (issue) => _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)));
+
+export const getCinematicScriptReadinessIssues = (
+  script: string,
+  chapters: Chapter[],
+  quality?: ScriptQualityReport,
+  contentSafety?: ContentSafetyReport,
+): string[] =>
+  _.uniq(
+    _.compact([
+      _.isEmpty(_.trim(script)) && "script:missing",
+      !/[.!?…][\s"')\]]*$/.test(_.trim(script)) && "script:incomplete_ending",
+      _.isEmpty(chapters) && "chapters:missing",
+      _.some(chapters, (chapter) => _.isEmpty(_.trim(chapter.scriptSegment))) && "chapters:script_segment_missing",
+      _.some(chapters, (chapter) => !/[.!?…][\s"')\]]*$/.test(_.trim(chapter.scriptSegment))) && "chapters:incomplete_ending",
+      !quality && "scriptQa:missing",
+      quality && !quality.passed && "scriptQa:failed",
+      quality && !quality.durationFit && "scriptQa:duration_mismatch",
+      _.includes(quality?.warnings, ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING) && "scriptQa:skipped",
+      !contentSafety && "contentSafety:missing",
+      contentSafety && !contentSafety.allowed && "contentSafety:blocked",
+    ]),
+  );
+
+export const getCinematicStoryboardReadinessIssues = (
+  scenes: StoryboardScene[],
+  expectedClipCount: number,
+  quality?: StoryboardQualityReport,
+): string[] =>
+  _.uniq(
+    _.compact([
+      _.isEmpty(scenes) && "storyboard:missing",
+      !_.isEqual(scenes.length, expectedClipCount) && `storyboard:clip_count:${scenes.length}/${expectedClipCount}`,
+      _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
+      !quality && "storyboardQa:missing",
+      quality && !quality.passed && "storyboardQa:failed",
+      _.includes(quality?.warnings, ADVISORY_QA_CONFIG.STORYBOARD_SKIPPED_WARNING) && "storyboardQa:skipped",
+      _.lt(_.defaultTo(quality?.scriptCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:script_coverage_below_target",
+      _.lt(_.defaultTo(quality?.pacingCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:pacing_coverage_below_target",
+    ]),
+  );
+
+export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], expectedClipCount: number): string[] =>
+  _.uniq([
+    ..._.flatMap(scenes, (scene) =>
+      _.compact([
+        !hasSceneAsset(scene) && `${scene.id}:asset_missing`,
+        !_.isEqual(scene.assetType, GenerateType.Video) && `${scene.id}:video_missing`,
+        !_.isEqual(scene.assetStatus, SceneAssetStatus.Approved) && `${scene.id}:asset_not_approved`,
+        !_.isEqual(scene.qaStatus, QaStatus.Passed) && `${scene.id}:qa_failed`,
+        !_.isEqual(scene.acceptance, AssetAcceptance.Approved) && `${scene.id}:acceptance_failed`,
+      ]),
+    ),
+    ...(!_.isEqual(scenes.length, expectedClipCount) ? [`storyboard:clip_count:${scenes.length}/${expectedClipCount}`] : []),
+  ]);
 
 const normalizedCharacterSet = (scene: StoryboardScene): string => _.join(_.sortBy(_.uniq(scene.characterIds || [])), "|");
 

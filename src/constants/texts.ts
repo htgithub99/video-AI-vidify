@@ -114,7 +114,7 @@ export const QUOTA_TEXTS = {
 
 export const TRANSFER_ENCODINGS = { CHUNKED: "chunked" };
 
-export const HTTP_STATUS_CODES = { OK: 200, BAD_REQUEST: 400, NOT_FOUND: 404, INTERNAL_SERVER_ERROR: 500, SERVICE_UNAVAILABLE: 503 };
+export const HTTP_STATUS_CODES = { OK: 200, BAD_REQUEST: 400, UNPROCESSABLE_ENTITY: 422, NOT_FOUND: 404, INTERNAL_SERVER_ERROR: 500, SERVICE_UNAVAILABLE: 503 };
 
 export const TEMPLATE_CONFIG = {
   PAYLOAD_LIMIT: "50mb",
@@ -1613,6 +1613,13 @@ export const CINEMATIC_SETUP_TEXTS = {
     GEMINI_CHAT_OPTION: "Gemini",
     GROK_CHAT_OPTION: "Grok",
     CHATGPT_UI_OPTION: "ChatGPT",
+    CLEAR_GEMINI_ROOMS: "Xóa Gemini",
+    CLEAR_GROK_ROOMS: "Xóa Grok",
+    CLEAR_CHATGPT_ROOMS: "Xóa ChatGPT",
+    CLEAR_ROOM_TOOLTIP: "Xóa toàn bộ cuộc trò chuyện {0} khỏi tài khoản.",
+    CLEAR_ROOM_CONFIRM: "Xóa toàn bộ cuộc trò chuyện {0} khỏi tài khoản? Dữ liệu này không thể khôi phục.",
+    CLEAR_ROOM_SUCCESS: "Đã xóa {1} cuộc trò chuyện {0}.",
+    CLEAR_ROOM_ERROR: "Chưa thể xóa phòng {0}. Hãy dừng tiến trình đang chạy rồi thử lại.",
     DISABLED_CHAT_OPTION: "Không dùng",
     SINGLE_EPISODE: "Phim một tập",
     SERIES_EPISODE: "Loạt phim nhiều tập",
@@ -1648,6 +1655,13 @@ export const CINEMATIC_SETUP_TEXTS = {
     GEMINI_CHAT_OPTION: "Gemini",
     GROK_CHAT_OPTION: "Grok",
     CHATGPT_UI_OPTION: "ChatGPT",
+    CLEAR_GEMINI_ROOMS: "Clear Gemini",
+    CLEAR_GROK_ROOMS: "Clear Grok",
+    CLEAR_CHATGPT_ROOMS: "Clear ChatGPT",
+    CLEAR_ROOM_TOOLTIP: "Delete every {0} conversation from the account.",
+    CLEAR_ROOM_CONFIRM: "Delete every {0} conversation from the account? This cannot be undone.",
+    CLEAR_ROOM_SUCCESS: "Deleted {1} {0} conversations.",
+    CLEAR_ROOM_ERROR: "Could not clear {0} rooms. Stop the active run and try again.",
     DISABLED_CHAT_OPTION: "Disabled",
     SINGLE_EPISODE: "Single Movie",
     SERIES_EPISODE: "Mini Series",

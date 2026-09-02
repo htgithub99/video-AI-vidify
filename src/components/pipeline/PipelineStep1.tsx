@@ -345,10 +345,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     playVoicePreviewFunc(voiceURI, gender, currentLang, project.voiceConfig.speed || 1.0, project.voiceConfig.pitch || 1.0, project.voiceConfig.previewUrl);
                   }}
                   className={cn(
-                    `flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5" : ""}`,
+                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95",
+                    testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") && "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10 ring-2 ring-amber-500/30",
                   )}>
                   {testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
-                    <Pause className={cn("w-4 h-4 animate-pulse text-amber-400")} />
+                    <Pause className={cn("w-4 h-4 animate-pulse text-amber-500")} />
                   ) : (
                     <Play className={cn("w-4 h-4 text-rose-500")} />
                   )}
@@ -359,7 +360,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   type="button"
                   onClick={() => handleTriggerAllSceneVoices(project.storyboard, false)}
                   disabled={!!loadingStates["bulkVoiceGenerate_loading"] || !project.storyboard || project.storyboard.length === 0}
-                  className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-rose-600/15")}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all shadow-lg shadow-rose-600/25 active:scale-95",
+                  )}
                   title={t.Generate_all_scene_voiceo}>
                   {loadingStates["bulkVoiceGenerate_loading"] ? (
                     <>
@@ -639,70 +642,112 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
           <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10")}>
             <Button
-              variant="ghost"
+              variant="unstyled"
               type="button"
               onClick={() => {
                 setStoryboardSourceMode(StoryboardSourceMode.AUDIO);
                 setInfoMsg(t.Switching_to_Audio_Voice_);
               }}
               className={cn(
-                `p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`,
+                "p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[96px] h-auto w-full cursor-pointer select-none",
+                storyboardSourceMode === StoryboardSourceMode.AUDIO
+                  ? "border-rose-500 bg-rose-500/10 shadow-md shadow-rose-500/15 ring-2 ring-rose-500/30"
+                  : "border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:bg-slate-850/60 shadow-sm",
               )}>
               <div
                 className={cn(
-                  `absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`,
+                  "absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                  storyboardSourceMode === StoryboardSourceMode.AUDIO
+                    ? "bg-rose-500 text-white scale-100 shadow-sm shadow-rose-500/30"
+                    : "bg-slate-850 text-transparent scale-75 border border-slate-700",
                 )}>
-                <Check className={cn("w-2.5 h-2.5")} />
+                <Check className={cn("w-3 h-3 stroke-[3]")} />
               </div>
 
-              <div className={cn("flex items-center gap-3")}>
+              <div className={cn("flex items-center gap-3.5")}>
                 <div
                   className={cn(
-                    `p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`,
+                    "p-2.5 rounded-xl border shrink-0 transition-all",
+                    storyboardSourceMode === StoryboardSourceMode.AUDIO
+                      ? "bg-rose-500 text-white border-rose-400 shadow-sm shadow-rose-500/30"
+                      : "bg-slate-850 border-slate-800 text-slate-400 group-hover:text-slate-200",
                   )}>
-                  <Music className={cn("w-4 h-4")} />
+                  <Music className={cn("w-5 h-5")} />
                 </div>
-                <div className={cn("space-y-0.5")}>
-                  <div className={cn("flex items-center gap-1.5")}>
-                    <span className={cn("text-[11px] font-bold text-slate-200")}>{t.Audio_voice_mode}</span>
-                    <span className={cn("text-[8px] bg-emerald-500/10 text-emerald-400 px-1 py-0.2 rounded border border-emerald-500/25 font-sans tracking-tight")}>
-                      {t.Recommended}
+                <div className={cn("space-y-1")}>
+                  <div className={cn("flex items-center gap-2")}>
+                    <span
+                      className={cn(
+                        "text-xs font-bold",
+                        storyboardSourceMode === StoryboardSourceMode.AUDIO ? "text-slate-100" : "text-slate-200",
+                      )}>
+                      {t.Audio_voice_mode || "Âm thanh gốc"}
+                    </span>
+                    <span className={cn("text-[9px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/30 font-bold tracking-tight")}>
+                      {t.Recommended || "Khuyên dùng"}
                     </span>
                   </div>
-                  <p className={cn("text-[10px] text-slate-400 leading-relaxed max-w-[280px] text-wrap")}>{t.Align_scenes_timings_dyna}</p>
+                  <p
+                    className={cn(
+                      "text-[11px] leading-relaxed max-w-[280px] text-wrap font-medium",
+                      storyboardSourceMode === StoryboardSourceMode.AUDIO ? "text-slate-300" : "text-slate-400",
+                    )}>
+                    {t.Align_scenes_timings_dyna || "Đồng bộ thời gian theo âm thanh."}
+                  </p>
                 </div>
               </div>
             </Button>
 
             <Button
-              variant="ghost"
+              variant="unstyled"
               type="button"
               onClick={() => {
                 setStoryboardSourceMode(StoryboardSourceMode.SCRIPT);
                 setInfoMsg(t.Switching_to_full_text_sc);
               }}
               className={cn(
-                `p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`,
+                "p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[96px] h-auto w-full cursor-pointer select-none",
+                storyboardSourceMode === StoryboardSourceMode.SCRIPT
+                  ? "border-rose-500 bg-rose-500/10 shadow-md shadow-rose-500/15 ring-2 ring-rose-500/30"
+                  : "border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:bg-slate-850/60 shadow-sm",
               )}>
               <div
                 className={cn(
-                  `absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`,
+                  "absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                  storyboardSourceMode === StoryboardSourceMode.SCRIPT
+                    ? "bg-rose-500 text-white scale-100 shadow-sm shadow-rose-500/30"
+                    : "bg-slate-850 text-transparent scale-75 border border-slate-700",
                 )}>
-                <Check className={cn("w-2.5 h-2.5")} />
+                <Check className={cn("w-3 h-3 stroke-[3]")} />
               </div>
 
-              <div className={cn("flex items-center gap-3")}>
+              <div className={cn("flex items-center gap-3.5")}>
                 <div
                   className={cn(
-                    `p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`,
+                    "p-2.5 rounded-xl border shrink-0 transition-all",
+                    storyboardSourceMode === StoryboardSourceMode.SCRIPT
+                      ? "bg-rose-500 text-white border-rose-400 shadow-sm shadow-rose-500/30"
+                      : "bg-slate-850 border-slate-800 text-slate-400 group-hover:text-slate-200",
                   )}>
-                  <FileText className={cn("w-4 h-4")} />
+                  <FileText className={cn("w-5 h-5")} />
                 </div>
-                <div className={cn("space-y-0.5")}>
-                  <div className={cn("flex items-center gap-1.5")}>
-                    <span className={cn("text-[11px] font-bold text-slate-200")}>{t.Script_mode}</span>
+                <div className={cn("space-y-1")}>
+                  <div className={cn("flex items-center gap-2")}>
+                    <span
+                      className={cn(
+                        "text-xs font-bold",
+                        storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "text-slate-100" : "text-slate-200",
+                      )}>
+                      {t.Script_mode || "Kịch bản chi tiết"}
+                    </span>
                   </div>
-                  <p className={cn("text-[10px] text-slate-400 leading-relaxed max-w-[280px] text-wrap")}>{t.Utilize_raw_screenplay_sc}</p>
+                  <p
+                    className={cn(
+                      "text-[11px] leading-relaxed max-w-[280px] text-wrap font-medium",
+                      storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "text-slate-300" : "text-slate-400",
+                    )}>
+                    {t.Utilize_raw_screenplay_sc || "Dán kịch bản để tự động cắt cảnh."}
+                  </p>
                 </div>
               </div>
             </Button>
@@ -1143,17 +1188,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        <div className={cn("bg-slate-950/60 border border-slate-800/85 rounded-xl p-4 space-y-3 shadow-inner text-left")}>
+        <div className={cn("bg-white/80 dark:bg-slate-950/60 border border-slate-250 dark:border-slate-800/85 rounded-2xl p-4 space-y-3 shadow-sm text-left")}>
           <div className={cn("flex items-center justify-between")}>
             <Button
-              variant="ghost"
+              variant="unstyled"
               type="button"
               onClick={() => setShowAdvancedVisualConfig(!showAdvancedVisualConfig)}
-              className={cn("flex items-center gap-2 text-xs font-bold text-rose-450 hover:text-rose-350 transition-colors shadow-none p-0 h-auto w-auto hover:bg-slate-900")}
+              className={cn("flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-500 transition-colors p-0 cursor-pointer select-none")}
               title={t.Modify_visual_configurati}>
               <Sliders className={cn("w-4 h-4 text-rose-500 animate-pulse")} />
-              {t.Veo_3_Creative_Studio_Dec}
-              <span className={cn("text-[9px] uppercase font-mono font-medium tracking-wide px-2 py-0.5 bg-rose-955/45 border border-rose-500/10 text-rose-400 rounded")}>
+              <span>{t.Veo_3_Creative_Studio_Dec}</span>
+              <span className={cn("text-[9px] uppercase font-mono font-bold tracking-wide px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full")}>
                 {(() => {
                   const engine = project.visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
                   let modelLabel = ImageModelLabel.Veo3;
@@ -1168,11 +1213,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
             </Button>
             <Button
               variant="ghost"
+              size="xs"
               type="button"
               onClick={() => setShowAdvancedVisualConfig(!showAdvancedVisualConfig)}
-              className={cn("flex items-center gap-1.5 text-slate-400 hover:text-slate-100 text-xs font-medium shadow-none p-0 h-auto w-auto hover:bg-slate-900")}>
+              className={cn("flex items-center gap-1.5 text-slate-400 hover:text-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-xl")}>
               <span>{showAdvancedVisualConfig ? t.Collapse : t.Expand}</span>
-              {showAdvancedVisualConfig ? <ChevronUp className={cn("w-4 h-4 dynamic-icon")} /> : <ChevronDown className={cn("w-4 h-4 dynamic-icon")} />}
+              {showAdvancedVisualConfig ? <ChevronUp className={cn("w-4 h-4")} /> : <ChevronDown className={cn("w-4 h-4")} />}
             </Button>
           </div>
 
@@ -1701,18 +1747,18 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className={cn("bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl")}>
+        <div className={cn("bg-white/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm")}>
           <div className={cn("flex items-center gap-3 text-left w-full md:w-auto")}>
-            <div className={cn("p-2 bg-rose-950/40 rounded-lg text-rose-450 border border-rose-500/10")}>
+            <div className={cn("p-2 bg-rose-500/10 dark:bg-rose-500/15 rounded-xl text-rose-600 dark:text-rose-400 border border-rose-500/20")}>
               <ImageIcon className={cn("w-5 h-5")} />
             </div>
             <div className={cn("flex items-center gap-1.5")}>
-              <h4 className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono")}>{t.Auto_Render_All_Scene_Art}</h4>
+              <h4 className={cn("text-xs font-bold text-slate-100 uppercase tracking-wider font-mono")}>{t.Auto_Render_All_Scene_Art || "Vẽ toàn bộ"}</h4>
               <div className={cn("relative group/tooltip inline-block")}>
-                <HelpCircle className={cn("w-3.5 h-3.5 text-slate-400 hover:text-slate-200 cursor-help transition-colors")} />
+                <HelpCircle className={cn("w-3.5 h-3.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-help transition-colors")} />
                 <div
                   className={cn(
-                    "absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 bg-slate-900 border border-slate-800 p-3 rounded-lg text-slate-350 text-[10px] leading-relaxed shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-all duration-200 z-50",
+                    "absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 bg-slate-900 border border-slate-800 p-3 rounded-xl text-slate-300 text-[10px] leading-relaxed shadow-xl opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-all duration-200 z-50",
                   )}>
                   <p>{t.Process_all_storyboard_de}</p>
                   <div className={cn("absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900")} />
@@ -1724,7 +1770,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           <div className={cn("flex items-center gap-2 w-full md:w-auto justify-end")}>
             {isBatchGenerating ? (
               <div className={cn("flex items-center gap-2 w-full md:w-auto justify-center")}>
-                <div className={cn("flex items-center gap-3 bg-slate-900 border border-rose-500/20 px-4 py-2.5 rounded-lg text-xs font-mono text-rose-300")}>
+                <div className={cn("flex items-center gap-3 bg-rose-500/10 border border-rose-500/30 px-4 py-2.5 rounded-xl text-xs font-mono text-rose-600 dark:text-rose-300")}>
                   <RefreshCw className={cn("w-4 h-4 animate-spin text-rose-500 shrink-0")} />
                   <span>{batchProgressMsg || t.initializingBatchGen}</span>
                 </div>
@@ -1733,27 +1779,27 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   type="button"
                   onClick={handleCancelBatchGenerate}
                   disabled={isCancellingBatch}
-                  className={cn("px-3 py-2.5 text-xs shadow-none h-auto")}
+                  className={cn("px-4 py-2.5 text-xs font-bold rounded-xl shadow-sm")}
                   title={t.stopImageGen}>
-                  {isCancellingBatch ? <RefreshCw className={cn("w-3.5 h-3.5 text-rose-400 animate-spin")} /> : <X className={cn("w-3.5 h-3.5 text-rose-400")} />}
-                  {isCancellingBatch ? t.cancelling : t.cancel}
+                  {isCancellingBatch ? <RefreshCw className={cn("w-3.5 h-3.5 text-rose-500 animate-spin")} /> : <X className={cn("w-3.5 h-3.5 text-rose-500")} />}
+                  <span>{isCancellingBatch ? t.cancelling : t.cancel}</span>
                 </Button>
               </div>
             ) : (
-              <div className={cn("flex flex-col md:flex-row items-center gap-2 w-full md:w-auto")}>
+              <div className={cn("flex flex-col md:flex-row items-center gap-2.5 w-full md:w-auto")}>
                 <Button
-                  variant="primary"
+                  variant="success"
                   type="button"
                   onClick={handleOptimizeAllPrompts}
                   disabled={isBatchGenerating || !!loadingStates["optimizePrompts"] || (project.storyboard || []).length === 0}
                   className={cn(
-                    "w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto",
+                    "w-full md:w-auto font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-emerald-600/20",
                   )}
                   title={t.OPTIMIZE_PROMPTS}>
                   {loadingStates["optimizePrompts"] ? (
-                    <RefreshCw className={cn("w-4 h-4 animate-spin text-emerald-200 shrink-0")} />
+                    <RefreshCw className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
                   ) : (
-                    <ShieldCheck className={cn("w-4 h-4 text-emerald-200 shrink-0")} />
+                    <ShieldCheck className={cn("w-4 h-4 text-white shrink-0")} />
                   )}
                   <span>{loadingStates["optimizePrompts"] ? t.optimizingPrompts : t.OPTIMIZE_PROMPTS}</span>
                 </Button>
@@ -1764,7 +1810,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   onClick={handleBatchGenerateClick}
                   disabled={isBatchGenerating || (project.storyboard || []).length === 0}
                   className={cn(
-                    "w-full md:w-auto bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition shadow-none active:scale-95 h-auto",
+                    "w-full md:w-auto font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-lg shadow-rose-600/20",
                   )}
                   title={t.Trigger_batch_AI_renderin}>
                   <Sparkles className={cn("w-4 h-4 text-amber-200 animate-pulse")} />

@@ -26,6 +26,7 @@ assert.deepEqual(
     [7.2, 0.4],
   ],
 );
+assert.deepEqual(timeline.map((item) => item.duration), [2.4, 3.6, 2.4]);
 assert.equal(timeline[0].spokenDialogue, "");
 assert.equal(timeline[1].spokenDialogue, "One line");
 assert.equal(timeline[2].spokenDialogue, "");

@@ -3,12 +3,13 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { renderQueueService } from "../services/renderQueueService.js";
+import { validateFFmpegRenderOptions } from "../utils/ffmpegRender.js";
 import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/profileManagerService.js";
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { beginChatPlanningRun, cancelChatPlanningRun, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -466,6 +467,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
   const isVi = isVietnameseRequest(req);
   const { storyboard, visualConfig, visualBible, aspectRatio } = req.body;
   let planningFailureIssues: string[] = [];
+  let planningPartialStoryboard: StoryboardScene[] = [];
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
@@ -499,18 +501,21 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         ? AiPlanningExecutionMode.ApiOnly
         : AiPlanningExecutionMode.RoomOnly;
     const usesChatPlanning = !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly);
-    const planningRun = beginChatPlanningRun(_.toString(req.body?.pipelineRunId), _.toFinite(req.body?.pipelineStartedAt));
+    const planningWorkerId = _.toString(req.body?.planningWorkerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID);
+    const planningRun = beginChatPlanningRun(
+      _.toString(req.body?.pipelineRunId),
+      _.toFinite(req.body?.pipelineStartedAt),
+      planningWorkerId,
+      usesChatPlanning ? planningFallbackProvider : AiPlanningFallbackProvider.Disabled,
+    );
     req.once("aborted", planningRun.cancel);
+    res.once("finish", planningRun.complete);
     res.once("close", () => {
       if (!res.writableEnded) planningRun.cancel();
     });
     const planningChromeHeadless = _.isBoolean(req.body?.planningChromeHeadless) ? req.body.planningChromeHeadless : req.body?.chromeHeadless;
     const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
-    const chunkSize = isCinematicPlanning && _.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)
-      ? 1
-      : isCinematicPlanning
-        ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE
-        : PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
+    const chunkSize = isCinematicPlanning ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE : PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
     const backgroundDirective = resolvedVisualConfig.styleBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleBackgroundMode) : undefined;
     const textDirective = resolvedVisualConfig.styleTextInImageMode ? _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleTextInImageMode) : undefined;
     const focusDirective = resolvedVisualConfig.imageFocusMode
@@ -557,7 +562,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const dialogueDirective = !_.isEmpty(requiredDialogueIds)
         ? `Dialogue is REQUIRED for these scene IDs: ${_.join(requiredDialogueIds, ", ")}. Author a natural 3-12 word character line that expresses intent or subtext and remains faithful to the scene even when the source is prose. It must not be a stage direction, action label, sound label, narration, or voice-over.`
         : "Dialogue is optional for these scene IDs. Use silent action unless a short character line is naturally present in the source scene.";
-      const continuityContextJson = jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length));
+      const continuityContext = createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length);
+      if (_.isEqual(chunkIndex, 0) && req.body?.planningPreviousScene) continuityContext.previousScene = req.body.planningPreviousScene;
+      const continuityContextJson = jsonUtils.safeStringify(continuityContext);
       const createPlanningPrompt = (correctionIssuesJson: string = "", forChatUi = false) =>
         isCinematicPlanning
           ? getCinematicVideoPlanningPrompt(
@@ -592,10 +599,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           _.toString(req.body?.genre || req.body?.config?.genre),
               clipDurationSeconds,
             );
-      const createRepairPrompt = (items: any[], issues: string[]) =>
+      const createRepairPrompt = (items: any[], issues: string[], repairSceneIds: string[] = sceneIds) =>
         getCinematicVideoPlanningRepairPrompt(
-          jsonUtils.safeStringify(chunkItem),
-          jsonUtils.safeStringify(items),
+          jsonUtils.safeStringify(_.filter(chunkItem, (item) => _.includes(repairSceneIds, _.toString(_.get(item, "id"))))),
+          jsonUtils.safeStringify(_.filter(items, (item) => _.includes(repairSceneIds, _.toString(_.get(item, "id"))))),
           jsonUtils.safeStringify(issues),
           continuityContextJson,
           clipDurationSeconds,
@@ -767,7 +774,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           },
         },
       } as const;
-      const requestChatUiPlan = async (contents: string): Promise<any[]> => {
+      const requestChatUiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         let lastError: unknown;
         for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_RESPONSE_ATTEMPTS; attempt++) {
           if (planningRun.signal.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
@@ -777,8 +784,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               model: planningChatModel,
               prompt: contents,
               projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
+              workerId: planningWorkerId,
               chromeHeadless: planningChromeHeadless,
-              expectedSceneIds: sceneIds,
+              expectedSceneIds,
               signal: planningRun.signal,
             });
             const parsed = safeParseJSON(response.text, null);
@@ -803,12 +811,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         const parsed = safeParseJSON(response.text, []);
         return _.isArray(parsed) ? parsed : [];
       };
-      const requestVisualPlan = async (apiContents: string, chatUiContents: string, preferChatUi = false): Promise<any[]> => {
+      const requestVisualPlan = async (apiContents: string, chatUiContents: string, preferChatUi = false, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)) return requestApiPlan(apiContents);
-        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)) return requestChatUiPlan(chatUiContents);
+        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)) return requestChatUiPlan(chatUiContents, expectedSceneIds);
         if (preferChatUi) {
           try {
-            return await requestChatUiPlan(chatUiContents);
+            return await requestChatUiPlan(chatUiContents, expectedSceneIds);
           } catch {
             appWarn("AI Chat dự phòng chưa trả được kế hoạch; hệ thống quay lại tuyến API.");
             return requestApiPlan(apiContents);
@@ -818,7 +826,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           return await requestApiPlan(apiContents);
         } catch (apiError) {
           appWarn("API lập kế hoạch chưa khả dụng; chuyển sang AI Chat trong Chrome.");
-          return requestChatUiPlan(chatUiContents);
+          return requestChatUiPlan(chatUiContents, expectedSceneIds);
         }
       };
       const collectPlanningIssues = (items: any[]): string[] => {
@@ -1154,14 +1162,25 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           const correctionIssues = getCorrectablePlanningIssues(planningIssues);
           const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
           const apiCorrectionPrompt = createPlanningPrompt(correctionIssuesJson);
+          const repairSceneIds = _.uniq(
+            _.compact(
+              _.map(correctionIssues, (issue) => {
+                const sceneId = _.head(_.split(issue, ":"));
+                return _.includes(sceneIds, sceneId) ? sceneId : undefined;
+              }),
+            ),
+          );
+          const targetRepairSceneIds = _.isEmpty(repairSceneIds) ? sceneIds : repairSceneIds;
           const candidateItems = await requestVisualPlan(
             apiCorrectionPrompt,
-            isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues) : createPlanningPrompt(correctionIssuesJson, true),
+            isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues, targetRepairSceneIds) : createPlanningPrompt(correctionIssuesJson, true),
             isCinematicPlanning,
+            targetRepairSceneIds,
           );
           const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
           const candidateById = _.keyBy(candidateItems, (item) => _.toString(item.id));
-          const candidatePlanningIssues = collectPlanningIssues(candidateItems);
+          const mergedCandidateItems = _.compact(_.map(sceneIds, (sceneId) => candidateById[sceneId] || currentById[sceneId]));
+          const candidatePlanningIssues = collectPlanningIssues(mergedCandidateItems);
           parsedItems = _.compact(
             _.map(sceneIds, (sceneId) => {
               const currentItem = currentById[sceneId];
@@ -1183,14 +1202,27 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           for (let rewriteAttempt = 0; rewriteAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.FINAL_FULL_REWRITE_ATTEMPTS; rewriteAttempt++) {
             const blockingIssues = getCorrectablePlanningIssues(planningIssues);
             const fullRewriteIssuesJson = jsonUtils.safeStringify(blockingIssues);
+            const rewriteSceneIds = _.uniq(
+              _.compact(
+                _.map(blockingIssues, (issue) => {
+                  const sceneId = _.head(_.split(issue, ":"));
+                  return _.includes(sceneIds, sceneId) ? sceneId : undefined;
+                }),
+              ),
+            );
+            const targetRewriteSceneIds = _.isEmpty(rewriteSceneIds) ? sceneIds : rewriteSceneIds;
             const fullRewriteItems = await requestVisualPlan(
               createPlanningPrompt(fullRewriteIssuesJson),
-              createPlanningPrompt(fullRewriteIssuesJson, true),
+              createRepairPrompt(parsedItems, blockingIssues, targetRewriteSceneIds),
               true,
+              targetRewriteSceneIds,
             );
-            const fullRewriteIssues = collectPlanningIssues(fullRewriteItems);
+            const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
+            const rewriteById = _.keyBy(fullRewriteItems, (item) => _.toString(item.id));
+            const mergedRewriteItems = _.compact(_.map(sceneIds, (sceneId) => rewriteById[sceneId] || currentById[sceneId]));
+            const fullRewriteIssues = collectPlanningIssues(mergedRewriteItems);
             if (_.lt(getCorrectablePlanningIssues(fullRewriteIssues).length, blockingIssues.length)) {
-              parsedItems = fullRewriteItems;
+              parsedItems = mergedRewriteItems;
               planningIssues = fullRewriteIssues;
             }
             if (_.isEmpty(getCorrectablePlanningIssues(planningIssues))) break;
@@ -1201,17 +1233,20 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         planningWarnings.push(...planningIssues);
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: continuing_after_final_correction: ${_.join(planningIssues, ", ")}`);
       }
-      if (
-        isCinematicPlanning &&
-        !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) &&
-        !_.isEmpty(getBlockingCinematicPlanningIssues(planningIssues))
-      ) {
-        planningFailureIssues = getBlockingCinematicPlanningIssues(planningIssues);
-        throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
-      }
       const returnedById = _.keyBy(parsedItems, (item) => _.toString(item.id));
+      const blockingPlanningIssues = isCinematicPlanning ? getBlockingCinematicPlanningIssues(planningIssues) : [];
+      const explicitlyBlockedSceneIds = _.uniq(
+        _.compact(
+          _.map(blockingPlanningIssues, (issue) => {
+            const sceneId = _.head(_.split(issue, ":"));
+            return _.includes(sceneIds, sceneId) ? sceneId : undefined;
+          }),
+        ),
+      );
+      const blockedSceneIds = !_.isEmpty(blockingPlanningIssues) && _.isEmpty(explicitlyBlockedSceneIds) ? sceneIds : explicitlyBlockedSceneIds;
       _.forEach(chunkItem, (sourceItem) => {
         const sceneId = _.toString(_.get(sourceItem, "id"));
+        if (_.includes(blockedSceneIds, sceneId)) return;
         const baseScene = _.find(plannedScenes, { id: sceneId });
         const returnedItem = returnedById[sceneId];
         if (!baseScene || !returnedItem) return;
@@ -1224,6 +1259,15 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         const plannedSceneIndex = _.findIndex(plannedScenes, { id: sceneId });
         if (_.gte(plannedSceneIndex, 0)) plannedScenes[plannedSceneIndex] = normalizedScene;
       });
+      planningPartialStoryboard = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
+      if (
+        isCinematicPlanning &&
+        !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) &&
+        !_.isEmpty(blockingPlanningIssues)
+      ) {
+        planningFailureIssues = blockingPlanningIssues;
+        throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
+      }
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
     plannedScenes = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
@@ -1263,6 +1307,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED,
       retryable: false,
       planningIssues: planningFailureIssues,
+      storyboard: planningPartialStoryboard,
       rotationLogs: error.rotationLogs,
     });
   }
@@ -1943,6 +1988,19 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         cleanedSegment = _.trim(`${cleanedSegment} ${deduplicatedContinuation}`);
       }
 
+      const hasCompleteChapterEnding = (value: string): boolean => /[.!?…][\s"')\]]*$/.test(_.trim(value));
+      if (!hasCompleteChapterEnding(cleanedSegment)) {
+        const endingRepair = await requestValidChapterSegment(
+          `${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, Math.max(12, chapterMinimumWords - _.size(_.words(cleanedSegment))), Math.max(30, chapterMaximumWords - _.size(_.words(cleanedSegment))), isVi)}\n\nThe previous text ended mid-sentence. Continue from its exact final words, finish the current event, and end with complete punctuation. Do not restart or summarize the chapter.\n\n${cinematicScreenplayDirective}`,
+        );
+        if (!_.isEmpty(endingRepair)) cleanedSegment = _.trim(`${cleanedSegment} ${endingRepair}`);
+      }
+      if (_.lt(_.size(_.words(cleanedSegment)), chapterMinimumWords) || !hasCompleteChapterEnding(cleanedSegment)) {
+        const incompleteChapterError: any = createAppError(`chapter_incomplete:${chapter.id || i + 1}`);
+        incompleteChapterError.retryable = true;
+        throw incompleteChapterError;
+      }
+
       completedChapters.push({
         id: chapter.id || `ch_${i + 1}`,
         title: chapter.title,
@@ -2045,7 +2103,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
             : getGeminiUserMessage(error, isVi);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
       error: errorMessage,
-      retryable: scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
+      retryable: Boolean(error?.retryable) || scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
     });
   }
 });
@@ -4713,7 +4771,20 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId, subtitleMode, audioTracks, autoMusicProfile, preserveVideoAudio } = req.body;
+    const {
+      scenes,
+      globalAudioUrl,
+      globalAudioBase64,
+      quality,
+      aspectRatio,
+      projectId,
+      subtitleMode,
+      audioTracks,
+      autoMusicProfile,
+      preserveVideoAudio,
+      expectedSourceSceneIds,
+      expectedDurationSeconds,
+    } = req.body;
     const jobId = randomUUID();
     const safeProjectId = path.basename(_.toString(projectId));
     const dataRoot = path.resolve(getDataDirectory());
@@ -4743,25 +4814,41 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
       return { ...scene, imageUrl: recoveredUrl };
     };
     const recoveredScenes = _.map(_.castArray(scenes), recoverSceneAsset);
+    const persistedRenderProject = safeProjectId ? await getProjectDetailFromDb(safeProjectId) : undefined;
+    const requiredSourceSceneIds = !_.isEmpty(expectedSourceSceneIds)
+      ? _.map(_.castArray(expectedSourceSceneIds), _.toString)
+      : _.map(_.defaultTo(persistedRenderProject?.storyboard, []), "id");
+    const requiredDurationSeconds = _.gt(_.toNumber(expectedDurationSeconds), 0)
+      ? _.toNumber(expectedDurationSeconds)
+      : parseTargetDurationSeconds(persistedRenderProject?.config?.duration);
+    const renderPayload = {
+      scenes: recoveredScenes,
+      globalAudioUrl,
+      globalAudioBase64,
+      quality: quality as VideoQuality,
+      aspectRatio: aspectRatio as string,
+      projectId: projectId as string,
+      subtitleMode,
+      audioTracks,
+      autoMusicProfile,
+      preserveVideoAudio: Boolean(preserveVideoAudio),
+      expectedSourceSceneIds: requiredSourceSceneIds,
+      expectedDurationSeconds: requiredDurationSeconds,
+    };
+    const preflight = validateFFmpegRenderOptions(renderPayload);
+    if (!preflight.ready) {
+      logger.warn(`[Render preflight] Rejected ${safeProjectId || "unknown_project"}: ${preflight.issues.join(",")}`);
+      return res.status(HTTP_STATUS_CODES.UNPROCESSABLE_ENTITY).json({
+        success: false,
+        error: "render_preflight_failed",
+        issues: preflight.issues,
+        retryable: true,
+      });
+    }
 
     const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
 
-    await renderQueueService.addJob(
-      jobId,
-      {
-        scenes: recoveredScenes,
-        globalAudioUrl,
-        globalAudioBase64,
-        quality: quality as VideoQuality,
-        aspectRatio: aspectRatio as string,
-        projectId: projectId as string,
-        subtitleMode,
-        audioTracks,
-        autoMusicProfile,
-        preserveVideoAudio: Boolean(preserveVideoAudio),
-      },
-      licenseKey,
-    );
+    await renderQueueService.addJob(jobId, renderPayload, licenseKey);
 
     res.json({ success: true, jobId });
   } catch (error: any) {
@@ -4818,6 +4905,19 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
   return res.json({ success: true });
+});
+
+router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+  const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
+  if (!_.includes(supportedProviders, provider)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
+  try {
+    const cleanupResult = await clearChatPlanningRooms(provider);
+    return res.json({ success: true, ...cleanupResult });
+  } catch (error) {
+    logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false });
+  }
 });
 
 router.get("/profiles", (_req: Request, res: Response) => {

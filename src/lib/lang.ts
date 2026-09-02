@@ -33,7 +33,7 @@ export const translations = {
     confirmDelete: "Confirm deletion?",
     editProject: "Edit",
     credits: "Credits",
-    stepShortLabels: ["Script", "Storyboard", "Covers & SEO", "SEO", "Export", "Generate Image/Video", "CapCut Editor"],
+    stepShortLabels: ["Script", "Storyboard", "Thumbnails", "SEO Boost", "Export", "Generate Image/Video", "CapCut Editor"],
     stepTooltips: [
       "Input ideas and generate script",
       "Segment scenes, direct visual style, generate prompts, and synthesize scene-by-scene voices",
@@ -1019,7 +1019,7 @@ export const translations = {
     confirmDelete: "Xác nhận xóa?",
     editProject: "Sửa",
     credits: "Tín dụng",
-    stepShortLabels: ["Kịch bản", "Phân cảnh", "Ảnh bìa & SEO", "Tối ưu SEO", "Kết xuất", "Tạo ảnh/video", "Biên tập CapCut"],
+    stepShortLabels: ["Kịch bản", "Phân cảnh", "Ảnh bìa", "Tối ưu SEO", "Kết xuất", "Tạo ảnh/video", "Biên tập CapCut"],
     stepTooltips: [
       "Ý tưởng & kịch bản",
       "Dàn cảnh, tạo lời thoại và giọng đọc cho từng phân cảnh.",

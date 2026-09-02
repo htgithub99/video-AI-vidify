@@ -45,7 +45,7 @@ const isPersistableAssetUrl = (value: unknown): boolean => {
 };
 
 const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOptions => ({
-  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio"]),
+  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio", "expectedSourceSceneIds", "expectedDurationSeconds"]),
   globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
   scenes: _.map(payload.scenes, (scene) => ({
     ..._.pick(scene, [
@@ -124,9 +124,10 @@ class RenderQueueService {
 
   public async addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): Promise<RenderJob> {
     await this.initialize();
+    const targetProjectId = payload.projectId;
     for (const [activeJobId, controller] of this.abortControllers) {
       const activeJob = this.jobsMap.get(activeJobId);
-      if (activeJob && _.isEqual(activeJob.status, JobStatus.PROCESSING)) {
+      if (activeJob && _.isEqual(activeJob.status, JobStatus.PROCESSING) && _.isEqual(activeJob.payload.projectId, targetProjectId)) {
         activeJob.status = JobStatus.CANCELLED;
         activeJob.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
         activeJob.completedAt = new Date();
@@ -135,15 +136,6 @@ class RenderQueueService {
         await this.persist(activeJob);
       }
     }
-    this.queue = _.reject(this.queue, (pendingJob) => {
-      pendingJob.status = JobStatus.CANCELLED;
-      pendingJob.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
-      pendingJob.completedAt = new Date();
-      pendingJob.updatedAt = pendingJob.completedAt;
-      void this.persist(pendingJob);
-      return true;
-    });
-    const targetProjectId = payload.projectId;
     if (targetProjectId) {
       this.queue = _.reject(this.queue, (pendingJob) => {
         if (_.isEqual(pendingJob.payload.projectId, targetProjectId)) {

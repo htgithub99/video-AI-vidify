@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext, Locator, Page } from "playwright";
 import _ from "lodash";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
 import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS } from "../../constants/index.js";
@@ -13,46 +13,66 @@ interface ChatPlanningRequest {
   projectId: string;
   chromeHeadless?: boolean;
   expectedSceneIds?: string[];
+  workerId?: string;
   signal?: AbortSignal;
 }
 
-const planningMutex = new SimpleMutex();
+const planningMutexes = new Map<string, SimpleMutex>();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
-let activePlanningController: AbortController | undefined;
-let activePlanningStartedAt = 0;
-let activePlanningRunId = "";
+interface ActivePlanningController {
+  controller: AbortController;
+  provider: AiPlanningFallbackProvider;
+}
 
-export const beginChatPlanningRun = (runId: string, startedAt: number): { signal: AbortSignal; cancel: () => void } => {
+const activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>();
+
+export const beginChatPlanningRun = (
+  runId: string,
+  startedAt: number,
+  workerId: string = CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID,
+  provider: AiPlanningFallbackProvider = AiPlanningFallbackProvider.Disabled,
+): { signal: AbortSignal; cancel: () => void; complete: () => void } => {
   if (_.isEmpty(_.trim(runId)) || startedAt <= 0) {
     const unversionedController = new AbortController();
     unversionedController.abort();
-    return { signal: unversionedController.signal, cancel: _.noop };
+    return { signal: unversionedController.signal, cancel: _.noop, complete: _.noop };
   }
-  const hasActiveDifferentRun = activePlanningStartedAt > 0 && !_.isEqual(activePlanningRunId, runId);
-  const isOlderOrUnversionedRun = startedAt <= 0 || activePlanningStartedAt > startedAt;
-  if (hasActiveDifferentRun && isOlderOrUnversionedRun) {
-    const rejectedController = new AbortController();
-    rejectedController.abort();
-    return { signal: rejectedController.signal, cancel: _.noop };
-  }
-  activePlanningController?.abort();
+  const runControllers = activePlanningControllers.get(runId) || new Map<string, ActivePlanningController>();
+  runControllers.get(workerId)?.controller.abort();
   const controller = new AbortController();
-  activePlanningController = controller;
-  activePlanningStartedAt = startedAt > 0 ? startedAt : Date.now();
-  activePlanningRunId = runId;
-  return { signal: controller.signal, cancel: () => controller.abort() };
+  runControllers.set(workerId, { controller, provider });
+  activePlanningControllers.set(runId, runControllers);
+  const complete = () => {
+    const currentRunControllers = activePlanningControllers.get(runId);
+    if (!_.isEqual(currentRunControllers?.get(workerId)?.controller, controller)) return;
+    currentRunControllers?.delete(workerId);
+    if (_.isEmpty(currentRunControllers)) activePlanningControllers.delete(runId);
+  };
+  return {
+    signal: controller.signal,
+    cancel: () => {
+      controller.abort();
+      complete();
+    },
+    complete,
+  };
 };
 
 export const cancelChatPlanningRun = (runId?: string): boolean => {
-  if (!activePlanningController) return false;
-  if (!_.isEmpty(_.trim(runId)) && !_.isEqual(activePlanningRunId, runId)) return false;
-  activePlanningController.abort();
-  activePlanningController = undefined;
-  activePlanningStartedAt = 0;
-  activePlanningRunId = "";
-  return true;
+  const normalizedRunId = _.trim(runId);
+  if (!_.isEmpty(normalizedRunId)) {
+    const controllers = activePlanningControllers.get(normalizedRunId);
+    if (!controllers) return false;
+    _.forEach([...controllers.values()], (record) => record.controller.abort());
+    activePlanningControllers.delete(normalizedRunId);
+    return true;
+  }
+  const controllers = _.flatMap([...activePlanningControllers.values()], (runControllers) => [...runControllers.values()]);
+  _.forEach(controllers, (record) => record.controller.abort());
+  activePlanningControllers.clear();
+  return !_.isEmpty(controllers);
 };
 
 const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
@@ -67,6 +87,263 @@ const normalizeRoomPrompt = (prompt: string): string =>
       "\n\n",
     ),
   );
+
+const getPlanningRoomKey = (request: ChatPlanningRequest): string =>
+  _.join(
+    [request.provider, request.projectId, request.workerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID],
+    CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR,
+  );
+
+const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Page> | undefined => {
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return geminiRooms;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return grokRooms;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return chatGptRooms;
+  return undefined;
+};
+
+const getProviderConversationSelectors = (
+  provider: AiPlanningFallbackProvider,
+): { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string } | undefined => {
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat))
+    return {
+      item: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ITEM_SELECTOR,
+      action: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ACTION_SELECTOR,
+      ready: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
+      sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SIDEBAR_OPEN_SELECTOR,
+      sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SIDEBAR_READY_SELECTOR,
+      url: EXTERNAL_URLS.GEMINI_CHAT,
+    };
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat))
+    return {
+      item: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CONVERSATION_ITEM_SELECTOR,
+      action: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CONVERSATION_ACTION_SELECTOR,
+      ready: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_INPUT_SELECTOR,
+      sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_SIDEBAR_OPEN_SELECTOR,
+      sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_SIDEBAR_READY_SELECTOR,
+      url: EXTERNAL_URLS.GROK_CHAT,
+    };
+  if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi))
+    return {
+      item: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_CONVERSATION_ITEM_SELECTOR,
+      action: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_CONVERSATION_ACTION_SELECTOR,
+      ready: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR,
+      sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SIDEBAR_OPEN_SELECTOR,
+      sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SIDEBAR_READY_SELECTOR,
+      url: EXTERNAL_URLS.CHATGPT,
+    };
+  return undefined;
+};
+
+const getConversationIdentity = async (item: ReturnType<Page["locator"]>): Promise<string> =>
+  (await item.locator("a").first().getAttribute("href").catch(() => null)) || (await item.innerText().catch(() => ""));
+
+const waitForConversationIdentityChange = async (page: Page, itemSelector: string, previousIdentity: string): Promise<boolean> => {
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_VERIFY_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const items = page.locator(itemSelector);
+    if (_.isEqual(await items.count().catch(() => 0), 0)) return true;
+    if (!_.isEqual(await getConversationIdentity(items.first()), previousIdentity)) return true;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_VERIFY_POLL_MS);
+  }
+  return false;
+};
+
+const deleteFirstProviderConversation = async (
+  page: Page,
+  provider: AiPlanningFallbackProvider,
+  itemSelector: string,
+  actionSelector: string,
+): Promise<boolean> => {
+  const item = page.locator(itemSelector).first();
+  const previousIdentity = await getConversationIdentity(item);
+  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ITEM_ATTEMPTS; attempt++) {
+    appLog(`[AI Chat Cleanup] ${provider}: đang xóa cuộc trò chuyện, lần ${_.add(attempt, 1)}.`);
+    await item.scrollIntoViewIfNeeded({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
+    await item.hover({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
+    const directActionButton = item.locator(actionSelector).last();
+    const actionButton = _.gt(await directActionButton.count().catch(() => 0), 0)
+      ? directActionButton
+      : item.locator("xpath=..").locator(actionSelector).first();
+    const actionCount = await actionButton.count().catch(() => 0);
+    if (_.isEqual(actionCount, 0)) {
+      appWarn(`[AI Chat Cleanup] ${provider}: không tìm thấy nút tùy chọn.`);
+      continue;
+    }
+    const actionVisible = await actionButton
+      .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+      .then(() => true)
+      .catch(() => false);
+    const actionClicked = actionVisible
+      ? await actionButton
+          .click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+          .then(() => true)
+          .catch(() => false)
+      : await actionButton
+          .evaluate((element: HTMLElement) => element.click())
+          .then(() => true)
+          .catch(() => false);
+    appLog(`[AI Chat Cleanup] ${provider}: nút tùy chọn count=${actionCount}, visible=${actionVisible}, clicked=${actionClicked}.`);
+    const deleteMenuItem = page
+      .getByRole("menuitem", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN })
+      .or(page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
+      .or(page.locator('[role="menu"] [role="menuitem"]').filter({ hasText: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
+      .filter({ visible: true })
+      .last();
+    const deleteVisible = await deleteMenuItem
+      .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+      .then(() => true)
+      .catch(() => false);
+    if (!deleteVisible) {
+      const visibleMenuText = _.join(
+        _.compact(
+          _.map(await page.locator('[role="menu"], [role="listbox"], [role="dialog"]').allTextContents().catch(() => []), (value) => _.trim(value)),
+        ),
+        " | ",
+      );
+      appWarn(`[AI Chat Cleanup] ${provider}: chưa tìm thấy lệnh xóa; menu=${visibleMenuText}.`);
+      continue;
+    }
+    await deleteMenuItem.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+    const dialog = page.getByRole("dialog").or(page.getByRole("alertdialog")).filter({ visible: true }).last();
+    const hasDialog = await dialog
+      .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_CONFIRM_TIMEOUT_MS })
+      .then(() => true)
+      .catch(() => false);
+    appLog(`[AI Chat Cleanup] ${provider}: hộp xác nhận visible=${hasDialog}.`);
+    if (hasDialog) {
+      const confirmButton = dialog
+        .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_PATTERN })
+        .or(dialog.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
+        .filter({ visible: true })
+        .last();
+      const confirmCount = await confirmButton.count().catch(() => 0);
+      const confirmClicked = await confirmButton
+        .click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+        .then(() => true)
+        .catch(() => false);
+      appLog(`[AI Chat Cleanup] ${provider}: xác nhận count=${confirmCount}, clicked=${confirmClicked}.`);
+    }
+    if (await waitForConversationIdentityChange(page, itemSelector, previousIdentity)) return true;
+  }
+  appWarn(
+    `[AI Chat Cleanup] ${provider}: không xóa được ${previousIdentity}; remaining=${await page.locator(itemSelector).count().catch(() => 0)}, current=${await getConversationIdentity(page.locator(itemSelector).first())}.`,
+  );
+  return false;
+};
+
+const deleteAllGeminiActivity = async (page: Page, detectedConversationCount: number): Promise<number> => {
+  await page.goto(EXTERNAL_URLS.GEMINI_ACTIVITY, {
+    waitUntil: "domcontentloaded",
+    timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS,
+  });
+  const deleteActivityButton = page
+    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_DELETE_PATTERN, exact: true })
+    .filter({ visible: true })
+    .first();
+  await deleteActivityButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  await deleteActivityButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  const allTimeOption = page
+    .getByRole("menuitem", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_ALL_TIME_PATTERN })
+    .filter({ visible: true })
+    .first();
+  await allTimeOption.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await allTimeOption.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  const confirmDialog = page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("heading", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_CONFIRM_HEADING_PATTERN }) })
+    .filter({ visible: true })
+    .last();
+  await confirmDialog.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const confirmButton = confirmDialog
+    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_DELETE_PATTERN, exact: true })
+    .filter({ visible: true })
+    .last();
+  await confirmButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  await confirmButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await confirmDialog.waitFor({ state: "hidden", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  appLog(`[AI Chat Cleanup] ${AiPlanningFallbackProvider.GeminiChat}: đã xóa toàn bộ hoạt động và phòng trò chuyện.`);
+  return detectedConversationCount;
+};
+
+const deleteProviderConversationHistory = async (page: Page, provider: AiPlanningFallbackProvider): Promise<number> => {
+  const selectors = getProviderConversationSelectors(provider);
+  if (!selectors) return 0;
+  if (!_.includes(page.url(), new URL(selectors.url).hostname)) {
+    await page.goto(selectors.url, { waitUntil: "domcontentloaded", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
+  }
+  await page.locator(selectors.ready).last().waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const sidebarReady = page.locator(selectors.sidebarReady).filter({ visible: true }).first();
+  const sidebarOpenButton = page.locator(selectors.sidebarOpen).filter({ visible: true }).first();
+  if (!(await sidebarReady.isVisible().catch(() => false)) && (await sidebarOpenButton.isVisible().catch(() => false))) {
+    await sidebarOpenButton
+      .click({ force: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+      .catch(() => sidebarOpenButton.evaluate((element: HTMLElement) => element.click()));
+  }
+  const sidebarLoaded = await sidebarReady
+    .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (!sidebarLoaded && _.isEqual(await page.locator(selectors.item).count().catch(() => 0), 0)) {
+    appLog(`[AI Chat Cleanup] ${provider}: không còn cuộc trò chuyện.`);
+    return 0;
+  }
+  if (!sidebarLoaded) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+  await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
+  const initialConversationCount = await page.locator(selectors.item).count();
+  appLog(`[AI Chat Cleanup] ${provider}: tìm thấy ${initialConversationCount} cuộc trò chuyện.`);
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat))
+    return _.isEqual(initialConversationCount, 0) ? 0 : deleteAllGeminiActivity(page, initialConversationCount);
+  let deletedCount = 0;
+  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_MAX_CONVERSATIONS; attempt++) {
+    const items = page.locator(selectors.item);
+    if (_.isEqual(await items.count(), 0)) break;
+    const deleted = await deleteFirstProviderConversation(page, provider, selectors.item, selectors.action);
+    if (!deleted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+    deletedCount++;
+  }
+  const remainingConversationCount = await page.locator(selectors.item).count();
+  if (_.gt(remainingConversationCount, 0) || (_.gt(initialConversationCount, 0) && _.isEqual(deletedCount, 0))) {
+    throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+  }
+  return deletedCount;
+};
+
+export const clearChatPlanningRooms = async (
+  provider: AiPlanningFallbackProvider,
+): Promise<{ closedRoomCount: number; deletedConversationCount: number }> => {
+  const rooms = getProviderRooms(provider);
+  const selectors = getProviderConversationSelectors(provider);
+  if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0 };
+  const pages = [...rooms.values()];
+  _.forEach([...activePlanningControllers.entries()], ([runId, runControllers]) => {
+    _.forEach([...runControllers.entries()], ([workerId, record]) => {
+      if (!_.isEqual(record.provider, provider)) return;
+      record.controller.abort();
+      runControllers.delete(workerId);
+    });
+    if (_.isEmpty(runControllers)) activePlanningControllers.delete(runId);
+  });
+  const mutexPrefix = `${provider}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`;
+  _.forEach([...planningMutexes.keys()], (roomKey) => {
+    if (_.startsWith(roomKey, mutexPrefix)) planningMutexes.delete(roomKey);
+  });
+  await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
+  let cleanupPage: Page | undefined;
+  try {
+    const browser = await getOrLaunchGlobalBrowser(true);
+    cleanupPage = _.find(pages, (page) => !page.isClosed()) || (await browser.context.newPage());
+    const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
+    return { closedRoomCount: pages.length, deletedConversationCount };
+  } catch (error) {
+    appWarn(`[AI Chat Cleanup] ${provider}: ${_.toString(_.get(error, "message", error))}`);
+    throw error;
+  } finally {
+    rooms.clear();
+    const pagesToClose = _.uniq(_.compact([...pages, cleanupPage]));
+    await Promise.allSettled(_.map(pagesToClose, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
+    scheduleGlobalBrowserCleanup();
+  }
+};
 
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
   const room = rooms.get(projectId);
@@ -112,6 +389,15 @@ const extractBalancedJsonArrays = (text: string): string[] => {
     }
   }
   return results;
+};
+
+const getLastVisibleLocator = async (page: Page, selector: string): Promise<Locator> => {
+  const candidates = page.locator(selector);
+  for (let index = (await candidates.count()) - 1; index >= 0; index--) {
+    const candidate = candidates.nth(index);
+    if (await candidate.isVisible().catch(() => false)) return candidate;
+  }
+  throw new Error("Không tìm thấy vùng nhập đang hiển thị trong phòng AI.");
 };
 
 const extractPlanningJsonFromBody = (text: string, expectedSceneIds: string[]): string =>
@@ -198,7 +484,7 @@ const submitPrompt = async (
   signal?: AbortSignal,
 ): Promise<string> => {
   throwIfPlanningCancelled(signal);
-  const input = page.locator(inputSelector).last();
+  const input = await getLastVisibleLocator(page, inputSelector);
   try {
     await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   } catch (error) {
@@ -264,7 +550,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, request.projectId);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
   const response = await submitPrompt(
     room,
@@ -283,7 +569,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, request.projectId);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request));
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
   const response = await submitPrompt(
     room,
@@ -302,7 +588,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, request.projectId);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request));
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
     room,
@@ -334,6 +620,9 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error("AI Chat dự phòng đang tắt.");
   throwIfPlanningCancelled(request.signal);
+  const roomKey = getPlanningRoomKey(request);
+  const planningMutex = planningMutexes.get(roomKey) || new SimpleMutex();
+  planningMutexes.set(roomKey, planningMutex);
   const release = await planningMutex.acquire();
   try {
     throwIfPlanningCancelled(request.signal);

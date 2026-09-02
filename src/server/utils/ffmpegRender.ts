@@ -97,9 +97,11 @@ export interface FFmpegRenderOptions {
   autoMusicProfile?: string;
   safeProfile?: boolean;
   preserveVideoAudio?: boolean;
+  expectedSourceSceneIds?: string[];
+  expectedDurationSeconds?: number;
 }
 
-const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
+export const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   if (_.isEmpty(assetUrl) || _.startsWith(assetUrl, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX)) {
     return undefined;
   }
@@ -118,6 +120,54 @@ const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   return candidatePath;
 };
 
+export interface RenderPreflightResult {
+  ready: boolean;
+  issues: string[];
+}
+
+export const validateFFmpegRenderOptions = (options: FFmpegRenderOptions): RenderPreflightResult => {
+  const scenes = _.castArray(options?.scenes || []);
+  const issues: string[] = [];
+  if (_.isEmpty(scenes)) issues.push("storyboard_missing");
+
+  const seenIds = new Set<string>();
+  _.forEach(scenes, (scene, index) => {
+    const sceneId = _.trim(_.toString(scene?.id)) || `index_${index}`;
+    if (seenIds.has(sceneId)) issues.push(`scene_duplicate_id:${sceneId}`);
+    seenIds.add(sceneId);
+    const duration = _.toNumber(scene?.duration);
+    if (!Number.isFinite(duration) || !_.gt(duration, 0)) issues.push(`scene_invalid_duration:${sceneId}`);
+    const trimStart = _.toNumber(scene?.sourceTrimStartSeconds || 0);
+    const trimEnd = _.toNumber(scene?.sourceTrimEndSeconds || 0);
+    if (!Number.isFinite(trimStart) || !Number.isFinite(trimEnd) || _.lt(trimStart, 0) || _.lt(trimEnd, 0)) issues.push(`scene_invalid_trim:${sceneId}`);
+    const hasVisual = Boolean(resolveLocalAssetPath(scene?.imageUrl) || resolveLocalAssetPath(scene?.imageBase64) || resolveEncodedMediaSource(scene?.imageBase64, scene?.imageUrl));
+    if (!hasVisual) issues.push(`scene_asset_missing:${sceneId}`);
+  });
+
+  const expectedSourceSceneIds = _.uniq(_.compact(_.map(options.expectedSourceSceneIds || [], (id) => _.trim(_.toString(id)))));
+  _.forEach(expectedSourceSceneIds, (sourceSceneId) => {
+    const represented = _.some(scenes, (scene) => _.isEqual(scene.id, sourceSceneId) || _.startsWith(scene.id, `${sourceSceneId}__`));
+    if (!represented) issues.push(`required_scene_missing:${sourceSceneId}`);
+  });
+  const expectedDurationSeconds = _.toNumber(options.expectedDurationSeconds);
+  const declaredDurationSeconds = _.sumBy(scenes, (scene) => _.toNumber(scene.duration));
+  if (Number.isFinite(expectedDurationSeconds) && _.gt(expectedDurationSeconds, 0) && _.lt(declaredDurationSeconds, expectedDurationSeconds * 0.8)) {
+    issues.push(`render_duration_too_short:${_.round(declaredDurationSeconds, 2)}/${_.round(expectedDurationSeconds, 2)}`);
+  }
+
+  const audioCandidates = _.compact([
+    options.globalAudioUrl,
+    options.globalAudioBase64,
+    ..._.flatMap(scenes, (scene) => [scene.audioUrl, scene.audioBase64]),
+  ]).map(_.toString);
+  if (_.some(audioCandidates, isBlockedAudioSource)) issues.push("audio_source_blocked");
+  const hasValidAudio = _.some(audioCandidates, (source) => Boolean(resolveLocalAssetPath(source) || isEncodedMediaSource(source)));
+  const hasEmbeddedFilmAudio = Boolean(options.preserveVideoAudio && _.some(scenes, (scene) => _.isEqual(scene.assetType, GenerateType.Video)));
+  if (!hasValidAudio && !hasEmbeddedFilmAudio) issues.push("narration_missing");
+
+  return { ready: _.isEmpty(issues), issues: _.uniq(issues) };
+};
+
 export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<string> => {
   const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.HIGHEST);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
@@ -125,9 +175,8 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
   const globalAudioBase64Val = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_BASE64);
   const scenesVal = _.get(options, FFMPEG_RENDER_KEYS.SCENES);
 
-  if (_.isEmpty(scenesVal)) {
-    throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_NO_SCENES);
-  }
+  const preflight = validateFFmpegRenderOptions(options);
+  if (!preflight.ready) throw new Error(`render_preflight_failed:${preflight.issues.join(",")}`);
   const blockedAudioCandidates = [globalAudioUrlVal, ..._.map(scenesVal, (scene) => scene.audioUrl)];
   if (_.some(blockedAudioCandidates, (source) => isBlockedAudioSource(_.toString(source)))) {
     throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_BLOCKED_ERROR);

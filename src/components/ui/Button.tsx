@@ -27,18 +27,22 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primar
 
   const variants = {
     primary:
-      "bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 active:from-rose-700 active:to-amber-600 text-white border border-rose-450/40 shadow-md shadow-rose-600/20",
-    secondary: "bg-slate-800 hover:bg-slate-750 active:bg-slate-850 text-slate-100 border border-slate-700 hover:border-slate-600 shadow-sm backdrop-blur-sm",
+      "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 active:from-rose-700 active:to-indigo-700 text-white border border-rose-400/30 shadow-lg shadow-rose-600/20",
+    secondary:
+      "bg-slate-900 hover:bg-slate-850 text-slate-100 border border-slate-800 shadow-sm",
     success:
-      "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 active:from-emerald-700 active:to-teal-600 text-white border border-emerald-400/40 shadow-md shadow-emerald-600/20",
-    info: "bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:from-blue-700 active:to-cyan-600 text-white border border-blue-400/40 shadow-md shadow-blue-600/20",
+      "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:from-emerald-700 active:to-teal-700 text-white border border-emerald-400/30 shadow-md shadow-emerald-600/20",
+    info: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:from-blue-700 active:to-indigo-700 text-white border border-blue-400/30 shadow-md shadow-blue-600/20",
     purple:
-      "bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 active:from-purple-700 active:to-pink-600 text-white border border-purple-400/40 shadow-md shadow-purple-600/20",
+      "bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:via-purple-500 hover:to-pink-500 active:from-violet-700 active:to-pink-700 text-white border border-purple-400/30 shadow-md shadow-purple-600/20",
     amber:
-      "bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 active:from-amber-700 active:to-orange-600 text-white border border-amber-400/40 shadow-md shadow-amber-600/20",
-    danger: "bg-red-500/15 hover:bg-red-500/25 active:bg-red-500/35 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 shadow-sm",
-    ghost: "bg-transparent hover:bg-slate-800/60 active:bg-slate-800 text-slate-400 hover:text-slate-100 border border-transparent shadow-none",
-    outline: "bg-slate-900/60 hover:bg-slate-850 active:bg-slate-900 border border-slate-750 hover:border-slate-650 text-slate-200 hover:text-white backdrop-blur-sm",
+      "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:from-amber-600 active:to-orange-600 text-white border border-amber-400/30 shadow-md shadow-amber-500/20",
+    danger:
+      "bg-gradient-to-r from-rose-600 via-rose-600 to-red-600 hover:from-rose-500 hover:via-rose-500 hover:to-red-500 active:from-rose-700 active:to-red-700 text-white border border-rose-500/40 shadow-md shadow-rose-600/25",
+    ghost:
+      "bg-transparent hover:bg-slate-850/60 active:bg-slate-800/60 text-slate-200 hover:text-slate-100 border border-transparent shadow-none",
+    outline:
+      "bg-slate-900/80 hover:bg-slate-850 text-slate-200 border border-slate-800 shadow-sm backdrop-blur-sm",
     unstyled: "",
   };
 

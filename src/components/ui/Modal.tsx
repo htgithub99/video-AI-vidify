@@ -46,13 +46,13 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
         <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.05] rounded-full blur-3xl pointer-events-none z-0")} />
         <div className={cn("absolute bottom-0 left-0 w-64 h-64 bg-amber-500/[0.03] rounded-full blur-3xl pointer-events-none z-0")} />
 
-        <div className={cn("flex items-center justify-between px-6 py-4 border-b border-slate-800/80 relative z-10 bg-slate-900/40 backdrop-blur-sm")}>
-          {title && <h2 className={cn("text-sm font-extrabold text-slate-100 flex items-center gap-2 font-mono uppercase tracking-wide truncate")}>{title}</h2>}
+        <div className={cn("flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-slate-800/80 relative z-10 bg-slate-100/40 dark:bg-slate-900/40 backdrop-blur-sm")}>
+          {title && <h2 className={cn("text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 truncate")}>{title}</h2>}
           <Button
             variant="ghost"
             size="xs"
             onClick={onClose}
-            className={cn("p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shadow-none ml-auto shrink-0")}>
+            className={cn("p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/80 transition-colors shadow-none ml-auto shrink-0")}>
             <X className={cn("w-4 h-4")} />
           </Button>
         </div>

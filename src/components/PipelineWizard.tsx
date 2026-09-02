@@ -117,13 +117,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
   const [editStyleFormName, setEditStyleFormName] = React.useState("");
   const [editStyleFormPrompt, setEditStyleFormPrompt] = React.useState("");
 
-  const [visitedSteps, setVisitedSteps] = React.useState<Record<number, boolean>>({
-    [currentStep]: true,
+  const [visitedSteps] = React.useState<Record<number, boolean>>({
+    [WizardStep.SourceInput]: true,
+    [WizardStep.Storyboard]: true,
+    [WizardStep.AssetManager]: true,
+    [WizardStep.SEOBoost]: true,
+    [WizardStep.Export]: true,
+    [WizardStep.IndependentGenerator]: true,
   });
-
-  React.useEffect(() => {
-    setVisitedSteps((previous) => (previous[currentStep] ? previous : { ...previous, [currentStep]: true }));
-  }, [currentStep]);
 
   const handleAddFavorite = () => {
     if (!favFormName.trim() || !favFormURI.trim()) return;
@@ -1610,19 +1611,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   },
                 }}
                 className={cn(
-                  "bg-slate-900 shadow-2xl shadow-rose-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden",
+                  "bg-white/95 dark:bg-slate-900/95 shadow-xl p-3.5 pr-8 rounded-2xl text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-200/90 dark:border-slate-800/90 backdrop-blur-xl relative overflow-hidden",
                 )}>
-                <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500")} />
-                <AlertCircle className={cn("w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5 ml-1")} />
-                <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
-                  <span className={cn("text-[10px] uppercase font-mono font-bold text-rose-500 tracking-wider")}>{t.System_Error}</span>
-                  <p className={cn("leading-snug text-slate-300 font-medium")}>{errorMsg}</p>
+                <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-rose-500")} />
+                <AlertCircle className={cn("w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5")} />
+                <div className={cn("flex-grow flex flex-col gap-0.5 text-left min-w-0")}>
+                  <span className={cn("text-xs font-bold font-sans tracking-normal text-rose-600 dark:text-rose-400")}>{t.System_Error}</span>
+                  <p className={cn("leading-snug text-slate-200 font-medium text-xs")}>{errorMsg}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="xs"
+                  type="button"
                   onClick={() => setErrorMsg("")}
-                  className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
+                  className={cn("toast-close-btn absolute top-2.5 right-2.5 cursor-pointer")}
+                  aria-label="Close">
                   <X className={cn("w-3.5 h-3.5")} />
                 </Button>
                 <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500/10")}>
@@ -1651,19 +1654,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   },
                 }}
                 className={cn(
-                  "bg-slate-900 shadow-2xl shadow-emerald-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden",
+                  "bg-white/95 dark:bg-slate-900/95 shadow-xl p-3.5 pr-8 rounded-2xl text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-200/90 dark:border-slate-800/90 backdrop-blur-xl relative overflow-hidden",
                 )}>
-                <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500")} />
-                <Check className={cn("w-4.5 h-4.5 text-emerald-500 shrink-0 mt-0.5 ml-1 animate-pulse")} />
-                <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
-                  <span className={cn("text-[10px] uppercase font-mono font-bold text-emerald-500 tracking-wider")}>{t.Success}</span>
-                  <p className={cn("leading-snug text-slate-300 font-medium")}>{infoMsg}</p>
+                <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-emerald-500")} />
+                <Check className={cn("w-4.5 h-4.5 text-emerald-500 shrink-0 mt-0.5 animate-pulse")} />
+                <div className={cn("flex-grow flex flex-col gap-0.5 text-left min-w-0")}>
+                  <span className={cn("text-xs font-bold font-sans tracking-normal text-emerald-600 dark:text-emerald-400")}>{t.Success}</span>
+                  <p className={cn("leading-snug text-slate-200 font-medium text-xs")}>{infoMsg}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="xs"
+                  type="button"
                   onClick={() => setInfoMsg("")}
-                  className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto")}>
+                  className={cn("toast-close-btn absolute top-2.5 right-2.5 cursor-pointer")}
+                  aria-label="Close">
                   <X className={cn("w-3.5 h-3.5")} />
                 </Button>
                 <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500/10")}>

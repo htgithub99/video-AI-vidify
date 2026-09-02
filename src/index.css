@@ -206,9 +206,62 @@ html.light .advanced-config-icon {
   box-sizing: border-box !important;
 }
 
+:root.light .header-control-container {
+  background: rgba(240, 234, 222, 0.9) !important;
+  border: 1px solid rgba(215, 205, 190, 0.8) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+:root.light .header-control-container button {
+  color: #475569 !important;
+}
+
+:root.light .header-control-container button:hover {
+  background: rgba(225, 29, 72, 0.12) !important;
+  color: #e11d48 !important;
+}
+
+:root.light .header-control-item {
+  background: rgba(255, 253, 249, 0.95) !important;
+  border: 1px solid rgba(220, 210, 195, 0.8) !important;
+  color: #334155 !important;
+}
+
 /* ĐỒNG NHẤT CHIỀU CAO BUTTON TRÊN TOÀN BỘ CÁC MÀN HÌNH */
-button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *) {
+button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]) {
   min-height: 40px !important;
+}
+
+.toast-close-btn,
+[data-close-button] {
+  min-height: unset !important;
+  min-width: unset !important;
+  max-height: unset !important;
+  max-width: unset !important;
+  height: 20px !important;
+  width: 20px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+.toast-close-btn:hover,
+[data-close-button]:hover {
+  color: #f43f5e !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: scale(1.15) !important;
 }
 
 ::-webkit-scrollbar {
@@ -1275,4 +1328,87 @@ select optgroup {
   --color-slate-355: #0f0b07;
   --color-slate-350: #0a0704;
   --color-slate-300: #000000;
+}
+
+/* ==========================================================================
+   AI CINEMATIC STUDIO TOAST NOTIFICATION STYLES (SONNER)
+   ========================================================================== */
+[data-sonner-toaster] {
+  font-family: inherit !important;
+  z-index: 999999 !important;
+}
+
+[data-sonner-toast] {
+  border-radius: 1rem !important;
+  padding: 14px 18px !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.25), 0 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  border-width: 1.5px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+:root [data-sonner-toast] {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+:root.light [data-sonner-toast] {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  color: #0f172a !important;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-left: 4.5px solid #10b981 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left: 4.5px solid #f43f5e !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left: 4.5px solid #3b82f6 !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left: 4.5px solid #f59e0b !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 11.5px !important;
+  opacity: 0.85 !important;
+  margin-top: 2px !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  background: rgba(148, 163, 184, 0.15) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 9999px !important;
+  color: #64748b !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: rgba(244, 63, 94, 0.15) !important;
+  color: #f43f5e !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+  transform: scale(1.1) !important;
 }

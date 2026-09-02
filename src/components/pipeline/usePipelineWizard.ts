@@ -1047,7 +1047,7 @@ export function usePipelineWizard(props: any) {
     lastProjectIdRef.current = initialProject.id;
     lastUpdatedAtRef.current = initialProject.updatedAt;
 
-    if (isNewProject || isServerUpdate) {
+    if (isNewProject) {
       if ((initialProject as any).currentStep !== undefined) {
         setCurrentStep(resolvePersistedWizardStep((initialProject as any).currentStep));
       } else {
@@ -1059,7 +1059,9 @@ export function usePipelineWizard(props: any) {
       } else {
         setStoryboardSourceMode(StoryboardSourceMode.SCRIPT);
       }
+    }
 
+    if (isNewProject || isServerUpdate) {
       if (initialProject.hookConfig) {
         setHookStrategy(initialProject.hookConfig.type || "Auto");
         setHookDuration(initialProject.hookConfig.duration || 10);

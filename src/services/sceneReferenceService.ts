@@ -157,6 +157,7 @@ export const resolveStoryboardCharacterIds = (scenes: StoryboardScene[], charact
 
 export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], characters: CharacterConfig[]): StoryboardScene[] => {
   let previousCharacterIds: string[] = [];
+  const validIds = new Set(_.map(characters, "id"));
   return _.map(scenes, (scene) => {
     const narration = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle, scene.visibleAction, scene.reaction, scene.spokenDialogue]), " "));
     const narrationMatchedIds = _.map(
@@ -166,9 +167,12 @@ export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], cha
       }),
       "id",
     );
-    const validIds = new Set(_.map(characters, "id"));
+    // Planner-assigned IDs are authoritative after validation. Re-resolving only
+    // from localized narration (for example "Tôn Ngộ Không" vs "Sun Wukong")
+    // previously erased correct IDs and prevented Character Pack routing.
+    const explicitIds = _.filter(_.uniq(scene.characterIds || []), (id) => validIds.has(id));
     const speakerIds = validIds.has(_.toString(scene.speakerCharacterId)) ? [_.toString(scene.speakerCharacterId)] : [];
-    const directIds = _.uniq(_.concat(narrationMatchedIds, speakerIds));
+    const directIds = _.uniq(_.concat(explicitIds, narrationMatchedIds, speakerIds));
     const characterIds = _.isEmpty(directIds) && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration) ? previousCharacterIds : directIds;
     if (!_.isEmpty(characterIds)) previousCharacterIds = characterIds;
     return { ...scene, characterIds };

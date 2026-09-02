@@ -17,7 +17,7 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
       const editedSegments = _.map(segments, (segment, index): StoryboardScene => ({
         ...scene,
         id: `${scene.id}__${segment.segmentId || index + 1}`,
-        duration: sourceDuration,
+        duration: Number((_.toNumber(segment.outSeconds) - _.toNumber(segment.inSeconds)).toFixed(3)),
         sourceTrimStartSeconds: Number(_.toNumber(segment.inSeconds).toFixed(3)),
         sourceTrimEndSeconds: Number((_.max([0, sourceDuration - _.toNumber(segment.outSeconds)]) || 0).toFixed(3)),
         shotRole: segment.shotRole,

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createCharacterIdentityBlocks, createSceneGenerationContext, resolveSceneCharacterIds, resolveStoryboardCharacterIds } from "../src/services/sceneReferenceService.ts";
+import { createCharacterIdentityBlocks, createSceneGenerationContext, pruneUnsupportedSceneCharacterIds, resolveSceneCharacterIds, resolveStoryboardCharacterIds } from "../src/services/sceneReferenceService.ts";
 import { CharacterConfig, StoryboardScene } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { normalizeExtractedStyle } from "../src/services/styleReferenceService.ts";
@@ -129,6 +129,11 @@ const continuedScenes = resolveStoryboardCharacterIds([
   { ...scene, id: "sc_vu_2", script: "Anh nhanh chóng đeo đồng hồ.", subtitle: "Anh nhanh chóng đeo đồng hồ.", prompt: "", characterIds: [] },
 ], vietnameseCharacter);
 assert.deepEqual(continuedScenes.map(item => item.characterIds), [["char_vu"], ["char_vu"]]);
+const localizedExplicitScene = pruneUnsupportedSceneCharacterIds(
+  [{ ...scene, id: "sc_wukong", prompt: "", subtitle: "", visibleAction: "", reaction: "", script: "Tôn Ngộ Không siết chặt Gậy Như Ý.", characterIds: ["char_1"] }],
+  characters,
+);
+assert.deepEqual(localizedExplicitScene[0].characterIds, ["char_1"], "validated character ID was erased because the localized script used a different name");
 const unnamedPeopleContext = createSceneGenerationContext(explicitEmptyScene, {
   characters,
   styleReferenceImages: [],
