@@ -96,7 +96,8 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   );
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
   assert.match(initialPrompt, /natural Vietnamese/);
-  assert.match(initialPrompt, /generationPrompt is the final 180-500 word English prompt/);
+  assert.match(initialPrompt, /application separately compiles your creative decisions/);
+  assert.match(initialPrompt, /Do not return generationPrompt, timing, sequence IDs/);
 
   const apiPrompt = getCinematicVideoPlanningPrompt(
     serializedScene,
@@ -121,9 +122,9 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
     TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED,
     TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
   );
-  assert.match(repairPrompt, /Rewrite the COMPLETE scene object/);
+  assert.match(repairPrompt, /Rewrite only the supplied failed scene objects/);
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
-  assert.match(repairPrompt, /Output only the complete valid JSON array/);
+  assert.match(repairPrompt, /Application code deterministically compiles those technical fields/);
 };
 
 const verifyDialogueContractExemption = () => {
@@ -164,7 +165,7 @@ const verifyBlockingContractClassification = () => {
   assert.deepEqual(getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS), []);
 
   const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), soundDesignCues: [] } as StoryboardScene;
-  assert.match(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS)[0], /soundDesignCues:missing$/);
+  assert.deepEqual(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS), []);
 
   assert.deepEqual(
     getBlockingCinematicPlanningIssues([
@@ -174,11 +175,12 @@ const verifyBlockingContractClassification = () => {
       "sc_2:prompt:incomplete_or_outside_global_length_contract",
       "sc_2:textOverlay:must_be_empty_when_text_forbidden",
     ]),
-    [],
+    ["sc_2:prompt:incomplete_or_outside_global_length_contract"],
   );
-  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), [
-    "sc_2:generationPrompt:missing",
-    "sc_2:soundDesignCues:invalid",
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), []);
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:characterIds:unknown:varg", "sc_2:actionChoreography:aftermath_missing"]), [
+    "sc_2:characterIds:unknown:varg",
+    "sc_2:actionChoreography:aftermath_missing",
   ]);
 };
 
@@ -206,15 +208,14 @@ const verifyScopedVisualBibleIsolation = () => {
 
 const verifyPipelineControllerSourceInvariants = () => {
   const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
-  assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents\)/);
+  assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
-  assert.match(controllerSource, /return await requestApiPlan\(apiContents\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
-  assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents\)/);
+  assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
+  assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /forChatUi \? chunkCharactersJson : charactersJson/);
   assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
   assert.match(controllerSource, /maxItems: CINEMATIC_CHAT_PLANNING_CONFIG\.API_MAX_SOUND_DESIGN_CUES/);
-  assert.match(controllerSource, /planningExecutionMode, AiPlanningExecutionMode\.ApiOnly\)[\s\S]*firstParsedItems[\s\S]*firstPlanningIssues/);
-  assert.match(controllerSource, /else \{[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
+  assert.match(controllerSource, /getCorrectablePlanningIssues[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
   assert.match(controllerSource, /CINEMATIC_CHAT_PLANNING_CONFIG\.ROOM_RESPONSE_ATTEMPTS/);
   assert.match(controllerSource, /getBlockingCinematicStoryboardContractIssues/);
   assert.match(controllerSource, /getBlockingCinematicPlanningIssues\(planningIssues\)/);

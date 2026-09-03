@@ -34,10 +34,29 @@ export const distributeItemsByContinuity = <T extends ContinuityBatchItem>(items
   );
 
   const workerQueues = _.times(workerCount, () => [] as T[]);
+  const continuityGroups: T[][] = [];
+  const continuityGroupIndexes = new Map<string, number>();
 
-  _.forEach(items, (item, index) => {
-    const targetWorkerIndex = index % workerCount;
-    workerQueues[targetWorkerIndex].push(item);
+  _.forEach(items, (item) => {
+    const continuityKey = _.trim(item.continuityKey);
+    if (_.isEmpty(continuityKey)) {
+      continuityGroups.push([item]);
+      return;
+    }
+
+    const existingGroupIndex = continuityGroupIndexes.get(continuityKey);
+    if (_.isNumber(existingGroupIndex)) {
+      continuityGroups[existingGroupIndex].push(item);
+      return;
+    }
+
+    continuityGroupIndexes.set(continuityKey, continuityGroups.length);
+    continuityGroups.push([item]);
+  });
+
+  _.forEach(continuityGroups, (group) => {
+    const targetWorkerIndex = _.minBy(_.range(workerCount), (index) => workerQueues[index].length) || 0;
+    workerQueues[targetWorkerIndex].push(...group);
   });
 
   return workerQueues;

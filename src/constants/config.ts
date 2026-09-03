@@ -416,6 +416,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   SINGLE_SUBJECT_COUNT: 1,
   EMPTY_STRING: "",
   CHARACTER_VISUAL_PREFIX: "",
+  OBSERVABLE_ACTION_FALLBACK: "The named subject turns, steps forward, and visibly completes the story action",
   SCENE_DEPICTING_PREFIX: "Scene depicting: ",
   CHARACTER_STYLING_PREFIX: "Character styling: ",
   SHOT_TYPE_PREFIX: "Shot type: ",
@@ -702,12 +703,37 @@ export const REFERENCE_ASSET_GROUP = { STYLE: "style", SCENE: "scene", THUMBNAIL
 
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
+export const PROJECT_ASSET_QUERY = { SCENE_ID: "sceneId" } as const;
 
 export const REGENERATION_TARGET = { VOICE: "voice", IMAGES: "images", RENDER: "render" } as const;
 
 export const REGENERATION_TEXTS = {
-  vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", clips: "Tạo lại clip", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
-  en: { voice: "Redo voice", images: "Redo images", clips: "Redo clips", render: "Render again", failed: "Could not remove old assets. Please try again." },
+  vi: {
+    voice: "Tạo lại voice",
+    images: "Tạo lại ảnh",
+    clips: "Tạo lại clip",
+    render: "Ghép lại",
+    failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại.",
+    sceneDialogTitle: "Chọn clip",
+    sceneLabel: "Cảnh",
+    sceneEmpty: "Chưa có clip để tạo lại.",
+    sceneCancel: "Hủy",
+    sceneConfirm: "Tạo clip",
+    sceneRequired: "Hãy chọn đúng một cảnh cần tạo lại.",
+  },
+  en: {
+    voice: "Redo voice",
+    images: "Redo images",
+    clips: "Redo clips",
+    render: "Render again",
+    failed: "Could not remove old assets. Please try again.",
+    sceneDialogTitle: "Choose clip",
+    sceneLabel: "Scene",
+    sceneEmpty: "No clip is available to regenerate.",
+    sceneCancel: "Cancel",
+    sceneConfirm: "Redo clip",
+    sceneRequired: "Choose exactly one scene to regenerate.",
+  },
 } as const;
 
 export const FFMPEG_RESOLUTIONS = {
@@ -1499,6 +1525,10 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   DURATION_TOLERANCE_SECONDS: 1.5,
   PROGRESS_TEXT_PATTERN: /(?:^|\s)(\d{1,3})\s*%(?:\s|$)/,
   PROJECT_ASSET_URL_PATTERN: /^\/assets\/projects\/[^/]+\/videos\/[^/?#]+(?:[?#].*)?$/i,
+  MEDIA_ID_PATTERN: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  MEDIA_API_PATH_MARKER: "/fx/api/",
+  MEDIA_REDIRECT_PATH: "fx/api/trpc/media.getMediaUrlRedirect?name={mediaId}",
+  MEDIA_ID_TOKEN: "{mediaId}",
   FILE_EXTENSION: ".mp4",
   REMOTE_DOWNLOAD_PENDING_ERROR: "Video đã được tạo trên Flow nhưng chưa tải về được; hệ thống sẽ không tạo lại clip này.",
   INVALID_MEDIA_ERROR: "Flow chưa trả về tệp video hoàn chỉnh.",

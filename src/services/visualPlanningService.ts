@@ -10,6 +10,8 @@ const PHYSICAL_ACTION_PATTERN =
 
 const normalizePlanningText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value)))), " ");
 
+export const hasObservablePhysicalAction = (value: unknown): boolean => PHYSICAL_ACTION_PATTERN.test(_.toString(value));
+
 export const getVisualShotPlanIssues = (source: Partial<StoryboardScene>, baseScene: StoryboardScene): string[] => {
   const issues: string[] = [];
   const requiredFields: Array<keyof Pick<StoryboardScene, "visualIntent" | "visibleAction" | "reaction" | "storyEvidence" | "visualHook" | "composition">> = [
@@ -31,7 +33,7 @@ export const getVisualShotPlanIssues = (source: Partial<StoryboardScene>, baseSc
   if (!_.isEmpty(normalizedAction) && _.isEqual(normalizedAction, normalizedScript)) {
     issues.push(`${baseScene.id}:visibleAction:copied_from_script`);
   }
-  if (!_.isEmpty(action) && !PHYSICAL_ACTION_PATTERN.test(action)) {
+  if (!_.isEmpty(action) && !hasObservablePhysicalAction(action)) {
     issues.push(`${baseScene.id}:visibleAction:no_observable_physical_verb`);
   }
   if (_.isEqual(source.assetStrategy, "archival")) {
@@ -94,6 +96,18 @@ export const normalizeVisualShotPlan = (source: Partial<StoryboardScene>, baseSc
         IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT,
       )
     : undefined;
+  const sourcePrompt = _.trim(_.toString(source.prompt || baseScene.prompt));
+  const characterNames = _.compact(_.map(characterIds, (id) => _.find(options.characters, { id })?.name));
+  const missingCharacterNames = _.filter(characterNames, (name) => !_.includes(_.lowerCase(sourcePrompt), _.lowerCase(name)));
+  const prompt = _.isEmpty(missingCharacterNames)
+    ? sourcePrompt
+    : _.join([_.join(missingCharacterNames, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), sourcePrompt], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  const requestedVisibleAction = _.trim(_.toString(source.visibleAction));
+  const visibleAction = hasObservablePhysicalAction(requestedVisibleAction)
+    ? requestedVisibleAction
+    : hasObservablePhysicalAction(prompt)
+      ? prompt
+      : IMAGE_PROMPT_COMPILER_CONFIG.OBSERVABLE_ACTION_FALLBACK;
 
   return {
     ...baseScene,
@@ -153,6 +167,8 @@ export const normalizeVisualShotPlan = (source: Partial<StoryboardScene>, baseSc
     assetStrategy: _.isEqual(source.assetStrategy, "archival") ? "archival" : "ai_generated",
     archivalSearchQuery: _.isEqual(source.assetStrategy, "archival") ? _.trim(_.toString(source.archivalSearchQuery)) : "",
     archivalRationale: _.trim(_.toString(source.archivalRationale)),
+    prompt,
+    visibleAction,
   };
 };
 

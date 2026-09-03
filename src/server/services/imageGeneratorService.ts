@@ -77,6 +77,7 @@ import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
+import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 
 interface BrowserSession {
   context: BrowserContext;
@@ -334,6 +335,30 @@ const parseConfiguredVideoDuration = (duration?: string): number => {
   return _.gt(parsed, 0) ? parsed : _.toNumber(_.replace(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION, /[^0-9.]/g, ""));
 };
 
+interface FlowDownloadedVideo {
+  buffer: Buffer;
+  mimeType: string;
+  mediaUrl: string;
+}
+
+export const normalizeFlowMediaId = (value: string): string =>
+  _.defaultTo(_.toString(value).match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], _.trim(value));
+
+export const createFlowMediaRedirectUrl = (mediaId: string): string =>
+  new URL(
+    _.replace(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_REDIRECT_PATH, FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_TOKEN, encodeURIComponent(normalizeFlowMediaId(mediaId))),
+    EXTERNAL_URLS.GOOGLE_LABS,
+  ).href;
+
+const extractFlowMediaIdFromUrl = (mediaUrl: string): string => {
+  try {
+    const parsedUrl = new URL(mediaUrl, EXTERNAL_URLS.GOOGLE_LABS);
+    return _.defaultTo(_.toString(parsedUrl.searchParams.get("name") || mediaUrl).match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], "");
+  } catch {
+    return _.defaultTo(mediaUrl.match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], "");
+  }
+};
+
 const waitForFlowMediaCardReady = async (page: Page, mediaId: string): Promise<Locator> => {
   const resultThumb = page.locator(`img[src*="name=${mediaId}"]`).last();
   const resultButton = resultThumb.locator("xpath=ancestor::button[1]");
@@ -361,7 +386,7 @@ const downloadFlowVideoFromCard = async (
   mediaCard: Locator,
   previousVideoSources: string[],
   expectedDurationSeconds: number,
-): Promise<{ buffer: Buffer; mimeType: string } | null> => {
+): Promise<FlowDownloadedVideo | null> => {
   await mediaCard.scrollIntoViewIfNeeded();
   await mediaCard.click({ force: true });
   await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
@@ -386,7 +411,7 @@ const downloadFlowVideoFromEdit = async (
   flowProjectId: string,
   editId: string,
   expectedDurationSeconds: number,
-): Promise<{ buffer: Buffer; mimeType: string } | null> => {
+): Promise<FlowDownloadedVideo | null> => {
   await page.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}/edit/${editId}`, {
     waitUntil: "domcontentloaded",
     timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
@@ -410,7 +435,7 @@ export interface FlowVideoRecoveryOptions {
 
 export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
   const flowProjectId = normalizeFlowProjectId(options.flowProjectId);
-  const mediaId = _.trim(options.mediaId);
+    const mediaId = normalizeFlowMediaId(options.mediaId);
   if (_.some([flowProjectId, mediaId], _.isEmpty)) {
     return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR };
   }
@@ -428,7 +453,7 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
     if (await isFlowProjectUnavailable(page)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
 
     const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
-    const directMediaUrl = new URL(`fx/api/trpc/media.getMediaUrlRedirect?name=${encodeURIComponent(mediaId)}`, EXTERNAL_URLS.GOOGLE_LABS).href;
+    const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
     let downloadedVideo = await downloadValidatedVideo(browserInstance.context, [directMediaUrl], expectedDurationSeconds).catch(() => null);
     if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
     if (!downloadedVideo) {
@@ -472,14 +497,14 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
 
 const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directVideoSrc?: string | null): Promise<string[]> => {
   const pageUrls = await page.evaluate(
-    ({ targetMediaId }) => {
+    ({ targetMediaId, mediaApiPathMarker }) => {
       const normalizeMediaUrl = (value: string | null | undefined): string => {
         if (!value || value.startsWith("blob:")) return "";
         try {
-          const absoluteUrl = new URL(value, window.location.origin);
-          const duplicatedApiPathIndex = absoluteUrl.pathname.indexOf("/fx/api/", "/fx/api/".length);
-          if (duplicatedApiPathIndex >= 0) absoluteUrl.pathname = absoluteUrl.pathname.slice(duplicatedApiPathIndex);
-          return absoluteUrl.href;
+          const absoluteUrl = new URL(value, window.location.origin).href;
+          const firstApiPathIndex = absoluteUrl.indexOf(mediaApiPathMarker);
+          const finalApiPathIndex = absoluteUrl.lastIndexOf(mediaApiPathMarker);
+          return finalApiPathIndex > firstApiPathIndex ? new URL(absoluteUrl.slice(finalApiPathIndex), window.location.origin).href : absoluteUrl;
         } catch {
           return "";
         }
@@ -499,7 +524,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
         /media\.getMediaUrlRedirect|googleusercontent|storage|\.(?:mp4|webm|mov)(?:\?|$)/i.test(url) && (!targetMediaId || url.includes(targetMediaId) || /media\.getMediaUrlRedirect/i.test(url)),
       );
     },
-    { targetMediaId: mediaId || null },
+    { targetMediaId: mediaId || null, mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER },
   );
   const normalizedDirectUrl = (() => {
     try {
@@ -511,7 +536,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
   return _.uniq(_.compact([normalizedDirectUrl, ...pageUrls]));
 };
 
-const downloadValidatedVideo = async (context: BrowserContext, urls: string[], expectedDurationSeconds: number): Promise<{ buffer: Buffer; mimeType: string }> => {
+const downloadValidatedVideo = async (context: BrowserContext, urls: string[], expectedDurationSeconds: number): Promise<FlowDownloadedVideo> => {
   for (const mediaUrl of _.reverse(_.clone(urls))) {
     try {
       const response = await context.request.get(mediaUrl, { timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
@@ -519,7 +544,7 @@ const downloadValidatedVideo = async (context: BrowserContext, urls: string[], e
       const buffer = await response.body();
       await inspectGeneratedVideoBuffer(buffer, expectedDurationSeconds);
       const responseMimeType = _.defaultTo(response.headers()["content-type"], "");
-      return { buffer, mimeType: _.startsWith(responseMimeType, "video/") ? responseMimeType : "video/mp4" };
+      return { buffer, mimeType: _.startsWith(responseMimeType, "video/") ? responseMimeType : "video/mp4", mediaUrl };
     } catch (error) {}
   }
   throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
@@ -1706,7 +1731,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const generatedMedia = (await mediaHandle.jsonValue()) as { editId?: string | null; videoSrc?: string | null } | null;
           if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
 
-          let downloadedVideoFromCard: { buffer: Buffer; mimeType: string } | null = null;
+          let downloadedVideoFromCard: FlowDownloadedVideo | null = null;
           if (generatedMedia.editId) {
             remoteVideoMediaId = generatedMedia.editId;
             downloadedVideoFromCard = await downloadFlowVideoFromEdit(
@@ -1733,6 +1758,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const downloadedVideo =
             downloadedVideoFromCard ||
             (await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration)));
+          remoteVideoMediaId = extractFlowMediaIdFromUrl(downloadedVideo.mediaUrl) || generatedMedia.editId || undefined;
           finalBase64 = `data:${downloadedVideo.mimeType};base64,${downloadedVideo.buffer.toString("base64")}`;
         } else {
           const base64Data = await activePage.waitForFunction(
@@ -2496,7 +2522,7 @@ export async function generateBatchImagesWithGeminiChat(
       };
     };
 
-    const sharedQueue = [...items];
+    const workerQueues = distributeItemsByContinuity(items, activePages.length);
 
     const createReplacementWorkerPage = async (tabIndex: number): Promise<Page | null> => {
       for (let attempt = SecurityConstants.ZERO; attempt < GEMINI_BATCH_SETUP_CONFIG.WORKER_REPLACEMENT_MAX_ATTEMPTS; attempt++) {
@@ -2509,10 +2535,10 @@ export async function generateBatchImagesWithGeminiChat(
       return null;
     };
 
-    const runWorker = async (page: Page, tabIndex: number) => {
+    const runWorker = async (page: Page, tabIndex: number, workerQueue: BatchImageItem[]) => {
       let workerPage = page;
-      while (sharedQueue.length > 0 && !isMediaGenerationCancelled(generationRevision)) {
-        const item = sharedQueue.shift();
+      while (workerQueue.length > 0 && !isMediaGenerationCancelled(generationRevision)) {
+        const item = workerQueue.shift();
         if (!item) break;
         let itemSucceeded = false;
 
@@ -2540,7 +2566,7 @@ export async function generateBatchImagesWithGeminiChat(
           }
           const failedPage = workerPage;
           globalBatchPages = _.without(globalBatchPages, failedPage);
-          if (_.isEmpty(sharedQueue)) return;
+          if (_.isEmpty(workerQueue)) return;
           const replacementPage = await createReplacementWorkerPage(tabIndex);
           if (!replacementPage) return;
           workerPage = replacementPage;
@@ -2548,14 +2574,14 @@ export async function generateBatchImagesWithGeminiChat(
           continue;
         }
 
-        if (sharedQueue.length > 0) {
+        if (workerQueue.length > 0) {
           const delayTime = await applyBatchDelay(visualConfig);
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
         }
       }
     };
 
-    const workers = _.map(activePages, (page, idx) => runWorker(page, idx));
+    const workers = _.map(activePages, (page, index) => runWorker(page, index, workerQueues[index] || []));
     await Promise.all(workers);
 
     _.forEach(

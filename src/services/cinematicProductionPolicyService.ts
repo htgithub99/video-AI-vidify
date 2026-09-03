@@ -8,7 +8,7 @@ import {
   CINEMATIC_DIALOGUE_FALLBACKS,
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_POLICY_REQUIRED_FIELDS,
-  getCinematicDialogueRetryDirective,
+  hasCinematicCombatAction,
   resolveCinematicClipDuration,
 } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
@@ -83,7 +83,6 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
     _.compact([
       scene.script,
       scene.prompt,
-      scene.generationPrompt,
       scene.visibleAction,
       scene.reaction,
       scene.actionStartState,
@@ -92,10 +91,14 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
     ]),
     " ",
   );
-  if (CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONFLICT_PATTERN.test(choreographyText)) {
+  if (hasCinematicCombatAction(choreographyText)) {
     const choreographyChecks = [
       ["initiator_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.INITIATOR_PATTERN],
       ["target_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.TARGET_PATTERN],
+      ["footwork_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.FOOTWORK_PATTERN],
+      ["weight_transfer_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WEIGHT_TRANSFER_PATTERN],
+      ["wind_up_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WIND_UP_PATTERN],
+      ["limb_or_weapon_ownership_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OWNERSHIP_PATTERN],
       ["contact_or_evasion_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONTACT_PATTERN],
       ["caused_reaction_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REACTION_PATTERN],
       ["aftermath_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OUTCOME_PATTERN],
@@ -194,7 +197,6 @@ export const getCinematicScriptReadinessIssues = (
       _.some(chapters, (chapter) => !/[.!?…][\s"')\]]*$/.test(_.trim(chapter.scriptSegment))) && "chapters:incomplete_ending",
       !quality && "scriptQa:missing",
       quality && !quality.passed && !_.isEmpty(quality.blockingErrors) && "scriptQa:failed",
-      quality && !quality.durationFit && "scriptQa:duration_mismatch",
       !contentSafety && "contentSafety:missing",
       contentSafety && !contentSafety.allowed && "contentSafety:blocked",
     ]),
@@ -202,13 +204,12 @@ export const getCinematicScriptReadinessIssues = (
 
 export const getCinematicStoryboardReadinessIssues = (
   scenes: StoryboardScene[],
-  expectedClipCount: number,
+  _expectedClipCount: number,
   quality?: StoryboardQualityReport,
 ): string[] =>
   _.uniq(
     _.compact([
       _.isEmpty(scenes) && "storyboard:missing",
-      !_.isEqual(scenes.length, expectedClipCount) && `storyboard:clip_count:${scenes.length}/${expectedClipCount}`,
       _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
       !quality && "storyboardQa:missing",
       quality && !quality.passed && !_.isEmpty(quality.blockingErrors) && "storyboardQa:failed",
@@ -217,7 +218,7 @@ export const getCinematicStoryboardReadinessIssues = (
     ]),
   );
 
-export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], expectedClipCount: number): string[] =>
+export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], _expectedClipCount: number): string[] =>
   _.uniq([
     ..._.flatMap(scenes, (scene) =>
       _.compact([
@@ -228,7 +229,6 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], expec
         !_.isEqual(scene.acceptance, AssetAcceptance.Approved) && `${scene.id}:acceptance_failed`,
       ]),
     ),
-    ...(!_.isEqual(scenes.length, expectedClipCount) ? [`storyboard:clip_count:${scenes.length}/${expectedClipCount}`] : []),
   ]);
 
 export const getCinematicDialogueTakeIssues = (scenes: StoryboardScene[]): string[] =>
@@ -289,10 +289,15 @@ const timeCinematicBeats = (beats: NonNullable<StoryboardScene["cinematicBeats"]
   }));
 };
 
-const ensureValidCinematicBeats = (scene: StoryboardScene, group: StoryboardScene[]): NonNullable<StoryboardScene["cinematicBeats"]> => {
+const ensureValidCinematicBeats = (
+  scene: StoryboardScene,
+  group: StoryboardScene[],
+  requestedDuration?: string | number,
+): NonNullable<StoryboardScene["cinematicBeats"]> => {
   if (scene.cinematicBeats && scene.cinematicBeats.length >= CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT && scene.cinematicBeats.length <= CINEMATIC_POLICY_CONFIG.MAX_BEAT_COUNT)
-    return timeCinematicBeats(scene.cinematicBeats);
-  if (group.length >= CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT && group.length <= CINEMATIC_POLICY_CONFIG.MAX_BEAT_COUNT) return timeCinematicBeats(_.map(group, toCinematicBeat));
+    return timeCinematicBeats(scene.cinematicBeats, requestedDuration);
+  if (group.length >= CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT && group.length <= CINEMATIC_POLICY_CONFIG.MAX_BEAT_COUNT)
+    return timeCinematicBeats(_.map(group, toCinematicBeat), requestedDuration);
   if (group.length === 2) {
     const firstBeat = toCinematicBeat(group[0], 0);
     firstBeat.shotRole = "master";
@@ -308,7 +313,7 @@ const ensureValidCinematicBeats = (scene: StoryboardScene, group: StoryboardScen
       visibleAction: group[1].reaction || group[1].actionEndState || `Visible aftermath and consequence of ${secondBeat.visibleAction}`,
       transition: "motivated_reframe",
     };
-    return timeCinematicBeats([firstBeat, secondBeat, thirdBeat]);
+    return timeCinematicBeats([firstBeat, secondBeat, thirdBeat], requestedDuration);
   }
   const action = scene.visibleAction || scene.actionEndState || scene.script || CINEMATIC_DEFAULTS.VISIBLE_ACTION;
   const reaction = scene.reaction || scene.actionEndState || `Subject assesses the outcome of ${action}`;
@@ -355,7 +360,7 @@ const ensureValidCinematicBeats = (scene: StoryboardScene, group: StoryboardScen
       speakerCharacterId: "",
       lipSyncRequired: false,
     },
-  ]);
+  ], requestedDuration);
 };
 
 export const bundleCinematicScenesForGeneration = (scenes: StoryboardScene[], targetClipCount?: number): StoryboardScene[] => {
@@ -528,15 +533,84 @@ const applyFallbackDialogue = (scene: StoryboardScene, language: ProjectLanguage
     speakerCharacterId,
     lipSyncRequired: true,
     cinematicBeats: beats,
-    generationPrompt: _.join(
-      _.compact([scene.generationPrompt, getCinematicDialogueRetryDirective(language, spokenDialogue, speakerCharacterId!)]),
-      " ",
-    ),
   };
 };
 
-export const repairCinematicStoryboardContract = (scenes: StoryboardScene[], language: ProjectLanguage): StoryboardScene[] => {
-  const repairedScenes = applyCinematicContinuityHandoffs(scenes);
+export const repairCinematicStoryboardContract = (
+  scenes: StoryboardScene[],
+  language: ProjectLanguage,
+  requestedDuration?: string | number,
+): StoryboardScene[] => {
+  const structurallyRepairedScenes = _.map(scenes, (sourceScene, index) => {
+    const scene = _.cloneDeep(sourceScene);
+    const action = scene.visibleAction || scene.script || CINEMATIC_DEFAULTS.VISIBLE_ACTION;
+    const choreographyText = _.join(
+      _.compact([scene.script, scene.prompt, scene.visibleAction, scene.reaction, scene.actionStartState, scene.actionEndState, ..._.flatMap(scene.cinematicBeats || [], (beat) => [beat.visibleAction, beat.reaction])]),
+      " ",
+    );
+    const choreographyNeedsRepair =
+      hasCinematicCombatAction(choreographyText) &&
+      _.some(
+        [
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.TARGET_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.FOOTWORK_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WEIGHT_TRANSFER_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WIND_UP_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OWNERSHIP_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONTACT_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REACTION_PATTERN,
+          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OUTCOME_PATTERN,
+        ],
+        (pattern) => !pattern.test(choreographyText),
+      );
+    const reaction = _.join(
+      _.compact([
+        scene.reaction || scene.actionEndState || CINEMATIC_DEFAULTS.REACTION,
+        choreographyNeedsRepair ? CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REPAIR_SEQUENCE : "",
+      ]),
+      " ",
+    );
+    const sourceBeats = ensureValidCinematicBeats(scene, [scene], requestedDuration);
+    const cinematicBeats = _.map(sourceBeats, (beat, beatIndex) => ({
+      ...beat,
+      sourceSceneId: scene.id,
+      shotId: beat.shotId || `${scene.id}_shot_${beatIndex + 1}`,
+      shotRole: beat.shotRole || (beatIndex === 0 ? "master" : beatIndex === sourceBeats.length - 1 ? "payoff" : "coverage"),
+      shotSize: beat.shotSize || (beatIndex === 0 ? "wide shot" : beatIndex === sourceBeats.length - 1 ? "reaction close up" : "medium coverage"),
+      cameraAngle: beat.cameraAngle || scene.cameraAngle || "eye level",
+      visibleAction: beat.visibleAction || action,
+      reaction: beat.reaction || (beatIndex > 0 ? reaction : ""),
+      ...(choreographyNeedsRepair && beatIndex === sourceBeats.length - 1
+        ? { visibleAction: _.join(_.compact([beat.visibleAction, CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REPAIR_SEQUENCE]), " "), reaction }
+        : {}),
+      transition: beat.transition || (beatIndex > 0 ? "match_cut" : "hard_cut"),
+      dialogueMode: beat.dialogueMode || "silent_action",
+      spokenDialogue: beat.spokenDialogue || "",
+      speakerCharacterId: beat.speakerCharacterId || "",
+      lipSyncRequired: _.isEqual(beat.dialogueMode, "on_screen_dialogue") && Boolean(beat.spokenDialogue),
+    }));
+    return {
+      ...scene,
+      sequenceId: scene.sequenceId || scene.chapterId || `sequence_${index + 1}`,
+      shotId: scene.shotId || scene.id,
+      shotRole: scene.shotRole || "coverage",
+      dialogueMode: scene.dialogueMode || "silent_action",
+      spokenDialogue: scene.spokenDialogue || "",
+      speakerCharacterId: scene.speakerCharacterId || "",
+      lipSyncRequired: _.isEqual(scene.dialogueMode, "on_screen_dialogue") && Boolean(scene.spokenDialogue),
+      characterBlocking: scene.characterBlocking || action,
+      eyelineDirection: scene.eyelineDirection || CINEMATIC_DEFAULTS.EYELINE_DIRECTION,
+      screenDirection: scene.screenDirection || CINEMATIC_DEFAULTS.SCREEN_DIRECTION,
+      actionStartState: scene.actionStartState || CINEMATIC_DEFAULTS.ACTION_START_STATE,
+      actionEndState: scene.actionEndState || action,
+      locationState: scene.locationState || scene.locationId || CINEMATIC_DEFAULTS.LOCATION_STATE,
+      wardrobeState: scene.wardrobeState || CINEMATIC_DEFAULTS.WARDROBE_STATE,
+      propState: scene.propState || CINEMATIC_DEFAULTS.PROP_STATE,
+      soundDesignCues: !_.isEmpty(scene.soundDesignCues) ? scene.soundDesignCues : [...CINEMATIC_DEFAULT_SOUND_CUES],
+      cinematicBeats,
+    };
+  });
+  const repairedScenes = applyCinematicContinuityHandoffs(structurallyRepairedScenes);
   const characterLedScenes = _.filter(repairedScenes, (scene) => !_.isEmpty(scene.characterIds));
   const minimumDialogueScenes = Math.max(1, Math.ceil(characterLedScenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
   const dialogueSceneCount = _.size(

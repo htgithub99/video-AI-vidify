@@ -16,7 +16,8 @@ const projectController = readSource("src/server/controllers/projectController.t
 const imageEngineOptions = readSource("src/components/auto-video/autoVideoGeneratorUtils.ts");
 
 assert.doesNotMatch(autoPipeline, /generateCharacterReferenceLibrary|includeCharacterImages/);
-assert.doesNotMatch(sceneReferences, /character\.images|includeCharacterImages/);
+assert.match(sceneReferences, /createSceneGenerationContext[\s\S]*referenceImages: \[\]/);
+assert.match(sceneReferences, /resolveCinematicSceneCharacterReferences[\s\S]*character\.images/);
 assert.doesNotMatch(thumbnails, /character\.images|includeCharacterImages/);
 assert.match(selectors, /ModelMenu = ["']\[data-test-id=\\?"gem-mode-menu\\?"\]["']/);
 assert.match(selectors, /ModelOption = ["']gem-menu-item\[role=\\?"menuitem\\?"\]\[data-test-id\^=\\?"bard-mode-option-\\?"\]["']/);
@@ -27,10 +28,10 @@ assert.match(imageGenerator, /GEMINI_MODEL_FLASH_FAMILY_REGEX/);
 assert.match(imageGenerator, /getSelectedGeminiModelLabel\(modelMenu\)/);
 assert.match(imageGenerator, /waitForGeminiModelOptionSelected\(selectedOption\)/);
 assert.match(imageGenerator, /element\.classList\.contains\(selectedClass\)/);
-assert.match(imageGenerator, /await mediaContainer\.waitFor\(\{ state: "visible", timeout: mediaReadyTimeout \}\)/);
+assert.match(imageGenerator, /const maxAttempts = Math\.ceil\(mediaReadyTimeout \/ pollIntervalMs\)/);
 assert.match(imageGenerator, /waitForGeneratedImageReady\(mediaContainer\)/);
 assert.match(selectors, /GenerationBusy = ["']gem-icon-button\.send-button\.stop["']/);
-assert.match(selectors, /ResponseGenerationBusy = "\.model-response-label-announcer/);
+assert.match(selectors, /ResponseGenerationBusy = ["']\.model-response-label-announcer/);
 assert.match(imageGenerator, /const waitForGeminiPageIdle/);
 assert.match(imageGenerator, /const latestResponse = responses\.item/);
 assert.match(imageGenerator, /!latestResponse\?\.querySelector\(responseBusySelector\)/);
@@ -40,7 +41,7 @@ assert.match(imageGenerator, /if \(!itemSucceeded\) \{[\s\S]*?if \(!workerPage\.
 assert.match(imageGenerator, /createReplacementWorkerPage/);
 assert.match(imageGenerator, /workerPage = replacementPage/);
 assert.match(imageGenerator, /distributeItemsByContinuity\(items/);
-assert.match(imageGenerator, /_.filter\(items, item => !_.some\(results/);
+assert.match(imageGenerator, /_.filter\(items, \(item\) => !_.some\(results/);
 assert.doesNotMatch(imageGenerator, /if \(!batchRes\.success\) break/);
 assert.match(imageGenerator, /await closeGeminiModelMenu\(modelPickerBtn, modelMenu\)/);
 assert.doesNotMatch(imageGenerator, /configureGeminiModel[\s\S]*?keyboard\.press\("Escape"\)[\s\S]*?configureGeminiGenerateType/);
@@ -56,13 +57,13 @@ assert.match(imageGenerator, /finally \{\s*await closeActiveBrowser\(\);\s*\}/);
 assert.match(backgroundSelect, /BACKGROUND_OPTION_GROUPS/);
 assert.match(sceneTextSelect, /TEXT_IN_IMAGE_MODE_CONFIG/);
 assert.match(pipelineWizard, /textAllowed: sceneEditTextAllowed/);
-assert.doesNotMatch(autoPipeline, /evaluateVisualAssetQuality|validateSceneImage/);
+assert.match(autoPipeline, /validateSceneImage/);
 assert.doesNotMatch(imageGeneration, /createFallbackPayload|onFallbackResult|BACKOFF_MULTIPLIER/);
 assert.match(imageGeneration, /const reportMissingResults/);
 assert.match(imageGeneration, /PROJECT_IMAGE_BATCH_INCOMPLETE/);
 assert.match(autoPipeline, /failedScene\.assetStatus = SceneAssetStatus\.Failed/);
-assert.match(autoPipeline, /failedThumbnail\.generationStatus = SceneAssetStatus\.Failed/);
-assert.match(autoPipeline, /_.concat\(sceneBatchItems, sharedThumbnailBatchItems\)/);
+assert.match(autoPipeline, /const completedThumbnailCount = _.size/);
+assert.match(autoPipeline, /_.concat\(sceneBatchItems, unifiedThumbnailItems\)/);
 assert.match(projectController, /Boolean\(newProject\.allowAudioCleanup\)/);
 assert.match(imageEngineOptions, /ENGINE_LABS_SANDBOX[\s\S]*ENGINE_VEO3[\s\S]*ENGINE_IMAGEN/);
 

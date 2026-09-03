@@ -660,20 +660,11 @@ input.accent-amber-500::-moz-range-thumb {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 0.75rem !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.glass-card:hover {
-  border-color: rgba(245, 158, 11, 0.3);
-  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35);
 }
 :root.light .glass-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(228, 228, 231, 0.9);
   border-radius: 0.75rem !important;
-}
-:root.light .glass-card:hover {
-  border-color: rgba(217, 119, 6, 0.4);
-  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.08);
 }
 
 .glow-amber {
@@ -890,13 +881,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.08),
     0 12px 34px rgba(0, 0, 0, 0.06) !important;
-}
-
-.glass-card:hover {
-  border-color: color-mix(in srgb, var(--color-slate-700) 80%, transparent) !important;
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 16px 42px rgba(0, 0, 0, 0.08) !important;
 }
 
 .creation-workspace {

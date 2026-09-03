@@ -367,7 +367,13 @@ export default function AutoVideoGenerator({
   };
 
   const handleStartAutoGenerate = (
-    overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean; runIntent?: "new" | "continue" | "render_only" } = {},
+    overrides: {
+      forceRegenerateVoice?: boolean;
+      forceRegenerateScenes?: boolean;
+      resumeMode?: boolean;
+      runIntent?: "new" | "continue" | "render_only";
+      targetSceneIds?: string[];
+    } = {},
   ): Promise<void> =>
     startPipeline({
       scriptContent,
@@ -428,6 +434,7 @@ export default function AutoVideoGenerator({
       selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
+      targetSceneIds: overrides.targetSceneIds,
       musicAssetUrl,
       cinematicMode,
       filmFormat: cinematicMode ? filmSeriesMode : undefined,
@@ -457,14 +464,18 @@ export default function AutoVideoGenerator({
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);
 
-  const handleRegenerate = async (target: string) => {
+  const handleRegenerate = async (target: string, sceneId?: string) => {
     const project = activeCreatedProject;
     if (!project || isProcessing) return;
+    if (cinematicMode && _.isEqual(target, REGENERATION_TARGET.IMAGES) && _.isEmpty(sceneId)) {
+      toast.error(regenerationTexts.sceneRequired);
+      return;
+    }
 
     setRegeneratingTarget(target);
     try {
       const isRenderOnly = _.isEqual(target, REGENERATION_TARGET.RENDER);
-      const isDeleteSuccess = isRenderOnly || (await deleteProjectRegenerationAssets(project.id, target));
+      const isDeleteSuccess = isRenderOnly || (await deleteProjectRegenerationAssets(project.id, target, sceneId));
       if (!isDeleteSuccess) {
         toast.error(regenerationTexts.failed);
         return;
@@ -472,7 +483,7 @@ export default function AutoVideoGenerator({
 
       if (!isRenderOnly) pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-      const { updatedProject, changed } = isRenderOnly ? { updatedProject: project, changed: false } : applyProjectRegenerationReset(project, target);
+      const { updatedProject, changed } = isRenderOnly ? { updatedProject: project, changed: false } : applyProjectRegenerationReset(project, target, sceneId);
       if (changed) {
         setActiveCreatedProject(updatedProject);
         await onUpdateProject(updatedProject, true);
@@ -481,7 +492,11 @@ export default function AutoVideoGenerator({
       if (_.isEqual(target, REGENERATION_TARGET.VOICE)) {
         await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
       } else if (_.isEqual(target, REGENERATION_TARGET.IMAGES)) {
-        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
+        await handleStartAutoGenerate({
+          forceRegenerateScenes: _.isEmpty(sceneId),
+          resumeMode: true,
+          targetSceneIds: sceneId ? [sceneId] : undefined,
+        });
       } else if (_.isEqual(target, REGENERATION_TARGET.RENDER)) {
         await handleStartAutoGenerate({ resumeMode: true, runIntent: "render_only" });
       }

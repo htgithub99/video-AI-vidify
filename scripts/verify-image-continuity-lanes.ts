@@ -19,11 +19,11 @@ assert.equal(createThumbnailContinuityKey(), "thumbnail");
 const workerQueues = distributeItemsByContinuity([
   { sceneId: "sc_1", continuityKey: "character:char_vu" },
   { sceneId: "sc_2", continuityKey: "character:char_you" },
-  { sceneId: "sc_3", continuityKey: "character:char_vu" },
-  { sceneId: "sc_4", continuityKey: "characters:supporting" },
+  { sceneId: "sc_3", continuityKey: "characters:supporting" },
+  { sceneId: "sc_4", continuityKey: "character:char_vu" },
 ], 2);
 const laneWorkers = workerQueues.flatMap((queue, workerIndex) => queue.map(item => ({ ...item, workerIndex })));
-assert.equal(laneWorkers.find(item => item.sceneId === "sc_1")?.workerIndex, laneWorkers.find(item => item.sceneId === "sc_3")?.workerIndex);
-assert.deepEqual(workerQueues.flatMap(queue => queue.filter(item => item.continuityKey === "character:char_vu").map(item => item.sceneId)), ["sc_1", "sc_3"]);
+assert.equal(laneWorkers.find(item => item.sceneId === "sc_1")?.workerIndex, laneWorkers.find(item => item.sceneId === "sc_4")?.workerIndex);
+assert.deepEqual(workerQueues.flatMap(queue => queue.filter(item => item.continuityKey === "character:char_vu").map(item => item.sceneId)), ["sc_1", "sc_4"]);
 
 writeVerificationLog("Image continuity lane assertions passed");

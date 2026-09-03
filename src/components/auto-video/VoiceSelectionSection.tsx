@@ -66,7 +66,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
           variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
           onClick={() => setIsVoiceDialogOpen(true)}
           className={cn(
-            "w-full bg-slate-955/90 border border-slate-800/90 hover:border-amber-500/60 rounded-2xl p-3 text-left flex items-center justify-between transition-all group h-auto cursor-pointer shadow-sm hover:shadow-amber-950/20",
+            "w-full bg-slate-955/90 border border-slate-800/90 hover:border-amber-500/60 rounded-2xl p-3 text-left flex items-center justify-between transition-all group h-auto cursor-pointer shadow-sm",
           )}
           title={T.voiceBtnTooltip}>
           <div className={cn("flex items-center gap-3")}>

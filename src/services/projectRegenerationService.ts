@@ -1,13 +1,11 @@
 import _ from "lodash";
 import { CharacterConfig, GenerateType, StoryboardScene, VideoProject } from "../types";
 import { API_ROUTES, HTTP_METHODS, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS } from "../constants";
-import { REGENERATION_TARGET, PROJECT_ASSET_GROUP, AUTO_GENERATOR_CONSTANTS } from "../constants/config";
+import { REGENERATION_TARGET, PROJECT_ASSET_GROUP, AUTO_GENERATOR_CONSTANTS, PROJECT_ASSET_QUERY } from "../constants/config";
 import { storageUtils } from "../lib/storage";
 
-export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene => ({
+export const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
-  prompt: "",
-  generationPrompt: undefined,
   assetType: undefined,
   assetUrl: undefined,
   assetUrls: [],
@@ -18,6 +16,29 @@ export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene =
   dependencyHash: undefined,
   remoteVideoMediaId: undefined,
   remoteVideoDownloadPending: undefined,
+  qaStatus: undefined,
+  acceptance: undefined,
+  clipQaWarnings: undefined,
+  cinematicTakeDecision: undefined,
+  cinematicTakeDecisionReason: undefined,
+  cinematicContinuityScore: undefined,
+  cinematicStoryClarityScore: undefined,
+  cinematicPerformanceScore: undefined,
+  cinematicDialogueCoverageScore: undefined,
+  cinematicDialogueDetected: undefined,
+  cinematicObservedShotCount: undefined,
+  cinematicEditSegments: undefined,
+  sourceTrimStartSeconds: undefined,
+  sourceTrimEndSeconds: undefined,
+  sourceCrop: undefined,
+  cinematicAudioBridgeMode: undefined,
+  cinematicSupportShotType: undefined,
+});
+
+export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene => ({
+  ...clearSceneGeneratedAsset(scene),
+  prompt: "",
+  generationPrompt: undefined,
 });
 
 const clearMatchingSceneAssets = (scenes: StoryboardScene[] | undefined, predicate: (scene: StoryboardScene) => boolean): StoryboardScene[] =>
@@ -66,15 +87,24 @@ export const clearProjectVideoOutputs = (project: VideoProject): VideoProject =>
 
 export const clearAllProjectVisualOutputs = (project: VideoProject): VideoProject => clearProjectVideoOutputs(clearProjectImageOutputs(project));
 
-export const deleteProjectRegenerationAssets = async (projectId: string, target: string): Promise<boolean> => {
-  const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
+export const clearProjectSceneOutput = (project: VideoProject, sceneId: string): VideoProject =>
+  clearFinalRenderState({
+    ...project,
+    storyboard: _.map(_.defaultTo(project.storyboard, []), (scene) => (_.isEqual(scene.id, sceneId) ? clearSceneGeneratedAsset(scene) : scene)),
+  });
+
+export const deleteProjectRegenerationAssets = async (projectId: string, target: string, sceneId?: string): Promise<boolean> => {
+  const groups = !_.isEmpty(sceneId)
+    ? [PROJECT_ASSET_GROUP.VIDEOS]
+    : _.isEqual(target, REGENERATION_TARGET.VOICE)
     ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
     : _.isEqual(target, REGENERATION_TARGET.IMAGES)
       ? [PROJECT_ASSET_GROUP.VISUALS]
       : [PROJECT_ASSET_GROUP.VIDEOS];
 
   for (const group of groups) {
-    const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${projectId}/${group}`, {
+    const sceneQuery = !_.isEmpty(sceneId) ? `?${new URLSearchParams({ [PROJECT_ASSET_QUERY.SCENE_ID]: sceneId! }).toString()}` : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+    const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${projectId}/${group}${sceneQuery}`, {
       method: HTTP_METHODS.DELETE,
       headers: {
         [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
@@ -85,14 +115,17 @@ export const deleteProjectRegenerationAssets = async (projectId: string, target:
   return true;
 };
 
-export const applyProjectRegenerationReset = (project: VideoProject, target: string): { updatedProject: VideoProject; changed: boolean } => {
+export const applyProjectRegenerationReset = (project: VideoProject, target: string, sceneId?: string): { updatedProject: VideoProject; changed: boolean } => {
   let updatedProject = _.cloneDeep(project);
   let changed = false;
   const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
   const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
   const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
 
-  if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
+  if (!_.isEmpty(sceneId)) {
+    updatedProject = clearProjectSceneOutput(updatedProject, sceneId!);
+    changed = true;
+  } else if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
     _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     updatedProject.renderedVideoUrl = undefined;

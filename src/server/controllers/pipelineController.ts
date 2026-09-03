@@ -27,6 +27,7 @@ import {
   REFERENCE_ASSET_GROUP,
   PROJECT_ASSET_ROUTE,
   PROJECT_ASSET_INVALID_REQUEST,
+  PROJECT_ASSET_QUERY,
   BACKGROUND_MODE_CONFIG,
   TEXT_IN_IMAGE_MODE_CONFIG,
   FREE_AI_PROVIDER_LOGS,
@@ -50,7 +51,7 @@ import {
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
-import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
+import { clearProjectImageOutputs, clearProjectSceneOutput, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
 import { createGenreEditorialDirective } from "../../services/genreEditorialBlueprintService.js";
 import { createAudienceMarketDirective } from "../../services/audienceMarketService.js";
@@ -232,9 +233,16 @@ import {
   getBlockingCinematicStoryboardContractIssues,
   getCinematicStoryboardContractIssues,
   isCinematicEpisodeGenre,
+  repairCinematicStoryboardContract,
 } from "../../services/cinematicProductionPolicyService.js";
-import { createCinematicScreenplayDirective } from "../../services/cinematicEpisodeService.js";
-import { CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_POLICY_CONFIG, resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
+import { createCinematicScreenplayDirective, createCinematicVideoPrompt } from "../../services/cinematicEpisodeService.js";
+import {
+  CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS,
+  CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
+  CINEMATIC_CHAT_PLANNING_CONFIG,
+  CINEMATIC_POLICY_CONFIG,
+  resolveCinematicClipDuration,
+} from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
@@ -375,6 +383,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     const result = {
       style: preset.positivePrompt,
       styleProfile,
+      profileVersion: STYLE_EXTRACTION_CONFIG.PROFILE_VERSION,
       negativeStylePrompt: preset.negativePrompt,
       fingerprint: createHash("sha256").update(`${preset.id}:${Date.now()}`).digest("hex"),
     };
@@ -555,9 +564,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const chunkItem = chunks[chunkIndex];
       const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
       const sceneIds = _.map(chunkItem, (item) => _.toString(_.get(item, "id")));
-      const requiredDialogueIds = usesChatPlanning
-        ? _.filter(sceneIds, (sceneId) => dialogueRequiredSceneIds.has(sceneId))
-        : [];
+      const requiredDialogueIds = _.filter(sceneIds, (sceneId) => dialogueRequiredSceneIds.has(sceneId));
       const chunkSourceScenes = _.filter(plannedScenes, (scene) => _.includes(sceneIds, scene.id));
       const chunkCharacterIds = new Set(_.flatMap(chunkSourceScenes, (scene) => scene.characterIds || []));
       const chunkCharactersJson = jsonUtils.safeStringify(_.filter(promptCharacters, (character) => chunkCharacterIds.has(_.toString(character.id))));
@@ -577,8 +584,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               continuityContextJson,
               correctionIssuesJson,
               clipDurationSeconds,
-              forChatUi ? dialogueDirective : undefined,
-              forChatUi ? (isVi ? "Vietnamese" : "English") : undefined,
+              dialogueDirective,
+              isVi ? "Vietnamese" : "English",
             )
           : getOptimizePromptsBatchPrompt(
           visualStyle,
@@ -613,15 +620,16 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           isVi ? "Vietnamese" : "English",
         );
       const planningString = { type: "string" } as const;
-      const planningSchema = {
+      const createPlanningSchema = (expectedSceneIds: string[] = sceneIds) => ({
         type: "array",
-        minItems: chunkItem.length,
-        maxItems: chunkItem.length,
+        minItems: expectedSceneIds.length,
+        maxItems: expectedSceneIds.length,
         items: {
           type: "object",
           additionalProperties: false,
-          required: _.concat(
-            [
+          required: isCinematicPlanning
+            ? [...CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS]
+            : [
               "id",
               "prompt",
               "visualIntent",
@@ -648,31 +656,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               "archivalSearchQuery",
               "archivalRationale",
             ],
-            isCinematicPlanning
-              ? [
-                  "generationPrompt",
-                  "sequenceId",
-                  "shotId",
-                  "shotRole",
-                  "dialogueMode",
-                  "spokenDialogue",
-                  "speakerCharacterId",
-                  "lipSyncRequired",
-                  "characterBlocking",
-                  "eyelineDirection",
-                  "screenDirection",
-                  "actionStartState",
-                  "actionEndState",
-                  "locationState",
-                  "wardrobeState",
-                  "propState",
-                  "soundDesignCues",
-                  "cinematicBeats",
-                ]
-              : [],
-          ),
           properties: {
-            id: { type: "string", enum: sceneIds },
+            id: { type: "string", enum: expectedSceneIds },
             prompt: planningString,
             generationPrompt: planningString,
             visualIntent: planningString,
@@ -737,22 +722,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               items: {
                 type: "object",
                 additionalProperties: false,
-                required: [
-                  "sourceSceneId",
-                  "shotId",
-                  "shotRole",
-                  "shotSize",
-                  "cameraAngle",
-                  "visibleAction",
-                  "reaction",
-                  "transition",
-                  "dialogueMode",
-                  "spokenDialogue",
-                  "speakerCharacterId",
-                  "lipSyncRequired",
-                  "startSecond",
-                  "endSecond",
-                ],
+                required: [...CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS],
                 properties: {
                   sourceSceneId: planningString,
                   shotId: planningString,
@@ -776,7 +746,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             archivalRationale: planningString,
           },
         },
-      } as const;
+      }) as const;
       const requestChatUiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         let lastError: unknown;
         for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_RESPONSE_ATTEMPTS; attempt++) {
@@ -802,12 +772,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         }
         throw lastError instanceof Error ? lastError : new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
       };
-      const requestApiPlan = async (contents: string): Promise<any[]> => {
+      const requestApiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         const response = await generateContentWithRetry({
           contents,
           config: {
             responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: planningSchema,
+            responseJsonSchema: createPlanningSchema(expectedSceneIds),
           },
           task: { capability: AiTaskCapability.VisualPlanning },
         });
@@ -815,18 +785,18 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         return _.isArray(parsed) ? parsed : [];
       };
       const requestVisualPlan = async (apiContents: string, chatUiContents: string, preferChatUi = false, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
-        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)) return requestApiPlan(apiContents);
+        if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)) return requestApiPlan(apiContents, expectedSceneIds);
         if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.RoomOnly)) return requestChatUiPlan(chatUiContents, expectedSceneIds);
         if (preferChatUi) {
           try {
             return await requestChatUiPlan(chatUiContents, expectedSceneIds);
           } catch {
             appWarn("AI Chat dự phòng chưa trả được kế hoạch; hệ thống quay lại tuyến API.");
-            return requestApiPlan(apiContents);
+            return requestApiPlan(apiContents, expectedSceneIds);
           }
         }
         try {
-          return await requestApiPlan(apiContents);
+          return await requestApiPlan(apiContents, expectedSceneIds);
         } catch (apiError) {
           appWarn("API lập kế hoạch chưa khả dụng; chuyển sang AI Chat trong Chrome.");
           return requestChatUiPlan(chatUiContents, expectedSceneIds);
@@ -1056,15 +1026,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           }
         });
         if (isCinematicPlanning) {
-          if (usesChatPlanning)
-            issues.push(...getCinematicStoryboardContractIssues(items as StoryboardScene[], clipDurationSeconds, isVi ? ProjectLanguage.VI : ProjectLanguage.EN));
+          issues.push(...getCinematicStoryboardContractIssues(items as StoryboardScene[], clipDurationSeconds, isVi ? ProjectLanguage.VI : ProjectLanguage.EN));
           const playableDialogueScenes = _.filter(
             items,
             (item) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.get(item, "dialogueMode")) && !_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue")))),
           );
-          const isDialogueCoverageMissing = usesChatPlanning
-            ? !_.isEmpty(requiredDialogueIds) && _.isEmpty(playableDialogueScenes)
-            : _.gte(items.length, CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE) && _.isEmpty(playableDialogueScenes);
+          const isDialogueCoverageMissing = !_.isEmpty(requiredDialogueIds) && _.isEmpty(playableDialogueScenes);
           if (isDialogueCoverageMissing)
             issues.push("chunk:dialogue_coverage:missing_playable_character_exchange");
           const previousPlannedScene = chunkStartIndex > 0 ? plannedScenes[chunkStartIndex - 1] : undefined;
@@ -1133,105 +1100,48 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const initialChatUiPrompt = usesChatPlanning ? createPlanningPrompt("", true) : initialApiPrompt;
       let parsedItems = await requestVisualPlan(initialApiPrompt, initialChatUiPrompt);
       let planningIssues = collectPlanningIssues(parsedItems);
-      if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) && !_.isEmpty(planningIssues)) {
-        const firstParsedItems = parsedItems;
-        const firstPlanningIssues = planningIssues;
-        const apiCorrectionPrompt = createPlanningPrompt(jsonUtils.safeStringify(planningIssues));
-        parsedItems = await requestVisualPlan(apiCorrectionPrompt, apiCorrectionPrompt, isCinematicPlanning);
+      const getCorrectablePlanningIssues = (issues: string[]): string[] =>
+        isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : issues;
+      for (
+        let correctionAttempt = 0;
+        correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
+        correctionAttempt++
+      ) {
+        const correctionIssues = getCorrectablePlanningIssues(planningIssues);
+        const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
+        const repairSceneIds = _.uniq(
+          _.compact(
+            _.map(correctionIssues, (issue) => {
+              const sceneId = _.head(_.split(issue, ":"));
+              return _.includes(sceneIds, sceneId) ? sceneId : undefined;
+            }),
+          ),
+        );
+        const targetRepairSceneIds = isCinematicPlanning && !_.isEmpty(repairSceneIds) ? repairSceneIds : sceneIds;
+        const correctionPrompt = isCinematicPlanning
+          ? createRepairPrompt(parsedItems, correctionIssues, targetRepairSceneIds)
+          : createPlanningPrompt(correctionIssuesJson, true);
+        const candidateItems = await requestVisualPlan(correctionPrompt, correctionPrompt, isCinematicPlanning, targetRepairSceneIds);
+        const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
+        const candidateById = _.keyBy(candidateItems, (item) => _.toString(item.id));
+        const mergedCandidateItems = _.compact(_.map(sceneIds, (sceneId) => candidateById[sceneId] || currentById[sceneId]));
+        const candidatePlanningIssues = collectPlanningIssues(mergedCandidateItems);
+        parsedItems = _.compact(
+          _.map(sceneIds, (sceneId) => {
+            const currentItem = currentById[sceneId];
+            const candidateItem = candidateById[sceneId];
+            if (!candidateItem) return currentItem;
+            if (!currentItem) return candidateItem;
+            const belongsToScene = (issue: string) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:") || _.startsWith(issue, "result:");
+            const currentSceneIssues = _.filter(planningIssues, belongsToScene);
+            const candidateSceneIssues = _.filter(candidatePlanningIssues, belongsToScene);
+            const currentBlockingCount = getCorrectablePlanningIssues(currentSceneIssues).length;
+            const candidateBlockingCount = getCorrectablePlanningIssues(candidateSceneIssues).length;
+            if (!_.isEqual(candidateBlockingCount, currentBlockingCount)) return _.lt(candidateBlockingCount, currentBlockingCount) ? candidateItem : currentItem;
+            return _.lte(candidateSceneIssues.length, currentSceneIssues.length) ? candidateItem : currentItem;
+          }),
+        );
         planningIssues = collectPlanningIssues(parsedItems);
-        if (!_.isEmpty(planningIssues)) {
-          const firstById = _.keyBy(firstParsedItems, (item) => _.toString(item.id));
-          const secondById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-          parsedItems = _.compact(
-            _.map(sceneIds, (sceneId) => {
-              const firstItem = firstById[sceneId];
-              const secondItem = secondById[sceneId];
-              const firstIssueCount = _.filter(firstPlanningIssues, (issue) => _.startsWith(issue, `${sceneId}:`)).length;
-              const secondIssueCount = _.filter(planningIssues, (issue) => _.startsWith(issue, `${sceneId}:`)).length;
-              if (!secondItem) return firstItem;
-              if (!firstItem) return secondItem;
-              return _.lte(secondIssueCount, firstIssueCount) ? secondItem : firstItem;
-            }),
-          );
-          planningIssues = collectPlanningIssues(parsedItems);
-        }
-      } else {
-        const getCorrectablePlanningIssues = (issues: string[]): string[] =>
-          isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : issues;
-        for (
-          let correctionAttempt = 0;
-          correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
-          correctionAttempt++
-        ) {
-          const correctionIssues = getCorrectablePlanningIssues(planningIssues);
-          const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
-          const apiCorrectionPrompt = createPlanningPrompt(correctionIssuesJson);
-          const repairSceneIds = _.uniq(
-            _.compact(
-              _.map(correctionIssues, (issue) => {
-                const sceneId = _.head(_.split(issue, ":"));
-                return _.includes(sceneIds, sceneId) ? sceneId : undefined;
-              }),
-            ),
-          );
-          const targetRepairSceneIds = _.isEmpty(repairSceneIds) ? sceneIds : repairSceneIds;
-          const candidateItems = await requestVisualPlan(
-            apiCorrectionPrompt,
-            isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues, targetRepairSceneIds) : createPlanningPrompt(correctionIssuesJson, true),
-            isCinematicPlanning,
-            targetRepairSceneIds,
-          );
-          const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-          const candidateById = _.keyBy(candidateItems, (item) => _.toString(item.id));
-          const mergedCandidateItems = _.compact(_.map(sceneIds, (sceneId) => candidateById[sceneId] || currentById[sceneId]));
-          const candidatePlanningIssues = collectPlanningIssues(mergedCandidateItems);
-          parsedItems = _.compact(
-            _.map(sceneIds, (sceneId) => {
-              const currentItem = currentById[sceneId];
-              const candidateItem = candidateById[sceneId];
-              if (!candidateItem) return currentItem;
-              if (!currentItem) return candidateItem;
-              const belongsToScene = (issue: string) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:") || _.startsWith(issue, "result:");
-              const currentSceneIssues = _.filter(planningIssues, belongsToScene);
-              const candidateSceneIssues = _.filter(candidatePlanningIssues, belongsToScene);
-              const currentBlockingCount = getBlockingCinematicPlanningIssues(currentSceneIssues).length;
-              const candidateBlockingCount = getBlockingCinematicPlanningIssues(candidateSceneIssues).length;
-              if (!_.isEqual(candidateBlockingCount, currentBlockingCount)) return _.lt(candidateBlockingCount, currentBlockingCount) ? candidateItem : currentItem;
-              return _.lte(candidateSceneIssues.length, currentSceneIssues.length) ? candidateItem : currentItem;
-            }),
-          );
-          planningIssues = collectPlanningIssues(parsedItems);
-        }
-        if (isCinematicPlanning && !_.isEmpty(getCorrectablePlanningIssues(planningIssues))) {
-          for (let rewriteAttempt = 0; rewriteAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.FINAL_FULL_REWRITE_ATTEMPTS; rewriteAttempt++) {
-            const blockingIssues = getCorrectablePlanningIssues(planningIssues);
-            const fullRewriteIssuesJson = jsonUtils.safeStringify(blockingIssues);
-            const rewriteSceneIds = _.uniq(
-              _.compact(
-                _.map(blockingIssues, (issue) => {
-                  const sceneId = _.head(_.split(issue, ":"));
-                  return _.includes(sceneIds, sceneId) ? sceneId : undefined;
-                }),
-              ),
-            );
-            const targetRewriteSceneIds = _.isEmpty(rewriteSceneIds) ? sceneIds : rewriteSceneIds;
-            const fullRewriteItems = await requestVisualPlan(
-              createPlanningPrompt(fullRewriteIssuesJson),
-              createRepairPrompt(parsedItems, blockingIssues, targetRewriteSceneIds),
-              true,
-              targetRewriteSceneIds,
-            );
-            const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-            const rewriteById = _.keyBy(fullRewriteItems, (item) => _.toString(item.id));
-            const mergedRewriteItems = _.compact(_.map(sceneIds, (sceneId) => rewriteById[sceneId] || currentById[sceneId]));
-            const fullRewriteIssues = collectPlanningIssues(mergedRewriteItems);
-            if (_.lt(getCorrectablePlanningIssues(fullRewriteIssues).length, blockingIssues.length)) {
-              parsedItems = mergedRewriteItems;
-              planningIssues = fullRewriteIssues;
-            }
-            if (_.isEmpty(getCorrectablePlanningIssues(planningIssues))) break;
-          }
-        }
       }
       if (!_.isEmpty(planningIssues)) {
         planningWarnings.push(...planningIssues);
@@ -1277,6 +1187,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     plannedScenes = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
     if (isCinematicPlanning) {
       const projectLanguage = isVi ? ProjectLanguage.VI : ProjectLanguage.EN;
+      plannedScenes = _.map(repairCinematicStoryboardContract(plannedScenes, projectLanguage, clipDurationSeconds), (scene) => ({
+        ...scene,
+        generationPrompt: createCinematicVideoPrompt(scene, scene.prompt, GenerateType.Video, clipDurationSeconds),
+      }));
       const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       if (!_.isEmpty(unresolvedCinematicIssues)) {
@@ -4802,8 +4716,9 @@ router.delete(`${ROUTER_PATHS.REFERENCE_ASSETS}/:projectId/:group/:filename`, as
 
 router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   const { projectId, group } = req.params;
+  const sceneId = _.trim(_.toString(req.query[PROJECT_ASSET_QUERY.SCENE_ID]));
   const allowedGroups = _.values(PROJECT_ASSET_GROUP);
-  if (!_.includes(allowedGroups, group)) {
+  if (!_.includes(allowedGroups, group) || (!_.isEmpty(sceneId) && !_.isEqual(group, PROJECT_ASSET_GROUP.VIDEOS))) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   }
 
@@ -4815,6 +4730,28 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
   }
 
   try {
+    if (!_.isEmpty(sceneId)) {
+      const project = await getProjectDetailFromDb(projectId);
+      const targetScene = _.find(project?.storyboard, { id: sceneId });
+      if (!project || !targetScene) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+
+      const videoDirectory = path.resolve(projectRoot, PROJECT_ASSET_GROUP.VIDEOS);
+      const assetUrls = _.uniq(
+        _.compact([
+          targetScene.assetUrl,
+          ..._.defaultTo(targetScene.assetUrls, []),
+          ..._.map(_.defaultTo(targetScene.assetRevisions, []), "assetUrl"),
+        ]),
+      );
+      _.forEach(assetUrls, (assetUrl) => {
+        const assetPath = resolveLocalProjectAssetPath(assetUrl);
+        if (!assetPath || !_.startsWith(_.toLower(assetPath), _.toLower(`${videoDirectory}${path.sep}`))) return;
+        fs.rmSync(assetPath, { force: true });
+      });
+      await saveProjectDetailToDb(clearProjectSceneOutput(project, sceneId));
+      return res.json({ success: true });
+    }
+
     const targetGroups = _.isEqual(group, PROJECT_ASSET_GROUP.VISUALS)
       ? [
           PROJECT_ASSET_GROUP.IMAGES,

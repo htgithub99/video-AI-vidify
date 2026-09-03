@@ -4,10 +4,11 @@ import _ from "lodash";
 import { Download, Eye, ImageIcon, Mic, RefreshCw, Sliders, Video } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
-import { REGENERATION_TARGET } from "../../constants/config";
+import { REGENERATION_TARGET, REGENERATION_TEXTS } from "../../constants/config";
 import { VideoProject } from "../../types";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { usePausedVideoPreview } from "../../hooks/usePausedVideoPreview";
+import { SceneRegenerationDialog } from "./SceneRegenerationDialog";
 
 interface PreviewPanelSectionProps {
   renderedVideoUrl: string;
@@ -16,9 +17,9 @@ interface PreviewPanelSectionProps {
   isProcessing: boolean;
   regeneratingTarget?: string | null;
   onSelectProject: (id: string) => void;
-  handleRegenerate: (target: string) => Promise<void>;
+  handleRegenerate: (target: string, sceneId?: string) => Promise<void>;
   T: ReturnType<typeof getAutoVideoTexts>;
-  regenerationTexts: Record<string, string>;
+  regenerationTexts: (typeof REGENERATION_TEXTS)[keyof typeof REGENERATION_TEXTS];
   showVoiceRegeneration?: boolean;
   regenerateVideoClips?: boolean;
 }
@@ -37,13 +38,14 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   regenerateVideoClips = false,
 }) => {
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
+  const [isSceneDialogOpen, setIsSceneDialogOpen] = useState(false);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   usePausedVideoPreview(previewVideoRef, renderedVideoUrl);
 
-  const onRegenerate = async (target: string) => {
+  const onRegenerate = async (target: string, sceneId?: string) => {
     setLoadingTarget(target);
     try {
-      await handleRegenerate(target);
+      await handleRegenerate(target, sceneId);
     } finally {
       setLoadingTarget(null);
     }
@@ -140,7 +142,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             size={REFACTOR_CONSTANTS.SIZE_MD}
             variant="purple"
             disabled={isAnyDisabled}
-            onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)}
+            onClick={() => (regenerateVideoClips ? setIsSceneDialogOpen(true) : onRegenerate(REGENERATION_TARGET.IMAGES))}
             title={sceneMediaRegenerationText}
             className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
             {isSceneMediaActive ? (
@@ -164,6 +166,15 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           </Button>
         </div>
       )}
+
+      <SceneRegenerationDialog
+        isOpen={isSceneDialogOpen}
+        isProcessing={isSceneMediaActive}
+        scenes={_.defaultTo(activeCreatedProject?.storyboard, [])}
+        texts={regenerationTexts}
+        onClose={() => setIsSceneDialogOpen(false)}
+        onConfirm={(sceneId) => onRegenerate(REGENERATION_TARGET.IMAGES, sceneId)}
+      />
     </div>
   );
 };

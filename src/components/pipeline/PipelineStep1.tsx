@@ -298,7 +298,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     type="button"
                     onClick={() => setIsVoiceDialogOpen(true)}
                     className={cn(
-                      "w-full flex items-center justify-between bg-slate-955 hover:bg-slate-900/60 border border-slate-850 hover:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 hover:text-slate-205 transition-all shadow-inner text-left group h-auto group-hover:scale-[1.01]",
+                      "w-full flex items-center justify-between bg-slate-955 hover:bg-slate-900/60 border border-slate-850 hover:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 hover:text-slate-205 transition-all shadow-inner text-left group h-auto",
                     )}>
                     <div className={cn("flex items-center gap-3 min-w-0")}>
                       <div
@@ -1845,11 +1845,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
           ) : (
             <div
               className={cn(
-                "glass-card bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 sm:p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-4 shadow-xl group hover:border-amber-500/30 transition-all duration-300",
+                "glass-card bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 sm:p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-4 shadow-xl",
               )}>
               <div
                 className={cn(
-                  "w-12 h-12 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/10 group-hover:scale-105 group-hover:border-amber-500/30 transition-all duration-300 animate-pulse",
+                  "w-12 h-12 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/10",
                 )}>
                 <Layout className={cn("w-5 h-5 text-amber-400")} />
               </div>

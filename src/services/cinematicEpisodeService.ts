@@ -1,23 +1,35 @@
 import _ from "lodash";
 import {
+  CINEMATIC_ACTION_CHOREOGRAPHY_PROMPT_POLICY,
   CINEMATIC_DEFAULT_DIEGETIC_SFX,
   CINEMATIC_DEFAULT_SCENE_CONTEXT,
+  CINEMATIC_PLATFORM_SAFE_ACTION_POLICY,
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE,
   CINEMATIC_TECHNICAL_FOUNDATION,
   CINEMATIC_TEXT_FREE_POLICY,
+  hasCinematicCombatAction,
   resolveCinematicClipDuration,
 } from "../constants/cinematicConstants";
 import { GenerateType, StoryboardScene } from "../types";
+import { ASPECT_RATIO_PARAM_REGEX } from "../constants/regexes";
 
 const resolveBeatCount = (beats: StoryboardScene["cinematicBeats"]): number => {
   const count = _.size(beats);
   return count >= CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT && count <= CINEMATIC_POLICY_CONFIG.MAX_BEAT_COUNT ? count : CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT;
 };
 
+const normalizeComparablePromptText = (value?: string): string => _.toLower(_.trimEnd(_.trim(value), "."));
+
 const buildSceneContextBlock = (scene: StoryboardScene): string => {
-  const contextParts = _.compact([scene.characterBlocking, scene.locationState, scene.lighting ? `Lighting: ${scene.lighting}.` : ""]);
+  const characterBlocking = _.isEqual(normalizeComparablePromptText(scene.characterBlocking), normalizeComparablePromptText(scene.script)) ? "" : scene.characterBlocking;
+  const contextParts = _.compact([characterBlocking, scene.locationState, scene.lighting ? `Lighting: ${scene.lighting}.` : ""]);
   return !_.isEmpty(contextParts) ? _.join(contextParts, " ") : CINEMATIC_DEFAULT_SCENE_CONTEXT;
+};
+
+const buildCreativeBriefBlock = (scene: StoryboardScene, basePrompt: string): string => {
+  const creativeBrief = _.trim(_.replace(basePrompt || scene.prompt, ASPECT_RATIO_PARAM_REGEX, ""));
+  return _.isEmpty(creativeBrief) ? "" : `Creative brief: ${creativeBrief}`;
 };
 
 const buildSequenceHeader = (beatCount: number, cutCount: number, clipDurationSeconds: number): string =>
@@ -31,7 +43,9 @@ const formatSingleBeat = (beat: NonNullable<StoryboardScene["cinematicBeats"]>[n
   const cameraAngle = beat.cameraAngle || "eye level";
   const shotLabel = `**${start}s–${end}s — Shot ${index + 1}: ${shotSize}, ${cameraAngle}**`;
   const actionDesc = _.trim(beat.visibleAction) || `Execute continuous narrative action for shot ${index + 1}.`;
-  const reactionDesc = beat.reaction ? ` ${beat.reaction}.` : "";
+  const normalizedAction = normalizeComparablePromptText(actionDesc);
+  const normalizedReaction = normalizeComparablePromptText(beat.reaction);
+  const reactionDesc = !_.isEmpty(normalizedReaction) && !_.isEqual(normalizedReaction, normalizedAction) ? ` ${beat.reaction}.` : "";
   const continuityHandoff = index > 0 ? `Continue directly from Shot ${index}. ` : "";
   return `${shotLabel}\n${continuityHandoff}${actionDesc}${reactionDesc}`;
 };
@@ -68,6 +82,16 @@ const buildAudioBlock = (scene: StoryboardScene, beats: StoryboardScene["cinemat
   return `No dialogue, narration, voice-over, lip movement or background music. Only natural diegetic ambience and physical interactions: ${sfxCues}.`;
 };
 
+const buildActionPolicyBlock = (scene: StoryboardScene, beats: StoryboardScene["cinematicBeats"]): string => {
+  const choreographyText = _.join(
+    _.compact([scene.script, scene.visibleAction, scene.reaction, scene.actionStartState, scene.actionEndState, ..._.flatMap(beats || [], (beat) => [beat.visibleAction, beat.reaction])]),
+    " ",
+  );
+  return hasCinematicCombatAction(choreographyText)
+    ? _.join([CINEMATIC_ACTION_CHOREOGRAPHY_PROMPT_POLICY, CINEMATIC_PLATFORM_SAFE_ACTION_POLICY], " ")
+    : CINEMATIC_PLATFORM_SAFE_ACTION_POLICY;
+};
+
 export const createCinematicScreenplayDirective = (language: string, targetDuration: string): string => CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE(language, targetDuration);
 
 export const createCinematicVideoPrompt = (scene: StoryboardScene, basePrompt: string, generateType: GenerateType, requestedDuration?: string | number): string => {
@@ -81,12 +105,14 @@ export const createCinematicVideoPrompt = (scene: StoryboardScene, basePrompt: s
   return _.join(
     [
       CINEMATIC_TECHNICAL_FOUNDATION,
+      buildCreativeBriefBlock(scene, basePrompt),
       buildSceneContextBlock(scene),
       buildSequenceHeader(beatCount, cutCount, clipDurationSeconds),
       buildShotDescriptionsBlock(beats, beatCount, clipDurationSeconds),
       buildContinuityBlock(scene),
       buildNegativeConstraintsBlock(beatCount, cutCount),
       buildAudioBlock(scene, beats),
+      buildActionPolicyBlock(scene, beats),
       CINEMATIC_TEXT_FREE_POLICY,
     ],
     "\n\n",

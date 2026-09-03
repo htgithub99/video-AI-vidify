@@ -3,6 +3,7 @@ import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeServ
 import { getCinematicPromptPreflightIssues, resolveAuthoritativeCinematicPrompt } from "../src/services/cinematicPromptPreflightService";
 import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
+import { createFlowMediaRedirectUrl, normalizeFlowMediaId } from "../src/server/services/imageGeneratorService";
 
 const scene = {
   id: "sc_preflight",
@@ -32,6 +33,10 @@ const scene = {
 
 const prompt = createCinematicVideoPrompt(scene, "", GenerateType.Video, 10);
 assert.deepEqual(getCinematicPromptPreflightIssues(scene, prompt, 10), []);
+const staleDialoguePatch = "Mandatory dialogue correction: char_1 must audibly speak exactly the approved line.";
+const compiledFromStaleScene = createCinematicVideoPrompt({ ...scene, generationPrompt: staleDialoguePatch }, scene.prompt || "", GenerateType.Video, 10);
+assert.notEqual(compiledFromStaleScene, staleDialoguePatch);
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, compiledFromStaleScene, 10), []);
 assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replace("Shot 3", "Final view"), 10).some((issue) => issue.includes("shot_3_missing")));
 assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replace(scene.spokenDialogue!, ""), 10).some((issue) => issue.includes("dialogue_missing")));
 const aiAuthoredPrompt = `${prompt}\n\nPreserve these intentional trailing line breaks.\n`;
@@ -43,4 +48,8 @@ scene.characterIds = ["char_1"];
 assert.deepEqual(getCinematicSceneContractIssues(scene, 10, ProjectLanguage.EN), []);
 assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Người kể: Anh ấy bước đi." }, 10, ProjectLanguage.VI).some((issue) => issue.includes("third_person_narration_forbidden")));
 assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Chúng ta đi ngay." }, 10, ProjectLanguage.EN).some((issue) => issue.includes("must_be_english")));
+const flowMediaId = "84a69b3c-7dda-487c-a735-227c6b76b6b9";
+const duplicatedFlowMediaUrl = `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`;
+assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
+assert.equal(createFlowMediaRedirectUrl(duplicatedFlowMediaUrl), `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`);
 process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, shots: 3 }));

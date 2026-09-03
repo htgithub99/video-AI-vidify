@@ -206,6 +206,7 @@ import {
   trimCinematicTimelineToDialogue,
 } from "../services/cinematicEditTimelineService";
 import { getCinematicPromptPreflightIssues, resolveAuthoritativeCinematicPrompt } from "../services/cinematicPromptPreflightService";
+import { createCinematicVideoPrompt } from "../services/cinematicEpisodeService";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
@@ -281,6 +282,7 @@ export interface PipelineConfig {
   selectedProjectId?: string | null;
   forceRegenerateVoice?: boolean;
   forceRegenerateScenes?: boolean;
+  targetSceneIds?: string[];
   musicAssetUrl?: string;
   filmFormat?: "single" | "series";
   episodeCount?: number;
@@ -581,7 +583,14 @@ export function useAutoVideoPipeline(
       const selectedAutoProj = resolvedTarget.selectedAutoProject;
       const rawExistingTargetProj = hydratedContinuationTarget || resolvedTarget.existingTargetProject;
       const existingTargetProj = migrateVideoProject(rawExistingTargetProj);
-      const referenceChangeState = getReferenceChangeState(existingTargetProj, config.referenceImages, config.sceneReferenceImages, config.thumbnailReferenceImages, []);
+      const referenceChangeState = getReferenceChangeState(
+        existingTargetProj,
+        config.referenceImages,
+        config.sceneReferenceImages,
+        config.thumbnailReferenceImages,
+        [],
+        isContinuation,
+      );
       let invalidationState = preserveInterruptedStoryboardCheckpoint(existingTargetProj, config, getPipelineInvalidationState(existingTargetProj, config, referenceChangeState));
       if (isContinuation && existingTargetProj) {
         invalidationState = {
@@ -957,7 +966,7 @@ export function useAutoVideoPipeline(
       const cachedOpening = _.first(smartSplitSentences(realScript)) || realScript;
       const cachedNarrationIsOffTopic = !isCinematicPipeline && isScriptCached && !isHookTopicallyGrounded(cachedOpening, config.scriptContent);
       const cachedNarrationLanguageInvalid = isScriptCached && !validateChapterLanguage(realScript, _.isEqual(config.language, ProjectLanguage.VI)).valid;
-      const cachedCinematicScriptIssues = isCinematicPipeline
+      const cachedCinematicScriptIssues = isCinematicPipeline && isScriptCached
         ? getCinematicScriptReadinessIssues(realScript, chapters, newProj.scriptQa, newProj.contentSafety)
         : [];
       if (cachedNarrationIsOffTopic || cachedNarrationLanguageInvalid || !_.isEmpty(cachedCinematicScriptIssues)) {
@@ -974,7 +983,7 @@ export function useAutoVideoPipeline(
               : `[Script] The saved result is not ready: ${_.join(cachedCinematicScriptIssues, ", ")}. Retrying only the script step.`,
           );
       }
-      if (isCinematicPipeline && isStoryboardCached) {
+      if (isCinematicPipeline && isContinuation && isStoryboardCached) {
         const cachedExpectedClipCount = Math.max(1, Math.ceil(parseTargetDurationSeconds(config.duration) / resolveCinematicClipDuration(config.videoDuration)));
         const cachedStoryboardIssues = getCinematicStoryboardReadinessIssues(realScenes, cachedExpectedClipCount, newProj.storyboardQa);
         if (!_.isEmpty(cachedStoryboardIssues)) {
@@ -1507,7 +1516,7 @@ export function useAutoVideoPipeline(
       if (isCinematicEpisodeGenre(config.genre)) setCurrentStepIndex(2);
 
       const storyboardBeforeCinematicRepair = realScenes;
-      if (isCinematicEpisodeGenre(config.genre)) realScenes = repairCinematicStoryboardContract(realScenes as StoryboardScene[], config.language);
+      if (isCinematicEpisodeGenre(config.genre)) realScenes = repairCinematicStoryboardContract(realScenes as StoryboardScene[], config.language, config.videoDuration);
       const requiresCinematicPlanRepair = !_.isEqual(storyboardBeforeCinematicRepair, realScenes);
 
       if (
@@ -1704,7 +1713,7 @@ export function useAutoVideoPipeline(
           appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
         }
         if (isCinematicEpisodeGenre(config.genre)) {
-          realScenes = repairCinematicStoryboardContract(realScenes as StoryboardScene[], config.language);
+          realScenes = repairCinematicStoryboardContract(realScenes as StoryboardScene[], config.language, config.videoDuration);
           const finalPlanIssues = getCinematicStoryboardContractIssues(realScenes as StoryboardScene[], config.videoDuration, config.language);
           if (!optimizeRes.success || _.isEmpty(realScenes)) {
             const planningIssues = _.take(_.castArray(optimizeRes.data?.planningIssues || []), CINEMATIC_PLANNING_MESSAGES.ISSUE_DISPLAY_LIMIT);
@@ -1978,6 +1987,7 @@ export function useAutoVideoPipeline(
         return inheritApprovedSceneAsset(sceneWithDependency, previousScenes[scene.id]);
       });
       let targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
+        if (!_.isEmpty(config.targetSceneIds)) return _.includes(config.targetSceneIds, sc.id);
         if (config.forceRegenerateScenes) return true;
         if (isContinuation && hasSceneAsset(sc)) return false;
         if (isContinuation && sc.remoteVideoDownloadPending) return false;
@@ -2157,10 +2167,11 @@ export function useAutoVideoPipeline(
         const context = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
         if (isCinematicEpisodeGenre(config.genre) && _.isEqual(sceneGenerateType, GenerateType.Video)) {
           const characterReferences = resolveCinematicSceneCharacterReferences(scene, _.defaultTo(voiceUpdatedProj.visualConfig.characters, []));
+          const compiledPrompt = createCinematicVideoPrompt(scene, scene.prompt, GenerateType.Video, config.videoDuration);
           return {
             ...context,
             ...characterReferences,
-            prompt: _.toString(scene.generationPrompt),
+            prompt: compiledPrompt,
           };
         }
         const compiledPrompt = compileImagePrompt(scene, {
@@ -2181,16 +2192,39 @@ export function useAutoVideoPipeline(
       if (isCinematicEpisodeGenre(config.genre)) {
         appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_START : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_START);
         const preflightScenes = _.filter(targetScenesToGen as StoryboardScene[], (scene) => !hasSceneAsset(scene));
-        const preflightIssues: string[] = [];
-        for (const scene of preflightScenes) {
+        const preflightIssuesByScene = new Map<string, string[]>();
+        const reviewedPromptsByScene = new Map<string, { prompt: string; review: any }>();
+        const canReuseProjectSafetyReview = Boolean(
+          voiceUpdatedProj.contentSafety?.allowed &&
+            !voiceUpdatedProj.contentSafety.sensitiveTopic &&
+            _.isEmpty(voiceUpdatedProj.contentSafety.blockingErrors) &&
+            _.isEmpty(voiceUpdatedProj.contentSafety.warnings),
+        );
+        const reviewScenePrompt = async (scene: StoryboardScene) => {
           throwIfCancelled();
           const requestContext = createSceneRequestContext(scene, GenerateType.Video);
+          const localIssues = getCinematicPromptPreflightIssues(scene, requestContext.prompt, config.videoDuration);
+          if (!_.isEmpty(localIssues)) {
+            preflightIssuesByScene.set(scene.id, localIssues);
+            return;
+          }
+          if (canReuseProjectSafetyReview) {
+            reviewedPromptsByScene.set(scene.id, {
+              prompt: requestContext.prompt,
+              review: {
+                violatesPolicy: false,
+                risks: [],
+                rationale: CINEMATIC_PLANNING_MESSAGES.PROJECT_SAFETY_APPROVED_RATIONALE,
+              },
+            });
+            return;
+          }
           let policyResult: SystemFetchResult = createSystemFetchFailure(PIPELINE_FETCH_FAILURE_KEY.VIDEO_PROMPT_REVIEW);
-          for (let reviewAttempt = 0; reviewAttempt < PIPELINE_GUARANTEE_CONFIG.MEDIA_ATTEMPTS; reviewAttempt++) {
+          for (let reviewAttempt = 0; reviewAttempt < CINEMATIC_POLICY_CONFIG.PREFLIGHT_REVIEW_ATTEMPTS; reviewAttempt++) {
             policyResult = await safeSystemFetch(API_ROUTES.PIPELINE_REPAIR_VIDEO_PROMPT, { prompt: requestContext.prompt, bypassCache: reviewAttempt > 0 }, requestSignal);
             const candidateReview = policyResult.data?.review;
             if (policyResult.success && !_.isEqual(_.toString(candidateReview?.rationale), "review_unavailable")) break;
-            if (reviewAttempt < PIPELINE_GUARANTEE_CONFIG.MEDIA_ATTEMPTS - 1)
+            if (reviewAttempt < CINEMATIC_POLICY_CONFIG.PREFLIGHT_REVIEW_ATTEMPTS - 1)
               appendLog(
                 config.language === ProjectLanguage.VI
                   ? `[Preflight] Kiểm tra an toàn ${scene.id} chưa phản hồi; retry riêng cảnh này.`
@@ -2200,19 +2234,43 @@ export function useAutoVideoPipeline(
           const review = policyResult.data?.review;
           const reviewUnavailable = !policyResult.success || _.isEqual(_.toString(review?.rationale), "review_unavailable");
           const approvedPrompt = resolveAuthoritativeCinematicPrompt(requestContext.prompt, review);
+          const issues = _.compact([
+            reviewUnavailable ? `${scene.id}:content_safety_review_unavailable` : undefined,
+            ...getCinematicPromptPreflightIssues(scene, approvedPrompt, config.videoDuration),
+          ]);
+          if (!_.isEmpty(issues)) preflightIssuesByScene.set(scene.id, issues);
+          reviewedPromptsByScene.set(scene.id, { prompt: approvedPrompt, review });
+        };
+        let nextPreflightSceneIndex = 0;
+        const reviewWorker = async () => {
+          while (nextPreflightSceneIndex < preflightScenes.length) {
+            const sceneIndex = nextPreflightSceneIndex;
+            nextPreflightSceneIndex = _.add(nextPreflightSceneIndex, 1);
+            await reviewScenePrompt(preflightScenes[sceneIndex]);
+          }
+        };
+        const reviewWorkerCount = Math.min(CINEMATIC_POLICY_CONFIG.PREFLIGHT_REVIEW_WORKER_COUNT, preflightScenes.length);
+        await Promise.all(_.map(_.range(reviewWorkerCount), reviewWorker));
+        _.forEach(preflightScenes, (scene) => {
+          const reviewed = reviewedPromptsByScene.get(scene.id);
+          if (!reviewed) return;
           scene.cinematicPolicyReview = {
-            violatesPolicy: Boolean(review?.violatesPolicy),
-            risks: _.map(_.castArray(review?.risks || []), _.toString),
-            rationale: _.toString(review?.rationale),
+            violatesPolicy: Boolean(reviewed.review?.violatesPolicy),
+            risks: _.map(_.castArray(reviewed.review?.risks || []), _.toString),
+            rationale: _.toString(reviewed.review?.rationale),
           };
-          scene.generationPrompt = approvedPrompt;
-          if (reviewUnavailable) preflightIssues.push(`${scene.id}:content_safety_review_unavailable`);
-          preflightIssues.push(...getCinematicPromptPreflightIssues(scene, approvedPrompt, config.videoDuration));
-          cinematicPreflightPrompts.set(scene.id, approvedPrompt);
-        }
+          scene.generationPrompt = reviewed.prompt;
+          cinematicPreflightPrompts.set(scene.id, reviewed.prompt);
+        });
+        const preflightIssues = _.flatMap(preflightScenes, (scene) => preflightIssuesByScene.get(scene.id) || []);
         if (!_.isEmpty(preflightIssues)) {
-          appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_FAILED : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_FAILED);
-          throw new Error(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_FAILED : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_FAILED);
+          const failedSceneIds = _.uniq(_.compact(_.map(preflightIssues, (issue) => _.head(_.split(issue, ":")))));
+          const failureMessage = config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_FAILED : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_FAILED;
+          const detailTemplate = config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_FAILED_SCENES : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_FAILED_SCENES;
+          const detailMessage = detailTemplate.replace("{0}", _.join(failedSceneIds, ", "));
+          appendLog(`${failureMessage} ${detailMessage}`);
+          logger.warn(`${CINEMATIC_PLANNING_MESSAGES.PREFLIGHT_LOG_PREFIX} ${_.join(preflightIssues, ", ")}`);
+          throw new Error(`${failureMessage} ${detailMessage}`);
         }
         appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_PREFLIGHT_PASSED : CINEMATIC_PLANNING_MESSAGES.EN_PREFLIGHT_PASSED);
         await persistImageCheckpoint();
@@ -2247,7 +2305,10 @@ export function useAutoVideoPipeline(
             appendLog(`Không tìm thấy tư liệu phù hợp cho ${archivalScene.id}; chuyển riêng cảnh này sang ảnh AI.`);
           }
         }
-        const remainingTargetScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
+        const remainingTargetScenes = _.filter(
+          targetScenesToGen,
+          (scene) => !hasSceneAsset(scene) && !scene.remoteVideoDownloadPending,
+        );
         const runSceneGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
           const generateScene = async (sc: StoryboardScene, i: number): Promise<void> => {
             throwIfCancelled();
@@ -2315,6 +2376,8 @@ export function useAutoVideoPipeline(
                 }
                 sc.assetType = sceneGenerateType;
                 sc.assetStatus = SceneAssetStatus.Generated;
+                if (!_.isEmpty(imageResult.remoteMediaId)) sc.remoteVideoMediaId = imageResult.remoteMediaId;
+                sc.remoteVideoDownloadPending = false;
                 appendAssetRevision(sc, sc.assetUrl, SceneAssetStatus.Generated);
                 sc.assetError = undefined;
                 await persistImageCheckpoint();
@@ -2796,6 +2859,11 @@ export function useAutoVideoPipeline(
             );
             const retryAssetUrl = createProjectImageUrl(retryResult);
             if (!retryResult.success || !isPersistedProjectVideoUrl(retryAssetUrl)) {
+              if (retryResult.remoteMediaCreated && !_.isEmpty(retryResult.remoteMediaId)) {
+                scene.remoteVideoMediaId = retryResult.remoteMediaId;
+                scene.remoteVideoDownloadPending = true;
+                await persistImageCheckpoint();
+              }
               scene.assetError = retryResult.warning || FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR;
               continue;
             }
@@ -3484,6 +3552,8 @@ export function useAutoVideoPipeline(
             scene.assetUrls = [retryAssetUrl];
             scene.assetType = GenerateType.Video;
             scene.assetStatus = SceneAssetStatus.Generated;
+            if (!_.isEmpty(retryResult.remoteMediaId)) scene.remoteVideoMediaId = retryResult.remoteMediaId;
+            scene.remoteVideoDownloadPending = false;
             const retryRevision = appendAssetRevision(scene, retryAssetUrl, SceneAssetStatus.Generated);
             retryRevision.operation = "retry";
           }

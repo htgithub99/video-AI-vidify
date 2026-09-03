@@ -58,7 +58,7 @@ assert.match(pipeline, /startPipeline/);
 assert.doesNotMatch(pipeline, /referencesAreShared/);
 
 const controller = fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8");
-assert.match(controller, /cachePayload[\s\S]*purpose/);
+assert.match(controller, /requestedStyle[\s\S]*resolveStylePreset\(requestedStyle\)/);
 assert.match(controller, /profileVersion: STYLE_EXTRACTION_CONFIG\.PROFILE_VERSION/);
 assert.match(controller, new RegExp(`PROJECT_ASSET_GROUP\\.${PROJECT_ASSET_GROUP.VISUALS.toUpperCase()}`));
 assert.match(controller, /REFERENCE_ASSET_GROUP\.CHARACTER/);

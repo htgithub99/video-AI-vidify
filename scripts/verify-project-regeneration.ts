@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { clearAllProjectVisualOutputs } from "../src/services/projectRegenerationService.ts";
+import { clearAllProjectVisualOutputs, clearProjectSceneOutput } from "../src/services/projectRegenerationService.ts";
 import { GenerateType, SceneAssetStatus, VideoProject } from "../src/types.ts";
 
 const project = {
@@ -21,6 +21,11 @@ const project = {
       assetUrls: ["/videos/sc_2.mp4"],
       assetStatus: SceneAssetStatus.Approved,
       generationPrompt: "Old video prompt --ar 16:9",
+      sourceTrimStartSeconds: 0.75,
+      sourceTrimEndSeconds: 1.25,
+      sourceCrop: "800:450:0:0",
+      cinematicAudioBridgeMode: "j_cut",
+      cinematicSupportShotType: "reaction",
     },
   ],
   thumbnails: [{ id: "th_1", prompt: "Old thumbnail", imageUrl: "/images/th_1.jpg" }],
@@ -55,11 +60,26 @@ for (const scene of resetProject.storyboard || []) {
   assert.deepEqual(scene.assetRevisions, []);
 }
 
+const selectedSceneReset = clearProjectSceneOutput(project, "sc_2");
+assert.equal(selectedSceneReset.storyboard?.[0].assetUrl, "/images/sc_1.jpg");
+assert.equal(selectedSceneReset.storyboard?.[0].generationPrompt, "Old image prompt --ar 16:9");
+assert.equal(selectedSceneReset.storyboard?.[1].assetUrl, undefined);
+assert.deepEqual(selectedSceneReset.storyboard?.[1].assetUrls, []);
+assert.equal(selectedSceneReset.storyboard?.[1].generationPrompt, "Old video prompt --ar 16:9");
+assert.equal(selectedSceneReset.storyboard?.[1].sourceTrimStartSeconds, undefined);
+assert.equal(selectedSceneReset.storyboard?.[1].sourceTrimEndSeconds, undefined);
+assert.equal(selectedSceneReset.storyboard?.[1].sourceCrop, undefined);
+assert.equal(selectedSceneReset.storyboard?.[1].cinematicAudioBridgeMode, undefined);
+assert.equal(selectedSceneReset.storyboard?.[1].cinematicSupportShotType, undefined);
+assert.equal(selectedSceneReset.renderedVideoUrl, undefined);
+assert.deepEqual(selectedSceneReset.thumbnails, project.thumbnails);
+assert.deepEqual(selectedSceneReset.visualConfig.characters, project.visualConfig.characters);
+
 const projectControllerSource = await import("node:fs").then(({ readFileSync }) => (
   readFileSync("src/server/controllers/projectController.ts", "utf8")
 ));
-assert.match(projectControllerSource, /legacyCharacterReferenceDir/);
-assert.match(projectControllerSource, /fs\.rmSync\(legacyCharacterReferenceDir/);
+assert.match(projectControllerSource, /Boolean\(newProject\.allowBulkDeleteImages\)/);
 assert.match(projectControllerSource, /Boolean\(newProject\.allowAudioCleanup\)/);
+assert.match(projectControllerSource, /Boolean\(newProject\.allowReferenceCleanup\)/);
 
 process.stdout.write("Project visual regeneration assertions passed.\n");

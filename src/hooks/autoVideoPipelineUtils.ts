@@ -105,11 +105,14 @@ export const getReferenceChangeState = (
   sceneImages: string[],
   thumbnailImages: string[],
   characterImages: string[],
+  preserveEmptyValues = false,
 ): ReferenceChangeState => {
-  const styleChanged = !_.isEqual(styleImages, _.defaultTo(project?.visualConfig?.styleReferenceImages, []));
-  const sceneChanged = !_.isEqual(sceneImages, _.defaultTo(project?.visualConfig?.sceneReferenceImages, []));
-  const thumbnailChanged = !_.isEqual(thumbnailImages, _.defaultTo(project?.visualConfig?.thumbnailReferenceImages, []));
-  const characterChanged = !_.isEqual(characterImages, _.defaultTo(project?.visualConfig?.characters?.[0]?.images, []));
+  const hasMeaningfulChange = (nextValues: string[], existingValues: string[] | undefined): boolean =>
+    !(preserveEmptyValues && _.isEmpty(nextValues)) && !_.isEqual(nextValues, _.defaultTo(existingValues, []));
+  const styleChanged = hasMeaningfulChange(styleImages, project?.visualConfig?.styleReferenceImages);
+  const sceneChanged = hasMeaningfulChange(sceneImages, project?.visualConfig?.sceneReferenceImages);
+  const thumbnailChanged = hasMeaningfulChange(thumbnailImages, project?.visualConfig?.thumbnailReferenceImages);
+  const characterChanged = hasMeaningfulChange(characterImages, project?.visualConfig?.characters?.[0]?.images);
   return {
     shouldRegenerateStoryboard: styleChanged || characterChanged,
     hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]),
@@ -186,6 +189,17 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
   const hasScript = !_.isEmpty(project.scriptRewritten),
     hasStoryboard = !_.isEmpty(project.storyboard),
     hasVoice = !_.isEmpty(project.voiceConfig?.audioUrl) || !_.isEmpty(project.voiceConfig?.audioBase64);
+
+  if (config.resumeMode && !config.forceRegenerateScenes && !config.forceRegenerateVoice) {
+    return {
+      regenerateScript: !hasScript || !project.contentSafety?.allowed,
+      regenerateStoryboard: !hasStoryboard,
+      regenerateVoice: !hasVoice,
+      regenerateSceneAssets: references.shouldRegenerateSceneAssets,
+      regenerateSeo: _.isEmpty(project.seo),
+      regenerateThumbnails: references.shouldRegenerateThumbnails || _.isEmpty(project.thumbnails),
+    };
+  }
   const previousThumbnailStyle = resolveStylePreset(project.visualConfig?.thumbnailReferencePrompt || project.visualConfig?.style).positivePrompt;
   const requestedThumbnailStyle = resolveStylePreset(config.thumbnailStylePreset || config.stylePreset).positivePrompt;
 

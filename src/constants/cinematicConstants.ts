@@ -8,6 +8,8 @@ export const CINEMATIC_POLICY_CONFIG = {
   MAX_CLIP_DURATION_SECONDS: 15,
   PLANNING_CHUNK_SIZE: 2,
   PLANNING_WORKER_COUNT: 3,
+  PREFLIGHT_REVIEW_WORKER_COUNT: 3,
+  PREFLIGHT_REVIEW_ATTEMPTS: 1,
   CLIENT_PLANNING_ATTEMPTS: 3,
   EPSILON_TOLERANCE: 0.25,
   MIN_DIALOGUE_SCENE_RATIO: 0.3,
@@ -36,8 +38,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   RESPONSE_POLL_MS: 1000,
   RESPONSE_STABLE_POLLS: 3,
   MIN_RESPONSE_CHARACTERS: 20,
-  MAX_CORRECTION_ATTEMPTS: 4,
-  FINAL_FULL_REWRITE_ATTEMPTS: 1,
+  MAX_CORRECTION_ATTEMPTS: 2,
   API_MAX_SOUND_DESIGN_CUES: 3,
   ROOM_MAX_SOUND_DESIGN_CUES: 5,
   PAGE_READY_TIMEOUT_MS: 45000,
@@ -98,6 +99,37 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONVERSATION_DELETE_FALLBACK_PATTERN: /(?:Xóa|Xoá|Delete)/i,
 } as const;
 
+export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
+  "id",
+  "prompt",
+  "visualIntent",
+  "visibleAction",
+  "reaction",
+  "storyEvidence",
+  "visualHook",
+  "characterIds",
+  "shotPurpose",
+  "dialogueMode",
+  "spokenDialogue",
+  "speakerCharacterId",
+  "lipSyncRequired",
+  "cinematicBeats",
+  "assetStrategy",
+] as const;
+
+export const CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS = [
+  "shotRole",
+  "shotSize",
+  "cameraAngle",
+  "visibleAction",
+  "reaction",
+  "transition",
+  "dialogueMode",
+  "spokenDialogue",
+  "speakerCharacterId",
+  "lipSyncRequired",
+] as const;
+
 export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
   /:actionStartState:must_match_previous_end_state$/,
   /:actionStartState:must_match_previous_clip_end_state$/,
@@ -107,8 +139,12 @@ export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
   /:neighbor_visual_repetition$/,
   /:scene_meaning:too_similar_to:/,
   /:editorial_rhythm:/,
-  /:(?:prompt|visualIntent|reaction|storyEvidence|visualHook|shotPurpose|shotSize|cameraAngle|composition|continuityNotes|lighting):/,
+  /:(?:shotSize|cameraAngle|composition|continuityNotes|lighting):/,
   /:(?:expectedSubjectCount|allowBackgroundPeople|layout|propIds|assetStrategy|archivalSearchQuery|archivalRationale|textAllowed|textOverlay):/,
+  /:(?:generationPrompt|sequenceId|shotId|shotRole|characterBlocking|eyelineDirection|screenDirection|actionStartState|actionEndState|locationState|wardrobeState|propState|soundDesignCues):/,
+  /:visibleAction:no_observable_physical_verb$/,
+  /:prompt:missing_named_character:/,
+  /:cinematicBeats:(?:\d+:)?(?:requires_between|source_scene_mismatch|shot_id_missing|shot_ids_not_unique|shot_ids_must_be_unique|unplayable_timing|timing_|timeline_gap|must_cover_|shot_too_short|final_shot_|generation_prompt_missing_exact_dialogue)/,
 ] as const;
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
@@ -166,6 +202,10 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_PREFLIGHT_PASSED: "[Preflight] Every clip passed; each clip will be submitted for generation exactly once.",
   VI_PREFLIGHT_FAILED: "Kế hoạch phim chưa vượt qua kiểm tra bắt buộc trước khi tạo. Không clip nào được gửi đi nên chưa sử dụng credit video.",
   EN_PREFLIGHT_FAILED: "The film plan did not pass the mandatory preflight. No clip was submitted, so no video credit was used.",
+  VI_PREFLIGHT_FAILED_SCENES: "Cảnh cần sửa: {0}.",
+  EN_PREFLIGHT_FAILED_SCENES: "Scenes requiring repair: {0}.",
+  PREFLIGHT_LOG_PREFIX: "[Cinematic preflight]",
+  PROJECT_SAFETY_APPROVED_RATIONALE: "project_content_safety_approved",
   VI_CHARACTER_PACK_START: "[Character Pack] Đang tạo ảnh nhận diện chuẩn cho từng nhân vật trước khi dùng credit video.",
   EN_CHARACTER_PACK_START: "[Character Pack] Creating canonical identity references before any video credit is used.",
   VI_CHARACTER_PACK_READY: "[Character Pack] Ảnh nhân vật đã được lưu; mỗi cảnh sẽ chỉ tải lên các nhân vật thực sự xuất hiện.",
@@ -186,7 +226,7 @@ export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 
 
 export const CINEMATIC_PROMPT_PREFLIGHT_CONFIG = {
   MIN_WORDS: 180,
-  MAX_WORDS: 520,
+  MAX_WORDS: 650,
   FORBIDDEN_PATTERN: /one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take|Video motion direction:|--ar\s/i,
 } as const;
 
@@ -223,6 +263,12 @@ export const CINEMATIC_DEFAULT_SOUND_CUES = ["diegetic room tone ambience", "sub
 export const CINEMATIC_TEXT_FREE_POLICY =
   "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.";
 
+export const CINEMATIC_PLATFORM_SAFE_ACTION_POLICY =
+  "Keep all physical conflict non-graphic and suitable for mainstream generative-video platforms. No gore, exposed wounds, dismemberment, torture, cruelty, prolonged suffering, or violence toward children or vulnerable people. Prefer readable blocks, evasions, controlled impacts, sparks, dust, environmental damage, production sound, and stable positional consequences.";
+
+export const CINEMATIC_ACTION_CHOREOGRAPHY_PROMPT_POLICY =
+  "Show one readable exchange on a stable action axis: name the foreground initiator and explicit target, planted lead foot and weight transfer, a short wind-up, movement direction and limb or weapon ownership, visible contact or evasion, caused target reaction, and stable aftermath. Keep at most two foreground combatants; do not replace action with decorative spinning, synchronized weapon waving, posing, crowd motion, camera shake, smoke, or light effects.";
+
 export const CINEMATIC_DEFAULTS = {
   CHARACTER_BLOCKING: "Subject positions into the scene",
   EYELINE_DIRECTION: "Looking forward",
@@ -245,13 +291,22 @@ export const CINEMATIC_DEFAULTS = {
 
 export const CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG = {
   CONFLICT_PATTERN:
-    /\b(fight|battle|combat|attack|strike|punch|kick|slash|shoot|fire|swing|dodge|block|parry|collide|impact|enemy|opponent|soldier|weapon|đánh|chiến đấu|giao chiến|tấn công|ra đòn|đấm|đá|chém|bắn|vung|né|đỡ|va chạm|đối thủ|kẻ địch|binh|vũ khí)\b/i,
+    /\b(fights?|battles?|combat|attacks?|strike|punches?|kicks?|slashes?|shoots?|fires?|swings?|dodges?|blocks?|parries?|collides?|impact|enemy|opponent|soldier|weapon|đánh|chiến đấu|giao chiến|tấn công|ra đòn|đấm|đá|chém|bắn|vung|né|đỡ|va chạm|đối thủ|kẻ địch|binh|vũ khí)\b/i,
   INITIATOR_PATTERN: /\b(attacks?|strikes?|swings?|fires?|shoots?|punches?|kicks?|slashes?|charges?|tấn công|ra đòn|vung|bắn|đấm|đá|chém|lao vào)\b/i,
+  FOOTWORK_PATTERN: /\b(plants?|braces?|steps?|lead foot|rear foot|stance|chân trụ|đặt chân|bước chân|thế đứng|trụ chân)\b/i,
+  WEIGHT_TRANSFER_PATTERN: /\b(weight shifts?|weight transfers?|transfers? (?:his|her|their|the|body) weight|drives? (?:his|her|their|the|body) weight|hips? turns?|shoulders? turns?|dồn trọng lượng|chuyển trọng tâm|xoay hông|xoay vai)\b/i,
+  WIND_UP_PATTERN: /\b(draws? (?:his|her|their|the)? ?(?:limb|arm|fist|weapon|staff|sword|axe|spear)? ?back|pulls? (?:his|her|their|the)? ?(?:limb|arm|fist|weapon|staff|sword|axe|spear)? ?back|cocks?|winds? up|raises? .* (?:shoulder|hip)|kéo .* về|thu .* về|lấy đà|giơ .* ngang)\b/i,
+  OWNERSHIP_PATTERN: /\b(his|her|their|the attacker's|the defender's|tay phải|tay trái|cánh tay|bàn tay|vũ khí của|rìu của|gậy của|kiếm của)\b/i,
   TARGET_PATTERN: /\b(at|toward|against|into|target|enemy|opponent|defender|vào|về phía|nhắm|mục tiêu|kẻ địch|đối thủ|người đỡ)\b/i,
-  CONTACT_PATTERN: /\b(hit|impact|contact|collides?|connects?|blocks?|parries?|strikes? the|va chạm|đánh trúng|trúng|chạm|đỡ đòn|chặn|tia lửa)\b/i,
+  CONTACT_PATTERN: /\b(hits?|impact|contact|collides?|connects?|blocks?|parries?|strikes? the|va chạm|đánh trúng|trúng|chạm|đỡ đòn|chặn|tia lửa)\b/i,
   REACTION_PATTERN: /\b(recoils?|stumbles?|falls?|slides?|is thrown|is driven|reacts?|staggers?|lùi|ngã|văng|trượt|choáng|khựng|phản ứng|bị đẩy)\b/i,
   OUTCOME_PATTERN: /\b(aftermath|ends?|remains?|lands?|new position|disarmed|broken|damaged|defeated|kết quả|sau đòn|tiếp đất|vị trí mới|mất vũ khí|vỡ|hư hại|thất thế|bị hạ)\b/i,
+  REPAIR_SEQUENCE:
+    "The foreground attacker plants the lead foot, transfers body weight forward, draws their weapon back with both hands, then drives one controlled strike toward the named defender. The defender blocks the visible contact and recoils one step. The attacker keeps ownership of the weapon; both remain in stable new positions after the exchange.",
 } as const;
+
+export const hasCinematicCombatAction = (value: string): boolean =>
+  CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONFLICT_PATTERN.test(value) && CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.INITIATOR_PATTERN.test(value);
 
 export const CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE = (language: string, targetDuration: string): string => `
 [DEDICATED AI FILM SCREENPLAY CONTRACT]
@@ -259,13 +314,15 @@ You are the head screenwriter and story editor for a ${targetDuration} original 
 - Write playable screen events in ${language === "vi" ? "natural contemporary Vietnamese" : "natural contemporary English"}. Characters must have distinct vocabulary, rhythm, status and subtext appropriate to their world.
 - Build a concrete protagonist objective, opposing force, escalating choices, an irreversible midpoint/turn, climax caused by the protagonist's decision, and an earned visual aftermath.
 - Open inside a playable situation rather than explaining the world. Reveal lore through what characters attempt, fear, joke about, conceal, discover or pay for. Establish one concrete object, destination, threat or promise early and keep returning to its changing condition until the payoff.
+- Give the story a visible physical spine. Track the owner, location and condition of every story-critical prop across scenes; show it being received, carried, used, damaged, transferred or paid off. Never let a critical object appear, disappear, reopen or change hands without a visible causal event.
+- Build transformations as an earned progression rather than a single effect shot: trigger or choice -> first physical symptom -> character reaction -> practical consequence -> irreversible new capability or cost -> final image proving the new identity. Preserve every accumulated change in body, wardrobe, damage and behavior.
 - Build ensemble chemistry through contrast: each recurring character has a recognizable conversational tactic, such as blunt challenge, dry humor, caution, deflection, command or curiosity. Dialogue must change the relationship, plan or available information; never let several characters paraphrase the same fact.
 - Alternate pressure and release. After danger, allow a short human reaction, joke, disagreement or practical task; after calm, introduce a visible warning or decision. Humor must emerge from character and circumstance without cancelling real stakes.
 - A silent stretch is still dramatic action. Use listening, preparation, spatial exploration, exchanged looks, prop handling and environmental response to create anticipation instead of filling every second with speech.
 - Use an A/B story only when the secondary line changes how the main line is understood: for example, heroes discover an objective while an opposing group reveals why it matters. Enter the secondary line on a shared prop, threat, destination or decision and return with new dramatic pressure; never intercut unrelated exposition.
 - Every approximately ten-second clip unit contains at least three (and up to five in dense action/dramatic tension sequences) chronological, editable camera setups from one continuous event: setup/objective, action/obstacle, consequence/payoff. Each setup changes the visible information; never fill runtime with a person merely walking, looking, standing, holding an object or explaining the plot.
 - Select the 3-to-5 setup coverage by scene function: dialogue uses spatial master -> speaker/prop coverage -> listener reaction or changed decision; discovery uses approach/context -> evidence insert/reveal -> consequence reaction; action uses geography/threat -> decisive contact/evasion -> physical result and new position. Do not force all characters to move simultaneously and do not cut merely because a timer elapsed.
-- VEO-SAFE DIRECTORIAL ACTION DESIGN: Clarity outranks spectacle. Generate footage using 35mm anamorphic cinematic framing at 24fps with realistic physics. Never ask one generated clip to simulate an incoherent crowd collision, impossible vehicle acrobatics or chaotic multi-character melee. Decompose action into 3 to 5 low-complexity, high-impact chronological shots: (1) readable geography plus threat/intent, (2) one short decisive movement by one foreground subject, (3) physical impact/reaction, and (4) stable aftermath or changed decision. Use inserts, silhouettes, off-screen impact, dust/light/environmental response and production sound to imply Hollywood scale.
+- VEO-SAFE DIRECTORIAL ACTION DESIGN: Clarity outranks spectacle. Generate footage using 35mm anamorphic cinematic framing at 24fps with realistic physics. Never ask one generated clip to simulate an incoherent crowd collision, impossible vehicle acrobatics or chaotic multi-character melee. Decompose action into 3 to 5 low-complexity, high-impact chronological shots: (1) readable geography plus threat/intent, (2) planted foot, weight transfer and short wind-up by one named foreground initiator, (3) one committed strike with explicit limb or weapon ownership, (4) visible contact, block or evasion plus a caused physical reaction, and (5) stable aftermath or changed decision. Use inserts, silhouettes, off-screen impact, dust/light/environmental response and production sound to imply Hollywood scale; effects may support contact but never replace it.
 - Keep no more than two clearly articulated foreground performers in physical conflict. Other forces remain distant, soft-focus, occluded, silhouetted or represented by their effect on the environment. Use one movement direction and one action axis; keep feet grounded, hand/weapon ownership explicit and the camera stable enough to read anatomy.
 - Prefer concise speakable dialogue, interruptions, silence and reactions. No exposition speeches, generic motivational lines, trailer narration, omniscient summary or repeated statement of facts already visible.
 - Dialogue must be short enough for natural lip-sync inside its planned shot. Preserve the exact chosen output language and never mix languages unless the story explicitly requires it.
