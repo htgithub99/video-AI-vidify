@@ -3,11 +3,14 @@ import { REFACTOR_CONSTANTS } from "../constants";
 import { jsonUtils } from "../lib/json";
 
 interface PipelineRunLock {
+  version: number;
   runId: string;
   targetKey: string;
   ownerId: string;
   expiresAt: number;
 }
+
+const PIPELINE_RUN_LOCK_VERSION = 2;
 
 export interface PipelineRunLease {
   acquired: boolean;
@@ -21,7 +24,8 @@ const getStorageKey = (targetKey: string): string => `${REFACTOR_CONSTANTS.PIPEL
 
 const readLock = (targetKey: string): PipelineRunLock | null => jsonUtils.getItem<PipelineRunLock | null>(getStorageKey(targetKey), null);
 
-const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock => Boolean(lock && _.gt(lock.expiresAt, Date.now()));
+const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock =>
+  Boolean(lock && _.isEqual(lock.version, PIPELINE_RUN_LOCK_VERSION) && _.gt(lock.expiresAt, Date.now()));
 
 const getOwnerId = (): string => {
   const existingOwnerId = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_RUN_OWNER_KEY);
@@ -43,6 +47,7 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
   }
   const runId = createRunId();
   const lock: PipelineRunLock = {
+    version: PIPELINE_RUN_LOCK_VERSION,
     runId,
     targetKey: normalizedTargetKey,
     ownerId,
@@ -62,6 +67,7 @@ export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
   const isLockRenewable = _.isEqual(currentLock?.runId, lease.runId) || (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)));
   if (isLockRenewable) {
     const refreshedLock: PipelineRunLock = {
+      version: PIPELINE_RUN_LOCK_VERSION,
       runId: lease.runId,
       targetKey: lease.targetKey,
       ownerId,

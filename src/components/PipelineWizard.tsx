@@ -206,13 +206,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               className={cn(
                 "flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-slate-900 hover:bg-slate-850 px-3 py-1.5 rounded-lg border border-transparent shadow-none h-auto",
               )}>
-              <ArrowLeft className={cn("w-3.5 h-3.5 text-rose-500")} />
+              <ArrowLeft className={cn("w-3.5 h-3.5 text-amber-400")} />
               <span>{t.Projects}</span>
             </Button>
           </Tooltip>
           <div className={cn("h-4 w-[1px] bg-slate-850")} />
           <div className={cn("flex items-center gap-2")}>
-            <span className={cn("text-[10px] font-medium text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full select-none")}>{t.Pro}</span>
+            <span className={cn("text-[10px] font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full select-none")}>{t.Pro}</span>
             <span className={cn("text-xs font-medium text-slate-300 truncate max-w-[150px] sm:max-w-none")}>{project.name}</span>
           </div>
         </div>
@@ -224,15 +224,15 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             const stepName = _.get(t, `stepShortLabels[${currentStep}]`, `${PipelineConstants.UI_TEXTS.STEP_FALLBACK} ${idx + 1}`);
 
             return (
-              <div className={cn("bg-slate-950/50 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2.5 shadow-inner")}>
+              <div className={cn("bg-slate-955/50 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2.5 shadow-inner")}>
                 <div className={cn("flex items-center gap-1.5")}>
-                  <span className={cn("w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse")} />
+                  <span className={cn("w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse")} />
                   <span className={cn("text-[10px] font-mono text-slate-400 font-bold tracking-widest uppercase")}>
                     {PipelineConstants.UI_TEXTS.STEP_PREFIX} {idx + 1}/{_.size(PipelineConstants.FLOW_STEPS)}
                   </span>
                 </div>
                 <div className={cn("w-[1px] h-3 bg-slate-700/50")} />
-                <span className={cn("text-xs font-black text-rose-400 uppercase tracking-wide")}>{stepName}</span>
+                <span className={cn("text-xs font-black text-amber-400 uppercase tracking-wide")}>{stepName}</span>
               </div>
             );
           })()}
@@ -1102,7 +1102,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             const progressPercent = ((idx + 1) / _.size(PipelineConstants.FLOW_STEPS)) * 100;
             return (
               <div
-                className={cn("h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(244,63,94,0.8)] relative")}
+                className={cn("h-full bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(245,158,11,0.5)] relative")}
                 style={{ width: `${progressPercent}%` }}>
                 <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)] translate-x-1/2")} />
               </div>
@@ -1127,24 +1127,24 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               const isCurrent = stepIdx === currentStep;
               return (
                 <div key={stepIdx} className={cn("relative")}>
-                  {arrayIdx < 3 && <div className={cn("absolute left-[22px] top-11 bottom-[-22px] w-[2px] bg-gradient-to-b from-rose-500/20 to-slate-800 z-0")} />}
+                  {arrayIdx < 3 && <div className={cn("absolute left-[22px] top-11 bottom-[-22px] w-[2px] bg-gradient-to-b from-amber-500/20 to-slate-800 z-0")} />}
 
                   <Button
                     variant="unstyled"
                     onClick={() => setCurrentStep(stepIdx)}
                     title={tooltip}
                     className={cn(
-                      `w-full text-left p-2.5 rounded-xl relative z-10 flex items-center gap-3 select-none h-auto justify-start transition-all ${isCurrent ? "bg-rose-500/10 text-rose-500 font-extrabold ring-1 ring-rose-500/30" : isCompleted ? "bg-slate-900/40 text-slate-400 hover:bg-slate-900" : "bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-850"}`,
+                      `w-full text-left p-2.5 rounded-xl relative z-10 flex items-center gap-3 select-none h-auto justify-start transition-all ${isCurrent ? "bg-amber-500/10 text-amber-300 font-extrabold ring-1 ring-amber-500/30" : isCompleted ? "bg-slate-900/40 text-slate-400 hover:bg-slate-900" : "bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-850"}`,
                     )}>
                     <div
                       className={cn(
-                        `w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 ring-2 ring-rose-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`,
+                        `w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 ring-2 ring-amber-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`,
                       )}>
                       0{arrayIdx + 1}
                     </div>
 
                     <div className={cn("flex-1 min-w-0")}>
-                      <div className={cn(`text-[8px] font-mono leading-none tracking-wider uppercase ${isCurrent ? "text-rose-400" : "text-slate-500"}`)}>
+                      <div className={cn(`text-[8px] font-mono leading-none tracking-wider uppercase ${isCurrent ? "text-amber-400" : "text-slate-500"}`)}>
                         {t.NODE}
                         {arrayIdx + 1}
                       </div>
@@ -1162,7 +1162,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className={cn("text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur font-bold")}>
               {t.FPS_24_COMPLIANT}
             </span>
-            <span className={cn("text-[9px] bg-rose-600 text-white font-extrabold border border-rose-500 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm")}>
+            <span className={cn("text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold border border-amber-400/40 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm")}>
               {t.stepShortLabels?.[currentStep]}
             </span>
           </div>

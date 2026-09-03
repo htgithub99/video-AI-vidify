@@ -554,6 +554,8 @@ export interface StoryboardScene {
   qaStatus?: QaStatus;
   acceptance?: AssetAcceptance;
   assetError?: string;
+  remoteVideoMediaId?: string;
+  remoteVideoDownloadPending?: boolean;
   dependencyHash?: string;
   assetRevisionId?: string;
   assetRevisions?: AssetRevision[];
@@ -1052,6 +1054,7 @@ export interface VideoProject {
   allowBulkDeleteImages?: boolean;
   isRecreatingStoryboard?: boolean;
   allowAudioCleanup?: boolean;
+  allowReferenceCleanup?: boolean;
   resetDerivedData?: boolean;
   status?: string;
   activeRunId?: string | null;

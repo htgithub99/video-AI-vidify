@@ -4,6 +4,12 @@ export const APP_CONFIG = { TOAST_DURATION: 3000 };
 
 export const TECHNICAL_RESPONSE_RETRY_CONFIG = { MAX_ATTEMPTS: 2 } as const;
 
+export const PIPELINE_FETCH_FAILURE_KEY = {
+  SCRIPT: "script_request_failed",
+  STORYBOARD: "storyboard_request_failed",
+  VIDEO_PROMPT_REVIEW: "video_prompt_review_failed",
+} as const;
+
 export const ADVISORY_QA_CONFIG = {
   SCRIPT_SKIPPED_WARNING: "script_qa_skipped_for_speed",
   SCRIPT_DURATION_WARNING: "script_duration_out_of_target",
@@ -343,6 +349,11 @@ export const IMAGE_PROMPT_QA_CONFIG = {
 } as const;
 
 export const FLEXIBLE_DURATION_CONFIG = { MINIMUM_RATIO: 0.65, MAXIMUM_RATIO: 1.35 } as const;
+
+export const SCRIPT_SPEECH_RATE_CONFIG = {
+  VIETNAMESE_WORDS_PER_MINUTE: 250,
+  ENGLISH_WORDS_PER_MINUTE: 150,
+} as const;
 
 export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CLAUSE_SEPARATOR: ". ",
@@ -1479,6 +1490,7 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
 } as const;
 
 export const FLOW_VIDEO_MEDIA_CONFIG = {
+  GLOBAL_BROWSER_IDLE_TIMEOUT_MS: 2 * 60_000,
   GENERATION_TIMEOUT_MS: 8 * 60_000,
   DOWNLOAD_TIMEOUT_MS: 2 * 60_000,
   READY_POLL_INTERVAL_MS: 1_500,
@@ -1487,6 +1499,8 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   DURATION_TOLERANCE_SECONDS: 1.5,
   PROGRESS_TEXT_PATTERN: /(?:^|\s)(\d{1,3})\s*%(?:\s|$)/,
   PROJECT_ASSET_URL_PATTERN: /^\/assets\/projects\/[^/]+\/videos\/[^/?#]+(?:[?#].*)?$/i,
+  FILE_EXTENSION: ".mp4",
+  REMOTE_DOWNLOAD_PENDING_ERROR: "Video đã được tạo trên Flow nhưng chưa tải về được; hệ thống sẽ không tạo lại clip này.",
   INVALID_MEDIA_ERROR: "Flow chưa trả về tệp video hoàn chỉnh.",
   PERSISTENCE_ERROR: "Clip video chưa được lưu thành tệp cục bộ.",
 } as const;

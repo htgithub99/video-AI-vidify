@@ -511,9 +511,23 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
   const currentModelLabel = _.trim(await button.innerText().catch(() => ""));
   if (modelLabel.test(currentModelLabel)) return;
   await button.click();
-  const option = page.getByRole("menuitem", { name: modelLabel }).or(page.getByRole("menuitemradio", { name: modelLabel })).first();
-  await option.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  await option.click();
+  const option = page
+    .getByRole("menuitem", { name: modelLabel })
+    .or(page.getByRole("menuitemradio", { name: modelLabel }))
+    .or(page.getByRole("option", { name: modelLabel }))
+    .or(page.locator('[role="listbox"] [role="option"], [role="menu"] button').filter({ hasText: modelLabel }))
+    .filter({ visible: true })
+    .first();
+  const optionAvailable = await option
+    .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (optionAvailable) {
+    await option.click();
+    return;
+  }
+  await page.keyboard.press("Escape").catch(() => undefined);
+  appWarn("[AI Chat Planning] Mô hình đã chọn không xuất hiện trong tài khoản; tiếp tục bằng mô hình hiện tại.");
 };
 
 const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<void> => {

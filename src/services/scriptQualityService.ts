@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
+import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG } from "../constants/config.js";
 import { VideoGenre } from "../constants/enums.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
@@ -13,7 +13,7 @@ export const SCRIPT_QUALITY_THRESHOLDS = {
   HOOK_FACTUAL_SAFETY: 80,
   MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
   MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
-  WORDS_PER_MINUTE: 150,
+  DEFAULT_WORDS_PER_MINUTE: SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
   MIN_SCORE: 0,
   MAX_SCORE: 100,
   DECIMAL_PRECISION: 2,
@@ -131,9 +131,15 @@ const evaluateBelowTargetScores = (report: {
     report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && SCRIPT_QUALITY_MESSAGES.HOOK_PAYOFF_BELOW_TARGET,
   ]);
 
-export const normalizeScriptQualityReport = (value: Partial<ScriptQualityReport>, wordCount: number, targetDurationSeconds: number): ScriptQualityReport => {
+export const normalizeScriptQualityReport = (
+  value: Partial<ScriptQualityReport>,
+  wordCount: number,
+  targetDurationSeconds: number,
+  wordsPerMinute: number = SCRIPT_QUALITY_THRESHOLDS.DEFAULT_WORDS_PER_MINUTE,
+): ScriptQualityReport => {
   const safeWordCount = _.max([0, wordCount]) || 0;
-  const estimatedDurationSeconds = _.round((safeWordCount / SCRIPT_QUALITY_THRESHOLDS.WORDS_PER_MINUTE) * SCRIPT_QUALITY_THRESHOLDS.SECONDS_PER_MINUTE);
+  const safeWordsPerMinute = _.gt(wordsPerMinute, 0) ? wordsPerMinute : SCRIPT_QUALITY_THRESHOLDS.DEFAULT_WORDS_PER_MINUTE;
+  const estimatedDurationSeconds = _.round((safeWordCount / safeWordsPerMinute) * SCRIPT_QUALITY_THRESHOLDS.SECONDS_PER_MINUTE);
   const durationRatio = targetDurationSeconds > 0 ? estimatedDurationSeconds / targetDurationSeconds : 0;
   const durationFit =
     targetDurationSeconds > 0 && durationRatio >= SCRIPT_QUALITY_THRESHOLDS.MINIMUM_DURATION_RATIO && durationRatio <= SCRIPT_QUALITY_THRESHOLDS.MAXIMUM_DURATION_RATIO;

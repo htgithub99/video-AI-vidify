@@ -44,6 +44,8 @@ import {
   STORYBOARD_QUALITY_CONFIG,
   CINEMATIC_GENERATION_RECOVERY_CONFIG,
   VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG,
+  SCRIPT_SPEECH_RATE_CONFIG,
+  FLOW_VIDEO_MEDIA_CONFIG,
 } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
@@ -174,6 +176,7 @@ import {
   closeAllBatchPages,
   cancelAllActiveMediaGeneration,
   getOrLaunchGlobalBrowser,
+  recoverExistingFlowVideo,
 } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
@@ -1053,7 +1056,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           }
         });
         if (isCinematicPlanning) {
-          if (usesChatPlanning) issues.push(...getCinematicStoryboardContractIssues(items as StoryboardScene[], clipDurationSeconds));
+          if (usesChatPlanning)
+            issues.push(...getCinematicStoryboardContractIssues(items as StoryboardScene[], clipDurationSeconds, isVi ? ProjectLanguage.VI : ProjectLanguage.EN));
           const playableDialogueScenes = _.filter(
             items,
             (item) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.get(item, "dialogueMode")) && !_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue")))),
@@ -1272,8 +1276,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     }
     plannedScenes = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
     if (isCinematicPlanning) {
-      const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds);
-      const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds);
+      const projectLanguage = isVi ? ProjectLanguage.VI : ProjectLanguage.EN;
+      const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
+      const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       if (!_.isEmpty(unresolvedCinematicIssues)) {
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: unresolved_cinematic_contract: ${_.join(unresolvedCinematicIssues, ", ")}`);
         planningWarnings.push(...unresolvedCinematicIssues);
@@ -2045,7 +2050,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     }
     const finalLanguageValidation = validateChapterLanguage(finalCleanScript, isVi);
     if (!finalLanguageValidation.valid) throw new Error(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
-    const scriptQaBase = normalizeScriptQualityReport(editorialQa, _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    const scriptQaBase = normalizeScriptQualityReport(
+      editorialQa,
+      _.size(_.words(finalCleanScript)),
+      targetDurationSeconds,
+      isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
+    );
     const deterministicStyleWarnings = isVi && isSatiricalVideoGenre(config.genre) ? detectVietnameseNarrationStyleWarnings(finalCleanScript) : [];
     const scriptQa = {
       ...scriptQaBase,
@@ -2744,7 +2754,12 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       }
     }
 
-    const storyboardQaBase = applyDeterministicStoryboardCoverage(normalizeStoryboardQuality({}), rewrittenScript, data.scenes);
+    const storyboardQaBase = applyDeterministicStoryboardCoverage(
+      normalizeStoryboardQuality({}),
+      rewrittenScript,
+      data.scenes,
+      isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
+    );
     data.storyboardQa = {
       ...storyboardQaBase,
       blockingErrors: [],
@@ -3101,9 +3116,58 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     });
   }
 });
+const persistProjectVideo = async (localProjectId: string, sceneId: string, base64: string): Promise<string> => {
+  const safeProjectId = path.basename(_.toString(localProjectId));
+  const safeSceneId = path.basename(_.toString(sceneId));
+  if (_.some([safeProjectId, safeSceneId, base64], _.isEmpty)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
+  const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId);
+  const videoDirectory = path.resolve(projectRoot, PROJECT_ASSET_GROUP.VIDEOS);
+  if (!_.startsWith(_.toLower(videoDirectory), _.toLower(`${projectRoot}${path.sep}`))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+  const videoBuffer = Buffer.from(base64, REFACTOR_CONSTANTS.ENCODING_BASE64);
+  if (_.lt(videoBuffer.length, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+  await fs.promises.mkdir(videoDirectory, { recursive: true });
+  const videoFilename = `${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
+  const videoPath = path.join(videoDirectory, videoFilename);
+  await fs.promises.writeFile(videoPath, videoBuffer);
+  const persistedSize = (await fs.promises.stat(videoPath)).size;
+  if (_.lt(persistedSize, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
+  return `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${safeProjectId}/${PROJECT_ASSET_GROUP.VIDEOS}/${videoFilename}`;
+};
+
+router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
+  try {
+    const localProjectId = path.basename(_.toString(req.body?.projectId));
+    const sceneId = path.basename(_.toString(req.body?.sceneId));
+    const mediaId = _.trim(_.toString(req.body?.mediaId));
+    const project = await getProjectDetailFromDb(localProjectId);
+    const flowProjectId = _.trim(_.toString(project?.visualConfig?.flowProjectId));
+    if (_.some([localProjectId, sceneId, mediaId, flowProjectId], _.isEmpty)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+    const scene = _.find(project?.storyboard, { id: sceneId });
+    if (!scene || !_.isEqual(scene.remoteVideoMediaId, mediaId)) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+
+    const result = await recoverExistingFlowVideo({
+      flowProjectId,
+      mediaId,
+      expectedDuration: _.toString(project?.visualConfig?.videoDuration),
+      retainBrowserSession: true,
+    });
+    if (!result.success || _.isEmpty(result.base64)) return res.json(result);
+    const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, result.base64!);
+    return res.json({ ...result, base64: null, fallbackUrl });
+  } catch (error) {
+    logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
+    return res.json({
+      success: false,
+      base64: null,
+      fallbackUrl: "",
+      warning: getMessage("SYSTEM_ERROR", undefined, error instanceof Error ? error.message : FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR),
+    });
+  }
+});
+
 router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
   try {
-    const { prompt, style, visualConfig, sandboxConfig } = req.body;
+    const { prompt, style, visualConfig, sandboxConfig, sceneId } = req.body;
 
     const localProjectId = path.basename(_.toString(sandboxConfig?.localProjectId));
     let localProject: any = null;
@@ -3119,13 +3183,49 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       logger.info(`[Google Flow] Reusing shared room ${persistedFlowProjectId} for local project ${localProjectId}.`);
     }
 
-    const result = await generateImageWithPlaywright({
+    let result = await generateImageWithPlaywright({
       prompt,
       style,
       visualConfig,
       sandboxConfig: resolvedSandboxConfig,
       retainBrowserSession: !_.isEmpty(localProjectId),
     });
+
+    const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
+    const generatedRemoteMediaId = _.trim(_.toString(result?.remoteMediaId));
+    if (
+      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
+      result?.remoteMediaCreated &&
+      _.isEmpty(result.base64) &&
+      !_.isEmpty(generatedFlowProjectId) &&
+      !_.isEmpty(generatedRemoteMediaId)
+    ) {
+      const recoveredResult = await recoverExistingFlowVideo({
+        flowProjectId: generatedFlowProjectId,
+        mediaId: generatedRemoteMediaId,
+        expectedDuration: _.toString(visualConfig?.videoDuration),
+        retainBrowserSession: !_.isEmpty(localProjectId),
+      });
+      if (recoveredResult.success && !_.isEmpty(recoveredResult.base64)) {
+        result = {
+          ...result,
+          ...recoveredResult,
+          success: true,
+          newProjectId: result.newProjectId,
+          remoteMediaId: generatedRemoteMediaId,
+          remoteMediaCreated: true,
+        };
+      }
+    }
+
+    if (result?.success && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(result.base64)) {
+      const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, result.base64);
+      result = {
+        ...result,
+        base64: null,
+        fallbackUrl,
+      };
+    }
 
     const resolvedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     if (localProject && !_.isEmpty(resolvedFlowProjectId) && !_.isEqual(localProject?.visualConfig?.flowProjectId, resolvedFlowProjectId)) {

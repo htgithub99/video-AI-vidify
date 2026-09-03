@@ -1924,24 +1924,31 @@ export function usePipelineWizard(props: any) {
       if (!success || data?.error) throw new Error(error || data?.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
 
       const rawCharacters = (data.characters || []).slice(0, 3);
-      const chars = rawCharacters.map((c: any, index: number) => ({
-        id: `char_${index + 1}_${Date.now()}`,
-        name: c.name,
-        description: c.description,
-        images: [],
-        prompt: c.prompt || "",
-        extracted: false,
-      }));
-
-      setProject((prev) => ({
-        ...prev,
-        visualConfig: {
-          ...prev.visualConfig,
-          characters: chars,
-          characterAnalysis: rawCharacters.map((c: any) => `${c.name}: ${c.description}`).join("\n"),
-          characterExtracted: false,
-        },
-      }));
+      setProject((prev) => {
+        const existingByName = _.keyBy(_.defaultTo(prev.visualConfig.characters, []), (character) => _.toLower(_.trim(character.name)));
+        const chars = rawCharacters.map((character: any, index: number) => {
+          const existingCharacter = existingByName[_.toLower(_.trim(character.name))];
+          const images = _.defaultTo(existingCharacter?.images, []);
+          return {
+            ...existingCharacter,
+            id: existingCharacter?.id || `char_${index + 1}_${Date.now()}`,
+            name: character.name,
+            description: character.description,
+            images,
+            prompt: character.prompt || existingCharacter?.prompt || "",
+            extracted: Boolean(existingCharacter?.extracted || !_.isEmpty(images)),
+          };
+        });
+        return {
+          ...prev,
+          visualConfig: {
+            ...prev.visualConfig,
+            characters: chars,
+            characterAnalysis: rawCharacters.map((character: any) => `${character.name}: ${character.description}`).join("\n"),
+            characterExtracted: _.some(chars, (character) => !_.isEmpty(character.images)),
+          },
+        };
+      });
 
       const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
       setInfoMsg(successMsg);

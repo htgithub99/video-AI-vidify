@@ -36,7 +36,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
   const selectFields = [
     {
       label: T.lblGenre,
-      icon: <Layers className={cn("w-3.5 h-3.5 text-rose-400 mr-2 shrink-0")} />,
+      icon: <Layers className={cn("w-3.5 h-3.5 text-amber-400 mr-2 shrink-0")} />,
       value: genre,
       onChange: setGenre,
       optionGroups: GENRE_OPTION_GROUPS,
@@ -71,10 +71,10 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
   ];
 
   return (
-    <div className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border-none bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <div className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center gap-2.5 relative z-10 border-b border-slate-800/80 pb-3")}>
-        <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20 shrink-0")}>
-          <Settings2 className={cn("w-3.5 h-3.5 text-rose-400")} />
+        <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20 shrink-0")}>
+          <Settings2 className={cn("w-3.5 h-3.5 text-amber-400")} />
         </span>
         <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")}>Cài đặt kịch bản</h3>
       </div>
@@ -83,7 +83,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
         {_.map(selectFields, ({ label, icon, value, onChange, options, optionGroups }, fieldIndex) => (
           <div key={label} className={cn("space-y-1.5 min-w-0")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block truncate")}>{label}</span>
-            <div className={cn("relative flex items-center bg-slate-955/80 rounded-xl px-3 h-10 transition-all border-none focus-within:ring-1 focus-within:ring-rose-500/30")}>
+            <div className={cn("relative flex items-center bg-slate-955/80 border border-slate-850 rounded-xl px-3 h-10 transition-all hover:border-violet-500/50 focus-within:border-violet-500/80 focus-within:ring-1 focus-within:ring-violet-500/20")}>
               {icon}
               {fieldIndex === 0 && lockedGenreLabel ? (
                 <span className={cn("flex-1 text-amber-400 text-xs font-semibold truncate")}>{lockedGenreLabel}</span>

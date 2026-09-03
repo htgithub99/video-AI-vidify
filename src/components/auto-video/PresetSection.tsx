@@ -89,11 +89,11 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
           placeholder={T.presetNamePlaceholder}
           value={presetNameInputState}
           onChange={(e) => setPresetNameInputState(e.target.value)}
-          className={cn("w-36 sm:w-44 h-9 bg-slate-955/90 rounded-xl px-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none shadow-inner")}
+          className={cn("w-36 sm:w-44 h-9 bg-slate-955/90 border border-slate-800/80 rounded-xl px-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/20 shadow-inner transition-colors")}
         />
         <Button
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-          variant="success"
+          variant="amber"
           size={REFACTOR_CONSTANTS.SIZE_MD}
           onClick={handleSavePreset}
           title={T.savePresetTooltip}

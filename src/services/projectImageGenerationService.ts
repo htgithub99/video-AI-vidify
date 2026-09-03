@@ -19,6 +19,8 @@ export interface ProjectImageResult {
   warning?: string;
   assetType?: GenerateType.Image | GenerateType.Video;
   newProjectId?: string;
+  remoteMediaId?: string;
+  remoteMediaCreated?: boolean;
 }
 type ImagePayloadFactory = (item: ProjectImageItem) => object;
 interface ProjectImageGenerationConfig {
@@ -34,6 +36,12 @@ export interface ProjectImageGenerationSummary {
   completedSceneIds: string[];
   failedSceneIds: string[];
   cancelled: boolean;
+}
+
+export interface FlowVideoRecoveryRequest {
+  projectId: string;
+  sceneId: string;
+  mediaId: string;
 }
 export interface SceneAssetSummary {
   total: number;
@@ -127,10 +135,14 @@ const cleanBatchSession = async (): Promise<void> => {
 export const generateProjectImageOnce = async (item: ProjectImageItem, createPayload: ImagePayloadFactory, signal?: AbortSignal): Promise<ProjectImageResult> => {
   const emptyResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
   if (signal?.aborted) return emptyResult;
-  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, createPayload(item), signal);
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, { ...createPayload(item), sceneId: item.sceneId }, signal);
   const base64 = _.defaultTo(_.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY), _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY));
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY, response.success);
+  const generationWarning = _.find(
+    [response.success ? undefined : response.error, _.get(response.data, "warning"), _.get(response.data, "error")],
+    (message) => !_.isEmpty(message),
+  );
   return {
     sceneId: item.sceneId,
     success: _.every(
@@ -139,9 +151,26 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
     ),
     base64,
     fallbackUrl,
-    warning: response.error,
+    warning: _.toString(generationWarning),
     assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image,
     newProjectId: _.get(response.data, "newProjectId"),
+    remoteMediaId: _.get(response.data, "remoteMediaId"),
+    remoteMediaCreated: Boolean(_.get(response.data, "remoteMediaCreated")),
+  };
+};
+
+export const recoverProjectFlowVideo = async (request: FlowVideoRecoveryRequest, signal?: AbortSignal): Promise<ProjectImageResult> => {
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_RECOVER_FLOW_VIDEO, request, signal);
+  const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+  const success = Boolean(response.success && _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) && isPersistedProjectVideoUrl(fallbackUrl));
+  return {
+    sceneId: request.sceneId,
+    success,
+    fallbackUrl,
+    warning: _.toString(_.find([response.success ? undefined : response.error, _.get(response.data, "warning")], (message) => !_.isEmpty(message))),
+    assetType: GenerateType.Video,
+    remoteMediaId: request.mediaId,
+    remoteMediaCreated: true,
   };
 };
 

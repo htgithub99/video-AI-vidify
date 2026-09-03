@@ -1,10 +1,14 @@
 import _ from "lodash";
 import {
   CINEMATIC_ADVISORY_ISSUE_PATTERNS,
+  CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG,
   CINEMATIC_DEFAULT_SOUND_CUES,
   CINEMATIC_DEFAULTS,
+  CINEMATIC_DIALOGUE_CONFIG,
+  CINEMATIC_DIALOGUE_FALLBACKS,
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_POLICY_REQUIRED_FIELDS,
+  getCinematicDialogueRetryDirective,
   resolveCinematicClipDuration,
 } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
@@ -20,9 +24,10 @@ import {
   ScriptQualityReport,
   StoryboardQualityReport,
   StoryboardScene,
+  ProjectLanguage,
   VisualConfig,
 } from "../types";
-import { ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config";
+import { STORYBOARD_QUALITY_CONFIG } from "../constants/config";
 import { hasSceneAsset } from "./projectImageGenerationService";
 
 export const CINEMATIC_PRODUCTION_POLICY = { PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS } as const;
@@ -41,7 +46,20 @@ export const applyCinematicProductionPolicy = (source: VisualConfig, genre?: str
   };
 };
 
-export const getCinematicSceneContractIssues = (scene: StoryboardScene, requestedDuration?: string | number): string[] => {
+const getDialogueContractIssues = (scene: StoryboardScene, language?: ProjectLanguage): string[] => {
+  if (!_.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode))) return [];
+  const dialogue = _.trim(scene.spokenDialogue);
+  const issues: string[] = [];
+  if (CINEMATIC_DIALOGUE_CONFIG.NARRATION_PATTERN.test(dialogue)) issues.push(`${scene.id}:spokenDialogue:third_person_narration_forbidden`);
+  if (!_.isEmpty(scene.characterIds) && !_.includes(scene.characterIds, scene.speakerCharacterId)) issues.push(`${scene.id}:speakerCharacterId:must_reference_visible_character`);
+  if (_.isEqual(language, ProjectLanguage.VI) && !CINEMATIC_DIALOGUE_CONFIG.VIETNAMESE_CHARACTER_PATTERN.test(dialogue) && !CINEMATIC_DIALOGUE_CONFIG.VIETNAMESE_WORD_PATTERN.test(dialogue))
+    issues.push(`${scene.id}:spokenDialogue:must_be_vietnamese`);
+  if (_.isEqual(language, ProjectLanguage.EN) && (CINEMATIC_DIALOGUE_CONFIG.VIETNAMESE_CHARACTER_PATTERN.test(dialogue) || !CINEMATIC_DIALOGUE_CONFIG.ENGLISH_WORD_PATTERN.test(dialogue)))
+    issues.push(`${scene.id}:spokenDialogue:must_be_english`);
+  return issues;
+};
+
+export const getCinematicSceneContractIssues = (scene: StoryboardScene, requestedDuration?: string | number, language?: ProjectLanguage): string[] => {
   const clipDurationSeconds = resolveCinematicClipDuration(requestedDuration);
   const issues: string[] = [];
   _.forEach(CINEMATIC_PRODUCTION_POLICY.REQUIRED_TEXT_FIELDS, (field) => {
@@ -60,6 +78,32 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
     if (_.isEqual(scene.lipSyncRequired, true)) issues.push(`${scene.id}:lipSyncRequired:must_be_false`);
   }
   if (_.isEqual(scene.dialogueMode, "narration")) issues.push(`${scene.id}:dialogueMode:narration_forbidden_in_ai_film`);
+  issues.push(...getDialogueContractIssues(scene, language));
+  const choreographyText = _.join(
+    _.compact([
+      scene.script,
+      scene.prompt,
+      scene.generationPrompt,
+      scene.visibleAction,
+      scene.reaction,
+      scene.actionStartState,
+      scene.actionEndState,
+      ..._.flatMap(scene.cinematicBeats || [], (beat) => [beat.visibleAction, beat.reaction]),
+    ]),
+    " ",
+  );
+  if (CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONFLICT_PATTERN.test(choreographyText)) {
+    const choreographyChecks = [
+      ["initiator_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.INITIATOR_PATTERN],
+      ["target_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.TARGET_PATTERN],
+      ["contact_or_evasion_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONTACT_PATTERN],
+      ["caused_reaction_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REACTION_PATTERN],
+      ["aftermath_missing", CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OUTCOME_PATTERN],
+    ] as const;
+    _.forEach(choreographyChecks, ([issue, pattern]) => {
+      if (!pattern.test(choreographyText)) issues.push(`${scene.id}:actionChoreography:${issue}`);
+    });
+  }
   if (
     !_.isArray(scene.cinematicBeats) ||
     scene.cinematicBeats.length < CINEMATIC_POLICY_CONFIG.MIN_BEAT_COUNT ||
@@ -99,8 +143,8 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
   return issues;
 };
 
-export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number): string[] => {
-  const issues = _.flatMap(scenes, (scene) => getCinematicSceneContractIssues(scene, requestedDuration));
+export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number, language?: ProjectLanguage): string[] => {
+  const issues = _.flatMap(scenes, (scene) => getCinematicSceneContractIssues(scene, requestedDuration, language));
   const characterLedScenes = _.filter(scenes, (scene) => !_.isEmpty(scene.characterIds));
   const dialogueSceneCount = _.size(
     _.filter(characterLedScenes, (scene) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode) && !_.isEmpty(_.trim(scene.spokenDialogue))),
@@ -127,8 +171,8 @@ export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], 
   return _.uniq(issues);
 };
 
-export const getBlockingCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number): string[] =>
-  _.reject(getCinematicStoryboardContractIssues(scenes, requestedDuration), (issue) =>
+export const getBlockingCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number, language?: ProjectLanguage): string[] =>
+  _.reject(getCinematicStoryboardContractIssues(scenes, requestedDuration, language), (issue) =>
     _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)),
   );
 
@@ -149,9 +193,8 @@ export const getCinematicScriptReadinessIssues = (
       _.some(chapters, (chapter) => _.isEmpty(_.trim(chapter.scriptSegment))) && "chapters:script_segment_missing",
       _.some(chapters, (chapter) => !/[.!?…][\s"')\]]*$/.test(_.trim(chapter.scriptSegment))) && "chapters:incomplete_ending",
       !quality && "scriptQa:missing",
-      quality && !quality.passed && "scriptQa:failed",
+      quality && !quality.passed && !_.isEmpty(quality.blockingErrors) && "scriptQa:failed",
       quality && !quality.durationFit && "scriptQa:duration_mismatch",
-      _.includes(quality?.warnings, ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING) && "scriptQa:skipped",
       !contentSafety && "contentSafety:missing",
       contentSafety && !contentSafety.allowed && "contentSafety:blocked",
     ]),
@@ -168,8 +211,7 @@ export const getCinematicStoryboardReadinessIssues = (
       !_.isEqual(scenes.length, expectedClipCount) && `storyboard:clip_count:${scenes.length}/${expectedClipCount}`,
       _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
       !quality && "storyboardQa:missing",
-      quality && !quality.passed && "storyboardQa:failed",
-      _.includes(quality?.warnings, ADVISORY_QA_CONFIG.STORYBOARD_SKIPPED_WARNING) && "storyboardQa:skipped",
+      quality && !quality.passed && !_.isEmpty(quality.blockingErrors) && "storyboardQa:failed",
       _.lt(_.defaultTo(quality?.scriptCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:script_coverage_below_target",
       _.lt(_.defaultTo(quality?.pacingCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:pacing_coverage_below_target",
     ]),
@@ -188,6 +230,23 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], expec
     ),
     ...(!_.isEqual(scenes.length, expectedClipCount) ? [`storyboard:clip_count:${scenes.length}/${expectedClipCount}`] : []),
   ]);
+
+export const getCinematicDialogueTakeIssues = (scenes: StoryboardScene[]): string[] =>
+  _.flatMap(
+    _.filter(scenes, (scene) => _.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode))),
+    (scene) =>
+      _.compact([
+        !scene.cinematicDialogueDetected && `${scene.id}:dialogue:not_detected`,
+        _.lt(_.defaultTo(scene.cinematicDialogueCoverageScore, 0), CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_COVERAGE_SCORE) && `${scene.id}:dialogue:coverage_below_target`,
+      ]),
+  );
+
+export const recoverCinematicChaptersFromStoryboard = (scenes: StoryboardScene[]): Chapter[] =>
+  _.map(_.groupBy(scenes, (scene) => scene.chapterId || scene.sequenceId || scene.id), (chapterScenes, chapterId) => ({
+    id: chapterId,
+    title: _.toString(_.first(chapterScenes)?.shotPurpose || chapterId),
+    scriptSegment: _.trim(_.join(_.compact(_.map(chapterScenes, "script")), " ")),
+  }));
 
 const normalizedCharacterSet = (scene: StoryboardScene): string => _.join(_.sortBy(_.uniq(scene.characterIds || [])), "|");
 
@@ -411,9 +470,7 @@ export const applyCinematicContinuityHandoffs = (scenes: StoryboardScene[]): Sto
     const previousEndState = previous.actionEndState || previous.visibleAction || CINEMATIC_DEFAULTS.PREVIOUS_FINAL_POSE;
     const plannedOpeningState = scene.actionStartState,
       requiredOpeningState = previousEndState;
-    const screenDirectionLock = _.includes(["not_applicable", ""], scene.screenDirection || "")
-      ? previous.screenDirection || CINEMATIC_DEFAULTS.STATIC_AXIS
-      : scene.screenDirection || previous.screenDirection || CINEMATIC_DEFAULTS.STATIC_AXIS;
+    const screenDirectionLock = previous.screenDirection || scene.screenDirection || CINEMATIC_DEFAULTS.STATIC_AXIS;
     const eyelineLock = _.isEqual(scene.shotRole, "reaction")
       ? scene.eyelineDirection || `the reciprocal eyeline established by ${previous.id}`
       : scene.eyelineDirection || previous.eyelineDirection || CINEMATIC_DEFAULTS.ESTABLISHED_EYELINE;
@@ -446,4 +503,51 @@ export const applyCinematicContinuityHandoffs = (scenes: StoryboardScene[]): Sto
     previous = scene;
     return scene;
   });
+};
+
+const applyFallbackDialogue = (scene: StoryboardScene, language: ProjectLanguage): StoryboardScene => {
+  const speakerCharacterId = _.first(scene.characterIds);
+  if (_.isEmpty(speakerCharacterId)) return scene;
+  const spokenDialogue = _.isEqual(language, ProjectLanguage.VI) ? CINEMATIC_DIALOGUE_FALLBACKS.vi : CINEMATIC_DIALOGUE_FALLBACKS.en;
+  const beats = _.cloneDeep(scene.cinematicBeats || []);
+  const dialogueBeatIndex = Math.min(1, Math.max(0, beats.length - 1));
+  if (beats[dialogueBeatIndex]) {
+    beats[dialogueBeatIndex] = {
+      ...beats[dialogueBeatIndex],
+      dialogueMode: "on_screen_dialogue",
+      spokenDialogue,
+      speakerCharacterId,
+      lipSyncRequired: true,
+    };
+  }
+  return {
+    ...scene,
+    subtitle: spokenDialogue,
+    dialogueMode: "on_screen_dialogue",
+    spokenDialogue,
+    speakerCharacterId,
+    lipSyncRequired: true,
+    cinematicBeats: beats,
+    generationPrompt: _.join(
+      _.compact([scene.generationPrompt, getCinematicDialogueRetryDirective(language, spokenDialogue, speakerCharacterId!)]),
+      " ",
+    ),
+  };
+};
+
+export const repairCinematicStoryboardContract = (scenes: StoryboardScene[], language: ProjectLanguage): StoryboardScene[] => {
+  const repairedScenes = applyCinematicContinuityHandoffs(scenes);
+  const characterLedScenes = _.filter(repairedScenes, (scene) => !_.isEmpty(scene.characterIds));
+  const minimumDialogueScenes = Math.max(1, Math.ceil(characterLedScenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
+  const dialogueSceneCount = _.size(
+    _.filter(characterLedScenes, (scene) => _.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode)) && !_.isEmpty(_.trim(scene.spokenDialogue))),
+  );
+  const missingDialogueSceneCount = Math.max(0, minimumDialogueScenes - dialogueSceneCount);
+  if (_.isEqual(missingDialogueSceneCount, 0)) return repairedScenes;
+  const dialogueCandidates = _.sortBy(
+    _.filter(characterLedScenes, (scene) => !_.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode))),
+    [(scene) => (hasSceneAsset(scene) ? 1 : 0), (scene) => _.findIndex(repairedScenes, { id: scene.id })],
+  );
+  const repairIds = new Set(_.map(_.take(dialogueCandidates, missingDialogueSceneCount), "id"));
+  return _.map(repairedScenes, (scene) => (repairIds.has(scene.id) ? applyFallbackDialogue(scene, language) : scene));
 };

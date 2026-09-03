@@ -27,7 +27,6 @@ import {
   SecurityConstants,
   ALIGN_CONFIG,
   PROJECT_VISUAL_ASSET_CONFIG,
-  REFERENCE_ASSET_GROUP,
   FLOW_VIDEO_MEDIA_CONFIG,
 } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
@@ -276,9 +275,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     const audioDir = path.join(projectDir, VOICES_DIR_NAME);
     const thumbDir = path.join(projectDir, THUMBNAILS_DIR_NAME);
     const videoDir = path.join(projectDir, VIDEOS_DIR_NAME);
-    const legacyCharacterReferenceDir = path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.CHARACTER);
-    fs.rmSync(legacyCharacterReferenceDir, { recursive: true, force: true });
-
     if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
     if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
     if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
@@ -607,11 +603,50 @@ function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): vo
   }
 }
 
-function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, cleanAudio: boolean): void {
-  cleanupUnusedSceneImages(newProject.storyboard, path.join(projectDir, IMAGES_DIR_NAME));
+const preserveReferenceState = (newProject: VideoProject, oldProject: VideoProject): VideoProject => {
+  const nextVisualConfig = { ...oldProject.visualConfig, ...newProject.visualConfig };
+  const referenceKeys = [
+    "styleReferenceImages",
+    "sceneReferenceImages",
+    "referenceImages",
+    "thumbnailReferenceImages",
+    "thumbnailSceneReferenceImages",
+    "characterImages",
+  ];
+  _.forEach(referenceKeys, (key) => {
+    const oldValues = _.get(oldProject.visualConfig, key);
+    if (_.isEmpty(_.get(nextVisualConfig, key)) && !_.isEmpty(oldValues)) _.set(nextVisualConfig, key, oldValues);
+  });
+
+  const oldCharactersById = _.keyBy(_.defaultTo(oldProject.visualConfig?.characters, []), "id");
+  const oldCharactersByName = _.keyBy(_.defaultTo(oldProject.visualConfig?.characters, []), (character) => _.toLower(_.trim(character.name)));
+  nextVisualConfig.characters = _.map(_.defaultTo(nextVisualConfig.characters, []), (character) => {
+    const oldCharacter = oldCharactersById[character.id] || oldCharactersByName[_.toLower(_.trim(character.name))];
+    if (!oldCharacter || !_.isEmpty(character.images)) return character;
+    return {
+      ...character,
+      images: oldCharacter.images,
+      extracted: Boolean(character.extracted || oldCharacter.extracted || !_.isEmpty(oldCharacter.images)),
+    };
+  });
+  nextVisualConfig.characterExtracted = Boolean(
+    nextVisualConfig.characterExtracted || _.some(nextVisualConfig.characters, (character) => !_.isEmpty(character.images)),
+  );
+  return { ...newProject, visualConfig: nextVisualConfig };
+};
+
+function cleanUpDiskFiles(
+  newProject: any,
+  oldProject: any,
+  projectDir: string,
+  cleanImages: boolean,
+  cleanAudio: boolean,
+  cleanReferences: boolean,
+): void {
+  if (cleanImages) cleanupUnusedSceneImages(newProject.storyboard, path.join(projectDir, IMAGES_DIR_NAME));
   cleanupUnusedSceneAudios(newProject.storyboard, oldProject, newProject, path.join(projectDir, VOICES_DIR_NAME), cleanAudio);
-  cleanupUnusedThumbnails(newProject.thumbnails, path.join(projectDir, THUMBNAILS_DIR_NAME));
-  cleanupUnusedReferenceFiles(newProject, path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY));
+  if (cleanImages) cleanupUnusedThumbnails(newProject.thumbnails, path.join(projectDir, THUMBNAILS_DIR_NAME));
+  if (cleanReferences) cleanupUnusedReferenceFiles(newProject, path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY));
 }
 
 async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
@@ -758,6 +793,8 @@ export const updateProject = async (request: Request, response: Response) => {
     if (oldProject) {
       let newProject = request.body;
 
+      if (!newProject.allowReferenceCleanup) newProject = preserveReferenceState(newProject, oldProject);
+
       if (newProject.resetDerivedData) {
         Object.assign(newProject, {
           output: undefined,
@@ -854,11 +891,19 @@ export const updateProject = async (request: Request, response: Response) => {
         }
       }
 
-      cleanUpDiskFiles(newProject, oldProject, projectDir, Boolean(newProject.allowAudioCleanup));
+      cleanUpDiskFiles(
+        newProject,
+        oldProject,
+        projectDir,
+        Boolean(newProject.allowBulkDeleteImages),
+        Boolean(newProject.allowAudioCleanup),
+        Boolean(newProject.allowReferenceCleanup),
+      );
 
       delete newProject.allowBulkDeleteImages;
       delete newProject.isRecreatingStoryboard;
       delete newProject.allowAudioCleanup;
+      delete newProject.allowReferenceCleanup;
       delete newProject.resetDerivedData;
 
       const updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };

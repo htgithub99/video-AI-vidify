@@ -18,11 +18,19 @@ export const PageLoadingSpinner: FC<{ className?: string }> = ({ className }) =>
   </div>
 );
 
-export const Skeleton: FC<SkeletonProps> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+type LoadingSkeletonProps = { className?: string };
 
-export const SkeletonText: FC<{ lines?: number; className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+const createLoadingSkeleton = <T extends LoadingSkeletonProps>(displayName: string): FC<T> => {
+  const LoadingSkeleton: FC<T> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+  LoadingSkeleton.displayName = displayName;
+  return LoadingSkeleton;
+};
 
-export const SkeletonCard: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const Skeleton = createLoadingSkeleton<SkeletonProps>("Skeleton");
+
+export const SkeletonText = createLoadingSkeleton<{ lines?: number; className?: string }>("SkeletonText");
+
+export const SkeletonCard = createLoadingSkeleton<LoadingSkeletonProps>("SkeletonCard");
 
 export interface SkeletonWrapperProps {
   isLoading: boolean;
@@ -43,28 +51,28 @@ export interface ProjectTableSkeletonProps {
   className?: string;
 }
 
-export const ProjectTableSkeleton: FC<ProjectTableSkeletonProps> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const ProjectTableSkeleton = createLoadingSkeleton<ProjectTableSkeletonProps>("ProjectTableSkeleton");
 
-export const ProjectListSkeleton: FC<ProjectTableSkeletonProps> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const ProjectListSkeleton = createLoadingSkeleton<ProjectTableSkeletonProps>("ProjectListSkeleton");
 
-export const PipelineSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const PipelineSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("PipelineSkeleton");
 
-export const PipelineWizardSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const PipelineWizardSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("PipelineWizardSkeleton");
 
-export const AutoVideoStudioSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const AutoVideoStudioSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("AutoVideoStudioSkeleton");
 
-export const DashboardSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const DashboardSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("DashboardSkeleton");
 
-export const VoiceDialogSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const VoiceDialogSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("VoiceDialogSkeleton");
 
-export const VoiceGridSkeleton: FC<{ count?: number; className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const VoiceGridSkeleton = createLoadingSkeleton<{ count?: number; className?: string }>("VoiceGridSkeleton");
 
-export const LogPanelSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const LogPanelSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("LogPanelSkeleton");
 
-export const PreviewPanelSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const PreviewPanelSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("PreviewPanelSkeleton");
 
-export const TimelineSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const TimelineSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("TimelineSkeleton");
 
-export const MediaGridSkeleton: FC<{ count?: number; className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const MediaGridSkeleton = createLoadingSkeleton<{ count?: number; className?: string }>("MediaGridSkeleton");
 
-export const SettingsSkeleton: FC<{ className?: string }> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+export const SettingsSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("SettingsSkeleton");

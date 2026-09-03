@@ -31,6 +31,9 @@ interface GenerationSettingsSectionProps {
   setVideoResolution: (value: string) => void;
 }
 
+const FIELD_BASE_CLASSNAME =
+  "relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 transition-all hover:border-violet-500/50 focus-within:border-violet-500/80 focus-within:ring-1 focus-within:ring-violet-500/20 shadow-sm";
+
 export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({
   generationMode,
   setGenerationMode,
@@ -101,7 +104,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {!forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={generationMode}
@@ -126,7 +129,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={isGrokProvider ? ImageGeneratorEngine.GrokImagine : ImageGenerationMode.LabsFlow}
@@ -158,7 +161,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{forceVideoOnly ? uiTexts.videoModelLabel : T.lblEngine}</span>
-            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
+            <div className={cn(FIELD_BASE_CLASSNAME)}>
               <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
               <select
                 value={imageGeneratorEngine}
@@ -178,7 +181,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblChromeHeadless}</span>
               <div
-                className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}
+                className={cn(FIELD_BASE_CLASSNAME)}
                 title={T.lblChromeHeadlessTooltip}>
                 <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
@@ -201,7 +204,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <>
               <div className={cn("space-y-1")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblDuration}</span>
-                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
+                <div className={cn(FIELD_BASE_CLASSNAME)}>
                   <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                   <select
                     value={videoDuration}
@@ -218,7 +221,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               </div>
               <div className={cn("space-y-1")}>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblVideoResolution}</span>
-                <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
+                <div className={cn(FIELD_BASE_CLASSNAME)}>
                   <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                   <select
                     value={videoResolution}
@@ -238,7 +241,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblAspectRatio}</span>
-            <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
+            <div className={cn(FIELD_BASE_CLASSNAME)}>
               <Layout className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
               <select
                 value={aspectRatio}
@@ -262,7 +265,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {!forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenType || uiTexts.contentToGenerate}</span>
-              <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-blue-500/60 transition-colors")}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={forceVideoOnly ? GenerateType.Video : generateType}

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
+import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
 import { StoryboardQualityReport } from "../types.js";
 import { calculateStoryboardScriptCoverage } from "./storyboardFallbackService.js";
 
@@ -28,11 +28,19 @@ export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityRepor
 export const applyDeterministicStoryboardCoverage = (
   report: StoryboardQualityReport,
   script: string,
-  scenes: Array<{ script?: string; subtitle?: string }>,
+  scenes: Array<{ script?: string; subtitle?: string; duration?: number }>,
+  wordsPerMinute: number = SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
 ): StoryboardQualityReport => {
   const scriptCoverageScore = _.round(calculateStoryboardScriptCoverage(script, scenes) * 100);
-  const maximumSceneWords = _.max(_.map(scenes, (scene) => _.size(_.words(scene.script || scene.subtitle)))) || 0;
-  const pacingCoverageScore = maximumSceneWords > 0 ? _.round(_.clamp((STORYBOARD_QUALITY_CONFIG.MIN_SCORE * 22) / maximumSceneWords, 0, 100)) : 0;
+  const safeWordsPerMinute = _.gt(wordsPerMinute, 0) ? wordsPerMinute : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE;
+  const scenePacingScores = _.map(scenes, (scene) => {
+    const sceneWordCount = _.size(_.words(scene.script || scene.subtitle));
+    const sceneDurationSeconds = _.toFinite(scene.duration);
+    if (!_.gt(sceneWordCount, 0) || !_.gt(sceneDurationSeconds, 0)) return 0;
+    const maximumWords = (sceneDurationSeconds / 60) * safeWordsPerMinute * FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO;
+    return _.round(_.clamp((maximumWords / sceneWordCount) * 100, 0, 100));
+  });
+  const pacingCoverageScore = _.min(scenePacingScores) || 0;
   const warnings = _.uniq(
     _.compact([
       ...report.warnings,

@@ -59,6 +59,9 @@ const SettingSlider: React.FC<SettingSliderProps> = ({ label, value, displayValu
   </div>
 );
 
+const FIELD_BASE_CLASSNAME =
+  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 h-10 transition-all hover:border-violet-500/50 focus-within:border-violet-500/80 focus-within:ring-1 focus-within:ring-violet-500/20 shadow-sm";
+
 export default function PipelineStep0(props: PipelineWizardState) {
   const {
     t,
@@ -93,7 +96,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
           <h3 className={cn("text-lg font-bold text-slate-100 flex items-center gap-2")}>
             <Tooltip content={STEP0_TEXTS.TOOLTIP_INPUT_METHOD} position="bottom" align="start">
               <span className={cn("flex items-center gap-2 cursor-help")}>
-                <Settings2 className={cn("w-5 h-5 text-rose-500")} />
+                <Settings2 className={cn("w-5 h-5 text-amber-400")} />
                 {t.stepInput}
                 <Info className={cn("w-4 h-4 text-slate-500")} />
               </span>
@@ -152,14 +155,14 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   className={cn(
                     "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
                     _.isEqual(currentInputType, ProjectInputType.Script)
-                      ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                      ? "bg-amber-500/15 border-amber-500/80 text-amber-300 font-black shadow-sm ring-1 ring-amber-500/30"
                       : "bg-slate-955/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-900",
                   )}>
                   <div className={cn("flex items-center gap-3")}>
                     <div
                       className={cn(
                         "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                        _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400",
+                        _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-amber-500/20 text-amber-400" : "bg-slate-800 text-slate-400",
                       )}>
                       <FileText className={cn("w-4 h-4")} />
                     </div>
@@ -168,7 +171,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.originalScriptDesc}</span>
                     </div>
                   </div>
-                  {_.isEqual(currentInputType, ProjectInputType.Script) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
+                  {_.isEqual(currentInputType, ProjectInputType.Script) && <Check className={cn("w-4 h-4 text-amber-400 stroke-[3] shrink-0")} />}
                 </Button>
 
                 <Button
@@ -186,14 +189,14 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   className={cn(
                     "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
                     _.isEqual(currentInputType, ProjectInputType.Idea)
-                      ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                      ? "bg-amber-500/15 border-amber-500/80 text-amber-300 font-black shadow-sm ring-1 ring-amber-500/30"
                       : "bg-slate-955/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-900",
                   )}>
                   <div className={cn("flex items-center gap-3")}>
                     <div
                       className={cn(
                         "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                        _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400",
+                        _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-400" : "bg-slate-800 text-slate-400",
                       )}>
                       <Sparkles className={cn("w-4 h-4")} />
                     </div>
@@ -202,7 +205,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       <span className={cn("text-[10px] font-medium opacity-80 block")}>{t.storyIdeaDesc}</span>
                     </div>
                   </div>
-                  {_.isEqual(currentInputType, ProjectInputType.Idea) && <Check className={cn("w-4 h-4 text-rose-500 stroke-[3] shrink-0")} />}
+                  {_.isEqual(currentInputType, ProjectInputType.Idea) && <Check className={cn("w-4 h-4 text-amber-400 stroke-[3] shrink-0")} />}
                 </Button>
               </div>
             </div>
@@ -222,7 +225,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 }
                 placeholder={t.Nh_p_n_i_dung_k_ch_b_n_nh}
                 className={cn(
-                  "w-full flex-1 bg-slate-955/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/20 text-slate-100 p-4 rounded-2xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-y min-h-[260px] shadow-inner",
+                  "w-full flex-1 bg-slate-955/90 border border-slate-800/90 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/20 text-slate-100 p-4 rounded-2xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-y min-h-[260px] shadow-inner",
                 )}
               />
             </div>
@@ -231,11 +234,11 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
         <div className={cn("space-y-6")}>
           <div className={cn("glass-card bg-slate-900/80 border border-slate-800/80 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden")}>
-            <div className={cn("absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none")} />
+            <div className={cn("absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none")} />
             <div className={cn("border-b border-slate-800 pb-3 flex items-center gap-2 relative z-20")}>
               <Tooltip content={STEP0_TEXTS.TOOLTIP_CONFIG_DETAIL} position="bottom" align="start">
                 <span className={cn("flex items-center gap-2 cursor-help")}>
-                  <Settings2 className={cn("w-4 h-4 text-rose-500 shrink-0")} />
+                  <Settings2 className={cn("w-4 h-4 text-amber-400 shrink-0")} />
                   <h4 className={cn("font-bold text-slate-100 text-xs font-mono uppercase tracking-wider")}>
                     {t.C_u_h_nh_K_ch_b_n} <Info className={cn("w-3 h-3 text-slate-500")} />
                   </h4>
@@ -245,10 +248,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Th_lo_i_video}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Layers className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.genre}
@@ -275,10 +275,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Ng_n_ng_u_ra}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Check className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.language}
@@ -301,10 +298,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.C_u_h_nh_S_l_ng_t_Th_i_l_}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Clock className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.duration}
@@ -328,10 +322,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.txt_2_Split_Density}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Sliders className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.splitStrategy || SplitStrategy.MIXED_SENTENCES}
@@ -354,10 +345,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{t.Kh_n_gi_m_c_ti_u}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Layout className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.audience}
@@ -380,10 +368,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div className={cn("space-y-1.5")}>
               <span className={cn("text-[10px] text-slate-450 font-mono font-bold uppercase tracking-wider block")}>{t.Phong_c_ch_h_nh_v_n}</span>
-              <div
-                className={cn(
-                  "relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 h-10 transition-all shadow-sm",
-                )}>
+              <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Sparkles className={cn("w-4 h-4 text-slate-450 mr-2.5 shrink-0")} />
                 <select
                   value={project.config.writingStyle}
@@ -410,8 +395,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
               displayValue={`${project.config.rewriteLevel ?? 50}%`}
               min={0}
               max={100}
-              colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10"
-              accentClass="accent-rose-600"
+              colorClass="text-amber-400 bg-amber-500/10 border-amber-500/20"
+              accentClass="accent-amber-500"
               onChange={(val) =>
                 setProject((prev) => ({
                   ...prev,
@@ -442,8 +427,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
               displayValue={`${project.config.creativityLevel}/10`}
               min={1}
               max={10}
-              colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10"
-              accentClass="accent-rose-600"
+              colorClass="text-violet-400 bg-violet-500/10 border-violet-500/20"
+              accentClass="accent-violet-500"
               onChange={(val) =>
                 setProject((prev) => ({
                   ...prev,

@@ -237,7 +237,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 position="bottom"
                 align="start">
                 <span className={cn("flex items-center gap-2 cursor-help")}>
-                  <Layout className={cn("w-5 h-5 text-rose-500")} /> {t.storyboardDirector} &amp; {t.Scene_Voiceovers}
+                  <Layout className={cn("w-5 h-5 text-amber-400")} /> {t.storyboardDirector} &amp; {t.Scene_Voiceovers}
                 </span>
               </Tooltip>
             </h3>
@@ -251,7 +251,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 onClick={() => handleTriggerStoryboardSplit(true, "top")}
                 disabled={!!loadingStates["storyboardSplit_loading"]}
                 className={cn(
-                  "flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 hover:text-white border border-rose-400/20 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 h-auto relative z-20",
+                  "flex items-center gap-2 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:opacity-95 hover:text-white border border-amber-400/30 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-amber-500/20 active:scale-95 h-auto relative z-20",
                 )}
                 title={t.Automatically_split_story}>
                 {loadingStates["storyboardSplit_loading"] ? (
@@ -361,7 +361,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   onClick={() => handleTriggerAllSceneVoices(project.storyboard, false)}
                   disabled={!!loadingStates["bulkVoiceGenerate_loading"] || !project.storyboard || project.storyboard.length === 0}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all shadow-lg shadow-rose-600/25 active:scale-95",
+                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:opacity-95 text-white shadow-lg shadow-amber-500/20 active:scale-95",
                   )}
                   title={t.Generate_all_scene_voiceo}>
                   {loadingStates["bulkVoiceGenerate_loading"] ? (
@@ -651,14 +651,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
               className={cn(
                 "p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[96px] h-auto w-full cursor-pointer select-none",
                 storyboardSourceMode === StoryboardSourceMode.AUDIO
-                  ? "border-rose-500 bg-rose-500/10 shadow-md shadow-rose-500/15 ring-2 ring-rose-500/30"
+                  ? "border-amber-500/80 bg-amber-500/15 shadow-md shadow-amber-500/15 ring-2 ring-amber-500/30"
                   : "border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:bg-slate-850/60 shadow-sm",
               )}>
               <div
                 className={cn(
                   "absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
                   storyboardSourceMode === StoryboardSourceMode.AUDIO
-                    ? "bg-rose-500 text-white scale-100 shadow-sm shadow-rose-500/30"
+                    ? "bg-amber-500 text-white scale-100 shadow-sm shadow-amber-500/30"
                     : "bg-slate-850 text-transparent scale-75 border border-slate-700",
                 )}>
                 <Check className={cn("w-3 h-3 stroke-[3]")} />
@@ -669,7 +669,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   className={cn(
                     "p-2.5 rounded-xl border shrink-0 transition-all",
                     storyboardSourceMode === StoryboardSourceMode.AUDIO
-                      ? "bg-rose-500 text-white border-rose-400 shadow-sm shadow-rose-500/30"
+                      ? "bg-amber-500 text-white border-amber-400 shadow-sm shadow-amber-500/30"
                       : "bg-slate-850 border-slate-800 text-slate-400 group-hover:text-slate-200",
                   )}>
                   <Music className={cn("w-5 h-5")} />
@@ -708,14 +708,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
               className={cn(
                 "p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[96px] h-auto w-full cursor-pointer select-none",
                 storyboardSourceMode === StoryboardSourceMode.SCRIPT
-                  ? "border-rose-500 bg-rose-500/10 shadow-md shadow-rose-500/15 ring-2 ring-rose-500/30"
+                  ? "border-amber-500/80 bg-amber-500/15 shadow-md shadow-amber-500/15 ring-2 ring-amber-500/30"
                   : "border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:bg-slate-850/60 shadow-sm",
               )}>
               <div
                 className={cn(
                   "absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
                   storyboardSourceMode === StoryboardSourceMode.SCRIPT
-                    ? "bg-rose-500 text-white scale-100 shadow-sm shadow-rose-500/30"
+                    ? "bg-amber-500 text-white scale-100 shadow-sm shadow-amber-500/30"
                     : "bg-slate-850 text-transparent scale-75 border border-slate-700",
                 )}>
                 <Check className={cn("w-3 h-3 stroke-[3]")} />
@@ -726,7 +726,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   className={cn(
                     "p-2.5 rounded-xl border shrink-0 transition-all",
                     storyboardSourceMode === StoryboardSourceMode.SCRIPT
-                      ? "bg-rose-500 text-white border-rose-400 shadow-sm shadow-rose-500/30"
+                      ? "bg-amber-500 text-white border-amber-400 shadow-sm shadow-amber-500/30"
                       : "bg-slate-850 border-slate-800 text-slate-400 group-hover:text-slate-200",
                   )}>
                   <FileText className={cn("w-5 h-5")} />
@@ -1188,17 +1188,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        <div className={cn("bg-white/80 dark:bg-slate-950/60 border border-slate-250 dark:border-slate-800/85 rounded-2xl p-4 space-y-3 shadow-sm text-left")}>
+        <div className={cn("glass-card bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-xl text-left")}>
           <div className={cn("flex items-center justify-between")}>
             <Button
               variant="unstyled"
               type="button"
               onClick={() => setShowAdvancedVisualConfig(!showAdvancedVisualConfig)}
-              className={cn("flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-500 transition-colors p-0 cursor-pointer select-none")}
+              className={cn("flex items-center gap-2 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors p-0 cursor-pointer select-none")}
               title={t.Modify_visual_configurati}>
-              <Sliders className={cn("w-4 h-4 text-rose-500 animate-pulse")} />
+              <Sliders className={cn("w-4 h-4 text-amber-400 animate-pulse")} />
               <span>{t.Veo_3_Creative_Studio_Dec}</span>
-              <span className={cn("text-[9px] uppercase font-mono font-bold tracking-wide px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full")}>
+              <span className={cn("text-[9px] uppercase font-mono font-bold tracking-wide px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full")}>
                 {(() => {
                   const engine = project.visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
                   let modelLabel = ImageModelLabel.Veo3;
@@ -1747,9 +1747,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className={cn("bg-white/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm")}>
+        <div className={cn("glass-card bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl")}>
           <div className={cn("flex items-center gap-3 text-left w-full md:w-auto")}>
-            <div className={cn("p-2 bg-rose-500/10 dark:bg-rose-500/15 rounded-xl text-rose-600 dark:text-rose-400 border border-rose-500/20")}>
+            <div className={cn("p-2 bg-amber-500/15 text-amber-400 rounded-xl border border-amber-500/30")}>
               <ImageIcon className={cn("w-5 h-5")} />
             </div>
             <div className={cn("flex items-center gap-1.5")}>
@@ -1845,13 +1845,13 @@ export default function PipelineStep1(props: PipelineWizardState) {
           ) : (
             <div
               className={cn(
-                "bg-slate-950/30 border border-slate-800/80 rounded-xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-2 group hover:border-slate-700/60 transition-all duration-300",
+                "glass-card bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 sm:p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-4 shadow-xl group hover:border-amber-500/30 transition-all duration-300",
               )}>
               <div
                 className={cn(
-                  "w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 group-hover:border-rose-500/20 transition-all duration-300 animate-pulse",
+                  "w-12 h-12 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/10 group-hover:scale-105 group-hover:border-amber-500/30 transition-all duration-300 animate-pulse",
                 )}>
-                <Layout className={cn("w-5 h-5 text-rose-500")} />
+                <Layout className={cn("w-5 h-5 text-amber-400")} />
               </div>
               <div className={cn("space-y-1")}>
                 <h4 className={cn("text-xs font-bold font-mono tracking-wider text-slate-300 uppercase")}>{t.No_Storyboard_Scenes}</h4>
@@ -1863,7 +1863,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 onClick={() => handleTriggerStoryboardSplit(true, "empty")}
                 disabled={loadingStates["storyboardSplit_loading"]}
                 className={cn(
-                  "bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] font-bold px-4 py-2 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-none disabled:opacity-50 disabled:cursor-not-allowed h-auto",
+                  "bg-amber-500/15 text-amber-300 hover:text-white hover:bg-amber-500 border border-amber-500/30 hover:border-amber-500 text-[10px] font-bold px-5 py-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-amber-500/15 disabled:opacity-50 disabled:cursor-not-allowed h-auto",
                 )}>
                 {loadingStates["storyboardSplit_loading"] ? (
                   <RefreshCw className={cn("w-3.5 h-3.5 animate-spin text-amber-300")} />

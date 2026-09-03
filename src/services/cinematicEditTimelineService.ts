@@ -1,6 +1,59 @@
 import _ from "lodash";
 import { CinematicEditSegment, StoryboardScene } from "../types";
 
+export interface CinematicClipAnalysisDecision {
+  sceneId: string;
+  takeDecision?: string;
+  trimStartSeconds?: number;
+  trimEndSeconds?: number;
+  sourceCrop?: string;
+  warnings?: string[];
+  reason?: string;
+  recommendedTransition?: string;
+  audioBridgeMode?: StoryboardScene["cinematicAudioBridgeMode"];
+  continuityScore?: number;
+  storyClarityScore?: number;
+  performanceScore?: number;
+  dialogueCoverageScore?: number;
+  dialogueDetected?: boolean;
+  observedShotCount?: number;
+  segments?: CinematicEditSegment[];
+  supportShotType?: StoryboardScene["cinematicSupportShotType"];
+}
+
+export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], decisions: CinematicClipAnalysisDecision[]): StoryboardScene[] => {
+  const decisionsByScene = _.keyBy(decisions, "sceneId");
+  return _.map(scenes, (scene) => {
+    const decision = decisionsByScene[scene.id];
+    if (!decision) return scene;
+    const technicalDecision = _.toString(decision.takeDecision);
+    const takeDecision: StoryboardScene["cinematicTakeDecision"] = _.isEqual(technicalDecision, "omit")
+      ? "omit"
+      : _.isEqual(technicalDecision, "trim")
+        ? "trim"
+        : scene.cinematicTakeDecision || "use";
+    return {
+      ...scene,
+      sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
+      sourceTrimEndSeconds: _.toNumber(decision.trimEndSeconds),
+      sourceCrop: _.toString(decision.sourceCrop || ""),
+      clipQaWarnings: _.castArray(decision.warnings || []),
+      cinematicTakeDecision: takeDecision,
+      cinematicTakeDecisionReason: _.join(_.compact([scene.cinematicTakeDecisionReason, decision.reason]), ";"),
+      transition: _.toString(decision.recommendedTransition || scene.transition),
+      cinematicAudioBridgeMode: decision.audioBridgeMode,
+      cinematicContinuityScore: _.toNumber(decision.continuityScore),
+      cinematicStoryClarityScore: _.toNumber(decision.storyClarityScore),
+      cinematicPerformanceScore: _.toNumber(decision.performanceScore),
+      cinematicDialogueCoverageScore: _.toNumber(decision.dialogueCoverageScore),
+      cinematicDialogueDetected: Boolean(decision.dialogueDetected),
+      cinematicObservedShotCount: _.toNumber(decision.observedShotCount),
+      cinematicEditSegments: _.castArray(decision.segments || []),
+      cinematicSupportShotType: decision.supportShotType,
+    };
+  });
+};
+
 const isUsableSegment = (segment: CinematicEditSegment, sourceDuration: number): boolean => {
   const start = _.toNumber(segment.inSeconds);
   const end = _.toNumber(segment.outSeconds);
@@ -31,6 +84,15 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
     },
     [],
   );
+
+export const trimCinematicTimelineToDialogue = (timeline: StoryboardScene[]): StoryboardScene[] => {
+  const dialogueIndexes = _.filter(
+    _.map(timeline, (scene, index) => (!_.isEmpty(_.trim(scene.spokenDialogue)) ? index : undefined)),
+    _.isNumber,
+  );
+  if (_.isEmpty(dialogueIndexes)) return [];
+  return _.slice(timeline, _.first(dialogueIndexes), _.add(_.last(dialogueIndexes)!, 1));
+};
 
 export const countCinematicTimelineShots = (scenes: StoryboardScene[]): number =>
   _.sumBy(scenes, (scene) => (_.isEmpty(scene.cinematicEditSegments) ? 1 : _.size(scene.cinematicEditSegments)));

@@ -167,9 +167,6 @@ export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], cha
       }),
       "id",
     );
-    // Planner-assigned IDs are authoritative after validation. Re-resolving only
-    // from localized narration (for example "Tôn Ngộ Không" vs "Sun Wukong")
-    // previously erased correct IDs and prevented Character Pack routing.
     const explicitIds = _.filter(_.uniq(scene.characterIds || []), (id) => validIds.has(id));
     const speakerIds = validIds.has(_.toString(scene.speakerCharacterId)) ? [_.toString(scene.speakerCharacterId)] : [];
     const directIds = _.uniq(_.concat(explicitIds, narrationMatchedIds, speakerIds));

@@ -16,6 +16,8 @@ export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene =
   assetRevisionId: undefined,
   assetRevisions: [],
   dependencyHash: undefined,
+  remoteVideoMediaId: undefined,
+  remoteVideoDownloadPending: undefined,
 });
 
 const clearMatchingSceneAssets = (scenes: StoryboardScene[] | undefined, predicate: (scene: StoryboardScene) => boolean): StoryboardScene[] =>

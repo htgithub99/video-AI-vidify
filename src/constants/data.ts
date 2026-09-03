@@ -1,4 +1,5 @@
 import { SplitStrategy, VideoGenre } from "./enums";
+import { SCRIPT_SPEECH_RATE_CONFIG } from "./config";
 import _ from "lodash";
 
 export interface PipelineNode {
@@ -730,7 +731,7 @@ export const VOICE_PRESET_MAP: Record<string, string> = {
 };
 
 export const getDurationText = (isVi: boolean, durStr: string) => {
-  const spokenWordsPerMinute = isVi ? 250 : 150;
+  const spokenWordsPerMinute = isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE;
   if (durStr === "30s") {
     return { targetWordCount: _.round(spokenWordsPerMinute / 2), durationText: isVi ? "30 giây (30 seconds)" : "30 seconds" };
   }

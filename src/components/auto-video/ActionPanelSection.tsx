@@ -56,7 +56,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
               ? "bg-rose-600 border-rose-500 shadow-md shadow-rose-500/20"
               : !isReady
                 ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
-                : "bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:to-rose-400 border-rose-400/40 shadow-lg shadow-rose-600/30 active:scale-98 text-white",
+                : "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 border border-rose-400/30 shadow-lg shadow-rose-600/20 active:scale-98 text-white",
           )}
           title={T.startBtnTooltip}>
           <Zap className={`w-4 h-4 shrink-0 ${isReady ? "text-white fill-white" : "text-slate-500"}`} />

@@ -165,7 +165,7 @@ const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile
     }
     await option.waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS }).catch(() => undefined);
     if (!(await option.isVisible().catch(() => false))) return false;
-    await option.click();
+    await option.click({ force: true });
     const addButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_ADD_TO_PROMPT_BUTTON }).last();
     if (await addButton.isVisible().catch(() => false)) await addButton.click();
     await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
@@ -356,9 +356,134 @@ const waitForFlowMediaCardReady = async (page: Page, mediaId: string): Promise<L
   throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
 };
 
+const downloadFlowVideoFromCard = async (
+  page: Page,
+  mediaCard: Locator,
+  previousVideoSources: string[],
+  expectedDurationSeconds: number,
+): Promise<{ buffer: Buffer; mimeType: string } | null> => {
+  await mediaCard.scrollIntoViewIfNeeded();
+  await mediaCard.click({ force: true });
+  await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
+  const videoUrls = await collectFlowVideoUrls(page);
+  return downloadValidatedVideo(page.context(), _.filter(videoUrls, (url) => !_.includes(previousVideoSources, url)), expectedDurationSeconds).catch(() => null);
+};
+
+const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
+  page.evaluate(() =>
+    Array.from(document.querySelectorAll('a[href*="/edit/"]'))
+      .filter((link) => {
+        const container = link.closest("button") || link.parentElement;
+        const text = container?.textContent || "";
+        return /play_circle|360p|720p/i.test(text) || Boolean(link.querySelector('img[alt*="video" i], img[alt*="Hình thu nhỏ video" i]'));
+      })
+      .map((link) => link.getAttribute("href")?.split("/edit/").pop() || "")
+      .filter(Boolean),
+  );
+
+const downloadFlowVideoFromEdit = async (
+  page: Page,
+  flowProjectId: string,
+  editId: string,
+  expectedDurationSeconds: number,
+): Promise<{ buffer: Buffer; mimeType: string } | null> => {
+  await page.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}/edit/${editId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
+  });
+  await dismissFlowOnboarding(page);
+  await page.waitForFunction(
+    () => Array.from(document.querySelectorAll("video")).some((video) => Boolean(video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src"))),
+    undefined,
+    { timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS },
+  );
+  const videoUrls = await collectFlowVideoUrls(page);
+  return downloadValidatedVideo(page.context(), videoUrls, expectedDurationSeconds).catch(() => null);
+};
+
+export interface FlowVideoRecoveryOptions {
+  flowProjectId: string;
+  mediaId: string;
+  expectedDuration?: string;
+  retainBrowserSession?: boolean;
+}
+
+export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
+  const flowProjectId = normalizeFlowProjectId(options.flowProjectId);
+  const mediaId = _.trim(options.mediaId);
+  if (_.some([flowProjectId, mediaId], _.isEmpty)) {
+    return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR };
+  }
+
+  const release = await imageGenMutex.acquire();
+  let browserInstance: BrowserSession | null = null;
+  try {
+    browserInstance = await getOrLaunchGlobalBrowser();
+    const page = browserInstance.page;
+    const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}`;
+    if (!_.includes(page.url(), flowProjectId)) {
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
+    }
+    await dismissFlowOnboarding(page);
+    if (await isFlowProjectUnavailable(page)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+
+    const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
+    const directMediaUrl = new URL(`fx/api/trpc/media.getMediaUrlRedirect?name=${encodeURIComponent(mediaId)}`, EXTERNAL_URLS.GOOGLE_LABS).href;
+    let downloadedVideo = await downloadValidatedVideo(browserInstance.context, [directMediaUrl], expectedDurationSeconds).catch(() => null);
+    if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
+    if (!downloadedVideo) {
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
+      const availableEditIds = await getFlowVideoEditIds(page);
+      for (const editId of _.uniq([mediaId, ...availableEditIds])) {
+        downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, editId, expectedDurationSeconds).catch(() => null);
+        if (downloadedVideo) break;
+      }
+      if (!downloadedVideo) {
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
+        const mediaCard = await waitForFlowMediaCardReady(page, mediaId);
+        downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds);
+      }
+    }
+    if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+    return {
+      success: true,
+      base64: downloadedVideo.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64),
+      fallbackUrl: SecurityConstants.EMPTY_STRING,
+      remoteMediaId: mediaId,
+      remoteMediaCreated: true,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      base64: null,
+      fallbackUrl: SecurityConstants.EMPTY_STRING,
+      warning: getErrorMessage(error),
+      remoteMediaId: mediaId,
+      remoteMediaCreated: true,
+    };
+  } finally {
+    if (browserInstance) {
+      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
+      else await closeActiveBrowser();
+    }
+    release();
+  }
+};
+
 const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directVideoSrc?: string | null): Promise<string[]> => {
   const pageUrls = await page.evaluate(
     ({ targetMediaId }) => {
+      const normalizeMediaUrl = (value: string | null | undefined): string => {
+        if (!value || value.startsWith("blob:")) return "";
+        try {
+          const absoluteUrl = new URL(value, window.location.origin);
+          const duplicatedApiPathIndex = absoluteUrl.pathname.indexOf("/fx/api/", "/fx/api/".length);
+          if (duplicatedApiPathIndex >= 0) absoluteUrl.pathname = absoluteUrl.pathname.slice(duplicatedApiPathIndex);
+          return absoluteUrl.href;
+        } catch {
+          return "";
+        }
+      };
       const elementUrls = Array.from(document.querySelectorAll("video, source, a[href]"))
         .flatMap((element) => [
           (element as HTMLVideoElement).currentSrc,
@@ -367,15 +492,23 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
           element.getAttribute("data-src"),
           element.getAttribute("data-url"),
         ])
-        .filter(Boolean) as string[];
-      const resourceUrls = performance.getEntriesByType("resource").map((entry) => entry.name);
-      return [...elementUrls, ...resourceUrls].filter(
-        (url) => !url.startsWith("blob:") && (!targetMediaId || url.includes(targetMediaId) || /\.(?:mp4|webm|mov)(?:\?|$)/i.test(url)),
+        .map(normalizeMediaUrl)
+        .filter(Boolean);
+      const resourceUrls = performance.getEntriesByType("resource").map((entry) => normalizeMediaUrl(entry.name));
+      return [...elementUrls, ...resourceUrls].filter((url) =>
+        /media\.getMediaUrlRedirect|googleusercontent|storage|\.(?:mp4|webm|mov)(?:\?|$)/i.test(url) && (!targetMediaId || url.includes(targetMediaId) || /media\.getMediaUrlRedirect/i.test(url)),
       );
     },
     { targetMediaId: mediaId || null },
   );
-  return _.uniq(_.compact([directVideoSrc || "", ...pageUrls]));
+  const normalizedDirectUrl = (() => {
+    try {
+      return directVideoSrc ? new URL(directVideoSrc, EXTERNAL_URLS.GOOGLE_LABS).href : "";
+    } catch {
+      return "";
+    }
+  })();
+  return _.uniq(_.compact([normalizedDirectUrl, ...pageUrls]));
 };
 
 const downloadValidatedVideo = async (context: BrowserContext, urls: string[], expectedDurationSeconds: number): Promise<{ buffer: Buffer; mimeType: string }> => {
@@ -827,6 +960,8 @@ export interface ImageGeneratorResult {
   fallbackUrl: string;
   warning?: string;
   newProjectId?: string;
+  remoteMediaId?: string;
+  remoteMediaCreated?: boolean;
 }
 
 export const extractKeywords = (text: string): string => {
@@ -928,6 +1063,7 @@ let activeBrowserInstance: BrowserSession | null = null;
 let activeBrowserTimeout: NodeJS.Timeout | null = null;
 let activeBrowserHeadless: boolean | undefined = undefined;
 let activeBrowserLaunchPromise: Promise<BrowserSession> | null = null;
+let activeFlowVideoGenerationCount = SecurityConstants.ZERO;
 
 export async function closeActiveBrowser() {
   if (activeBrowserTimeout) {
@@ -953,9 +1089,13 @@ export async function closeActiveBrowser() {
 export function scheduleGlobalBrowserCleanup() {
   if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
   activeBrowserTimeout = setTimeout(async () => {
+    if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO)) {
+      scheduleGlobalBrowserCleanup();
+      return;
+    }
     appLog(ImageGenMessages.AUTO_RELEASE_CHROME_IDLE);
     await closeActiveBrowser();
-  }, 120000);
+  }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 
 export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promise<BrowserSession> {
@@ -1222,9 +1362,12 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   const cleanProjectId = normalizeFlowProjectId(sandboxConfig.flowProjectId || sandboxConfig.projectId);
 
   const release = await imageGenMutex.acquire();
+  const isFlowVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  if (isFlowVideoGeneration) activeFlowVideoGenerationCount = _.add(activeFlowVideoGenerationCount, SecurityConstants.DEFAULT_AMOUNT);
 
   let responseText = "";
   let lastGenerationError = BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR;
+  let remoteVideoMediaId: string | undefined;
   let success = false;
   let attempts = 0;
   const maxAttempts = SecurityConstants.DEFAULT_AMOUNT;
@@ -1508,6 +1651,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             .map((video) => video.currentSrc || video.src)
             .filter(Boolean),
         );
+        const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? await getFlowVideoEditIds(activePage) : [];
         if (_.isEqual(visualConfig?.generateType, GenerateType.Video)) {
           flowResponseListener = (response: any) => {
             const responseUrl = _.toString(response.url());
@@ -1541,26 +1685,37 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         let finalBase64: string;
         if (visualConfig?.generateType === GenerateType.Video) {
           const mediaHandle = await activePage.waitForFunction(
-            ([oldIdsList, oldVideoSourcesList, getImgIdStr]) => {
-              const getImgIdSafe = new Function("return " + getImgIdStr)();
-              const candidates = Array.from(document.querySelectorAll("img"))
-                .filter((img) => img.src && img.src.includes("getMediaUrlRedirect"))
-                .map((img) => ({ img, id: getImgIdSafe(img.src) }))
-                .filter(({ id }) => id && !oldIdsList.includes(id));
+            ([oldEditIds, oldVideoSourcesList]) => {
+              const generatedEditId = Array.from(document.querySelectorAll('a[href*="/edit/"]'))
+                .filter((link) => {
+                  const container = link.closest("button") || link.parentElement;
+                  const text = container?.textContent || "";
+                  return /play_circle|360p|720p/i.test(text) || Boolean(link.querySelector('img[alt*="video" i], img[alt*="Hình thu nhỏ video" i]'));
+                })
+                .map((link) => link.getAttribute("href")?.split("/edit/").pop() || "")
+                .find((editId) => editId && !oldEditIds.includes(editId));
               const generatedVideo = Array.from(document.querySelectorAll("video"))
                 .map((video) => ({ video, src: video.currentSrc || video.src }))
                 .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && video.readyState >= 1);
-              if (candidates.length) return { mediaId: candidates[candidates.length - 1].id, videoSrc: null };
-              return generatedVideo ? { mediaId: null, videoSrc: generatedVideo.src } : null;
+              if (generatedEditId) return { editId: generatedEditId, videoSrc: null };
+              return generatedVideo ? { editId: null, videoSrc: generatedVideo.src } : null;
             },
-            [oldIds, oldVideoSources, browserGetImgIdSafeStr] as const,
+            [oldVideoEditIds, oldVideoSources] as const,
             { timeout: 300000 },
           );
-          const generatedMedia = (await mediaHandle.jsonValue()) as { mediaId?: string | null; videoSrc?: string | null } | null;
+          const generatedMedia = (await mediaHandle.jsonValue()) as { editId?: string | null; videoSrc?: string | null } | null;
           if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
 
-          if (generatedMedia.mediaId) await waitForFlowMediaCardReady(activePage, generatedMedia.mediaId);
-          else {
+          let downloadedVideoFromCard: { buffer: Buffer; mimeType: string } | null = null;
+          if (generatedMedia.editId) {
+            remoteVideoMediaId = generatedMedia.editId;
+            downloadedVideoFromCard = await downloadFlowVideoFromEdit(
+              activePage,
+              currentProjectId,
+              generatedMedia.editId,
+              parseConfiguredVideoDuration(visualConfig?.videoDuration),
+            );
+          } else {
             const expectedDurationSeconds = parseConfiguredVideoDuration(visualConfig?.videoDuration);
             await activePage.waitForFunction(
               ({ directVideoSrc, previousVideoSources, expectedDuration }) => {
@@ -1574,8 +1729,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             );
           }
           if (!browserInstance) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
-          const videoUrls = _.uniq(_.concat(await collectFlowVideoUrls(activePage, generatedMedia.mediaId, generatedMedia.videoSrc), flowResponseUrls));
-          const downloadedVideo = await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration));
+          const videoUrls = _.uniq(_.concat(await collectFlowVideoUrls(activePage, generatedMedia.editId, generatedMedia.videoSrc), flowResponseUrls));
+          const downloadedVideo =
+            downloadedVideoFromCard ||
+            (await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration)));
           finalBase64 = `data:${downloadedVideo.mimeType};base64,${downloadedVideo.buffer.toString("base64")}`;
         } else {
           const base64Data = await activePage.waitForFunction(
@@ -1645,6 +1802,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     lastGenerationError = getErrorMessage(error);
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${getErrorMessage(error)}`);
   } finally {
+    if (isFlowVideoGeneration) activeFlowVideoGenerationCount = _.max([SecurityConstants.ZERO, _.subtract(activeFlowVideoGenerationCount, SecurityConstants.DEFAULT_AMOUNT)])!;
     if (browserInstance) {
       if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
       else {
@@ -1672,8 +1830,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     success: false,
     base64: null,
     fallbackUrl: SecurityConstants.EMPTY_STRING,
-    warning: lastGenerationError,
+    warning: remoteVideoMediaId ? FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR : lastGenerationError,
     newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
+    remoteMediaId: remoteVideoMediaId,
+    remoteMediaCreated: !_.isEmpty(remoteVideoMediaId),
   };
 }
 

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
   --font-logo: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;

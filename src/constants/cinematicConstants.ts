@@ -11,7 +11,24 @@ export const CINEMATIC_POLICY_CONFIG = {
   CLIENT_PLANNING_ATTEMPTS: 3,
   EPSILON_TOLERANCE: 0.25,
   MIN_DIALOGUE_SCENE_RATIO: 0.3,
+  MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
+
+export const CINEMATIC_DIALOGUE_CONFIG = {
+  MODES: ["on_screen_dialogue", "off_screen_dialogue"],
+  VIETNAMESE_CHARACTER_PATTERN: /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i,
+  VIETNAMESE_WORD_PATTERN: /\b(?:anh|chị|em|ông|bà|tôi|ta|ngươi|chúng ta|không|được|phải|đang|sẽ|đã|này|đó|với|của|cho|hãy|đừng)\b/i,
+  ENGLISH_WORD_PATTERN: /\b(?:the|you|your|we|our|they|this|that|is|are|will|must|can|cannot|do|not|please|come|go|stop|wait)\b/i,
+  NARRATION_PATTERN: /^(?:narrator|voice[- ]?over|lời dẫn|người kể|chúng ta thấy|khán giả thấy|câu chuyện|the audience|we see)\s*[:：-]/i,
+} as const;
+
+export const CINEMATIC_DIALOGUE_FALLBACKS = {
+  vi: "Ta sẽ kết thúc chuyện này!",
+  en: "I will end this now!",
+} as const;
+
+export const getCinematicDialogueRetryDirective = (language: string, dialogue: string, speakerId: string): string =>
+  `Mandatory dialogue correction: ${speakerId} must audibly speak exactly "${dialogue}" in ${language === "vi" ? "Vietnamese" : "English"}. Preserve the named speaker, natural performance and accurate lip synchronization. No narrator, voice-over, third-person commentary, translated duplicate, or additional spoken line.`;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 2,
@@ -224,6 +241,16 @@ export const CINEMATIC_DEFAULTS = {
   STATIC_AXIS: "static_axis",
   ESTABLISHED_EYELINE: "established eyeline",
   PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip",
+} as const;
+
+export const CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG = {
+  CONFLICT_PATTERN:
+    /\b(fight|battle|combat|attack|strike|punch|kick|slash|shoot|fire|swing|dodge|block|parry|collide|impact|enemy|opponent|soldier|weapon|đánh|chiến đấu|giao chiến|tấn công|ra đòn|đấm|đá|chém|bắn|vung|né|đỡ|va chạm|đối thủ|kẻ địch|binh|vũ khí)\b/i,
+  INITIATOR_PATTERN: /\b(attacks?|strikes?|swings?|fires?|shoots?|punches?|kicks?|slashes?|charges?|tấn công|ra đòn|vung|bắn|đấm|đá|chém|lao vào)\b/i,
+  TARGET_PATTERN: /\b(at|toward|against|into|target|enemy|opponent|defender|vào|về phía|nhắm|mục tiêu|kẻ địch|đối thủ|người đỡ)\b/i,
+  CONTACT_PATTERN: /\b(hit|impact|contact|collides?|connects?|blocks?|parries?|strikes? the|va chạm|đánh trúng|trúng|chạm|đỡ đòn|chặn|tia lửa)\b/i,
+  REACTION_PATTERN: /\b(recoils?|stumbles?|falls?|slides?|is thrown|is driven|reacts?|staggers?|lùi|ngã|văng|trượt|choáng|khựng|phản ứng|bị đẩy)\b/i,
+  OUTCOME_PATTERN: /\b(aftermath|ends?|remains?|lands?|new position|disarmed|broken|damaged|defeated|kết quả|sau đòn|tiếp đất|vị trí mới|mất vũ khí|vỡ|hư hại|thất thế|bị hạ)\b/i,
 } as const;
 
 export const CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE = (language: string, targetDuration: string): string => `

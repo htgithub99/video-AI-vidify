@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
 import { getCinematicPromptPreflightIssues, resolveAuthoritativeCinematicPrompt } from "../src/services/cinematicPromptPreflightService";
-import { GenerateType, StoryboardScene } from "../src/types";
+import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
+import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
 
 const scene = {
   id: "sc_preflight",
@@ -38,4 +39,8 @@ assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPol
 const aiRewrittenPrompt = `${prompt}\nComplete AI-authored safe rewrite.`;
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: aiRewrittenPrompt }), aiRewrittenPrompt);
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: "" }), "");
+scene.characterIds = ["char_1"];
+assert.deepEqual(getCinematicSceneContractIssues(scene, 10, ProjectLanguage.EN), []);
+assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Người kể: Anh ấy bước đi." }, 10, ProjectLanguage.VI).some((issue) => issue.includes("third_person_narration_forbidden")));
+assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Chúng ta đi ngay." }, 10, ProjectLanguage.EN).some((issue) => issue.includes("must_be_english")));
 process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, shots: 3 }));

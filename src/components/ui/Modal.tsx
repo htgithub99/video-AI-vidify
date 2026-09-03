@@ -5,19 +5,7 @@ import { IBaseModalProps } from "../../types";
 import { X } from "lucide-react";
 import { stopPropagation } from "../../utils/helpers";
 import { Button } from "./Button";
-
-const SIZE_MAP: Record<string, string> = {
-  xs: "max-w-xs",
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
-  "2xl": "max-w-2xl",
-  "3xl": "max-w-3xl",
-  "4xl": "max-w-4xl",
-  "5xl": "max-w-5xl",
-  "6xl": "max-w-6xl",
-};
+import { MODAL_CLASS_NAME, MODAL_SIZE_CLASS_NAME } from "../../constants";
 
 export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, children, maxWidth }) => {
   useEffect(() => {
@@ -32,32 +20,36 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
 
   if (!isOpen) return null;
 
-  const isFullClass = maxWidth?.startsWith("max-w-");
-  const maxWidthClass = maxWidth ? (isFullClass ? maxWidth : SIZE_MAP[maxWidth] || `max-w-${maxWidth}`) : "max-w-2xl";
+  const isFullClass = maxWidth?.startsWith(MODAL_CLASS_NAME.WIDTH_PREFIX);
+  const maxWidthClass = maxWidth
+    ? isFullClass
+      ? maxWidth
+      : MODAL_SIZE_CLASS_NAME[maxWidth] || `${MODAL_CLASS_NAME.WIDTH_PREFIX}${maxWidth}`
+    : MODAL_CLASS_NAME.DEFAULT_WIDTH;
 
   return createPortal(
-    <div className={cn("fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-955/75 backdrop-blur-lg animate-in fade-in duration-200")} onClick={onClose}>
+    <div className={cn(MODAL_CLASS_NAME.OVERLAY)} onClick={onClose}>
       <div
         className={cn(
-          "glass-panel bg-slate-900/95 border border-slate-700/60 rounded-3xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 text-left",
+          MODAL_CLASS_NAME.CONTENT,
           maxWidthClass,
         )}
         onClick={stopPropagation}>
-        <div className={cn("absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.05] rounded-full blur-3xl pointer-events-none z-0")} />
-        <div className={cn("absolute bottom-0 left-0 w-64 h-64 bg-amber-500/[0.03] rounded-full blur-3xl pointer-events-none z-0")} />
+        <div className={cn(MODAL_CLASS_NAME.TOP_DECORATION)} />
+        <div className={cn(MODAL_CLASS_NAME.BOTTOM_DECORATION)} />
 
-        <div className={cn("flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-slate-800/80 relative z-10 bg-slate-100/40 dark:bg-slate-900/40 backdrop-blur-sm")}>
-          {title && <h2 className={cn("text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 truncate")}>{title}</h2>}
+        <div className={cn(MODAL_CLASS_NAME.HEADER)}>
+          {title && <h2 className={cn(MODAL_CLASS_NAME.TITLE)}>{title}</h2>}
           <Button
             variant="ghost"
             size="xs"
             onClick={onClose}
-            className={cn("p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/80 transition-colors shadow-none ml-auto shrink-0")}>
-            <X className={cn("w-4 h-4")} />
+            className={cn(MODAL_CLASS_NAME.CLOSE_BUTTON)}>
+            <X className={cn(MODAL_CLASS_NAME.CLOSE_ICON)} />
           </Button>
         </div>
 
-        <div className={cn("flex-1 overflow-y-auto bg-transparent relative z-10 p-6")}>{children}</div>
+        <div className={cn(MODAL_CLASS_NAME.BODY)}>{children}</div>
       </div>
     </div>,
     document.body,

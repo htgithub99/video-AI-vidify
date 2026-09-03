@@ -5,6 +5,22 @@ import _ from "lodash";
 import { storageUtils } from "./storage";
 import { jsonUtils } from "./json";
 
+export interface SystemFetchSuccess<T = any> {
+  success: true;
+  data: T;
+  error?: undefined;
+}
+
+export interface SystemFetchFailure<T = any> {
+  success: false;
+  error?: string;
+  data?: T;
+}
+
+export type SystemFetchResult<T = any> = SystemFetchSuccess<T> | SystemFetchFailure<T>;
+
+export const createSystemFetchFailure = <T = any>(error: string): SystemFetchFailure<T> => ({ success: false, error });
+
 export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 
 export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
@@ -20,7 +36,7 @@ export const createAuthenticatedHeaders = (customHeaders: Record<string, string>
     customHeaders,
   );
 
-export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal) => {
+export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal): Promise<SystemFetchResult> => {
   try {
     const response = await fetch(url, {
       method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,

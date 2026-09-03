@@ -314,6 +314,8 @@ export const REFACTOR_CONSTANTS = {
   LOG_WARN_WRITE_IMG_CACHE: "Failed to write image cache",
 
   HTTP_METHOD_POST: "POST",
+  HTTP_METHOD_HEAD: "HEAD",
+  IMAGE_MIME_TYPE_PREFIX: "image/",
   HEADER_CONTENT_TYPE: "Content-Type",
   MIME_JSON: "application/json",
   STATUS_COMPLETED: "completed",
@@ -371,7 +373,7 @@ export const REFACTOR_CONSTANTS = {
   KEY_CINEMATIC_PIPELINE_PROJECT_LOGS_PREFIX: "cinematic_pipeline_logs_",
   STATUS_GENERATING: "Generating",
   STATUS_CANCELLED: "Cancelled",
-  PIPELINE_RUN_LOCK_PREFIX: "vidify_pipeline_run_lock_",
+  PIPELINE_RUN_LOCK_PREFIX: "vidify_pipeline_run_lock_v8_",
   PIPELINE_RUN_LOCK_TTL_MS: 7200000,
   PIPELINE_RUN_OWNER_KEY: "vidify.pipeline.run.owner",
   ERR_PIPELINE_ALREADY_RUNNING: "Dự án này đang được xử lý. Vui lòng chờ hoặc hủy lần chạy hiện tại trước khi thử lại.",

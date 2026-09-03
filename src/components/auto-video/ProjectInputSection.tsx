@@ -23,27 +23,27 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
   const inputTypeCards = [
     {
       type: ProjectInputType.Script,
-      icon: <FileText className={cn("w-4 h-4 text-rose-600")} />,
+      icon: <FileText className={cn("w-4 h-4 text-amber-400")} />,
       label: T.inputTypeScript,
       tooltip: T.inputTypeScriptTooltip,
     },
     {
       type: ProjectInputType.Idea,
-      icon: <Sparkles className={cn("w-4 h-4 text-amber-600")} />,
+      icon: <Sparkles className={cn("w-4 h-4 text-amber-400")} />,
       label: T.inputTypeIdea,
       tooltip: T.inputTypeIdeaTooltip,
     },
   ] as const;
 
   return (
-    <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border-none bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between relative z-10")}>
         <div className={cn("flex items-center gap-2.5")}>
-          <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20")}>
+          <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20")}>
             {PIPELINE_STEPS.STEP_1}
           </span>
           <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} title={T.sec1TitleTooltip}>
-            <FileText className={cn("w-3.5 h-3.5 text-rose-400")} /> {T.sec1Title}
+            <FileText className={cn("w-3.5 h-3.5 text-amber-400")} /> {T.sec1Title}
           </h3>
         </div>
         <div className={cn("header-badge flex items-center gap-2 text-[11px] font-mono font-bold text-slate-300 bg-slate-955/80 px-3 py-1 rounded-full shadow-inner")}>
@@ -67,17 +67,17 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
               variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
               onClick={() => setInputType(type)}
               className={cn(
-                "p-2.5 rounded-xl border-none text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none",
+                "p-2.5 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none",
                 isSelected
-                  ? "bg-rose-500/15 text-rose-400 font-extrabold shadow-sm ring-1 ring-rose-500/30"
-                  : "bg-slate-955/80 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900",
+                  ? "bg-amber-500/15 text-amber-300 font-extrabold shadow-sm ring-1 ring-amber-500/30 border-amber-500/40"
+                  : "bg-slate-955/80 border-slate-850 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900",
               )}
               title={tooltip}>
               <div className={cn("flex items-center gap-2.5")}>
                 {icon}
                 <span className={cn("text-xs")}>{label}</span>
               </div>
-              {isSelected && <Check className={cn("w-4 h-4 text-rose-400 stroke-[3]")} />}
+              {isSelected && <Check className={cn("w-4 h-4 text-amber-400 stroke-[3]")} />}
             </Button>
           );
         })}
@@ -90,7 +90,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
           onChange={(e) => setScriptContent(e.target.value)}
           placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea}
           className={cn(
-            "w-full min-h-[140px] sm:min-h-[160px] max-h-[220px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border-none",
+            "w-full min-h-[140px] sm:min-h-[160px] max-h-[220px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/20",
           )}
         />
       </div>
