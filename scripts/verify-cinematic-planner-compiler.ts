@@ -12,17 +12,30 @@ import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
 const SCENE_COUNT = 12;
 const CLIP_DURATION_SECONDS = 10;
 const ACTION_SCENE_INDEXES = new Set([1, 2, 4, 5, 7, 8, 10, 11]);
-const DIALOGUE_SCENE_INDEXES = new Set([0, 3, 6, 9]);
-const DIALOGUE = "Ngộ Không, hãy dừng tay và nghe ta nói!";
+const DIALOGUE_LINES = [
+  "Ngộ Không, hãy dừng lại!",
+  "Ta không lùi bước đâu!",
+  "Ngươi đã phá phòng tuyến!",
+  "Cánh cổng kia phải mở!",
+  "Hãy giữ vững đội hình!",
+  "Ta sẽ vượt qua ngươi!",
+  "Con đường đã hiện ra!",
+  "Đừng để hắn tiến thêm!",
+  "Không ai cản được ta!",
+  "Hãy nhìn hậu quả này!",
+  "Lực lượng đã tan vỡ!",
+  "Trận chiến kết thúc rồi!",
+];
 const CREATIVE_BRIEF =
   "Photorealistic mythic Chinese palace drama featuring Sun Wukong with his unmistakable simian face, amber eyes, russet fur, gold circlet, red-and-gold armor, and gold-banded staff beside a distinct armored heavenly guard. Preserve both identities, grounded anatomy, practical cloud-palace lighting, layered celestial architecture, readable body language, clear spatial depth, restrained cinematic contrast, realistic materials, and one story-specific physical consequence in the foreground.";
 
 const createCreativeScene = (index: number): StoryboardScene => {
   const id = `sc_${index + 1}`;
   const isAction = ACTION_SCENE_INDEXES.has(index);
-  const hasDialogue = DIALOGUE_SCENE_INDEXES.has(index);
+  const hasDialogue = true;
+  const dialogue = DIALOGUE_LINES[index];
   const visibleAction = isAction
-    ? "Sun Wukong attacks toward the armored heavenly guard from left to right, swinging his gold-banded staff into the guard's raised shield."
+    ? "Sun Wukong plants his lead foot, transfers his weight forward, draws his gold-banded staff back over his right shoulder, then attacks toward the armored heavenly guard from left to right and strikes the guard's raised shield."
     : "Sun Wukong plants his gold-banded staff on the jade floor and points toward the sealed celestial gate as the heavenly guard steps aside.";
   const reaction = isAction
     ? "The shield catches the contact with sparks; the heavenly guard recoils, stumbles backward, and drops to one knee."
@@ -31,7 +44,7 @@ const createCreativeScene = (index: number): StoryboardScene => {
     ? "Aftermath: Sun Wukong remains grounded on the left while the disarmed guard remains kneeling in a new position beside the damaged balustrade."
     : "The open gate remains visible while Sun Wukong faces the passage and the guard remains clear of his path.";
   const dialogueMode = hasDialogue ? "on_screen_dialogue" : "silent_action";
-  const spokenDialogue = hasDialogue ? DIALOGUE : "";
+  const spokenDialogue = dialogue;
   const speakerCharacterId = hasDialogue ? "heaven_guard" : "";
   const beats = isAction
     ? [
@@ -112,7 +125,7 @@ const createCreativeScene = (index: number): StoryboardScene => {
     cinematicBeats: _.map(beats, (beat, beatIndex) => ({
       ...beat,
       dialogueMode: hasDialogue && beatIndex === 1 ? "on_screen_dialogue" : "silent_action",
-      spokenDialogue: hasDialogue && beatIndex === 1 ? DIALOGUE : "",
+      spokenDialogue: hasDialogue && beatIndex === 1 ? dialogue : "",
       speakerCharacterId: hasDialogue && beatIndex === 1 ? "heaven_guard" : "",
       lipSyncRequired: hasDialogue && beatIndex === 1,
     })) as StoryboardScene["cinematicBeats"],

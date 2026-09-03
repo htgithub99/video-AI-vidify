@@ -12,7 +12,7 @@ export const CINEMATIC_POLICY_CONFIG = {
   PREFLIGHT_REVIEW_ATTEMPTS: 1,
   CLIENT_PLANNING_ATTEMPTS: 3,
   EPSILON_TOLERANCE: 0.25,
-  MIN_DIALOGUE_SCENE_RATIO: 0.3,
+  MIN_DIALOGUE_SCENE_RATIO: 1,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
 
@@ -22,11 +22,6 @@ export const CINEMATIC_DIALOGUE_CONFIG = {
   VIETNAMESE_WORD_PATTERN: /\b(?:anh|chị|em|ông|bà|tôi|ta|ngươi|chúng ta|không|được|phải|đang|sẽ|đã|này|đó|với|của|cho|hãy|đừng)\b/i,
   ENGLISH_WORD_PATTERN: /\b(?:the|you|your|we|our|they|this|that|is|are|will|must|can|cannot|do|not|please|come|go|stop|wait)\b/i,
   NARRATION_PATTERN: /^(?:narrator|voice[- ]?over|lời dẫn|người kể|chúng ta thấy|khán giả thấy|câu chuyện|the audience|we see)\s*[:：-]/i,
-} as const;
-
-export const CINEMATIC_DIALOGUE_FALLBACKS = {
-  vi: "Ta sẽ kết thúc chuyện này!",
-  en: "I will end this now!",
 } as const;
 
 export const getCinematicDialogueRetryDirective = (language: string, dialogue: string, speakerId: string): string =>
@@ -301,8 +296,6 @@ export const CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG = {
   CONTACT_PATTERN: /\b(hits?|impact|contact|collides?|connects?|blocks?|parries?|strikes? the|va chạm|đánh trúng|trúng|chạm|đỡ đòn|chặn|tia lửa)\b/i,
   REACTION_PATTERN: /\b(recoils?|stumbles?|falls?|slides?|is thrown|is driven|reacts?|staggers?|lùi|ngã|văng|trượt|choáng|khựng|phản ứng|bị đẩy)\b/i,
   OUTCOME_PATTERN: /\b(aftermath|ends?|remains?|lands?|new position|disarmed|broken|damaged|defeated|kết quả|sau đòn|tiếp đất|vị trí mới|mất vũ khí|vỡ|hư hại|thất thế|bị hạ)\b/i,
-  REPAIR_SEQUENCE:
-    "The foreground attacker plants the lead foot, transfers body weight forward, draws their weapon back with both hands, then drives one controlled strike toward the named defender. The defender blocks the visible contact and recoils one step. The attacker keeps ownership of the weapon; both remain in stable new positions after the exchange.",
 } as const;
 
 export const hasCinematicCombatAction = (value: string): boolean =>
@@ -326,7 +319,7 @@ You are the head screenwriter and story editor for a ${targetDuration} original 
 - Keep no more than two clearly articulated foreground performers in physical conflict. Other forces remain distant, soft-focus, occluded, silhouetted or represented by their effect on the environment. Use one movement direction and one action axis; keep feet grounded, hand/weapon ownership explicit and the camera stable enough to read anatomy.
 - Prefer concise speakable dialogue, interruptions, silence and reactions. No exposition speeches, generic motivational lines, trailer narration, omniscient summary or repeated statement of facts already visible.
 - Dialogue must be short enough for natural lip-sync inside its planned shot. Preserve the exact chosen output language and never mix languages unless the story explicitly requires it.
-- The finished film must use character dialogue and production sound, never narration or voice-over. Convey exposition through playable conversation, behavior, props and consequences. A beat without dialogue is silent_action with diegetic ambience; off_screen_dialogue is allowed only when the named speaker is physically present in the same location.
+- Every generated clip must contain one short, story-specific line spoken by a named character in the selected language. The line must change the immediate objective, danger, relationship or viewer understanding; generic filler and repeated catchphrases are forbidden. Use on_screen_dialogue with synchronized lips whenever the speaker is visible. Use off_screen_dialogue only when the named speaker is physically present in the same location. Never use narration or voice-over.
 - SCREENPLAY OUTPUT LOCK: Write the actual playable screenplay, not prose describing what the film would show. Every chapter must contain concrete scene action plus natural character dialogue. Attribute every spoken line to a named character. Do not write a narrator, narration paragraphs, voice-over, explanatory commentary, YouTube hook, synopsis, recap or phrases such as "we see", "the audience learns", "câu hỏi là", or "liệu rằng". Important story information must be discovered through a character's decision, conversation, physical evidence or visible consequence.
 - DIALOGUE COVERAGE: Unless a sequence is deliberately silent for suspense or action clarity, include at least one short speakable exchange that changes the plan, relationship, danger or available information. A film may contain silent shots, but it may not become a narrator-led slideshow. Preserve pauses and reactions around dialogue so speech remains naturally performable inside generated clips.
 - Establish geography before action, preserve prop ownership and wardrobe/damage progression, and design entrances/exits that the next clip can continue.

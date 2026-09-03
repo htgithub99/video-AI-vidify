@@ -273,7 +273,7 @@ Visual Bible: ${visualBibleJson || "Not supplied"}
 Neighbor continuity: ${continuityContext || "Not supplied"}
 ${correctionIssuesJson ? `The previous answer failed these creative checks. Rewrite only the supplied failed scenes and resolve every issue: ${correctionIssuesJson}` : ""}
 
-For each scene, preserve its literal story event and decide only the creative content: character identity, objective, readable action, caused reaction, evidence, shot purpose, 3 to 5 chronological beats, and character dialogue. Use natural cinematic English except spokenDialogue. Use exact character dialogue from the screenplay when available; never use narration or voice-over. Across the finished story, make at least one third of character-led clips contain a short playable on-screen or same-location off-screen exchange when the screenplay supports speech. Silent action is valid when speech would be unnatural.${dialogueDirective && dialogueLanguage ? `
+For each scene, preserve its literal story event and decide only the creative content: character identity, objective, readable action, caused reaction, evidence, shot purpose, 3 to 5 chronological beats, and character dialogue. Use natural cinematic English except spokenDialogue. Every clip must contain one short, story-specific line spoken by a named character. The line must change the immediate objective, danger, relationship or viewer understanding; never use narration, voice-over, generic filler or a repeated catchphrase.${dialogueDirective && dialogueLanguage ? `
 Dialogue assignment for this request: ${dialogueDirective}
 Dialogue language lock: every spokenDialogue value must use natural ${dialogueLanguage}. Keep all visual and directorial fields in English.
 ` : ""}

@@ -2167,7 +2167,13 @@ export function useAutoVideoPipeline(
         const context = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
         if (isCinematicEpisodeGenre(config.genre) && _.isEqual(sceneGenerateType, GenerateType.Video)) {
           const characterReferences = resolveCinematicSceneCharacterReferences(scene, _.defaultTo(voiceUpdatedProj.visualConfig.characters, []));
-          const compiledPrompt = createCinematicVideoPrompt(scene, scene.prompt, GenerateType.Video, config.videoDuration);
+          const compiledPrompt = createCinematicVideoPrompt(
+            scene,
+            scene.prompt,
+            GenerateType.Video,
+            config.videoDuration,
+            _.defaultTo(voiceUpdatedProj.visualConfig.characters, []),
+          );
           return {
             ...context,
             ...characterReferences,
@@ -2923,6 +2929,31 @@ export function useAutoVideoPipeline(
         onLog: appendLog,
       });
       if (isCinematicEpisodeGenre(config.genre)) {
+        if (!_.isEmpty(config.targetSceneIds)) {
+          const targetedScenes = _.filter(realScenes as StoryboardScene[], (scene) => targetSceneIds.has(scene.id));
+          const targetedTakeIssues = getCinematicGeneratedTakeIssues(targetedScenes, targetedScenes.length);
+          const targetedProject = await syncProject({
+            ...voiceUpdatedProj,
+            status: REFACTOR_CONSTANTS.STATUS_PARTIAL,
+            activeRunId: undefined,
+            storyboard: realScenes as VideoProject["storyboard"],
+          });
+          setActiveCreatedProject(targetedProject);
+          if (!_.isEmpty(targetedTakeIssues)) {
+            throw new Error(
+              config.language === ProjectLanguage.VI
+                ? `Clip đã được tải nhưng chưa đạt QA: ${_.join(targetedTakeIssues, ", ")}`
+                : `The clip was downloaded but did not pass QA: ${_.join(targetedTakeIssues, ", ")}`,
+            );
+          }
+          appendLog(
+            config.language === ProjectLanguage.VI
+              ? `Đã tạo, tải và duyệt ${_.join(_.map(targetedScenes, "id"), ", ")}. Dùng Ghép lại khi toàn bộ cảnh đã sẵn sàng.`
+              : `Created, downloaded and approved ${_.join(_.map(targetedScenes, "id"), ", ")}. Use Re-render when every scene is ready.`,
+          );
+          setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
+          return;
+        }
         const expectedClipCount = Math.max(1, Math.ceil(parseTargetDurationSeconds(config.duration) / resolveCinematicClipDuration(config.videoDuration)));
         const takeIssues = getCinematicGeneratedTakeIssues(realScenes as StoryboardScene[], expectedClipCount);
         if (!_.isEmpty(takeIssues)) {

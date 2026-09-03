@@ -14,6 +14,7 @@ const scene = {
   dialogueMode: "on_screen_dialogue",
   spokenDialogue: "We leave before sunrise.",
   speakerCharacterId: "char_1",
+  characterIds: ["char_1"],
   lipSyncRequired: true,
   characterBlocking: "Kade faces the pilot beside the open ship ramp",
   eyelineDirection: "Kade looks screen right toward the pilot",
@@ -38,13 +39,12 @@ const compiledFromStaleScene = createCinematicVideoPrompt({ ...scene, generation
 assert.notEqual(compiledFromStaleScene, staleDialoguePatch);
 assert.deepEqual(getCinematicPromptPreflightIssues(scene, compiledFromStaleScene, 10), []);
 assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replace("Shot 3", "Final view"), 10).some((issue) => issue.includes("shot_3_missing")));
-assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replace(scene.spokenDialogue!, ""), 10).some((issue) => issue.includes("dialogue_missing")));
+assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replaceAll(scene.spokenDialogue!, ""), 10).some((issue) => issue.includes("dialogue_missing")));
 const aiAuthoredPrompt = `${prompt}\n\nPreserve these intentional trailing line breaks.\n`;
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: false, repairedPrompt: "must not replace a safe prompt" }), aiAuthoredPrompt);
 const aiRewrittenPrompt = `${prompt}\nComplete AI-authored safe rewrite.`;
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: aiRewrittenPrompt }), aiRewrittenPrompt);
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: "" }), "");
-scene.characterIds = ["char_1"];
 assert.deepEqual(getCinematicSceneContractIssues(scene, 10, ProjectLanguage.EN), []);
 assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Người kể: Anh ấy bước đi." }, 10, ProjectLanguage.VI).some((issue) => issue.includes("third_person_narration_forbidden")));
 assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Chúng ta đi ngay." }, 10, ProjectLanguage.EN).some((issue) => issue.includes("must_be_english")));

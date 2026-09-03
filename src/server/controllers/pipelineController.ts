@@ -1189,7 +1189,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const projectLanguage = isVi ? ProjectLanguage.VI : ProjectLanguage.EN;
       plannedScenes = _.map(repairCinematicStoryboardContract(plannedScenes, projectLanguage, clipDurationSeconds), (scene) => ({
         ...scene,
-        generationPrompt: createCinematicVideoPrompt(scene, scene.prompt, GenerateType.Video, clipDurationSeconds),
+        generationPrompt: createCinematicVideoPrompt(scene, scene.prompt, GenerateType.Video, clipDurationSeconds, characters),
       }));
       const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);

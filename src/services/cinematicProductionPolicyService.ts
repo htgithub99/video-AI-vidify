@@ -5,7 +5,6 @@ import {
   CINEMATIC_DEFAULT_SOUND_CUES,
   CINEMATIC_DEFAULTS,
   CINEMATIC_DIALOGUE_CONFIG,
-  CINEMATIC_DIALOGUE_FALLBACKS,
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_POLICY_REQUIRED_FIELDS,
   hasCinematicCombatAction,
@@ -67,6 +66,8 @@ export const getCinematicSceneContractIssues = (scene: StoryboardScene, requeste
   });
   if (!_.isBoolean(scene.lipSyncRequired)) issues.push(`${scene.id}:lipSyncRequired:missing`);
   if (!_.isArray(scene.soundDesignCues) || _.isEmpty(scene.soundDesignCues)) issues.push(`${scene.id}:soundDesignCues:missing`);
+  if (_.isEmpty(scene.characterIds)) issues.push(`${scene.id}:characterIds:dialogue_speaker_required`);
+  if (!_.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode))) issues.push(`${scene.id}:dialogueMode:character_dialogue_required`);
   if (_.isEqual(scene.dialogueMode, "on_screen_dialogue")) {
     if (_.isEmpty(_.trim(scene.spokenDialogue))) issues.push(`${scene.id}:spokenDialogue:missing`);
     if (_.isEmpty(_.trim(scene.speakerCharacterId))) issues.push(`${scene.id}:speakerCharacterId:missing`);
@@ -155,6 +156,14 @@ export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], 
   const minimumDialogueScenes = Math.max(1, Math.ceil(characterLedScenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
   if (_.gt(characterLedScenes.length, 1) && _.lt(dialogueSceneCount, minimumDialogueScenes))
     issues.push(`storyboard:dialogue_coverage:requires_at_least_${minimumDialogueScenes}_playable_dialogue_scenes`);
+  const dialogueOwners = _.groupBy(
+    _.filter(scenes, (scene) => !_.isEmpty(_.trim(scene.spokenDialogue))),
+    (scene) => _.lowerCase(_.trim(scene.spokenDialogue)),
+  );
+  _.forEach(dialogueOwners, (matchingScenes) => {
+    if (_.size(matchingScenes) < 2) return;
+    _.forEach(_.tail(matchingScenes), (scene) => issues.push(`${scene.id}:spokenDialogue:duplicate_story_line`));
+  });
   _.forEach(_.tail(scenes), (scene, index) => {
     const previous = scenes[index];
     if (!_.isEqual(previous.sequenceId || previous.chapterId, scene.sequenceId || scene.chapterId)) return;
@@ -510,66 +519,15 @@ export const applyCinematicContinuityHandoffs = (scenes: StoryboardScene[]): Sto
   });
 };
 
-const applyFallbackDialogue = (scene: StoryboardScene, language: ProjectLanguage): StoryboardScene => {
-  const speakerCharacterId = _.first(scene.characterIds);
-  if (_.isEmpty(speakerCharacterId)) return scene;
-  const spokenDialogue = _.isEqual(language, ProjectLanguage.VI) ? CINEMATIC_DIALOGUE_FALLBACKS.vi : CINEMATIC_DIALOGUE_FALLBACKS.en;
-  const beats = _.cloneDeep(scene.cinematicBeats || []);
-  const dialogueBeatIndex = Math.min(1, Math.max(0, beats.length - 1));
-  if (beats[dialogueBeatIndex]) {
-    beats[dialogueBeatIndex] = {
-      ...beats[dialogueBeatIndex],
-      dialogueMode: "on_screen_dialogue",
-      spokenDialogue,
-      speakerCharacterId,
-      lipSyncRequired: true,
-    };
-  }
-  return {
-    ...scene,
-    subtitle: spokenDialogue,
-    dialogueMode: "on_screen_dialogue",
-    spokenDialogue,
-    speakerCharacterId,
-    lipSyncRequired: true,
-    cinematicBeats: beats,
-  };
-};
-
 export const repairCinematicStoryboardContract = (
   scenes: StoryboardScene[],
-  language: ProjectLanguage,
+  _language: ProjectLanguage,
   requestedDuration?: string | number,
 ): StoryboardScene[] => {
   const structurallyRepairedScenes = _.map(scenes, (sourceScene, index) => {
     const scene = _.cloneDeep(sourceScene);
     const action = scene.visibleAction || scene.script || CINEMATIC_DEFAULTS.VISIBLE_ACTION;
-    const choreographyText = _.join(
-      _.compact([scene.script, scene.prompt, scene.visibleAction, scene.reaction, scene.actionStartState, scene.actionEndState, ..._.flatMap(scene.cinematicBeats || [], (beat) => [beat.visibleAction, beat.reaction])]),
-      " ",
-    );
-    const choreographyNeedsRepair =
-      hasCinematicCombatAction(choreographyText) &&
-      _.some(
-        [
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.TARGET_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.FOOTWORK_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WEIGHT_TRANSFER_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.WIND_UP_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OWNERSHIP_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONTACT_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REACTION_PATTERN,
-          CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.OUTCOME_PATTERN,
-        ],
-        (pattern) => !pattern.test(choreographyText),
-      );
-    const reaction = _.join(
-      _.compact([
-        scene.reaction || scene.actionEndState || CINEMATIC_DEFAULTS.REACTION,
-        choreographyNeedsRepair ? CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REPAIR_SEQUENCE : "",
-      ]),
-      " ",
-    );
+    const reaction = scene.reaction || scene.actionEndState || CINEMATIC_DEFAULTS.REACTION;
     const sourceBeats = ensureValidCinematicBeats(scene, [scene], requestedDuration);
     const cinematicBeats = _.map(sourceBeats, (beat, beatIndex) => ({
       ...beat,
@@ -580,9 +538,6 @@ export const repairCinematicStoryboardContract = (
       cameraAngle: beat.cameraAngle || scene.cameraAngle || "eye level",
       visibleAction: beat.visibleAction || action,
       reaction: beat.reaction || (beatIndex > 0 ? reaction : ""),
-      ...(choreographyNeedsRepair && beatIndex === sourceBeats.length - 1
-        ? { visibleAction: _.join(_.compact([beat.visibleAction, CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.REPAIR_SEQUENCE]), " "), reaction }
-        : {}),
       transition: beat.transition || (beatIndex > 0 ? "match_cut" : "hard_cut"),
       dialogueMode: beat.dialogueMode || "silent_action",
       spokenDialogue: beat.spokenDialogue || "",
@@ -610,18 +565,5 @@ export const repairCinematicStoryboardContract = (
       cinematicBeats,
     };
   });
-  const repairedScenes = applyCinematicContinuityHandoffs(structurallyRepairedScenes);
-  const characterLedScenes = _.filter(repairedScenes, (scene) => !_.isEmpty(scene.characterIds));
-  const minimumDialogueScenes = Math.max(1, Math.ceil(characterLedScenes.length * CINEMATIC_POLICY_CONFIG.MIN_DIALOGUE_SCENE_RATIO));
-  const dialogueSceneCount = _.size(
-    _.filter(characterLedScenes, (scene) => _.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode)) && !_.isEmpty(_.trim(scene.spokenDialogue))),
-  );
-  const missingDialogueSceneCount = Math.max(0, minimumDialogueScenes - dialogueSceneCount);
-  if (_.isEqual(missingDialogueSceneCount, 0)) return repairedScenes;
-  const dialogueCandidates = _.sortBy(
-    _.filter(characterLedScenes, (scene) => !_.includes(CINEMATIC_DIALOGUE_CONFIG.MODES, _.toString(scene.dialogueMode))),
-    [(scene) => (hasSceneAsset(scene) ? 1 : 0), (scene) => _.findIndex(repairedScenes, { id: scene.id })],
-  );
-  const repairIds = new Set(_.map(_.take(dialogueCandidates, missingDialogueSceneCount), "id"));
-  return _.map(repairedScenes, (scene) => (repairIds.has(scene.id) ? applyFallbackDialogue(scene, language) : scene));
+  return applyCinematicContinuityHandoffs(structurallyRepairedScenes);
 };

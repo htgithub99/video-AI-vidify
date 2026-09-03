@@ -63,7 +63,8 @@ const repairedFightScene = repairCinematicStoryboardContract(
   "vi" as any,
   "10s",
 )[0];
-assert(!getCinematicSceneContractIssues(repairedFightScene, "10s").some((issue) => issue.includes(":actionChoreography:")));
+assert(getCinematicSceneContractIssues(repairedFightScene, "10s").some((issue) => issue.includes(":actionChoreography:")));
+assert(!JSON.stringify(repairedFightScene).includes("foreground attacker"));
 assert(
   !getCinematicSceneContractIssues(
     { id: "retreat_order", script: "The emperor orders his soldiers to retreat while the hero approaches the throne." } as any,
