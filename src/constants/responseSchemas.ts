@@ -1,6 +1,76 @@
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
 const stringArraySchema = { type: "array", items: stringSchema } as const;
+const characterTimelineStageSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "label", "outfit", "expressionRange", "posture", "visibleCondition"],
+  properties: {
+    id: stringSchema,
+    label: stringSchema,
+    outfit: stringSchema,
+    expressionRange: stringSchema,
+    posture: stringSchema,
+    visibleCondition: stringSchema,
+  },
+} as const;
+const cinematicCharacterSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "id",
+    "name",
+    "narrativeRole",
+    "genderPresentation",
+    "ageRange",
+    "ethnicitySkinTone",
+    "bodyBuild",
+    "faceShape",
+    "eyes",
+    "nose",
+    "hair",
+    "signatureClothing",
+    "accessories",
+    "colorPalette",
+    "silhouette",
+    "description",
+    "prompt",
+    "referenceGenerationPrompt",
+    "timelineStages",
+  ],
+  properties: {
+    id: stringSchema,
+    name: stringSchema,
+    narrativeRole: stringSchema,
+    genderPresentation: stringSchema,
+    ageRange: stringSchema,
+    ethnicitySkinTone: stringSchema,
+    bodyBuild: stringSchema,
+    faceShape: stringSchema,
+    eyes: stringSchema,
+    nose: stringSchema,
+    hair: stringSchema,
+    signatureClothing: stringSchema,
+    accessories: stringSchema,
+    colorPalette: stringSchema,
+    silhouette: stringSchema,
+    description: stringSchema,
+    prompt: stringSchema,
+    referenceGenerationPrompt: stringSchema,
+    timelineStages: { type: "array", minItems: 1, items: characterTimelineStageSchema },
+  },
+} as const;
+
+export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["characters", "characterAnalysis", "characterSpecs"],
+  properties: {
+    characters: { type: "array", minItems: 1, maxItems: 3, items: cinematicCharacterSchema },
+    characterAnalysis: stringSchema,
+    characterSpecs: stringSchema,
+  },
+} as const;
 const narrativeBeatTypeSchema = {
   type: "string",
   enum: ["hook", "setup", "temptation", "decision", "reward", "escalation", "reversal", "false_victory", "collapse", "payoff"],
@@ -204,6 +274,48 @@ export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
     emotionalArcScore: numberScoreSchema,
     conversationalScore: numberScoreSchema,
     hookPayoffScore: numberScoreSchema,
+    warnings: stringArraySchema,
+    suggestedPatches: stringArraySchema,
+  },
+} as const;
+
+const cinematicScreenplayChapterSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "title", "scriptSegment"],
+  properties: {
+    id: stringSchema,
+    title: stringSchema,
+    scriptSegment: stringSchema,
+  },
+} as const;
+
+export const FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "scriptSegment",
+    "chapters",
+    "continuityScore",
+    "repetitionScore",
+    "factualityScore",
+    "emotionalArcScore",
+    "conversationalScore",
+    "hookPayoffScore",
+    "blockingErrors",
+    "warnings",
+    "suggestedPatches",
+  ],
+  properties: {
+    scriptSegment: stringSchema,
+    chapters: { type: "array", minItems: 3, items: cinematicScreenplayChapterSchema },
+    continuityScore: numberScoreSchema,
+    repetitionScore: numberScoreSchema,
+    factualityScore: numberScoreSchema,
+    emotionalArcScore: numberScoreSchema,
+    conversationalScore: numberScoreSchema,
+    hookPayoffScore: numberScoreSchema,
+    blockingErrors: stringArraySchema,
     warnings: stringArraySchema,
     suggestedPatches: stringArraySchema,
   },

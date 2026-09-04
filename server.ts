@@ -15,6 +15,7 @@ import licenseRouter from "./src/server/routes/licenseRoutes.js";
 import { requireLicense } from "./src/server/middlewares/requireLicense.js";
 import { API_ROUTES } from "./src/constants/apiRoutes.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
+import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "./src/types.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { SecurityConstants } from "./src/constants/security.js";
 import { getResolvedLicenseKey } from "./src/server/services/apiKeyResolver.js";
@@ -122,7 +123,29 @@ app.use((req, _res, next) => {
   const groqKey = (req.headers[SERVER_CONFIG.HEADER_GROQ_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const licenseKey = getResolvedLicenseKey(req);
-  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey }, next);
+  const executionSource = _.get(req.body, "aiExecution", {});
+  const configSource = _.get(req.body, "config", {});
+  const visualSource = _.get(req.body, "visualConfig", {});
+  const aiExecutionMode = _.get(executionSource, "mode") || _.get(req.body, "planningExecutionMode") || _.get(configSource, "planningExecutionMode") || _.get(visualSource, "planningExecutionMode");
+  const aiRoomProvider = _.get(executionSource, "provider") || _.get(req.body, "planningFallbackProvider") || _.get(configSource, "planningFallbackProvider") || _.get(visualSource, "planningFallbackProvider");
+  const aiRoomModel = _.get(executionSource, "model") || _.get(req.body, "planningChatModel") || _.get(configSource, "planningChatModel") || _.get(visualSource, "planningChatModel");
+  const aiRoomProjectId = _.toString(_.get(executionSource, "projectId") || _.get(req.body, "projectId") || _.get(req.body, "localProjectId") || "pipeline-room");
+  const aiRoomChromeHeadless = Boolean(_.get(executionSource, "chromeHeadless") ?? _.get(req.body, "planningChromeHeadless") ?? _.get(configSource, "planningChromeHeadless") ?? _.get(visualSource, "planningChromeHeadless"));
+  requestContext.run(
+    {
+      geminiKey,
+      cerebrasKey,
+      groqKey,
+      ai33Key,
+      licenseKey,
+      aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined,
+      aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined,
+      aiRoomModel,
+      aiRoomProjectId,
+      aiRoomChromeHeadless,
+    },
+    next,
+  );
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));

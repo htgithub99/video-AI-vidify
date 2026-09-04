@@ -264,31 +264,32 @@ export const getCinematicVideoPlanningPrompt = (
   clipDurationSeconds: number = 10,
   dialogueDirective?: string,
   dialogueLanguage?: string,
-): string => `You are the creative film director. Return ONLY one raw JSON array with exactly the supplied scene IDs and no Markdown or commentary. The application separately compiles your creative decisions into the final technical video prompt, IDs, timing, continuity locks, and platform constraints.
-
-${UNTRUSTED_INPUT_RULE}
-
-Characters: ${charactersJson || "No character cards supplied"}
-Visual Bible: ${visualBibleJson || "Not supplied"}
-Neighbor continuity: ${continuityContext || "Not supplied"}
-${correctionIssuesJson ? `The previous answer failed these creative checks. Rewrite only the supplied failed scenes and resolve every issue: ${correctionIssuesJson}` : ""}
-
-For each scene, preserve its literal story event and decide only the creative content: character identity, objective, readable action, caused reaction, evidence, shot purpose, 3 to 5 chronological beats, and character dialogue. Use natural cinematic English except spokenDialogue. Every clip must contain one short, story-specific line spoken by a named character. The line must change the immediate objective, danger, relationship or viewer understanding; never use narration, voice-over, generic filler or a repeated catchphrase.${dialogueDirective && dialogueLanguage ? `
-Dialogue assignment for this request: ${dialogueDirective}
-Dialogue language lock: every spokenDialogue value must use natural ${dialogueLanguage}. Keep all visual and directorial fields in English.
-` : ""}
-
-Each scene represents one paid ${clipDurationSeconds}-second video. Plan 3 to 5 chronological beats. Beat 1 establishes geography and objective; middle beats add one readable cause, obstacle, evidence, decision, contact, or evasion; the final beat must be payoff, reaction, or reveal and visibly prove a stable consequence. Do not invent technical timing or IDs. Use simple physically playable actions and persistent character, wardrobe, prop, damage, lighting, and geography details in prompt.
-
-For combat, pursuit, attack, or defence, describe a complete readable chain across the beats: foreground initiator -> explicit target -> directional decisive move -> visible contact or evasion -> caused target reaction -> stable aftermath. Keep at most two foreground combatants, one action axis, clear limb or weapon ownership, and non-graphic platform-safe consequences. Do not substitute posing, weapon waving, camera shake, smoke, light, or crowd motion for the exchange. No gore, exposed wounds, dismemberment, torture, prolonged suffering, or violence toward children or vulnerable people.
-
-Return every field in this compact creative shape. Do not return generationPrompt, timing, sequence IDs, shot IDs, continuity IDs, or other compiler-owned fields:
-[{"id":"exact_scene_id","prompt":"60-95 word English creative brief naming each visible character and identity anchors","visualIntent":"viewer understanding","visibleAction":"observable subject verb target object and result","reaction":"visible caused response","storyEvidence":"specific physical evidence","visualHook":"story-grounded focal event","characterIds":[],"shotPurpose":"setup|obstacle|decision|escalation|reveal|climax|reaction|payoff|transition","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact short line or empty","speakerCharacterId":"matching visible character ID or empty","lipSyncRequired":false,"cinematicBeats":[{"shotRole":"master|coverage|reaction|insert|transition|payoff","shotSize":"motivated shot size","cameraAngle":"motivated angle","visibleAction":"one new physical action and result","reaction":"caused response","transition":"hard_cut|match_cut|motivated_reframe","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact line or empty","speakerCharacterId":"matching visible character ID or empty","lipSyncRequired":false}],"assetStrategy":"ai_generated"}]
-
-on_screen_dialogue requires lipSyncRequired=true; all other modes require false. A silent beat has empty spokenDialogue and speakerCharacterId. Every visible named story character must use an existing character ID and be named in prompt. Do not return until every supplied scene has one complete creative object.${dialogueDirective ? "\nUse only concise production sounds implied by the action; the compiler supplies the technical audio policy." : ""}
-
-Input scenes:
-${chunkJson}`;
+): string => `${getOptimizePromptsBatchPrompt(
+  "",
+  "Use the complete AI-authored Visual Bible and character cards as the cinematic style and identity lock.",
+  chunkJson,
+  AspectRatio.SixteenNine,
+  charactersJson || undefined,
+  false,
+  undefined,
+  undefined,
+  undefined,
+  "auto",
+  "auto",
+  "default",
+  "Identity-only character reference images may be attached at generation time.",
+  visualBibleJson,
+  continuityContext,
+  "",
+  "",
+  correctionIssuesJson,
+  VideoGenre.CINEMATIC_EPISODE,
+  clipDurationSeconds,
+)}${
+  dialogueDirective && dialogueLanguage
+    ? `\n\n[DIALOGUE ASSIGNMENT]\n${dialogueDirective}\nEvery spokenDialogue value must use natural ${dialogueLanguage}; all visual and directorial prose remains English.`
+    : ""
+}`;
 
 export const getCinematicVideoPlanningRepairPrompt = (
   sourceSceneJson: string,
@@ -298,22 +299,19 @@ export const getCinematicVideoPlanningRepairPrompt = (
   clipDurationSeconds: number = 10,
   dialogueDirective: string = "Dialogue is optional when it is not naturally supported by this story beat.",
   dialogueLanguage: string = "the source screenplay language",
-): string => `Continue as the creative film director in this same room. Rewrite only the supplied failed scene objects as complete creative plans; do not return patches.
+): string => `Continue as the creative film director in this same room. Rewrite every supplied failed scene as one complete production artifact; do not return patches.
 
 Exact validation failures: ${issuesJson}
 Dialogue assignment: ${dialogueDirective}
 Dialogue language lock: every spokenDialogue value must use natural ${dialogueLanguage}. Keep visual and directorial fields in English.
 Source scene: ${sourceSceneJson}
 Neighbor continuity: ${continuityContext || "Not supplied"}
-Current response to replace: ${previousResponseJson}
-
-Return exactly one raw JSON array containing one corrected creative object for every supplied source scene ID, using the same compact shape as the initial request. Preserve the literal story event and character identities. visibleAction and every beat must use an observable physical verb and create new information. If dialogue is required, author one short natural line faithful to the scene intent, assign its visible character speaker, use on_screen_dialogue or same-location off_screen_dialogue, and never turn narration into voice-over. For conflict, include initiator, target, contact or evasion, caused reaction, and stable non-graphic aftermath across 3 to 5 chronological beats.
+Previous rejected complete scene: ${previousResponseJson || "Not supplied"}
+Return exactly one raw JSON array containing one corrected object for every supplied source scene ID, using the complete field contract from the initial request. Preserve the literal story event, exact scene ID, character identities, dialogue assignment and the AI-authored master continuity states. Rewrite the complete scene object and generationPrompt from the first word through the final constraint; do not return field patches. Author every timing boundary, sound cue, action, reaction and dialogue value needed by the final object. visibleAction and every beat must describe observable physical action and create new information. If dialogue is required, author one short natural line faithful to the scene intent, assign its visible character speaker, use on_screen_dialogue or same-location off_screen_dialogue, and never turn narration into voice-over. For conflict, make the initiator, target, contact or evasion, caused reaction and stable non-graphic aftermath visually unambiguous across 3 to 5 chronological beats without relying on mandatory keywords.
 
 Each corrected scene represents one ${clipDurationSeconds}-second generated clip; choose creative beats that can play clearly within that duration.
 
-Do not return generationPrompt, timing, IDs, continuity locks, sound policy, or safety boilerplate. Application code deterministically compiles those technical fields after your creative plan passes.
-
-Output only the complete valid JSON array. No Markdown, explanation, placeholders, ellipses, or references to earlier text.`;
+The application forwards generationPrompt unchanged. It will not compile, concatenate, append or invent any creative or technical field. Output only the complete valid JSON array. No Markdown, explanation, placeholders, ellipses, or references to earlier text.`;
 
 export const getOptimizePromptsBatchPrompt = (
   visualStyle: string,
@@ -371,12 +369,12 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 - MOTIVATED BRIDGE SHOT: A change of location, time, weather or story phase requires a visually motivated bridge, establishing shot, insert or action match that tells the viewer where and when the story moved. Never jump between unrelated spaces merely because two clips are adjacent.
 - CINEMATIC SEQUENCE CONTRACT: Group chronologically continuous dramatic scenes under one sequenceId and give every scene a unique shotId. Plan a usable master/coverage/reaction/insert/payoff relationship instead of isolated beauty shots. For every shot, specify exact character blocking, eyeline and screen direction, observable start state and end state, and locked location/wardrobe/prop state. Never cross the action axis or teleport a person or prop without a motivated transition.
 - DIALOGUE & PERFORMANCE CONTRACT: Classify dialogueMode. For AI Film, narration is forbidden: use only on_screen_dialogue, off_screen_dialogue or silent_action. Use on_screen_dialogue only when a named visible character truly speaks the exact supplied line; use off_screen_dialogue only for a named character physically present in the same location; copy the exact short line into spokenDialogue and identify speakerCharacterId. Set lipSyncRequired=true only for on-screen speech. Silent action contains no spoken words. Never generate voice-over, narrator commentary, trailer narration or invented factual quotations.
-- PRODUCTION SOUND CONTRACT: Return zero to three soundDesignCues describing only story-synchronous production sound, ambience or a motivated accent that can be heard in this exact shot. Never request generic trailer booms, repetitive whooshes, beeps or constant impacts.
-- MEDIA SOURCE DIRECTOR: For factual, historical, documentary, science, news, review, architecture, true-crime and real-person topics, deliberately assign archival to identifiable people, places, buildings, artifacts, maps, plans, documents and present-day evidence. For history, prefer licensed photographs of surviving sites, excavations, museum artifacts, inscriptions, original documents and maps; never treat a movie still, television reenactment, fan artwork, publisher graphic or generic costume scene as authentic evidence. Every archivalSearchQuery must name the exact evidence needed and its relationship to the narration. Use ai_generated only for explicit reconstruction, unavailable historical moments, conceptual mechanisms or connective illustration. Across history/documentary/architecture sequences, target authentic licensed evidence for roughly two scenes in every three when suitable evidence exists.
+- PRODUCTION SOUND CONTRACT: For cinematic episodes, return one to three soundDesignCues describing only story-synchronous production sound, ambience or a motivated accent that can be heard in this exact shot. Never request generic trailer booms, repetitive whooshes, beeps or constant impacts.
+- MEDIA SOURCE DIRECTOR: ${_.isEqual(editorialContext, VideoGenre.CINEMATIC_EPISODE) ? "This is a generated-film production: set assetStrategy to ai_generated for every clip and leave archivalSearchQuery and archivalRationale empty. Do not substitute still archival imagery for a cinematic video clip." : "For factual, historical, documentary, science, news, review, architecture, true-crime and real-person topics, deliberately assign archival to identifiable people, places, buildings, artifacts, maps, plans, documents and present-day evidence. For history, prefer licensed photographs of surviving sites, excavations, museum artifacts, inscriptions, original documents and maps; never treat a movie still, television reenactment, fan artwork, publisher graphic or generic costume scene as authentic evidence. Every archivalSearchQuery must name the exact evidence needed and its relationship to the narration. Use ai_generated only for explicit reconstruction, unavailable historical moments, conceptual mechanisms or connective illustration."}
 - HISTORICAL PRESENCE LOCK: A real historical person may appear only in a beat where the narration or immediate continuing context places that person there and the date falls within their lifetime. Never use one famous person as a decorative protagonist across later events, battles or institutions they did not witness.
 
 [GEMINI PROMPT GOLDEN FORMULA - DEEP STORY & DIALOGUE ALIGNMENT]
-Write one natural, continuous English paragraph of 60-95 words in this exact order. Do not print section labels:
+Write one continuous 60-95 word English paragraph in natural prose and in this exact order. Do not print section labels:
 1. [Style Anchor]: Start with the PROJECT STYLE LOCK instruction at the beginning. NEVER prefix the prompt with style labels like "Line art:", "Palette:", "Rendering:", or "Medium:".
 2. [Character Identity]: Name every recurring character and include only the fixed identity markers from the matching character card. Clothing follows the current place, time and activity while preserving established signature markers. Never use raw IDs such as char_1 in prompt prose.
 3. [Visible Action]: Depict one concrete physical action that directly illustrates the exact current narration beat.
@@ -400,6 +398,7 @@ Write one natural, continuous English paragraph of 60-95 words in this exact ord
 - ONE-FRAME READABILITY: A viewer should understand the scene's subject, action and consequence within one second at thumbnail size. Use one dominant focal event and no more than two supporting evidence elements; avoid clutter and generic decorative symbols.
 - EDITORIAL SHOT RHYTHM: Do not use the same shotPurpose, shotSize, cameraAngle, subject blocking, or location treatment for more than two consecutive scenes. Use close reaction shots for emotional turns, inserts for objects/evidence/time, wide shots for isolation or geography, over-the-shoulder shots for screen interactions, and reveal compositions for reversals.
 - CINEMATIC HANDOFF: Inside one sequence, actionEndState of shot N and actionStartState of shot N+1 must describe the same observable handoff moment before the next action advances. Keep character blocking, screen direction, reciprocal eyelines, prop ownership/hand/condition, wardrobe wear/damage, set geography, time, weather and motivated light direction continuous. Never reset characters to a neutral pose at the start of the next shot. Start a new sequenceId only for a real change of place, time, or story event.
+- MASTER SEQUENCE AUTHORITY: When Neighboring scenes contains masterSequence, it is the shared AI-authored sequence contract for every parallel room. Preserve its exact scene IDs, screenplay events, cast/location/prop membership, dialogue assignments and opening/closing continuity states. Expand the current scene into a production-ready artifact without independently changing facts that another worker room must share.
 - ACTION CHOREOGRAPHY LOCK: When a scene contains pursuit, combat, attack, defence or physical conflict, name one foreground initiator and one explicit target. Show the exact movement direction, weapon or limb ownership, visible contact or readable evasion, the target's caused physical reaction, and a stable changed end position. Structure its beats as readable geography/threat -> decisive move -> contact/evasion -> reaction -> aftermath. Never substitute posing, generic weapon waving, unrelated crowd motion, camera shake, smoke or light effects for the actual exchange. Keep at most two foreground combatants and carry the aftermath into actionEndState for the next clip.
 - PLATFORM-SAFE ACTION: Keep combat non-graphic and suitable for mainstream video-generation platforms. No gore, exposed wounds, dismemberment, torture detail, cruelty fetish or prolonged suffering. Prefer blocks, evasions, weapon impacts, sparks, dust, environmental damage, silhouettes, sound and clear positional consequences. Violence must serve story clarity and may never target children or protected vulnerable people.
 - EDIT-POINT INTENT: Request hard_cut for continuous action, dialogue, eyeline or reaction; request match_cut for an observable action/prop handoff; request cross_dissolve only for a genuine reflective passage or soft time transition; request fade_black only for a chapter, major time jump or decisive ending. Never choose a transition for variety alone. Preserve continuous room tone or motivated ambience across shots in the same sequence so ${clipDurationSeconds}-second generation boundaries are not audible.
@@ -411,7 +410,7 @@ Write one natural, continuous English paragraph of 60-95 words in this exact ord
 - DIRECT CAUSE-AND-EFFECT: Do not ask the model to infer a complicated off-screen mechanism or simulate multiple projectiles colliding. Show one legible cause contacting one visible target and one immediate physical result: a shot hits an exposed power core, the core ruptures, the gate opens; a hand pulls a lever, the lock disengages; a warning light changes, the character reacts. The final frame must make the causal result unmistakable without narration.
 - FILM STORY CLARITY: Each ${clipDurationSeconds}-second clip must have a readable mini-arc: establish who/where, show a concrete cause or decision, then reveal its immediate consequence. Describe performance, blocking, physical evidence, environment behavior and motivated sound in enough specificity that a viewer can understand the beat without narration. Avoid dry generic actions such as standing, walking, looking, holding or turning unless followed by a story-changing result.
 - STORY-BLUEPRINT LOCK: Read the full story context and neighboring continuity before assigning each clip. Preserve the protagonist objective, opposing force, escalation, irreversible turn, climax and earned aftermath. Assign one distinct shotPurpose to each clip from setup, obstacle, decision, escalation, reveal, climax, reaction, payoff or transition. Adjacent clips may share location and continuity but must not repeat the same dramatic job, visible action, evidence or final consequence.
-- FILM COVERAGE GRAMMAR: Choose the three internal shots from the scene's dramatic function. Dialogue: spatial master -> motivated speaker/prop coverage -> listener reaction or changed decision. Discovery: approach/context -> evidence insert or reveal -> consequence reaction. Action: readable geography/threat -> one decisive contact/evasion -> physical result and new position. Suspense: source of uncertainty -> controlled investigation -> reveal or escalated uncertainty. Never use three arbitrary angles, three simultaneous actions, or a cut that does not reveal new information.
+- FILM COVERAGE GRAMMAR: Choose the smallest sufficient set of three to five internal shots from the scene's dramatic function. Dialogue: spatial master -> motivated speaker/prop coverage -> listener reaction or changed decision. Discovery: approach/context -> evidence insert or reveal -> consequence reaction. Action: readable geography/threat -> one decisive contact/evasion -> physical result and new position. Suspense: source of uncertainty -> controlled investigation -> reveal or escalated uncertainty. Never use arbitrary angles, simultaneous incompatible actions, or a cut that does not reveal new information.
 - ESSENTIAL SCREEN EVIDENCE: When the story depends on a contract, message, map, status or control changing, make that change visually provable. Prefer a simple portrait, color-coded state, recognizable symbol, progress state or physical indicator that can change on camera without requiring readable prose. If exact words are genuinely essential, set textAllowed=true and return only the exact short textOverlay in the selected user language; never simultaneously forbid text and require viewers to read a screen.
 - GENERATIVE-VIDEO ACTION SAFETY: Design action for reliable comprehension, not maximum choreography. Never place a whole battle, extended chase, wrestling/grappling, acrobatic exchange, vehicle collision, crowd collision or multiple simultaneous attacks inside one generated clip. Break it into anticipation/geography -> one short decisive motion -> stable consequence. The complex instant may happen between cuts and be sold by an insert, reaction, off-screen impact, displaced prop, environmental debris/light or motivated sound. Use at most two well-defined foreground combatants, one screen direction, one action axis, grounded feet and explicit hand/weapon/prop ownership; keep additional forces distant, obscured or soft-focus.
 - HERO-PROP VISUAL LOCK: For every recurring weapon, vehicle, device or other story-critical prop, repeat one concise immutable design phrase in the premise, every shot where it remains visible, and the continuity sentence. Lock its category, scale, material/color, one distinctive shape or light feature, owner, hand/grip and condition. Never alternate between pistol/rifle, one-hand/two-hand grip, intact/damaged, or small/large versions without an explicit on-screen change.
@@ -443,43 +442,25 @@ Return the COMPLETE corrected JSON array for EVERY input scene below. Do not ret
 [CINEMATIC AI FILM VIDEO PROMPT RULES]:
 For cinematic episodes, the short 60-95 word image field named "prompt" is planning metadata only. It is NEVER the deliverable sent to Flow. You MUST author the "generationPrompt" field as the complete production-ready Google Veo 3 prompt. Return the final prompt fully written from beginning to end; never return a summary, placeholder, partial correction, reference to cinematicBeats, or instructions for application code to assemble, shorten, append to, or repair it later. The application validates this field and sends it unchanged.
 
-The generationPrompt MUST follow this exact continuous format and section order for every scene. Preserve the line breaks and timed-shot headings inside the JSON string. Replace angle-bracket placeholders with scene-specific prose and do not print the angle brackets:
-
-Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur.
-<Character identity, immediate objective, story-specific location, geography, atmosphere, persistent weapon/props and motivated light in one compact paragraph.>
-Create one continuous ${clipDurationSeconds}-second cinematic sequence with exactly N chronological shots and exactly N-1 motivated cuts.
-**<start>–<end> — Shot 1: <shot size>, <camera angle>**
-<Opening geography, character position, screen direction, one readable physical action, and the new information produced by it.>
-**<start>–<end> — Shot 2: <shot size>, <camera angle>**
-Continue directly from Shot 1. <Begin from Shot 1's exact end state, advance one simple decisive action, and specify the motivated cut or action/eyeline match.>
-**<start>–${clipDurationSeconds}.0s — Shot N: <shot size>, <camera angle>**
-Continue directly from the previous shot. <Show the visible consequence, discovery, reaction, decision or changed objective that completes this clip's mini-arc.>
-Maintain identical character identity, face, hairstyle, wardrobe (<exact current wardrobe>), weapon and props (<exact persistent props>), lighting direction, geography (<exact location state>), eyeline and screen direction across all shots.
-Exactly N shots. Exactly N-1 clean motivated cuts. No extra shots, montage, location reset, repeated action, camera shake, whip-pan, dissolve, flash transition, crash zoom, morphing, duplicated characters, extra limbs, distorted face, wardrobe or weapon changes.
-<Exact dialogue/audio rule for this scene.>
-Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.
-
-Write generationPrompt in rich, self-contained cinematic English (180-320 words) specifically tailored for Google Veo 3:
-1. Technical Foundation: "Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur."
-2. Scene Premise: State character blocking, location, and atmospheric lighting in 1-2 sentences.
-   For an invented named character, state once that they are an original fictional character and not a real person or celebrity. Never use this marker for a real historical or documentary subject.
-3. Sequence Instruction: State "Create one continuous ${clipDurationSeconds}-second cinematic sequence with exactly N chronological shots and exactly N-1 motivated cuts." (where N is 3, 4, or 5 chronological setups selected from the editorial needs).
-4. Chronological Setups (3 to 5 setups across exactly ${clipDurationSeconds}.0 seconds). Each later setup MUST explicitly say "Continue directly from Shot X" and begin from the previous setup's observable end state. AI must choose timing boundaries from action complexity, natural dialogue rate and the time needed to read the final consequence. Never copy a stock equal-interval timing pattern.
-5. Continuity: "Maintain identical character identity, face, hairstyle, wardrobe (<wardrobeState>), weapon and props (<propState>), lighting direction, geography (<locationState>), eyeline (<eyelineDirection>) and screen direction (<screenDirection>) across all shots."
-6. Strict Constraints: "Exactly N shots. Exactly N-1 clean motivated cuts. No extra shots, montage, location reset, repeated action, camera shake, whip-pan, dissolve, flash transition, crash zoom, morphing, duplicated characters, extra limbs, distorted face, wardrobe or weapon changes."
-7. Audio: If dialogue exists, specify the exact line and speaker with lipSyncRequired. If silent, state: "No dialogue, narration, voice-over, lip movement or background music. Only natural diegetic ambience and physical interactions: <soundDesignCues>."
-8. Text Policy: "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing."
-9. Mini-Arc Test: Shot 1 establishes pursuit/objective and geography; middle shots reveal an obstacle, evidence, decision or contact; the final shot must visibly prove a consequence or changed objective. A sequence of unrelated poses, repeated movement, or three cosmetic camera angles is invalid.
-10. Field Agreement: generationPrompt and cinematicBeats MUST contain the same shot count, exact timing boundaries, shot order, actions, dialogue, speaker, screen direction and final consequence. The generationPrompt is authoritative and must be usable when copied directly into Flow without any other field.
-11. Opening Readability: Reserve the opening 0.5-1.0 second of Shot 1 for a clear starting pose, geography, objective, action axis and hero prop before danger or movement begins.
-12. Motion Reliability: Use one simple achievable physical action per foreground character per shot. Simplify rolls, acrobatics, grappling, projectile collisions and multi-person combat into anticipation -> one decisive action -> stable visible result.
-13. Prop Lock: Repeat the same compact immutable prop description wherever the recurring prop appears, including exact type, scale, material/color, distinctive feature, owner, grip and condition.
-14. Named Character Reveal: When a named opponent or supporting character enters, expose one unique identity anchor and an observable reaction; do not represent that character only as an anonymous back, shadow or interchangeable extra.
-15. Edit Handoff: The clip opening must inherit the previous clip's observable state when continuity applies. The final shot must end on a stable visual and sound bridge that motivates the next clip while preserving screen direction, geography, damage, props and room tone.
+Author generationPrompt as scene-specific directorial prose, not copied boilerplate. It must be rich, self-contained cinematic English (180-500 words) tailored for Google Veo 3 and contain all of the following in a natural production order:
+1. A compact capture/rendering foundation including 24fps, an anamorphic or motivated cinema lens, realistic physics/materials, practical lighting and the selected visual style. Adapt these choices to the scene instead of repeating a stock paragraph.
+2. The immediate objective, exact named visible identities, character blocking, location geography, accumulated wardrobe/body/prop state and motivated light. For an invented named character, identify them once as an original fictional character, not a real person or celebrity; never apply that label to a real subject.
+3. One ${clipDurationSeconds}-second sequence with 3-5 AI-selected chronological shots and exactly one fewer motivated cuts than shots. Use explicit headings containing each start/end time and "Shot 1", "Shot 2", and so on. Choose timing from action complexity, natural speech rate and payoff readability; never divide time evenly by code or copy a stock timing pattern.
+4. Each later shot must inherit the preceding visible end state and then add new information. The final shot must visibly prove a consequence, discovery, changed relationship, decision or objective—not merely stop on a pose.
+5. A concise continuity lock covering face/identity, wardrobe/damage, prop ownership/condition, location geography, light direction, action axis, eyelines and screen direction. Express actual current values, never placeholders.
+6. Exact dialogue, named speaker, performance and lip synchronization when dialogue exists. Otherwise explicitly forbid dialogue, narration, voice-over and lip movement. Include only motivated production sound and stable ambience appropriate to the action.
+7. One compact scene-specific negative-constraint sentence covering extra shots, repeated action, location reset, morphing, duplicate anatomy/people, accidental identity/wardrobe/prop changes, unstable camera behavior and unwanted visible text/captions/logos/watermarks. Avoid long generic keyword dumps.
+8. generationPrompt and cinematicBeats must agree exactly on shot count, timing boundaries, action order, dialogue, speaker, spatial direction and final consequence. generationPrompt is authoritative and must work when sent alone, byte-for-byte, with no application-added suffix.
+9. Reserve enough of Shot 1 for readable starting geography and enough of the final shot for a stable consequence. Use one achievable action per foreground performer per shot; simplify acrobatics, grappling, projectile collisions and crowds into anticipation, one decisive motion and a legible result.
+10. End on a stable visual and sound bridge that motivates the next clip while preserving screen direction, geography, damage, props and room tone.
 For all other non-cinematic genres, return generationPrompt as an empty string.
 
-Output ONLY this JSON array shape:
-[{"id":"scene_id","prompt":"one continuous 60-95 word English paragraph following the required order without labels or --ar; only the exact textOverlay may use the selected user language","visualIntent":"what viewers understand from this exact story beat","visibleAction":"one clear physical action or observable change","reaction":"visible response or consequence","storyEvidence":"specific drawable evidence","visualHook":"story-grounded focal event","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"","shotPurpose":"setup","shotSize":"editorially motivated shot size","cameraAngle":"editorially motivated angle","composition":"clear focal hierarchy","locationId":"loc_id or empty string","propIds":[],"continuityFrom":"previous scene id or empty string","continuityNotes":"identity, action and prop continuity","lighting":"motivated light","sequenceId":"continuous event group","shotId":"unique production shot ID","shotRole":"master|coverage|reaction|insert|transition|payoff","dialogueMode":"on_screen_dialogue|off_screen_dialogue|silent_action","spokenDialogue":"exact line when dialogue exists","speakerCharacterId":"matching character ID or empty","lipSyncRequired":false,"characterBlocking":"positions, facing and movement","eyelineDirection":"stable gaze direction or not_applicable","screenDirection":"left_to_right|right_to_left|static_axis|not_applicable","actionStartState":"observable opening state inherited from continuity","actionEndState":"observable changed state that motivates the next clip","locationState":"persistent geography, time, weather and damage","wardrobeState":"current clothing and damage","propState":"owner, hand, position and condition","soundDesignCues":[],"cinematicBeats":[{"sourceSceneId":"scene_id","shotId":"shot_a","shotRole":"master","shotSize":"wide shot","cameraAngle":"eye level","visibleAction":"establish objective and opening state","reaction":"opening response","transition":"hard_cut","dialogueMode":"silent_action","spokenDialogue":"","speakerCharacterId":"","lipSyncRequired":false,"startSecond":0,"endSecond":${Number((clipDurationSeconds / 3).toFixed(2))}},{"sourceSceneId":"scene_id","shotId":"shot_b","shotRole":"coverage","shotSize":"motivated coverage","cameraAngle":"motivated angle","visibleAction":"continue from shot_a and change the situation","reaction":"caused response","transition":"match_cut","dialogueMode":"silent_action","spokenDialogue":"","speakerCharacterId":"","lipSyncRequired":false,"startSecond":${Number((clipDurationSeconds / 3).toFixed(2))},"endSecond":${Number(((clipDurationSeconds * 2) / 3).toFixed(2))}},{"sourceSceneId":"scene_id","shotId":"shot_c","shotRole":"payoff","shotSize":"motivated payoff shot","cameraAngle":"motivated angle","visibleAction":"continue and prove the final consequence","reaction":"final change","transition":"hard_cut","dialogueMode":"silent_action","spokenDialogue":"","speakerCharacterId":"","lipSyncRequired":false,"startSecond":${Number(((clipDurationSeconds * 2) / 3).toFixed(2))},"endSecond":${clipDurationSeconds}}],"assetStrategy":"archival only for verifiable evidence, otherwise ai_generated","archivalSearchQuery":"precise source query or empty","archivalRationale":"editorial reason"}]
+${
+  _.isEqual(editorialContext, VideoGenre.CINEMATIC_EPISODE)
+    ? `Output ONLY the complete raw JSON array. Every object must contain all fields in the enforced response schema. In particular, cinematicBeats must be an array of three to five complete objects containing sourceSceneId, shotId, shotRole, shotSize, cameraAngle, visibleAction, reaction, transition, dialogueMode, spokenDialogue, speakerCharacterId, lipSyncRequired, numeric startSecond and numeric endSecond. AI must choose every boundary from the actual action and dialogue: the first startSecond is 0, adjacent boundaries touch without gaps, and the final endSecond is ${clipDurationSeconds}. Never copy an example timing pattern, use equal divisions, emit placeholders, or omit a field. Set assetStrategy to ai_generated and leave both archival fields empty.`
+    : `Output ONLY the complete raw JSON array in this structural shape, filling every value yourself from the source scene:
+[{"id":"exact_scene_id","prompt":"one continuous 60-95 word English paragraph","visualIntent":"what viewers understand","visibleAction":"observable physical action and result","reaction":"visible caused response","storyEvidence":"specific drawable evidence","visualHook":"story-grounded focal event","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"","shotPurpose":"setup","shotSize":"motivated shot size","cameraAngle":"motivated camera angle","composition":"clear focal hierarchy","locationId":"","propIds":[],"continuityFrom":"","continuityNotes":"identity, geography and prop continuity","lighting":"motivated light","assetStrategy":"ai_generated","archivalSearchQuery":"","archivalRationale":""}]`
+}
 
 Input scenes:
 ${chunkJson}`;
@@ -623,6 +604,47 @@ Return JSON only with this exact structure:
 
 [COMPLETE SCRIPT]
 ${script}`;
+
+export const getFinalCinematicScreenplayPrompt = (
+  originalInput: string,
+  scriptPlanJson: string,
+  genre: string,
+  isVi: boolean,
+  targetWordCount: number,
+  targetChapterCount: number,
+): string => `You are the final authority for an original production screenplay. Write and internally edit the COMPLETE screenplay in one pass from the approved source and story plan. Your JSON response is the sole creative artifact used by production; application code will not join chapters, add dialogue, invent transitions, repair prose, or compile missing content.
+${UNTRUSTED_INPUT_RULE}
+
+OUTPUT LANGUAGE: ${isVi ? "Natural contemporary Vietnamese with complete correct diacritics" : "Natural idiomatic contemporary English"}.
+GENRE: ${genre || "Cinematic drama"}.
+TARGET LENGTH: 90%-110% of ${targetWordCount} words.
+CHAPTER CONTRACT: Return exactly ${targetChapterCount} chapters. Use the exact chapter IDs and titles from the approved story plan, in the same order.
+
+AUTHORITATIVE SCREENPLAY RULES:
+- scriptSegment must be the complete final screenplay, ready to hand unchanged to the storyboard director. Write playable physical action and attributed character dialogue, never narrator prose, a synopsis, a trailer, a recap, a YouTube hook, editorial notes, or commentary about what viewers will see.
+- Begin inside a concrete situation. Give the protagonist a visible objective and an opposing force. Escalate through causally linked choices, make the midpoint irreversible, make the climax result from the protagonist's decision, and end on a visible earned aftermath that pays off the opening dramatic question.
+- Every scene must change at least one production-trackable state: objective, relationship, information, location, body/wardrobe damage, prop owner/position/condition, threat, or consequence. Do not use atmosphere, walking, looking, posing, or repeated exposition as story progress.
+- Keep character voices distinct through vocabulary, rhythm, status and subtext. Dialogue must be concise, speakable, attributable to a named character, and must change the plan, relationship, danger or available information. Preserve silence and physical reaction when they are stronger than speech.
+- Preserve supported facts, names, numbers, chronology, causal relationships and user constraints. Never invent evidence, quotations, statistics, real-person conduct or outcomes. For fictional material, resolve contradictions through the approved story plan rather than adding unrelated lore.
+- Track every story-critical prop and accumulated physical change continuously. Show every transfer, loss, damage, entrance, exit and transformation cause on screen; nothing important may teleport, reset or change ownership between chapters.
+- Design action for generated-film clarity: readable geography, no more than two foreground combatants, explicit initiator/target/limb-or-weapon ownership, planted movement, contact/block/evasion, caused reaction and stable aftermath. Scale may come from sound, silhouettes and environmental response rather than incoherent crowd motion.
+- Write only events that can be decomposed into approximately ten-second generated clips with 3-5 motivated setups each. Each dramatic unit needs setup/objective, action/obstacle and consequence/payoff, but do not include video-generation prompts or camera instructions in the screenplay.
+- Polish the screenplay before returning it. Scores must honestly judge the returned final artifact. blockingErrors and suggestedPatches must both be empty; otherwise rewrite the screenplay yourself before answering.
+
+ARTIFACT CONSISTENCY LOCK:
+- chapters are not summaries or alternate drafts. Each chapter.scriptSegment must be an exact, contiguous substring of scriptSegment.
+- Concatenating chapter.scriptSegment values in order with whitespace normalization must reproduce scriptSegment exactly, with no omitted, duplicated, reordered or code-generated words.
+- Do not place any screenplay word outside chapters. Do not add chapter headings to scriptSegment unless those exact headings also occur inside the corresponding chapter.scriptSegment.
+- Return the entire artifact from the beginning on every attempt. Never return a continuation, patch, placeholder, ellipsis, Markdown fence or explanation.
+
+Return only JSON with this structure:
+{"scriptSegment":"complete final screenplay","chapters":[{"id":"exact_plan_chapter_id","title":"exact plan chapter title","scriptSegment":"exact contiguous screenplay portion"}],"continuityScore":0,"repetitionScore":0,"factualityScore":0,"emotionalArcScore":0,"conversationalScore":0,"hookPayoffScore":0,"blockingErrors":[],"warnings":[],"suggestedPatches":[]}
+
+[APPROVED SOURCE]
+${originalInput}
+
+[APPROVED STORY PLAN]
+${scriptPlanJson}`;
 
 export const getSceneImageQualityPrompt = (
   sceneId: string,
@@ -1607,6 +1629,7 @@ export const getCharacterAnalysisPrompt = (
   script: string,
   visualStyle: string = "",
   sourceContext: string = "",
+  requireCompleteArtifact: boolean = false,
 ): string => `Analyze the source premise and script, then design at most three recurring, visually important characters in the supplied art style.
 
 Authoritative source premise/topic:
@@ -1644,9 +1667,20 @@ STRICT LANGUAGE AND IDENTITY RULES:
 - The canonical reference image must contain no story action, handheld prop, other person, crowd, collage, split screen, readable text, logo, watermark, border, extreme expression, dramatic perspective, or environment-specific costume. It locks identity only; scene wardrobe, action, location, damage, and lighting remain controlled by each later video prompt.
 - End "referenceGenerationPrompt" with an explicit instruction that the image is a clean single-character identity reference for image-to-video continuity.
 
-Output ONLY a valid JSON array matching the structure: 
-[
+${
+  requireCompleteArtifact
+    ? `CINEMATIC ARTIFACT CONTRACT:
+- Return at least one recurring character. This film pipeline must stop rather than invent a fallback cast in application code.
+- Author a stable unique "id" for every character and use it as the canonical identity key in all later film-planning artifacts.
+- Also author "characterAnalysis" as a complete production-facing cast analysis and "characterSpecs" as a complete visual continuity bible for the cast. These two fields must be finished prose written by you; the application will store them unchanged and will not concatenate character fragments.`
+    : ""
+}
+
+Output ONLY ${requireCompleteArtifact ? "a valid JSON object matching" : "a valid JSON array matching"} the structure:
+${requireCompleteArtifact ? `{
+  "characters": [` : `[`}
   {
+    ${requireCompleteArtifact ? '"id": "stable_character_id",' : ""}
     "name": "Character Name", 
     "narrativeRole": "Primary or supporting role",
     "genderPresentation": "Visual gender presentation",
@@ -1666,8 +1700,11 @@ Output ONLY a valid JSON array matching the structure:
     "referenceGenerationPrompt": "Complete English prompt for one clean canonical single-character identity reference image in the shared target style",
     "timelineStages": [{"id":"base","label":"Starting stage","outfit":"stable stage-specific outfit","expressionRange":"allowed visible expressions","posture":"stable posture tendency","visibleCondition":"visible age, health, wealth, or wear changes"}]
   }
-]
-containing at most 3 elements. Do not include markdown tags, code blocks, or explanatory text.
+${requireCompleteArtifact ? `  ],
+  "characterAnalysis": "Complete production-facing analysis of the cast, roles, identity risks, and continuity priorities.",
+  "characterSpecs": "Complete reusable cast visual-continuity bible authored as one finished artifact."
+}` : `]`}
+containing at most 3 characters. Do not include markdown tags, code blocks, or explanatory text.
 
 Script:
 ${script}`;

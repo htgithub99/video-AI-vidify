@@ -96,8 +96,9 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   );
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
   assert.match(initialPrompt, /natural Vietnamese/);
-  assert.match(initialPrompt, /application separately compiles your creative decisions/);
-  assert.match(initialPrompt, /Do not return generationPrompt, timing, sequence IDs/);
+  assert.match(initialPrompt, /application validates this field and sends it unchanged/i);
+  assert.match(initialPrompt, /author the "generationPrompt" field/i);
+  assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
 
   const apiPrompt = getCinematicVideoPlanningPrompt(
     serializedScene,
@@ -122,9 +123,11 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
     TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED,
     TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
   );
-  assert.match(repairPrompt, /Rewrite only the supplied failed scene objects/);
+  assert.match(repairPrompt, /Rewrite every supplied failed scene as one complete production artifact/);
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
-  assert.match(repairPrompt, /Application code deterministically compiles those technical fields/);
+  assert.match(repairPrompt, /Previous rejected complete scene/);
+  assert.match(repairPrompt, /forwards generationPrompt unchanged/);
+  assert.doesNotMatch(repairPrompt, /deterministically compiles/);
 };
 
 const verifyDialogueContractExemption = () => {
@@ -161,11 +164,16 @@ const verifyBlockingContractClassification = () => {
     screenDirection: "right_to_left",
   } as StoryboardScene;
   const advisoryIssues = getCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
-  assert.equal(advisoryIssues.length, 3);
-  assert.deepEqual(getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS), []);
+  assert(advisoryIssues.includes("sc_2:continuityFrom:must_reference_previous_clip"));
+  assert(advisoryIssues.includes("sc_2:actionStartState:must_match_previous_end_state"));
+  assert(advisoryIssues.includes("sc_2:screenDirection:continuity_break"));
+  const continuityBlockers = getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
+  assert(continuityBlockers.includes("sc_2:continuityFrom:must_reference_previous_clip"));
+  assert.equal(continuityBlockers.includes("sc_2:actionStartState:must_match_previous_end_state"), false);
+  assert(continuityBlockers.includes("sc_2:screenDirection:continuity_break"));
 
   const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), soundDesignCues: [] } as StoryboardScene;
-  assert.deepEqual(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS), []);
+  assert(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"));
 
   assert.deepEqual(
     getBlockingCinematicPlanningIssues([
@@ -175,12 +183,17 @@ const verifyBlockingContractClassification = () => {
       "sc_2:prompt:incomplete_or_outside_global_length_contract",
       "sc_2:textOverlay:must_be_empty_when_text_forbidden",
     ]),
-    ["sc_2:prompt:incomplete_or_outside_global_length_contract"],
+    [
+      "sc_2:screenDirection:continuity_break",
+      "sc_2:textOverlay:must_be_empty_when_text_forbidden",
+    ],
   );
-  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), []);
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), [
+    "sc_2:generationPrompt:missing",
+    "sc_2:soundDesignCues:invalid",
+  ]);
   assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:characterIds:unknown:varg", "sc_2:actionChoreography:aftermath_missing"]), [
     "sc_2:characterIds:unknown:varg",
-    "sc_2:actionChoreography:aftermath_missing",
   ]);
 };
 
@@ -213,6 +226,8 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /forChatUi \? chunkCharactersJson : charactersJson/);
+  assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
+  assert.match(controllerSource, /isCinematicPlanning \? promptCharacters : _\.filter/);
   assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
   assert.match(controllerSource, /maxItems: CINEMATIC_CHAT_PLANNING_CONFIG\.API_MAX_SOUND_DESIGN_CUES/);
   assert.match(controllerSource, /getCorrectablePlanningIssues[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
@@ -222,6 +237,10 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /candidateBlockingCount[\s\S]*currentBlockingCount/);
   assert.match(controllerSource, /chunkSize = isCinematicPlanning \? CINEMATIC_PRODUCTION_POLICY\.PLANNING_CHUNK_SIZE/);
   assert.match(controllerSource, /targetRepairSceneIds[\s\S]*createRepairPrompt\(parsedItems, correctionIssues, targetRepairSceneIds\)/);
+  assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
+  assert.match(controllerSource, /planningMasterStoryboard/);
+  assert.match(controllerSource, /continuityContext\.masterSequence/);
+  assert.match(controllerSource, /exactSceneSet/);
   assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
   assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
@@ -234,6 +253,8 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /runControllers\.get\(workerId\)\?\.controller\.abort\(\)/);
   assert.match(planningServiceSource, /planningMutexes = new Map<string, SimpleMutex>/);
   assert.match(planningServiceSource, /getPlanningRoomKey\(request\)/);
+  assert.match(planningServiceSource, /difference\(expectedSceneIds, returnedSceneIds\)/);
+  assert.match(planningServiceSource, /belongsToCurrentRequest\) return latestText/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
   assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
@@ -265,6 +286,9 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /scenesToPlan = shouldReuseCompletedPlans \? _.filter\(realScenes, \(scene\) => _.isEmpty\(_.trim\(scene\.generationPrompt\)\)\) : realScenes/);
   assert.match(pipelineSource, /planningBatches = _.chunk\(scenesToPlan, CINEMATIC_POLICY_CONFIG\.PLANNING_CHUNK_SIZE\)/);
   assert.match(pipelineSource, /storyboard: pendingPlanningScenes/);
+  assert.match(pipelineSource, /planningMasterStoryboard/);
+  assert.match(pipelineSource, /allPlanningIssues/);
+  assert.match(pipelineSource, /recovery-\$\{batchIndex\}/);
   assert.match(pipelineSource, /issueSceneIds[\s\S]*pendingPlanningScenes = _.filter\(pendingPlanningScenes/);
   assert.match(pipelineSource, /completedResponseScenes[\s\S]*checkpointCompletedScenes/);
   assert.match(pipelineSource, /PLANNING_WORKER_COUNT[\s\S]*Promise\.all/);

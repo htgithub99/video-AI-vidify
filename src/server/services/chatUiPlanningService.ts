@@ -6,6 +6,12 @@ import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { getOrLaunchGlobalBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
+export interface ChatRoomAttachment {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
 interface ChatPlanningRequest {
   provider: AiPlanningFallbackProvider;
   model?: AiPlanningChatModel;
@@ -15,6 +21,7 @@ interface ChatPlanningRequest {
   expectedSceneIds?: string[];
   workerId?: string;
   signal?: AbortSignal;
+  attachments?: ChatRoomAttachment[];
 }
 
 const planningMutexes = new Map<string, SimpleMutex>();
@@ -361,10 +368,12 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   return page;
 };
 
-const extractBalancedJsonArrays = (text: string): string[] => {
+const extractBalancedJsonValues = (text: string): string[] => {
   const results: string[] = [];
   for (let start = 0; start < text.length; start++) {
-    if (text[start] !== "[") continue;
+    const opening = text[start];
+    if (opening !== "[" && opening !== "{") continue;
+    const closing = opening === "[" ? "]" : "}";
     let depth = 0;
     let inString = false;
     let escaped = false;
@@ -377,8 +386,8 @@ const extractBalancedJsonArrays = (text: string): string[] => {
         continue;
       }
       if (character === '"') inString = true;
-      else if (character === "[") depth++;
-      else if (character === "]") {
+      else if (character === opening) depth++;
+      else if (character === closing) {
         depth--;
         if (depth === 0) {
           results.push(text.slice(start, index + 1));
@@ -401,13 +410,16 @@ const getLastVisibleLocator = async (page: Page, selector: string): Promise<Loca
 };
 
 const extractPlanningJsonFromBody = (text: string, expectedSceneIds: string[]): string =>
-  _.findLast(extractBalancedJsonArrays(text), (candidate) =>
+  _.findLast(extractBalancedJsonValues(text), (candidate) =>
     _.every([
       ..._.map(expectedSceneIds, (sceneId) => new RegExp(`"id"\\s*:\\s*"${_.escapeRegExp(sceneId)}"`).test(candidate)),
     ]),
   ) || "";
 
-const extractLatestJsonArray = (text: string): string => _.last(extractBalancedJsonArrays(text)) || "";
+const extractCompleteJsonValue = (text: string): string => {
+  const candidate = _.reduce(extractBalancedJsonValues(text), (longest, current) => (current.length > longest.length ? current : longest), "");
+  return candidate.length > 1 ? candidate : "";
+};
 
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
@@ -415,7 +427,12 @@ const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): 
     const parsed = JSON.parse(text);
     if (!_.isArray(parsed)) return false;
     const returnedSceneIds = _.map(parsed, (item) => _.toString(_.get(item, "id")));
-    return _.every(expectedSceneIds, (sceneId) => _.includes(returnedSceneIds, sceneId));
+    return (
+      _.isEqual(returnedSceneIds.length, expectedSceneIds.length) &&
+      _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) &&
+      _.isEmpty(_.difference(expectedSceneIds, returnedSceneIds)) &&
+      _.isEmpty(_.difference(returnedSceneIds, expectedSceneIds))
+    );
   } catch {
     return false;
   }
@@ -448,7 +465,7 @@ const waitForStableResponse = async (
     const responseCandidates = _.compact([...newResponseTexts, changedLastResponse]);
     const selectedResponse =
       _.findLast(_.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)), (value) => !_.isEmpty(value)) ||
-      _.findLast(_.map(responseCandidates, extractLatestJsonArray), (value) => !_.isEmpty(value)) ||
+      _.findLast(_.map(responseCandidates, extractCompleteJsonValue), (value) => !_.isEmpty(value)) ||
       _.last(responseCandidates) ||
       "";
     const latestText = selectedResponse;
@@ -461,7 +478,18 @@ const waitForStableResponse = async (
     if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
-      if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) return latestText;
+      if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
+        if (belongsToCurrentRequest) return latestText;
+        let isCompleteArray = false;
+        try {
+          isCompleteArray = _.isArray(JSON.parse(latestText));
+        } catch {}
+        if (isCompleteArray) {
+          throw new Error(
+            `${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}: expected=${_.join(expectedSceneIds, ",")}, candidateLength=${latestText.length}`,
+          );
+        }
+      }
     } else {
       stablePolls = 0;
       previousText = latestText;
@@ -473,6 +501,44 @@ const waitForStableResponse = async (
   );
 };
 
+const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): Promise<void> => {
+  const removableAttachments = page.locator(
+    'button[aria-label*="remove attachment" i], button[aria-label*="remove file" i], button[aria-label*="xóa tệp" i], button[aria-label*="gỡ tệp" i]',
+  );
+  for (let index = (await removableAttachments.count().catch(() => 0)) - 1; index >= 0; index--) {
+    await removableAttachments.nth(index).click().catch(() => undefined);
+  }
+
+  let uploaded = false;
+  const fileInputs = page.locator('input[type="file"]');
+  for (let index = 0; index < (await fileInputs.count().catch(() => 0)); index++) {
+    try {
+      await fileInputs.nth(index).setInputFiles(attachments);
+      uploaded = true;
+      break;
+    } catch {}
+  }
+
+  if (!uploaded) {
+    const attachmentButton = page
+      .getByRole("button", { name: /attach|upload|add files?|đính kèm|tải tệp|thêm tệp|thêm tệp và ảnh/i })
+      .or(page.locator('button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i]'))
+      .filter({ visible: true })
+      .last();
+    const chooser = await Promise.all([
+      page.waitForEvent("filechooser", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
+      attachmentButton.click().catch(() => undefined),
+    ]).then(([fileChooser]) => fileChooser);
+    if (chooser) {
+      await chooser.setFiles(attachments);
+      uploaded = true;
+    }
+  }
+
+  if (!uploaded) throw new Error("Room-only AI execution could not attach the required media files to the selected chat room.");
+  await page.waitForTimeout(1500);
+};
+
 const submitPrompt = async (
   page: Page,
   prompt: string,
@@ -481,6 +547,7 @@ const submitPrompt = async (
   responseSelector: string,
   busySelector: string,
   expectedSceneIds: string[],
+  attachments: ChatRoomAttachment[] = [],
   signal?: AbortSignal,
 ): Promise<string> => {
   throwIfPlanningCancelled(signal);
@@ -495,6 +562,7 @@ const submitPrompt = async (
   }
   const initialCount = await page.locator(responseSelector).count().catch(() => 0);
   const previousLastResponse = _.trim(await page.locator(responseSelector).last().innerText().catch(() => ""));
+  if (!_.isEmpty(attachments)) await attachRoomFiles(page, attachments);
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
   const sendButton = page.locator(sendSelector).last();
@@ -574,6 +642,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.attachments || [],
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -593,6 +662,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.attachments || [],
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -612,6 +682,7 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR,
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
     request.expectedSceneIds || [],
+    request.attachments || [],
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -640,7 +711,9 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   const release = await planningMutex.acquire();
   try {
     throwIfPlanningCancelled(request.signal);
-    appLog(`[AI Chat Planning] Đang sử dụng ${providerNames[request.provider]} cho project ${request.projectId}.`);
+    appLog(
+      `[AI Chat Planning][${request.workerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID}] Đang sử dụng ${providerNames[request.provider]} cho project ${request.projectId}.`,
+    );
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error("AI Chat dự phòng chưa được hỗ trợ.");
     const text = await generator(request);

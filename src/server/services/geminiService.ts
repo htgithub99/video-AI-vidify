@@ -8,8 +8,19 @@ import { resolveApiKeys } from "./apiKeyResolver.js";
 import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
 import { classifyGeminiError } from "./geminiErrorClassifier.js";
 import { generateWithFreeProviders } from "./freeAiProviderService.js";
+import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { requestContext } from "../utils/requestContext.js";
+import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
+
+const getRoomExecution = () => {
+  const context = requestContext.getStore();
+  return context?.aiExecutionMode === AiPlanningExecutionMode.RoomOnly && context.aiRoomProvider && context.aiRoomProvider !== AiPlanningFallbackProvider.Disabled
+    ? context
+    : undefined;
+};
 
 export const isAiProviderAvailable = async (): Promise<boolean> => {
+  if (getRoomExecution()) return true;
   const keys = await resolveApiKeys();
   return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
 };
@@ -49,6 +60,50 @@ export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate
   return { textCharacters, estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS), mediaInputCount };
 };
 
+const createRoomRequestPayload = (contents: unknown): { prompt: string; attachments: Array<{ name: string; mimeType: string; buffer: Buffer }> } => {
+  const textParts: string[] = [];
+  const attachments: Array<{ name: string; mimeType: string; buffer: Buffer }> = [];
+  const extensionByMimeType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "video/mp4": "mp4",
+    "audio/mpeg": "mp3",
+    "audio/mp4": "m4a",
+    "audio/wav": "wav",
+  };
+  const visit = (value: unknown): void => {
+    if (_.isString(value)) {
+      textParts.push(value);
+      return;
+    }
+    if (_.isArray(value)) {
+      _.forEach(value, visit);
+      return;
+    }
+    if (!_.isPlainObject(value)) return;
+    const source = value as Record<string, any>;
+    if (_.isPlainObject(source.inlineData)) {
+      const mimeType = _.toString(source.inlineData.mimeType || "application/octet-stream");
+      const rawData = _.toString(source.inlineData.data);
+      const encodedData = _.includes(rawData, ";base64,") ? _.last(_.split(rawData, ";base64,")) || "" : rawData;
+      if (_.isEmpty(encodedData)) throw createAppError("Room-only AI execution received an empty inline media attachment.");
+      const extension = extensionByMimeType[mimeType] || _.replace(_.last(_.split(mimeType, "/")) || "bin", /[^a-z0-9]/gi, "");
+      attachments.push({
+        name: `room-media-${attachments.length + 1}.${extension || "bin"}`,
+        mimeType,
+        buffer: Buffer.from(encodedData, "base64"),
+      });
+      return;
+    }
+    if (_.has(source, "fileData")) throw createAppError("Room-only AI execution requires inline media data so it can upload the file to the selected room.");
+    if (_.isString(source.text)) textParts.push(source.text);
+    _.forEach(_.omit(source, ["text", "role"]), visit);
+  };
+  visit(contents);
+  return { prompt: _.join(_.compact(_.map(textParts, _.trim)), "\n\n"), attachments };
+};
+
 const isSchemaCompatibilityError = (error: unknown): boolean => {
   const normalizedError = _.toLower(_.join([_.toString(_.get(error, "message")), _.toString(error), _.toString(_.get(error, "status"))], " "));
   return _.some(GEMINI_REQUEST_POLICY.INVALID_ARGUMENT_PATTERNS, (pattern) => _.includes(normalizedError, _.toLower(pattern)));
@@ -65,6 +120,31 @@ export const generateContentWithRetry = async (
   retries: number = GEMINI_REQUEST_POLICY.DEFAULT_RETRIES,
   delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS,
 ): Promise<any> => {
+  const roomExecution = getRoomExecution();
+  if (roomExecution) {
+    const roomPayload = createRoomRequestPayload(params.contents);
+    if (_.isEmpty(roomPayload.prompt)) throw createAppError("Room-only AI execution received no textual task instruction for the selected room.");
+    const schemaContract = params.config?.responseJsonSchema
+      ? `\n\n[REQUIRED RESPONSE CONTRACT]\nReturn only valid JSON matching this JSON Schema exactly:\n${JSON.stringify(params.config.responseJsonSchema)}`
+      : "";
+    const roomResponse = await generatePlanningWithChatUi({
+      provider: roomExecution.aiRoomProvider!,
+      model: roomExecution.aiRoomModel,
+      prompt: `${roomPayload.prompt}${schemaContract}`,
+      projectId: roomExecution.aiRoomProjectId || "pipeline-room",
+      chromeHeadless: roomExecution.aiRoomChromeHeadless,
+      attachments: roomPayload.attachments,
+    });
+    return {
+      text: roomResponse.text,
+      rotationLogs: [`[AI Room] ${roomResponse.provider}: completed without API fallback.`],
+      aiMetadata: {
+        provider: roomResponse.provider,
+        model: roomExecution.aiRoomModel,
+        executionMode: AiPlanningExecutionMode.RoomOnly,
+      },
+    };
+  }
   const keys = await resolveApiKeys();
   const activeApiKey = _.get(keys, "geminiKey", "");
 

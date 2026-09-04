@@ -1,23 +1,24 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 
 export const CINEMATIC_POLICY_CONFIG = {
+  MIN_SCRIPT_QA_SCORE: 85,
   MIN_BEAT_COUNT: 3,
   MAX_BEAT_COUNT: 5,
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
-  PLANNING_CHUNK_SIZE: 2,
+  PLANNING_CHUNK_SIZE: 1,
   PLANNING_WORKER_COUNT: 3,
   PREFLIGHT_REVIEW_WORKER_COUNT: 3,
   PREFLIGHT_REVIEW_ATTEMPTS: 1,
   CLIENT_PLANNING_ATTEMPTS: 3,
   EPSILON_TOLERANCE: 0.25,
-  MIN_DIALOGUE_SCENE_RATIO: 1,
+  MIN_DIALOGUE_SCENE_RATIO: 0.6,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
 
 export const CINEMATIC_DIALOGUE_CONFIG = {
-  MODES: ["on_screen_dialogue", "off_screen_dialogue"],
+  MODES: ["on_screen_dialogue", "off_screen_dialogue", "silent_action"],
   VIETNAMESE_CHARACTER_PATTERN: /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i,
   VIETNAMESE_WORD_PATTERN: /\b(?:anh|chị|em|ông|bà|tôi|ta|ngươi|chúng ta|không|được|phải|đang|sẽ|đã|này|đó|với|của|cho|hãy|đừng)\b/i,
   ENGLISH_WORD_PATTERN: /\b(?:the|you|your|we|our|they|this|that|is|are|will|must|can|cannot|do|not|please|come|go|stop|wait)\b/i,
@@ -97,6 +98,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
 export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
   "id",
   "prompt",
+  "generationPrompt",
   "visualIntent",
   "visibleAction",
   "reaction",
@@ -108,11 +110,40 @@ export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
   "spokenDialogue",
   "speakerCharacterId",
   "lipSyncRequired",
+  "expectedSubjectCount",
+  "allowBackgroundPeople",
+  "layout",
+  "textAllowed",
+  "textOverlay",
+  "shotSize",
+  "cameraAngle",
+  "composition",
+  "locationId",
+  "propIds",
+  "continuityFrom",
+  "continuityNotes",
+  "lighting",
+  "sequenceId",
+  "shotId",
+  "shotRole",
+  "characterBlocking",
+  "eyelineDirection",
+  "screenDirection",
+  "actionStartState",
+  "actionEndState",
+  "locationState",
+  "wardrobeState",
+  "propState",
+  "soundDesignCues",
   "cinematicBeats",
   "assetStrategy",
+  "archivalSearchQuery",
+  "archivalRationale",
 ] as const;
 
 export const CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS = [
+  "sourceSceneId",
+  "shotId",
   "shotRole",
   "shotSize",
   "cameraAngle",
@@ -123,23 +154,22 @@ export const CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS = [
   "spokenDialogue",
   "speakerCharacterId",
   "lipSyncRequired",
+  "startSecond",
+  "endSecond",
 ] as const;
 
 export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
-  /:actionStartState:must_match_previous_end_state$/,
-  /:actionStartState:must_match_previous_clip_end_state$/,
-  /:screenDirection:continuity_break$/,
-  /:continuityFrom:must_reference_previous_clip$/,
-  /:editorial_role:must_advance_from_previous_clip$/,
   /:neighbor_visual_repetition$/,
   /:scene_meaning:too_similar_to:/,
   /:editorial_rhythm:/,
-  /:(?:shotSize|cameraAngle|composition|continuityNotes|lighting):/,
-  /:(?:expectedSubjectCount|allowBackgroundPeople|layout|propIds|assetStrategy|archivalSearchQuery|archivalRationale|textAllowed|textOverlay):/,
-  /:(?:generationPrompt|sequenceId|shotId|shotRole|characterBlocking|eyelineDirection|screenDirection|actionStartState|actionEndState|locationState|wardrobeState|propState|soundDesignCues):/,
+  /:editorial_role:/,
+  /:prompt:incomplete_or_outside_global_length_contract$/,
+  /:prompt:incomplete_sentence$/,
+  /:(?:visualIntent|visibleAction|reaction|storyEvidence|visualHook|composition):must_be_english$/,
   /:visibleAction:no_observable_physical_verb$/,
-  /:prompt:missing_named_character:/,
-  /:cinematicBeats:(?:\d+:)?(?:requires_between|source_scene_mismatch|shot_id_missing|shot_ids_not_unique|shot_ids_must_be_unique|unplayable_timing|timing_|timeline_gap|must_cover_|shot_too_short|final_shot_|generation_prompt_missing_exact_dialogue)/,
+  /:actionChoreography:/,
+  /:actionStartState:must_match_previous_(?:clip_)?end_state$/,
+  /^(?:chunk|storyboard):dialogue_coverage:/,
 ] as const;
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
@@ -221,7 +251,7 @@ export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 
 
 export const CINEMATIC_PROMPT_PREFLIGHT_CONFIG = {
   MIN_WORDS: 180,
-  MAX_WORDS: 650,
+  MAX_WORDS: 500,
   FORBIDDEN_PATTERN: /one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take|Video motion direction:|--ar\s/i,
 } as const;
 
@@ -232,6 +262,19 @@ export const resolveCinematicClipDuration = (value?: string | number): number =>
 };
 
 export const CINEMATIC_POLICY_REQUIRED_FIELDS = [
+  "prompt",
+  "generationPrompt",
+  "visualIntent",
+  "visibleAction",
+  "reaction",
+  "storyEvidence",
+  "visualHook",
+  "shotPurpose",
+  "shotSize",
+  "cameraAngle",
+  "composition",
+  "continuityNotes",
+  "lighting",
   "sequenceId",
   "shotId",
   "shotRole",
@@ -244,45 +287,8 @@ export const CINEMATIC_POLICY_REQUIRED_FIELDS = [
   "locationState",
   "wardrobeState",
   "propState",
+  "assetStrategy",
 ] as const;
-
-export const CINEMATIC_TECHNICAL_FOUNDATION =
-  "Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur.";
-
-export const CINEMATIC_DEFAULT_SCENE_CONTEXT = "The scene takes place in a grounded cinematic environment with realistic atmospheric depth.";
-
-export const CINEMATIC_DEFAULT_DIEGETIC_SFX = "natural footsteps, physical movement, and atmospheric room tone";
-
-export const CINEMATIC_DEFAULT_SOUND_CUES = ["diegetic room tone ambience", "subtle footsteps and environmental movement", "cinematic atmosphere soundscape"] as const;
-
-export const CINEMATIC_TEXT_FREE_POLICY =
-  "Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.";
-
-export const CINEMATIC_PLATFORM_SAFE_ACTION_POLICY =
-  "Keep all physical conflict non-graphic and suitable for mainstream generative-video platforms. No gore, exposed wounds, dismemberment, torture, cruelty, prolonged suffering, or violence toward children or vulnerable people. Prefer readable blocks, evasions, controlled impacts, sparks, dust, environmental damage, production sound, and stable positional consequences.";
-
-export const CINEMATIC_ACTION_CHOREOGRAPHY_PROMPT_POLICY =
-  "Show one readable exchange on a stable action axis: name the foreground initiator and explicit target, planted lead foot and weight transfer, a short wind-up, movement direction and limb or weapon ownership, visible contact or evasion, caused target reaction, and stable aftermath. Keep at most two foreground combatants; do not replace action with decorative spinning, synchronized weapon waving, posing, crowd motion, camera shake, smoke, or light effects.";
-
-export const CINEMATIC_DEFAULTS = {
-  CHARACTER_BLOCKING: "Subject positions into the scene",
-  EYELINE_DIRECTION: "Looking forward",
-  SCREEN_DIRECTION: "Left to right",
-  ACTION_START_STATE: "Opening scene position",
-  ACTION_END_STATE: "Completed action aftermath",
-  LOCATION_STATE: "Established cinematic environment",
-  WARDROBE_STATE: "Established character costume and gear",
-  PROP_STATE: "Established character props",
-  VISIBLE_ACTION: "Action unfolds",
-  REACTION: "Visible reaction",
-  LOCATION_LOCK: "unchanged set geography",
-  WARDROBE_LOCK: "unchanged wardrobe and wear state",
-  PROP_LOCK: "unchanged prop ownership, hand and condition",
-  LIGHTING_LOCK: "unchanged motivated light direction and time",
-  STATIC_AXIS: "static_axis",
-  ESTABLISHED_EYELINE: "established eyeline",
-  PREVIOUS_FINAL_POSE: "the exact final pose of the previous clip",
-} as const;
 
 export const CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG = {
   CONFLICT_PATTERN:
@@ -319,7 +325,7 @@ You are the head screenwriter and story editor for a ${targetDuration} original 
 - Keep no more than two clearly articulated foreground performers in physical conflict. Other forces remain distant, soft-focus, occluded, silhouetted or represented by their effect on the environment. Use one movement direction and one action axis; keep feet grounded, hand/weapon ownership explicit and the camera stable enough to read anatomy.
 - Prefer concise speakable dialogue, interruptions, silence and reactions. No exposition speeches, generic motivational lines, trailer narration, omniscient summary or repeated statement of facts already visible.
 - Dialogue must be short enough for natural lip-sync inside its planned shot. Preserve the exact chosen output language and never mix languages unless the story explicitly requires it.
-- Every generated clip must contain one short, story-specific line spoken by a named character in the selected language. The line must change the immediate objective, danger, relationship or viewer understanding; generic filler and repeated catchphrases are forbidden. Use on_screen_dialogue with synchronized lips whenever the speaker is visible. Use off_screen_dialogue only when the named speaker is physically present in the same location. Never use narration or voice-over.
+- Use character dialogue only when it changes the immediate objective, danger, relationship or viewer understanding; generic filler and repeated catchphrases are forbidden. A dramatically intentional silent clip is valid when physical action, suspense, discovery or aftermath carries the story more strongly. Use on_screen_dialogue with synchronized lips whenever the speaker is visible. Use off_screen_dialogue only when the named speaker is physically present in the same location. Never use narration or voice-over.
 - SCREENPLAY OUTPUT LOCK: Write the actual playable screenplay, not prose describing what the film would show. Every chapter must contain concrete scene action plus natural character dialogue. Attribute every spoken line to a named character. Do not write a narrator, narration paragraphs, voice-over, explanatory commentary, YouTube hook, synopsis, recap or phrases such as "we see", "the audience learns", "câu hỏi là", or "liệu rằng". Important story information must be discovered through a character's decision, conversation, physical evidence or visible consequence.
 - DIALOGUE COVERAGE: Unless a sequence is deliberately silent for suspense or action clarity, include at least one short speakable exchange that changes the plan, relationship, danger or available information. A film may contain silent shots, but it may not become a narrator-led slideshow. Preserve pauses and reactions around dialogue so speech remains naturally performable inside generated clips.
 - Establish geography before action, preserve prop ownership and wardrobe/damage progression, and design entrances/exits that the next clip can continue.

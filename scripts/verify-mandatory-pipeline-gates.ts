@@ -5,6 +5,7 @@ import {
   getCinematicScriptReadinessIssues,
   getCinematicGeneratedTakeIssues,
   getCinematicSceneContractIssues,
+  getCinematicStoryboardReadinessIssues,
   repairCinematicStoryboardContract,
 } from "../src/services/cinematicProductionPolicyService";
 import { AssetAcceptance, GenerateType, QaStatus, SceneAssetStatus } from "../src/types";
@@ -20,6 +21,38 @@ const incompleteScriptIssues = getCinematicScriptReadinessIssues(
 );
 assert(incompleteScriptIssues.includes("script:incomplete_ending"));
 assert(incompleteScriptIssues.includes("chapters:incomplete_ending"));
+
+const lowCinematicScoreIssues = getCinematicScriptReadinessIssues(
+  "Cảnh phim kết thúc.",
+  [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }],
+  {
+    continuityScore: 84,
+    repetitionScore: 90,
+    factualityScore: 90,
+    emotionalArcScore: 90,
+    conversationalScore: 90,
+    hookPayoffScore: 90,
+    passed: true,
+  } as any,
+  { allowed: true, warnings: [] } as any,
+);
+assert(lowCinematicScoreIssues.includes("scriptQa:cinematic_score_below_85"));
+assert(
+  getCinematicScriptReadinessIssues(
+    "Cảnh phim kết thúc.",
+    [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }],
+    {
+      continuityScore: 90,
+      repetitionScore: 90,
+      factualityScore: 90,
+      emotionalArcScore: 90,
+      conversationalScore: 90,
+      hookPayoffScore: 90,
+      passed: true,
+    } as any,
+    { allowed: true, warnings: ["content_safety_response_incomplete"] } as any,
+  ).includes("contentSafety:review_unavailable_or_incomplete"),
+);
 
 const takeIssues = getCinematicGeneratedTakeIssues(
   [
@@ -38,6 +71,13 @@ const takeIssues = getCinematicGeneratedTakeIssues(
 assert(takeIssues.includes("sc_2:asset_missing"));
 assert(takeIssues.includes("sc_2:qa_failed"));
 assert(!takeIssues.some((issue) => issue.startsWith("storyboard:clip_count:")));
+assert(
+  getCinematicStoryboardReadinessIssues(
+    [{ id: "only_clip", script: "Một cảnh." }] as any,
+    2,
+    { passed: true, scriptCoverageScore: 100, pacingCoverageScore: 100 } as any,
+  ).includes("storyboard:clip_count:1/2"),
+);
 
 const unclearFightIssues = getCinematicSceneContractIssues({ id: "fight_weak", script: "Ngộ Không vung thiết bảng giữa thiên binh." } as any, "10s");
 assert(unclearFightIssues.includes("fight_weak:actionChoreography:target_missing"));
@@ -102,7 +142,23 @@ assert.deepEqual(
     "sc_10:cinematicBeats:0:timing_invalid",
     "sc_10:cinematicBeats:1:generation_prompt_missing_exact_dialogue",
   ]),
-  [],
+  [
+    "sc_10:cinematicBeats:0:source_scene_mismatch",
+    "sc_10:cinematicBeats:0:timing_invalid",
+    "sc_10:cinematicBeats:1:generation_prompt_missing_exact_dialogue",
+  ],
+);
+
+assert(
+  getCinematicScriptReadinessIssues(
+    "Cảnh một kết thúc. Cảnh hai bắt đầu.",
+    [
+      { id: "ch_1", title: "Một", scriptSegment: "Cảnh một kết thúc." },
+      { id: "ch_2", title: "Hai", scriptSegment: "Nội dung không thuộc kịch bản." },
+    ],
+    { passed: true, durationFit: true } as any,
+    { allowed: true } as any,
+  ).includes("chapters:must_exactly_partition_screenplay"),
 );
 
 const resumableProject = {
@@ -167,4 +223,16 @@ assert.match(previewSource, /setIsSceneDialogOpen\(true\)/, "clip regeneration d
 assert.match(autoGeneratorSource, /deleteProjectRegenerationAssets\(project\.id, target, sceneId\)/, "selected clip ID is not sent to targeted cleanup");
 assert.match(autoGeneratorSource, /forceRegenerateScenes: _\.isEmpty\(sceneId\)/, "selected clip retry still forces every scene to regenerate");
 assert.match(controllerSource, /clearProjectSceneOutput\(project, sceneId\)/, "server does not isolate selected clip cleanup");
-process.stdout.write(JSON.stringify({ passed: true, incompleteScriptIssues, takeIssues, unclearFightIssues }));
+assert.match(controllerSource, /FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA/, "cinematic screenplay is not returned as one AI-authored artifact");
+assert.match(controllerSource, /chapters:must_exactly_partition_screenplay/, "screenplay/chapter identity gate is missing");
+assert.match(controllerSource, /CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA/, "cinematic cast is not enforced as one complete AI artifact");
+assert.match(controllerSource, /passed: _\.isEmpty\(blockingErrors\)/, "cinematic storyboard still bypasses deterministic blocking errors");
+assert.match(pipelineSource, /cinematicMode: isCinematicPipeline/, "character analysis is not marked as a cinematic artifact request");
+assert.match(
+  pipelineSource,
+  /if \(isCinematicPipeline && \(!analyzeCharacterRes\.success \|\| !_\.isEmpty\(cinematicCharacterIssues\)\)\)/,
+  "cinematic character-analysis failure can still fall through to a code-created cast",
+);
+assert.match(pipelineSource, /if \(!isCinematicPipeline && _\.isEmpty\(rawAnalyzedCharacters\)\)/, "legacy character fallback is not isolated from cinematic production");
+assert.doesNotMatch(pipelineSource, /recoverCinematicChaptersFromStoryboard/, "pipeline still synthesizes cinematic chapters in application code");
+process.stdout.write(JSON.stringify({ passed: true, incompleteScriptIssues, lowCinematicScoreIssues, takeIssues, unclearFightIssues }));

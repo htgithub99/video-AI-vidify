@@ -202,6 +202,10 @@ export interface ProjectConfig {
   filmFormat?: "single" | "series";
   episodeCount?: number;
   seriesBibleRequired?: boolean;
+  planningFallbackProvider?: AiPlanningFallbackProvider;
+  planningChatModel?: AiPlanningChatModel;
+  planningExecutionMode?: AiPlanningExecutionMode;
+  planningChromeHeadless?: boolean;
 }
 
 export interface HookVersion {
