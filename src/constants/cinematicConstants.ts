@@ -59,7 +59,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_MODEL_BUTTON_SELECTOR:
     'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
-    "Return only the complete raw JSON array required by the request. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.",
+    "Return only the complete raw JSON value required by the request. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.",
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
   EXCESS_BLANK_LINES_PATTERN: /\n[ \t]*\n(?:[ \t]*\n)+/g,
   CANCELLED_ERROR: "chat_planning_cancelled",

@@ -100,6 +100,7 @@ import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rollo
 import { applyOptionalMusicAsset, createAudioCueSheet, resolveAutomaticMusicProfile } from "../services/soundDesignService";
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
+import { resolvePipelineAiExecution } from "../services/pipelineAiExecutionService";
 
 const getRestoredPipelineProgress = (project: VideoProject): { step: number; progress: number } => {
   const phase = project.generationCheckpoint?.phase;
@@ -605,21 +606,6 @@ export function useAutoVideoPipeline(
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
 
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) =>
-        safeSystemFetch(
-          url,
-          {
-            ...payload,
-            aiExecution: {
-              mode: config.planningExecutionMode,
-              provider: config.planningFallbackProvider,
-              model: config.planningChatModel,
-              projectId: newProjectId || pipelineTargetKey,
-              chromeHeadless: config.planningChromeHeadless,
-            },
-          },
-          signal,
-        );
       let newProj: VideoProject;
       const resolvedTarget = resolveTargetProject(
         projects,
@@ -632,6 +618,31 @@ export function useAutoVideoPipeline(
       const selectedAutoProj = resolvedTarget.selectedAutoProject;
       const rawExistingTargetProj = hydratedContinuationTarget || resolvedTarget.existingTargetProject;
       const existingTargetProj = migrateVideoProject(rawExistingTargetProj);
+      const resolvedAiExecution = resolvePipelineAiExecution(config, existingTargetProj, isCinematicPipeline);
+      config.planningFallbackProvider = resolvedAiExecution.provider;
+      config.planningChatModel = resolvedAiExecution.model;
+      config.planningExecutionMode = resolvedAiExecution.mode;
+      config.planningChromeHeadless = resolvedAiExecution.chromeHeadless;
+      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) =>
+        safeSystemFetch(
+          url,
+          {
+            ...payload,
+            aiExecution: {
+              mode: resolvedAiExecution.mode,
+              provider: resolvedAiExecution.provider,
+              model: resolvedAiExecution.model,
+              projectId: newProjectId || pipelineTargetKey,
+              chromeHeadless: resolvedAiExecution.chromeHeadless,
+            },
+          },
+          signal,
+        );
+      appendLog(
+        config.language === ProjectLanguage.VI
+          ? `[AI] Tuyến thực thi: ${resolvedAiExecution.mode} · room ${resolvedAiExecution.provider} · model ${resolvedAiExecution.model}.`
+          : `[AI] Execution route: ${resolvedAiExecution.mode} · room ${resolvedAiExecution.provider} · model ${resolvedAiExecution.model}.`,
+      );
       const referenceChangeState = getReferenceChangeState(
         existingTargetProj,
         config.referenceImages,
@@ -706,10 +717,10 @@ export function useAutoVideoPipeline(
             filmFormat: config.filmFormat,
             episodeCount: config.episodeCount,
             seriesBibleRequired: _.isEqual(config.filmFormat, "series"),
-            planningFallbackProvider: config.planningFallbackProvider,
-            planningChatModel: config.planningChatModel,
-            planningExecutionMode: config.planningExecutionMode,
-            planningChromeHeadless: config.planningChromeHeadless,
+            planningFallbackProvider: resolvedAiExecution.provider,
+            planningChatModel: resolvedAiExecution.model,
+            planningExecutionMode: resolvedAiExecution.mode,
+            planningChromeHeadless: resolvedAiExecution.chromeHeadless,
           },
           hookConfig: {
             ...existingTargetProj.hookConfig,
@@ -760,10 +771,10 @@ export function useAutoVideoPipeline(
               _.take(_.uniq(_.concat(config.referenceImages || [], config.sceneReferenceImages || [])), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
               existingTargetProj.visualConfig.referenceImages,
             ),
-            planningFallbackProvider: config.planningFallbackProvider,
-            planningChatModel: config.planningChatModel,
-            planningExecutionMode: config.planningExecutionMode,
-            planningChromeHeadless: config.planningChromeHeadless,
+            planningFallbackProvider: resolvedAiExecution.provider,
+            planningChatModel: resolvedAiExecution.model,
+            planningExecutionMode: resolvedAiExecution.mode,
+            planningChromeHeadless: resolvedAiExecution.chromeHeadless,
           },
           generationCheckpoint: {
             intent: runIntent,
@@ -822,6 +833,10 @@ export function useAutoVideoPipeline(
             filmFormat: config.filmFormat,
             episodeCount: config.episodeCount,
             seriesBibleRequired: _.isEqual(config.filmFormat, "series"),
+            planningFallbackProvider: resolvedAiExecution.provider,
+            planningChatModel: resolvedAiExecution.model,
+            planningExecutionMode: resolvedAiExecution.mode,
+            planningChromeHeadless: resolvedAiExecution.chromeHeadless,
           },
           hookConfig: {
             type: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : config.hookStrategy,
@@ -876,10 +891,10 @@ export function useAutoVideoPipeline(
             referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
             referencePrompt: config.stylePreset,
             characters: [],
-            planningFallbackProvider: config.planningFallbackProvider,
-            planningChatModel: config.planningChatModel,
-            planningExecutionMode: config.planningExecutionMode,
-            planningChromeHeadless: config.planningChromeHeadless,
+            planningFallbackProvider: resolvedAiExecution.provider,
+            planningChatModel: resolvedAiExecution.model,
+            planningExecutionMode: resolvedAiExecution.mode,
+            planningChromeHeadless: resolvedAiExecution.chromeHeadless,
           },
           seoConfig: { numTitles: 3, numDescriptions: 1, numHashtags: 5, numTags: 10 },
           creditsUsed: 0,
@@ -1069,8 +1084,8 @@ export function useAutoVideoPipeline(
           if (scriptAttempt < PIPELINE_GUARANTEE_CONFIG.SCRIPT_ATTEMPTS - 1)
             appendLog(
               config.language === ProjectLanguage.VI
-                ? `[Kịch bản] Lần ${scriptAttempt + 1} chưa đạt (${_.join(scriptReadinessIssues, ", ")}); đang retry riêng bước kịch bản.`
-                : `[Script] Attempt ${scriptAttempt + 1} is incomplete (${_.join(scriptReadinessIssues, ", ")}); retrying only the script step.`,
+                ? `[Kịch bản][${resolvedAiExecution.mode} · ${resolvedAiExecution.provider}/${resolvedAiExecution.model}] Lần ${scriptAttempt + 1} chưa đạt (${_.join(scriptReadinessIssues, ", ")}); đang retry riêng bước kịch bản.`
+                : `[Script][${resolvedAiExecution.mode} · ${resolvedAiExecution.provider}/${resolvedAiExecution.model}] Attempt ${scriptAttempt + 1} is incomplete (${_.join(scriptReadinessIssues, ", ")}); retrying only the script step.`,
             );
         }
         if (isCinematicPipeline && (!scriptData || !_.isEmpty(scriptReadinessIssues))) {
@@ -1642,10 +1657,10 @@ export function useAutoVideoPipeline(
           promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
           bypassCache: true,
           projectId: newProjectId,
-          planningFallbackProvider: config.planningFallbackProvider,
-          planningChatModel: config.planningChatModel,
-          planningExecutionMode: config.planningExecutionMode,
-          planningChromeHeadless: config.planningChromeHeadless,
+          planningFallbackProvider: resolvedAiExecution.provider,
+          planningChatModel: resolvedAiExecution.model,
+          planningExecutionMode: resolvedAiExecution.mode,
+          planningChromeHeadless: resolvedAiExecution.chromeHeadless,
           chromeHeadless: config.chromeHeadless,
           pipelineRunId: pipelineRunLease.runId,
           pipelineStartedAt,

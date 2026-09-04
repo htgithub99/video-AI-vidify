@@ -4,6 +4,7 @@ import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy, VideoGenre } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
 import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_CATALOG } from "./thumbnail.js";
+import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config.js";
 
 export const NO_FRAME_RULE = `Use a natural full-frame composition. Add "No frame" only when the scene could reasonably be mistaken for framed artwork.`;
 
@@ -607,7 +608,8 @@ ${script}`;
 
 export const getFinalCinematicScreenplayPrompt = (
   originalInput: string,
-  scriptPlanJson: string,
+  storyBibleJson: string,
+  narrativePlanJson: string,
   genre: string,
   isVi: boolean,
   targetWordCount: number,
@@ -638,13 +640,52 @@ ARTIFACT CONSISTENCY LOCK:
 - Return the entire artifact from the beginning on every attempt. Never return a continuation, patch, placeholder, ellipsis, Markdown fence or explanation.
 
 Return only JSON with this structure:
-{"scriptSegment":"complete final screenplay","chapters":[{"id":"exact_plan_chapter_id","title":"exact plan chapter title","scriptSegment":"exact contiguous screenplay portion"}],"continuityScore":0,"repetitionScore":0,"factualityScore":0,"emotionalArcScore":0,"conversationalScore":0,"hookPayoffScore":0,"blockingErrors":[],"warnings":[],"suggestedPatches":[]}
+{"schemaVersion":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION}","artifactId":"AI-created stable artifact ID","sourceNarrativeArtifactId":"exact approved Narrative Plan artifactId","scriptSegment":"complete final screenplay","chapters":[{"id":"exact_plan_chapter_id","title":"exact plan chapter title","scriptSegment":"exact contiguous screenplay portion"}],"continuityScore":0,"repetitionScore":0,"factualityScore":0,"emotionalArcScore":0,"conversationalScore":0,"hookPayoffScore":0,"blockingErrors":[],"warnings":[],"suggestedPatches":[],"completionMarker":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER}"}
+
+completionMarker must be the final property. Return the complete artifact from the beginning.
 
 [APPROVED SOURCE]
 ${originalInput}
 
-[APPROVED STORY PLAN]
-${scriptPlanJson}`;
+[APPROVED STORY BIBLE]
+${storyBibleJson}
+
+[APPROVED NARRATIVE PLAN]
+${narrativePlanJson}`;
+
+export const getCinematicScreenplayEditorialPrompt = (
+  originalInput: string,
+  storyBibleJson: string,
+  narrativePlanJson: string,
+  screenplayJson: string,
+  isVi: boolean,
+  targetWordCount: number,
+  targetChapterCount: number,
+): string => `You are the final independent screenplay editor. Return the complete publishable screenplay artifact, not a review report and not a patch.
+${UNTRUSTED_INPUT_RULE}
+
+LANGUAGE: ${isVi ? "Natural contemporary Vietnamese with complete diacritics" : "Natural idiomatic contemporary English"}.
+TARGET LENGTH: 90%-110% of ${targetWordCount} words.
+CHAPTER CONTRACT: exactly ${targetChapterCount} chapters with the exact approved chapter IDs and titles in the same order.
+
+Silently repair weak causality, repeated exposition, generic AI prose, broken character voice, missing setup/payoff, discontinuous prop or character state, incomplete ending, and unsupported factual wording. Do not invent unsupported events, claims, quotations, identities, or outcomes. Each chapter.scriptSegment must be an exact contiguous partition of scriptSegment. All six scores must be honest integers from 0 to 100 and at least 85. blockingErrors and suggestedPatches must be empty because every accepted correction must already be applied to the returned screenplay.
+
+Return only one complete raw JSON object with no additional properties:
+{"schemaVersion":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION}","artifactId":"AI-created stable artifact ID","sourceNarrativeArtifactId":"exact approved Narrative Plan artifactId","scriptSegment":"complete final screenplay","chapters":[{"id":"exact_plan_chapter_id","title":"exact plan chapter title","scriptSegment":"exact contiguous screenplay portion"}],"continuityScore":0,"repetitionScore":0,"factualityScore":0,"emotionalArcScore":0,"conversationalScore":0,"hookPayoffScore":0,"blockingErrors":[],"warnings":[],"suggestedPatches":[],"completionMarker":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER}"}
+
+completionMarker must be the final property. Never return Markdown, explanation, placeholder, ellipsis, continuation, or review notes.
+
+[SOURCE DATA]
+${originalInput}
+
+[APPROVED STORY BIBLE]
+${storyBibleJson}
+
+[APPROVED NARRATIVE PLAN]
+${narrativePlanJson}
+
+[SCREENPLAY TO EDIT]
+${screenplayJson}`;
 
 export const getSceneImageQualityPrompt = (
   sceneId: string,
@@ -2067,6 +2108,62 @@ MANDATORY: Generate exactly ${targetChapterCount} concise chapters in the chapte
     }
   ]
 }`;
+
+export const getCinematicStoryBiblePrompt = (
+  originalInput: string,
+  durationText: string,
+  targetWordCount: number,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  audienceGuideline: string,
+): string => `You are the lead story architect for a production-ready original film.
+${UNTRUSTED_INPUT_RULE}
+
+Create only the compact authoritative Story Bible. Do not write chapters, beats, scenes, screenplay prose, camera instructions, or generation prompts in this step.
+LANGUAGE: ${isVi ? "Natural Vietnamese with complete diacritics" : "Natural idiomatic English"}.
+TARGET FILM: ${durationText}, approximately ${targetWordCount} screenplay words.
+GENRE: ${genre || "Cinematic drama"}.
+WRITING STYLE: ${writingStyle || "Cinematic"}.
+AUDIENCE: ${audienceGuideline}.
+
+The creativeBrief must establish one concrete protagonist objective, opposing force, irreversible midpoint choice, causal climax, visible earned aftermath, and a precise viewer promise. characterSpecs contains only stable identity markers, never current pose, prop, location, lighting, or scene action. factPack contains only claims supported by the supplied source or grounded research; unsupported claims must be marked unsupported or needs_scope and receive a cautious safeRewrite. Keep every field concise enough to finish in one response.
+
+Return exactly one raw JSON object with this structure and no additional properties:
+{"schemaVersion":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION}","artifactId":"AI-created stable artifact ID","theme":"core theme","characterSpecs":"stable character identities","preferredTerms":[],"factCheckNotes":"fact policy","creativeBrief":{"logline":"","centralQuestion":"","viewerPromise":"","centralMessage":"","audience":"","narrativePerspective":"","primaryCharacter":"","conflict":"","turningPoint":"","resolution":"","emotionalArc":"","visualMotifs":[],"forbiddenDirections":[]},"factPack":{"claims":[]},"completionMarker":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER}"}
+
+completionMarker must be the final property. Return the complete object from the beginning. Never return Markdown, explanation, placeholder, ellipsis, patch, or continuation.
+
+[SOURCE DATA]
+${originalInput}`;
+
+export const getCinematicNarrativePlanPrompt = (
+  originalInput: string,
+  storyBibleJson: string,
+  durationText: string,
+  targetWordCount: number,
+  targetChapterCount: number,
+  isVi: boolean,
+): string => `You are the narrative structure director for an original production film.
+${UNTRUSTED_INPUT_RULE}
+
+Use the approved Story Bible unchanged as the sole creative authority. Create a compact causal Narrative Plan, not screenplay prose and not video-generation prompts.
+LANGUAGE: ${isVi ? "Natural Vietnamese with complete diacritics" : "Natural idiomatic English"}.
+TARGET: ${durationText}, approximately ${targetWordCount} final screenplay words.
+CHAPTER COUNT: exactly ${targetChapterCount} chapters.
+
+Use at least six beats. Every beat must create a new decision, fact, relationship, prop state, threat, or consequence. requiredBeatIds and callback IDs must reference IDs that exist in this artifact. Chapters must cover the complete arc without duplicated responsibility. Keep strings concise enough to return the complete JSON in one response.
+
+Return exactly one raw JSON object with this structure and no additional properties:
+{"schemaVersion":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.NARRATIVE_PLAN_SCHEMA_VERSION}","artifactId":"AI-created stable artifact ID","sourceStoryBibleArtifactId":"exact approved Story Bible artifactId","narrativePlan":{"viewerPromise":"","centralQuestion":"","protagonist":{"initialState":"","emotionalLack":"","externalGoal":"","internalNeed":"","temptation":"","firstCompromise":"","escalatingChoices":[],"pointOfNoReturn":"","falseVictory":"","collapse":"","finalCost":"","realization":""},"beats":[{"id":"beat_01","type":"hook|setup|temptation|decision|reward|escalation|reversal|false_victory|collapse|payoff","event":"","characterStateBefore":"","characterStateAfter":"","visibleAction":"","retentionPurpose":"","targetDurationSeconds":1,"callbackId":""}],"callbacks":[{"id":"callback_01","setupBeatId":"beat_01","payoffBeatId":"beat_06","motif":"","changedMeaning":""}],"endingPayoff":""},"chapters":[{"id":"ch_1","title":"","description":"","purpose":"","requiredBeatIds":[],"characterStartState":"","characterEndState":"","callbackSetupIds":[],"callbackPayoffIds":[],"forbiddenRepetition":[],"handoffToNextChapter":""}],"completionMarker":"${CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER}"}
+
+completionMarker must be the final property. Return the complete object from the beginning. Never return Markdown, explanation, placeholder, ellipsis, patch, or continuation.
+
+[APPROVED STORY BIBLE]
+${storyBibleJson}
+
+[SOURCE DATA]
+${originalInput}`;
 
 export const getAudioQualityPrompt = (
   script: string,

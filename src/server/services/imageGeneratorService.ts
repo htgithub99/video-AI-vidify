@@ -102,8 +102,6 @@ let mediaGenerationRevision = SecurityConstants.ZERO;
 
 const isMediaGenerationCancelled = (revision: number): boolean => !_.isEqual(revision, mediaGenerationRevision);
 
-const createReferenceSignature = (referenceImages: string[]): string => crypto.createHash("sha256").update(referenceImages.join("\n")).digest("hex");
-
 const getReferenceProviderName = (provider: "flow" | "grok", logName = false): string => {
   if (_.isEqual(provider, "flow")) return logName ? PROVIDER_REFERENCE_UPLOAD_MESSAGES.FLOW_LOG_NAME : PROVIDER_REFERENCE_UPLOAD_MESSAGES.FLOW_NAME;
   return logName ? PROVIDER_REFERENCE_UPLOAD_MESSAGES.GROK_LOG_NAME : PROVIDER_REFERENCE_UPLOAD_MESSAGES.GROK_NAME;
@@ -129,6 +127,13 @@ const removeProviderReferenceAttachments = async (page: Page): Promise<void> => 
 };
 
 type ProviderReferenceFile = { name: string; mimeType: string; buffer: Buffer };
+type ProviderReferenceAttachmentResult = { attached: boolean; uploadedCount: number };
+
+const createReferenceSignature = (files: ProviderReferenceFile[]): string => {
+  const hash = crypto.createHash("sha256");
+  _.forEach(files, (file) => hash.update(file.name).update(file.mimeType).update(file.buffer));
+  return hash.digest("hex");
+};
 
 const uploadFilesFromButton = async (page: Page, button: Locator, files: ProviderReferenceFile[]): Promise<boolean> => {
   if (!(await button.isVisible().catch(() => false))) return false;
@@ -141,7 +146,7 @@ const uploadFilesFromButton = async (page: Page, button: Locator, files: Provide
   return true;
 };
 
-const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<boolean> => {
+const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<ProviderReferenceAttachmentResult> => {
   const openMediaDialog = async (): Promise<boolean> => {
     const button = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_COMPOSER_MEDIA_BUTTON }).last();
     if (!(await button.isVisible().catch(() => false))) return false;
@@ -150,49 +155,92 @@ const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile
     return true;
   };
 
-  if (!(await openMediaDialog())) return false;
-  const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_DIALOG_UPLOAD_BUTTON }).last();
-  if (!(await uploadFilesFromButton(page, uploadButton, files))) return false;
-
-  const consentButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_CONSENT_BUTTON }).last();
-  if (await consentButton.isVisible().catch(() => false)) await consentButton.click();
+  if (!(await openMediaDialog())) return { attached: false, uploadedCount: SecurityConstants.ZERO };
+  await Promise.all(
+    _.map(files, (file) =>
+      page
+        .getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: new RegExp(_.escapeRegExp(file.name), "i") })
+        .last()
+        .waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.LIBRARY_LOOKUP_TIMEOUT_MS })
+        .catch(() => undefined),
+    ),
+  );
+  const missingFiles: ProviderReferenceFile[] = [];
+  for (const file of files) {
+    const optionName = new RegExp(_.escapeRegExp(file.name), "i");
+    const option = page.getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: optionName }).last();
+    if (!(await option.isVisible().catch(() => false))) missingFiles.push(file);
+  }
+  if (!_.isEmpty(missingFiles)) {
+    const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_DIALOG_UPLOAD_BUTTON }).last();
+    if (!(await uploadFilesFromButton(page, uploadButton, missingFiles))) return { attached: false, uploadedCount: SecurityConstants.ZERO };
+    const consentButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_CONSENT_BUTTON }).last();
+    if (await consentButton.isVisible().catch(() => false)) await consentButton.click();
+  }
 
   for (const file of files) {
     const optionName = new RegExp(_.escapeRegExp(file.name), "i");
     let option = page.getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: optionName }).last();
     if (!(await option.isVisible().catch(() => false))) {
-      if (!(await openMediaDialog())) return false;
+      if (!(await openMediaDialog())) return { attached: false, uploadedCount: missingFiles.length };
       option = page.getByRole(PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOADED_OPTION_ROLE, { name: optionName }).last();
     }
     await option.waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS }).catch(() => undefined);
-    if (!(await option.isVisible().catch(() => false))) return false;
+    if (!(await option.isVisible().catch(() => false))) return { attached: false, uploadedCount: missingFiles.length };
     await option.click({ force: true });
     const addButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_ADD_TO_PROMPT_BUTTON }).last();
     if (await addButton.isVisible().catch(() => false)) await addButton.click();
     await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
   }
-  return true;
+  return { attached: true, uploadedCount: missingFiles.length };
 };
 
-const attachGrokReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<boolean> => {
-  const toolboxButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_TOOLBOX_BUTTON }).last();
-  if (!(await toolboxButton.isVisible().catch(() => false))) return false;
-  await toolboxButton.click();
-  await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
-  const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_MEDIA_UPLOAD_BUTTON }).last();
-  if (!(await uploadFilesFromButton(page, uploadButton, files))) return false;
-  await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
-  const uploadsTab = page.getByRole("tab", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_TAB }).last();
-  if (await uploadsTab.isVisible().catch(() => false)) await uploadsTab.click();
+const attachGrokReferenceFiles = async (page: Page, files: ProviderReferenceFile[]): Promise<ProviderReferenceAttachmentResult> => {
+  const openUploads = async (): Promise<boolean> => {
+    const toolboxButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_TOOLBOX_BUTTON }).last();
+    if (!(await toolboxButton.isVisible().catch(() => false))) return false;
+    await toolboxButton.click();
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
+    const uploadsTab = page.getByRole("tab", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_TAB }).last();
+    if (await uploadsTab.isVisible().catch(() => false)) await uploadsTab.click();
+    return true;
+  };
+
+  if (!(await openUploads())) return { attached: false, uploadedCount: SecurityConstants.ZERO };
+  await Promise.all(
+    _.map(files, (file) =>
+      page
+        .getByRole("button", { name: new RegExp(_.escapeRegExp(file.name), "i") })
+        .last()
+        .waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.LIBRARY_LOOKUP_TIMEOUT_MS })
+        .catch(() => undefined),
+    ),
+  );
+  const missingFiles: ProviderReferenceFile[] = [];
+  for (const file of files) {
+    const namedButton = page.getByRole("button", { name: new RegExp(_.escapeRegExp(file.name), "i") }).last();
+    if (!(await namedButton.isVisible().catch(() => false))) missingFiles.push(file);
+  }
+  if (!_.isEmpty(missingFiles)) {
+    const uploadButton = page.getByRole("button", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_MEDIA_UPLOAD_BUTTON }).last();
+    if (!(await uploadFilesFromButton(page, uploadButton, missingFiles))) return { attached: false, uploadedCount: SecurityConstants.ZERO };
+    await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.PROVIDER_PANEL_DELAY_MS);
+    const uploadsTab = page.getByRole("tab", { name: PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_TAB }).last();
+    if (await uploadsTab.isVisible().catch(() => false)) await uploadsTab.click();
+  }
   for (const file of files) {
     const fileNamePattern = new RegExp(_.escapeRegExp(file.name), "i");
-    const namedButton = page.getByRole("button", { name: fileNamePattern }).last();
+    let namedButton = page.getByRole("button", { name: fileNamePattern }).last();
+    if (!(await namedButton.isVisible().catch(() => false))) {
+      if (!(await openUploads())) return { attached: false, uploadedCount: missingFiles.length };
+      namedButton = page.getByRole("button", { name: fileNamePattern }).last();
+    }
     await namedButton.waitFor({ state: "visible", timeout: PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS }).catch(() => undefined);
-    if (!(await namedButton.isVisible().catch(() => false))) return false;
+    if (!(await namedButton.isVisible().catch(() => false))) return { attached: false, uploadedCount: missingFiles.length };
     await namedButton.click();
     await page.waitForTimeout(PROVIDER_REFERENCE_UPLOAD_CONFIG.POST_ACTION_DELAY_MS);
   }
-  return true;
+  return { attached: true, uploadedCount: missingFiles.length };
 };
 
 const countAttachedProviderReferences = async (page: Page, provider: "flow" | "grok", files: ProviderReferenceFile[]): Promise<number> => {
@@ -222,7 +270,10 @@ const countAttachedProviderReferences = async (page: Page, provider: "flow" | "g
 const uploadProviderCharacterReferences = async (page: Page, referenceImages: string[] | undefined, provider: "flow" | "grok"): Promise<void> => {
   const normalizedReferences = _.take(_.uniq(_.filter(_.castArray(referenceImages || []), _.isString)), GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES);
   const signatureMap = _.isEqual(provider, "flow") ? flowReferenceSignatureMap : grokReferenceSignatureMap;
-  const nextSignature = createReferenceSignature(normalizedReferences);
+  const rawReferenceFiles = createGeminiReferenceFiles(normalizedReferences);
+  if (!_.isEqual(rawReferenceFiles.length, normalizedReferences.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.READ_FAILED, provider));
+  const referenceFiles = _.uniqBy(rawReferenceFiles, "name");
+  const nextSignature = createReferenceSignature(referenceFiles);
   const existingPreviewCount = await page
     .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW)
     .count()
@@ -235,12 +286,9 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
     return;
   }
 
-  const referenceFiles = createGeminiReferenceFiles(normalizedReferences);
-  if (!_.isEqual(referenceFiles.length, normalizedReferences.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.READ_FAILED, provider));
+  let attachmentResult = _.isEqual(provider, "flow") ? await attachFlowReferenceFiles(page, referenceFiles) : await attachGrokReferenceFiles(page, referenceFiles);
 
-  let uploaded = _.isEqual(provider, "flow") ? await attachFlowReferenceFiles(page, referenceFiles) : await attachGrokReferenceFiles(page, referenceFiles);
-
-  if (!uploaded) {
+  if (!attachmentResult.attached && _.isEqual(attachmentResult.uploadedCount, SecurityConstants.ZERO)) {
     const uploadPattern = _.isEqual(provider, "flow") ? PROVIDER_REFERENCE_UPLOAD_CONFIG.FLOW_UPLOAD_BUTTON : PROVIDER_REFERENCE_UPLOAD_CONFIG.GROK_UPLOAD_BUTTON;
     const uploadButton = page.getByRole("button", { name: uploadPattern }).last();
     if (await uploadButton.isVisible().catch(() => false)) {
@@ -250,12 +298,12 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
       ]).then(([chooser]) => chooser);
       if (fileChooser) {
         await fileChooser.setFiles(referenceFiles);
-        uploaded = true;
+        attachmentResult = { attached: true, uploadedCount: referenceFiles.length };
       }
     }
   }
 
-  if (!uploaded) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.CONTROL_MISSING, provider));
+  if (!attachmentResult.attached) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.CONTROL_MISSING, provider));
   const verificationStartedAt = Date.now();
   let attachedCount = SecurityConstants.ZERO;
   while (_.lt(Date.now() - verificationStartedAt, PROVIDER_REFERENCE_UPLOAD_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS)) {
@@ -265,7 +313,11 @@ const uploadProviderCharacterReferences = async (page: Page, referenceImages: st
   }
   if (_.lt(attachedCount, referenceFiles.length)) throw createAppError(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.VERIFY_FAILED, provider));
   signatureMap.set(page, nextSignature);
-  appLog(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.SUCCESS, provider, referenceFiles.length));
+  if (_.gt(attachmentResult.uploadedCount, SecurityConstants.ZERO)) {
+    appLog(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.SUCCESS, provider, attachmentResult.uploadedCount));
+  }
+  const reusedCount = _.subtract(referenceFiles.length, attachmentResult.uploadedCount);
+  if (_.gt(reusedCount, SecurityConstants.ZERO)) appLog(createReferenceUploadMessage(PROVIDER_REFERENCE_UPLOAD_MESSAGES.REUSED, provider, reusedCount));
 };
 
 const normalizeFlowProjectId = (projectId?: string): string => {
@@ -2878,7 +2930,7 @@ export const createGeminiReferenceFiles = (referenceImages: unknown) =>
   _.chain(_.isArray(referenceImages) ? referenceImages : [])
     .filter(_.isString)
     .take(GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES)
-    .map((source, index) => {
+    .map((source) => {
       const match = _.toString(source).match(BASE64_IMAGE_MIME_REGEX);
       const encodedAsset = match
         ? {
@@ -2888,13 +2940,15 @@ export const createGeminiReferenceFiles = (referenceImages: unknown) =>
         : readEncodedProjectImage(source);
       if (!encodedAsset?.data || !encodedAsset.mimeType) return null;
       const extension = _.last(_.split(encodedAsset.mimeType, GEMINI_CHAT_VIDEO_INPUT_CONFIG.MIME_PREFIX)) || "png";
+      const buffer = Buffer.from(encodedAsset.data, REFACTOR_CONSTANTS.ENCODING_BASE64);
+      const contentHash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_HASH_LENGTH);
       return {
         name: _.join(
-          [GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_PREFIX, _.add(index, SecurityConstants.DEFAULT_AMOUNT), GEMINI_CHAT_VIDEO_INPUT_CONFIG.EXTENSION_SEPARATOR, extension],
+          [GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_PREFIX, contentHash, GEMINI_CHAT_VIDEO_INPUT_CONFIG.EXTENSION_SEPARATOR, extension],
           REFACTOR_CONSTANTS.VD_EMPTY_STRING,
         ),
         mimeType: encodedAsset.mimeType,
-        buffer: Buffer.from(encodedAsset.data, REFACTOR_CONSTANTS.ENCODING_BASE64),
+        buffer,
       };
     })
     .compact()

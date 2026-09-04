@@ -61,6 +61,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
   const quotaText = _.get(QUOTA_TEXTS, langKey, QUOTA_TEXTS.VN);
   const { licenseInfo, logoutLicense } = useLicense();
   const [clearingProvider, setClearingProvider] = useState<AiPlanningFallbackProvider | null>(null);
+  const [isClearing, setIsClearing] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<{ provider: AiPlanningFallbackProvider; name: string; label: string } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -108,15 +109,22 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
   const handleExecuteClearRooms = async () => {
     if (!confirmAction) return;
     const { provider, name } = confirmAction;
+    setIsClearing(true);
     setClearingProvider(provider);
-    const response = await safeSystemFetch(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS, { provider });
-    setClearingProvider(null);
-    setConfirmAction(null);
-    const message = (response.success ? planningTexts.CLEAR_ROOM_SUCCESS : planningTexts.CLEAR_ROOM_ERROR)
-      .replace("{0}", name)
-      .replace("{1}", _.toString(response.data?.deletedConversationCount || 0));
-    if (response.success) toast.success(message);
-    else toast.error(message);
+    try {
+      const response = await safeSystemFetch(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS, { provider });
+      const message = (response.success ? planningTexts.CLEAR_ROOM_SUCCESS : planningTexts.CLEAR_ROOM_ERROR)
+        .replace("{0}", name)
+        .replace("{1}", _.toString(response.data?.deletedConversationCount || 0));
+      if (response.success) toast.success(message);
+      else toast.error(message);
+    } catch (error) {
+      toast.error(planningTexts.CLEAR_ROOM_ERROR.replace("{0}", name).replace("{1}", "0"));
+    } finally {
+      setIsClearing(false);
+      setClearingProvider(null);
+      setConfirmAction(null);
+    }
   };
 
   const limitVideo = _.get(licenseInfo, SecurityConstants.LIMITS_VIDEO, SecurityConstants.ZERO);
@@ -196,9 +204,9 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
               title={isVietnamese ? "Dọn dẹp phiên chat AI" : "Clear AI Chat Sessions"}
               aria-label="Clear AI Chat Sessions"
               aria-expanded={isDropdownOpen}>
-              <Trash2 className={cn("w-3.5 h-3.5 text-rose-500 group-hover:text-rose-400 transition-transform group-hover:scale-110 shrink-0")} />
-              <span className={cn("text-[10.5px] font-bold hidden sm:inline")}>{isVietnamese ? "Dọn AI" : "Clear AI"}</span>
-              <ChevronDown className={cn("w-3 h-3 text-slate-400 transition-transform duration-200", isDropdownOpen && "rotate-180 text-rose-400")} />
+              <Trash2 className={cn("w-3.5 h-3.5 text-rose-500 group-hover:text-rose-400 transition-transform group-hover:scale-110 shrink-0 -translate-y-[0.5px]")} />
+              <span className={cn("text-[11px] font-bold hidden sm:inline-flex items-center leading-none translate-y-[0.5px]")}>{isVietnamese ? "Dọn AI" : "Clear AI"}</span>
+              <ChevronDown className={cn("w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0", isDropdownOpen && "rotate-180 text-rose-400")} />
             </button>
 
             {isDropdownOpen && (
@@ -284,7 +292,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
       <Modal
         isOpen={!_.isNull(confirmAction)}
         onClose={() => {
-          if (_.isNull(clearingProvider)) setConfirmAction(null);
+          if (!isClearing && _.isNull(clearingProvider)) setConfirmAction(null);
         }}
         maxWidth="max-w-md"
         title={
@@ -308,14 +316,14 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
           <div className={cn("flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800")}>
             <Button
               variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-              disabled={!_.isNull(clearingProvider)}
+              disabled={isClearing || !_.isNull(clearingProvider)}
               onClick={() => setConfirmAction(null)}
               className={cn("px-5 py-2.5 text-xs font-bold rounded-xl")}>
               {t.cancel || "Hủy"}
             </Button>
             <Button
               variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
-              isLoading={!_.isNull(clearingProvider)}
+              isLoading={isClearing || !_.isNull(clearingProvider)}
               onClick={handleExecuteClearRooms}
               className={cn("px-6 py-2.5 text-xs font-bold rounded-xl shadow-md shadow-rose-600/20")}>
               {t.delete || "Xóa ngay"}

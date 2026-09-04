@@ -208,6 +208,7 @@ const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf
 const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");
 const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8");
 const controllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+const cinematicArtifactSource = fs.readFileSync("src/server/services/cinematicScriptArtifactService.ts", "utf8");
 assert.doesNotMatch(pipelineSource, /No valid take remains[\s\S]{0,300}realScenes\s*=\s*_\.filter/, "pipeline still deletes failed scenes before render");
 assert.match(pipelineSource, /getCinematicGeneratedTakeIssues/, "mandatory take gate is not connected");
 assert.match(pipelineSource, /retryScenes[\s\S]*runSceneGeneration\(retryScenes/, "failed-scene-only media retry is not connected");
@@ -224,7 +225,8 @@ assert.match(autoGeneratorSource, /deleteProjectRegenerationAssets\(project\.id,
 assert.match(autoGeneratorSource, /forceRegenerateScenes: _\.isEmpty\(sceneId\)/, "selected clip retry still forces every scene to regenerate");
 assert.match(controllerSource, /clearProjectSceneOutput\(project, sceneId\)/, "server does not isolate selected clip cleanup");
 assert.match(controllerSource, /FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA/, "cinematic screenplay is not returned as one AI-authored artifact");
-assert.match(controllerSource, /chapters:must_exactly_partition_screenplay/, "screenplay/chapter identity gate is missing");
+assert.match(controllerSource, /getCinematicScreenplayArtifactIssues/, "screenplay validator is not connected");
+assert.match(cinematicArtifactSource, /chapters:must_exactly_partition_screenplay/, "screenplay/chapter identity gate is missing");
 assert.match(controllerSource, /CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA/, "cinematic cast is not enforced as one complete AI artifact");
 assert.match(controllerSource, /passed: _\.isEmpty\(blockingErrors\)/, "cinematic storyboard still bypasses deterministic blocking errors");
 assert.match(pipelineSource, /cinematicMode: isCinematicPipeline/, "character analysis is not marked as a cinematic artifact request");

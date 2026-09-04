@@ -109,10 +109,10 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
     if (!projectToDelete) return;
     setIsLoadingAction(true);
     const idToDelete = projectToDelete.id;
-    setProjectToDelete(null);
     try {
       await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
       await onDeleteProject(idToDelete);
+      setProjectToDelete(null);
     } catch (err) {
       appError(ERROR_MESSAGES.DELETING_PROJECT, err);
     } finally {
@@ -138,7 +138,10 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
   const totalPages = _.max([PROJECT_LIST_CONSTANTS.PAGE_ONE, _.ceil(filteredProjects.length / PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE)]) as number;
   const safeCurrentPage = _.clamp(currentPage, 1, totalPages);
   const paginatedProjects = _.slice(filteredProjects, (safeCurrentPage - 1) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, safeCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE);
-  const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, "config.genre"), Boolean)))];
+  const availableGenres: string[] = [
+    PROJECT_LIST_CONSTANTS.FILTER_ALL,
+    ...Array.from(new Set<string>(_.compact(_.map(projects, (p) => p.config?.genre)))),
+  ];
 
   if (isLoading && projects.length === 0) {
     return <ProjectListSkeleton />;
@@ -210,8 +213,8 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
               )}>
               <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
               {_.map(
-                _.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
-                (g) => (
+                _.filter(availableGenres, (g: string) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
+                (g: string) => (
                   <option key={g} value={g}>
                     {getGenreLabel(g, currentLang)}
                   </option>
@@ -511,7 +514,9 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
       <Modal
         isOpen={!!projectToDelete}
-        onClose={() => setProjectToDelete(null)}
+        onClose={() => {
+          if (!isLoadingAction) setProjectToDelete(null);
+        }}
         maxWidth="max-w-md"
         title={
           <div className={cn("flex items-center gap-2")}>
@@ -526,7 +531,11 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
           </p>
           <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed")}>{t.This_action_cannot_be_und}</div>
           <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800")}>
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
+            <Button
+              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+              disabled={isLoadingAction}
+              onClick={() => setProjectToDelete(null)}
+              className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
               {t.cancel}
             </Button>
             <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isLoadingAction} onClick={handleDeleteConfirm} className={cn("px-5 py-2 text-xs font-bold rounded-xl")}>

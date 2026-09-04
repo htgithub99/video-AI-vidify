@@ -834,6 +834,7 @@ export const GEMINI_CHAT_RECOVERY_CONFIG = {
 export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   MAX_REFERENCE_IMAGES: 3,
   FILE_PREFIX: "gemini-reference-",
+  FILE_HASH_LENGTH: 16,
   MIME_PREFIX: "image/",
   EXTENSION_SEPARATOR: ".",
   BASE64_CAPTURE_INDEX: 2,
@@ -868,6 +869,7 @@ export const PROVIDER_REFERENCE_UPLOAD_CONFIG = {
   GROK_UPLOAD_TAB: /tải lên|uploads?/i,
   FLOW_UPLOADED_OPTION_ROLE: "option",
   FILE_CHOOSER_TIMEOUT_MS: 5000,
+  LIBRARY_LOOKUP_TIMEOUT_MS: 5000,
   UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   POST_ACTION_DELAY_MS: 600,
   PROVIDER_PANEL_DELAY_MS: 800,
@@ -878,7 +880,8 @@ export const PROVIDER_REFERENCE_UPLOAD_MESSAGES = {
   CONTINUE_FAILED: "Không thể tải tiếp ảnh nhân vật lên {provider}.",
   CONTROL_MISSING: "Không tìm thấy thao tác tải ảnh nhân vật trên {provider}.",
   VERIFY_FAILED: "Ảnh nhân vật chưa được {provider} xác nhận tải lên.",
-  SUCCESS: "[{provider}] Đã tải {count} ảnh nhân vật tham chiếu cho cảnh hiện tại.",
+  SUCCESS: "[{provider}] Đã upload mới {count} ảnh nhân vật vào thư viện tham chiếu.",
+  REUSED: "[{provider}] Đã tái sử dụng {count} ảnh nhân vật từ thư viện, không upload lại.",
   FLOW_NAME: "Flow",
   FLOW_LOG_NAME: "Google Flow",
   GROK_NAME: "Grok",
@@ -1358,6 +1361,20 @@ export const SCRIPT_PLAN_CONFIG = {
   SOURCE_TITLE_MAX_LENGTH: 72,
   SOURCE_TITLE_OMISSION: "...",
   SOURCE_BEAT_DURATION_SECONDS: 15,
+} as const;
+
+export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
+  STORY_BIBLE_SCHEMA_VERSION: "cinematic-story-bible-v1",
+  NARRATIVE_PLAN_SCHEMA_VERSION: "cinematic-narrative-plan-v1",
+  SCREENPLAY_SCHEMA_VERSION: "cinematic-screenplay-v1",
+  COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
+  MAX_RESPONSE_ATTEMPTS: 3,
+  PRIMARY_WORKER_ID: "script-writer",
+  RECOVERY_WORKER_ID: "script-recovery",
+  EDITOR_WORKER_ID: "script-editor",
+  EDITOR_RECOVERY_WORKER_ID: "script-editor-recovery",
+  MAX_REJECTED_RESPONSE_CHARACTERS: 30_000,
+  DIAGNOSTIC_RESPONSE_PREVIEW_CHARACTERS: 320,
 } as const;
 
 export const VOICE_DIRECTION_CONFIG = {

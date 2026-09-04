@@ -1029,6 +1029,14 @@ export interface VideoProject {
   creativeBrief?: CreativeBrief;
   narrativePlan?: NarrativePlan;
   chapterPlans?: ChapterPlan[];
+  cinematicScriptArtifacts?: {
+    sourceSignature: string;
+    storyBible?: Record<string, unknown>;
+    narrativePlan?: Record<string, unknown>;
+    screenplayDraft?: Record<string, unknown>;
+    editorialScreenplay?: Record<string, unknown>;
+    updatedAt: string;
+  };
   factPack?: FactPack;
   scriptQa?: ScriptQualityReport;
   subtitleQa?: SubtitleQualityReport;

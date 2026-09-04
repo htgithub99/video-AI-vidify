@@ -294,6 +294,9 @@ export const FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
+    "schemaVersion",
+    "artifactId",
+    "sourceNarrativeArtifactId",
     "scriptSegment",
     "chapters",
     "continuityScore",
@@ -305,8 +308,12 @@ export const FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA = {
     "blockingErrors",
     "warnings",
     "suggestedPatches",
+    "completionMarker",
   ],
   properties: {
+    schemaVersion: stringSchema,
+    artifactId: stringSchema,
+    sourceNarrativeArtifactId: stringSchema,
     scriptSegment: stringSchema,
     chapters: { type: "array", minItems: 3, items: cinematicScreenplayChapterSchema },
     continuityScore: numberScoreSchema,
@@ -318,6 +325,48 @@ export const FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA = {
     blockingErrors: stringArraySchema,
     warnings: stringArraySchema,
     suggestedPatches: stringArraySchema,
+    completionMarker: stringSchema,
+  },
+} as const;
+
+export const CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schemaVersion",
+    "artifactId",
+    "theme",
+    "characterSpecs",
+    "preferredTerms",
+    "factCheckNotes",
+    "creativeBrief",
+    "factPack",
+    "completionMarker",
+  ],
+  properties: {
+    schemaVersion: stringSchema,
+    artifactId: stringSchema,
+    theme: stringSchema,
+    characterSpecs: stringSchema,
+    preferredTerms: stringArraySchema,
+    factCheckNotes: stringSchema,
+    creativeBrief: { type: "object" },
+    factPack: { type: "object" },
+    completionMarker: stringSchema,
+  },
+} as const;
+
+export const CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "artifactId", "sourceStoryBibleArtifactId", "narrativePlan", "chapters", "completionMarker"],
+  properties: {
+    schemaVersion: stringSchema,
+    artifactId: stringSchema,
+    sourceStoryBibleArtifactId: stringSchema,
+    narrativePlan: narrativePlanSchema,
+    chapters: { type: "array", minItems: 3, items: chapterPlanSchema },
+    completionMarker: stringSchema,
   },
 } as const;
 

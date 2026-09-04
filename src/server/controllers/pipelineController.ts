@@ -40,6 +40,7 @@ import {
   FINAL_MULTIMODAL_QA_CONFIG,
   FACT_RESEARCH_CONFIG,
   SCRIPT_PLAN_CONFIG,
+  CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
   SEO_FALLBACK_CONFIG,
   ADVISORY_QA_CONFIG,
   STORYBOARD_QUALITY_CONFIG,
@@ -86,6 +87,9 @@ import {
   getChapterExpansionPrompt,
   getFinalScriptEditorialPrompt,
   getFinalCinematicScreenplayPrompt,
+  getCinematicStoryBiblePrompt,
+  getCinematicNarrativePlanPrompt,
+  getCinematicScreenplayEditorialPrompt,
   getScriptSplitPrompt,
   getSceneDetailBatchPrompt,
   getDetailedPromptBuilderPrompt,
@@ -153,6 +157,8 @@ import {
   CHAPTER_RESPONSE_SCHEMA,
   FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
   FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
+  CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
+  CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
   CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
@@ -222,6 +228,14 @@ import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapt
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import {
+  getCinematicNarrativePlanIssues,
+  getCinematicArtifactIssues,
+  getCinematicScreenplayArtifactIssues,
+  getCinematicStoryBibleIssues,
+  createCinematicScriptSourceSignature,
+  requestValidCinematicArtifact,
+} from "../services/cinematicScriptArtifactService.js";
+import {
   createBatchContinuityContext,
   createPromptCharacterCards,
   createScopedVisualBibleContext,
@@ -243,13 +257,13 @@ import {
   CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS,
   CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
   CINEMATIC_CHAT_PLANNING_CONFIG,
-  CINEMATIC_POLICY_CONFIG,
   resolveCinematicClipDuration,
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
 import { createSourceGroundedSeo } from "../../services/seoFallbackService.js";
+import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { createHash, randomUUID } from "crypto";
@@ -268,6 +282,28 @@ if (fs.existsSync(ffmpegBinary)) {
 
 const isVietnameseRequest = (req: Request): boolean =>
   !_.isEqual(_.toString(req.body?.language || req.query?.lang || ProjectLanguage.VI), ProjectLanguage.EN);
+
+type CinematicScriptArtifactKey = "storyBible" | "narrativePlan" | "screenplayDraft" | "editorialScreenplay";
+
+const saveCinematicScriptArtifactCheckpoint = async (
+  projectId: unknown,
+  key: CinematicScriptArtifactKey,
+  artifact: Record<string, unknown>,
+  sourceSignature: string,
+): Promise<void> => {
+  const safeProjectId = path.basename(_.toString(projectId));
+  if (_.isEmpty(safeProjectId)) return;
+  const project = await getProjectDetailFromDb(safeProjectId);
+  if (!project) return;
+  const matchingArtifacts = _.isEqual(project.cinematicScriptArtifacts?.sourceSignature, sourceSignature) ? project.cinematicScriptArtifacts : undefined;
+  project.cinematicScriptArtifacts = {
+    ...matchingArtifacts,
+    sourceSignature,
+    [key]: artifact,
+    updatedAt: new Date().toISOString(),
+  };
+  await saveProjectDetailToDb(project);
+};
 
 const waitForNextTtsPoll = async (attempts: number): Promise<void> => {
   if (_.lt(attempts, TTS_POLLING_CONFIG.MAX_ATTEMPTS)) {
@@ -1715,6 +1751,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
   if (!(await isAiProviderAvailable())) {
     const isVi = config.language === ProjectLanguage.VI;
+    if (_.isEqual(requestContext.getStore()?.aiExecutionMode, AiPlanningExecutionMode.RoomOnly)) {
+      return res
+        .status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE)
+        .json({ error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, undefined, isVi), retryable: true });
+    }
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
   }
 
@@ -1825,7 +1866,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
     const retentionDirective = createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
     const cinematicScreenplayDirective = isCinematicScript ? createCinematicScreenplayDirective(config.language, durationText) : "";
-    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, isCinematicScript ? undefined : config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${cinematicScreenplayDirective}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${retentionDirective}\n\n${contentControlDirective}`;
+    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, isCinematicScript ? undefined : config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${retentionDirective}\n\n${contentControlDirective}`;
 
     let groundedResearchResponse: any = null;
     if (config.factCheck) {
@@ -1845,28 +1886,163 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       }
     }
     if (groundedResearchResponse?.aiMetadata) aiMetrics.push(groundedResearchResponse.aiMetadata);
-    const scriptPlanResponse = await requestValidScriptPlan(
-      {
-        contents: groundedResearchResponse
-          ? `${combinedScriptPrompt}\n\n[Grounded research evidence]:\n${groundedResearchResponse.text}`
-          : `${combinedScriptPrompt}\n\n[Fact-check mode]: Disabled by the user. Do not invent sources, quotations, studies, or precise factual claims. Mark unverifiable claims unsupported and use cautious qualitative wording.`,
-        config: {
-          responseMimeType: "application/json",
-          responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
-          maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
+    let storyBibleArtifact: Record<string, unknown> | undefined;
+    let narrativePlanArtifact: Record<string, unknown> | undefined;
+    let cinematicCheckpointProject: any = null;
+    let cinematicSourceSignature = "";
+    let canReuseCinematicCheckpoint = false;
+    let storyBibleRegenerated = false;
+    let narrativePlanRegenerated = false;
+    let scriptResult: any;
+    if (isCinematicScript) {
+      cinematicSourceSignature = createCinematicScriptSourceSignature({
+        originalInput,
+        inputType,
+        genre: config.genre,
+        language: config.language,
+        duration: rawDurationText,
+        targetWordCount,
+        targetChapterCount,
+        writingStyle: config.writingStyle,
+        audience: config.audience,
+        factCheck: Boolean(config.factCheck),
+        rewriteLevel: _.clamp(_.toNumber(config.rewriteLevel), 0, 100),
+        creativityLevel: _.clamp(_.toNumber(config.creativityLevel), 0, 10),
+        similarityReduction: _.clamp(_.toNumber(config.similarityReduction), 0, 10),
+        artifactSchemas: {
+          storyBible: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
+          narrativePlan: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.NARRATIVE_PLAN_SCHEMA_VERSION,
+          screenplay: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION,
         },
-        task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
-      },
-      targetChapterCount,
-      generateContentWithRetry,
-      isCinematicScript ? undefined : originalInput,
-    );
+      });
+      const checkpointProjectId = path.basename(_.toString(req.body?.projectId));
+      cinematicCheckpointProject = _.isEmpty(checkpointProjectId) ? null : await getProjectDetailFromDb(checkpointProjectId).catch(() => null);
+      canReuseCinematicCheckpoint =
+        !bypassCache &&
+        _.isEqual(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature, cinematicSourceSignature);
+      const storyBiblePrompt = `${getCinematicStoryBiblePrompt(
+        originalInput,
+        durationText,
+        targetWordCount,
+        config.genre,
+        config.writingStyle,
+        isVi,
+        audienceGuideline,
+      )}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${contentControlDirective}\n\n${
+        groundedResearchResponse
+          ? `[GROUNDED RESEARCH EVIDENCE]\n${groundedResearchResponse.text}`
+          : "[FACT POLICY]\nFact-check mode is disabled. Do not invent sources, quotations, studies, or precise factual claims."
+      }`;
+      const storyBibleOptions = {
+        artifactName: "cinematic_story_bible",
+        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
+        schema: CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
+        validate: getCinematicStoryBibleIssues,
+      };
+      const savedStoryBible = canReuseCinematicCheckpoint ? cinematicCheckpointProject?.cinematicScriptArtifacts?.storyBible : undefined;
+      const savedStoryBibleIssues = savedStoryBible
+        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedStoryBible), savedStoryBible, storyBibleOptions)
+        : ["checkpoint_missing"];
+      if (_.isEmpty(savedStoryBibleIssues)) {
+        storyBibleArtifact = savedStoryBible;
+        multiStepLogs.push("[cinematic_story_bible] reused_valid_checkpoint");
+      } else {
+        const storyBibleResponse = await requestValidCinematicArtifact(
+          {
+            contents: storyBiblePrompt,
+            config: {
+              responseMimeType: CONTENT_TYPES.JSON,
+              responseJsonSchema: CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
+              maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
+            },
+            task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
+          },
+          storyBibleOptions,
+          generateContentWithRetry,
+        );
+        storyBibleArtifact = storyBibleResponse.value;
+        storyBibleRegenerated = true;
+        aiMetrics.push(...storyBibleResponse.aiMetadata);
+        multiStepLogs.push(...storyBibleResponse.rotationLogs);
+        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "storyBible", storyBibleArtifact, cinematicSourceSignature);
+      }
 
-    aiMetrics.push(...scriptPlanResponse.aiMetadata);
-    multiStepLogs.push(...scriptPlanResponse.rotationLogs);
-    const scriptResult = normalizeScriptPlan(scriptPlanResponse.value, originalInput, isCinematicScript) as any;
+      const narrativePlanOptions = {
+        artifactName: "cinematic_narrative_plan",
+        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.NARRATIVE_PLAN_SCHEMA_VERSION,
+        schema: CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
+        validate: (value: Record<string, unknown>) => getCinematicNarrativePlanIssues(value, targetChapterCount, _.get(storyBibleArtifact, "artifactId")),
+      };
+      const savedNarrativePlan =
+        canReuseCinematicCheckpoint && !storyBibleRegenerated
+          ? cinematicCheckpointProject?.cinematicScriptArtifacts?.narrativePlan
+          : undefined;
+      const savedNarrativeIssues = savedNarrativePlan
+        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedNarrativePlan), savedNarrativePlan, narrativePlanOptions)
+        : ["checkpoint_missing"];
+      if (_.isEmpty(savedNarrativeIssues)) {
+        narrativePlanArtifact = savedNarrativePlan;
+        multiStepLogs.push("[cinematic_narrative_plan] reused_valid_checkpoint");
+      } else {
+        const narrativePlanResponse = await requestValidCinematicArtifact(
+          {
+            contents: `${getCinematicNarrativePlanPrompt(
+              originalInput,
+              jsonUtils.safeStringify(storyBibleArtifact),
+              durationText,
+              targetWordCount,
+              targetChapterCount,
+              isVi,
+            )}\n\n${retentionDirective}\n\n${contentControlDirective}`,
+            config: {
+              responseMimeType: CONTENT_TYPES.JSON,
+              responseJsonSchema: CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
+              maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
+            },
+            task: { capability: AiTaskCapability.TextPlanning },
+          },
+          narrativePlanOptions,
+          generateContentWithRetry,
+        );
+        narrativePlanArtifact = narrativePlanResponse.value;
+        narrativePlanRegenerated = true;
+        aiMetrics.push(...narrativePlanResponse.aiMetadata);
+        multiStepLogs.push(...narrativePlanResponse.rotationLogs);
+        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "narrativePlan", narrativePlanArtifact, cinematicSourceSignature);
+      }
+      scriptResult = {
+        theme: _.get(storyBibleArtifact, "theme"),
+        characterSpecs: _.get(storyBibleArtifact, "characterSpecs"),
+        preferredTerms: _.get(storyBibleArtifact, "preferredTerms"),
+        factCheckNotes: _.get(storyBibleArtifact, "factCheckNotes"),
+        creativeBrief: _.get(storyBibleArtifact, "creativeBrief"),
+        factPack: _.get(storyBibleArtifact, "factPack"),
+        narrativePlan: _.get(narrativePlanArtifact, "narrativePlan"),
+        chapters: _.get(narrativePlanArtifact, "chapters"),
+      };
+    } else {
+      const scriptPlanResponse = await requestValidScriptPlan(
+        {
+          contents: groundedResearchResponse
+            ? `${combinedScriptPrompt}\n\n[Grounded research evidence]:\n${groundedResearchResponse.text}`
+            : `${combinedScriptPrompt}\n\n[Fact-check mode]: Disabled by the user. Do not invent sources, quotations, studies, or precise factual claims. Mark unverifiable claims unsupported and use cautious qualitative wording.`,
+          config: {
+            responseMimeType: "application/json",
+            responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
+            maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
+          },
+          task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
+        },
+        targetChapterCount,
+        generateContentWithRetry,
+        originalInput,
+      );
+      aiMetrics.push(...scriptPlanResponse.aiMetadata);
+      multiStepLogs.push(...scriptPlanResponse.rotationLogs);
+      scriptResult = normalizeScriptPlan(scriptPlanResponse.value, originalInput) as any;
+    }
     scriptResult.factPack = await validateFactPack(scriptResult.factPack, Boolean(config.factCheck));
-    assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
+    if (!isCinematicScript) assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
 
     logStep(
       `${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`,
@@ -1883,77 +2059,96 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const expectedChapters = _.castArray(scriptResult.chapters);
       const screenplayPrompt = `${getFinalCinematicScreenplayPrompt(
         originalInput,
-        jsonUtils.safeStringify(scriptResult),
+        jsonUtils.safeStringify(storyBibleArtifact),
+        jsonUtils.safeStringify(narrativePlanArtifact),
         config.genre,
         isVi,
         targetWordCount,
         expectedChapters.length,
       )}\n\n${cinematicScreenplayDirective}\n\n${retentionDirective}\n\n${contentControlDirective}`;
-      let screenplayArtifact: any;
-      let screenplayIssues: string[] = [];
-      const normalizeArtifactText = (value: unknown): string => _.replace(_.trim(_.toString(value)), /\s+/g, " ");
-
-      for (let attemptIndex = 0; attemptIndex < SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS; attemptIndex++) {
-        const response = await generateContentWithRetry({
-          contents:
-            attemptIndex === 0
-              ? screenplayPrompt
-              : `${screenplayPrompt}\n\n[MANDATORY FULL-ARTIFACT REWRITE]\nThe previous artifact failed deterministic validation: ${jsonUtils.safeStringify(
-                  screenplayIssues,
-                )}. Rewrite and return the entire JSON artifact from the beginning. Do not patch or continue the rejected response.`,
-          config: {
-            responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
-            maxOutputTokens: _.clamp(targetWordCount * 6, 4096, 24576),
-          },
-          task: { capability: AiTaskCapability.ScriptWriting },
-        });
-        if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
-        if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
-
-        const candidate = safeParseJSON(response.text, {});
-        const candidateScript = _.trim(_.toString(candidate.scriptSegment));
-        const candidateChapters = _.castArray(candidate.chapters);
-        const wordRatio = _.size(_.words(candidateScript)) / (_.max([1, targetWordCount]) || 1);
-        const scoreFields = ["continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore"];
-        screenplayIssues = _.compact([
-          _.isEmpty(candidateScript) && "screenplay:missing",
-          !/[.!?…][\s"')\]]*$/.test(candidateScript) && "screenplay:incomplete_ending",
-          !_.inRange(wordRatio, 0.9, 1.100001) && "screenplay:duration_word_count_out_of_range",
-          !validateChapterLanguage(candidateScript, isVi).valid && "screenplay:language_invalid",
-          candidateChapters.length !== expectedChapters.length && "chapters:count_mismatch",
-          !_.isEmpty(_.castArray(candidate.blockingErrors)) && "screenplay:ai_reported_blocking_errors",
-          !_.isEmpty(_.castArray(candidate.suggestedPatches)) && "screenplay:ai_left_unapplied_patches",
-          !_.every(scoreFields, (field) => _.gte(_.toNumber(candidate[field]), CINEMATIC_POLICY_CONFIG.MIN_SCRIPT_QA_SCORE)) &&
-            "screenplay:quality_score_below_85",
-        ]);
-        _.forEach(expectedChapters, (expectedChapter: any, chapterIndex) => {
-          const candidateChapter = candidateChapters[chapterIndex] as any;
-          if (!candidateChapter) return;
-          if (!_.isEqual(_.toString(candidateChapter.id), _.toString(expectedChapter.id))) screenplayIssues.push(`chapters:${chapterIndex}:id_mismatch`);
-          if (!_.isEqual(_.trim(_.toString(candidateChapter.title)), _.trim(_.toString(expectedChapter.title)))) screenplayIssues.push(`chapters:${chapterIndex}:title_mismatch`);
-          if (_.isEmpty(_.trim(_.toString(candidateChapter.scriptSegment)))) screenplayIssues.push(`chapters:${chapterIndex}:script_segment_missing`);
-          if (!/[.!?…][\s"')\]]*$/.test(_.trim(_.toString(candidateChapter.scriptSegment)))) screenplayIssues.push(`chapters:${chapterIndex}:incomplete_ending`);
-          if (!validateChapterLanguage(_.toString(candidateChapter.scriptSegment), isVi).valid) screenplayIssues.push(`chapters:${chapterIndex}:language_invalid`);
-        });
-        const chapterArtifact = normalizeArtifactText(_.join(_.map(candidateChapters, (chapter: any) => _.toString(chapter?.scriptSegment)), " "));
-        if (!_.isEqual(chapterArtifact, normalizeArtifactText(candidateScript))) screenplayIssues.push("chapters:must_exactly_partition_screenplay");
-
-        if (_.isEmpty(screenplayIssues)) {
-          screenplayArtifact = candidate;
-          break;
+      const screenplayOptions = {
+        artifactName: "cinematic_screenplay",
+        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION,
+        schema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
+        validate: (value: Record<string, unknown>) =>
+          getCinematicScreenplayArtifactIssues(value, expectedChapters, targetWordCount, config.language, _.get(narrativePlanArtifact, "artifactId")),
+      };
+      const editorialOptions = {
+        ...screenplayOptions,
+        artifactName: "cinematic_screenplay_editorial",
+        primaryWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.EDITOR_WORKER_ID,
+        recoveryWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.EDITOR_RECOVERY_WORKER_ID,
+      };
+      const savedEditorial =
+        canReuseCinematicCheckpoint && !storyBibleRegenerated && !narrativePlanRegenerated
+          ? cinematicCheckpointProject?.cinematicScriptArtifacts?.editorialScreenplay
+          : undefined;
+      const savedEditorialIssues = savedEditorial
+        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedEditorial), savedEditorial, editorialOptions)
+        : ["checkpoint_missing"];
+      let screenplayArtifact: Record<string, unknown>;
+      if (_.isEmpty(savedEditorialIssues)) {
+        screenplayArtifact = savedEditorial;
+        multiStepLogs.push("[cinematic_screenplay_editorial] reused_valid_checkpoint");
+      } else {
+        const savedDraft =
+          canReuseCinematicCheckpoint && !storyBibleRegenerated && !narrativePlanRegenerated
+            ? cinematicCheckpointProject?.cinematicScriptArtifacts?.screenplayDraft
+            : undefined;
+        const savedDraftIssues = savedDraft ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedDraft), savedDraft, screenplayOptions) : ["checkpoint_missing"];
+        let screenplayDraft: Record<string, unknown>;
+        if (_.isEmpty(savedDraftIssues)) {
+          screenplayDraft = savedDraft;
+          multiStepLogs.push("[cinematic_screenplay] reused_valid_checkpoint");
+        } else {
+          const screenplayResponse = await requestValidCinematicArtifact(
+            {
+              contents: screenplayPrompt,
+              config: {
+                responseMimeType: CONTENT_TYPES.JSON,
+                responseJsonSchema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
+                maxOutputTokens: _.clamp(targetWordCount * 6, 4096, 24576),
+              },
+              task: { capability: AiTaskCapability.ScriptWriting },
+            },
+            screenplayOptions,
+            generateContentWithRetry,
+          );
+          screenplayDraft = screenplayResponse.value;
+          aiMetrics.push(...screenplayResponse.aiMetadata);
+          multiStepLogs.push(...screenplayResponse.rotationLogs);
+          await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "screenplayDraft", screenplayDraft, cinematicSourceSignature);
         }
-        multiStepLogs.push(`cinematic_screenplay_artifact_rejected:${_.join(_.uniq(screenplayIssues), ",")}`);
-      }
 
-      if (!screenplayArtifact) {
-        const screenplayError: any = createAppError(`cinematic_screenplay_artifact_invalid:${_.join(_.uniq(screenplayIssues), ",")}`);
-        screenplayError.retryable = true;
-        throw screenplayError;
+        const editorialResponse = await requestValidCinematicArtifact(
+          {
+            contents: getCinematicScreenplayEditorialPrompt(
+              originalInput,
+              jsonUtils.safeStringify(storyBibleArtifact),
+              jsonUtils.safeStringify(narrativePlanArtifact),
+              jsonUtils.safeStringify(screenplayDraft),
+              isVi,
+              targetWordCount,
+              expectedChapters.length,
+            ),
+            config: {
+              responseMimeType: CONTENT_TYPES.JSON,
+              responseJsonSchema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
+              maxOutputTokens: _.clamp(targetWordCount * 6, 4096, 24576),
+            },
+            task: { capability: AiTaskCapability.ScriptWriting },
+          },
+          editorialOptions,
+          generateContentWithRetry,
+        );
+        screenplayArtifact = editorialResponse.value;
+        aiMetrics.push(...editorialResponse.aiMetadata);
+        multiStepLogs.push(...editorialResponse.rotationLogs);
+        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "editorialScreenplay", screenplayArtifact, cinematicSourceSignature);
       }
 
       const finalCleanScript = _.trim(_.toString(screenplayArtifact.scriptSegment));
-      const finalChapters = _.map(screenplayArtifact.chapters, (chapter: any) => ({
+      const finalChapters = _.map(_.castArray<any>(_.get(screenplayArtifact, "chapters")), (chapter: any) => ({
         id: _.toString(chapter.id),
         title: _.toString(chapter.title),
         scriptSegment: _.toString(chapter.scriptSegment),
@@ -2204,6 +2399,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
+    if (_.isEqual(requestContext.getStore()?.aiExecutionMode, AiPlanningExecutionMode.RoomOnly)) {
+      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+        error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, error, isVi),
+        retryable: true,
+      });
+    }
     const rotationLogs = _.castArray(error?.rotationLogs);
     const missingFreeAiKeys = _.some(rotationLogs, (log) => _.isEqual(_.toString(log), FREE_AI_PROVIDER_LOGS.NO_KEYS));
     const attemptedFreeAi = _.some(rotationLogs, (log) => _.includes(_.toString(log), "[AI Router]")) && !missingFreeAiKeys;

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
+import fs, { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { readEncodedProjectImage, readStyleReferenceImage } from "../src/server/services/imageAssetService.ts";
@@ -41,6 +41,23 @@ try {
   assert.equal(referenceFiles[0].mimeType, "image/webp");
   assert.equal(referenceFiles[1].mimeType, "image/png");
   assert.equal(referenceFiles[1].buffer.toString(), imageBuffer.toString());
+  assert.match(referenceFiles[0].name, /^gemini-reference-[a-f0-9]{16}\.webp$/);
+  assert.equal(createGeminiReferenceFiles(["data:image/webp;base64,aW1hZ2U="])[0].name, referenceFiles[0].name);
+
+  const reversedReferenceFiles = createGeminiReferenceFiles([
+    "/assets/projects/test/images/reference.png",
+    "data:image/webp;base64,aW1hZ2U=",
+  ]);
+  assert.equal(reversedReferenceFiles[0].name, referenceFiles[1].name);
+  assert.equal(reversedReferenceFiles[1].name, referenceFiles[0].name);
+
+  const generatorSource = readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8");
+  const flowAttachStart = generatorSource.indexOf("const attachFlowReferenceFiles");
+  const flowAttachEnd = generatorSource.indexOf("const attachGrokReferenceFiles", flowAttachStart);
+  const flowAttachSource = generatorSource.slice(flowAttachStart, flowAttachEnd);
+  assert.ok(flowAttachSource.indexOf("const missingFiles") < flowAttachSource.indexOf("uploadFilesFromButton(page, uploadButton, missingFiles)"));
+  assert.doesNotMatch(flowAttachSource, /uploadFilesFromButton\(page, uploadButton, files\)/);
+  assert.match(generatorSource, /PROVIDER_REFERENCE_UPLOAD_MESSAGES\.REUSED/);
 
   writeVerificationLog("Image asset assertions passed");
 } finally {

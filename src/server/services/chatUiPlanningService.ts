@@ -22,6 +22,7 @@ interface ChatPlanningRequest {
   workerId?: string;
   signal?: AbortSignal;
   attachments?: ChatRoomAttachment[];
+  completionMarker?: string;
 }
 
 const planningMutexes = new Map<string, SimpleMutex>();
@@ -445,6 +446,7 @@ const waitForStableResponse = async (
   initialCount: number,
   expectedSceneIds: string[],
   previousLastResponse: string,
+  completionMarker?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   const startedAt = Date.now();
@@ -470,7 +472,8 @@ const waitForStableResponse = async (
       "";
     const latestText = selectedResponse;
     const isBusy = await page.locator(busySelector).first().isVisible().catch(() => false);
-    const belongsToCurrentRequest = _.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds);
+    const hasRequiredCompletionMarker = _.isEmpty(completionMarker) || _.includes(latestText, completionMarker);
+    const belongsToCurrentRequest = (_.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds)) && hasRequiredCompletionMarker;
     lastResponseCount = count;
     lastCandidateLength = latestText.length;
     lastBusyState = isBusy;
@@ -480,10 +483,16 @@ const waitForStableResponse = async (
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
         if (belongsToCurrentRequest) return latestText;
+        let isCompleteJson = false;
         let isCompleteArray = false;
         try {
-          isCompleteArray = _.isArray(JSON.parse(latestText));
+          const parsedResponse = JSON.parse(latestText);
+          isCompleteJson = true;
+          isCompleteArray = _.isArray(parsedResponse);
         } catch {}
+        if (!_.isEmpty(completionMarker) && isCompleteJson && !hasRequiredCompletionMarker) {
+          throw new Error(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}: completion_marker_missing, candidateLength=${latestText.length}`);
+        }
         if (isCompleteArray) {
           throw new Error(
             `${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}: expected=${_.join(expectedSceneIds, ",")}, candidateLength=${latestText.length}`,
@@ -497,7 +506,7 @@ const waitForStableResponse = async (
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   throw new Error(
-    `AI Chat chưa hoàn tất phản hồi kế hoạch phim trong thời gian cho phép (responses=${lastResponseCount}, initial=${initialCount}, candidateLength=${lastCandidateLength}, busy=${lastBusyState}, identityMatch=${lastIdentityMatch}).`,
+    `AI Chat chưa hoàn tất phản hồi kế hoạch phim trong thời gian cho phép (responses=${lastResponseCount}, initial=${initialCount}, candidateLength=${lastCandidateLength}, busy=${lastBusyState}, identityMatch=${lastIdentityMatch}, completionMarker=${completionMarker || "not-required"}).`,
   );
 };
 
@@ -548,6 +557,7 @@ const submitPrompt = async (
   busySelector: string,
   expectedSceneIds: string[],
   attachments: ChatRoomAttachment[] = [],
+  completionMarker?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   throwIfPlanningCancelled(signal);
@@ -568,7 +578,7 @@ const submitPrompt = async (
   const sendButton = page.locator(sendSelector).last();
   if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
   else await input.press("Enter");
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse, signal);
+  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse, completionMarker, signal);
 };
 
 const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
@@ -643,6 +653,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
     request.expectedSceneIds || [],
     request.attachments || [],
+    request.completionMarker,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -663,6 +674,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
     request.expectedSceneIds || [],
     request.attachments || [],
+    request.completionMarker,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -683,6 +695,7 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
     request.expectedSceneIds || [],
     request.attachments || [],
+    request.completionMarker,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();

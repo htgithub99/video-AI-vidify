@@ -12,15 +12,18 @@ import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 
-const getRoomExecution = () => {
+const getRoomOnlyContext = () => {
   const context = requestContext.getStore();
-  return context?.aiExecutionMode === AiPlanningExecutionMode.RoomOnly && context.aiRoomProvider && context.aiRoomProvider !== AiPlanningFallbackProvider.Disabled
-    ? context
-    : undefined;
+  return context?.aiExecutionMode === AiPlanningExecutionMode.RoomOnly ? context : undefined;
+};
+
+const getRoomExecution = () => {
+  const context = getRoomOnlyContext();
+  return context?.aiRoomProvider && context.aiRoomProvider !== AiPlanningFallbackProvider.Disabled ? context : undefined;
 };
 
 export const isAiProviderAvailable = async (): Promise<boolean> => {
-  if (getRoomExecution()) return true;
+  if (getRoomOnlyContext()) return true;
   const keys = await resolveApiKeys();
   return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
 };
@@ -115,16 +118,20 @@ export const generateContentWithRetry = async (
   params: {
     contents: string | any;
     config?: any;
-    task?: { capability?: AiTaskCapability; budgetUsd?: number; promptVersion?: string };
+    task?: { capability?: AiTaskCapability; budgetUsd?: number; promptVersion?: string; roomWorkerId?: string };
   },
   retries: number = GEMINI_REQUEST_POLICY.DEFAULT_RETRIES,
   delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS,
 ): Promise<any> => {
+  const roomOnlyContext = getRoomOnlyContext();
   const roomExecution = getRoomExecution();
+  if (roomOnlyContext && !roomExecution) {
+    throw createAppError("Room-only AI execution has no valid room provider configured.");
+  }
   if (roomExecution) {
     const roomPayload = createRoomRequestPayload(params.contents);
     if (_.isEmpty(roomPayload.prompt)) throw createAppError("Room-only AI execution received no textual task instruction for the selected room.");
-    const schemaContract = params.config?.responseJsonSchema
+    const schemaContract = params.config?.responseJsonSchema && params.config?.includeRoomSchemaContract !== false
       ? `\n\n[REQUIRED RESPONSE CONTRACT]\nReturn only valid JSON matching this JSON Schema exactly:\n${JSON.stringify(params.config.responseJsonSchema)}`
       : "";
     const roomResponse = await generatePlanningWithChatUi({
@@ -134,6 +141,8 @@ export const generateContentWithRetry = async (
       projectId: roomExecution.aiRoomProjectId || "pipeline-room",
       chromeHeadless: roomExecution.aiRoomChromeHeadless,
       attachments: roomPayload.attachments,
+      workerId: params.task?.roomWorkerId,
+      completionMarker: params.config?.roomCompletionMarker,
     });
     return {
       text: roomResponse.text,
