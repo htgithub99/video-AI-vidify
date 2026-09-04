@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getCharacterAnalysisPrompt } from "../src/constants/prompts";
 import { createSceneGenerationContext, resolveCinematicSceneCharacterReferences } from "../src/services/sceneReferenceService";
 import { CharacterConfig, StoryboardScene } from "../src/types";
@@ -18,9 +19,16 @@ assert.equal(cinematicReferences.referenceRoles.length, 2);
 const automaticContext = createSceneGenerationContext(scene, { characters });
 assert.deepEqual(automaticContext.referenceImages, []);
 
-const characterPrompt = getCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action");
+const characterPrompt = getCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "", true);
 assert.match(characterPrompt, /referenceGenerationPrompt/);
 assert.match(characterPrompt, /identity reference for image-to-video continuity/i);
 assert.match(characterPrompt, /scene wardrobe, action, location, damage, and lighting remain controlled/i);
+assert.match(characterPrompt, /MANDATORY SPECIES AND CANONICAL-FORM LOCK/);
+assert.match(characterPrompt, /sourceIdentityEvidence/);
+assert.match(characterPrompt, /speciesPresentation/);
+assert.match(characterPrompt, /identityContinuityRisks/);
+
+const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
+assert.match(pipelineControllerSource, /identityContinuityRisks: _\.get\(parsed, "identityContinuityRisks"\)/);
 
 process.stdout.write(JSON.stringify({ passed: true, cinematicReferenceCount: cinematicReferences.referenceImages.length, automaticReferencesUnchanged: true }));

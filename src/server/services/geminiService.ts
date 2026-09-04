@@ -143,6 +143,7 @@ export const generateContentWithRetry = async (
       attachments: roomPayload.attachments,
       workerId: params.task?.roomWorkerId,
       completionMarker: params.config?.roomCompletionMarker,
+      closeRoomOnComplete: true,
     });
     return {
       text: roomResponse.text,

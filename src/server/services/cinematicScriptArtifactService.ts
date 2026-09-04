@@ -180,7 +180,7 @@ export const requestValidCinematicArtifact = async (
   const recoveryWorkerId = options.recoveryWorkerId || CINEMATIC_SCRIPT_ARTIFACT_CONFIG.RECOVERY_WORKER_ID;
 
   for (let attemptIndex = 0; attemptIndex < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attemptIndex++) {
-    const workerId = attemptIndex < 2 ? primaryWorkerId : recoveryWorkerId;
+    const workerId = attemptIndex === 0 ? primaryWorkerId : recoveryWorkerId;
     let response: ArtifactAiResponse;
     try {
       response = await generateContent({

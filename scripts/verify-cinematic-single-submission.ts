@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
-import { getCinematicPromptPreflightIssues, resolveAuthoritativeCinematicPrompt } from "../src/services/cinematicPromptPreflightService";
+import {
+  getBlockingCinematicPromptPreflightIssues,
+  getCinematicPromptPreflightIssues,
+  resolveAuthoritativeCinematicPrompt,
+} from "../src/services/cinematicPromptPreflightService";
 import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { createFlowMediaRedirectUrl, normalizeFlowMediaId } from "../src/server/services/imageGeneratorService";
@@ -71,7 +75,11 @@ Create one continuous 10-second cinematic sequence with exactly 3 chronological 
 Maintain identical character identity, face, hairstyle, wardrobe (unchanged weathered armor), weapon and props (rifle secured across Kade's back), lighting direction, geography (the same windblown landing site before sunrise), eyeline and left-to-right screen direction across all shots. Exactly 3 shots and exactly 2 clean motivated cuts. No extra shots, montage, morphing, duplicated characters, distorted faces, wardrobe changes or weapon changes. Natural wind and idle engine audio only; no narrator or background music. Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.`;
 scene.generationPrompt = prompt;
 assert.equal(createCinematicVideoPrompt(scene, "ignored metadata", GenerateType.Video, 10), prompt);
-assert.deepEqual(getCinematicPromptPreflightIssues(scene, prompt, 10), []);
+assert.ok(getCinematicPromptPreflightIssues(scene, prompt, 10).some((issue) => issue.includes("length_outside_recommended_range")));
+assert.deepEqual(getBlockingCinematicPromptPreflightIssues(scene, prompt, 10), []);
+const promptWithoutCaptureMetadata = prompt.replace("Shot on 35mm anamorphic lens, 24fps, ", "");
+assert.ok(getCinematicPromptPreflightIssues(scene, promptWithoutCaptureMetadata, 10).some((issue) => issue.includes("cinematic_capture_missing")));
+assert.deepEqual(getBlockingCinematicPromptPreflightIssues(scene, promptWithoutCaptureMetadata, 10), []);
 const staleDialoguePatch = "Mandatory dialogue correction: char_1 must audibly speak exactly the approved line.";
 const compiledFromStaleScene = createCinematicVideoPrompt({ ...scene, generationPrompt: staleDialoguePatch }, scene.prompt || "", GenerateType.Video, 10);
 assert.equal(compiledFromStaleScene, staleDialoguePatch);

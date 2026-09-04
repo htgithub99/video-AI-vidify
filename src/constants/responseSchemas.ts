@@ -21,6 +21,8 @@ const cinematicCharacterSchema = {
     "id",
     "name",
     "narrativeRole",
+    "sourceIdentityEvidence",
+    "speciesPresentation",
     "genderPresentation",
     "ageRange",
     "ethnicitySkinTone",
@@ -42,6 +44,8 @@ const cinematicCharacterSchema = {
     id: stringSchema,
     name: stringSchema,
     narrativeRole: stringSchema,
+    sourceIdentityEvidence: stringSchema,
+    speciesPresentation: stringSchema,
     genderPresentation: stringSchema,
     ageRange: stringSchema,
     ethnicitySkinTone: stringSchema,
@@ -64,11 +68,12 @@ const cinematicCharacterSchema = {
 export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["characters", "characterAnalysis", "characterSpecs"],
+  required: ["characters", "characterAnalysis", "characterSpecs", "identityContinuityRisks"],
   properties: {
     characters: { type: "array", minItems: 1, maxItems: 3, items: cinematicCharacterSchema },
     characterAnalysis: stringSchema,
     characterSpecs: stringSchema,
+    identityContinuityRisks: stringArraySchema,
   },
 } as const;
 const narrativeBeatTypeSchema = {

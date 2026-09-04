@@ -661,6 +661,17 @@ async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
   }
 }
 
+const resolveLatestCinematicArtifacts = (
+  stored: VideoProject["cinematicScriptArtifacts"],
+  incoming: VideoProject["cinematicScriptArtifacts"],
+): VideoProject["cinematicScriptArtifacts"] => {
+  if (!stored) return incoming;
+  if (!incoming) return stored;
+  const storedUpdatedAt = Date.parse(stored.updatedAt);
+  const incomingUpdatedAt = Date.parse(incoming.updatedAt);
+  return Number.isFinite(storedUpdatedAt) && (!Number.isFinite(incomingUpdatedAt) || storedUpdatedAt > incomingUpdatedAt) ? stored : incoming;
+};
+
 migrateJsonToSqlite().catch((error) => {
   appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
 });
@@ -906,7 +917,12 @@ export const updateProject = async (request: Request, response: Response) => {
       delete newProject.allowReferenceCleanup;
       delete newProject.resetDerivedData;
 
-      const updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
+      const updatedProject = {
+        ...oldProject,
+        ...newProject,
+        cinematicScriptArtifacts: resolveLatestCinematicArtifacts(oldProject.cinematicScriptArtifacts, newProject.cinematicScriptArtifacts),
+        updatedAt: new Date().toISOString(),
+      };
       const savedProject = await saveProjectDetail(updatedProject);
       response.json(savedProject);
     } else {

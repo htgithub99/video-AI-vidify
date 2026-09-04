@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "../src/constants/config";
 import {
   CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
@@ -122,7 +123,7 @@ const result = await requestValidCinematicArtifact(
   },
 );
 assert.equal(result.value.artifactId, storyBible.artifactId);
-assert.deepEqual(workers, [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID]);
+assert.deepEqual(workers, [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.RECOVERY_WORKER_ID]);
 
 const transportWorkers: string[] = [];
 let transportAttempt = 0;
@@ -132,13 +133,12 @@ const recoveredTransportResult = await requestValidCinematicArtifact(
   async (request) => {
     transportWorkers.push(String(request.task.roomWorkerId));
     transportAttempt++;
-    if (transportAttempt < 3) throw new Error("completion_marker_missing");
+    if (transportAttempt < 2) throw new Error("completion_marker_missing");
     return { text: JSON.stringify(storyBible) };
   },
 );
 assert.equal(recoveredTransportResult.value.artifactId, storyBible.artifactId);
 assert.deepEqual(transportWorkers, [
-  CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID,
   CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID,
   CINEMATIC_SCRIPT_ARTIFACT_CONFIG.RECOVERY_WORKER_ID,
 ]);
@@ -167,5 +167,11 @@ assert.match(storyPrompt, /VIDIFY_ARTIFACT_COMPLETE/);
 assert.match(narrativePrompt, /sourceStoryBibleArtifactId/);
 assert.equal(FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA.properties.completionMarker.type, "string");
 assert.equal(CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA.properties.sourceStoryBibleArtifactId.type, "string");
+
+const projectControllerSource = readFileSync(new URL("../src/server/controllers/projectController.ts", import.meta.url), "utf8");
+const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
+assert.match(projectControllerSource, /resolveLatestCinematicArtifacts/);
+assert.match(projectControllerSource, /storedUpdatedAt > incomingUpdatedAt/);
+assert.match(pipelineControllerSource, /cinematicScriptArtifacts: latestCinematicCheckpoint\?\.cinematicScriptArtifacts/);
 
 process.stdout.write("Cinematic script artifact protocol assertions passed.\n");

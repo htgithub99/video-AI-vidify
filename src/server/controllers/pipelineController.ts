@@ -205,6 +205,7 @@ import {
   ProjectLanguage,
   SceneAssetStatus,
   StoryboardScene,
+  StoryboardQualityReport,
   TextInImageMode,
   ThumbnailItem,
   ThumbnailTextMode,
@@ -213,7 +214,11 @@ import {
 } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
-import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
+import {
+  applyDeterministicStoryboardCoverage,
+  getUnderfilledCinematicSceneIds,
+  normalizeStoryboardQuality,
+} from "../../services/storyboardQualityService.js";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import {
   detectVietnameseNarrationStyleWarnings,
@@ -257,6 +262,7 @@ import {
   CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS,
   CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
   CINEMATIC_CHAT_PLANNING_CONFIG,
+  CINEMATIC_POLICY_CONFIG,
   resolveCinematicClipDuration,
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
@@ -821,6 +827,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               chromeHeadless: planningChromeHeadless,
               expectedSceneIds,
               signal: planningRun.signal,
+              closeRoomOnComplete: true,
             });
             const parsed = safeParseJSON(response.text, null);
             const returnedSceneIds = _.isArray(parsed) ? _.map(parsed, (item) => _.toString(_.get(item, "id"))) : [];
@@ -1013,7 +1020,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               _.forEach(beats, (beat, beatIndex) => {
                 if (!_.isEqual(_.toString(beat.sourceSceneId), sceneId)) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:source_scene_mismatch`);
                 if (!_.lt(_.toNumber(beat.startSecond), _.toNumber(beat.endSecond))) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:timing_invalid`);
-                if (beatIndex > 0 && !_.isEqual(_.toNumber(beat.startSecond), _.toNumber(beats[beatIndex - 1].endSecond)))
+                if (
+                  beatIndex > 0 &&
+                  Math.abs(_.toNumber(beat.startSecond) - _.toNumber(beats[beatIndex - 1].endSecond)) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE
+                )
                   issues.push(`${sceneId}:cinematicBeats:${beatIndex}:timing_gap`);
                 const beatDialogueMode = _.toString(beat.dialogueMode);
                 const beatDialogue = _.trim(_.toString(beat.spokenDialogue));
@@ -1043,25 +1053,24 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               if (_.uniq(beatActions).length !== beatActions.length) issues.push(`${sceneId}:cinematicBeats:repeated_action`);
               const beatShotIds = _.map(beats, (beat) => _.lowerCase(_.trim(_.toString(beat.shotId))));
               if (_.uniq(beatShotIds).length !== beats.length || _.some(beatShotIds, _.isEmpty)) issues.push(`${sceneId}:cinematicBeats:shot_ids_must_be_unique`);
-              if (_.some(beats, (beat) => _.lt(_.subtract(_.toNumber(beat.endSecond), _.toNumber(beat.startSecond)), 1.5)))
+              if (_.some(beats, (beat) => _.lt(_.subtract(_.toNumber(beat.endSecond), _.toNumber(beat.startSecond)), 0.5)))
                 issues.push(`${sceneId}:cinematicBeats:shot_too_short_for_playable_action`);
               if (!_.includes(["payoff", "reaction", "reveal"], _.toString(_.last(beats)?.shotRole))) issues.push(`${sceneId}:cinematicBeats:final_shot_must_show_consequence`);
-              if (!_.isEqual(_.toNumber(beats[0].startSecond), 0) || Math.abs(_.toNumber(_.last(beats)?.endSecond) - clipDurationSeconds) > 0.05)
+              if (
+                Math.abs(_.toNumber(beats[0].startSecond)) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE ||
+                Math.abs(_.toNumber(_.last(beats)?.endSecond) - clipDurationSeconds) > CINEMATIC_POLICY_CONFIG.EPSILON_TOLERANCE
+              )
                 issues.push(`${sceneId}:cinematicBeats:must_cover_0_to_${clipDurationSeconds}_seconds`);
             }
           }
           if (isCinematicPlanning && _.isEqual(_.get(item, "dialogueMode"), "on_screen_dialogue")) {
             if (_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue"))))) issues.push(`${sceneId}:spokenDialogue:required_for_on_screen_dialogue`);
-            if (_.lt(_.size(_.words(_.toString(_.get(item, "spokenDialogue")))), 3))
-              issues.push(`${sceneId}:spokenDialogue:dialogue_must_be_at_least_3_words`);
             if (_.isEmpty(_.trim(_.toString(_.get(item, "speakerCharacterId"))))) issues.push(`${sceneId}:speakerCharacterId:required_for_on_screen_dialogue`);
             if (!_.isEqual(_.get(item, "lipSyncRequired"), true)) issues.push(`${sceneId}:lipSyncRequired:must_be_true_for_on_screen_dialogue`);
             if (!_.includes(_.toString(_.get(item, "generationPrompt")), _.trim(_.toString(_.get(item, "spokenDialogue")))))
               issues.push(`${sceneId}:generationPrompt:missing_exact_spoken_dialogue`);
           } else if (isCinematicPlanning && _.isEqual(_.get(item, "dialogueMode"), "off_screen_dialogue")) {
             if (_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue"))))) issues.push(`${sceneId}:spokenDialogue:required_for_off_screen_dialogue`);
-            if (_.lt(_.size(_.words(_.toString(_.get(item, "spokenDialogue")))), 3))
-              issues.push(`${sceneId}:spokenDialogue:dialogue_must_be_at_least_3_words`);
             if (_.isEmpty(_.trim(_.toString(_.get(item, "speakerCharacterId"))))) issues.push(`${sceneId}:speakerCharacterId:required_for_off_screen_dialogue`);
             if (_.isEqual(_.get(item, "lipSyncRequired"), true)) issues.push(`${sceneId}:lipSyncRequired:must_be_false_for_off_screen_dialogue`);
           } else if (isCinematicPlanning && !_.isEmpty(_.trim(_.toString(_.get(item, "spokenDialogue"))))) {
@@ -1429,12 +1438,14 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
 
     const requiresCompleteArtifact = Boolean(cinematicMode);
     const prompt = getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext), requiresCompleteArtifact);
-    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string } | undefined;
+    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[] } | undefined;
     let artifactIssues: string[] = [];
     const requiredIdentityFields = [
       "id",
       "name",
       "narrativeRole",
+      "sourceIdentityEvidence",
+      "speciesPresentation",
       "genderPresentation",
       "ageRange",
       "bodyBuild",
@@ -1482,6 +1493,8 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
           _.uniq(ids).length !== ids.length && "characters:duplicate_id",
           _.isEmpty(characterAnalysis) && "characterAnalysis:missing",
           _.isEmpty(characterSpecs) && "characterSpecs:missing",
+          !_.isArray(_.get(parsed, "identityContinuityRisks")) && "identityContinuityRisks:missing",
+          !_.isEmpty(_.castArray(_.get(parsed, "identityContinuityRisks"))) && "identityContinuityRisks:not_resolved",
           ..._.flatMap(characters, (character, index) => [
             ..._.map(
               _.filter(requiredIdentityFields, (field) => _.isEmpty(_.trim(_.toString(_.get(character, field))))),
@@ -1492,7 +1505,12 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
         ]),
       );
       if (_.isEmpty(artifactIssues)) {
-        result = { characters, characterAnalysis, characterSpecs };
+        result = {
+          characters,
+          characterAnalysis,
+          characterSpecs,
+          identityContinuityRisks: _.get(parsed, "identityContinuityRisks"),
+        };
         break;
       }
     }
@@ -2160,10 +2178,13 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         targetDurationSeconds,
         isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
       );
-      if (!scriptQa.passed) throw createAppError(`cinematic_screenplay_qa_failed:${_.join(scriptQa.blockingErrors, ",")}`);
+      if (!_.isEmpty(scriptQa.blockingErrors)) throw createAppError(`cinematic_screenplay_qa_failed:${_.join(scriptQa.blockingErrors, ",")}`);
 
       logStep(getPipelineLog("SCRIPT_STEP4", isVi));
       logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
+      const latestCinematicCheckpoint = _.isEmpty(path.basename(_.toString(req.body?.projectId)))
+        ? undefined
+        : await getProjectDetailFromDb(path.basename(_.toString(req.body?.projectId))).catch(() => null);
       const parsedData = {
         rewrittenScript: finalCleanScript,
         factCheckNotes: scriptResult.factCheckNotes,
@@ -2177,6 +2198,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         rotationLogs: multiStepLogs,
         aiMetrics,
         contentSafety,
+        cinematicScriptArtifacts: latestCinematicCheckpoint?.cinematicScriptArtifacts,
       };
       setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
       return res.json(parsedData);
@@ -2857,6 +2879,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     logStoryboardStep(`${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`);
     let allScenes: any[] = [];
+    let splitStoryboardQa: Partial<StoryboardQualityReport> | undefined;
 
     try {
       logStoryboardStep(getBilingualMessage("STORYBOARD_SPLITTING_GEMINI"));
@@ -2867,7 +2890,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         ? ({
             type: "object",
             additionalProperties: false,
-            required: ["scenes"],
+            required: ["scenes", "storyboardQa"],
             properties: {
               scenes: {
                 type: "array",
@@ -2885,6 +2908,19 @@ router.post("/storyboard", async (req: Request, res: Response) => {
                   },
                 },
               },
+              storyboardQa: {
+                type: "object",
+                additionalProperties: false,
+                required: ["continuityScore", "shotDiversityScore", "visibleActionScore", "editabilityScore", "blockingErrors", "warnings"],
+                properties: {
+                  continuityScore: { type: "integer", minimum: 0, maximum: 100 },
+                  shotDiversityScore: { type: "integer", minimum: 0, maximum: 100 },
+                  visibleActionScore: { type: "integer", minimum: 0, maximum: 100 },
+                  editabilityScore: { type: "integer", minimum: 0, maximum: 100 },
+                  blockingErrors: { type: "array", items: { type: "string" } },
+                  warnings: { type: "array", items: { type: "string" } },
+                },
+              },
             },
           } as const)
         : undefined;
@@ -2899,7 +2935,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
       const splitData = safeParseJSON(splitResponse.text, { scenes: [] });
       let splitScenes = splitData.scenes || [];
+      splitStoryboardQa = isCinematicStoryboard ? splitData.storyboardQa : undefined;
       if (splitResponse.rotationLogs) storyboardLogs.push(...splitResponse.rotationLogs);
+
+      const hasUnderfilledCinematicScene =
+        isCinematicStoryboard && !_.isEmpty(getUnderfilledCinematicSceneIds(splitScenes, rewrittenScript, cinematicClipCount));
 
       if (
         !_.isArray(splitScenes) ||
@@ -2913,6 +2953,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             _.replace(_.trim(_.join(_.map(splitScenes, (scene: any) => _.toString(scene.script)), " ")), /\s+/g, " "),
             _.replace(_.trim(rewrittenScript), /\s+/g, " "),
           )) ||
+        (isCinematicStoryboard && _.some(splitScenes, (scene: any) => !_.isEqual(_.toString(scene.script), _.toString(scene.subtitle)))) ||
+        hasUnderfilledCinematicScene ||
         (cinematicClipCount && !_.isEqual(splitScenes.length, cinematicClipCount))
       ) {
         throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
@@ -3093,7 +3135,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       ? _.map(data.scenes, (scene) => ({ ...scene, duration: storyboardClipDurationSeconds }))
       : data.scenes;
     const storyboardQaBase = applyDeterministicStoryboardCoverage(
-      normalizeStoryboardQuality({}),
+      normalizeStoryboardQuality(splitStoryboardQa || {}),
       rewrittenScript,
       storyboardQaScenes,
       isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
@@ -3103,12 +3145,14 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       const normalizedSourceScript = _.replace(_.trim(rewrittenScript), /\s+/g, " ");
       const chapterIds = new Set(_.map(_.castArray(syncedChapters), (chapter: any) => _.toString(chapter?.id)));
       const sceneIds = _.map(data.scenes, (scene) => _.trim(_.toString(scene.id)));
+      const underfilledSceneIds = getUnderfilledCinematicSceneIds(data.scenes, rewrittenScript, cinematicClipCount);
       const blockingErrors = _.uniq(
         _.compact([
           cinematicClipCount && data.scenes.length !== cinematicClipCount && `storyboard_clip_count_mismatch:${data.scenes.length}/${cinematicClipCount}`,
           !_.isEqual(normalizedStoryboardScript, normalizedSourceScript) && "storyboard_script_partition_mismatch",
           _.uniq(sceneIds).length !== sceneIds.length && "storyboard_scene_ids_not_unique",
           _.some(data.scenes, (scene) => !chapterIds.has(_.toString(scene.chapterId))) && "storyboard_unknown_chapter_id",
+          !_.isEmpty(underfilledSceneIds) && `storyboard_underfilled_scenes:${_.join(underfilledSceneIds, ",")}`,
           storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE && STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING,
           storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE && STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING,
         ]),
@@ -3118,6 +3162,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         blockingErrors,
         warnings: _.uniq(
           _.compact([
+            ...storyboardQaBase.warnings,
+            ..._.map(storyboardQaBase.blockingErrors, (issue) => `storyboard_ai_advisory:${issue}`),
             storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
             storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
           ]),

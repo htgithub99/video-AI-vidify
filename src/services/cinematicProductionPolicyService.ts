@@ -222,7 +222,7 @@ export const getCinematicScriptReadinessIssues = (
         "chapters:must_exactly_partition_screenplay",
       _.uniq(_.map(chapters, "id")).length !== chapters.length && "chapters:duplicate_id",
       !quality && "scriptQa:missing",
-      quality && !quality.passed && "scriptQa:failed",
+      quality && !_.isEmpty(quality.blockingErrors) && "scriptQa:failed",
       quality &&
         _.some(
           [
@@ -233,9 +233,9 @@ export const getCinematicScriptReadinessIssues = (
             quality.conversationalScore,
             quality.hookPayoffScore,
           ],
-          (score) => _.lt(_.toNumber(score), CINEMATIC_POLICY_CONFIG.MIN_SCRIPT_QA_SCORE),
+          (score) => _.lt(_.toNumber(score), CINEMATIC_POLICY_CONFIG.HARD_MIN_SCRIPT_QA_SCORE),
         ) &&
-        "scriptQa:cinematic_score_below_85",
+        "scriptQa:cinematic_score_below_65",
       !contentSafety && "contentSafety:missing",
       contentSafety && !contentSafety.allowed && "contentSafety:blocked",
       contentSafety &&
@@ -270,8 +270,8 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], _expe
         !hasSceneAsset(scene) && `${scene.id}:asset_missing`,
         !_.isEqual(scene.assetType, GenerateType.Video) && `${scene.id}:video_missing`,
         !_.isEqual(scene.assetStatus, SceneAssetStatus.Approved) && `${scene.id}:asset_not_approved`,
-        !_.isEqual(scene.qaStatus, QaStatus.Passed) && `${scene.id}:qa_failed`,
-        !_.isEqual(scene.acceptance, AssetAcceptance.Approved) && `${scene.id}:acceptance_failed`,
+        !_.includes([QaStatus.Passed, QaStatus.Unavailable], scene.qaStatus) && `${scene.id}:qa_failed`,
+        !_.includes([AssetAcceptance.Approved, AssetAcceptance.AcceptedWithWarning], scene.acceptance) && `${scene.id}:acceptance_failed`,
       ]),
     ),
   ]);

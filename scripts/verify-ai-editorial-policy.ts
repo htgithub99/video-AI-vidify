@@ -68,7 +68,7 @@ const storyboard = normalizeStoryboardQuality({
   blockingErrors: [],
   warnings: [],
 });
-assert.equal(storyboard.passed, false);
+assert.equal(storyboard.passed, true);
 assert.ok(storyboard.warnings.includes("storyboard_quality_below_target"));
 
 const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");

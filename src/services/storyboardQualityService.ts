@@ -1,9 +1,23 @@
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
-import { StoryboardQualityReport } from "../types.js";
+import { StoryboardQualityReport, StoryboardScene } from "../types.js";
 import { calculateStoryboardScriptCoverage } from "./storyboardFallbackService.js";
 
 const normalizeScore = (input: unknown): number => _.clamp(_.toNumber(input), 0, 100);
+
+export const getMinimumCinematicSceneWordCount = (sourceScript: string, expectedClipCount: number): number => {
+  if (!_.isInteger(expectedClipCount) || expectedClipCount < 1) return 1;
+  const averageWordsPerClip = _.size(_.words(sourceScript)) / expectedClipCount;
+  return _.min([8, _.max([1, _.floor(averageWordsPerClip / 5)]) || 1]) || 1;
+};
+
+export const getUnderfilledCinematicSceneIds = (scenes: StoryboardScene[], sourceScript: string, expectedClipCount: number): string[] => {
+  const minimumWordCount = getMinimumCinematicSceneWordCount(sourceScript, expectedClipCount);
+  return _.map(
+    _.filter(scenes, (scene) => _.size(_.words(_.toString(scene.script))) < minimumWordCount),
+    (scene) => _.toString(scene.id),
+  );
+};
 
 export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityReport>): StoryboardQualityReport => {
   const report: StoryboardQualityReport = {
@@ -21,7 +35,7 @@ export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityRepor
   if (_.some(scores, (score) => score < STORYBOARD_QUALITY_CONFIG.MIN_SCORE)) {
     report.warnings = _.uniq([...report.warnings, STORYBOARD_QUALITY_CONFIG.BELOW_TARGET_WARNING]);
   }
-  report.passed = _.isEmpty(report.blockingErrors) && _.every(scores, (score) => score >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE);
+  report.passed = _.isEmpty(report.blockingErrors);
   return report;
 };
 

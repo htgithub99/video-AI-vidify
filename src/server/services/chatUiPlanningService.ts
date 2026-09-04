@@ -23,6 +23,7 @@ interface ChatPlanningRequest {
   signal?: AbortSignal;
   attachments?: ChatRoomAttachment[];
   completionMarker?: string;
+  closeRoomOnComplete?: boolean;
 }
 
 const planningMutexes = new Map<string, SimpleMutex>();
@@ -107,6 +108,16 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
   if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return grokRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return chatGptRooms;
   return undefined;
+};
+
+const closeChatPlanningRoomPage = async (request: ChatPlanningRequest): Promise<void> => {
+  const rooms = getProviderRooms(request.provider);
+  if (!rooms) return;
+  const roomKey = getPlanningRoomKey(request);
+  const page = rooms.get(roomKey);
+  rooms.delete(roomKey);
+  if (page && !page.isClosed()) await page.close().catch(() => undefined);
+  scheduleGlobalBrowserCleanup();
 };
 
 const getProviderConversationSelectors = (
@@ -737,6 +748,9 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     }
     throw error;
   } finally {
+    if (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE) {
+      await closeChatPlanningRoomPage(request);
+    }
     release();
   }
 };

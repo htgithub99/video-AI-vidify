@@ -25,6 +25,11 @@ export const getCinematicPromptPreflightIssues = (scene: StoryboardScene, prompt
   if (_.isEmpty(normalizedPrompt)) issues.push(`${scene.id}:generationPrompt:missing`);
   if (_.lt(wordCount, CINEMATIC_PROMPT_PREFLIGHT_CONFIG.MIN_WORDS) || _.gt(wordCount, CINEMATIC_PROMPT_PREFLIGHT_CONFIG.MAX_WORDS))
     issues.push(`${scene.id}:generationPrompt:length_invalid`);
+  else if (
+    _.lt(wordCount, CINEMATIC_PROMPT_PREFLIGHT_CONFIG.RECOMMENDED_MIN_WORDS) ||
+    _.gt(wordCount, CINEMATIC_PROMPT_PREFLIGHT_CONFIG.RECOMMENDED_MAX_WORDS)
+  )
+    issues.push(`${scene.id}:generationPrompt:length_outside_recommended_range`);
   if (!/\b(?:24\s*fps|twenty-four\s+frames)\b/i.test(normalizedPrompt) || !/\b(?:anamorphic|cinema(?:tic)?\s+lens)\b/i.test(normalizedPrompt))
     issues.push(`${scene.id}:generationPrompt:cinematic_capture_missing`);
   if (!/\b(?:realistic|physically plausible|grounded)\b/i.test(normalizedPrompt)) issues.push(`${scene.id}:generationPrompt:physical_rendering_missing`);
@@ -55,3 +60,9 @@ export const getCinematicPromptPreflightIssues = (scene: StoryboardScene, prompt
   }
   return _.uniq(issues);
 };
+
+export const getBlockingCinematicPromptPreflightIssues = (
+  scene: StoryboardScene,
+  prompt: string,
+  requestedDuration?: string | number,
+): string[] => getBlockingCinematicPlanningIssues(getCinematicPromptPreflightIssues(scene, prompt, requestedDuration));

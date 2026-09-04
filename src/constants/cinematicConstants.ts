@@ -1,7 +1,8 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 
 export const CINEMATIC_POLICY_CONFIG = {
-  MIN_SCRIPT_QA_SCORE: 85,
+  MIN_SCRIPT_QA_SCORE: 75,
+  HARD_MIN_SCRIPT_QA_SCORE: 65,
   MIN_BEAT_COUNT: 3,
   MAX_BEAT_COUNT: 5,
   CLIP_DURATION_SECONDS: 10,
@@ -11,7 +12,7 @@ export const CINEMATIC_POLICY_CONFIG = {
   PLANNING_WORKER_COUNT: 3,
   PREFLIGHT_REVIEW_WORKER_COUNT: 3,
   PREFLIGHT_REVIEW_ATTEMPTS: 1,
-  CLIENT_PLANNING_ATTEMPTS: 3,
+  CLIENT_PLANNING_ATTEMPTS: 2,
   EPSILON_TOLERANCE: 0.25,
   MIN_DIALOGUE_SCENE_RATIO: 0.6,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
@@ -29,12 +30,12 @@ export const getCinematicDialogueRetryDirective = (language: string, dialogue: s
   `Mandatory dialogue correction: ${speakerId} must audibly speak exactly "${dialogue}" in ${language === "vi" ? "Vietnamese" : "English"}. Preserve the named speaker, natural performance and accurate lip synchronization. No narrator, voice-over, third-person commentary, translated duplicate, or additional spoken line.`;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
-  ROOM_RESPONSE_ATTEMPTS: 2,
-  RESPONSE_TIMEOUT_MS: 240000,
+  ROOM_RESPONSE_ATTEMPTS: 1,
+  RESPONSE_TIMEOUT_MS: 120000,
   RESPONSE_POLL_MS: 1000,
   RESPONSE_STABLE_POLLS: 3,
   MIN_RESPONSE_CHARACTERS: 20,
-  MAX_CORRECTION_ATTEMPTS: 2,
+  MAX_CORRECTION_ATTEMPTS: 1,
   API_MAX_SOUND_DESIGN_CUES: 3,
   ROOM_MAX_SOUND_DESIGN_CUES: 5,
   PAGE_READY_TIMEOUT_MS: 45000,
@@ -63,6 +64,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
   EXCESS_BLANK_LINES_PATTERN: /\n[ \t]*\n(?:[ \t]*\n)+/g,
   CANCELLED_ERROR: "chat_planning_cancelled",
+  CLOSE_ROOM_ON_COMPLETE: true,
   INVALID_RESPONSE_ERROR: "chat_planning_invalid_response",
   DEFAULT_PROJECT_SCOPE: "cinematic-planning",
   DEFAULT_WORKER_ID: "worker-0",
@@ -169,6 +171,12 @@ export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
   /:visibleAction:no_observable_physical_verb$/,
   /:actionChoreography:/,
   /:actionStartState:must_match_previous_(?:clip_)?end_state$/,
+  /:screenDirection:continuity_break$/,
+  /:cinematicBeats:final_shot_must_show_consequence$/,
+  /:generationPrompt:length_outside_recommended_range$/,
+  /:generationPrompt:cinematic_capture_missing$/,
+  /:generationPrompt:physical_rendering_missing$/,
+  /:generationPrompt:text_policy_missing$/,
   /^(?:chunk|storyboard):dialogue_coverage:/,
 ] as const;
 
@@ -250,8 +258,10 @@ export const CINEMATIC_PLANNING_MESSAGES = {
 export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 1, MAX_CHARACTERS: 3 } as const;
 
 export const CINEMATIC_PROMPT_PREFLIGHT_CONFIG = {
-  MIN_WORDS: 180,
-  MAX_WORDS: 500,
+  MIN_WORDS: 60,
+  MAX_WORDS: 600,
+  RECOMMENDED_MIN_WORDS: 100,
+  RECOMMENDED_MAX_WORDS: 320,
   FORBIDDEN_PATTERN: /one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take|Video motion direction:|--ar\s/i,
 } as const;
 
