@@ -42,17 +42,17 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primar
         finalBaseStyles,
         sizeStyles,
         variantStyles,
+        className,
         {
           [BUTTON_CLASS_NAME.LOADING]: Boolean(isLoading),
         },
-        className,
       )}
       disabled={disabled || isLoading}
       title={computedTitle}
       {...props}>
       {isLoading ? (
         <span className={cn(BUTTON_CLASS_NAME.LOADING_CONTENT)}>
-          <Loader2 className={cn("w-3.5 h-3.5 animate-spin shrink-0 app-loading-spinner text-current")} />
+          <Loader2 className={cn(BUTTON_CLASS_NAME.LOADING_SPINNER)} />
           <span className={cn(BUTTON_CLASS_NAME.LOADING_TEXT)}>{children}</span>
         </span>
       ) : (

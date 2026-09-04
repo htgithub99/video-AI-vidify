@@ -36,6 +36,8 @@ const planningMutexes = new Map<string, SimpleMutex>();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
+const grokBootstrapMutex = new SimpleMutex();
+const grokReadyContexts = new WeakSet<BrowserContext>();
 interface ActivePlanningController {
   controller: AbortController;
   provider: AiPlanningFallbackProvider;
@@ -679,6 +681,59 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   appWarn("[AI Chat Planning] Mức tư duy Gemini đã chọn không có trong tài khoản; tiếp tục bằng mức hiện tại.");
 };
 
+const isGrokSecurityChallengeActive = async (page: Page): Promise<boolean> => {
+  const title = await page.title().catch(() => "");
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  const hasChallengeFrame = await page
+    .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_FRAME_SELECTOR)
+    .count()
+    .then((count) => count > 0)
+    .catch(() => false);
+  return hasChallengeFrame || CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_TEXT_PATTERN.test(`${title}\n${bodyText}`);
+};
+
+const isGrokChatReady = async (page: Page): Promise<boolean> => {
+  const input = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_INPUT_SELECTOR).filter({ visible: true }).last();
+  return input.isVisible().catch(() => false);
+};
+
+const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promise<void> => {
+  const context = page.context();
+  if (grokReadyContexts.has(context) && (await isGrokChatReady(page))) return;
+  const startedAt = Date.now();
+  let challengeWasVisible = false;
+  let refreshedAfterBootstrap = false;
+  while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_WAIT_TIMEOUT_MS) {
+    throwIfPlanningCancelled(request.signal);
+    if (await isGrokChatReady(page)) {
+      grokReadyContexts.add(context);
+      appLog(
+        challengeWasVisible
+          ? "[AI Chat Planning][Grok] Xác minh Cloudflare hoàn tất; tự động tiếp tục room hiện tại."
+          : "[AI Chat Planning][Grok] Giao diện chat đã sẵn sàng.",
+      );
+      return;
+    }
+    const challengeActive = await isGrokSecurityChallengeActive(page);
+    if (challengeActive && !challengeWasVisible) {
+      challengeWasVisible = true;
+      if (request.chromeHeadless !== false) {
+        throw new Error("grok_security_verification_requires_visible_chrome");
+      }
+      appWarn("[AI Chat Planning][Grok] Cloudflare yêu cầu xác minh. Hãy hoàn tất checkbox trong Chrome; hệ thống đang giữ nguyên tab và chờ.");
+      await page.bringToFront().catch(() => undefined);
+    } else if (!challengeActive && grokReadyContexts.has(context) && !refreshedAfterBootstrap) {
+      refreshedAfterBootstrap = true;
+      await page.goto(EXTERNAL_URLS.GROK_CHAT, {
+        waitUntil: "domcontentloaded",
+        timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS,
+      });
+    }
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_POLL_MS);
+  }
+  throw new Error(challengeWasVisible ? "grok_security_verification_timeout" : "grok_chat_not_ready_or_login_required");
+};
+
 const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<void> => {
   const input = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR).last();
   if (await input.isVisible().catch(() => false)) return;
@@ -734,7 +789,14 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request));
+  const releaseBootstrap = await grokBootstrapMutex.acquire();
+  let room: Page;
+  try {
+    room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request));
+    await ensureGrokReady(room, request);
+  } finally {
+    releaseBootstrap();
+  }
   await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
   const response = await submitPrompt(
     room,

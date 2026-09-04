@@ -51,16 +51,16 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
           disabled={isProcessing || !isReady}
           isLoading={isProcessing && !isCancelling}
           className={cn(
-            "flex-1 h-10 min-h-[40px] px-4 text-xs font-extrabold text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 border",
+            "flex-1 h-10 min-h-[40px] px-4 text-xs font-extrabold text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 border",
             isProcessing
-              ? "bg-rose-600 border-rose-500 shadow-md shadow-rose-500/20"
+              ? "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 border-rose-400/60 shadow-xl shadow-rose-600/30 ring-1 ring-white/20 active:scale-100"
               : !isReady
                 ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
-                : "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 border border-rose-400/30 shadow-lg shadow-rose-600/20 active:scale-98 text-white",
+                : "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 border border-rose-400/40 shadow-lg shadow-rose-600/25 active:scale-[0.98] text-white",
           )}
           title={T.startBtnTooltip}>
           <Zap className={`w-4 h-4 shrink-0 ${isReady ? "text-white fill-white" : "text-slate-500"}`} />
-          <span className={cn("truncate font-extrabold text-white tracking-wide")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+          <span className={cn("truncate font-extrabold text-white tracking-wide drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
         </Button>
 
         {!isProcessing && canContinue && (

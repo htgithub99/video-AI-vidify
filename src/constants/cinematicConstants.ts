@@ -48,6 +48,12 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_RESPONSE_SELECTOR: '[data-testid="assistant-message"]',
   GROK_SEND_SELECTOR: 'button[type="submit"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   GROK_BUSY_SELECTOR: 'button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  GROK_CHALLENGE_FRAME_SELECTOR:
+    'iframe[src*="challenges.cloudflare.com"], iframe[src*="challenge"], iframe[title*="Cloudflare" i], input[name="cf-turnstile-response"]',
+  GROK_CHALLENGE_WAIT_TIMEOUT_MS: 300000,
+  GROK_CHALLENGE_POLL_MS: 1000,
+  GROK_CHALLENGE_TEXT_PATTERN:
+    /performing security verification|verify you are human|verifying you are human|just a moment|xác minh bạn là người|đang thực hiện xác minh bảo mật/i,
   CHATGPT_INPUT_SELECTOR: '#prompt-textarea, textarea[data-id="root"], div[contenteditable="true"][data-virtualkeyboard]',
   CHATGPT_RESPONSE_SELECTOR: '[data-message-author-role="assistant"]',
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',

@@ -4,6 +4,7 @@ import _ from "lodash";
 import {
   CINEMATIC_CHAT_MODEL_LABELS,
   CINEMATIC_CHAT_MODEL_OPTIONS,
+  CINEMATIC_CHAT_PLANNING_CONFIG,
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
 } from "../src/constants/cinematicConstants";
@@ -273,6 +274,11 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /selectGeminiChatModel/);
   assert.match(planningServiceSource, /GEMINI_CHAT_BASE_MODEL_LABELS/);
   assert.match(planningServiceSource, /Thinking level\|Mức tư duy\|Cấp độ tư duy/);
+  assert.match(planningServiceSource, /grokBootstrapMutex = new SimpleMutex/);
+  assert.match(planningServiceSource, /isGrokSecurityChallengeActive/);
+  assert.match(planningServiceSource, /ensureGrokReady\(room, request\)/);
+  assert.match(planningServiceSource, /Cloudflare yêu cầu xác minh[\s\S]*page\.bringToFront/);
+  assert.match(planningServiceSource, /releaseBootstrap = await grokBootstrapMutex\.acquire\(\)[\s\S]*createRoom[\s\S]*releaseBootstrap\(\)/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
   assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
@@ -289,6 +295,8 @@ const verifyCurrentGeminiModelPicker = () => {
   assert(GEMINI_CHAT_BASE_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink]?.test("Pro"));
   assert(GEMINI_CHAT_THINKING_LEVEL_LABELS[AiPlanningChatModel.GeminiThinking]?.test("Extended thinking"));
   assert(GEMINI_CHAT_THINKING_LEVEL_LABELS[AiPlanningChatModel.GeminiDeepThink]?.test("Deep Think"));
+  assert(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_TEXT_PATTERN.test("Performing security verification"));
+  assert(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_TEXT_PATTERN.test("Verify you are human"));
 };
 
 const verifyProviderRoomCleanup = () => {
