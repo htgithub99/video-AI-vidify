@@ -7,7 +7,7 @@ import { requestContext } from "../src/server/utils/requestContext.ts";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../src/types.ts";
 
 const PROVIDER_MODELS: Record<string, { provider: AiPlanningFallbackProvider; model: AiPlanningChatModel }> = {
-  gemini: { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlashLite },
+  gemini: { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash },
   grok: { provider: AiPlanningFallbackProvider.GrokChat, model: AiPlanningChatModel.GrokFast },
   chatgpt: { provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto },
 };

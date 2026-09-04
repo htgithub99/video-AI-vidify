@@ -56,7 +56,8 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_GOOGLE_LOGIN_SELECTOR: 'button:has-text("Continue with Google"), button:has-text("Tiếp tục với Google"), a:has-text("Continue with Google")',
   CHATGPT_COOKIE_REJECT_SELECTOR: '[data-cookie-consent] button:has-text("Reject"), [data-cookie-consent] button:has-text("Từ chối")',
   CHATGPT_COOKIE_ACTION_SELECTOR: '[data-cookie-consent] button',
-  GEMINI_MODEL_BUTTON_SELECTOR: 'button[aria-label*="chọn chế độ" i], button[aria-label*="select mode" i]',
+  GEMINI_MODEL_BUTTON_SELECTOR:
+    'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label*="mô hình" i], button[aria-label*="model" i], button[aria-label*="chế độ" i], button[aria-label*="mode" i], button:has-text("Flash-Lite"), button:has-text("Flash"), button:has-text("Pro")',
   GROK_MODEL_BUTTON_SELECTOR:
     'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
@@ -182,11 +183,11 @@ export const CINEMATIC_ADVISORY_ISSUE_PATTERNS = [
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
   [AiPlanningFallbackProvider.GeminiChat]: [
-    { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
-    { value: AiPlanningChatModel.GeminiFlash, label: "3.7 Flash" },
-    { value: AiPlanningChatModel.GeminiPro, label: "3.1 Pro" },
-    { value: AiPlanningChatModel.GeminiThinking, label: "Tư duy mở rộng" },
-    { value: AiPlanningChatModel.GeminiDeepThink, label: "Deep Think" },
+    { value: AiPlanningChatModel.GeminiFlashLite, label: "Flash-Lite" },
+    { value: AiPlanningChatModel.GeminiFlash, label: "Flash" },
+    { value: AiPlanningChatModel.GeminiPro, label: "Pro" },
+    { value: AiPlanningChatModel.GeminiThinking, label: "Pro · Tư duy mở rộng" },
+    { value: AiPlanningChatModel.GeminiDeepThink, label: "Pro · Deep Think" },
   ],
   [AiPlanningFallbackProvider.GrokChat]: [
     { value: AiPlanningChatModel.GrokFast, label: "Nhanh" },
@@ -200,10 +201,10 @@ export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, Re
 };
 
 export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
-  [AiPlanningChatModel.GeminiFlashLite]: /3\.5\s*Flash-Lite/i,
-  [AiPlanningChatModel.GeminiFlash]: /3\.7\s*Flash/i,
-  [AiPlanningChatModel.GeminiPro]: /3\.1\s*Pro/i,
-  [AiPlanningChatModel.GeminiThinking]: /Tư duy mở rộng|Extended thinking/i,
+  [AiPlanningChatModel.GeminiFlashLite]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash[-\s]?Lite/i,
+  [AiPlanningChatModel.GeminiFlash]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash(?![-\s]?Lite)/i,
+  [AiPlanningChatModel.GeminiPro]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Pro/i,
+  [AiPlanningChatModel.GeminiThinking]: /Tư duy mở rộng|Extended thinking|Extended/i,
   [AiPlanningChatModel.GeminiDeepThink]: /Deep Think/i,
   [AiPlanningChatModel.GrokFast]: /Nhanh|Fast/i,
   [AiPlanningChatModel.GrokBuild]: /Build/i,
@@ -211,6 +212,19 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GrokExpert]: /Chuyên gia|Expert/i,
   [AiPlanningChatModel.GrokHeavy]: /Nặng|Heavy/i,
   [AiPlanningChatModel.ChatGptAuto]: /Auto|Mặc định|Default/i,
+};
+
+export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
+  [AiPlanningChatModel.GeminiFlashLite]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite],
+  [AiPlanningChatModel.GeminiFlash]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash],
+  [AiPlanningChatModel.GeminiPro]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
+  [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
+  [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
+};
+
+export const GEMINI_CHAT_THINKING_LEVEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
+  [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiThinking],
+  [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink],
 };
 
 export const CINEMATIC_PLANNING_MESSAGES = {

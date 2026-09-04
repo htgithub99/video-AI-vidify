@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import _ from "lodash";
+import {
+  CINEMATIC_CHAT_MODEL_LABELS,
+  CINEMATIC_CHAT_MODEL_OPTIONS,
+  GEMINI_CHAT_BASE_MODEL_LABELS,
+  GEMINI_CHAT_THINKING_LEVEL_LABELS,
+} from "../src/constants/cinematicConstants";
 import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt } from "../src/constants/prompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
 import {
@@ -9,7 +15,7 @@ import {
   getCinematicStoryboardContractIssues,
 } from "../src/services/cinematicProductionPolicyService";
 import { createScopedVisualBibleContext, getVisualShotPlanIssues } from "../src/services/visualPlanningService";
-import type { StoryboardScene, VisualBible } from "../src/types";
+import { AiPlanningChatModel, AiPlanningFallbackProvider, type StoryboardScene, type VisualBible } from "../src/types";
 
 const TEST_CONSTANTS = {
   DEFAULT_CLIP_DURATION_SECONDS: 10,
@@ -264,9 +270,25 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
   assert.match(planningServiceSource, /const roomKey = getPlanningRoomKey\(request\)[\s\S]*rooms\.delete\(roomKey\)[\s\S]*page\.close\(\)/);
   assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoomPage\(request\)[\s\S]*release\(\)/);
+  assert.match(planningServiceSource, /selectGeminiChatModel/);
+  assert.match(planningServiceSource, /GEMINI_CHAT_BASE_MODEL_LABELS/);
+  assert.match(planningServiceSource, /Thinking level\|Mức tư duy\|Cấp độ tư duy/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
   assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
+};
+
+const verifyCurrentGeminiModelPicker = () => {
+  assert.deepEqual(
+    _.map(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GeminiChat], "label"),
+    ["Flash-Lite", "Flash", "Pro", "Pro · Tư duy mở rộng", "Pro · Deep Think"],
+  );
+  assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite].test("Gemini 3.5 Flash-Lite"));
+  assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash].test("Gemini 3.8 Flash"));
+  assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro].test("Gemini 3.1 Pro"));
+  assert(GEMINI_CHAT_BASE_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink]?.test("Pro"));
+  assert(GEMINI_CHAT_THINKING_LEVEL_LABELS[AiPlanningChatModel.GeminiThinking]?.test("Extended thinking"));
+  assert(GEMINI_CHAT_THINKING_LEVEL_LABELS[AiPlanningChatModel.GeminiDeepThink]?.test("Deep Think"));
 };
 
 const verifyProviderRoomCleanup = () => {
@@ -319,6 +341,7 @@ const runAllVerificationSuites = () => {
   verifyScopedVisualBibleIsolation();
   verifyPipelineControllerSourceInvariants();
   verifyPlanningRunIsolation();
+  verifyCurrentGeminiModelPicker();
   verifyProviderRoomCleanup();
   verifyCinematicPlanningCheckpointing();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);

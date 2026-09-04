@@ -1,7 +1,13 @@
 import type { BrowserContext, Locator, Page } from "playwright";
 import _ from "lodash";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
-import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS } from "../../constants/index.js";
+import {
+  CINEMATIC_CHAT_MODEL_LABELS,
+  CINEMATIC_CHAT_PLANNING_CONFIG,
+  EXTERNAL_URLS,
+  GEMINI_CHAT_BASE_MODEL_LABELS,
+  GEMINI_CHAT_THINKING_LEVEL_LABELS,
+} from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { getOrLaunchGlobalBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
@@ -414,6 +420,12 @@ const extractBalancedJsonValues = (text: string): string[] => {
 
 const getLastVisibleLocator = async (page: Page, selector: string): Promise<Locator> => {
   const candidates = page.locator(selector);
+  const visibleCandidate = candidates.filter({ visible: true }).last();
+  const becameVisible = await visibleCandidate
+    .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (becameVisible) return visibleCandidate;
   for (let index = (await candidates.count()) - 1; index >= 0; index--) {
     const candidate = candidates.nth(index);
     if (await candidate.isVisible().catch(() => false)) return candidate;
@@ -592,31 +604,79 @@ const submitPrompt = async (
   return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse, completionMarker, signal);
 };
 
-const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
-  if (!model || _.isEqual(model, AiPlanningChatModel.ChatGptAuto)) return;
-  const modelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
-  const button = page.locator(buttonSelector).first();
-  await button.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  const currentModelLabel = _.trim(await button.innerText().catch(() => ""));
-  if (modelLabel.test(currentModelLabel)) return;
-  await button.click();
-  const option = page
+const getChatModelOption = (page: Page, modelLabel: RegExp) =>
+  page
     .getByRole("menuitem", { name: modelLabel })
     .or(page.getByRole("menuitemradio", { name: modelLabel }))
     .or(page.getByRole("option", { name: modelLabel }))
-    .or(page.locator('[role="listbox"] [role="option"], [role="menu"] button').filter({ hasText: modelLabel }))
+    .or(page.locator('[role="listbox"] [role="option"], [role="menu"] button, [role="dialog"] button').filter({ hasText: modelLabel }))
     .filter({ visible: true })
     .first();
+
+const clickChatModelOption = async (page: Page, modelLabel: RegExp): Promise<boolean> => {
+  const option = getChatModelOption(page, modelLabel);
   const optionAvailable = await option
     .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
     .then(() => true)
     .catch(() => false);
-  if (optionAvailable) {
-    await option.click();
+  if (!optionAvailable) return false;
+  await option.click();
+  return true;
+};
+
+const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
+  if (!model || _.isEqual(model, AiPlanningChatModel.ChatGptAuto)) return;
+  const modelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
+  const button = await getLastVisibleLocator(page, buttonSelector);
+  await button.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const currentModelLabel = _.trim(await button.innerText().catch(() => ""));
+  if (modelLabel.test(currentModelLabel)) return;
+  await button.click();
+  if (await clickChatModelOption(page, modelLabel)) return;
+  await page.keyboard.press("Escape").catch(() => undefined);
+  appWarn("[AI Chat Planning] Mô hình đã chọn không xuất hiện trong tài khoản; tiếp tục bằng mô hình hiện tại.");
+};
+
+const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined): Promise<void> => {
+  if (!model) return;
+  const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
+  const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
+  if (!baseModelLabel) return;
+  let modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
+  await modelButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const currentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
+  if (requestedModelLabel.test(currentModelLabel)) return;
+  await modelButton.click();
+  if (await clickChatModelOption(page, requestedModelLabel)) return;
+
+  const thinkingLevelLabel = GEMINI_CHAT_THINKING_LEVEL_LABELS[model];
+  if (!thinkingLevelLabel) {
+    await page.keyboard.press("Escape").catch(() => undefined);
+    appWarn("[AI Chat Planning] Model Gemini đã chọn không có trong tài khoản; tiếp tục bằng model hiện tại.");
     return;
   }
   await page.keyboard.press("Escape").catch(() => undefined);
-  appWarn("[AI Chat Planning] Mô hình đã chọn không xuất hiện trong tài khoản; tiếp tục bằng mô hình hiện tại.");
+  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
+  const fallbackCurrentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
+  if (!baseModelLabel.test(fallbackCurrentModelLabel)) {
+    await modelButton.click();
+    if (!(await clickChatModelOption(page, baseModelLabel))) {
+      await page.keyboard.press("Escape").catch(() => undefined);
+      appWarn("[AI Chat Planning] Model nền Gemini đã chọn không có trong tài khoản; tiếp tục bằng model hiện tại.");
+      return;
+    }
+  }
+  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
+  await modelButton.click();
+  const thinkingLevelTrigger = page
+    .getByRole("menuitem", { name: /Thinking level|Mức tư duy|Cấp độ tư duy/i })
+    .or(page.getByRole("button", { name: /Thinking level|Mức tư duy|Cấp độ tư duy/i }))
+    .filter({ visible: true })
+    .first();
+  if (await thinkingLevelTrigger.isVisible().catch(() => false)) await thinkingLevelTrigger.click();
+  if (await clickChatModelOption(page, thinkingLevelLabel)) return;
+  await page.keyboard.press("Escape").catch(() => undefined);
+  appWarn("[AI Chat Planning] Mức tư duy Gemini đã chọn không có trong tài khoản; tiếp tục bằng mức hiện tại.");
 };
 
 const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<void> => {
@@ -654,7 +714,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
-  await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR);
+  await selectGeminiChatModel(room, request.model);
   const response = await submitPrompt(
     room,
     request.prompt,
