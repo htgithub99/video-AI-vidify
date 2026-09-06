@@ -8,7 +8,7 @@ import {
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
 } from "../src/constants/cinematicConstants";
-import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt } from "../src/constants/prompts";
+import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt } from "../src/constants/cinematicPrompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
 import {
   getBlockingCinematicPlanningIssues,
@@ -104,16 +104,14 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   );
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
   assert.match(initialPrompt, /natural Vietnamese/);
-  assert.match(initialPrompt, /application validates this field and sends it unchanged/i);
-  assert.match(initialPrompt, /author the "generationPrompt" field/i);
-  assert.match(initialPrompt, /layout must be exactly "single_frame"/i);
-  assert.match(initialPrompt, /speakerCharacterId must exactly equal one ID in that same scene's characterIds array/i);
-  assert.match(initialPrompt, /copy it character-for-character without translation/i);
-  assert.match(initialPrompt, /literal hyphenated duration token "10-second"/i);
-  assert.match(initialPrompt, /FEATURE-FILM FIGHT DRAMATURGY/);
-  assert.match(initialPrompt, /center-of-mass travel/i);
-  assert.match(initialPrompt, /momentum, recoil, collision response, gravity/i);
-  assert.match(initialPrompt, /Production sound should layer foot contact/i);
+  assert.match(initialPrompt, /stores and sends generationPrompt unchanged/i);
+  assert.match(initialPrompt, /one focused cinematic moment/i);
+  assert.match(initialPrompt, /cinematography, subject, one primary action, context, then style and ambiance/i);
+  assert.match(initialPrompt, /Prefer one continuous shot/i);
+  assert.match(initialPrompt, /There is no mandatory word count/i);
+  assert.match(initialPrompt, /Every object must contain only: id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired/i);
+  assert.match(initialPrompt, /one decisive attack-defence-consequence exchange/i);
+  assert.doesNotMatch(initialPrompt, /3-5 chronological shots|center-of-mass travel/i);
   assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
 
   const apiPrompt = getCinematicVideoPlanningPrompt(
@@ -141,14 +139,12 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
   );
   assert.match(repairPrompt, /Rewrite every supplied failed scene as one complete production artifact/);
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
-  assert.match(repairPrompt, /Previous rejected complete scene/);
+  assert.match(repairPrompt, /Previous rejected response/);
   assert.match(repairPrompt, /forwards generationPrompt unchanged/);
-  assert.match(repairPrompt, /Set layout to exactly "single_frame"/i);
-  assert.match(repairPrompt, /speakerCharacterId must exactly equal one ID already present/i);
-  assert.match(repairPrompt, /copy it character-for-character/i);
-  assert.match(repairPrompt, /hyphenated duration token "10-second"/i);
-  assert.match(repairPrompt, /feature-film exchange driven by each combatant's immediate objective and tactic/i);
-  assert.match(repairPrompt, /force transfer, involuntary reaction, recovery/i);
+  assert.match(repairPrompt, /one focused 10-second moment/i);
+  assert.match(repairPrompt, /Use the Veo order/i);
+  assert.match(repairPrompt, /one committed attack, one precise defence\/contact\/evasion/i);
+  assert.doesNotMatch(repairPrompt, /Set layout|3 to 5 chronological beats|hyphenated duration token/i);
   assert.doesNotMatch(repairPrompt, /deterministically compiles/);
 };
 
@@ -185,16 +181,16 @@ const verifyBlockingContractClassification = () => {
     actionStartState: "A different action state.",
     screenDirection: "right_to_left",
   } as StoryboardScene;
+  firstScene.generationPrompt = "Focused Veo prompt for scene one.";
+  secondScene.generationPrompt = "Focused Veo prompt for scene two.";
   const advisoryIssues = getCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
-  assert(advisoryIssues.includes("sc_2:continuityFrom:must_reference_previous_clip"));
-  assert(advisoryIssues.includes("sc_2:actionStartState:must_match_previous_end_state"));
-  assert(advisoryIssues.includes("sc_2:screenDirection:continuity_break"));
+  assert.deepEqual(advisoryIssues, []);
   const continuityBlockers = getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
   assert.equal(continuityBlockers.includes("sc_2:continuityFrom:must_reference_previous_clip"), false);
   assert.equal(continuityBlockers.includes("sc_2:actionStartState:must_match_previous_end_state"), false);
   assert.equal(continuityBlockers.includes("sc_2:screenDirection:continuity_break"), false);
 
-  const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), soundDesignCues: [] } as StoryboardScene;
+  const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), generationPrompt: "Focused Veo prompt.", soundDesignCues: [] } as StoryboardScene;
   assert.equal(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"), false);
 
   assert.deepEqual(
@@ -259,7 +255,9 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
   assert.match(controllerSource, /isCinematicPlanning \? promptCharacters : _\.filter/);
   assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
-  assert.match(controllerSource, /maxItems: CINEMATIC_CHAT_PLANNING_CONFIG\.API_MAX_SOUND_DESIGN_CUES/);
+  assert.match(controllerSource, /createCinematicPlanningProperties/);
+  assert.match(controllerSource, /generationPrompt: planningString/);
+  assert.match(controllerSource, /if \(isCinematicPlanning\) \{[\s\S]*generationPrompt:missing[\s\S]*return _\.uniq\(issues\)/);
   assert.match(controllerSource, /getCorrectablePlanningIssues[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
   assert.match(controllerSource, /CINEMATIC_CHAT_PLANNING_CONFIG\.ROOM_RESPONSE_ATTEMPTS/);
   assert.match(controllerSource, /getBlockingCinematicStoryboardContractIssues/);
@@ -285,7 +283,10 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /planningMutexes = new Map<string, SimpleMutex>/);
   assert.match(planningServiceSource, /getPlanningRoomKey\(request\)/);
   assert.match(planningServiceSource, /difference\(expectedSceneIds, returnedSceneIds\)/);
-  assert.match(planningServiceSource, /belongsToCurrentRequest \|\| isCompleteJson/);
+  assert.match(planningServiceSource, /initialResponseSet = new Set/);
+  assert.match(planningServiceSource, /responsesNotPresentBeforeSubmission/);
+  assert.match(planningServiceSource, /mayUseUnmarkedJsonFallback = _\.isEmpty\(completionMarker\) && isCompleteJson/);
+  assert.match(planningServiceSource, /belongsToCurrentRequest \|\| mayUseUnmarkedJsonFallback/);
   assert.match(planningServiceSource, /closeChatPlanningRoom/);
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
   assert.match(planningServiceSource, /const roomKey = getPlanningRoomKey\(request\)[\s\S]*rooms\.delete\(roomKey\)[\s\S]*page\.close\(\)/);
@@ -307,6 +308,8 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /releaseBootstrap = await getGrokBootstrapMutex\(browser\.context\)\.acquire\(\)[\s\S]*createRoom[\s\S]*releaseBootstrap\(\)/);
   const grokReadinessSource = planningServiceSource.match(/const ensureGrokReady[\s\S]*?const ensureChatGptReady/)?.[0] || "";
   assert.match(grokReadinessSource, /GROK_READY_STABLE_POLLS/);
+  assert.match(grokReadinessSource, /GROK_POST_CHALLENGE_READY_STABLE_POLLS/);
+  assert.match(planningServiceSource, /const browser = await getOrLaunchGrokBrowser\(request\.chromeHeadless\)/);
   assert.match(grokReadinessSource, /challengeActiveLastPoll/);
   assert.match(grokReadinessSource, /grokReadyContexts\.delete\(context\)/);
   assert.doesNotMatch(grokReadinessSource, /page\.(?:goto|reload)\(/);
@@ -319,6 +322,15 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /challengeBodyVisible = !chatReady/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
   assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
+  assert.match(imageGeneratorSource, /grokBrowserLaunchPromise: Promise<\{ context: BrowserContext; page: Page \}> \| null/);
+  assert.match(imageGeneratorSource, /waitForVisibleGrokVerificationBeforeAutomation/);
+  assert.match(imageGeneratorSource, /if \(chromeHeadless === false\) await waitForVisibleGrokVerificationBeforeAutomation\(\)/);
+  assert.match(imageGeneratorSource, /EXTERNAL_URLS\.GROK_CHAT,/);
+  const grokLaunchSource = imageGeneratorSource.match(/const launchNativeGrokBrowser[\s\S]*?export const getOrLaunchGrokBrowser/)?.[0] || "";
+  assert.doesNotMatch(grokLaunchSource, /EXTERNAL_URLS\.GROK_IMAGINE/);
+  assert.match(grokLaunchSource, /waitForGrokChrome\(\)[\s\S]*waitForVisibleGrokVerificationBeforeAutomation\(\)[\s\S]*chromium\.connectOverCDP/);
+  const grokPreconnectSource = imageGeneratorSource.match(/const waitForVisibleGrokVerificationBeforeAutomation[\s\S]*?const launchNativeGrokBrowser/)?.[0] || "";
+  assert.doesNotMatch(grokPreconnectSource, /page\.(?:goto|reload)\(|chromium\.connectOverCDP/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
 };
 
@@ -383,6 +395,7 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /phase,\s*\r?\n\s*lastSuccessfulPhase/);
   assert.match(pipelineSource, /prompt_planning_completed/);
   assert.match(pipelineSource, /CINEMATIC_PLANNING_MESSAGES\.VI_BATCH_ATTEMPT/);
+  assert.match(pipelineSource, /const latestProject = activeProjectSnapshotRef\.current \|\| currentProject/);
 };
 
 const runAllVerificationSuites = () => {

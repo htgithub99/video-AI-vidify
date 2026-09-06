@@ -1,11 +1,12 @@
 import _ from "lodash";
+import { ROOM_ONLY_SCRIPT_ERROR_CONFIG } from "../../constants/config.js";
 
 export const getRoomOnlyScriptError = (provider: unknown, error: unknown, isVietnamese: boolean): string => {
   const roomName = _.toString(provider || "selected-room");
   const rawIssue = _.trim(_.toString(_.get(error, "message")));
   const containsUnrelatedProviderAdvice = /api\s*key|groq|cerebras|kh[oó]a/i.test(rawIssue);
   const roomIssue = !rawIssue || containsUnrelatedProviderAdvice ? "room_execution_failed" : _.truncate(rawIssue, { length: 240 });
-  const isCreativeArtifactIssue = /cinematic_(?:story_bible|narrative_plan|screenplay).*_invalid|schema_version|completion_marker|\$root\./i.test(roomIssue);
+  const isCreativeArtifactIssue = ROOM_ONLY_SCRIPT_ERROR_CONFIG.CREATIVE_ARTIFACT_ISSUE_PATTERN.test(roomIssue);
   if (isCreativeArtifactIssue) {
     return isVietnamese
       ? `Room ${roomName} đã trả dữ liệu nhưng artifact kịch bản cuối còn lỗi cấu trúc (${roomIssue}). Các bước hợp lệ đã được checkpoint; hãy bấm Tiếp tục để AI viết lại riêng artifact này.`

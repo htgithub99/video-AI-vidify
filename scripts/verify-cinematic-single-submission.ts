@@ -6,7 +6,7 @@ import {
   getCinematicPromptPreflightIssues,
   resolveAuthoritativeCinematicPrompt,
 } from "../src/services/cinematicPromptPreflightService";
-import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
+import { GenerateType, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { isNonRetryableFlowVideoError } from "../src/services/projectImageGenerationService";
 import {
@@ -86,25 +86,26 @@ Create one continuous 10-second cinematic sequence with exactly 3 chronological 
 Maintain identical character identity, face, hairstyle, wardrobe (unchanged weathered armor), weapon and props (rifle secured across Kade's back), lighting direction, geography (the same windblown landing site before sunrise), eyeline and left-to-right screen direction across all shots. Exactly 3 shots and exactly 2 clean motivated cuts. No extra shots, montage, morphing, duplicated characters, distorted faces, wardrobe changes or weapon changes. Natural wind and idle engine audio only; no narrator or background music. Completely text-free. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks. Full-bleed cinematic frame with no borders, margins, letterboxing or pillarboxing.`;
 scene.generationPrompt = prompt;
 assert.equal(createCinematicVideoPrompt(scene, "ignored metadata", GenerateType.Video, 10), prompt);
-assert.ok(getCinematicPromptPreflightIssues(scene, prompt, 10).some((issue) => issue.includes("length_outside_recommended_range")));
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, prompt, 10), []);
 assert.deepEqual(getBlockingCinematicPromptPreflightIssues(scene, prompt, 10), []);
 const promptWithoutCaptureMetadata = prompt.replace("Shot on 35mm anamorphic lens, 24fps, ", "");
-assert.ok(getCinematicPromptPreflightIssues(scene, promptWithoutCaptureMetadata, 10).some((issue) => issue.includes("cinematic_capture_missing")));
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, promptWithoutCaptureMetadata, 10), []);
 assert.deepEqual(getBlockingCinematicPromptPreflightIssues(scene, promptWithoutCaptureMetadata, 10), []);
 const staleDialoguePatch = "Mandatory dialogue correction: char_1 must audibly speak exactly the approved line.";
 const compiledFromStaleScene = createCinematicVideoPrompt({ ...scene, generationPrompt: staleDialoguePatch }, scene.prompt || "", GenerateType.Video, 10);
 assert.equal(compiledFromStaleScene, staleDialoguePatch);
-assert.ok(getCinematicPromptPreflightIssues(scene, compiledFromStaleScene, 10).length > 0);
-assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replace("Shot 3", "Final view"), 10).some((issue) => issue.includes("shot_3_missing")));
-assert.ok(getCinematicPromptPreflightIssues(scene, prompt.replaceAll(scene.spokenDialogue!, ""), 10).some((issue) => issue.includes("dialogue_missing")));
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, compiledFromStaleScene, 10), []);
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, prompt.replace("Shot 3", "Final view"), 10), []);
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, prompt.replaceAll(scene.spokenDialogue!, ""), 10), []);
+assert.deepEqual(getCinematicPromptPreflightIssues(scene, "", 10), ["sc_preflight:generationPrompt:missing"]);
 const aiAuthoredPrompt = `${prompt}\n\nPreserve these intentional trailing line breaks.\n`;
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: false, repairedPrompt: "must not replace a safe prompt" }), aiAuthoredPrompt);
 const aiRewrittenPrompt = `${prompt}\nComplete AI-authored safe rewrite.`;
 assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: aiRewrittenPrompt }), aiRewrittenPrompt);
-assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: "" }), "");
-assert.deepEqual(getCinematicSceneContractIssues(scene, 10, ProjectLanguage.EN), []);
-assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Người kể: Anh ấy bước đi." }, 10, ProjectLanguage.VI).some((issue) => issue.includes("third_person_narration_forbidden")));
-assert.ok(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Chúng ta đi ngay." }, 10, ProjectLanguage.EN).some((issue) => issue.includes("must_be_english")));
+assert.equal(resolveAuthoritativeCinematicPrompt(aiAuthoredPrompt, { violatesPolicy: true, repairedPrompt: "" }), aiAuthoredPrompt);
+assert.deepEqual(getCinematicSceneContractIssues(scene, 10), []);
+assert.deepEqual(getCinematicSceneContractIssues({ ...scene, spokenDialogue: "Người kể: Anh ấy bước đi." }, 10), []);
+assert.deepEqual(getCinematicSceneContractIssues({ ...scene, generationPrompt: "" }, 10), ["sc_preflight:generationPrompt:missing"]);
 const flowMediaId = "84a69b3c-7dda-487c-a735-227c6b76b6b9";
 const duplicatedFlowMediaUrl = `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`;
 assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
@@ -152,4 +153,4 @@ assert.match(pipelineControllerSource, /!_\.isEmpty\(requestedIdempotencyKey\) &
 assert.doesNotMatch(pipelineControllerSource, /_\.some\(\[result\?\.success, result\?\.remoteMediaCreated\]/);
 assert.match(cinematicPipelineSource, /const recoverPendingFlowDownloads = async/);
 assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
-process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, shots: 3 }));
+process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, creativeQaBlockers: 0 }));

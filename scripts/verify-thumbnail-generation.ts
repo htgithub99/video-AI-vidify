@@ -92,7 +92,7 @@ assert.match(directorPrompt, /Keep generationPrompt below 150 English words/i);
 assert.match(directorPrompt, /PROJECT STYLE LOCK/i);
 assert.doesNotMatch(directorPrompt, /overall image style must be highly cinematic/i);
 assert.match(directorPrompt, /Do not include --ar; the application appends it/i);
-assert.match(directorPrompt, /Concise English Gemini prompt/i);
+assert.match(directorPrompt, /"generationPrompt"\s*:/i);
 assert.match(directorPrompt, /Choose exactly one of the eight layout IDs/i);
 assert.match(directorPrompt, /sports_banner_subject/i);
 assert.match(directorPrompt, /editorial_montage/i);

@@ -447,6 +447,7 @@ export interface VisualConfig {
   planningChatModel?: AiPlanningChatModel;
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
+  preserveAiPromptText?: boolean;
 }
 
 export interface CharacterConfig {
@@ -1027,10 +1028,6 @@ export interface VideoProject {
   cinematicScriptArtifacts?: {
     sourceSignature: string;
     filmPackage?: Record<string, unknown>;
-    storyBible?: Record<string, unknown>;
-    narrativePlan?: Record<string, unknown>;
-    screenplayDraft?: Record<string, unknown>;
-    editorialScreenplay?: Record<string, unknown>;
     updatedAt: string;
   };
   factPack?: FactPack;
@@ -1068,6 +1065,11 @@ export interface VideoProject {
   activeRunId?: string | null;
   lastRunId?: string;
   generationLogs?: string[];
+  generationDiagnostics?: Array<{
+    timestamp: string;
+    message: string;
+    detail?: unknown;
+  }>;
   generationCheckpoint?: {
     intent: "new" | "continue" | "render_only";
     phase: string;

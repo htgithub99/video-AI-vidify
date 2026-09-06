@@ -10,7 +10,7 @@ import {
 } from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
-import { getOrLaunchGlobalBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
+import { getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
 interface ChatRoomAttachment {
   name: string;
@@ -478,11 +478,12 @@ const waitForStableResponse = async (
   busySelector: string,
   initialCount: number,
   expectedSceneIds: string[],
-  previousLastResponse: string,
+  initialResponseTexts: string[],
   completionMarker?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   const startedAt = Date.now();
+  const initialResponseSet = new Set(_.map(initialResponseTexts, (value) => _.trim(value)));
   let previousText = "";
   let stablePolls = 0;
   let lastResponseCount = initialCount;
@@ -495,9 +496,10 @@ const waitForStableResponse = async (
     const count = await responses.count().catch(() => 0);
     const responseTexts = _.map(await responses.allTextContents().catch(() => []), (value) => _.trim(value));
     const lastResponse = _.trim(_.last(responseTexts) || "");
-    const changedLastResponse = !_.isEmpty(lastResponse) && !_.isEqual(lastResponse, previousLastResponse) ? lastResponse : "";
+    const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : "";
     const newResponseTexts = count > initialCount ? _.slice(responseTexts, initialCount) : [];
-    const responseCandidates = _.compact([...newResponseTexts, changedLastResponse]);
+    const responsesNotPresentBeforeSubmission = _.filter(responseTexts, (value) => !_.isEmpty(value) && !initialResponseSet.has(value));
+    const responseCandidates = _.uniq(_.compact([...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
     const selectedResponse =
       _.findLast(
         _.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)),
@@ -531,7 +533,8 @@ const waitForStableResponse = async (
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
-        if (belongsToCurrentRequest || isCompleteJson) {
+        const mayUseUnmarkedJsonFallback = _.isEmpty(completionMarker) && isCompleteJson;
+        if (belongsToCurrentRequest || mayUseUnmarkedJsonFallback) {
           if (!belongsToCurrentRequest) {
             appWarn(
               `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${_.join(
@@ -628,12 +631,12 @@ const submitPrompt = async (
     .locator(responseSelector)
     .count()
     .catch(() => 0);
-  const previousLastResponse = _.trim(
+  const initialResponseTexts = _.map(
     await page
       .locator(responseSelector)
-      .last()
-      .innerText()
-      .catch(() => ""),
+      .allTextContents()
+      .catch(() => []),
+    (value) => _.trim(value),
   );
   if (!_.isEmpty(attachments)) await attachRoomFiles(page, attachments);
   const normalizedPrompt = normalizeRoomPrompt(prompt);
@@ -643,7 +646,7 @@ const submitPrompt = async (
   if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
   else await input.press("Enter");
   appLog(`[AI Chat Planning] Đã nhập và gửi yêu cầu vào room (${normalizedPrompt.length} ký tự).`);
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, previousLastResponse, completionMarker, signal);
+  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseTexts, completionMarker, signal);
 };
 
 const getChatModelOption = (page: Page, modelLabel: RegExp) =>
@@ -781,6 +784,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
   let challengeWasVisible = false;
   let challengeActiveLastPoll = false;
   let stableReadyPolls = 0;
+  let previousReadyUrl = "";
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_WAIT_TIMEOUT_MS) {
     throwIfPlanningCancelled(request.signal);
     if (page.isClosed()) throw new Error("grok_chat_page_closed_during_bootstrap");
@@ -789,6 +793,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
     if (challengeActive) {
       grokReadyContexts.delete(context);
       stableReadyPolls = 0;
+      previousReadyUrl = "";
       challengeWasVisible = true;
       if (request.chromeHeadless !== false) throw new Error("grok_security_verification_requires_visible_chrome");
       if (!challengeActiveLastPoll) {
@@ -800,8 +805,13 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
       continue;
     }
     challengeActiveLastPoll = false;
-    stableReadyPolls = chatReady ? _.add(stableReadyPolls, 1) : 0;
-    if (stableReadyPolls >= CINEMATIC_CHAT_PLANNING_CONFIG.GROK_READY_STABLE_POLLS) {
+    const currentUrl = page.url();
+    stableReadyPolls = chatReady ? (_.isEqual(currentUrl, previousReadyUrl) ? _.add(stableReadyPolls, 1) : 1) : 0;
+    previousReadyUrl = chatReady ? currentUrl : "";
+    const requiredStablePolls = challengeWasVisible
+      ? CINEMATIC_CHAT_PLANNING_CONFIG.GROK_POST_CHALLENGE_READY_STABLE_POLLS
+      : CINEMATIC_CHAT_PLANNING_CONFIG.GROK_READY_STABLE_POLLS;
+    if (stableReadyPolls >= requiredStablePolls) {
       grokReadyContexts.add(context);
       appLog(
         challengeWasVisible
@@ -881,7 +891,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
 
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
+  const browser = await getOrLaunchGrokBrowser(request.chromeHeadless);
   const releaseBootstrap = await getGrokBootstrapMutex(browser.context).acquire();
   let room: Page;
   try {

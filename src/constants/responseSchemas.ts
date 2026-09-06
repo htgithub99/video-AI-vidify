@@ -1,3 +1,5 @@
+import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config";
+
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
 const stringArraySchema = { type: "array", items: stringSchema } as const;
@@ -75,12 +77,13 @@ const cinematicFilmPackageCharacterSchema = {
 const cinematicFilmPackageSceneSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "chapterId", "script", "subtitle"],
+  required: ["id", "chapterId", "script", "subtitle", "characterIds"],
   properties: {
     id: stringSchema,
     chapterId: stringSchema,
     script: stringSchema,
     subtitle: stringSchema,
+    characterIds: stringArraySchema,
   },
 } as const;
 
@@ -98,7 +101,7 @@ const cinematicFilmPackageChapterSchema = {
 export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["scriptSegment", "chapters", "characters", "scenes"],
+  required: ["scriptSegment", "chapters", "characters", "scenes", "completionMarker"],
   properties: {
     title: stringSchema,
     logline: stringSchema,
@@ -112,6 +115,7 @@ export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
     characters: { type: "array", maxItems: 3, items: cinematicFilmPackageCharacterSchema },
     scenes: { type: "array", minItems: 1, items: cinematicFilmPackageSceneSchema },
     warnings: stringArraySchema,
+    completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
   },
 } as const;
 
@@ -334,97 +338,6 @@ export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
   },
 } as const;
 
-const cinematicScreenplayChapterSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "title", "scriptSegment"],
-  properties: {
-    id: stringSchema,
-    title: stringSchema,
-    scriptSegment: stringSchema,
-  },
-} as const;
-
-export const FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "schemaVersion",
-    "artifactId",
-    "sourceNarrativeArtifactId",
-    "scriptSegment",
-    "chapters",
-    "continuityScore",
-    "repetitionScore",
-    "factualityScore",
-    "emotionalArcScore",
-    "conversationalScore",
-    "hookPayoffScore",
-    "blockingErrors",
-    "warnings",
-    "suggestedPatches",
-    "completionMarker",
-  ],
-  properties: {
-    schemaVersion: stringSchema,
-    artifactId: stringSchema,
-    sourceNarrativeArtifactId: stringSchema,
-    scriptSegment: stringSchema,
-    chapters: { type: "array", minItems: 3, items: cinematicScreenplayChapterSchema },
-    continuityScore: numberScoreSchema,
-    repetitionScore: numberScoreSchema,
-    factualityScore: numberScoreSchema,
-    emotionalArcScore: numberScoreSchema,
-    conversationalScore: numberScoreSchema,
-    hookPayoffScore: numberScoreSchema,
-    blockingErrors: stringArraySchema,
-    warnings: stringArraySchema,
-    suggestedPatches: stringArraySchema,
-    completionMarker: stringSchema,
-  },
-} as const;
-
-export const CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "schemaVersion",
-    "artifactId",
-    "theme",
-    "characterSpecs",
-    "preferredTerms",
-    "factCheckNotes",
-    "creativeBrief",
-    "factPack",
-    "completionMarker",
-  ],
-  properties: {
-    schemaVersion: stringSchema,
-    artifactId: stringSchema,
-    theme: stringSchema,
-    characterSpecs: stringSchema,
-    preferredTerms: stringArraySchema,
-    factCheckNotes: stringSchema,
-    creativeBrief: { type: "object" },
-    factPack: { type: "object" },
-    completionMarker: stringSchema,
-  },
-} as const;
-
-export const CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "artifactId", "sourceStoryBibleArtifactId", "narrativePlan", "chapters", "completionMarker"],
-  properties: {
-    schemaVersion: stringSchema,
-    artifactId: stringSchema,
-    sourceStoryBibleArtifactId: stringSchema,
-    narrativePlan: narrativePlanSchema,
-    chapters: { type: "array", minItems: 3, items: chapterPlanSchema },
-    completionMarker: stringSchema,
-  },
-} as const;
-
 export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
   type: "object",
   required: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan", "factPack", "chapters"],
@@ -581,11 +494,10 @@ export const CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA = {
           performanceScore: numberScoreSchema,
           dialogueCoverageScore: numberScoreSchema,
           dialogueDetected: { type: "boolean" },
-          observedShotCount: { type: "integer", minimum: 0, maximum: 8 },
+          observedShotCount: { type: "integer", minimum: 0 },
           segments: {
             type: "array",
             minItems: 1,
-            maxItems: 5,
             items: {
               type: "object",
               additionalProperties: false,

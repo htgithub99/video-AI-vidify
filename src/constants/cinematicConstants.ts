@@ -1,20 +1,13 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 
 export const CINEMATIC_POLICY_CONFIG = {
-  MIN_SCRIPT_QA_SCORE: 75,
-  HARD_MIN_SCRIPT_QA_SCORE: 65,
-  MIN_BEAT_COUNT: 3,
-  MAX_BEAT_COUNT: 5,
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
   PLANNING_CHUNK_SIZE: 3,
   PLANNING_WORKER_COUNT: 1,
-  PREFLIGHT_REVIEW_WORKER_COUNT: 3,
-  CLIENT_PLANNING_ATTEMPTS: 2,
-  CLIENT_SCENE_RECOVERY_ATTEMPTS: 2,
-  EPSILON_TOLERANCE: 0.25,
-  MIN_DIALOGUE_SCENE_RATIO: 0.6,
+  CLIENT_PLANNING_ATTEMPTS: 1,
+  CLIENT_SCENE_RECOVERY_ATTEMPTS: 1,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
 
@@ -23,14 +16,6 @@ export const CINEMATIC_ROOM_STAGE = {
   PROMPT: "prompt-room",
   THUMBNAIL: "thumbnail-room",
   VIDEO: "video-room",
-} as const;
-
-export const CINEMATIC_DIALOGUE_CONFIG = {
-  MODES: ["on_screen_dialogue", "off_screen_dialogue", "silent_action"],
-  VIETNAMESE_CHARACTER_PATTERN: /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i,
-  VIETNAMESE_WORD_PATTERN: /\b(?:anh|chị|em|ông|bà|tôi|ta|ngươi|chúng ta|không|được|phải|đang|sẽ|đã|này|đó|với|của|cho|hãy|đừng)\b/i,
-  ENGLISH_WORD_PATTERN: /\b(?:the|you|your|we|our|they|this|that|is|are|will|must|can|cannot|do|not|please|come|go|stop|wait)\b/i,
-  NARRATION_PATTERN: /^(?:narrator|voice[- ]?over|lời dẫn|người kể|chúng ta thấy|khán giả thấy|câu chuyện|the audience|we see)\s*[:：-]/i,
 } as const;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
@@ -60,6 +45,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_CHALLENGE_WAIT_TIMEOUT_MS: 300000,
   GROK_CHALLENGE_POLL_MS: 1000,
   GROK_READY_STABLE_POLLS: 2,
+  GROK_POST_CHALLENGE_READY_STABLE_POLLS: 5,
   GROK_CHALLENGE_TEXT_PATTERN: /performing security verification|verify you are human|verifying you are human|just a moment|xác minh bạn là người|đang thực hiện xác minh bảo mật/i,
   CHATGPT_INPUT_SELECTOR: '#prompt-textarea, textarea[data-id="root"], div[contenteditable="true"][data-virtualkeyboard]',
   CHATGPT_RESPONSE_SELECTOR:
@@ -112,65 +98,18 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
 
 export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
   "id",
-  "prompt",
   "generationPrompt",
-  "visualIntent",
-  "visibleAction",
-  "reaction",
-  "storyEvidence",
-  "visualHook",
   "characterIds",
-  "shotPurpose",
   "dialogueMode",
   "spokenDialogue",
   "speakerCharacterId",
   "lipSyncRequired",
-  "expectedSubjectCount",
-  "allowBackgroundPeople",
-  "layout",
-  "textAllowed",
-  "textOverlay",
-  "shotSize",
-  "cameraAngle",
-  "composition",
-  "locationId",
-  "propIds",
-  "continuityFrom",
-  "continuityNotes",
-  "lighting",
-  "sequenceId",
-  "shotId",
-  "shotRole",
-  "characterBlocking",
-  "eyelineDirection",
-  "screenDirection",
-  "actionStartState",
-  "actionEndState",
-  "locationState",
-  "wardrobeState",
-  "propState",
-  "soundDesignCues",
-  "cinematicBeats",
-  "assetStrategy",
-  "archivalSearchQuery",
-  "archivalRationale",
 ] as const;
 
-export const CINEMATIC_AI_CREATIVE_BEAT_REQUIRED_FIELDS = [
-  "sourceSceneId",
-  "shotId",
-  "shotRole",
-  "shotSize",
-  "cameraAngle",
-  "visibleAction",
-  "reaction",
-  "transition",
-  "dialogueMode",
-  "spokenDialogue",
-  "speakerCharacterId",
-  "lipSyncRequired",
-  "startSecond",
-  "endSecond",
+export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [
+  /:result:missing_scene$/,
+  /:id:(?:duplicate|unexpected)$/,
+  /:generationPrompt:missing$/,
 ] as const;
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
@@ -234,10 +173,10 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_SCENE_RECOVERY_ATTEMPT: "Optimizing details and continuity for {1} (attempt {2}/{3}).",
   VI_SCENE_RECOVERED: "Đã hoàn tất xây dựng câu lệnh và mô tả đạt chuẩn cho {0}.",
   EN_SCENE_RECOVERED: "Completed verified prompt description for {0}.",
-  VI_SCENE_RECOVERY_FAILED: "Chưa thể hoàn tất mô tả cho {0}. Hệ thống sẽ sử dụng phương án dự phòng an toàn.",
-  EN_SCENE_RECOVERY_FAILED: "Could not complete description for {0}. Falling back to safe defaults.",
-  VI_REQUIRED: "Kế hoạch sản xuất phim chưa đủ thông tin phân cảnh hoặc nhân vật. Hệ thống đã tạm dừng để bạn kiểm tra lại.",
-  EN_REQUIRED: "Film plan lacks required scenes or characters. Pipeline paused for review.",
+  VI_SCENE_RECOVERY_FAILED: "AI chưa trả prompt cho {0}. Đã giữ các cảnh hoàn thành và tạm dừng tại những cảnh còn thiếu.",
+  EN_SCENE_RECOVERY_FAILED: "AI did not return prompts for {0}. Completed scenes were kept and production paused at the missing scenes.",
+  VI_REQUIRED: "AI chưa trả đủ prompt video. Các cảnh đã hoàn thành được giữ lại để tiếp tục ở lần sau.",
+  EN_REQUIRED: "AI did not return every video prompt. Completed scenes were kept so the next run can continue from the missing ones.",
   VI_REQUIRED_DETAIL: "Chi tiết chưa đạt: {0}.",
   EN_REQUIRED_DETAIL: "Incomplete details: {0}.",
   ISSUE_DISPLAY_LIMIT: 8,
@@ -249,12 +188,12 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_START_NEW: "Starting new film production",
   VI_CONTINUE: "Tiếp tục sản xuất phim",
   EN_CONTINUE: "Continuing film production",
-  VI_PREFLIGHT_START: "Đang thẩm định chất lượng hình ảnh và chuyển động các phân cảnh trước khi sản xuất...",
-  EN_PREFLIGHT_START: "Auditing scene visuals and continuity before generation...",
-  VI_PREFLIGHT_PASSED: "Toàn bộ các phân cảnh đã đạt chuẩn chất lượng điện ảnh, sẵn sàng sản xuất.",
-  EN_PREFLIGHT_PASSED: "All scenes passed cinematic quality checks and are ready for generation.",
-  VI_PREFLIGHT_FAILED: "Một số phân cảnh chưa đạt tiêu chuẩn chất lượng. Đã tạm dừng để bạn điều chỉnh.",
-  EN_PREFLIGHT_FAILED: "Some scenes did not meet quality standards. Pipeline paused for review.",
+  VI_PREFLIGHT_START: "Đang kiểm tra kỹ thuật để chắc chắn mỗi cảnh có prompt trước khi tạo video...",
+  EN_PREFLIGHT_START: "Checking that every scene has a prompt before video generation...",
+  VI_PREFLIGHT_PASSED: "Mọi cảnh đều có prompt và sẵn sàng tạo video.",
+  EN_PREFLIGHT_PASSED: "Every scene has a prompt and is ready for video generation.",
+  VI_PREFLIGHT_FAILED: "Một số cảnh chưa có prompt nên chưa thể tạo video.",
+  EN_PREFLIGHT_FAILED: "Some scenes have no prompt, so video generation cannot start.",
   VI_PREFLIGHT_FAILED_SCENES: "Cần hoàn thiện lại: {0}.",
   EN_PREFLIGHT_FAILED_SCENES: "Scenes needing adjustment: {0}.",
   PREFLIGHT_LOG_PREFIX: "[Cinematic preflight]",
@@ -265,26 +204,9 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_CHARACTER_PACK_READY: "[Character Pack] Character references are saved; each scene will upload only its visible characters.",
   VI_CHARACTER_PACK_FAILED: "Không thể hoàn thành ảnh nhận diện nhân vật. Đã dừng trước khi tạo clip để tránh video sai nhân vật.",
   EN_CHARACTER_PACK_FAILED: "The character identity pack could not be completed. Production stopped before clip generation to avoid inconsistent characters.",
-  VI_SCRIPT_GATE_FAILED: "Kịch bản phim chưa đạt Bots kiểm tra bắt buộc. Đã dừng trước khi tạo clip nên chưa sử dụng credit video.",
-  EN_SCRIPT_GATE_FAILED: "The film script did not pass the mandatory quality gate. Production stopped before clip generation, so no video credit was used.",
-  VI_STORYBOARD_GATE_FAILED: "Storyboard chưa đủ cảnh, chưa phủ đúng kịch bản hoặc chưa đạt nhịp dựng. Đã dừng trước khi tạo clip nên chưa sử dụng credit video.",
-  EN_STORYBOARD_GATE_FAILED:
-    "The storyboard is incomplete, does not fully cover the script, or fails pacing requirements. Production stopped before clip generation, so no video credit was used.",
-  VI_PLAN_GATE_FAILED: "Kế hoạch quay còn thiếu prompt, shot, thoại hoặc continuity. Đã dừng trước khi tạo clip nên chưa sử dụng credit video.",
-  EN_PLAN_GATE_FAILED: "The shooting plan is missing prompts, shots, dialogue, or continuity. Production stopped before clip generation, so no video credit was used.",
-  VI_TAKE_GATE_FAILED: "Một hoặc nhiều clip bị thiếu hoặc không khớp nội dung. Đã dừng trước bước dựng để không xuất phim sai.",
-  EN_TAKE_GATE_FAILED: "One or more clips are missing or do not match the story. Editing stopped to prevent an incorrect film export.",
 } as const;
 
 export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 1, MAX_CHARACTERS: 3 } as const;
-
-export const CINEMATIC_PROMPT_PREFLIGHT_CONFIG = {
-  MIN_WORDS: 60,
-  MAX_WORDS: 600,
-  RECOMMENDED_MIN_WORDS: 100,
-  RECOMMENDED_MAX_WORDS: 320,
-  FORBIDDEN_PATTERN: /one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take|Video motion direction:|--ar\s/i,
-} as const;
 
 export const resolveCinematicClipDuration = (value?: string | number): number => {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));
@@ -292,77 +214,4 @@ export const resolveCinematicClipDuration = (value?: string | number): number =>
   return Math.min(CINEMATIC_POLICY_CONFIG.MAX_CLIP_DURATION_SECONDS, Math.max(CINEMATIC_POLICY_CONFIG.MIN_CLIP_DURATION_SECONDS, parsed));
 };
 
-export const CINEMATIC_POLICY_REQUIRED_FIELDS = [
-  "prompt",
-  "generationPrompt",
-  "visualIntent",
-  "visibleAction",
-  "reaction",
-  "storyEvidence",
-  "visualHook",
-  "shotPurpose",
-  "shotSize",
-  "cameraAngle",
-  "composition",
-  "continuityNotes",
-  "lighting",
-  "sequenceId",
-  "shotId",
-  "shotRole",
-  "dialogueMode",
-  "characterBlocking",
-  "eyelineDirection",
-  "screenDirection",
-  "actionStartState",
-  "actionEndState",
-  "locationState",
-  "wardrobeState",
-  "propState",
-  "assetStrategy",
-] as const;
-
-export const CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG = {
-  CONFLICT_PATTERN:
-    /\b(fights?|battles?|combat|attacks?|strike|punches?|kicks?|slashes?|shoots?|fires?|swings?|dodges?|blocks?|parries?|collides?|impact|enemy|opponent|soldier|weapon|đánh|chiến đấu|giao chiến|tấn công|ra đòn|đấm|đá|chém|bắn|vung|né|đỡ|va chạm|đối thủ|kẻ địch|binh|vũ khí)\b/i,
-  INITIATOR_PATTERN: /\b(attacks?|strikes?|swings?|fires?|shoots?|punches?|kicks?|slashes?|charges?|tấn công|ra đòn|vung|bắn|đấm|đá|chém|lao vào)\b/i,
-  FOOTWORK_PATTERN: /\b(plants?|braces?|steps?|lead foot|rear foot|stance|chân trụ|đặt chân|bước chân|thế đứng|trụ chân)\b/i,
-  WEIGHT_TRANSFER_PATTERN:
-    /\b(weight shifts?|weight transfers?|transfers? (?:his|her|their|the|body) weight|drives? (?:his|her|their|the|body) weight|hips? turns?|shoulders? turns?|dồn trọng lượng|chuyển trọng tâm|xoay hông|xoay vai)\b/i,
-  WIND_UP_PATTERN:
-    /\b(draws? (?:his|her|their|the)? ?(?:limb|arm|fist|weapon|staff|sword|axe|spear)? ?back|pulls? (?:his|her|their|the)? ?(?:limb|arm|fist|weapon|staff|sword|axe|spear)? ?back|cocks?|winds? up|raises? .* (?:shoulder|hip)|kéo .* về|thu .* về|lấy đà|giơ .* ngang)\b/i,
-  OWNERSHIP_PATTERN: /\b(his|her|their|the attacker's|the defender's|tay phải|tay trái|cánh tay|bàn tay|vũ khí của|rìu của|gậy của|kiếm của)\b/i,
-  TARGET_PATTERN: /\b(at|toward|against|into|target|enemy|opponent|defender|vào|về phía|nhắm|mục tiêu|kẻ địch|đối thủ|người đỡ)\b/i,
-  CONTACT_PATTERN: /\b(hits?|impact|contact|collides?|connects?|blocks?|parries?|strikes? the|va chạm|đánh trúng|trúng|chạm|đỡ đòn|chặn|tia lửa)\b/i,
-  REACTION_PATTERN: /\b(recoils?|stumbles?|falls?|slides?|is thrown|is driven|reacts?|staggers?|lùi|ngã|văng|trượt|choáng|khựng|phản ứng|bị đẩy)\b/i,
-  OUTCOME_PATTERN: /\b(aftermath|ends?|remains?|lands?|new position|disarmed|broken|damaged|defeated|kết quả|sau đòn|tiếp đất|vị trí mới|mất vũ khí|vỡ|hư hại|thất thế|bị hạ)\b/i,
-} as const;
-
-export const hasCinematicCombatAction = (value: string): boolean =>
-  CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.CONFLICT_PATTERN.test(value) && CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG.INITIATOR_PATTERN.test(value);
-
-export const CINEMATIC_SCREENPLAY_CONTRACT_DIRECTIVE = (language: string, targetDuration: string): string => `
-[DEDICATED AI FILM SCREENPLAY CONTRACT]
-You are the head screenwriter and story editor for a ${targetDuration} original film, not a narrator-led YouTube video.
-- Write playable screen events in ${language === "vi" ? "natural contemporary Vietnamese" : "natural contemporary English"}. Characters must have distinct vocabulary, rhythm, status and subtext appropriate to their world.
-- Build a concrete protagonist objective, opposing force, escalating choices, an irreversible midpoint/turn, climax caused by the protagonist's decision, and an earned visual aftermath.
-- Open inside a playable situation rather than explaining the world. Reveal lore through what characters attempt, fear, joke about, conceal, discover or pay for. Establish one concrete object, destination, threat or promise early and keep returning to its changing condition until the payoff.
-- Give the story a visible physical spine. Track the owner, location and condition of every story-critical prop across scenes; show it being received, carried, used, damaged, transferred or paid off. Never let a critical object appear, disappear, reopen or change hands without a visible causal event.
-- Build transformations as an earned progression rather than a single effect shot: trigger or choice -> first physical symptom -> character reaction -> practical consequence -> irreversible new capability or cost -> final image proving the new identity. Preserve every accumulated change in body, wardrobe, damage and behavior.
-- Build ensemble chemistry through contrast: each recurring character has a recognizable conversational tactic, such as blunt challenge, dry humor, caution, deflection, command or curiosity. Dialogue must change the relationship, plan or available information; never let several characters paraphrase the same fact.
-- Alternate pressure and release. After danger, allow a short human reaction, joke, disagreement or practical task; after calm, introduce a visible warning or decision. Humor must emerge from character and circumstance without cancelling real stakes.
-- A silent stretch is still dramatic action. Use listening, preparation, spatial exploration, exchanged looks, prop handling and environmental response to create anticipation instead of filling every second with speech.
-- Use an A/B story only when the secondary line changes how the main line is understood: for example, heroes discover an objective while an opposing group reveals why it matters. Enter the secondary line on a shared prop, threat, destination or decision and return with new dramatic pressure; never intercut unrelated exposition.
-- Every approximately ten-second clip unit contains at least three (and up to five in dense action/dramatic tension sequences) chronological, editable camera setups from one continuous event: setup/objective, action/obstacle, consequence/payoff. Each setup changes the visible information; never fill runtime with a person merely walking, looking, standing, holding an object or explaining the plot.
-- Select the 3-to-5 setup coverage by scene function: dialogue uses spatial master -> speaker/prop coverage -> listener reaction or changed decision; discovery uses approach/context -> evidence insert/reveal -> consequence reaction; action uses geography/threat -> decisive contact/evasion -> physical result and new position. Do not force all characters to move simultaneously and do not cut merely because a timer elapsed.
-- FEATURE-FILM ACTION DESIGN: Treat physical conflict as story, tactics and performance rather than a disconnected stunt reel. Every combatant has an immediate objective, a readable tactic and a changing advantage. Generate 35mm anamorphic 24fps coverage with realistic anatomy, acceleration, momentum, recoil, gravity, material resistance and recovery time. One approximately ten-second clip may contain only one decisive attack-defence-consequence exchange: one committed attack by a named initiator, one exact defensive answer or clean contact, then one readable physical consequence and stable changed advantage. Split every additional attack, counterattack or reversal into an adjacent clip instead of compressing it. Prefer three reliable chronological shots: (1) geography, distance, planted stance and intent, (2) the committed body/weapon path, defence/contact and momentum transfer in stable medium or full-body coverage, (3) recoil, involuntary reaction, recovery and aftermath. Forbid spinning combinations, rhythmic alternating blows, repeated flurries, decorative flips, full-body rolls, wire-fu suspension, synchronized posing and dance-like movement. Feet grip and release the floor naturally; hips and shoulders drive the strike; the camera follows readable performance and never hides contact with shake, dust, sparks, whip-pans or frantic cutting. Layer footsteps, breath, cloth/armor, weapon movement, environment and one synchronized impact.
-- Keep no more than two clearly articulated foreground performers in physical conflict. Other forces remain distant, soft-focus, occluded, silhouetted or represented by their effect on the environment. Use one movement direction and one action axis; keep feet grounded, hand/weapon ownership explicit and the camera stable enough to read anatomy.
-- Prefer concise speakable dialogue, interruptions, silence and reactions. No exposition speeches, generic motivational lines, trailer narration, omniscient summary or repeated statement of facts already visible.
-- Dialogue must be short enough for natural lip-sync inside its planned shot. Preserve the exact chosen output language and never mix languages unless the story explicitly requires it.
-- Use character dialogue only when it changes the immediate objective, danger, relationship or viewer understanding; generic filler and repeated catchphrases are forbidden. A dramatically intentional silent clip is valid when physical action, suspense, discovery or aftermath carries the story more strongly. Use on_screen_dialogue with synchronized lips whenever the speaker is visible. Use off_screen_dialogue only when the named speaker is physically present in the same location. Never use narration or voice-over.
-- SCREENPLAY OUTPUT LOCK: Write the actual playable screenplay, not prose describing what the film would show. Every chapter must contain concrete scene action plus natural character dialogue. Attribute every spoken line to a named character. Do not write a narrator, narration paragraphs, voice-over, explanatory commentary, YouTube hook, synopsis, recap or phrases such as "we see", "the audience learns", "câu hỏi là", or "liệu rằng". Important story information must be discovered through a character's decision, conversation, physical evidence or visible consequence.
-- DIALOGUE COVERAGE: Unless a sequence is deliberately silent for suspense or action clarity, include at least one short speakable exchange that changes the plan, relationship, danger or available information. A film may contain silent shots, but it may not become a narrator-led slideshow. Preserve pauses and reactions around dialogue so speech remains naturally performable inside generated clips.
-- Establish geography before action, preserve prop ownership and wardrobe/damage progression, and design entrances/exits that the next clip can continue.
-- Design production sound as narrative information: establish stable room tone, give recurring locations/forces a restrained sonic motif, let footsteps, mechanisms, breath, cloth, weather or distant threats anticipate visible events, and carry ambience across connected clips. Avoid constant trailer music, generic impacts and a whoosh at every cut.
-- End each sequence on a changed objective, new danger, discovery, sacrifice or consequence. The ending must pay off the opening dramatic question.
-- Format all image and video prompt outputs directly with rich directorial prose optimized for Google Veo 3 without robotic string concatenation.
-Return the existing required JSON contract only.`;
+export const CINEMATIC_POLICY_REQUIRED_FIELDS = ["generationPrompt"] as const;

@@ -39,6 +39,6 @@ const controller = fs.readFileSync(path.resolve("src/server/controllers/pipeline
 assert(/if\s*\(config\.factCheck\)[\s\S]*groundedResearchResponse\s*=\s*await generateContentWithRetry/.test(controller), "grounded research is not conditional");
 assertResponseContract({ audience: "general", versions: [{ id: "1" }] }, ResponseContractName.Hook);
 const prompts = fs.readFileSync(path.resolve("src/constants/prompts.ts"), "utf8");
-assert(prompts.includes("COMPACT_CINEMATIC_PROMPT_RULES"), "compact prompt module missing");
+assert(prompts.includes("COMPACT_VISUAL_PROMPT_RULES"), "compact visual prompt module missing");
 
 writeVerificationLog("Prompt/config conflict assertions passed");

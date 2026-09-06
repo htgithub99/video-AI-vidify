@@ -13,13 +13,13 @@ import { AssetAcceptance, GenerateType, QaStatus, SceneAssetStatus } from "../sr
 import { getPipelineInvalidationState, getReferenceChangeState } from "../src/hooks/autoVideoPipelineUtils";
 import { clearProjectSceneOutput } from "../src/services/projectRegenerationService";
 import { getVisualShotPlanIssues, normalizeVisualShotPlan } from "../src/services/visualPlanningService";
-import { getScriptSplitPrompt } from "../src/constants/prompts";
+import { getCinematicStoryboardRecoveryPrompt } from "../src/constants/cinematicPrompts";
 import { getUnderfilledCinematicSceneIds } from "../src/services/storyboardQualityService";
 
-const cinematicSplitPrompt = getScriptSplitPrompt("Chapter One\nA complete playable event unfolds.", "[]", "cinematic", false, 1, 10);
-assert.match(cinematicSplitPrompt, /storyboardQa/);
-assert.match(cinematicSplitPrompt, /Never create a standalone clip from a screenplay title/);
-assert.match(cinematicSplitPrompt, /85 is the editorial target, not a hard acceptance condition/);
+const cinematicSplitPrompt = getCinematicStoryboardRecoveryPrompt("Chapter One\nA complete playable event unfolds.", "[]", 1, 10, false);
+assert.match(cinematicSplitPrompt, /film scene editor recovering production scenes/i);
+assert.match(cinematicSplitPrompt, /attach headings and speaker labels/i);
+assert.doesNotMatch(cinematicSplitPrompt, /storyboardQa|score of 85/i);
 const longCinematicSource = _.join(_.fill(Array(200), "playable"), " ");
 assert.deepEqual(getUnderfilledCinematicSceneIds([{ id: "title_only", script: "Biển Lửa Hỏa Diệm" } as any], longCinematicSource, 5), ["title_only"]);
 
@@ -154,30 +154,24 @@ assert.deepEqual(
 );
 
 const unclearFightIssues = getCinematicSceneContractIssues({ id: "fight_weak", script: "Ngộ Không vung thiết bảng giữa thiên binh." } as any, "10s");
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:target_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:footwork_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:weight_transfer_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:wind_up_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:limb_or_weapon_ownership_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:contact_or_evasion_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:caused_reaction_missing"));
-assert(unclearFightIssues.includes("fight_weak:actionChoreography:aftermath_missing"));
+assert.deepEqual(unclearFightIssues, ["fight_weak:generationPrompt:missing"]);
 
 const readableFightIssues = getCinematicSceneContractIssues(
   {
     id: "fight_clear",
     script:
       "Ngộ Không plants his lead foot, transfers his weight forward and draws his staff back over his right shoulder. He swings his staff toward the armored opponent. The staff hits the raised shield with visible sparks; the defender recoils and slides backward. Ngộ Không lands in a new position while the opponent remains disarmed.",
+    generationPrompt: "A focused Veo prompt showing one decisive attack, defence and physical consequence.",
   } as any,
   "10s",
 );
-assert(!readableFightIssues.some((issue) => issue.includes(":actionChoreography:")));
+assert.deepEqual(readableFightIssues, []);
 const repairedFightScene = repairCinematicStoryboardContract(
   [{ id: "fight_repaired", script: "The giant swings an axe while the hero blocks it.", visibleAction: "The giant swings an axe while the hero blocks it." } as any],
   "vi" as any,
   "10s",
 )[0];
-assert(getCinematicSceneContractIssues(repairedFightScene, "10s").some((issue) => issue.includes(":actionChoreography:")));
+assert.deepEqual(getCinematicSceneContractIssues(repairedFightScene, "10s"), ["fight_repaired:generationPrompt:missing"]);
 assert(!JSON.stringify(repairedFightScene).includes("foreground attacker"));
 assert(
   !getCinematicSceneContractIssues(

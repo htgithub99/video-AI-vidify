@@ -333,5 +333,7 @@ export const THUMBNAIL_PROMPT_CONFIG = {
     STYLE_LOCK_MISSING: "thumbnail_project_style_lock_missing",
     HEADLINE_TOO_LONG: "thumbnail_headline_too_long",
     HEADLINE_WEAK_PREFIX: "thumbnail_headline_weak_prefix",
+    MISSING_ID: "thumbnail_id_missing",
+    DUPLICATE_ID: "thumbnail_id_duplicate",
   },
 } as const;

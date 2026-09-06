@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { getCharacterAnalysisPrompt } from "../src/constants/prompts";
+import { getCinematicCharacterAnalysisPrompt } from "../src/constants/cinematicPrompts";
 import { createSceneGenerationContext, resolveCinematicSceneCharacterReferences } from "../src/services/sceneReferenceService";
 import { CharacterConfig, StoryboardScene } from "../src/types";
 
@@ -19,11 +19,10 @@ assert.equal(cinematicReferences.referenceRoles.length, 2);
 const automaticContext = createSceneGenerationContext(scene, { characters });
 assert.deepEqual(automaticContext.referenceImages, []);
 
-const characterPrompt = getCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "", true);
+const characterPrompt = getCinematicCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "");
 assert.match(characterPrompt, /referenceGenerationPrompt/);
-assert.match(characterPrompt, /identity reference for image-to-video continuity/i);
-assert.match(characterPrompt, /scene wardrobe, action, location, damage, and lighting remain controlled/i);
-assert.match(characterPrompt, /MANDATORY SPECIES AND CANONICAL-FORM LOCK/);
+assert.match(characterPrompt, /character-continuity director/i);
+assert.match(characterPrompt, /Separate immutable identity from scene action/i);
 assert.match(characterPrompt, /sourceIdentityEvidence/);
 assert.match(characterPrompt, /speciesPresentation/);
 assert.match(characterPrompt, /identityContinuityRisks/);
@@ -31,6 +30,7 @@ assert.match(characterPrompt, /identityContinuityRisks/);
 const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
 assert.match(pipelineControllerSource, /identityContinuityRisks: _\.castArray/);
 assert.doesNotMatch(pipelineControllerSource, /identityContinuityRisks:not_resolved/);
-assert.match(pipelineControllerSource, /requiresCompleteArtifact \? 3 : 1/);
+assert.match(pipelineControllerSource, /getCinematicCharacterAnalysisPrompt/);
+assert.doesNotMatch(pipelineControllerSource, /requiresCompleteArtifact \? 3 : 1/);
 
 process.stdout.write(JSON.stringify({ passed: true, cinematicReferenceCount: cinematicReferences.referenceImages.length, automaticReferencesUnchanged: true }));

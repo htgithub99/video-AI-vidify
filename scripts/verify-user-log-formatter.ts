@@ -47,6 +47,10 @@ assert.equal(
   "Phiên làm việc AI chưa sẵn sàng hoặc cần xác thực lại. Hãy kiểm tra trạng thái đăng nhập rồi bấm Tiếp tục dự án.",
 );
 assert.equal(
+  formatUserFacingLog("Quy trình tạo video gặp sự cố. Room chatgpt-ui đã trả dữ liệu nhưng cinematic_film_package_invalid:response:incomplete.", "vi"),
+  "AI đã trả lời nhưng bộ kịch bản chưa truyền về đầy đủ. Hệ thống sẽ yêu cầu AI gửi lại trọn vẹn khi bạn chọn Tiếp tục dự án.",
+);
+assert.equal(
   formatUserFacingLog("✓ Tạo kịch bản phân cảnh thành công với 12 phân cảnh.", "vi"),
   "Toàn bộ kịch bản phân cảnh đã được chia nhỏ và phân bổ thời lượng thành công.",
 );
@@ -108,4 +112,3 @@ assert.equal(AUTO_GENERATOR_PANEL_TEXTS.vi.logPipelineFailedElapsed(0), "⏱️ 
 assert.equal(AUTO_GENERATOR_PANEL_TEXTS.vi.logPipelineFailedElapsed(24.3), "⏱️ Quy trình đã dừng sau 24 giây.");
 
 writeVerificationLog("User-facing log assertions passed");
-

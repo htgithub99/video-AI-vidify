@@ -1340,17 +1340,62 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 
 let grokPage: Page | null = null;
 let grokBrowser: Browser | null = null;
+let grokBrowserLaunchPromise: Promise<{ context: BrowserContext; page: Page }> | null = null;
 let activeGrokLocalProjectId: string | null = null;
+
+interface GrokCdpTarget {
+  type?: string;
+  title?: string;
+  url?: string;
+}
+
+const getGrokCdpTargets = async (): Promise<GrokCdpTarget[]> => {
+  try {
+    const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}${REFACTOR_CONSTANTS.GROK_CDP_TARGETS_PATH}`);
+    if (!response.ok) return [];
+    const targets = await response.json();
+    return _.isArray(targets) ? targets : [];
+  } catch {
+    return [];
+  }
+};
 
 const waitForGrokChrome = async (): Promise<void> => {
   for (let attempt = 0; attempt < REFACTOR_CONSTANTS.GROK_CDP_READY_ATTEMPTS; attempt++) {
     try {
-      const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}/json/version`);
+      const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}${REFACTOR_CONSTANTS.GROK_CDP_VERSION_PATH}`);
       if (response.ok) return;
     } catch {}
     await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS);
   }
   throw new Error("Không thể kết nối với cửa sổ Chrome dành cho Grok. Hãy đóng cửa sổ Grok cũ rồi thử lại.");
+};
+
+const waitForVisibleGrokVerificationBeforeAutomation = async (): Promise<void> => {
+  let stableReadyPolls = 0;
+  let challengeLogged = false;
+  const grokHostname = new URL(EXTERNAL_URLS.GROK_CHAT).hostname;
+  for (let attempt = 0; attempt < REFACTOR_CONSTANTS.GROK_CDP_VERIFICATION_ATTEMPTS; attempt++) {
+    const grokTarget = _.find(
+      await getGrokCdpTargets(),
+      (target) =>
+        _.isEqual(target.type, REFACTOR_CONSTANTS.GROK_CDP_PAGE_TYPE) &&
+        _.includes(_.toLower(_.toString(target.url)), grokHostname),
+    );
+    const readyTitle = REFACTOR_CONSTANTS.GROK_CDP_READY_TITLE_PATTERN.test(_.trim(_.toString(grokTarget?.title)));
+    if (readyTitle) {
+      stableReadyPolls = _.add(stableReadyPolls, SecurityConstants.DEFAULT_AMOUNT);
+      if (stableReadyPolls >= REFACTOR_CONSTANTS.GROK_CDP_PRECONNECT_STABLE_POLLS) return;
+    } else {
+      stableReadyPolls = SecurityConstants.ZERO;
+      if (grokTarget && !challengeLogged) {
+        challengeLogged = true;
+        appLog(REFACTOR_CONSTANTS.GROK_PRECONNECT_WAIT_LOG);
+      }
+    }
+    await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS);
+  }
+  throw new Error(REFACTOR_CONSTANTS.GROK_PRECONNECT_TIMEOUT_ERROR);
 };
 
 const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
@@ -1364,12 +1409,16 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
     REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace("{0}", profilePath),
     REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
     REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
-    EXTERNAL_URLS.GROK_IMAGINE,
+    EXTERNAL_URLS.GROK_CHAT,
   ];
   if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
   spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
   await waitForGrokChrome();
-  await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * 8);
+  if (chromeHeadless === false) await waitForVisibleGrokVerificationBeforeAutomation();
+  else
+    await delayAsync(
+      REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER,
+    );
   grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
   const context = _.first(grokBrowser.contexts());
   if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
@@ -1389,6 +1438,11 @@ export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<
   grokBrowser = null;
   grokPage = null;
   try {
+    const existingTargets = await getGrokCdpTargets();
+    const hasExistingGrokTarget = _.some(existingTargets, (target) =>
+      _.includes(_.toLower(_.toString(target.url)), new URL(EXTERNAL_URLS.GROK_CHAT).hostname),
+    );
+    if (chromeHeadless === false && hasExistingGrokTarget) await waitForVisibleGrokVerificationBeforeAutomation();
     grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
     const existingContext = _.first(grokBrowser.contexts());
     const existingPage = existingContext && (_.find(existingContext.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || _.first(existingContext.pages()));
@@ -1399,7 +1453,12 @@ export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<
       return { context: existingContext, page: existingPage };
     }
   } catch {}
-  return launchNativeGrokBrowser(chromeHeadless);
+  if (!grokBrowserLaunchPromise) {
+    grokBrowserLaunchPromise = launchNativeGrokBrowser(chromeHeadless).finally(() => {
+      grokBrowserLaunchPromise = null;
+    });
+  }
+  return grokBrowserLaunchPromise;
 };
 
 const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Promise<ImageGeneratorResult> => {
@@ -2486,7 +2545,9 @@ export async function generateBatchImagesWithGeminiChat(
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
       const hasRefs = !_.isEmpty(itemVisualConfig.referenceImages) || !_.isEmpty(itemVisualConfig.sceneReferenceImages) || !_.isEmpty(itemVisualConfig.styleReferenceImages);
-      const finalPrompt = removeConflictingStyleTerms(item.prompt || "", hasRefs);
+      const finalPrompt = itemVisualConfig.preserveAiPromptText
+        ? item.prompt || ""
+        : removeConflictingStyleTerms(item.prompt || "", hasRefs);
 
       let success = false;
       let base64Result: string | null = null;

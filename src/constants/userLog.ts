@@ -59,6 +59,7 @@ export const USER_LOG_CONFIG = {
   PIPELINE_PATTERNS: {
     FLOW_CONFIG_ERROR: /^(?=.*\bflow\b)(?=.*(?:cấu hình|config))(?=.*(?:chưa|không|sai|mismatch)).*$|config_mismatch/i,
     FLOW_PROMPT_ERROR: /^(?=.*\bflow\b)(?=.*(?:prompt|mô tả))(?=.*(?:chưa|không|sai|failed|missing)).*$|prompt_(?:not_)?applied/i,
+    SCRIPT_RESPONSE_INCOMPLETE: /cinematic_film_package_invalid|film_package.*(?:missing|incomplete)|response:incomplete/i,
     ROOM_NOT_READY: /(?:room|phòng).*(?:chưa trả|không trả|chưa sẵn sàng|đăng nhập|invalid_.*response)|(?:chatgpt-ui|gemini-chat|grok).*(?:invalid|failed|error)/i,
     FINAL_FAILURE: /quy trình tạo video gặp sự cố|video generation (?:failed|stopped)/i,
     PREFLIGHT_ADVISORY: /(?:preflight|kiểm tra trước khi tạo).*(?:giữ prompt|keeping the current prompt|góp ý|advisories)/i,
@@ -119,6 +120,7 @@ export const USER_LOG_MESSAGES = {
     SEO_FAILED: "Chưa thể tạo tiêu đề và mô tả SEO tối ưu. Quy trình sản xuất video chính vẫn đang tiếp tục bình thường.",
     THUMBNAIL_FAILED: "Chưa thể tạo ảnh bìa video. Quy trình sản xuất video chính vẫn đang tiếp tục bình thường.",
     VIDEO_FAILED: "Chưa thể tạo video cho phân cảnh này. Hệ thống sẽ tự động thử phương án dự phòng hoặc bạn có thể thử lại sau.",
+    SCRIPT_RESPONSE_INCOMPLETE: "AI đã trả lời nhưng bộ kịch bản chưa truyền về đầy đủ. Hệ thống sẽ yêu cầu AI gửi lại trọn vẹn khi bạn chọn Tiếp tục dự án.",
     ROOM_NOT_READY: "Phiên làm việc AI chưa sẵn sàng hoặc cần xác thực lại. Hãy kiểm tra trạng thái đăng nhập rồi bấm Tiếp tục dự án.",
     FLOW_CONFIG_ERROR: "Cài đặt video chưa đồng bộ chính xác với dịch vụ tạo. Hệ thống đã tạm dừng để bạn kiểm tra và tránh tạo sai sót.",
     FLOW_PROMPT_ERROR: "Mô tả phân cảnh chưa được truyền tải đầy đủ tới dịch vụ tạo video. Hệ thống đã tạm dừng để bảo toàn tài nguyên.",
@@ -174,6 +176,7 @@ export const USER_LOG_MESSAGES = {
     SEO_FAILED: "Could not generate SEO title and description. Main video production will continue normally.",
     THUMBNAIL_FAILED: "Could not generate video thumbnail. Main video production will continue normally.",
     VIDEO_FAILED: "Could not generate video for this scene. The system will switch to fallback or retry shortly.",
+    SCRIPT_RESPONSE_INCOMPLETE: "AI responded, but the complete screenplay package was not received. Click Continue project to request one complete replacement.",
     ROOM_NOT_READY: "AI session is not ready or requires re-authentication. Check your login status and click Continue project.",
     FLOW_CONFIG_ERROR: "Video settings were not synced with the generation service. Paused to prevent incorrect output.",
     FLOW_PROMPT_ERROR: "Scene description was not fully received by the generation tool. Paused to conserve resources.",

@@ -85,6 +85,47 @@ export const normalizeThumbnailIdeas = (generatedItems: Partial<ThumbnailItem>[]
   return _.map(sourceItems, (item, index) => normalizeThumbnail(item, index, usedLayoutIds, textMode));
 };
 
+export const preserveAiThumbnailIdeas = (generatedItems: Partial<ThumbnailItem>[], requestedCount: number): ThumbnailItem[] =>
+  _.map(
+    _.take(
+      _.filter(generatedItems, (item) => !_.isEmpty(_.trim(_.toString(item.generationPrompt)))),
+      requestedCount,
+    ),
+    (item) => {
+      const generationPrompt = _.toString(item.generationPrompt);
+      return { ...item, prompt: generationPrompt, generationPrompt } as ThumbnailItem;
+    },
+  );
+
+export const resolveThumbnailGenerationPrompt = (
+  thumbnail: ThumbnailItem,
+  cinematicMode: boolean,
+  style: string,
+  aspectRatio: string,
+  hasReferences?: boolean,
+  characters?: CharacterConfig[],
+): string =>
+  cinematicMode
+    ? _.toString(thumbnail.generationPrompt || thumbnail.prompt)
+    : createThumbnailGenerationPrompt(thumbnail, style, aspectRatio, hasReferences, characters);
+
+export const getThumbnailTechnicalPlanningIssues = (
+  generatedItems: Array<Partial<ThumbnailItem>>,
+  requestedCount: number = _.size(generatedItems),
+): string[] =>
+  (() => {
+    const ids = _.map(generatedItems, (item) => _.trim(_.toString(item.id)));
+    return _.uniq(
+      _.compact([
+      _.lt(_.size(generatedItems), requestedCount) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT,
+      _.some(ids, _.isEmpty) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_ID,
+      _.uniq(ids).length !== ids.length && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.DUPLICATE_ID,
+      _.some(generatedItems, (item) => _.isEmpty(_.trim(_.toString(item.generationPrompt)))) &&
+        THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
+      ]),
+    );
+  })();
+
 export const createSourceGroundedThumbnailIdeas = (script: string, requestedCount: number, style: string, textMode: string = ThumbnailTextMode.Headline): ThumbnailItem[] => {
   const normalizedScript = _.trim(script);
   const sentences = smartSplitSentences(normalizedScript);

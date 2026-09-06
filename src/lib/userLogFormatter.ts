@@ -118,7 +118,7 @@ const formatKnownPipelineLog = (rawMessage: string, language: UserLogLanguage): 
 
   if (patterns.FLOW_CONFIG_ERROR.test(rawMessage)) return messages.FLOW_CONFIG_ERROR;
   if (patterns.FLOW_PROMPT_ERROR.test(rawMessage)) return messages.FLOW_PROMPT_ERROR;
-  if (patterns.FINAL_FAILURE.test(rawMessage)) return messages.FINAL_FAILURE;
+  if (patterns.SCRIPT_RESPONSE_INCOMPLETE.test(rawMessage)) return messages.SCRIPT_RESPONSE_INCOMPLETE;
   if (patterns.PREFLIGHT_ADVISORY.test(rawMessage)) return replaceToken(messages.REVIEW_ADVISORY, USER_LOG_CONFIG.TOKEN_SCENE, getSceneLabel(rawMessage, language));
   if (patterns.PREFLIGHT_PASSED.test(rawMessage)) return messages.REVIEW_PASSED;
   if (patterns.PREFLIGHT_START.test(rawMessage)) return messages.REVIEW_PROCESSING;
@@ -139,6 +139,7 @@ const formatKnownPipelineLog = (rawMessage: string, language: UserLogLanguage): 
     if (patterns.THUMBNAIL_STAGE.test(rawMessage)) return messages.THUMBNAIL_FAILED;
     if (patterns.VIDEO_STAGE.test(rawMessage)) return messages.VIDEO_FAILED;
   }
+  if (patterns.FINAL_FAILURE.test(rawMessage)) return messages.FINAL_FAILURE;
 
   const isSuccess = USER_LOG_CONFIG.SUCCESS_PATTERN.test(rawMessage);
   if (isSuccess) {
@@ -227,4 +228,3 @@ export const formatUserFacingLogs = (values: unknown[], language?: string): stri
     },
     [],
   );
-
