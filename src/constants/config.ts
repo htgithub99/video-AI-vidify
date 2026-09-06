@@ -1313,7 +1313,7 @@ export const SCRIPT_PLAN_CONFIG = {
 } as const;
 
 export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
-  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v1",
+  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v2-english-visual-prompts",
   COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
   MAX_OUTPUT_TOKENS: 24_576,
   MAX_RESPONSE_ATTEMPTS: 2,
@@ -1702,7 +1702,7 @@ export const CINEMATIC_CONFIG = {
   GENERATION_DEFAULTS: {
     MODE: ImageGenerationMode.LabsFlow,
     ENGINE: ImageGeneratorEngine.Veo3,
-    CHROME_HEADLESS: false,
+    CHROME_HEADLESS: true,
     CLIP_DURATION: "10s",
     RESOLUTION: "720p",
     ASPECT_RATIO: AspectRatio.SixteenNine,

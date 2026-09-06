@@ -8,7 +8,12 @@ import {
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
 } from "../src/constants/cinematicConstants";
-import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt } from "../src/constants/cinematicPrompts";
+import {
+  getCinematicVideoPlanningPrompt,
+  getCinematicVideoPlanningRepairPrompt,
+  getCinematicVideoPromptPolicyRepairPrompt,
+  getCinematicVideoPromptRepairPrompt,
+} from "../src/constants/cinematicPrompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
 import {
   getBlockingCinematicPlanningIssues,
@@ -106,11 +111,21 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   assert.match(initialPrompt, /natural Vietnamese/);
   assert.match(initialPrompt, /stores and sends generationPrompt unchanged/i);
   assert.match(initialPrompt, /one focused cinematic moment/i);
-  assert.match(initialPrompt, /cinematography, subject, one primary action, context, then style and ambiance/i);
+  assert.match(initialPrompt, /Use only the Veo elements that strengthen this moment/i);
   assert.match(initialPrompt, /Prefer one continuous shot/i);
   assert.match(initialPrompt, /There is no mandatory word count/i);
   assert.match(initialPrompt, /Every object must contain only: id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired/i);
   assert.match(initialPrompt, /one decisive attack-defence-consequence exchange/i);
+  assert.match(initialPrompt, /body orientation and eyeline/i);
+  assert.match(initialPrompt, /camera's position relative to the action axis/i);
+  assert.match(initialPrompt, /must face and look toward that target/i);
+  assert.match(initialPrompt, /Never turn a subject toward the camera merely to display identity/i);
+  assert.match(initialPrompt, /contact point readable in the same frame/i);
+  assert.match(initialPrompt, /must remain through the final frame/i);
+  assert.match(initialPrompt, /avoid repeating a long visual biography/i);
+  assert.match(initialPrompt, /Do not wrap those words in quotation marks inside generationPrompt/i);
+  assert.match(initialPrompt, /response must parse directly with JSON\.parse/i);
+  assert(initialPrompt.includes('as \\"'));
   assert.doesNotMatch(initialPrompt, /3-5 chronological shots|center-of-mass travel/i);
   assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
 
@@ -142,10 +157,22 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
   assert.match(repairPrompt, /Previous rejected response/);
   assert.match(repairPrompt, /forwards generationPrompt unchanged/);
   assert.match(repairPrompt, /one focused 10-second moment/i);
-  assert.match(repairPrompt, /Use the Veo order/i);
-  assert.match(repairPrompt, /one committed attack, one precise defence\/contact\/evasion/i);
+  assert.match(repairPrompt, /Use only the Veo elements that strengthen the moment/i);
+  assert.match(repairPrompt, /body orientation and eyeline/i);
+  assert.match(repairPrompt, /camera relative to the action axis/i);
+  assert.match(repairPrompt, /faces and looks toward that target/i);
+  assert.match(repairPrompt, /one exact contact point or evasion/i);
+  assert.match(repairPrompt, /remains visible through the last frame/i);
   assert.doesNotMatch(repairPrompt, /Set layout|3 to 5 chronological beats|hyphenated duration token/i);
   assert.doesNotMatch(repairPrompt, /deterministically compiles/);
+
+  const policyRepairPrompt = getCinematicVideoPromptPolicyRepairPrompt("A safe action prompt");
+  assert.match(policyRepairPrompt, /spatial blocking, eyeline, action axis, contact readability/i);
+
+  const technicalRepairPrompt = getCinematicVideoPromptRepairPrompt("A failed action prompt", ["contact_missing"], MOCK_CURRENT_SCENE);
+  assert.match(technicalRepairPrompt, /body orientation and eyeline toward the intended target/i);
+  assert.match(technicalRepairPrompt, /camera relative to the action axis/i);
+  assert.match(technicalRepairPrompt, /final state that persists through the last frame/i);
 };
 
 const verifyDialogueContractExemption = () => {
@@ -284,11 +311,15 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /getPlanningRoomKey\(request\)/);
   assert.match(planningServiceSource, /difference\(expectedSceneIds, returnedSceneIds\)/);
   assert.match(planningServiceSource, /initialResponseSet = new Set/);
+  assert.match(planningServiceSource, /initialResponseIdentitySet = new Set/);
+  assert.match(planningServiceSource, /getChatResponseSnapshots/);
   assert.match(planningServiceSource, /responsesNotPresentBeforeSubmission/);
-  assert.match(planningServiceSource, /mayUseUnmarkedJsonFallback = _\.isEmpty\(completionMarker\) && isCompleteJson/);
+  assert.match(planningServiceSource, /mayUseUnmarkedJsonFallback = _\.isEmpty\(expectedSceneIds\) && _\.isEmpty\(completionMarker\) && isCompleteJson/);
   assert.match(planningServiceSource, /belongsToCurrentRequest \|\| mayUseUnmarkedJsonFallback/);
   assert.match(planningServiceSource, /closeChatPlanningRoom/);
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
+  assert.match(planningServiceSource, /CLOSED_ROOM_ERROR_PATTERN\.test\(errorMessage\)/);
+  assert.match(planningServiceSource, /canRecoverClosedRoom[\s\S]*await closeChatPlanningRoom\(request\)/);
   assert.match(planningServiceSource, /const roomKey = getPlanningRoomKey\(request\)[\s\S]*rooms\.delete\(roomKey\)[\s\S]*page\.close\(\)/);
   assert.match(planningServiceSource, /const createRoom[\s\S]*rooms\.set\(projectId, page\)[\s\S]*catch \(error\)[\s\S]*rooms\.delete\(projectId\)[\s\S]*page\.close\(\)/);
   assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoom\(request\)[\s\S]*release\(\)/);
@@ -316,7 +347,9 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /input\.isEditable\(\)/);
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS, 250);
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 2);
+  assert.match(CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, /parseable directly with JSON\.parse/i);
   assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
+  assert.match(planningServiceSource, /INVALID_JSON_RESPONSE_ERROR/);
   assert.match(planningServiceSource, /chờ hàng đợi/);
   assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);
   assert.match(planningServiceSource, /challengeBodyVisible = !chatReady/);

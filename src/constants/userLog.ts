@@ -56,6 +56,7 @@ export const USER_LOG_CONFIG = {
   SCENES_SUFFIX_EN: " scenes",
   ATTEMPT_LABEL_VI: "(lần {0})",
   ATTEMPT_LABEL_EN: "(attempt {0})",
+  CINEMATIC_STEP_MESSAGE_PATTERN: /^(?:Bước|Step)\s+[1-4]\/4\s*·/i,
   PIPELINE_PATTERNS: {
     FLOW_CONFIG_ERROR: /^(?=.*\bflow\b)(?=.*(?:cấu hình|config))(?=.*(?:chưa|không|sai|mismatch)).*$|config_mismatch/i,
     FLOW_PROMPT_ERROR: /^(?=.*\bflow\b)(?=.*(?:prompt|mô tả))(?=.*(?:chưa|không|sai|failed|missing)).*$|prompt_(?:not_)?applied/i,

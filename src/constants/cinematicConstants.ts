@@ -18,13 +18,62 @@ export const CINEMATIC_ROOM_STAGE = {
   VIDEO: "video-room",
 } as const;
 
+export const CINEMATIC_PROGRESS_STAGE = {
+  SCRIPT: 1,
+  PROMPT: 2,
+  THUMBNAIL: 3,
+  VIDEO: 4,
+  TOTAL: 4,
+} as const;
+
+export const CINEMATIC_PROGRESS_MESSAGES = {
+  vi: {
+    SCRIPT_START: "Bước 1/4 · AI đang viết kịch bản phim.",
+    SCRIPT_READY: "Bước 1/4 · Kịch bản đã hoàn tất.",
+    PROMPT_START: "Bước 2/4 · AI đang viết prompt video cho từng cảnh.",
+    PROMPT_PROGRESS: "Bước 2/4 · Đã hoàn thành prompt {0}/{1} cảnh.",
+    PROMPT_READY: "Bước 2/4 · Prompt video đã hoàn tất.",
+    THUMBNAIL_START: "Bước 3/4 · Đang chuẩn bị ảnh tham chiếu nhân vật và ảnh bìa.",
+    THUMBNAIL_READY: "Bước 3/4 · Ảnh bìa đã hoàn tất.",
+    VIDEO_START: "Bước 4/4 · Đang tạo video cho {0} cảnh.",
+    VIDEO_PROGRESS: "Bước 4/4 · Đã tạo xong {0}/{1} cảnh.",
+    VIDEO_READY: "Bước 4/4 · Video đã hoàn tất.",
+    PLANNING_STOPPED: "Bước {0}/4 tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
+    VIDEO_STOPPED: "Bước 4/4 tạm dừng vì khâu tạo hoặc ghép video chưa hoàn tất. Các cảnh đã xong được giữ lại; hãy chọn Tiếp tục dự án.",
+    CANCELLED: "Đã dừng quy trình an toàn. Mọi kết quả đã hoàn thành đều được giữ lại.",
+  },
+  en: {
+    SCRIPT_START: "Step 1/4 · AI is writing the screenplay.",
+    SCRIPT_READY: "Step 1/4 · The screenplay is complete.",
+    PROMPT_START: "Step 2/4 · AI is writing the video prompt for each scene.",
+    PROMPT_PROGRESS: "Step 2/4 · Completed prompts for {0}/{1} scenes.",
+    PROMPT_READY: "Step 2/4 · Video prompts are complete.",
+    THUMBNAIL_START: "Step 3/4 · Preparing character references and the film cover.",
+    THUMBNAIL_READY: "Step 3/4 · The thumbnail is complete.",
+    VIDEO_START: "Step 4/4 · Creating video for {0} scenes.",
+    VIDEO_PROGRESS: "Step 4/4 · Completed {0}/{1} scenes.",
+    VIDEO_READY: "Step 4/4 · The video is complete.",
+    PLANNING_STOPPED: "Step {0}/4 paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
+    VIDEO_STOPPED: "Step 4/4 paused because video creation or assembly did not finish. Completed scenes are kept; continue the project to resume.",
+    CANCELLED: "Production stopped safely. Every completed result has been kept.",
+  },
+} as const;
+
+export const CINEMATIC_CHECKPOINT_CONFIG = {
+  MEDIA_PHASE_PATTERN: /media|render|completed/i,
+} as const;
+
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 1,
   RESPONSE_TIMEOUT_MS: 120000,
   RESPONSE_POLL_MS: 250,
   RESPONSE_STABLE_POLLS: 2,
   MIN_RESPONSE_CHARACTERS: 20,
+  INVALID_JSON_RESPONSE_ERROR: "chat_planning_invalid_json_response",
   MAX_CORRECTION_ATTEMPTS: 1,
+  CLOSED_ROOM_RECOVERY_ATTEMPTS: 1,
+  CLOSED_ROOM_ERROR_PATTERN: /target page, context or browser has been closed|page has been closed|page closed|browser.*closed/i,
+  CLOSED_ROOM_RECOVERY_LOG: "[AI Chat Planning] Tab {0} vừa bị đóng; mở lại đúng room và tiếp tục một lần.",
   API_MAX_SOUND_DESIGN_CUES: 3,
   ROOM_MAX_SOUND_DESIGN_CUES: 5,
   PAGE_READY_TIMEOUT_MS: 20000,
@@ -52,6 +101,10 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
     '[data-message-author-role="assistant"], article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"])',
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  RESPONSE_IDENTITY_SELECTOR: "[data-message-id], [data-testid^='conversation-turn-'], [data-test-id]",
+  RESPONSE_MESSAGE_ID_ATTRIBUTE: "data-message-id",
+  RESPONSE_TEST_ID_ATTRIBUTE: "data-testid",
+  RESPONSE_LEGACY_TEST_ID_ATTRIBUTE: "data-test-id",
   CHATGPT_LOGIN_SELECTOR: 'button:has-text("Log in"), a:has-text("Log in"), button:has-text("Đăng nhập"), a:has-text("Đăng nhập")',
   CHATGPT_GOOGLE_LOGIN_SELECTOR: 'button:has-text("Continue with Google"), button:has-text("Tiếp tục với Google"), a:has-text("Continue with Google")',
   CHATGPT_COOKIE_REJECT_SELECTOR: '[data-cookie-consent] button:has-text("Reject"), [data-cookie-consent] button:has-text("Từ chối")',
@@ -61,7 +114,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_MODEL_BUTTON_SELECTOR:
     'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
-    "Return only the complete raw JSON value required by the request. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.",
+    'Return only the complete raw JSON value required by the request, parseable directly with JSON.parse. Escape every double quote that occurs inside a JSON string value as \\". Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.',
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
   EXCESS_BLANK_LINES_PATTERN: /\n[ \t]*\n(?:[ \t]*\n)+/g,
   CANCELLED_ERROR: "chat_planning_cancelled",
@@ -198,10 +251,12 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_PREFLIGHT_FAILED_SCENES: "Scenes needing adjustment: {0}.",
   PREFLIGHT_LOG_PREFIX: "[Cinematic preflight]",
   PROJECT_SAFETY_APPROVED_RATIONALE: "project_content_safety_approved",
-  VI_CHARACTER_PACK_START: "[Character Pack] Đang tạo ảnh nhận diện chuẩn cho từng nhân vật trước khi dùng credit video.",
-  EN_CHARACTER_PACK_START: "[Character Pack] Creating canonical identity references before any video credit is used.",
-  VI_CHARACTER_PACK_READY: "[Character Pack] Ảnh nhân vật đã được lưu; mỗi cảnh sẽ chỉ tải lên các nhân vật thực sự xuất hiện.",
-  EN_CHARACTER_PACK_READY: "[Character Pack] Character references are saved; each scene will upload only its visible characters.",
+  VI_CHARACTER_PACK_START: "Bước 3/4 · Đang tạo ảnh tham chiếu cho từng nhân vật.",
+  EN_CHARACTER_PACK_START: "Step 3/4 · Creating a reference image for each character.",
+  VI_CHARACTER_PACK_READY: "Bước 3/4 · Ảnh tham chiếu nhân vật đã được tạo và lưu.",
+  EN_CHARACTER_PACK_READY: "Step 3/4 · Character reference images have been created and saved.",
+  VI_CHARACTER_PACK_PARTIAL: "Bước 3/4 · Một số ảnh tham chiếu nhân vật chưa tạo được; hệ thống giữ hồ sơ nhận diện do AI viết để tiếp tục.",
+  EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some character reference images were unavailable; production will continue with the AI-authored identity profiles.",
   VI_CHARACTER_PACK_FAILED: "Không thể hoàn thành ảnh nhận diện nhân vật. Đã dừng trước khi tạo clip để tránh video sai nhân vật.",
   EN_CHARACTER_PACK_FAILED: "The character identity pack could not be completed. Production stopped before clip generation to avoid inconsistent characters.",
 } as const;

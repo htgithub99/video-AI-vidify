@@ -3,7 +3,7 @@ import React from "react";
 import _ from "lodash";
 import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react";
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
-import { FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
+import { AUTO_VIDEO_DEFAULTS, FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
@@ -51,7 +51,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   T,
   mediaMixTexts,
   forceVideoOnly = false,
-  chromeHeadless = false,
+  chromeHeadless = AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS,
   setChromeHeadless,
   videoDuration,
   setVideoDuration,

@@ -10,7 +10,7 @@ import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerati
 import { createSceneSubtitleCues } from "../src/services/subtitleService.ts";
 import { appendAssetRevision } from "../src/services/dependencyHashService.ts";
 import { removeRedundantSceneAudioBase64 } from "../src/services/voiceTimelineService.ts";
-import { hasCompleteSceneAlignment } from "../src/hooks/autoVideoPipelineUtils.ts";
+import { getGenerationCheckpointSceneProgress, hasCompleteSceneAlignment } from "../src/hooks/autoVideoPipelineUtils.ts";
 import fs from "node:fs";
 
 const values = new Map<string, string>();
@@ -32,6 +32,24 @@ Object.defineProperty(globalThis, "sessionStorage", {
 const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
+
+const interruptedPromptProgress = getGenerationCheckpointSceneProgress({
+  storyboard: [
+    { id: "scene_001", generationPrompt: "AI prompt 1" },
+    { id: "scene_002", generationPrompt: "AI prompt 2" },
+    { id: "scene_003", generationPrompt: "" },
+  ],
+  generationCheckpoint: {
+    intent: "continue",
+    phase: "prompt_planning_failed",
+    completedSceneIds: [],
+    pendingSceneIds: ["scene_001", "scene_002", "scene_003"],
+    failedSceneIds: [],
+    updatedAt: new Date().toISOString(),
+  },
+} as any);
+assert(interruptedPromptProgress.completedSceneIds.join(",") === "scene_001,scene_002", "completed AI prompts were lost from the interrupted checkpoint");
+assert(interruptedPromptProgress.pendingSceneIds.join(",") === "scene_003", "interrupted checkpoint did not isolate the missing prompt");
 
 
 const sourceHookText = "A real opening sentence from the supplied script.";

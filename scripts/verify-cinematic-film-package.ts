@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA } from "../src/constants/responseSchemas";
+import { CINEMATIC_CONFIG } from "../src/constants/config";
 import {
   getCinematicEditDecisionPrompt,
   getCinematicEditSceneMediaLabel,
@@ -9,8 +10,14 @@ import {
   getCinematicFinalVideoQualityPrompt,
   getCinematicSeoPrompt,
   getCinematicThumbnailPrompt,
+  getCinematicThumbnailTechnicalRepairPrompt,
 } from "../src/constants/cinematicPrompts";
-import { CINEMATIC_POLICY_CONFIG, CINEMATIC_ROOM_STAGE } from "../src/constants/cinematicConstants";
+import {
+  CINEMATIC_PLANNING_MESSAGES,
+  CINEMATIC_POLICY_CONFIG,
+  CINEMATIC_PROGRESS_MESSAGES,
+  CINEMATIC_ROOM_STAGE,
+} from "../src/constants/cinematicConstants";
 import {
   getThumbnailTechnicalPlanningIssues,
   preserveAiThumbnailIdeas,
@@ -29,6 +36,8 @@ assert.match(prompt, /Application code will store these fields unchanged/i);
 assert.match(prompt, /Let the later video-prompt director decide shot count/i);
 assert.match(prompt, /characterIds containing only IDs from characters (?:who are )?visibly present/i);
 assert.match(prompt, /completionMarker must be the final property/i);
+assert.match(prompt, /characters\[\]\.prompt and characters\[\]\.referenceGenerationPrompt must be written entirely in English/i);
+assert.match(prompt, /only exact dialogue or deliberately rendered on-image text may remain in the selected screenplay language/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return one complete film package again from the beginning/i);
 
@@ -51,7 +60,31 @@ const cinematicThumbnailPrompt = getCinematicThumbnailPrompt({
 });
 assert.match(cinematicThumbnailPrompt, /theatrical key art grounded in the completed film/i);
 assert.match(cinematicThumbnailPrompt, /application code sends it unchanged/i);
+assert.match(cinematicThumbnailPrompt, /every generationPrompt and all visual\/directorial metadata .* in English/i);
 assert.doesNotMatch(cinematicThumbnailPrompt, /Quick Video|YouTube thumbnail|TikTok|CTR strategist|approved layout library|viewer retention/i);
+
+const vietnameseThumbnailPrompt = getCinematicThumbnailPrompt({
+  rewrittenScript: "Người đưa thư băng qua thành phố ngập nước.",
+  thumbnailCount: 1,
+  referenceDirection: "Rain-soaked photorealism",
+  isVi: true,
+  aspectRatio: "16:9",
+  textMode: "headline",
+  backgroundMode: "contextual",
+  focusMode: "subject",
+  backgroundDirective: "Flooded city",
+  focusDirective: "Courier and sealed package",
+  charactersJson: "[]",
+  genre: "drama",
+  writingStyle: "restrained",
+  audience: "adult",
+});
+assert.match(vietnameseThumbnailPrompt, /only the exact visible headline uses the selected screenplay language/i);
+assert.match(vietnameseThumbnailPrompt, /natural Vietnamese phrase with correct diacritics/i);
+assert.match(vietnameseThumbnailPrompt, /all surrounding visual direction inside generationPrompt remains English/i);
+const thumbnailRepairPrompt = getCinematicThumbnailTechnicalRepairPrompt(vietnameseThumbnailPrompt, "{}", ["thumbnail_generation_prompt_missing"]);
+assert.match(thumbnailRepairPrompt, /generationPrompt and all visual\/directorial metadata are English/i);
+assert.match(thumbnailRepairPrompt, /only the exact visible headline may use the selected screenplay language/i);
 
 const editPrompt = getCinematicEditDecisionPrompt([{ sceneId: "scene_001" }]);
 assert.match(editPrompt, /continuous take is valid/i);
@@ -65,6 +98,10 @@ assert.doesNotMatch(cinematicSeoPrompt, /Quick Video|YouTube|TikTok|growth templ
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, 3);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_WORKER_COUNT, 1);
 assert.deepEqual(Object.values(CINEMATIC_ROOM_STAGE), ["script-room", "prompt-room", "thumbnail-room", "video-room"]);
+assert.match(CINEMATIC_PROGRESS_MESSAGES.vi.THUMBNAIL_START, /ảnh tham chiếu nhân vật và ảnh bìa/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START, /Bước 3\/4.*ảnh tham chiếu/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY, /đã được tạo và lưu/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL, /chưa tạo được/i);
 
 const aiThumbnailPrompt = "AI-authored key-art prompt preserved byte-for-byte.\n";
 const aiThumbnail = {
@@ -87,6 +124,7 @@ const imageGeneratorSource = fs.readFileSync("src/server/services/imageGenerator
 const cinematicPromptSource = fs.readFileSync("src/constants/cinematicPrompts.ts", "utf8");
 const sharedPromptSource = fs.readFileSync("src/constants/prompts.ts", "utf8");
 assert.match(controllerSource, /cinematicFilmPackage/);
+assert.match(controllerSource, /schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG\.FILM_PACKAGE_SCHEMA_VERSION/);
 assert.match(controllerSource, /getCinematicThumbnailPrompt/);
 assert.match(controllerSource, /getCinematicFinalVideoQualityPrompt/);
 assert.match(controllerSource, /isCinematicSeo[\s\S]*getCinematicSeoPrompt/);
@@ -96,6 +134,10 @@ assert.match(controllerSource, /productionScenes: _\.castArray\(cinematicFilmPac
 assert.doesNotMatch(controllerSource, /getCinematicScreenplayEditorialPrompt/);
 assert.doesNotMatch(controllerSource, /getCinematicNarrativePlanPrompt/);
 assert.match(pipelineSource, /const shouldAnalyzeCharacters\s*=\s*!isCinematicPipeline/);
+assert.match(pipelineSource, /requiresCinematicVisualPromptLanguageUpgrade/);
+assert.match(pipelineSource, /cinematicScriptArtifacts: scriptData\.cinematicScriptArtifacts \|\| newProj\.cinematicScriptArtifacts/);
+assert.match(pipelineSource, /const characterReferencesComplete = _\.every/);
+assert.match(pipelineSource, /CINEMATIC_PLANNING_MESSAGES\.VI_CHARACTER_PACK_PARTIAL/);
 assert.match(pipelineSource, /PIPELINE_CLOSE_CHAT_PLANNING_ROOMS/);
 assert.match(pipelineSource, /const thumbnailPlanningAttempted = Boolean\(thumbnailPlanRequest\)/);
 assert.match(pipelineSource, /else if \(!thumbnailPlanningAttempted\)/);
@@ -107,7 +149,12 @@ assert.doesNotMatch(filmSetupSource, /roomOnly/);
 assert.match(chatSettingsSource, /value=\{AiPlanningExecutionMode\.ApiOnly\}/);
 assert.match(chatSettingsSource, /texts\.PLANNING_API_ONLY/);
 assert.doesNotMatch(filmSetupSource, /seriesMode|episodeCount/);
-assert.match(generatorSource, /\[planningChromeHeadless, setPlanningChromeHeadless\] = useState\(false\)/, "planning Chrome must default to visible");
+assert.match(
+  generatorSource,
+  /\[planningChromeHeadless, setPlanningChromeHeadless\] = useState<boolean>\(CINEMATIC_CONFIG\.GENERATION_DEFAULTS\.CHROME_HEADLESS\)/,
+  "planning Chrome must use the centralized background-mode default",
+);
+assert.equal(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS, true, "cinematic planning and video Chrome must default to background mode");
 assert.match(generatorSource, /useState<SubtitleMode>\(SubtitleMode\.None\)/);
 assert.match(episodeServiceSource, /GenerateType\.Video\) \? _\.toString\(scene\.generationPrompt\) : basePrompt/);
 assert.match(imageGeneratorSource, /itemVisualConfig\.preserveAiPromptText[\s\S]*item\.prompt \|\| ""/);

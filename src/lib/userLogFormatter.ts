@@ -185,6 +185,7 @@ export const formatUserFacingLog = (value: unknown, language?: string): string =
   const messages = USER_LOG_MESSAGES[normalizedLanguage];
 
   if (_.isEmpty(rawMessage)) return messages.PROCESSING;
+  if (USER_LOG_CONFIG.CINEMATIC_STEP_MESSAGE_PATTERN.test(rawMessage)) return shortenMessage(rawMessage);
 
   if (USER_LOG_CONFIG.CONNECTION_ERROR_PATTERN.test(rawMessage)) return messages.CONFIG_REQUIRED;
   if (USER_LOG_CONFIG.CAPACITY_ERROR_PATTERN.test(rawMessage)) return messages.SERVICE_BUSY;

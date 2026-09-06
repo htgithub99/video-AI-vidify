@@ -27,6 +27,7 @@ for (const log of technicalLogs) {
 
 assert.match(formatUserFacingLog("Missing API key", "vi"), /cấu hình|khóa dịch vụ/i);
 assert.match(formatUserFacingLog("429 quota exceeded", "vi"), /giới hạn/);
+assert.equal(formatUserFacingLog("Bước 2/4 · AI đang viết prompt video cho từng cảnh.", "vi"), "Bước 2/4 · AI đang viết prompt video cho từng cảnh.");
 assert.equal(
   formatUserFacingLog(
     "[Kịch bản][room-only · gemini-chat/gemini-flash] Lần 2 chưa đạt (invalid_script_plan_response:$root.scriptSegment:word_ratio_1.520); đang retry riêng bước kịch bản.",

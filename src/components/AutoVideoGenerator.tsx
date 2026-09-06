@@ -180,7 +180,7 @@ export default function AutoVideoGenerator({
   const [planningFallbackProvider, setPlanningFallbackProvider] = useState<AiPlanningFallbackProvider>(AiPlanningFallbackProvider.GeminiChat);
   const [planningChatModel, setPlanningChatModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
   const [planningExecutionMode, setPlanningExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
-  const [planningChromeHeadless, setPlanningChromeHeadless] = useState(false);
+  const [planningChromeHeadless, setPlanningChromeHeadless] = useState<boolean>(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
   const [cinematicSubtitleMode, setCinematicSubtitleMode] = useState<SubtitleMode>(SubtitleMode.None);
   const cinematicEstimate = useMemo(() => {
     const minutes = Math.max(1, Number.parseInt(duration, 10) || 1);
@@ -208,7 +208,7 @@ export default function AutoVideoGenerator({
     if (savedModel && _.includes(Object.values(AiPlanningChatModel), savedModel)) setPlanningChatModel(savedModel);
     if (savedMode && _.includes(Object.values(AiPlanningExecutionMode), savedMode)) setPlanningExecutionMode(savedMode);
     else setPlanningExecutionMode(_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly);
-    setPlanningChromeHeadless(_.isBoolean(savedHeadless) ? savedHeadless : false);
+    setPlanningChromeHeadless(_.isBoolean(savedHeadless) ? savedHeadless : CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
     setCinematicSubtitleMode(savedSubtitleMode || SubtitleMode.None);
   }, [cinematicMode, projects, selectedProjectId]);
 

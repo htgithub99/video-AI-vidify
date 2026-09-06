@@ -26,6 +26,9 @@ assert.match(characterPrompt, /Separate immutable identity from scene action/i);
 assert.match(characterPrompt, /sourceIdentityEvidence/);
 assert.match(characterPrompt, /speciesPresentation/);
 assert.match(characterPrompt, /identityContinuityRisks/);
+assert.match(characterPrompt, /characters\[\]\.prompt and characters\[\]\.referenceGenerationPrompt entirely in English/i);
+assert.match(characterPrompt, /Preserve canonical proper names exactly/i);
+assert.match(characterPrompt, /no readable text/i);
 
 const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
 assert.match(pipelineControllerSource, /identityContinuityRisks: _\.castArray/);

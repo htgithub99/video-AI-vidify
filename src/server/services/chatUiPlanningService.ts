@@ -7,6 +7,7 @@ import {
   EXTERNAL_URLS,
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
+  SecurityConstants,
 } from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
@@ -16,6 +17,11 @@ interface ChatRoomAttachment {
   name: string;
   mimeType: string;
   buffer: Buffer;
+}
+
+interface ChatResponseSnapshot {
+  identity: string;
+  text: string;
 }
 
 interface ChatPlanningRequest {
@@ -455,6 +461,27 @@ const extractCompleteJsonValue = (text: string): string => {
   return candidate.length > 1 ? candidate : "";
 };
 
+const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
+  page
+    .locator(responseSelector)
+    .evaluateAll(
+      (elements, identityConfig) =>
+        elements.map((element, index) => {
+          const identityElement = element.closest(identityConfig.selector) || element;
+          const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || "";
+          const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || "";
+          const identity = messageId || (testId ? `${testId}:${index}` : identityElement.id);
+          return { identity, text: (element.textContent || "").trim() };
+        }),
+      {
+        selector: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_IDENTITY_SELECTOR,
+        messageIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MESSAGE_ID_ATTRIBUTE,
+        testIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TEST_ID_ATTRIBUTE,
+        legacyTestIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_LEGACY_TEST_ID_ATTRIBUTE,
+      },
+    )
+    .catch(() => []);
+
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
   try {
@@ -478,12 +505,13 @@ const waitForStableResponse = async (
   busySelector: string,
   initialCount: number,
   expectedSceneIds: string[],
-  initialResponseTexts: string[],
+  initialResponseSnapshots: ChatResponseSnapshot[],
   completionMarker?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   const startedAt = Date.now();
-  const initialResponseSet = new Set(_.map(initialResponseTexts, (value) => _.trim(value)));
+  const initialResponseSet = new Set(_.map(initialResponseSnapshots, (snapshot) => _.trim(snapshot.text)));
+  const initialResponseIdentitySet = new Set(_.compact(_.map(initialResponseSnapshots, "identity")));
   let previousText = "";
   let stablePolls = 0;
   let lastResponseCount = initialCount;
@@ -492,14 +520,18 @@ const waitForStableResponse = async (
   let lastIdentityMatch = false;
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) {
     throwIfPlanningCancelled(signal);
-    const responses = page.locator(responseSelector);
-    const count = await responses.count().catch(() => 0);
-    const responseTexts = _.map(await responses.allTextContents().catch(() => []), (value) => _.trim(value));
+    const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
+    const count = responseSnapshots.length;
+    const responseTexts = _.map(responseSnapshots, "text");
     const lastResponse = _.trim(_.last(responseTexts) || "");
     const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : "";
     const newResponseTexts = count > initialCount ? _.slice(responseTexts, initialCount) : [];
     const responsesNotPresentBeforeSubmission = _.filter(responseTexts, (value) => !_.isEmpty(value) && !initialResponseSet.has(value));
-    const responseCandidates = _.uniq(_.compact([...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
+    const responsesWithNewIdentity = _.map(
+      _.filter(responseSnapshots, (snapshot) => !_.isEmpty(snapshot.identity) && !initialResponseIdentitySet.has(snapshot.identity)),
+      "text",
+    );
+    const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
     const selectedResponse =
       _.findLast(
         _.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)),
@@ -511,8 +543,9 @@ const waitForStableResponse = async (
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
-      .first()
-      .isVisible()
+      .filter({ visible: true })
+      .count()
+      .then((visibleCount) => visibleCount > 0)
       .catch(() => false);
     const hasRequiredCompletionMarker = _.isEmpty(completionMarker) || _.includes(latestText, completionMarker);
     const belongsToCurrentRequest = (_.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds)) && hasRequiredCompletionMarker;
@@ -533,7 +566,7 @@ const waitForStableResponse = async (
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
-        const mayUseUnmarkedJsonFallback = _.isEmpty(completionMarker) && isCompleteJson;
+        const mayUseUnmarkedJsonFallback = _.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && isCompleteJson;
         if (belongsToCurrentRequest || mayUseUnmarkedJsonFallback) {
           if (!belongsToCurrentRequest) {
             appWarn(
@@ -546,6 +579,10 @@ const waitForStableResponse = async (
           appLog(`[AI Chat Planning] Đã lấy response hoàn chỉnh từ room (${latestText.length} ký tự).`);
           return latestText;
         }
+        if (!isCompleteJson && !_.isEmpty(responseCandidates)) {
+          throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
+        }
+        if (!_.isEmpty(responseCandidates)) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
       }
     } else {
       stablePolls = 0;
@@ -627,17 +664,8 @@ const submitPrompt = async (
     );
   }
   appLog(`[AI Chat Planning] Ô nhập đã sẵn sàng sau ${Date.now() - uiReadyStartedAt} ms.`);
-  const initialCount = await page
-    .locator(responseSelector)
-    .count()
-    .catch(() => 0);
-  const initialResponseTexts = _.map(
-    await page
-      .locator(responseSelector)
-      .allTextContents()
-      .catch(() => []),
-    (value) => _.trim(value),
-  );
+  const initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
+  const initialCount = initialResponseSnapshots.length;
   if (!_.isEmpty(attachments)) await attachRoomFiles(page, attachments);
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
@@ -646,7 +674,7 @@ const submitPrompt = async (
   if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
   else await input.press("Enter");
   appLog(`[AI Chat Planning] Đã nhập và gửi yêu cầu vào room (${normalizedPrompt.length} ký tự).`);
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseTexts, completionMarker, signal);
+  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseSnapshots, completionMarker, signal);
 };
 
 const getChatModelOption = (page: Page, modelLabel: RegExp) =>
@@ -966,8 +994,26 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     );
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error("AI Chat dự phòng chưa được hỗ trợ.");
-    const text = await generator(request);
-    return { text, provider: request.provider };
+    let lastError: unknown;
+    for (let recoveryAttempt = 0; recoveryAttempt <= CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS; recoveryAttempt++) {
+      try {
+        const text = await generator(request);
+        return { text, provider: request.provider };
+      } catch (error) {
+        lastError = error;
+        throwIfPlanningCancelled(request.signal);
+        const errorMessage = _.toString(_.get(error, "message", error));
+        const canRecoverClosedRoom =
+          CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) &&
+          recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
+        if (!canRecoverClosedRoom) throw error;
+        appWarn(
+          _.replace(CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_LOG, SecurityConstants.PLACEHOLDER_0, providerNames[request.provider]),
+        );
+        await closeChatPlanningRoom(request);
+      }
+    }
+    throw lastError;
   } catch (error) {
     if (!_.isEqual(_.toString(_.get(error, "message", error)), CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR)) {
       appWarn(`[AI Chat Planning] ${providerNames[request.provider]} chưa hoàn tất: ${_.toString(_.get(error, "message", error))}`);

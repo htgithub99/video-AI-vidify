@@ -309,6 +309,7 @@ const saveCinematicScriptArtifactCheckpoint = async (
   project.cinematicScriptArtifacts = {
     ...matchingArtifacts,
     sourceSignature,
+    schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION,
     [key]: artifact,
     updatedAt: new Date().toISOString(),
   };

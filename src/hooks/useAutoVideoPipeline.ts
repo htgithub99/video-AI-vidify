@@ -62,6 +62,7 @@ import {
   AUTO_VIDEO_PIPELINE_PROGRESS,
   CINEMATIC_EDIT_ANALYSIS_CONFIG,
   CINEMATIC_CONFIG,
+  CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
   FFMPEG_RENDER_CONSTANTS,
   FLOW_VIDEO_MEDIA_CONFIG,
   PROJECT_IMAGE_FALLBACK_CONFIG,
@@ -213,6 +214,8 @@ import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
   CINEMATIC_CHARACTER_PACK_CONFIG,
   CINEMATIC_CHAT_PLANNING_CONFIG,
+  CINEMATIC_PROGRESS_MESSAGES,
+  CINEMATIC_PROGRESS_STAGE,
   CINEMATIC_PLANNING_MESSAGES,
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_ROOM_STAGE,
@@ -223,6 +226,7 @@ import {
   fetchCachedVoiceAudio,
   getReferenceChangeState,
   getPipelineInvalidationState,
+  getGenerationCheckpointSceneProgress,
   preserveInterruptedStoryboardCheckpoint,
   hasCompleteSceneAlignment,
   resolveTargetProject,
@@ -555,12 +559,15 @@ export function useAutoVideoPipeline(
     setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.START);
     setCurrentStepIndex(1);
 
-    let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
+    let currentLogs: string[] = config.resumeMode && !isCinematicPipeline ? _.clone(logs) : [];
     setLogs(_.clone(currentLogs));
-    if (!config.resumeMode) storageUtils.set(currentLogsStorageKey, jsonUtils.safeStringify([]));
+    if (!config.resumeMode || isCinematicPipeline) storageUtils.set(currentLogsStorageKey, jsonUtils.safeStringify([]));
     let currentLogProjectId = config.resumeMode ? _.toString(config.selectedProjectId || activeCreatedProject?.id) : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-    const appendLog = (msg: string) => {
+    const cinematicProgressMessages = config.language === ProjectLanguage.VI ? CINEMATIC_PROGRESS_MESSAGES.vi : CINEMATIC_PROGRESS_MESSAGES.en;
+    let cinematicProgressStage: number = CINEMATIC_PROGRESS_STAGE.SCRIPT;
+    const appendLog = (msg: string, cinematicUserVisible = false) => {
       if (!_.isEqual(activePipelineRunIdRef.current, pipelineRunId)) return;
+      if (isCinematicPipeline && !cinematicUserVisible) return;
       const userMessage = formatUserFacingLog(msg, config.language);
       const previousMessage = _.trim(_.toString(_.last(currentLogs))).replace(/^\[[^\]]+\]\s*/, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       if (_.isEqual(previousMessage, userMessage)) return;
@@ -573,21 +580,17 @@ export function useAutoVideoPipeline(
         storageUtils.set(`${projectLogsStoragePrefix}${currentLogProjectId}`, jsonUtils.safeStringify(currentLogs));
       }
     };
+    const appendCinematicLog = (msg: string, stage?: number) => {
+      if (!isCinematicPipeline) return;
+      if (_.isNumber(stage)) cinematicProgressStage = stage;
+      appendLog(msg, true);
+    };
 
     const pipelineStartedAt = Date.now();
     let currentProject: VideoProject | null = resetDerivedPresentation ? null : activeCreatedProject;
     let roomCleanupProvider = AiPlanningFallbackProvider.Disabled;
-    appendLog(
-      config.cinematicMode
-        ? config.language === ProjectLanguage.VI
-          ? config.resumeMode
-            ? CINEMATIC_PLANNING_MESSAGES.VI_CONTINUE
-            : CINEMATIC_PLANNING_MESSAGES.VI_START_NEW
-          : config.resumeMode
-            ? CINEMATIC_PLANNING_MESSAGES.EN_CONTINUE
-            : CINEMATIC_PLANNING_MESSAGES.EN_START_NEW
-        : T.logPipelineStart,
-    );
+    if (isCinematicPipeline) appendCinematicLog(cinematicProgressMessages.SCRIPT_START, CINEMATIC_PROGRESS_STAGE.SCRIPT);
+    else appendLog(T.logPipelineStart);
     appendLog(T.logConfigSummary(config.genre, config.language, config.duration, config.generationMode, config.resumeMode));
 
     try {
@@ -641,14 +644,19 @@ export function useAutoVideoPipeline(
         isContinuation,
       );
       let invalidationState = preserveInterruptedStoryboardCheckpoint(existingTargetProj, config, getPipelineInvalidationState(existingTargetProj, config, referenceChangeState));
+      const requiresCinematicVisualPromptLanguageUpgrade = Boolean(
+        isCinematicPipeline &&
+          existingTargetProj &&
+          !_.isEqual(existingTargetProj.cinematicScriptArtifacts?.schemaVersion, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION),
+      );
       if (isContinuation && existingTargetProj) {
         invalidationState = {
-          regenerateScript: _.isEmpty(existingTargetProj.scriptRewritten),
-          regenerateStoryboard: _.isEmpty(existingTargetProj.storyboard),
+          regenerateScript: _.isEmpty(existingTargetProj.scriptRewritten) || requiresCinematicVisualPromptLanguageUpgrade,
+          regenerateStoryboard: _.isEmpty(existingTargetProj.storyboard) || requiresCinematicVisualPromptLanguageUpgrade,
           regenerateVoice: !isCinematicEpisodeGenre(config.genre) && _.isEmpty(existingTargetProj.voiceConfig?.audioUrl) && _.isEmpty(existingTargetProj.voiceConfig?.audioBase64),
           regenerateSceneAssets: false,
           regenerateSeo: _.isEmpty(existingTargetProj.seo),
-          regenerateThumbnails: _.isEmpty(existingTargetProj.thumbnails),
+          regenerateThumbnails: _.isEmpty(existingTargetProj.thumbnails) || requiresCinematicVisualPromptLanguageUpgrade,
         };
       }
       const sceneStyleProfileOutdated = _.every(
@@ -765,15 +773,7 @@ export function useAutoVideoPipeline(
             intent: runIntent,
             phase: "initializing",
             lastSuccessfulPhase: existingTargetProj.generationCheckpoint?.lastSuccessfulPhase,
-            completedSceneIds: _.map(
-              _.filter(existingTargetProj.storyboard, (scene) => !_.isEmpty(scene.assetUrl)),
-              "id",
-            ),
-            pendingSceneIds: _.map(
-              _.filter(existingTargetProj.storyboard, (scene) => _.isEmpty(scene.assetUrl)),
-              "id",
-            ),
-            failedSceneIds: [],
+            ...getGenerationCheckpointSceneProgress(existingTargetProj),
             updatedAt: new Date().toISOString(),
           },
         };
@@ -1149,6 +1149,7 @@ export function useAutoVideoPipeline(
           chapterPlans: scriptData.chapterPlans,
           factPack: scriptData.factPack as FactPack,
           scriptQa: scriptData.scriptQa as ScriptQualityReport | undefined,
+          cinematicScriptArtifacts: scriptData.cinematicScriptArtifacts || newProj.cinematicScriptArtifacts,
           aiMetrics: _.concat(_.defaultTo(newProj.aiMetrics, []), _.defaultTo(scriptData.aiMetrics, [])),
           contentSafety: scriptData.contentSafety as ContentSafetyReport,
           chapters,
@@ -1626,6 +1627,10 @@ export function useAutoVideoPipeline(
 
       appendLog(T.logReferenceSummary(_.size(config.referenceImages), _.size(config.sceneReferenceImages), SecurityConstants.ZERO, isCinematicPipeline));
       if (isCinematicEpisodeGenre(config.genre)) setCurrentStepIndex(2);
+      if (isCinematicPipeline) {
+        appendCinematicLog(cinematicProgressMessages.SCRIPT_READY, CINEMATIC_PROGRESS_STAGE.SCRIPT);
+        appendCinematicLog(cinematicProgressMessages.PROMPT_START, CINEMATIC_PROGRESS_STAGE.PROMPT);
+      }
 
       const requiresCinematicPlanRepair = isCinematicEpisodeGenre(config.genre)
         ? !_.isEmpty(getBlockingCinematicStoryboardContractIssues(realScenes as StoryboardScene[], config.videoDuration, config.language))
@@ -1742,6 +1747,15 @@ export function useAutoVideoPipeline(
             _.forEach(completedScenes, (scene) => plannedById.set(scene.id, scene));
             completedSceneCount = _.add(completedSceneCount, completedScenes.length);
             await checkpointPlanningState();
+            const completedPromptCount = _.size(_.filter(realScenes, (scene) => !_.isEmpty(_.trim(scene.generationPrompt))));
+            appendCinematicLog(
+              _.replace(
+                _.replace(cinematicProgressMessages.PROMPT_PROGRESS, SecurityConstants.PLACEHOLDER_0, _.toString(completedPromptCount)),
+                SecurityConstants.PLACEHOLDER_1,
+                _.toString(realScenes.length),
+              ),
+              CINEMATIC_PROGRESS_STAGE.PROMPT,
+            );
           };
           const processPlanningBatch = async (batchIndex: number) => {
             throwIfCancelled();
@@ -2067,6 +2081,10 @@ export function useAutoVideoPipeline(
             : `[AI Film] Video-only production: ${realScenes.length}/${realScenes.length} shots use the selected video model.`,
         );
       }
+      if (isCinematicPipeline) {
+        appendCinematicLog(cinematicProgressMessages.PROMPT_READY, CINEMATIC_PROGRESS_STAGE.PROMPT);
+        appendCinematicLog(cinematicProgressMessages.THUMBNAIL_START, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+      }
       voiceUpdatedProj = {
         ...voiceUpdatedProj,
         visualConfig: executionVisualConfig,
@@ -2115,7 +2133,10 @@ export function useAutoVideoPipeline(
           (_character, index) => _.isEqual(runIntent, "new") || !referenceAvailability[index],
         );
         if (!_.isEmpty(charactersMissingReferences)) {
-          appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_START);
+          appendCinematicLog(
+            config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_START,
+            CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
+          );
           const generatedReferences = new Map<string, string>();
           for (const character of charactersMissingReferences) {
             throwIfCancelled();
@@ -2200,7 +2221,17 @@ export function useAutoVideoPipeline(
             },
           };
           voiceUpdatedProj = await syncProject(voiceUpdatedProj);
-          appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_READY);
+          const characterReferencesComplete = _.every(charactersWithReferences, (character) => !_.isEmpty(character.images));
+          appendCinematicLog(
+            config.language === ProjectLanguage.VI
+              ? characterReferencesComplete
+                ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY
+                : CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL
+              : characterReferencesComplete
+                ? CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_READY
+                : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_PARTIAL,
+            CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
+          );
         }
       }
       const cachedSeoData = isContinuation && newProj.seo ? newProj.seo : null;
@@ -2682,6 +2713,17 @@ export function useAutoVideoPipeline(
                     ? `✓ Đã tải và lưu ${sceneGenerateType === GenerateType.Video ? "clip video" : "hình ảnh"} ${sc.id}.`
                     : `✓ Downloaded and saved the ${sceneGenerateType === GenerateType.Video ? "video clip" : "image"} for ${sc.id}.`,
                 );
+                if (isCinematicPipeline) {
+                  const completedVideoSceneCount = _.size(_.filter(realScenes, hasSceneAsset));
+                  appendCinematicLog(
+                    _.replace(
+                      _.replace(cinematicProgressMessages.VIDEO_PROGRESS, SecurityConstants.PLACEHOLDER_0, _.toString(completedVideoSceneCount)),
+                      SecurityConstants.PLACEHOLDER_1,
+                      _.toString(realScenes.length),
+                    ),
+                    CINEMATIC_PROGRESS_STAGE.VIDEO,
+                  );
+                }
               } else {
                 if (imageResult.remoteMediaCreated) {
                   sc.remoteVideoMediaId = imageResult.remoteMediaId;
@@ -2931,6 +2973,11 @@ export function useAutoVideoPipeline(
             await imageCheckpointQueue;
           };
           await generateFilmThumbnails();
+          appendCinematicLog(cinematicProgressMessages.THUMBNAIL_READY, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+          appendCinematicLog(
+            _.replace(cinematicProgressMessages.VIDEO_START, SecurityConstants.PLACEHOLDER_0, _.toString(realScenes.length)),
+            CINEMATIC_PROGRESS_STAGE.VIDEO,
+          );
           await runSceneGeneration(remainingTargetScenes, false);
         }
 
@@ -2966,6 +3013,13 @@ export function useAutoVideoPipeline(
           await runSceneGeneration(retryScenes, true);
         }
         await recoverPendingFlowDownloads();
+      }
+      if (isCinematicPipeline && _.lt(cinematicProgressStage, CINEMATIC_PROGRESS_STAGE.VIDEO)) {
+        appendCinematicLog(cinematicProgressMessages.THUMBNAIL_READY, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+        appendCinematicLog(
+          _.replace(cinematicProgressMessages.VIDEO_START, SecurityConstants.PLACEHOLDER_0, _.toString(realScenes.length)),
+          CINEMATIC_PROGRESS_STAGE.VIDEO,
+        );
       }
       const qaEligibleScenes = _.filter(realScenes as StoryboardScene[], (scene) => _.every([hasSceneAsset(scene), scene.assetType !== GenerateType.Video], Boolean));
       for (const scene of qaEligibleScenes) {
@@ -4108,6 +4162,7 @@ export function useAutoVideoPipeline(
             };
             await syncProject(renderCompletedProj);
             setRenderedVideoUrl(statusData.url);
+            appendCinematicLog(cinematicProgressMessages.VIDEO_READY, CINEMATIC_PROGRESS_STAGE.VIDEO);
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
             appendLog(
               config.language === ProjectLanguage.VI
@@ -4145,10 +4200,14 @@ export function useAutoVideoPipeline(
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.COMPLETE);
     } catch (error: unknown) {
       if (cancellationRef.current || (error instanceof DOMException && _.isEqual(error.name, "AbortError"))) {
-        appendLog(T.logCancelled);
-        appendLog(T.logPipelineCancelledElapsed((Date.now() - pipelineStartedAt) / 1000));
+        if (isCinematicPipeline) appendCinematicLog(cinematicProgressMessages.CANCELLED, cinematicProgressStage);
+        else {
+          appendLog(T.logCancelled);
+          appendLog(T.logPipelineCancelledElapsed((Date.now() - pipelineStartedAt) / 1000));
+        }
         const latestProject = activeProjectSnapshotRef.current || currentProject;
         if (latestProject) {
+          const checkpointProgress = getGenerationCheckpointSceneProgress(latestProject);
           const cancelledProject = {
             ...latestProject,
             status: REFACTOR_CONSTANTS.STATUS_CANCELLED,
@@ -4158,6 +4217,7 @@ export function useAutoVideoPipeline(
             generationCheckpoint: {
               ...(latestProject.generationCheckpoint || { intent: runIntent, completedSceneIds: [], pendingSceneIds: [], failedSceneIds: [] }),
               phase: "interrupted",
+              ...checkpointProgress,
               renderJobId: activeRenderJobIdRef.current,
               updatedAt: new Date().toISOString(),
             },
@@ -4177,9 +4237,20 @@ export function useAutoVideoPipeline(
         message: errorMessage,
         detail: _.get(error, "diagnostic"),
       };
-      appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
-      appendLog(T.logPipelineFailedElapsed((Date.now() - pipelineStartedAt) / 1000));
+      if (isCinematicPipeline) {
+        const stoppedMessage = _.isEqual(cinematicProgressStage, CINEMATIC_PROGRESS_STAGE.VIDEO)
+          ? cinematicProgressMessages.VIDEO_STOPPED
+          : _.replace(cinematicProgressMessages.PLANNING_STOPPED, SecurityConstants.PLACEHOLDER_0, _.toString(cinematicProgressStage));
+        appendCinematicLog(
+          stoppedMessage,
+          cinematicProgressStage,
+        );
+      } else {
+        appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
+        appendLog(T.logPipelineFailedElapsed((Date.now() - pipelineStartedAt) / 1000));
+      }
       const latestProject = activeProjectSnapshotRef.current || currentProject;
+      const checkpointProgress = latestProject ? getGenerationCheckpointSceneProgress(latestProject) : undefined;
       const failedProj = {
         ...(latestProject || {}),
         id: latestProject?.id || REFACTOR_CONSTANTS.STATUS_FAILED,
@@ -4192,6 +4263,7 @@ export function useAutoVideoPipeline(
         generationCheckpoint: {
           ...(latestProject?.generationCheckpoint || { intent: runIntent, completedSceneIds: [], pendingSceneIds: [], failedSceneIds: [] }),
           phase: "failed",
+          ...checkpointProgress,
           renderJobId: activeRenderJobIdRef.current,
           updatedAt: new Date().toISOString(),
         },
@@ -4233,6 +4305,7 @@ export function useAutoVideoPipeline(
     const renderJobId = activeRenderJobIdRef.current;
     const project = activeProjectSnapshotRef.current;
     if (project && pipelineRunId) {
+      const checkpointProgress = getGenerationCheckpointSceneProgress(project);
       const cancelledProject: VideoProject = {
         ...project,
         status: REFACTOR_CONSTANTS.STATUS_CANCELLED,
@@ -4241,6 +4314,7 @@ export function useAutoVideoPipeline(
         generationCheckpoint: {
           ...(project.generationCheckpoint || { intent: "new", completedSceneIds: [], pendingSceneIds: [], failedSceneIds: [] }),
           phase: "interrupted",
+          ...checkpointProgress,
           renderJobId,
           updatedAt: new Date().toISOString(),
         },

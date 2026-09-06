@@ -2,6 +2,7 @@ import _ from "lodash";
 import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
+import { CINEMATIC_CHECKPOINT_CONFIG } from "../constants/cinematicConstants";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
@@ -27,8 +28,39 @@ export interface PipelineInvalidationState {
   regenerateThumbnails: boolean;
 }
 
+export interface GenerationCheckpointSceneProgress {
+  completedSceneIds: string[];
+  pendingSceneIds: string[];
+  failedSceneIds: string[];
+}
+
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;
+
+const hasStoredSceneAsset = (scene: StoryboardScene): boolean =>
+  !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls);
+
+export const getGenerationCheckpointSceneProgress = (project: VideoProject): GenerationCheckpointSceneProgress => {
+  const scenes = _.defaultTo(project.storyboard, []) as StoryboardScene[];
+  const checkpoint = project.generationCheckpoint;
+  const reachedMediaStage =
+    _.some(scenes, hasStoredSceneAsset) ||
+    CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.phase)) ||
+    CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.lastSuccessfulPhase));
+  const completedScenes = _.filter(scenes, (scene) =>
+    reachedMediaStage ? hasStoredSceneAsset(scene) : !_.isEmpty(_.trim(scene.generationPrompt)),
+  );
+  const completedSceneIds = _.map(completedScenes, "id");
+  const pendingSceneIds = _.map(
+    _.reject(scenes, (scene) => _.includes(completedSceneIds, scene.id)),
+    "id",
+  );
+  const failedSceneIds = _.map(
+    _.filter(scenes, (scene) => !_.isEmpty(scene.assetError) && _.includes(pendingSceneIds, scene.id)),
+    "id",
+  );
+  return { completedSceneIds, pendingSceneIds, failedSceneIds };
+};
 
 export const preserveInterruptedStoryboardCheckpoint = (
   project: VideoProject | null,
@@ -254,4 +286,3 @@ export const calculateSceneDuration = (scenes: StoryboardScene[]): number =>
   _.sumBy(scenes, (scene) => _.max([0, (_.toNumber(scene.duration) || 0) - (_.toNumber(scene.sourceTrimStartSeconds) || 0) - (_.toNumber(scene.sourceTrimEndSeconds) || 0)]) || 0);
 export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = "auto"): string =>
   _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);
-

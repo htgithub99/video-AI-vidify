@@ -1027,6 +1027,7 @@ export interface VideoProject {
   chapterPlans?: ChapterPlan[];
   cinematicScriptArtifacts?: {
     sourceSignature: string;
+    schemaVersion?: string;
     filmPackage?: Record<string, unknown>;
     updatedAt: string;
   };

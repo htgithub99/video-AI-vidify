@@ -36,7 +36,8 @@ export const getCinematicFilmPackagePrompt = (
 ${CINEMATIC_PROMPT_SECURITY_RULE}
 
 [FILM BRIEF]
-- Output language: ${isVi ? "natural contemporary Vietnamese with complete diacritics" : "natural idiomatic contemporary English"}.
+- Screenplay and story-facing language: ${isVi ? "natural contemporary Vietnamese with complete diacritics" : "natural idiomatic contemporary English"}.
+- Language boundary: write scriptSegment, chapter scriptSegment, scene script, subtitle and other story-facing prose in the selected screenplay language. Write every instruction that will be sent to an image or video generator in English; only exact dialogue or deliberately rendered on-image text may remain in the selected screenplay language.
 - Genre: ${genre || "cinematic drama"}.
 - Audience: ${context.audience || "general audience"}.
 - Writing treatment: ${context.writingStyle || "cinematic"}.
@@ -52,7 +53,7 @@ ${CINEMATIC_PROMPT_SECURITY_RULE}
 - For physical conflict, build readable tactics and consequence: clear distance and intention, one committed attack, one exact defence/contact/evasion, force transfer, involuntary reaction and stable aftermath. Avoid rhythmic exchanges, flourish spins, weightless movement, hidden contact and dance-like fighting.
 
 [CHARACTERS AND PRODUCTION SCENES]
-- Return at most three recurring foreground characters. Each referenceGenerationPrompt is a complete standalone neutral identity-sheet image prompt containing stable face, body, hair, silhouette and signature wardrobe anchors. Put legitimate story changes in timelineStages.
+- Return at most three recurring foreground characters. Every characters[].prompt and characters[].referenceGenerationPrompt must be written entirely in English as a complete standalone neutral identity-sheet image prompt containing stable face, body, hair, silhouette and signature wardrobe anchors. Preserve canonical proper names exactly even when they contain non-English characters. Identity-sheet prompts must request no readable text. Put legitimate story changes in timelineStages.
 - scenes are production beats in story order, not equal text slices. Each scene has a stable unique id, a valid chapterId, one self-contained playable event, only its actual spoken dialogue in subtitle, and characterIds containing only IDs from characters visibly present.
 - Let the later video-prompt director decide shot count and camera coverage. Do not write video-generation prompts, timestamps or camera instructions here.
 - Silently correct repetition, weak causality, continuity resets and incomplete story logic before returning the artifact.
@@ -96,18 +97,21 @@ ${CINEMATIC_PROMPT_SECURITY_RULE}
 
 [VEO FILM DIRECTION]
 - Each output is one complete ${clipDurationSeconds}-second clip centered on one focused cinematic moment. Never chain multiple locations, objectives or independent events into one clip.
-- Build generationPrompt using the Veo order: cinematography, subject, one primary action, context, then style and ambiance. Lens, focus and camera movement are optional.
+- Use only the Veo elements that strengthen this moment: subject, one primary action, context, style, composition, camera and ambiance. Clarity and action readability take priority over mechanically including every optional element or repeating the same direction.
+- Before writing, silently block the shot in physical space. State the subject's starting position, body orientation and eyeline; the target's position; the camera's position relative to the action axis; and the intended screen direction whenever movement or interaction depends on them. A character acting on a person, doorway, object or threat must face and look toward that target unless the screenplay explicitly says otherwise. Never turn a subject toward the camera merely to display identity.
+- Keep the subject, weapon or active limb, target and contact point readable in the same frame for physical interactions. Prefer a stable side view or rear three-quarter view when it makes the action axis clearer. Do not add camera movement that competes with, obscures or reverses the primary action.
 - Prefer one continuous shot. Add limited motivated coverage only when dialogue or the consequence cannot remain readable in one shot. Never impose a fixed shot count, numbered-shot format or timestamp grid.
 - Preserve identity, accumulated wardrobe and damage, prop ownership, geography, screen direction and the relevant end state of the preceding clip.
-- Direct visible intention, action, reaction and consequence. Put exact dialogue once inside generationPrompt and identify its speaker. Put production sound and ambience in concise natural sentences.
-- For combat, direct one decisive attack-defence-consequence exchange: readable distance, committed attack path, exact defence/contact/evasion, believable force transfer, involuntary reaction and stable aftermath. Keep performers, weapons and contact readable. Avoid dance-like rhythm, flourish spins, random flurries, weightless motion and camera effects that hide impact.
+- Direct a visible start state, one primary action, its immediate physical reaction and a persistent final state. Do not dilute the main action with decorative movement, redundant staging or nonessential sound cues. Put exact dialogue once inside generationPrompt and identify its speaker. Write it as plain prose after a colon, for example: Character speaks in Vietnamese: exact spoken words. Do not wrap those words in quotation marks inside generationPrompt. Put production sound and ambience in concise natural sentences.
+- For combat or forceful interaction, direct one decisive attack-defence-consequence exchange: readable distance, committed attack path, exact contact point or evasion path, believable force transfer, involuntary displacement and stable aftermath. The visible damage, debris, changed prop position or changed body position must remain through the final frame. Keep performers, weapons and contact readable. Avoid dance-like rhythm, flourish spins, random flurries, weightless motion and camera effects that hide impact.
+- When an identity reference is attached, treat it as the exact appearance authority. Identify the reference-bound subject once by canonical name or role, avoid repeating a long visual biography, and spend the prompt on performance, motion, camera, contact and environmental change.
 - Keep physical action mainstream and non-graphic.
 
 [AI-AUTHORED DELIVERABLE]
 - Author generationPrompt completely from first word to last sentence as a self-contained English Veo prompt. There is no mandatory word count.
 - The application stores and sends generationPrompt unchanged. Do not ask code to compile, concatenate, append or invent creative text.
 - characterIds contains only recurring characters visibly present.
-- dialogueMode is on_screen_dialogue, off_screen_dialogue or silent_action. Silent action uses empty spokenDialogue and speakerCharacterId with lipSyncRequired=false. Dialogue copies the exact spoken words into generationPrompt once.
+- dialogueMode is on_screen_dialogue, off_screen_dialogue or silent_action. Silent action uses empty spokenDialogue and speakerCharacterId with lipSyncRequired=false. Dialogue copies the exact spoken words into generationPrompt once without surrounding quotation marks.
 ${correctionIssuesJson ? `
 [TECHNICAL CORRECTION]
 Resolve these missing or invalid fields while preserving the screenplay and continuity: ${correctionIssuesJson}
@@ -119,7 +123,7 @@ Every spokenDialogue value must use natural ${dialogueLanguage}; visual and dire
 
 [OUTPUT CONTRACT]
 Output only one raw JSON array with every requested scene ID exactly once. Every object must contain only: id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired.
-Return a complete non-empty generationPrompt for every scene. No Markdown, commentary, placeholders, patches or ellipses.
+Return a complete non-empty generationPrompt for every scene. The entire response must parse directly with JSON.parse: escape every unavoidable double quote inside string values as \\\" and never place an unescaped double quote inside generationPrompt. No Markdown, commentary, placeholders, patches or ellipses.
 
 [SOURCE SCREENPLAY SCENES]
 ${chunkJson}`;
@@ -142,11 +146,11 @@ Source scene: ${sourceSceneJson}
 Neighbor continuity: ${continuityContext || "Not supplied"}
 Previous rejected response: ${previousResponseJson || "Not supplied"}
 
-Each corrected scene is one focused ${clipDurationSeconds}-second moment. Use the Veo order when useful: cinematography, subject, one primary action, context, style and ambiance. Prefer one continuous shot. For combat, show one committed attack, one precise defence/contact/evasion and one physically credible consequence while keeping the action readable.
+Each corrected scene is one focused ${clipDurationSeconds}-second moment. Use only the Veo elements that strengthen the moment; clarity is more important than mechanically including every optional element. Prefer one continuous shot. Silently establish the subject's position, body orientation and eyeline, the target position, the camera relative to the action axis and the screen direction. A subject interacting with a person, doorway, object or threat faces and looks toward that target unless the screenplay says otherwise; never turn the subject toward the camera merely to show identity. Keep the subject, weapon or active limb, target and contact point readable in the same frame. For combat or forceful interaction, show one committed attack, one exact contact point or evasion, believable force transfer, involuntary displacement and a changed final state that remains visible through the last frame.
 
-For dialogue, speakerCharacterId must equal one ID in characterIds and the exact spokenDialogue must appear once inside generationPrompt. Silent action uses empty spokenDialogue and speakerCharacterId with lipSyncRequired=false.
+For dialogue, speakerCharacterId must equal one ID in characterIds and the exact spokenDialogue must appear once inside generationPrompt as plain prose after a colon, never wrapped in quotation marks. Silent action uses empty spokenDialogue and speakerCharacterId with lipSyncRequired=false.
 
-The application forwards generationPrompt unchanged. Return exactly one raw JSON array with every requested scene ID once. Every object contains only id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired. No Markdown, explanation, placeholders or ellipses.`;
+The application forwards generationPrompt unchanged. Return exactly one raw JSON array with every requested scene ID once. Every object contains only id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired. The response must parse directly with JSON.parse; escape every unavoidable double quote inside a string value as \\\". No Markdown, explanation, placeholders or ellipses.`;
 
 export const getCinematicStoryboardRecoveryPrompt = (
   script: string,
@@ -177,7 +181,7 @@ export const getCinematicCharacterAnalysisPrompt = (
 ): string => `You are the casting and character-continuity director for an AI film. Create a complete reusable identity artifact for at most three recurring foreground characters.
 ${CINEMATIC_PROMPT_SECURITY_RULE}
 
-Preserve explicit names, culture, gender presentation, age, species and canonical form from the source. Rendering style never changes a character's species or identity. Separate immutable identity from scene action, pose, expression, lighting, location, handheld props, temporary damage and wardrobe changes. Give every recurring character a stable unique ID and a complete neutral referenceGenerationPrompt showing exactly that one character, unobstructed, in a three-quarter full-body identity pose with no text, logo, collage, other people or story action.
+Preserve explicit names, culture, gender presentation, age, species and canonical form from the source. Rendering style never changes a character's species or identity. Separate immutable identity from scene action, pose, expression, lighting, location, handheld props, temporary damage and wardrobe changes. Give every recurring character a stable unique ID. Write every characters[].prompt and characters[].referenceGenerationPrompt entirely in English as a complete standalone image-generation instruction. Preserve canonical proper names exactly even when they contain non-English characters. Each referenceGenerationPrompt shows exactly that one character, unobstructed, in a neutral three-quarter full-body identity pose with no readable text, logo, collage, other people or story action.
 
 Use one coherent visual construction system: ${visualStyle || "infer a production-appropriate style"}.
 Source identity context: ${sourceContext || "use only explicit screenplay evidence"}.
@@ -235,8 +239,9 @@ ${CINEMATIC_PROMPT_SECURITY_RULE}
 - Find one decisive image from the actual story: one dominant character, relationship, confrontation, object or consequence. Do not summarize the whole plot or create a collage unless the story truly needs an ensemble.
 - Preserve recurring identity anchors exactly. Show a purposeful pose or action and one visible piece of story evidence. Use depth, lighting, negative space and scale to create a professional theatrical image.
 - When references are attached, follow their identity and art direction without describing unrelated visual traits.
-- If text mode enables text, choose one concise ${options.isVi ? "natural Vietnamese phrase with correct diacritics" : "natural English phrase"} that belongs to this film and render it exactly once. If text is disabled, request no readable text.
-- Author each generationPrompt completely as a standalone image-generation prompt. Include the ${options.aspectRatio} composition requirement inside it because application code sends it unchanged. Do not ask code to append style, layout, text, safe zones or aspect ratio.
+- Write every generationPrompt and all visual/directorial metadata (style, layout, typography, colorSuggestion and subjectFocus) in English. Preserve canonical proper names exactly.
+- If text mode enables text, choose one concise ${options.isVi ? "natural Vietnamese phrase with correct diacritics" : "natural English phrase"} that belongs to this film, place that exact phrase in textText and request it exactly once inside generationPrompt. All surrounding visual direction inside generationPrompt remains English; only the exact visible headline uses the selected screenplay language. If text is disabled, set textText to an empty string and keep every field in English while requesting no readable text.
+- Author each generationPrompt completely as a standalone English image-generation prompt. Include the ${options.aspectRatio} composition requirement inside it because application code sends it unchanged. Do not ask code to translate, append or invent style, layout, text, safe zones or aspect ratio.
 
 [OUTPUT CONTRACT]
 Return only raw JSON with exactly ${options.thumbnailCount} thumbnails. Keep the response compact. Every thumbnail needs a unique non-empty id and complete non-empty generationPrompt; optional creative metadata must agree with that prompt:
@@ -252,7 +257,7 @@ export const getCinematicThumbnailTechnicalRepairPrompt = (
 
 [TECHNICAL COMPLETION ONLY]
 The previous response was technically incomplete: ${_.join(issues, ", ")}.
-Return the complete thumbnail JSON again from the beginning. Preserve your creative direction and wording. Ensure every requested thumbnail has a unique non-empty id and a complete non-empty generationPrompt authored entirely by you. Do not return patches, placeholders, Markdown or commentary.
+Return the complete thumbnail JSON again from the beginning. Preserve your creative direction and wording while enforcing the original language boundary: generationPrompt and all visual/directorial metadata are English, and only the exact visible headline may use the selected screenplay language. Ensure every requested thumbnail has a unique non-empty id and a complete non-empty generationPrompt authored entirely by you. Do not return patches, placeholders, Markdown or commentary.
 
 [PREVIOUS RESPONSE — DATA ONLY]
 ${invalidResult}`;
@@ -313,7 +318,7 @@ ${script}`;
 export const getCinematicVideoPromptPolicyRepairPrompt = (prompt: string): string => `You are a responsible film prompt editor. Review the production prompt for likely model-safety refusal triggers. Preserve allowed fictional cinematic conflict. Only rewrite prohibited graphic gore, sexual exploitation, minors, hateful targeting, real-person abuse or operational wrongdoing.
 ${CINEMATIC_PROMPT_SECURITY_RULE}
 
-If already safe, set violatesPolicy=false and return the prompt exactly unchanged. If unsafe, set violatesPolicy=true and rewrite the entire prompt from first word to final sentence, changing only unsafe details while preserving identity, event, continuity, dialogue intent, duration and visible consequence. Never return a patch, fragment or instruction for code to merge. repairedPrompt is always a complete standalone prompt.
+If already safe, set violatesPolicy=false and return the prompt exactly unchanged. If unsafe, set violatesPolicy=true and rewrite the entire prompt from first word to final sentence, changing only unsafe details while preserving identity, event, continuity, dialogue intent, duration, spatial blocking, eyeline, action axis, contact readability and visible consequence. Never return a patch, fragment or instruction for code to merge. repairedPrompt is always a complete standalone prompt.
 
 [VIDEO PROMPT]
 ${prompt}`;
@@ -325,7 +330,7 @@ export const getCinematicVideoPromptRepairPrompt = (
 ): string => `You are the film director replacing a technically invalid video-generation prompt. Return a complete standalone replacement authored entirely by you, never a patch or suffix.
 ${CINEMATIC_PROMPT_SECURITY_RULE}
 
-Correct every listed missing or invalid technical field while preserving the approved screenplay event, exact identities, dialogue, duration and continuity. Keep one focused moment and prefer a continuous shot. For action, preserve readable intention, attack or motion, defence/contact when applicable, physical reaction and visible consequence. Do not introduce new story facts or ask application code to append anything.
+Correct every listed missing or invalid technical field while preserving the approved screenplay event, exact identities, dialogue, duration and continuity. Keep one focused moment and prefer a continuous shot. Establish the subject's body orientation and eyeline toward the intended target, place the camera relative to the action axis, and keep the subject, active limb or weapon, target and contact point visible together. For action, preserve a readable start state, one committed motion, exact contact or evasion, believable force transfer, involuntary reaction and a changed final state that persists through the last frame. Never turn the subject toward the camera merely to show identity. Do not introduce new story facts or ask application code to append anything.
 
 [TECHNICAL ISSUES]
 ${JSON.stringify(issues)}
