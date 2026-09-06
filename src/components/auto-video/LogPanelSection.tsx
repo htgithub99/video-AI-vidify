@@ -6,6 +6,7 @@ import { cn } from "../../lib/utils";
 import { AppTheme } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { isProgressLogVisible, ProgressLogContext } from "../../constants/progressLog";
+import { formatUserFacingLogs } from "../../lib/userLogFormatter";
 
 interface LogPanelSectionProps {
   logs: string[];
@@ -17,7 +18,10 @@ interface LogPanelSectionProps {
 
 export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T, language, context = ProgressLogContext.Automatic }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const visibleLogs = useMemo(() => _.filter(logs, (log) => isProgressLogVisible(log, context)), [context, logs]);
+  const visibleLogs = useMemo(
+    () => formatUserFacingLogs(_.filter(logs, (log) => isProgressLogVisible(log, context)), language),
+    [context, language, logs],
+  );
 
   const scrollToLatest = () => {
     if (scrollContainerRef.current) {

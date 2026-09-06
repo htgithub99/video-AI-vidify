@@ -1,6 +1,5 @@
 import _ from "lodash";
 import {
-  CINEMATIC_ADVISORY_ISSUE_PATTERNS,
   CINEMATIC_ACTION_CHOREOGRAPHY_CONFIG,
   CINEMATIC_DIALOGUE_CONFIG,
   CINEMATIC_POLICY_CONFIG,
@@ -10,21 +9,17 @@ import {
 } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
 import {
-  AssetAcceptance,
   Chapter,
   ContentSafetyReport,
   GenerateType,
   ImageGenerationMode,
   ImageGeneratorEngine,
-  QaStatus,
-  SceneAssetStatus,
   ScriptQualityReport,
   StoryboardQualityReport,
   StoryboardScene,
   ProjectLanguage,
   VisualConfig,
 } from "../types";
-import { CONTENT_SAFETY_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config";
 import { hasSceneAsset } from "./projectImageGenerationService";
 
 export const CINEMATIC_PRODUCTION_POLICY = { PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS } as const;
@@ -194,12 +189,16 @@ export const getCinematicStoryboardContractIssues = (scenes: StoryboardScene[], 
 };
 
 export const getBlockingCinematicStoryboardContractIssues = (scenes: StoryboardScene[], requestedDuration?: string | number, language?: ProjectLanguage): string[] =>
-  _.reject(getCinematicStoryboardContractIssues(scenes, requestedDuration, language), (issue) =>
-    _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)),
-  );
+  getBlockingCinematicPlanningIssues(getCinematicStoryboardContractIssues(scenes, requestedDuration, language));
+
+const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [
+  /:result:missing_scene$/,
+  /:id:(?:duplicate|unexpected)$/,
+  /:generationPrompt:missing$/,
+] as const;
 
 export const getBlockingCinematicPlanningIssues = (issues: string[]): string[] =>
-  _.reject(issues, (issue) => _.some(CINEMATIC_ADVISORY_ISSUE_PATTERNS, (pattern) => pattern.test(issue)));
+  _.filter(issues, (issue) => _.some(CINEMATIC_PRODUCTION_BLOCKER_PATTERNS, (pattern) => pattern.test(issue)));
 
 export const getCinematicScriptReadinessIssues = (
   script: string,
@@ -210,56 +209,22 @@ export const getCinematicScriptReadinessIssues = (
   _.uniq(
     _.compact([
       _.isEmpty(_.trim(script)) && "script:missing",
-      !/[.!?…][\s"')\]]*$/.test(_.trim(script)) && "script:incomplete_ending",
       _.isEmpty(chapters) && "chapters:missing",
-      _.some(chapters, (chapter) => _.isEmpty(_.trim(chapter.scriptSegment))) && "chapters:script_segment_missing",
-      _.some(chapters, (chapter) => !/[.!?…][\s"')\]]*$/.test(_.trim(chapter.scriptSegment))) && "chapters:incomplete_ending",
-      !_.isEmpty(chapters) &&
-        !_.isEqual(
-          _.replace(_.trim(_.join(_.map(chapters, "scriptSegment"), " ")), /\s+/g, " "),
-          _.replace(_.trim(script), /\s+/g, " "),
-        ) &&
-        "chapters:must_exactly_partition_screenplay",
-      _.uniq(_.map(chapters, "id")).length !== chapters.length && "chapters:duplicate_id",
-      !quality && "scriptQa:missing",
+      !_.isEmpty(chapters) && !_.some(chapters, (chapter) => !_.isEmpty(_.trim(chapter.scriptSegment))) && "chapters:no_usable_script_segment",
       quality && !_.isEmpty(quality.blockingErrors) && "scriptQa:failed",
-      quality &&
-        _.some(
-          [
-            quality.continuityScore,
-            quality.repetitionScore,
-            quality.factualityScore,
-            quality.emotionalArcScore,
-            quality.conversationalScore,
-            quality.hookPayoffScore,
-          ],
-          (score) => _.lt(_.toNumber(score), CINEMATIC_POLICY_CONFIG.HARD_MIN_SCRIPT_QA_SCORE),
-        ) &&
-        "scriptQa:cinematic_score_below_65",
-      !contentSafety && "contentSafety:missing",
       contentSafety && !contentSafety.allowed && "contentSafety:blocked",
-      contentSafety &&
-        _.some(contentSafety.warnings, (warning) =>
-          _.includes([CONTENT_SAFETY_CONFIG.UNAVAILABLE_WARNING, CONTENT_SAFETY_CONFIG.INCOMPLETE_RESPONSE_ERROR], warning),
-        ) &&
-        "contentSafety:review_unavailable_or_incomplete",
     ]),
   );
 
 export const getCinematicStoryboardReadinessIssues = (
   scenes: StoryboardScene[],
-  expectedClipCount: number,
-  quality?: StoryboardQualityReport,
+  _expectedClipCount: number,
+  _quality?: StoryboardQualityReport,
 ): string[] =>
   _.uniq(
     _.compact([
       _.isEmpty(scenes) && "storyboard:missing",
-      !_.isEmpty(scenes) && !_.isEqual(scenes.length, expectedClipCount) && `storyboard:clip_count:${scenes.length}/${expectedClipCount}`,
       _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
-      !quality && "storyboardQa:missing",
-      quality && !quality.passed && !_.isEmpty(quality.blockingErrors) && "storyboardQa:failed",
-      _.lt(_.defaultTo(quality?.scriptCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:script_coverage_below_target",
-      _.lt(_.defaultTo(quality?.pacingCoverageScore, 0), STORYBOARD_QUALITY_CONFIG.MIN_SCORE) && "storyboardQa:pacing_coverage_below_target",
     ]),
   );
 
@@ -269,9 +234,6 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], _expe
       _.compact([
         !hasSceneAsset(scene) && `${scene.id}:asset_missing`,
         !_.isEqual(scene.assetType, GenerateType.Video) && `${scene.id}:video_missing`,
-        !_.isEqual(scene.assetStatus, SceneAssetStatus.Approved) && `${scene.id}:asset_not_approved`,
-        !_.includes([QaStatus.Passed, QaStatus.Unavailable], scene.qaStatus) && `${scene.id}:qa_failed`,
-        !_.includes([AssetAcceptance.Approved, AssetAcceptance.AcceptedWithWarning], scene.acceptance) && `${scene.id}:acceptance_failed`,
       ]),
     ),
   ]);

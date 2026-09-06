@@ -9,7 +9,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -81,15 +81,13 @@ import {
   EN_AUDIENCE_GUIDELINES,
   PROMPT_CONTEXT,
   getStyleRewriteBatchPrompt,
+  getCinematicVideoPlanningPrompt,
   getCinematicVideoPlanningRepairPrompt,
-  getOptimizePromptsBatchPrompt,
+  getQuickVideoPlanningPrompt,
   getChapterWriterPrompt,
   getChapterExpansionPrompt,
   getFinalScriptEditorialPrompt,
-  getFinalCinematicScreenplayPrompt,
-  getCinematicStoryBiblePrompt,
-  getCinematicNarrativePlanPrompt,
-  getCinematicScreenplayEditorialPrompt,
+  getCinematicFilmPackagePrompt,
   getScriptSplitPrompt,
   getSceneDetailBatchPrompt,
   getDetailedPromptBuilderPrompt,
@@ -107,6 +105,7 @@ import {
   getFinalVideoQualityPrompt,
   getCinematicEditDecisionPrompt,
   getVideoPromptPolicyRepairPrompt,
+  getVisualPromptQaRepairPrompt,
   getContentSafetyPrompt,
   REGEX_AUTO_MODE_PATH,
   LogEvent,
@@ -156,9 +155,7 @@ import {
   SCRIPT_PLAN_RESPONSE_SCHEMA,
   CHAPTER_RESPONSE_SCHEMA,
   FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
-  FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
-  CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
-  CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
+  CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
   CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
@@ -232,14 +229,7 @@ import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
-import {
-  getCinematicNarrativePlanIssues,
-  getCinematicArtifactIssues,
-  getCinematicScreenplayArtifactIssues,
-  getCinematicStoryBibleIssues,
-  createCinematicScriptSourceSignature,
-  requestValidCinematicArtifact,
-} from "../services/cinematicScriptArtifactService.js";
+import { createCinematicScriptSourceSignature } from "../services/cinematicScriptArtifactService.js";
 import {
   createBatchContinuityContext,
   createPromptCharacterCards,
@@ -263,6 +253,7 @@ import {
   CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
   CINEMATIC_CHAT_PLANNING_CONFIG,
   CINEMATIC_POLICY_CONFIG,
+  CINEMATIC_ROOM_STAGE,
   resolveCinematicClipDuration,
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
@@ -289,7 +280,7 @@ if (fs.existsSync(ffmpegBinary)) {
 const isVietnameseRequest = (req: Request): boolean =>
   !_.isEqual(_.toString(req.body?.language || req.query?.lang || ProjectLanguage.VI), ProjectLanguage.EN);
 
-type CinematicScriptArtifactKey = "storyBible" | "narrativePlan" | "screenplayDraft" | "editorialScreenplay";
+type CinematicScriptArtifactKey = "filmPackage" | "storyBible" | "narrativePlan" | "screenplayDraft" | "editorialScreenplay";
 
 const saveCinematicScriptArtifactCheckpoint = async (
   projectId: unknown,
@@ -565,6 +556,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         ? AiPlanningExecutionMode.ApiOnly
         : AiPlanningExecutionMode.RoomOnly;
     const usesChatPlanning = !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly);
+    const keepPlanningRoomOpen = Boolean(req.body?.keepPlanningRoomOpen);
     const planningWorkerId = _.toString(req.body?.planningWorkerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID);
     const planningRun = beginChatPlanningRun(
       _.toString(req.body?.pipelineRunId),
@@ -572,10 +564,24 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       planningWorkerId,
       usesChatPlanning ? planningFallbackProvider : AiPlanningFallbackProvider.Disabled,
     );
+    let planningRoomClosePromise: Promise<void> | undefined;
+    const closePlanningRoom = (): Promise<void> => {
+      if (!usesChatPlanning || keepPlanningRoomOpen) return Promise.resolve();
+      planningRoomClosePromise ||= closeChatPlanningRoom({
+        provider: planningFallbackProvider,
+        projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
+        workerId: planningWorkerId,
+      });
+      return planningRoomClosePromise;
+    };
     req.once("aborted", planningRun.cancel);
-    res.once("finish", planningRun.complete);
+    res.once("finish", () => {
+      planningRun.complete();
+      void closePlanningRoom();
+    });
     res.once("close", () => {
       if (!res.writableEnded) planningRun.cancel();
+      void closePlanningRoom();
     });
     const planningChromeHeadless = _.isBoolean(req.body?.planningChromeHeadless) ? req.body.planningChromeHeadless : req.body?.chromeHeadless;
     const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
@@ -643,13 +649,29 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         );
       }
       const continuityContextJson = jsonUtils.safeStringify(continuityContext);
-      const createPlanningPrompt = (correctionIssuesJson: string = "", forChatUi = false) =>
-        getOptimizePromptsBatchPrompt(
+      const quickGenerateType = resolvedVisualConfig.generateType || GenerateType.Image;
+      const quickVideoPromptRequired = _.includes([GenerateType.Video, GenerateType.Mixed], quickGenerateType);
+      const createPlanningPrompt = (correctionIssuesJson: string = "", forChatUi = false) => {
+        const scopedCharactersJson = forChatUi ? chunkCharactersJson : charactersJson;
+        const scopedVisualBibleJson = forChatUi ? chunkVisualBibleJson : jsonUtils.safeStringify(resolvedVisualBible);
+        if (isCinematicPlanning) {
+          return getCinematicVideoPlanningPrompt(
+            jsonUtils.safeStringify(chunkItem),
+            scopedCharactersJson,
+            scopedVisualBibleJson,
+            continuityContextJson,
+            correctionIssuesJson,
+            clipDurationSeconds,
+            "Use dialogue only when the authoritative scene requires it; otherwise keep the scene silent.",
+            isVi ? "Vietnamese" : "English",
+          );
+        }
+        return getQuickVideoPlanningPrompt(
           visualStyle,
           targetStyle,
           jsonUtils.safeStringify(chunkItem),
           aspectRatio || AspectRatio.SixteenNine,
-          forChatUi ? chunkCharactersJson : charactersJson,
+          scopedCharactersJson,
           isVi,
           backgroundDirective,
           textDirective,
@@ -658,14 +680,15 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           resolvedVisualConfig.styleTextInImageMode || "auto",
           resolvedVisualConfig.imageFocusMode || "default",
           referenceContext,
-          forChatUi ? chunkVisualBibleJson : jsonUtils.safeStringify(resolvedVisualBible),
+          scopedVisualBibleJson,
           continuityContextJson,
           jsonUtils.safeStringify(resolvedVisualBible.locations || []),
           jsonUtils.safeStringify(resolvedVisualBible.props || []),
           correctionIssuesJson,
           _.toString(req.body?.genre || req.body?.config?.genre),
-          clipDurationSeconds,
+          quickGenerateType,
         );
+      };
       const createRepairPrompt = (items: any[], issues: string[], repairSceneIds: string[] = sceneIds) => {
         if (!isCinematicPlanning) return createPlanningPrompt(jsonUtils.safeStringify(issues), true);
         const repairSourceScenes = _.filter(chunkItem, (item) => _.includes(repairSceneIds, _.toString(_.get(item, "id"))));
@@ -693,6 +716,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             : [
               "id",
               "prompt",
+              ...(quickVideoPromptRequired ? ["generationPrompt"] : []),
               "visualIntent",
               "visibleAction",
               "reaction",
@@ -827,17 +851,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               chromeHeadless: planningChromeHeadless,
               expectedSceneIds,
               signal: planningRun.signal,
-              closeRoomOnComplete: true,
+              closeRoomOnComplete: false,
             });
             const parsed = safeParseJSON(response.text, null);
-            const returnedSceneIds = _.isArray(parsed) ? _.map(parsed, (item) => _.toString(_.get(item, "id"))) : [];
-            const exactSceneSet =
-              _.isArray(parsed) &&
-              _.isEqual(returnedSceneIds.length, expectedSceneIds.length) &&
-              _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) &&
-              _.isEmpty(_.difference(expectedSceneIds, returnedSceneIds)) &&
-              _.isEmpty(_.difference(returnedSceneIds, expectedSceneIds));
-            if (exactSceneSet) return parsed;
+            if (_.isArray(parsed)) return parsed;
             lastError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
           } catch (error) {
             if (planningRun.signal.aborted) throw error;
@@ -941,6 +958,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           }
           issues.push(...getVisualShotPlanIssues(item, baseScene));
           const optimizedPrompt = _.trim(_.toString(_.get(item, "prompt")));
+          if (quickVideoPromptRequired && !isCinematicPlanning && _.isEmpty(_.trim(_.toString(_.get(item, "generationPrompt"))))) {
+            issues.push(`${sceneId}:generationPrompt:missing`);
+          }
           const optimizedPromptWordCount = _.size(_.words(optimizedPrompt));
           if (
             _.lt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MIN_PROMPT_WORDS) ||
@@ -1157,8 +1177,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const initialChatUiPrompt = usesChatPlanning ? createPlanningPrompt("", true) : initialApiPrompt;
       let parsedItems = await requestVisualPlan(initialApiPrompt, initialChatUiPrompt);
       let planningIssues = collectPlanningIssues(parsedItems);
+      const getQuickPlanningBlockers = (issues: string[]): string[] =>
+        _.filter(issues, (issue) =>
+          /(?:^result:|:id:(?:duplicate|unexpected)$|:result:missing_scene$|:generationPrompt:missing$)/.test(issue),
+        );
       const getCorrectablePlanningIssues = (issues: string[]): string[] =>
-        isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : issues;
+        isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : getQuickPlanningBlockers(issues);
       for (
         let correctionAttempt = 0;
         correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
@@ -1205,7 +1229,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: continuing_after_final_correction: ${_.join(planningIssues, ", ")}`);
       }
       const returnedById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-      const blockingPlanningIssues = isCinematicPlanning ? getBlockingCinematicPlanningIssues(planningIssues) : [];
+      const blockingPlanningIssues = isCinematicPlanning ? getBlockingCinematicPlanningIssues(planningIssues) : getQuickPlanningBlockers(planningIssues);
       const explicitlyBlockedSceneIds = _.uniq(
         _.compact(
           _.map(blockingPlanningIssues, (issue) => {
@@ -1234,9 +1258,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       });
       planningPartialStoryboard = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
       if (
-        isCinematicPlanning &&
-        !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) &&
-        !_.isEmpty(blockingPlanningIssues)
+        !_.isEmpty(blockingPlanningIssues) &&
+        (!isCinematicPlanning || !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly))
       ) {
         planningFailureIssues = blockingPlanningIssues;
         throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
@@ -1438,7 +1461,9 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
 
     const requiresCompleteArtifact = Boolean(cinematicMode);
     const prompt = getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext), requiresCompleteArtifact);
-    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[] } | undefined;
+    let result:
+      | { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] }
+      | undefined;
     let artifactIssues: string[] = [];
     const requiredIdentityFields = [
       "id",
@@ -1460,7 +1485,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
       "referenceGenerationPrompt",
     ];
 
-    for (let attempt = 0; attempt < (requiresCompleteArtifact ? 2 : 1); attempt++) {
+    for (let attempt = 0; attempt < (requiresCompleteArtifact ? 3 : 1); attempt++) {
       const response = await generateContentWithRetry({
         contents:
           attempt === 0
@@ -1485,22 +1510,34 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
       const characterAnalysis = _.trim(_.toString(_.get(parsed, "characterAnalysis")));
       const characterSpecs = _.trim(_.toString(_.get(parsed, "characterSpecs")));
       const ids = _.map(characters, (character) => _.trim(_.toString(character?.id)));
-      artifactIssues = _.uniq(
+      const artifactWarnings = _.uniq(
         _.compact([
-          !_.isPlainObject(parsed) && "character_artifact:object_required",
-          _.isEmpty(characters) && "characters:missing",
-          characters.length > REFACTOR_CONSTANTS.HOOK_COUNT && "characters:too_many",
-          _.uniq(ids).length !== ids.length && "characters:duplicate_id",
           _.isEmpty(characterAnalysis) && "characterAnalysis:missing",
           _.isEmpty(characterSpecs) && "characterSpecs:missing",
           !_.isArray(_.get(parsed, "identityContinuityRisks")) && "identityContinuityRisks:missing",
-          !_.isEmpty(_.castArray(_.get(parsed, "identityContinuityRisks"))) && "identityContinuityRisks:not_resolved",
           ..._.flatMap(characters, (character, index) => [
             ..._.map(
-              _.filter(requiredIdentityFields, (field) => _.isEmpty(_.trim(_.toString(_.get(character, field))))),
+              _.filter(
+                _.reject(requiredIdentityFields, (field) => _.includes(["id", "name", "prompt", "referenceGenerationPrompt"], field)),
+                (field) => _.isEmpty(_.trim(_.toString(_.get(character, field)))),
+              ),
               (field) => `characters:${index}:${field}:missing`,
             ),
             (_.isEmpty(character?.timelineStages) || !_.isArray(character?.timelineStages)) && `characters:${index}:timelineStages:missing`,
+          ]),
+        ]),
+      );
+      artifactIssues = _.uniq(
+        _.compact([
+          !_.isPlainObject(parsed) && !_.isArray(parsed) && "character_artifact:object_or_array_required",
+          _.isEmpty(characters) && "characters:missing",
+          characters.length > REFACTOR_CONSTANTS.HOOK_COUNT && "characters:too_many",
+          _.uniq(ids).length !== ids.length && "characters:duplicate_id",
+          ..._.flatMap(characters, (character, index) => [
+            _.isEmpty(_.trim(_.toString(character?.id))) && `characters:${index}:id:missing`,
+            _.isEmpty(_.trim(_.toString(character?.name))) && `characters:${index}:name:missing`,
+            _.isEmpty(_.trim(_.toString(character?.prompt))) && _.isEmpty(_.trim(_.toString(character?.referenceGenerationPrompt))) &&
+              `characters:${index}:identity_prompt:missing`,
           ]),
         ]),
       );
@@ -1509,7 +1546,8 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
           characters,
           characterAnalysis,
           characterSpecs,
-          identityContinuityRisks: _.get(parsed, "identityContinuityRisks"),
+          identityContinuityRisks: _.castArray(_.get(parsed, "identityContinuityRisks") || []),
+          artifactWarnings,
         };
         break;
       }
@@ -1763,7 +1801,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   const cachedCinematicIssues = isCinematicScript
     ? getCinematicScriptReadinessIssues(cached?.rewrittenScript, _.castArray(cached?.chapters || []), cached?.scriptQa, cached?.contentSafety)
     : [];
-  if (cached && validateChapterLanguage(cached.rewrittenScript, isVietnameseScript).valid && _.isEmpty(cachedCinematicIssues)) {
+  if (cached && (isCinematicScript || validateChapterLanguage(cached.rewrittenScript, isVietnameseScript).valid) && _.isEmpty(cachedCinematicIssues)) {
     return res.json({ ...cached, cached: true });
   }
 
@@ -1808,30 +1846,25 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const multiStepLogs: string[] = [];
     const aiMetrics: any[] = [];
     let contentSafety: ContentSafetyReport;
-    try {
-      const safetyResponse = await generateContentWithRetry({
-        contents: getContentSafetyPrompt(originalInput),
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
-          maxOutputTokens: CONTENT_SAFETY_CONFIG.MAX_OUTPUT_TOKENS,
-        },
-        task: { capability: AiTaskCapability.FactualReview },
-      });
-      contentSafety = normalizeContentSafety(safeParseJSON(safetyResponse.text, {}));
-      if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
-    } catch (safetyError) {
-      appWarn(CONTENT_SAFETY_CONFIG.REVIEW_FAILED_LOG, safetyError);
-      if (isCinematicScript) throw safetyError;
-      contentSafety = createUnavailableContentSafetyReport();
-    }
-    if (
-      isCinematicScript &&
-      _.some(contentSafety.warnings, (warning) =>
-        _.includes([CONTENT_SAFETY_CONFIG.UNAVAILABLE_WARNING, CONTENT_SAFETY_CONFIG.INCOMPLETE_RESPONSE_ERROR], warning),
-      )
-    ) {
-      throw createAppError("cinematic_content_safety_review_incomplete");
+    if (isCinematicScript) {
+      contentSafety = { ...createUnavailableContentSafetyReport(), warnings: [] };
+    } else {
+      try {
+        const safetyResponse = await generateContentWithRetry({
+          contents: getContentSafetyPrompt(originalInput),
+          config: {
+            responseMimeType: CONTENT_TYPES.JSON,
+            responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
+            maxOutputTokens: CONTENT_SAFETY_CONFIG.MAX_OUTPUT_TOKENS,
+          },
+          task: { capability: AiTaskCapability.FactualReview },
+        });
+        contentSafety = normalizeContentSafety(safeParseJSON(safetyResponse.text, {}));
+        if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
+      } catch (safetyError) {
+        appWarn(CONTENT_SAFETY_CONFIG.REVIEW_FAILED_LOG, safetyError);
+        contentSafety = createUnavailableContentSafetyReport();
+      }
     }
     if (!contentSafety.allowed) throw new Error(_.join(contentSafety.blockingErrors, ", ") || PIPELINE_SERVER_ERRORS.CONTENT_SAFETY_REJECTED);
     const logStep = (msg: string) => {
@@ -1904,15 +1937,14 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       }
     }
     if (groundedResearchResponse?.aiMetadata) aiMetrics.push(groundedResearchResponse.aiMetadata);
-    let storyBibleArtifact: Record<string, unknown> | undefined;
-    let narrativePlanArtifact: Record<string, unknown> | undefined;
+    let cinematicFilmPackage: Record<string, any> | undefined;
     let cinematicCheckpointProject: any = null;
     let cinematicSourceSignature = "";
     let canReuseCinematicCheckpoint = false;
-    let storyBibleRegenerated = false;
-    let narrativePlanRegenerated = false;
     let scriptResult: any;
     if (isCinematicScript) {
+      const clipDurationSeconds = resolveCinematicClipDuration(config?.videoDuration);
+      const targetClipCount = Math.max(1, Math.ceil(parseTargetDurationSeconds(rawDurationText) / clipDurationSeconds));
       cinematicSourceSignature = createCinematicScriptSourceSignature({
         originalInput,
         inputType,
@@ -1927,116 +1959,75 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         rewriteLevel: _.clamp(_.toNumber(config.rewriteLevel), 0, 100),
         creativityLevel: _.clamp(_.toNumber(config.creativityLevel), 0, 10),
         similarityReduction: _.clamp(_.toNumber(config.similarityReduction), 0, 10),
-        artifactSchemas: {
-          storyBible: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
-          narrativePlan: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.NARRATIVE_PLAN_SCHEMA_VERSION,
-          screenplay: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION,
-        },
+        artifactSchemas: { filmPackage: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION },
       });
       const checkpointProjectId = path.basename(_.toString(req.body?.projectId));
       cinematicCheckpointProject = _.isEmpty(checkpointProjectId) ? null : await getProjectDetailFromDb(checkpointProjectId).catch(() => null);
       canReuseCinematicCheckpoint =
         !bypassCache &&
         _.isEqual(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature, cinematicSourceSignature);
-      const storyBiblePrompt = `${getCinematicStoryBiblePrompt(
-        originalInput,
-        durationText,
-        targetWordCount,
-        config.genre,
-        config.writingStyle,
-        isVi,
-        audienceGuideline,
-      )}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${contentControlDirective}\n\n${
-        groundedResearchResponse
-          ? `[GROUNDED RESEARCH EVIDENCE]\n${groundedResearchResponse.text}`
-          : "[FACT POLICY]\nFact-check mode is disabled. Do not invent sources, quotations, studies, or precise factual claims."
-      }`;
-      const storyBibleOptions = {
-        artifactName: "cinematic_story_bible",
-        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
-        schema: CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
-        validate: getCinematicStoryBibleIssues,
+      const getFilmPackageIssues = (value: Record<string, any> | undefined): string[] => {
+        const scenes = _.castArray(value?.scenes || []);
+        const sceneIds = _.map(scenes, (scene) => _.trim(_.toString(scene?.id)));
+        return _.compact([
+          _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
+          _.isEmpty(_.castArray(value?.chapters || [])) && "chapters:missing",
+          _.isEmpty(scenes) && "scenes:missing",
+          _.some(sceneIds, _.isEmpty) && "scenes:id_missing",
+          _.uniq(sceneIds).length !== sceneIds.length && "scenes:id_duplicate",
+          _.some(scenes, (scene) => _.isEmpty(_.trim(_.toString(scene?.script)))) && "scenes:script_missing",
+        ]);
       };
-      const savedStoryBible = canReuseCinematicCheckpoint ? cinematicCheckpointProject?.cinematicScriptArtifacts?.storyBible : undefined;
-      const savedStoryBibleIssues = savedStoryBible
-        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedStoryBible), savedStoryBible, storyBibleOptions)
-        : ["checkpoint_missing"];
-      if (_.isEmpty(savedStoryBibleIssues)) {
-        storyBibleArtifact = savedStoryBible;
-        multiStepLogs.push("[cinematic_story_bible] reused_valid_checkpoint");
+      const savedFilmPackage = canReuseCinematicCheckpoint ? cinematicCheckpointProject?.cinematicScriptArtifacts?.filmPackage : undefined;
+      if (_.isEmpty(getFilmPackageIssues(savedFilmPackage))) {
+        cinematicFilmPackage = savedFilmPackage;
+        multiStepLogs.push("[cinematic_film_package] reused_valid_checkpoint");
       } else {
-        const storyBibleResponse = await requestValidCinematicArtifact(
-          {
-            contents: storyBiblePrompt,
+        const filmPackagePrompt = `${getCinematicFilmPackagePrompt(
+          originalInput,
+          config.genre,
+          isVi,
+          targetWordCount,
+          targetClipCount,
+          clipDurationSeconds,
+        )}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${contentControlDirective}${
+          groundedResearchResponse ? `\n\n[GROUNDED RESEARCH EVIDENCE]\n${groundedResearchResponse.text}` : ""
+        }`;
+        let latestIssues: string[] = ["film_package:missing"];
+        for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
+          const filmPackageResponse = await generateContentWithRetry({
+            contents:
+              attempt === 0
+                ? filmPackagePrompt
+                : `${filmPackagePrompt}\n\nThe previous response was incomplete (${_.join(latestIssues, ", ")}). Return one complete film package again from the beginning. Do not return a patch or continuation.`,
             config: {
               responseMimeType: CONTENT_TYPES.JSON,
-              responseJsonSchema: CINEMATIC_STORY_BIBLE_RESPONSE_SCHEMA,
-              maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
+              responseJsonSchema: CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
+              maxOutputTokens: 24576,
             },
-            task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
-          },
-          storyBibleOptions,
-          generateContentWithRetry,
-        );
-        storyBibleArtifact = storyBibleResponse.value;
-        storyBibleRegenerated = true;
-        aiMetrics.push(...storyBibleResponse.aiMetadata);
-        multiStepLogs.push(...storyBibleResponse.rotationLogs);
-        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "storyBible", storyBibleArtifact, cinematicSourceSignature);
-      }
-
-      const narrativePlanOptions = {
-        artifactName: "cinematic_narrative_plan",
-        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.NARRATIVE_PLAN_SCHEMA_VERSION,
-        schema: CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
-        validate: (value: Record<string, unknown>) => getCinematicNarrativePlanIssues(value, targetChapterCount, _.get(storyBibleArtifact, "artifactId")),
-      };
-      const savedNarrativePlan =
-        canReuseCinematicCheckpoint && !storyBibleRegenerated
-          ? cinematicCheckpointProject?.cinematicScriptArtifacts?.narrativePlan
-          : undefined;
-      const savedNarrativeIssues = savedNarrativePlan
-        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedNarrativePlan), savedNarrativePlan, narrativePlanOptions)
-        : ["checkpoint_missing"];
-      if (_.isEmpty(savedNarrativeIssues)) {
-        narrativePlanArtifact = savedNarrativePlan;
-        multiStepLogs.push("[cinematic_narrative_plan] reused_valid_checkpoint");
-      } else {
-        const narrativePlanResponse = await requestValidCinematicArtifact(
-          {
-            contents: `${getCinematicNarrativePlanPrompt(
-              originalInput,
-              jsonUtils.safeStringify(storyBibleArtifact),
-              durationText,
-              targetWordCount,
-              targetChapterCount,
-              isVi,
-            )}\n\n${retentionDirective}\n\n${contentControlDirective}`,
-            config: {
-              responseMimeType: CONTENT_TYPES.JSON,
-              responseJsonSchema: CINEMATIC_NARRATIVE_PLAN_RESPONSE_SCHEMA,
-              maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
-            },
-            task: { capability: AiTaskCapability.TextPlanning },
-          },
-          narrativePlanOptions,
-          generateContentWithRetry,
-        );
-        narrativePlanArtifact = narrativePlanResponse.value;
-        narrativePlanRegenerated = true;
-        aiMetrics.push(...narrativePlanResponse.aiMetadata);
-        multiStepLogs.push(...narrativePlanResponse.rotationLogs);
-        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "narrativePlan", narrativePlanArtifact, cinematicSourceSignature);
+            task: { capability: AiTaskCapability.ScriptWriting, roomWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID },
+          });
+          if (filmPackageResponse.aiMetadata) aiMetrics.push(filmPackageResponse.aiMetadata);
+          if (filmPackageResponse.rotationLogs) multiStepLogs.push(...filmPackageResponse.rotationLogs);
+          const candidate = safeParseJSON(filmPackageResponse.text, {}) as Record<string, any>;
+          latestIssues = getFilmPackageIssues(candidate);
+          if (_.isEmpty(latestIssues)) {
+            cinematicFilmPackage = candidate;
+            break;
+          }
+        }
+        if (!cinematicFilmPackage) throw createAppError(`cinematic_film_package_invalid:${_.join(latestIssues, ",")}`);
+        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "filmPackage", cinematicFilmPackage, cinematicSourceSignature);
       }
       scriptResult = {
-        theme: _.get(storyBibleArtifact, "theme"),
-        characterSpecs: _.get(storyBibleArtifact, "characterSpecs"),
-        preferredTerms: _.get(storyBibleArtifact, "preferredTerms"),
-        factCheckNotes: _.get(storyBibleArtifact, "factCheckNotes"),
-        creativeBrief: _.get(storyBibleArtifact, "creativeBrief"),
-        factPack: _.get(storyBibleArtifact, "factPack"),
-        narrativePlan: _.get(narrativePlanArtifact, "narrativePlan"),
-        chapters: _.get(narrativePlanArtifact, "chapters"),
+        theme: cinematicFilmPackage.theme,
+        characterSpecs: cinematicFilmPackage.characterSpecs,
+        preferredTerms: [],
+        factCheckNotes: "",
+        creativeBrief: _.pick(cinematicFilmPackage, ["title", "logline", "theme", "visualDirection"]),
+        factPack: { claims: [] },
+        narrativePlan: undefined,
+        chapters: cinematicFilmPackage.chapters,
       };
     } else {
       const scriptPlanResponse = await requestValidScriptPlan(
@@ -2073,127 +2064,30 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(`${getPipelineLog("SCRIPT_STEP2B_DONE", isVi)} ${(scriptResult.chapters || []).length}.`);
 
     if (isCinematicScript) {
-      logStep(getPipelineLog("SCRIPT_STEP3", isVi));
-      const expectedChapters = _.castArray(scriptResult.chapters);
-      const screenplayPrompt = `${getFinalCinematicScreenplayPrompt(
-        originalInput,
-        jsonUtils.safeStringify(storyBibleArtifact),
-        jsonUtils.safeStringify(narrativePlanArtifact),
-        config.genre,
-        isVi,
-        targetWordCount,
-        expectedChapters.length,
-      )}\n\n${cinematicScreenplayDirective}\n\n${retentionDirective}\n\n${contentControlDirective}`;
-      const screenplayOptions = {
-        artifactName: "cinematic_screenplay",
-        schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION,
-        schema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
-        validate: (value: Record<string, unknown>) =>
-          getCinematicScreenplayArtifactIssues(value, expectedChapters, targetWordCount, config.language, _.get(narrativePlanArtifact, "artifactId")),
-      };
-      const editorialOptions = {
-        ...screenplayOptions,
-        artifactName: "cinematic_screenplay_editorial",
-        primaryWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.EDITOR_WORKER_ID,
-        recoveryWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.EDITOR_RECOVERY_WORKER_ID,
-      };
-      const savedEditorial =
-        canReuseCinematicCheckpoint && !storyBibleRegenerated && !narrativePlanRegenerated
-          ? cinematicCheckpointProject?.cinematicScriptArtifacts?.editorialScreenplay
-          : undefined;
-      const savedEditorialIssues = savedEditorial
-        ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedEditorial), savedEditorial, editorialOptions)
-        : ["checkpoint_missing"];
-      let screenplayArtifact: Record<string, unknown>;
-      if (_.isEmpty(savedEditorialIssues)) {
-        screenplayArtifact = savedEditorial;
-        multiStepLogs.push("[cinematic_screenplay_editorial] reused_valid_checkpoint");
-      } else {
-        const savedDraft =
-          canReuseCinematicCheckpoint && !storyBibleRegenerated && !narrativePlanRegenerated
-            ? cinematicCheckpointProject?.cinematicScriptArtifacts?.screenplayDraft
-            : undefined;
-        const savedDraftIssues = savedDraft ? getCinematicArtifactIssues(jsonUtils.safeStringify(savedDraft), savedDraft, screenplayOptions) : ["checkpoint_missing"];
-        let screenplayDraft: Record<string, unknown>;
-        if (_.isEmpty(savedDraftIssues)) {
-          screenplayDraft = savedDraft;
-          multiStepLogs.push("[cinematic_screenplay] reused_valid_checkpoint");
-        } else {
-          const screenplayResponse = await requestValidCinematicArtifact(
-            {
-              contents: screenplayPrompt,
-              config: {
-                responseMimeType: CONTENT_TYPES.JSON,
-                responseJsonSchema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
-                maxOutputTokens: _.clamp(targetWordCount * 6, 4096, 24576),
-              },
-              task: { capability: AiTaskCapability.ScriptWriting },
-            },
-            screenplayOptions,
-            generateContentWithRetry,
-          );
-          screenplayDraft = screenplayResponse.value;
-          aiMetrics.push(...screenplayResponse.aiMetadata);
-          multiStepLogs.push(...screenplayResponse.rotationLogs);
-          await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "screenplayDraft", screenplayDraft, cinematicSourceSignature);
-        }
-
-        const editorialResponse = await requestValidCinematicArtifact(
-          {
-            contents: getCinematicScreenplayEditorialPrompt(
-              originalInput,
-              jsonUtils.safeStringify(storyBibleArtifact),
-              jsonUtils.safeStringify(narrativePlanArtifact),
-              jsonUtils.safeStringify(screenplayDraft),
-              isVi,
-              targetWordCount,
-              expectedChapters.length,
-            ),
-            config: {
-              responseMimeType: CONTENT_TYPES.JSON,
-              responseJsonSchema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
-              maxOutputTokens: _.clamp(targetWordCount * 6, 4096, 24576),
-            },
-            task: { capability: AiTaskCapability.ScriptWriting },
-          },
-          editorialOptions,
-          generateContentWithRetry,
-        );
-        screenplayArtifact = editorialResponse.value;
-        aiMetrics.push(...editorialResponse.aiMetadata);
-        multiStepLogs.push(...editorialResponse.rotationLogs);
-        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "editorialScreenplay", screenplayArtifact, cinematicSourceSignature);
-      }
-
-      const finalCleanScript = _.trim(_.toString(screenplayArtifact.scriptSegment));
-      const finalChapters = _.map(_.castArray<any>(_.get(screenplayArtifact, "chapters")), (chapter: any) => ({
+      const finalCleanScript = _.trim(_.toString(cinematicFilmPackage?.scriptSegment));
+      const finalChapters = _.map(_.castArray<any>(cinematicFilmPackage?.chapters || []), (chapter: any) => ({
         id: _.toString(chapter.id),
         title: _.toString(chapter.title),
         scriptSegment: _.toString(chapter.scriptSegment),
       }));
-      const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
-      const scriptQa = normalizeScriptQualityReport(
-        screenplayArtifact,
-        _.size(_.words(finalCleanScript)),
-        targetDurationSeconds,
-        isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
-      );
-      if (!_.isEmpty(scriptQa.blockingErrors)) throw createAppError(`cinematic_screenplay_qa_failed:${_.join(scriptQa.blockingErrors, ",")}`);
-
-      logStep(getPipelineLog("SCRIPT_STEP4", isVi));
-      logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
       const latestCinematicCheckpoint = _.isEmpty(path.basename(_.toString(req.body?.projectId)))
         ? undefined
         : await getProjectDetailFromDb(path.basename(_.toString(req.body?.projectId))).catch(() => null);
       const parsedData = {
         rewrittenScript: finalCleanScript,
-        factCheckNotes: scriptResult.factCheckNotes,
+        factCheckNotes: "",
         creativeBrief: scriptResult.creativeBrief || {},
-        narrativePlan: scriptResult.narrativePlan,
-        chapterPlans: scriptResult.chapters,
-        factPack: scriptResult.factPack || { claims: [] },
-        scriptQa,
+        narrativePlan: undefined,
+        chapterPlans: finalChapters,
+        factPack: { claims: [] },
+        scriptQa: undefined,
         chapters: finalChapters,
+        characters: _.castArray(cinematicFilmPackage?.characters || []),
+        characterAnalysis: _.toString(cinematicFilmPackage?.characterAnalysis),
+        characterSpecs: _.toString(cinematicFilmPackage?.characterSpecs),
+        identityContinuityRisks: _.castArray(cinematicFilmPackage?.identityContinuityRisks || []),
+        productionScenes: _.castArray(cinematicFilmPackage?.scenes || []),
+        visualDirection: _.toString(cinematicFilmPackage?.visualDirection),
         hookVersions: [],
         rotationLogs: multiStepLogs,
         aiMetrics,
@@ -2829,35 +2723,28 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       text: visualBiblePrompt + (referenceImages && !_.isEmpty(referenceImages) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
     });
 
-    let visualBible: VisualBible = isCinematicStoryboard
-      ? ({} as VisualBible)
-      : {
-          characterSpecs: characterRef || "Preserve recurring identity anchors",
-          landscapeSpecs: "Preserve story-grounded environments and geography",
-          visualStyle: activeStyle || visualStyle,
-          colorPalette: "Use a restrained scene-appropriate palette compatible with the selected visual language",
-          lightingMood: "Let each narrated scene determine its lighting and mood",
-          lineStyle: "Follow the selected visual language without adding unrelated rendering traits",
-          colorMode: "Keep coloring coherent while adapting contrast to each scene",
-          shading: "Use only style-compatible shading needed for readable forms",
-          background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.contextual),
-          textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
-          locations: [],
-          props: [],
-        };
-    if (aiProviderAvailable) {
+    let visualBible: VisualBible = {
+      characterSpecs: characterRef || "",
+      landscapeSpecs: "",
+      visualStyle: activeStyle || visualStyle,
+      colorPalette: "",
+      lightingMood: "",
+      lineStyle: "",
+      colorMode: "",
+      shading: "",
+      background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.contextual),
+      textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
+      locations: [],
+      props: [],
+    };
+    if (aiProviderAvailable && !isCinematicStoryboard) {
       try {
         const bibleResponse = await generateContentWithRetry({
           contents: bibleParts,
           config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
         });
         const parsedVisualBible = safeParseJSON(bibleResponse.text, {}) as VisualBible;
-        const hasRequiredVisualBibleFields =
-          !_.isEmpty(parsedVisualBible.locations) &&
-          _.every(
-            [parsedVisualBible.colorPalette, parsedVisualBible.characterSpecs, parsedVisualBible.landscapeSpecs, parsedVisualBible.lightingMood, parsedVisualBible.visualStyle],
-            (value) => !_.isEmpty(_.trim(_.toString(value))),
-          );
+        const hasRequiredVisualBibleFields = _.isPlainObject(parsedVisualBible) && !_.isEmpty(parsedVisualBible);
         if (hasRequiredVisualBibleFields) visualBible = parsedVisualBible;
         else if (isCinematicStoryboard) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
         else storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
@@ -2867,8 +2754,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         appWarn(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID, visualBibleError);
         storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
       }
-    } else {
-      if (isCinematicStoryboard) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
+    } else if (!isCinematicStoryboard) {
       storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
     }
     if (!_.isEmpty(visualBible)) {
@@ -2894,8 +2780,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             properties: {
               scenes: {
                 type: "array",
-                minItems: cinematicClipCount,
-                maxItems: cinematicClipCount,
+                minItems: 1,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -2938,24 +2823,13 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       splitStoryboardQa = isCinematicStoryboard ? splitData.storyboardQa : undefined;
       if (splitResponse.rotationLogs) storyboardLogs.push(...splitResponse.rotationLogs);
 
-      const hasUnderfilledCinematicScene =
-        isCinematicStoryboard && !_.isEmpty(getUnderfilledCinematicSceneIds(splitScenes, rewrittenScript, cinematicClipCount));
-
       if (
         !_.isArray(splitScenes) ||
         _.isEmpty(splitScenes) ||
         !_.every(splitScenes, (s: any) =>
-          _.every([s.id, s.chapterId, s.script, s.subtitle], (value) => !_.isEmpty(_.trim(_.toString(value)))),
+          _.every([s.id, s.chapterId, s.script], (value) => !_.isEmpty(_.trim(_.toString(value)))),
         ) ||
-        _.uniq(_.map(splitScenes, (scene: any) => _.trim(_.toString(scene.id)))).length !== splitScenes.length ||
-        (isCinematicStoryboard &&
-          !_.isEqual(
-            _.replace(_.trim(_.join(_.map(splitScenes, (scene: any) => _.toString(scene.script)), " ")), /\s+/g, " "),
-            _.replace(_.trim(rewrittenScript), /\s+/g, " "),
-          )) ||
-        (isCinematicStoryboard && _.some(splitScenes, (scene: any) => !_.isEqual(_.toString(scene.script), _.toString(scene.subtitle)))) ||
-        hasUnderfilledCinematicScene ||
-        (cinematicClipCount && !_.isEqual(splitScenes.length, cinematicClipCount))
+        _.uniq(_.map(splitScenes, (scene: any) => _.trim(_.toString(scene.id)))).length !== splitScenes.length
       ) {
         throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
       } else {
@@ -3148,13 +3022,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       const underfilledSceneIds = getUnderfilledCinematicSceneIds(data.scenes, rewrittenScript, cinematicClipCount);
       const blockingErrors = _.uniq(
         _.compact([
-          cinematicClipCount && data.scenes.length !== cinematicClipCount && `storyboard_clip_count_mismatch:${data.scenes.length}/${cinematicClipCount}`,
-          !_.isEqual(normalizedStoryboardScript, normalizedSourceScript) && "storyboard_script_partition_mismatch",
           _.uniq(sceneIds).length !== sceneIds.length && "storyboard_scene_ids_not_unique",
-          _.some(data.scenes, (scene) => !chapterIds.has(_.toString(scene.chapterId))) && "storyboard_unknown_chapter_id",
-          !_.isEmpty(underfilledSceneIds) && `storyboard_underfilled_scenes:${_.join(underfilledSceneIds, ",")}`,
-          storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE && STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING,
-          storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE && STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING,
+          _.some(data.scenes, (scene) => _.isEmpty(_.trim(_.toString(scene.script)))) && "storyboard_scene_script_missing",
         ]),
       );
       data.storyboardQa = {
@@ -3164,6 +3033,10 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           _.compact([
             ...storyboardQaBase.warnings,
             ..._.map(storyboardQaBase.blockingErrors, (issue) => `storyboard_ai_advisory:${issue}`),
+            cinematicClipCount && data.scenes.length !== cinematicClipCount && `storyboard_clip_count_advisory:${data.scenes.length}/${cinematicClipCount}`,
+            !_.isEqual(normalizedStoryboardScript, normalizedSourceScript) && "storyboard_script_partition_advisory",
+            _.some(data.scenes, (scene) => !chapterIds.has(_.toString(scene.chapterId))) && "storyboard_unknown_chapter_id_advisory",
+            !_.isEmpty(underfilledSceneIds) && `storyboard_underfilled_scenes_advisory:${_.join(underfilledSceneIds, ",")}`,
             storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
             storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
           ]),
@@ -3233,6 +3106,7 @@ router.post("/seo", async (req: Request, res: Response) => {
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,
       config: { responseMimeType: "application/json" },
+      task: { capability: AiTaskCapability.TextPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
     });
 
     const seoResult = safeParseJSON(combinedResponse.text, {
@@ -3362,7 +3236,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const combinedResponse = await generateContentWithRetry({
       contents: requestParts,
       config: { responseMimeType: "application/json" },
-      task: { capability: AiTaskCapability.Thumbnail },
+      task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
     });
     const parsedResult = safeParseJSON(combinedResponse.text, {
       concepts: [],
@@ -3379,7 +3253,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       const repairResponse = await generateContentWithRetry({
         contents: getThumbnailContractRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues),
         config: { responseMimeType: "application/json" },
-        task: { capability: AiTaskCapability.Thumbnail },
+        task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
       });
       const repairedResult = safeParseJSON(repairResponse.text, { concepts: [], thumbnails: [] });
       const repairedThumbnails = _.castArray(repairedResult.thumbnails || []);
@@ -3577,9 +3451,30 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
   }
 });
 
+const activeVideoSubmissionKeys = new Set<string>();
+const completedVideoSubmissionResults = new Map<string, unknown>();
+
 router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
+  let activeVideoSubmissionKey = "";
   try {
     const { prompt, style, visualConfig, sandboxConfig, sceneId } = req.body;
+    const requestedIdempotencyKey = _.trim(_.toString(req.body?.idempotencyKey));
+    if (_.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(requestedIdempotencyKey)) {
+      const completedSubmission = completedVideoSubmissionResults.get(requestedIdempotencyKey);
+      if (completedSubmission && _.get(completedSubmission, "success")) return res.json(completedSubmission);
+      if (completedSubmission) completedVideoSubmissionResults.delete(requestedIdempotencyKey);
+      if (activeVideoSubmissionKeys.has(requestedIdempotencyKey)) {
+        return res.json({
+          success: false,
+          base64: null,
+          fallbackUrl: "",
+          warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
+          remoteSubmissionPending: true,
+        });
+      }
+      activeVideoSubmissionKey = requestedIdempotencyKey;
+      activeVideoSubmissionKeys.add(activeVideoSubmissionKey);
+    }
 
     const localProjectId = path.basename(_.toString(sandboxConfig?.localProjectId));
     let localProject: any = null;
@@ -3587,6 +3482,48 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
     if (!_.isEmpty(localProjectId)) {
       localProject = await getProjectDetailFromDb(localProjectId);
       persistedFlowProjectId = _.toString(localProject?.visualConfig?.flowProjectId || persistedFlowProjectId);
+    }
+
+    const persistedScene = _.find(localProject?.storyboard, { id: sceneId });
+    if (
+      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
+      !_.isEmpty(persistedFlowProjectId) &&
+      !_.isEmpty(persistedScene?.remoteVideoMediaId) &&
+      _.isEmpty(persistedScene?.assetUrl) &&
+      _.isEmpty(persistedScene?.assetUrls)
+    ) {
+      const recoveredResult = await recoverExistingFlowVideo({
+        flowProjectId: persistedFlowProjectId,
+        mediaId: persistedScene.remoteVideoMediaId,
+        expectedDuration: _.toString(visualConfig?.videoDuration),
+        retainBrowserSession: true,
+      });
+      if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
+        return res.json({
+          ...recoveredResult,
+          success: false,
+          remoteMediaId: persistedScene.remoteVideoMediaId,
+          remoteMediaCreated: true,
+          warning: FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
+        });
+      }
+      const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, recoveredResult.base64!);
+      persistedScene.assetUrl = fallbackUrl;
+      persistedScene.assetUrls = [fallbackUrl];
+      persistedScene.assetType = GenerateType.Video;
+      persistedScene.assetStatus = SceneAssetStatus.Generated;
+      persistedScene.remoteVideoDownloadPending = false;
+      await saveProjectDetailToDb(localProject);
+      const recoveredResponse = {
+        ...recoveredResult,
+        success: true,
+        base64: null,
+        fallbackUrl,
+        remoteMediaId: persistedScene.remoteVideoMediaId,
+        remoteMediaCreated: true,
+      };
+      if (!_.isEmpty(requestedIdempotencyKey)) completedVideoSubmissionResults.set(requestedIdempotencyKey, recoveredResponse);
+      return res.json(recoveredResponse);
     }
 
     const resolvedSandboxConfig = { ...sandboxConfig, localProjectId, flowProjectId: persistedFlowProjectId || undefined, projectId: undefined };
@@ -3605,6 +3542,18 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
 
     const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     const generatedRemoteMediaId = _.trim(_.toString(result?.remoteMediaId));
+    if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(generatedRemoteMediaId)) {
+      const generatedScene = _.find(localProject.storyboard, { id: sceneId });
+      if (generatedScene) {
+        generatedScene.remoteVideoMediaId = generatedRemoteMediaId;
+        generatedScene.remoteVideoDownloadPending = _.isEmpty(result.base64);
+      }
+      localProject.visualConfig = {
+        ...localProject.visualConfig,
+        flowProjectId: generatedFlowProjectId || localProject.visualConfig?.flowProjectId,
+      };
+      await saveProjectDetailToDb(localProject);
+    }
     if (
       _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
       result?.remoteMediaCreated &&
@@ -3637,6 +3586,16 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
         base64: null,
         fallbackUrl,
       };
+      const completedScene = _.find(localProject?.storyboard, { id: sceneId });
+      if (completedScene) {
+        completedScene.assetUrl = fallbackUrl;
+        completedScene.assetUrls = [fallbackUrl];
+        completedScene.assetType = GenerateType.Video;
+        completedScene.assetStatus = SceneAssetStatus.Generated;
+        completedScene.remoteVideoMediaId = generatedRemoteMediaId || completedScene.remoteVideoMediaId;
+        completedScene.remoteVideoDownloadPending = false;
+        await saveProjectDetailToDb(localProject);
+      }
     }
 
     const resolvedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
@@ -3659,6 +3618,14 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       await incrementFeatureUsage(req, feature, SecurityConstants.DEFAULT_AMOUNT);
     }
 
+    if (!_.isEmpty(requestedIdempotencyKey) && result?.success) {
+      completedVideoSubmissionResults.set(requestedIdempotencyKey, result);
+      while (_.gt(completedVideoSubmissionResults.size, FLOW_VIDEO_MEDIA_CONFIG.IDEMPOTENCY_CACHE_MAX_ENTRIES)) {
+        const oldestKey = completedVideoSubmissionResults.keys().next().value;
+        if (_.isString(oldestKey)) completedVideoSubmissionResults.delete(oldestKey);
+        else break;
+      }
+    }
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
@@ -3668,6 +3635,8 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       fallbackUrl: "",
       warning: getMessage("SYSTEM_ERROR", undefined, error.message),
     });
+  } finally {
+    if (!_.isEmpty(activeVideoSubmissionKey)) activeVideoSubmissionKeys.delete(activeVideoSubmissionKey);
   }
 });
 
@@ -3917,7 +3886,28 @@ router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response
         responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
         maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS,
       },
-      task: { capability: AiTaskCapability.VisualPlanning },
+      task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
+    });
+    return res.json({ success: true, review: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata });
+  } catch (error: any) {
+    logger.warn(LogEvent.VISUAL_QA_ERROR, error);
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false, error: error.message });
+  }
+});
+
+router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Response) => {
+  const prompt = _.toString(req.body?.prompt);
+  const qaIssues = _.compact(_.map(_.castArray(req.body?.qaIssues), _.toString));
+  if (_.isEmpty(_.trim(prompt))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Visual prompt is required." });
+  try {
+    const response = await generateContentWithRetry({
+      contents: getVisualPromptQaRepairPrompt(prompt, qaIssues, req.body?.scene || {}, _.toString(req.body?.purpose || "scene image")),
+      config: {
+        responseMimeType: CONTENT_TYPES.JSON,
+        responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
+        maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS,
+      },
+      task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
     });
     return res.json({ success: true, review: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata });
   } catch (error: any) {
@@ -5457,6 +5447,16 @@ router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, ""
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false });
   }
+});
+
+router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+  const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
+  const projectId = _.toString(req.body?.projectId);
+  const workerIds = _.uniq(_.compact(_.map(_.castArray(req.body?.workerIds || []), _.toString)));
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
+  if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
+  await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
+  return res.json({ success: true, closedRoomCount: workerIds.length });
 });
 
 router.get("/profiles", (_req: Request, res: Response) => {

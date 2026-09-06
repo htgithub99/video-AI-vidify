@@ -12,7 +12,7 @@ export interface DirectedVoiceOptions {
 
 const VOICE_ARC_ORDER: Array<keyof VoiceArc> = ["setup", "descent", "isolation", "climax", "reckoning", "resolution"];
 
-export const splitNarrationForVoiceArc = (text: string): string[] => {
+const splitNarrationForVoiceArc = (text: string): string[] => {
   const paragraphs = _.filter(_.map(_.split(text, /\n{2,}/), _.trim), Boolean);
   if (_.gte(_.size(paragraphs), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) {
     const chunks = _.chunk(paragraphs, _.ceil(_.divide(_.size(paragraphs), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) || 1);

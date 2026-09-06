@@ -101,7 +101,7 @@ export interface FFmpegRenderOptions {
   expectedDurationSeconds?: number;
 }
 
-export const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
+const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   if (_.isEmpty(assetUrl) || _.startsWith(assetUrl, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX)) {
     return undefined;
   }

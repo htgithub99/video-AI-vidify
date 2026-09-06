@@ -1,7 +1,7 @@
 import { FC, ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
-import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown } from "lucide-react";
+import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown, Zap, Bot } from "lucide-react";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
 import { UIConstants, SecurityConstants } from "../constants/security";
@@ -73,36 +73,43 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
       }
     };
     if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener(UIConstants.MOUSE_DOWN_EVENT, handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener(UIConstants.MOUSE_DOWN_EVENT, handleClickOutside);
   }, [isDropdownOpen]);
 
+  const isDark = _.isEqual(theme, AppTheme.DARK);
   const planningTexts = CINEMATIC_SETUP_TEXTS[currentLang as Lang] || CINEMATIC_SETUP_TEXTS.vi;
   const roomActions = [
     {
       provider: AiPlanningFallbackProvider.GeminiChat,
       name: planningTexts.GEMINI_CHAT_OPTION,
       label: planningTexts.CLEAR_GEMINI_ROOMS,
-      hoverClass: "hover:bg-blue-500/10 dark:hover:bg-blue-500/20 hover:border-blue-500/40",
-      iconClass: "text-blue-600 dark:text-blue-400 group-hover:scale-110",
-      textHoverClass: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
+      subtext: planningTexts.GEMINI_BROWSER,
+      badgeStyle: isDark
+        ? "bg-blue-500/15 text-blue-400 border-blue-500/25"
+        : "bg-blue-50 text-blue-600 border-blue-200",
+      icon: <Sparkles className={cn("w-3.5 h-3.5")} />,
     },
     {
       provider: AiPlanningFallbackProvider.GrokChat,
       name: planningTexts.GROK_CHAT_OPTION,
       label: planningTexts.CLEAR_GROK_ROOMS,
-      hoverClass: "hover:bg-amber-500/10 dark:hover:bg-amber-500/20 hover:border-amber-500/40",
-      iconClass: "text-amber-600 dark:text-amber-400 group-hover:scale-110",
-      textHoverClass: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
+      subtext: planningTexts.GROK_BROWSER,
+      badgeStyle: isDark
+        ? "bg-amber-500/15 text-amber-400 border-amber-500/25"
+        : "bg-amber-50 text-amber-600 border-amber-200",
+      icon: <Zap className={cn("w-3.5 h-3.5")} />,
     },
     {
       provider: AiPlanningFallbackProvider.ChatGptUi,
       name: planningTexts.CHATGPT_UI_OPTION,
       label: planningTexts.CLEAR_CHATGPT_ROOMS,
-      hoverClass: "hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:border-emerald-500/40",
-      iconClass: "text-emerald-600 dark:text-emerald-400 group-hover:scale-110",
-      textHoverClass: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400",
+      subtext: planningTexts.CHATGPT_BROWSER,
+      badgeStyle: isDark
+        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25"
+        : "bg-emerald-50 text-emerald-600 border-emerald-200",
+      icon: <Bot className={cn("w-3.5 h-3.5")} />,
     },
   ];
 
@@ -114,12 +121,16 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
     try {
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS, { provider });
       const message = (response.success ? planningTexts.CLEAR_ROOM_SUCCESS : planningTexts.CLEAR_ROOM_ERROR)
-        .replace("{0}", name)
-        .replace("{1}", _.toString(response.data?.deletedConversationCount || 0));
+        .replace(SecurityConstants.PLACEHOLDER_0, name)
+        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(response.data?.deletedConversationCount || SecurityConstants.ZERO));
       if (response.success) toast.success(message);
       else toast.error(message);
     } catch (error) {
-      toast.error(planningTexts.CLEAR_ROOM_ERROR.replace("{0}", name).replace("{1}", "0"));
+      toast.error(
+        planningTexts.CLEAR_ROOM_ERROR
+          .replace(SecurityConstants.PLACEHOLDER_0, name)
+          .replace(SecurityConstants.PLACEHOLDER_1, _.toString(SecurityConstants.ZERO)),
+      );
     } finally {
       setIsClearing(false);
       setClearingProvider(null);
@@ -196,56 +207,101 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
               className={cn(
-                "header-control-item group px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-150 cursor-pointer shadow-sm select-none",
-                "bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700",
-                "text-slate-300 hover:text-rose-400 active:scale-95",
-                isDropdownOpen && "border-rose-500/40 text-rose-400 bg-rose-500/10",
+                "header-control-item px-2.5 rounded-xl inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer shadow-sm select-none",
+                isDark
+                  ? "bg-slate-900/80 border border-slate-800 text-slate-200"
+                  : "bg-white/90 border border-stone-200 text-zinc-700",
+                isDropdownOpen && (isDark ? "border-slate-700 bg-slate-850 text-white" : "border-stone-300 bg-stone-50 text-zinc-900"),
               )}
-              title={isVietnamese ? "Dọn dẹp phiên chat AI" : "Clear AI Chat Sessions"}
-              aria-label="Clear AI Chat Sessions"
+              title={planningTexts.CLEAR_AI_SESSIONS}
+              aria-label={planningTexts.CLEAR_AI_SESSIONS}
               aria-expanded={isDropdownOpen}>
-              <Trash2 className={cn("w-3.5 h-3.5 text-rose-500 group-hover:text-rose-400 transition-transform group-hover:scale-110 shrink-0 -translate-y-[0.5px]")} />
-              <span className={cn("text-[11px] font-bold hidden sm:inline-flex items-center leading-none translate-y-[0.5px]")}>{isVietnamese ? "Dọn AI" : "Clear AI"}</span>
-              <ChevronDown className={cn("w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0", isDropdownOpen && "rotate-180 text-rose-400")} />
+              <Trash2 className={cn("w-3.5 h-3.5 shrink-0 text-rose-500")} />
+              <span className="leading-none hidden sm:inline">{planningTexts.CLEAR_AI_SHORT}</span>
+              <ChevronDown className={cn("w-3 h-3 shrink-0 text-slate-400 transition-transform duration-150", isDropdownOpen && "rotate-180")} />
             </button>
 
             {isDropdownOpen && (
               <div
                 className={cn(
-                  "absolute right-0 top-full mt-1.5 w-52 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl flex flex-col gap-1",
+                  "absolute right-0 top-full mt-2 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl flex flex-col gap-1.5",
+                  isDark
+                    ? "bg-[#181424]/98 border border-[#2c233a] shadow-black/60"
+                    : "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10",
                 )}>
-                <div className={cn("px-3 py-1.5 text-[9.5px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800/60 flex items-center justify-between")}>
-                  <span>{isVietnamese ? "Dọn phiên AI" : "Clear AI"}</span>
-                  <Sparkles className={cn("w-2.5 h-2.5 text-rose-500")} />
+                <div
+                  className={cn(
+                    "px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b",
+                    isDark ? "border-[#2c233a] text-zinc-400" : "border-zinc-100 text-zinc-500",
+                  )}>
+                  <div className={cn("flex items-center gap-1.5")}>
+                    <Trash2 className={cn("w-3 h-3 text-rose-500")} />
+                    <span className={cn(isDark ? "text-zinc-200" : "text-zinc-800")}>
+                      {planningTexts.CLEAR_AI_MENU}
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[9px] font-medium normal-case px-1.5 py-0.5 rounded border",
+                      isDark
+                        ? "text-zinc-400 bg-zinc-800/80 border-zinc-700/50"
+                        : "text-zinc-500 bg-zinc-100 border-zinc-200",
+                    )}>
+                    {planningTexts.CLOSE_HIDDEN_TABS}
+                  </span>
                 </div>
 
-                <div className={cn("flex flex-col gap-1 pt-1")}>
+                <div className={cn("flex flex-col gap-1.5 pt-0.5")}>
                   {_.map(roomActions, (action) => (
-                    <button
+                    <div
                       key={action.provider}
-                      type="button"
-                      disabled={!_.isNull(clearingProvider)}
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setConfirmAction(action);
-                      }}
                       className={cn(
-                        "w-full px-3 py-2 rounded-xl flex items-center justify-between gap-3 text-left transition-all duration-150 cursor-pointer select-none group",
-                        "bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 shadow-sm active:scale-[0.98]",
-                        action.hoverClass,
-                      )}
-                      title={planningTexts.CLEAR_ROOM_TOOLTIP.replace("{0}", action.name)}
-                      aria-label={action.label}>
-                      <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                        <Trash2 className={cn("w-4 h-4 transition-transform shrink-0", action.iconClass)} />
-                        <span className={cn("text-xs font-bold text-slate-800 dark:text-slate-100 transition-colors", action.textHoverClass)}>
-                          {action.name}
-                        </span>
+                        "w-full p-2 rounded-xl flex items-center justify-between gap-2.5 text-left border cursor-default select-none transition-none",
+                        isDark
+                          ? "bg-[#221b2d]/60 border-[#2c233a]/80"
+                          : "bg-zinc-50/80 border-zinc-200/70",
+                      )}>
+                      <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border shadow-xs", action.badgeStyle)}>
+                          {action.icon}
+                        </div>
+                        <div className={cn("flex flex-col min-w-0")}>
+                          <span
+                            className={cn(
+                              "text-xs font-bold truncate leading-tight",
+                              isDark ? "text-zinc-100" : "text-zinc-900",
+                            )}>
+                            {action.name}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-[10px] font-medium truncate leading-tight mt-0.5",
+                              isDark ? "text-zinc-400" : "text-zinc-500",
+                            )}>
+                            {action.subtext}
+                          </span>
+                        </div>
                       </div>
-                      <span className={cn("text-[10.5px] font-bold text-rose-500 dark:text-rose-400 transition-transform group-hover:translate-x-0.5")}>
-                        {isVietnamese ? "Xóa" : "Clear"}
-                      </span>
-                    </button>
+
+                      <button
+                        type="button"
+                        disabled={!_.isNull(clearingProvider)}
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setConfirmAction(action);
+                        }}
+                        className={cn(
+                          "btn-icon-tiny group/btn w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] p-0 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer shadow-xs active:scale-90 shrink-0",
+                          isDark
+                            ? "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30"
+                            : "bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-200 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/20",
+                          "disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-rose-500/30",
+                        )}
+                        title={planningTexts.CLEAR_ROOM_TOOLTIP.replace(SecurityConstants.PLACEHOLDER_0, action.name)}
+                        aria-label={action.label}>
+                        <Trash2 className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/btn:scale-110")} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -298,19 +354,17 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
         title={
           <div className={cn("flex items-center gap-2")}>
             <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span>{isVietnamese ? "Xác nhận xóa phòng chat" : "Confirm Room Cleanup"}</span>
+            <span>{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
           </div>
         }>
         <div className={cn("space-y-4 pt-1")}>
           <p className={cn("text-slate-700 dark:text-slate-200 text-sm font-medium leading-relaxed")}>
-            {planningTexts.CLEAR_ROOM_CONFIRM.replace("{0}", confirmAction?.name || "")}
+            {planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
           </p>
           <div className={cn("p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold leading-relaxed flex items-start gap-2 shadow-sm")}>
             <span className={cn("inline-block mt-0.5 shrink-0")}>⚠️</span>
             <span>
-              {isVietnamese
-                ? "Hành động này sẽ đóng các tab trình duyệt AI và làm mới hoàn toàn phiên làm việc để giải phóng tài nguyên."
-                : "This action will close AI browser tabs and completely refresh the session to free up resources."}
+              {planningTexts.CLEAR_ROOM_RESOURCE_NOTICE}
             </span>
           </div>
           <div className={cn("flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800")}>
@@ -319,14 +373,14 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
               disabled={isClearing || !_.isNull(clearingProvider)}
               onClick={() => setConfirmAction(null)}
               className={cn("px-5 py-2.5 text-xs font-bold rounded-xl")}>
-              {t.cancel || "Hủy"}
+              {t.cancel || planningTexts.CANCEL_FALLBACK}
             </Button>
             <Button
               variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
               isLoading={isClearing || !_.isNull(clearingProvider)}
               onClick={handleExecuteClearRooms}
               className={cn("px-6 py-2.5 text-xs font-bold rounded-xl shadow-md shadow-rose-600/20")}>
-              {t.delete || "Xóa ngay"}
+              {t.delete || planningTexts.DELETE_NOW_FALLBACK}
             </Button>
           </div>
         </div>

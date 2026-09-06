@@ -24,12 +24,12 @@ export interface ResolvedApiKeys {
   };
 }
 
-export function extractFirstNonEmptyString(sources: any[]): string {
+function extractFirstNonEmptyString(sources: any[]): string {
   const value = _.find(sources, (candidate) => _.isString(candidate) && !_.isEmpty(_.trim(candidate))) as string | undefined;
   return _.trim(value || SecurityConstants.EMPTY_STRING);
 }
 
-export function extractApiKeyFromResponse(data: any, keyNames: string[]): string {
+function extractApiKeyFromResponse(data: any, keyNames: string[]): string {
   if (_.isNil(data)) return SecurityConstants.EMPTY_STRING;
   const adminKeys = _.get(data, SecurityConstants.API_KEYS_KEY, {});
   const sources = [adminKeys, _.get(data, SecurityConstants.DATA_KEY), data];

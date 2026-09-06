@@ -7,8 +7,6 @@ import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
 import { resolveStylePreset } from "../constants/stylePresets";
 
-export { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../lib/imagePromptDirectives";
-
 export interface CachedVoiceAudio {
   audioBase64: string;
   audioUrl: string;
@@ -252,9 +250,8 @@ export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNa
     ]),
   );
 
-export const applyGeneratedMediaLanguage = (prompt: string, directive: string): string =>
-  _.includes(prompt, AUTO_VIDEO_PIPELINE_CONFIG.GENERATED_MEDIA_LANGUAGE_MARKER) ? prompt : _.join([prompt, directive], REFACTOR_CONSTANTS.AVG_BLANK);
 export const calculateSceneDuration = (scenes: StoryboardScene[]): number =>
   _.sumBy(scenes, (scene) => _.max([0, (_.toNumber(scene.duration) || 0) - (_.toNumber(scene.sourceTrimStartSeconds) || 0) - (_.toNumber(scene.sourceTrimEndSeconds) || 0)]) || 0);
 export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = "auto"): string =>
   _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);
+

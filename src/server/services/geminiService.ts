@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants";
+import { CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_ROOM_STAGE, FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants";
 import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from "lodash";
@@ -8,7 +8,7 @@ import { resolveApiKeys } from "./apiKeyResolver.js";
 import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
 import { classifyGeminiError } from "./geminiErrorClassifier.js";
 import { generateWithFreeProviders } from "./freeAiProviderService.js";
-import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { closeChatPlanningRoom, generatePlanningWithChatUi } from "./chatUiPlanningService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 
@@ -20,6 +20,24 @@ const getRoomOnlyContext = () => {
 const getRoomExecution = () => {
   const context = getRoomOnlyContext();
   return context?.aiRoomProvider && context.aiRoomProvider !== AiPlanningFallbackProvider.Disabled ? context : undefined;
+};
+
+const resolveRoomWorkerId = (capability?: AiTaskCapability, explicitWorkerId?: string): string => {
+  if (!_.isEmpty(explicitWorkerId)) return explicitWorkerId!;
+  if (_.isEqual(capability, AiTaskCapability.Thumbnail)) return CINEMATIC_ROOM_STAGE.THUMBNAIL;
+  if (_.includes([AiTaskCapability.VisualPlanning, AiTaskCapability.StyleExtraction], capability)) return CINEMATIC_ROOM_STAGE.PROMPT;
+  if (_.includes([AiTaskCapability.VisualQa, AiTaskCapability.AudioQa], capability)) return CINEMATIC_ROOM_STAGE.VIDEO;
+  return CINEMATIC_ROOM_STAGE.SCRIPT;
+};
+
+export const closeCurrentRoomExecution = async (workerId?: string): Promise<void> => {
+  const roomExecution = getRoomExecution();
+  if (!roomExecution) return;
+  await closeChatPlanningRoom({
+    provider: roomExecution.aiRoomProvider!,
+    projectId: roomExecution.aiRoomProjectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE,
+    workerId,
+  });
 };
 
 export const isAiProviderAvailable = async (): Promise<boolean> => {
@@ -138,12 +156,12 @@ export const generateContentWithRetry = async (
       provider: roomExecution.aiRoomProvider!,
       model: roomExecution.aiRoomModel,
       prompt: `${roomPayload.prompt}${schemaContract}`,
-      projectId: roomExecution.aiRoomProjectId || "pipeline-room",
+      projectId: roomExecution.aiRoomProjectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE,
       chromeHeadless: roomExecution.aiRoomChromeHeadless,
       attachments: roomPayload.attachments,
-      workerId: params.task?.roomWorkerId,
+      workerId: resolveRoomWorkerId(params.task?.capability, params.task?.roomWorkerId),
       completionMarker: params.config?.roomCompletionMarker,
-      closeRoomOnComplete: true,
+      closeRoomOnComplete: false,
     });
     return {
       text: roomResponse.text,

@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { BackgroundMode, ImageFocusMode, TextInImageMode } from "../types";
-import { BACKGROUND_MODE_CONFIG, IMAGE_FOCUS_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../constants/config";
+import { BackgroundMode, ImageFocusMode } from "../types";
+import { BACKGROUND_MODE_CONFIG, IMAGE_FOCUS_MODE_CONFIG } from "../constants/config";
 import { REFACTOR_CONSTANTS } from "../constants/refactor";
 
 const appendDirectiveBeforeAspectRatio = (prompt: string, directive: string): string => {
@@ -21,8 +21,3 @@ export const resolveImageFocusDirective = (mode: ImageFocusMode, backgroundMode:
 };
 
 export const applyBackgroundMode = (prompt: string, mode: BackgroundMode): string => appendDirectiveBeforeAspectRatio(prompt, BACKGROUND_MODE_CONFIG.DIRECTIVES[mode]);
-
-export const applyTextInImageMode = (prompt: string, mode: TextInImageMode): string => appendDirectiveBeforeAspectRatio(prompt, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES[mode]);
-
-export const applyImageFocusMode = (prompt: string, mode: ImageFocusMode, backgroundMode: BackgroundMode): string =>
-  appendDirectiveBeforeAspectRatio(prompt, resolveImageFocusDirective(mode, backgroundMode));

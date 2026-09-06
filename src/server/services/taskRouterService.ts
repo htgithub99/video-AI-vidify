@@ -18,7 +18,7 @@ export interface AiTaskRequest {
   maxOutputTokens: number;
   budgetUsd?: number;
 }
-export type AiProvider = "cerebras" | "groq" | "google";
+type AiProvider = "cerebras" | "groq" | "google";
 export interface AiCallMetadata {
   capability: AiTaskCapability;
   provider: AiProvider;

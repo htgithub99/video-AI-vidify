@@ -10,7 +10,7 @@ import { useVoices } from "../hooks/useVoices";
 import { logger } from "../utils/logger";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
-import { VOICE_DIALOG_TEXTS } from "../constants/texts";
+import { VOICE_DIALOG_AGE_LABELS, VOICE_DIALOG_LANGUAGE_LABELS, VOICE_DIALOG_TEXTS } from "../constants/texts";
 import {
   VOICE_PROVIDER_OPTIONS,
   VOICE_LANGUAGE_OPTIONS,
@@ -99,25 +99,6 @@ const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean 
   } catch (e) {
     return code;
   }
-};
-
-const LANGUAGE_LABEL_MAP: Record<string, Record<"vi" | "en", string>> = {
-  "": { vi: "Tất cả", en: "All" },
-  en: { vi: "Tiếng Anh", en: "English" },
-  vi: { vi: "Tiếng Việt", en: "Vietnamese" },
-  fr: { vi: "Tiếng Pháp", en: "French" },
-  de: { vi: "Tiếng Đức", en: "German" },
-  es: { vi: "Tiếng Tây Ban Nha", en: "Spanish" },
-  ja: { vi: "Tiếng Nhật", en: "Japanese" },
-  ko: { vi: "Tiếng Hàn", en: "Korean" },
-  zh: { vi: "Tiếng Trung", en: "Chinese" },
-};
-
-const AGE_LABEL_MAP: Record<string, Record<"vi" | "en", string>> = {
-  "": { vi: "Tất cả", en: "All" },
-  young: { vi: "Trẻ tuổi", en: "Young" },
-  middle_aged: { vi: "Trung niên", en: "Middle Aged" },
-  old: { vi: "Cao tuổi", en: "Elderly" },
 };
 
 export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
@@ -356,7 +337,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
-                      {LANGUAGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
+                      {VOICE_DIALOG_LANGUAGE_LABELS[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>
@@ -401,7 +382,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
-                      {AGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
+                      {VOICE_DIALOG_AGE_LABELS[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>

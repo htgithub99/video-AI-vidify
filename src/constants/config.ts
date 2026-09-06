@@ -1,4 +1,5 @@
 import { AspectRatio, ImageGenerationMode, ImageGeneratorEngine, SubtitleMode } from "../types";
+import { CINEMATIC_ROOM_STAGE } from "./cinematicConstants";
 
 export const APP_CONFIG = { TOAST_DURATION: 3000 };
 
@@ -7,7 +8,6 @@ export const TECHNICAL_RESPONSE_RETRY_CONFIG = { MAX_ATTEMPTS: 2 } as const;
 export const PIPELINE_FETCH_FAILURE_KEY = {
   SCRIPT: "script_request_failed",
   STORYBOARD: "storyboard_request_failed",
-  VIDEO_PROMPT_REVIEW: "video_prompt_review_failed",
 } as const;
 
 export const ADVISORY_QA_CONFIG = {
@@ -642,38 +642,6 @@ export const STYLE_EXTRACTION_CONFIG = {
   MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" },
 } as const;
 
-export const STYLE_LOCK_CONFIG = {
-  SHARED_PERSON_RULE: "Every person uses exactly this same character type, body construction, line work, coloring, and rendering style",
-  SHARED_PERSON_PATTERN: /every person uses/i,
-} as const;
-
-export const STYLE_REFERENCE_DIRECTIVES = {
-  PEOPLE_RULE_PREFIX: "Strict character visual lock: every person uses the exact same",
-  PEOPLE_RULE_FALLBACK: "character anatomy and construction",
-  FACIAL_FEATURES_RULE: "Render clear expressive facial features suited to the character's emotion and narrative action. Never leave the face blank",
-  LINE_ART_TEMPLATE: "Line art: {value}",
-  PALETTE_TEMPLATE: "Palette: {value}",
-  RENDERING_TEMPLATE: "Rendering: {value}",
-  SHAPE_LANGUAGE_TEMPLATE: "Shape language: {value}",
-  TEXTURE_TEMPLATE: "Texture: {value}",
-  SHAPES_TEMPLATE: "Shapes: {value}",
-  SURFACE_TEMPLATE: "Surface: {value}",
-  WITH_DNA_PREFIX: " with ",
-  UNIVERSAL_ANATOMY_MANDATE:
-    "MANDATORY UNIVERSAL CHARACTER ANATOMY: Every single person, protagonist, secondary character, broker, boss, and background crowd member MUST strictly share the exact same character construction",
-  UNIFIED_STYLE_TEMPLATE: "Unified art style: {value}",
-  EVERY_ANATOMY_TEMPLATE: "Every character anatomy strictly follows: {value}",
-  FULL_FACIAL_FEATURES: "Render clear expressive facial features suited to character emotion and narrative action, never blank",
-  STRICT_PROHIBITION: "Strict prohibition: Absolutely NO realistic human body proportions, NO muscular anatomical limbs, NO 3D rendered bodies, NO semi-realistic cartoon torsos",
-  VISUAL_CONSISTENCY_TEMPLATE: "Visual consistency: {value}",
-  ENVIRONMENT_STYLE_TEMPLATE: "Environment style: {value}",
-  LIMB_INTEGRITY:
-    "Limb & Anatomy Integrity: Natural single-jointed stick limbs with clean natural elbow/knee angles, strictly no disjointed multi-jointed arms, no mutated extra elbows, no rubbery distorted limbs, strictly no oversized black joint balls or spheres",
-  UNIFORM_VISUAL_IDENTITY: "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
-  CLEAN_RENDER: "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
-  REFERENCE_MATCH_DIRECTIVE: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image",
-} as const;
-
 export const STYLE_DIRECTIVE_CONFIG = {
   SENTENCE_SEPARATOR: ". ",
   TEMPLATE_VALUE_TOKEN: "{value}",
@@ -1020,29 +988,6 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   ],
 } as const;
 
-export const AUTO_GENERATOR_SCENE_REFERENCE_CONFIG = {
-  CARD_CLASS: "space-y-4",
-  HEADER_CLASS: "flex items-center gap-3",
-  HEADER_ICON_CLASS: "w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0",
-  TITLE_CLASS: "text-[11px] font-bold uppercase tracking-wider text-slate-250 dark:text-slate-100 font-mono",
-  DESCRIPTION_CLASS: "text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5",
-  GRID_CLASS: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3",
-  UPLOAD_CLASS:
-    "bg-slate-950/20 dark:bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-sky-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden",
-  INPUT_CLASS: "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10",
-  UPLOAD_CONTENT_CLASS: "absolute inset-0 flex flex-col items-center justify-center p-2 text-center",
-  UPLOAD_ICON_BOX_CLASS: "p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-sky-500/30 transition-all duration-300 mb-1.5 shadow-lg",
-  UPLOAD_ICON_CLASS: "w-4 h-4 text-slate-400 group-hover:text-sky-400 transition-colors",
-  UPLOAD_TITLE_CLASS: "text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-sky-400 transition-colors",
-  UPLOAD_SUBTITLE_CLASS: "text-[8px] text-slate-500 leading-tight block truncate max-w-full",
-  IMAGE_CARD_CLASS: "relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-sky-500/30 transition-colors",
-  IMAGE_CLASS: "w-full h-full object-cover rounded-xl",
-  IMAGE_OVERLAY_CLASS: "absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-end items-start p-1.5",
-  DELETE_BUTTON_CLASS:
-    "w-5 h-5 bg-rose-600/90 hover:bg-rose-500 hover:scale-110 rounded-full flex items-center justify-center text-white shadow-md transition-all duration-200 p-0 border border-white/20",
-  DELETE_ICON_CLASS: "w-3 h-3",
-} as const;
-
 export const GEMINI_VIDEO_PROCESS_CONFIG = {
   TEMP_DIR_PREFIX: "gemini-video-",
   INPUT_FILE_NAME: "source.mp4",
@@ -1104,6 +1049,7 @@ export const AUTO_GENERATOR_CONSTANTS = {
   API_IMAGE_SUCCESS: "✅ Đã hoàn tất vẽ toàn bộ hình ảnh minh họa cho video!",
   LOG_PROJECT_INIT: "📌 Đang chuẩn bị dự án...",
   LOG_PROJECT_SUCCESS: '✅ Đã chuẩn bị dự án "{0}" thành công!',
+  LOG_REFERENCE_CLEANUP_SUCCESS: "✓ Đã dọn ảnh tham chiếu cũ; chỉ giữ lại ảnh đang dùng.",
   LOG_SCRIPT_GEN: "📌 [Bước 1/4] Trí tuệ nhân tạo (AI) đang phân tích và biên soạn kịch bản chi tiết...",
   LOG_VOICE_GEN: "📌 [Bước 2/4] Đang tạo giọng thuyết minh ({0})...",
   LOG_IMAGE_GEN: "📌 [Bước 3/4] Đang tạo tài nguyên hình ảnh và video phân cảnh ({0})...",
@@ -1254,6 +1200,8 @@ export const GEMINI_MODEL_SELECTION_CONFIG = {
   OPTION_TIMEOUT_MS: 10_000,
   SELECTION_POLL_MS: 200,
   ACTIVE_MODE_TIMEOUT_MS: 4_000,
+  PAGE_LOADING_TIMEOUT_MS: 12_000,
+  PAGE_LOADING_SELECTOR: 'mat-progress-spinner[role="progressbar"], [role="progressbar"][aria-label*="tải" i], [role="progressbar"][aria-label*="load" i]',
   SELECTED_CLASS: "selected",
   ACTIVE_ATTRIBUTE: "data-active",
   ACTIVE_VALUE: "true",
@@ -1302,6 +1250,7 @@ export const DEPENDENCY_HASH_CONFIG = {
 
 export const STORYBOARD_QUALITY_CONFIG = {
   MIN_SCORE: 85,
+  HARD_MIN_COVERAGE_SCORE: 65,
   BELOW_TARGET_WARNING: "storyboard_quality_below_target",
   SCRIPT_COVERAGE_WARNING: "storyboard_script_coverage_incomplete",
   PACING_COVERAGE_WARNING: "storyboard_scene_coverage_too_sparse",
@@ -1364,15 +1313,18 @@ export const SCRIPT_PLAN_CONFIG = {
 } as const;
 
 export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
+  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v1",
   STORY_BIBLE_SCHEMA_VERSION: "cinematic-story-bible-v1",
   NARRATIVE_PLAN_SCHEMA_VERSION: "cinematic-narrative-plan-v1",
   SCREENPLAY_SCHEMA_VERSION: "cinematic-screenplay-v1",
   COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
+  HARD_MIN_WORD_RATIO: 0.6,
+  HARD_MAX_WORD_RATIO: 1.75,
   MAX_RESPONSE_ATTEMPTS: 2,
-  PRIMARY_WORKER_ID: "script-writer",
-  RECOVERY_WORKER_ID: "script-recovery",
-  EDITOR_WORKER_ID: "script-editor",
-  EDITOR_RECOVERY_WORKER_ID: "script-editor-recovery",
+  PRIMARY_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
+  RECOVERY_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
+  EDITOR_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
+  EDITOR_RECOVERY_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
   MAX_REJECTED_RESPONSE_CHARACTERS: 30_000,
   DIAGNOSTIC_RESPONSE_PREVIEW_CHARACTERS: 320,
 } as const;
@@ -1519,14 +1471,29 @@ export const FLOW_AGENT_UI_CONFIG = {
 export const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRatio.NineSixteen] as const;
 
 export const FLOW_DIRECT_VIDEO_CONFIG = {
+  SETTINGS_PANEL: "flow-prompt-box-settings.settings-content-overlay, .cdk-overlay-pane flow-prompt-box-settings",
   VIDEO_TAB: /(?:videocam\s*)?(?:Video)/i,
   COMPONENTS_TAB: /(?:chrome_extension\s*)?(?:Thành phần|Components)/i,
   CONFIG_BUTTON: /Video\s*·|Nano Banana|Omni(?:\s+1\.1)?\s+Flash|Veo 3\.1/i,
   RESOLUTIONS: ["360p", "720p"],
   DURATIONS: ["4s", "6s", "8s", "10s"],
-  DEFAULT_RESOLUTION: "360p",
+  DEFAULT_RESOLUTION: "720p",
   DEFAULT_DURATION: "8s",
   SINGLE_OUTPUT: "x1",
+  PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
+  CONFIG_VERIFY_TIMEOUT_MS: 5000,
+  PROMPT_APPLY_TIMEOUT_MS: 2_000,
+  PROMPT_ACTION_TIMEOUT_MS: 5_000,
+  CONFIG_MISMATCH_ERROR: "Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn.",
+  PROMPT_NOT_READY_ERROR: "Google Flow chưa nhận đủ prompt nên chưa thể gửi tạo video.",
+  NON_RETRYABLE_SETUP_ERRORS: [
+    /Google Flow chưa áp dụng đúng cấu hình video/i,
+    /Google Flow chưa nhận đủ prompt/i,
+    /Không tìm thấy ô nhập mô tả hình ảnh|Prompt input field not found/i,
+    /Không thể đọc đủ ảnh nhân vật.*Flow/i,
+    /Không tìm thấy thao tác tải ảnh nhân vật.*Flow/i,
+    /Ảnh nhân vật chưa được Flow xác nhận tải lên/i,
+  ],
   PROJECT_ERROR_HEADING: /Đã xảy ra lỗi|Something went wrong/i,
   PROJECT_UNAVAILABLE_LOG: "[Google Flow] Room hiện tại không khả dụng; hệ thống đang tạo room mới cho dự án.",
   PROJECT_REPLACED_LOG: "[Google Flow] Đã thay room lỗi bằng room mới: {0}.",
@@ -1534,6 +1501,7 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
 
 export const FLOW_VIDEO_MEDIA_CONFIG = {
   GLOBAL_BROWSER_IDLE_TIMEOUT_MS: 2 * 60_000,
+  IDEMPOTENCY_CACHE_MAX_ENTRIES: 500,
   GENERATION_TIMEOUT_MS: 8 * 60_000,
   DOWNLOAD_TIMEOUT_MS: 2 * 60_000,
   READY_POLL_INTERVAL_MS: 1_500,
@@ -1548,6 +1516,11 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   MEDIA_ID_TOKEN: "{mediaId}",
   FILE_EXTENSION: ".mp4",
   REMOTE_DOWNLOAD_PENDING_ERROR: "Video đã được tạo trên Flow nhưng chưa tải về được; hệ thống sẽ không tạo lại clip này.",
+  VI_RECOVERY_START: "Đang tải lại clip đã tạo cho {0}; không gửi yêu cầu tạo mới.",
+  EN_RECOVERY_START: "Downloading the existing clip for {0}; no new generation request will be sent.",
+  VI_RECOVERY_SUCCESS: "✓ Đã tải và lưu clip hiện có cho {0}.",
+  EN_RECOVERY_SUCCESS: "✓ Downloaded and saved the existing clip for {0}.",
+  SUBMISSION_IN_PROGRESS_ERROR: "Video này đang được tạo; hệ thống sẽ không gửi thêm yêu cầu trùng lặp.",
   INVALID_MEDIA_ERROR: "Flow chưa trả về tệp video hoàn chỉnh.",
   PERSISTENCE_ERROR: "Clip video chưa được lưu thành tệp cục bộ.",
 } as const;
@@ -1558,7 +1531,7 @@ export const PIPELINE_GUARANTEE_CONFIG = {
   SCRIPT_ATTEMPTS: 1,
   STORYBOARD_ATTEMPTS: 2,
   MEDIA_ATTEMPTS: 3,
-  VIDEO_QA_REGENERATION_ATTEMPTS: 1,
+  VIDEO_QA_REGENERATION_ATTEMPTS: 0,
 } as const;
 
 export const VISUAL_QA_MEDIA_CONFIG = {
@@ -1725,16 +1698,16 @@ export const CINEMATIC_CONFIG = {
   MIN_EPISODE_COUNT: 2,
   MAX_EPISODE_COUNT: 24,
   DEFAULT_DURATION: "1 minute",
-  DURATIONS: ["1 minute", "2 minutes", "3 minutes", "3-5 minutes", "5-10 minutes", "10-15 minutes"],
+  DURATIONS: ["1 minute", "2 minutes", "3 minutes", "5 minutes", "8 minutes", "10 minutes", "15 minutes"],
   PERSISTENCE_SCOPE: "cinematic_film_studio",
   STATE_SCOPE: "cinematic",
   UNLIMITED_VIDEO_SCENES: Number.MAX_SAFE_INTEGER,
   GENERATION_DEFAULTS: {
     MODE: ImageGenerationMode.LabsFlow,
     ENGINE: ImageGeneratorEngine.Veo3,
-    CHROME_HEADLESS: true,
+    CHROME_HEADLESS: false,
     CLIP_DURATION: "10s",
-    RESOLUTION: "360p",
+    RESOLUTION: "720p",
     ASPECT_RATIO: AspectRatio.SixteenNine,
   },
   PIPELINE_PROFILE: {

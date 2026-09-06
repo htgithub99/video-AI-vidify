@@ -29,6 +29,8 @@ assert.match(characterPrompt, /speciesPresentation/);
 assert.match(characterPrompt, /identityContinuityRisks/);
 
 const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-assert.match(pipelineControllerSource, /identityContinuityRisks: _\.get\(parsed, "identityContinuityRisks"\)/);
+assert.match(pipelineControllerSource, /identityContinuityRisks: _\.castArray/);
+assert.doesNotMatch(pipelineControllerSource, /identityContinuityRisks:not_resolved/);
+assert.match(pipelineControllerSource, /requiresCompleteArtifact \? 3 : 1/);
 
 process.stdout.write(JSON.stringify({ passed: true, cinematicReferenceCount: cinematicReferences.referenceImages.length, automaticReferencesUnchanged: true }));

@@ -9,24 +9,10 @@ export const SAFE_FOLDER_CHARS_REGEX = /[^a-zA-Z0-9\s-_]/g;
 export const SAFE_PROJECT_ID_REGEX = /[^a-zA-Z0-9_-]/g;
 export const MULTIPLE_SPACES_REGEX = /\s+/g;
 
-export const SENTENCE_SPLIT_REGEX = /[^.!?]+[.!?]*/g;
-export const CLAUSE_SPLIT_REGEX = /([,;:|])\s*/;
-
 export const NON_ALPHANUMERIC_SPACE_REGEX = /[^a-zA-Z0-9\s]/g;
-export const BASE64_IMAGE_DATA_REGEX = /^data:([^;]+);base64,([\s\S]+)$/;
 
 export const PLAYWRIGHT_SUBMIT_ICON_REGEX = /^(arrow_forward|add_2|send)$/i;
 export const PLAYWRIGHT_SUBMIT_TEXT_REGEX = /(Tạo|Create|Generate)/i;
-
-export const CURL_AUTHORIZATION_BEARER_REGEX = /-H\s+['"]authorization:\s*(Bearer\s+[^'"]+)['"]/i;
-export const CURL_AUTHORIZATION_JSON_REGEX = /"authorization"\s*:\s*"([^"]+)"/i;
-export const CURL_BEARER_TOKEN_REGEX = /(Bearer\s+ya29\.[a-zA-Z0-9_\-]+)/i;
-export const CURL_PROJECT_ID_BODY_REGEX = /"projectId"\s*:\s*"(projects\/)?([^"]+)"/;
-export const CURL_PROJECT_ID_URL_REGEX = /projects\/([^/]+)/;
-export const CURL_CLIENT_SESSION_ID_REGEX = /"clientSessionId"\s*:\s*"([^"]+)"/i;
-export const CURL_SESSION_ID_REGEX = /"sessionId"\s*:\s*"([^"]+)"/i;
-export const CURL_RECAPTCHA_TOKEN_REGEX = /"token"\s*:\s*"([^"]+)"/i;
-export const CURL_AGENT_SESSION_ID_REGEX = /"agentSessionId"\s*:\s*"([^"]+)"/i;
 
 export const BASE64_IMAGE_MIME_REGEX = /^data:image\/([a-zA-Z0-9+]+);base64,([\s\S]+)$/;
 export const BASE64_VIDEO_MIME_REGEX = /^data:video\/([a-zA-Z0-9+]+);base64,([\s\S]+)$/;
@@ -39,15 +25,9 @@ export const AUDIO_CLEAN_PREFIX_REGEX = /^(Dưới đây là|Đây là|Tuyệt v
 export const AUDIO_CLEAN_MARKDOWN_REGEX = /[\*\#\_\-\[\]\(\)]/g;
 export const AUDIO_CLEAN_EMOJI_REGEX =
   /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
-export const FILE_EXTENSION_REGEX = /\.[^/.]+$/;
 export const WHITESPACE_REGEX = /\s+/g;
 export const VIETNAMESE_VALID_CHARS_REGEX = /[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g;
 export const PROMPT_NUMBERING_PREFIX_REGEX = /^\d+[\.\-\s)]+\s*/;
-export const ASPECT_RATIO_PARAM_REGEX = /\s*--ar\s+\d+:\d+/gi;
-
-export const IMAGE_GEN_VIDEO_SECTION_REGEX = /(tạo video|video generation|video)/i;
-export const IMAGE_GEN_IMAGE_SECTION_REGEX = /(tạo hình ảnh|image generation|image)/i;
-export const IMAGE_GEN_SAVE_BTN_REGEX = /^(Lưu|Save)$/i;
 
 export const IMAGE_GEN_IMAGEN_EXACT_REGEX = /(imagen|banana pro)/i;
 export const IMAGE_GEN_IMAGEN_FALLBACK_REGEX = /(imagen|banana pro|banana)/i;
@@ -63,10 +43,6 @@ export const GEMINI_MODEL_FLASH_LITE_REGEX = /\b3\.5\s+Flash[\s-]*Lite\b/i;
 
 export const JSON_CLEANUP_CURLY_REGEX = /,\s*}/g;
 export const JSON_CLEANUP_SQUARE_REGEX = /,\s*]/g;
-
-export const URL_ENCODED_COMMA_REGEX = /%2C/g;
-export const URL_ENCODED_PLUS_REGEX = /\+/g;
-export const URL_ENCODED_LITERAL_COMMA_REGEX = /,/g;
 export const ALPHANUMERIC_ONLY_REGEX = /[^a-z0-9]/g;
 export const SINGLE_QUOTE_REGEX = /'/g;
 

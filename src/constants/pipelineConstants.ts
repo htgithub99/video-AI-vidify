@@ -69,14 +69,3 @@ export const PipelineConstants = {
     STEP_FALLBACK: "Bước",
   },
 };
-
-export enum PipelineEnum {
-  STEP_0 = 0,
-  STEP_1 = 1,
-  STEP_2 = 2,
-  STEP_3 = 3,
-  STEP_4 = 4,
-  STEP_5 = 5,
-  STEP_6 = 6,
-  STEP_7 = 7,
-}

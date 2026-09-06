@@ -22,7 +22,7 @@ const normalizeNarrationTokens = (value: string): string[] =>
     ),
   );
 
-export const getNarrationSentenceSimilarity = (first: string, second: string): number => {
+const getNarrationSentenceSimilarity = (first: string, second: string): number => {
   const firstTokens = normalizeNarrationTokens(first);
   const secondTokens = normalizeNarrationTokens(second);
   if (_.lt(_.min([firstTokens.length, secondTokens.length]) || 0, MINIMUM_TOKEN_COUNT)) return 0;

@@ -1,12 +1,12 @@
 import _ from "lodash";
 import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, TextInImageMode, VisualConfig } from "../types";
 
-export enum ConfigIssueSeverity {
+enum ConfigIssueSeverity {
   Warning = "warning",
   Blocking = "blocking",
 }
 
-export enum ConfigIssueCode {
+enum ConfigIssueCode {
   CharacterConsistencyDisabled = "character_consistency_disabled",
   ImageModeVideoSettingsRemoved = "image_mode_video_settings_removed",
   ImageModeVideoEngineReplaced = "image_mode_video_engine_replaced",
@@ -15,7 +15,7 @@ export enum ConfigIssueCode {
   VideoModeRoutedThroughGemini = "video_mode_routed_through_gemini",
 }
 
-export interface ConfigIssue {
+interface ConfigIssue {
   code: ConfigIssueCode;
   severity: ConfigIssueSeverity;
 }

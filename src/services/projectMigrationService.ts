@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { AssetAcceptance, QaStatus, SceneAssetStatus, VideoProject } from "../types";
-export const CURRENT_PROJECT_SCHEMA_VERSION = 4;
+const CURRENT_PROJECT_SCHEMA_VERSION = 4;
 export const migrateVideoProject = (project: VideoProject | null): VideoProject | null => {
   if (!project) return null;
   if (_.toInteger(project.schemaVersion) >= CURRENT_PROJECT_SCHEMA_VERSION) return project;

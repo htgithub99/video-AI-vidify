@@ -36,7 +36,7 @@ const isSafePublicSourceUrl = async (rawUrl: string): Promise<boolean> => {
 
 export type SourceReachabilityChecker = (url: string) => Promise<boolean>;
 
-export const checkSourceReachability: SourceReachabilityChecker = async (url) => {
+const checkSourceReachability: SourceReachabilityChecker = async (url) => {
   if (!(await isSafePublicSourceUrl(url))) return false;
   const request = async (method: "HEAD" | "GET") => {
     const controller = new AbortController();

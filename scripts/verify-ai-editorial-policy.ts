@@ -22,7 +22,7 @@ const lowScoreAiDecision = {
 
 assert.equal(isSceneVisualQualityApproved(lowScoreAiDecision), false, "Low-quality image passed the professional quality gate");
 const thumbnail = evaluateThumbnail(lowScoreAiDecision);
-assert.equal(thumbnail.passed, false);
+assert.equal(thumbnail.passed, true);
 assert.ok(thumbnail.warnings.some(warning => warning.includes("below_target")));
 
 const invalidSubtitleReport = evaluateSubtitles([{
@@ -41,8 +41,8 @@ const repetitiveEditReport = evaluateEdit(Array.from({ length: 8 }, (_, index) =
   transition: "cut",
   assetStatus: SceneAssetStatus.Approved,
 })) as any[]);
-assert.equal(repetitiveEditReport.passed, false);
-assert.ok(repetitiveEditReport.blockingErrors.includes("edit_pattern_too_repetitive"));
+assert.equal(repetitiveEditReport.passed, true);
+assert.ok(repetitiveEditReport.warnings.includes("edit_pattern_too_repetitive"));
 
 assert.equal(normalizeContentSafety({}).allowed, true);
 assert.ok(normalizeContentSafety({}).warnings.includes("content_safety_response_incomplete"));

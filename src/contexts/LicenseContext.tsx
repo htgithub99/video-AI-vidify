@@ -7,7 +7,7 @@ import { clearBrowserLicenseSession } from "../lib/licenseSession";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 
-export interface LicenseInfo {
+interface LicenseInfo {
   status: LicenseStatus;
   plan_type: string;
   usage: {

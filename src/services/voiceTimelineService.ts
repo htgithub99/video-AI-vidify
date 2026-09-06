@@ -27,13 +27,13 @@ export interface AlignVoiceTimelineOptions {
   signal?: AbortSignal;
 }
 
-export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] =>
+const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] =>
   _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
 
 export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGlobalNarration: boolean): StoryboardScene[] =>
   hasGlobalNarration ? _.map(scenes, (scene) => _.omit(scene, "audioBase64") as StoryboardScene) : scenes;
 
-export const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignment[]): StoryboardScene[] =>
+const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignment[]): StoryboardScene[] =>
   _.map(scenes, (scene) => {
     const alignment = _.find(alignments, (item) => _.isEqual(item.id, scene.id));
     return alignment

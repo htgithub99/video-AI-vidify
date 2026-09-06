@@ -3,7 +3,7 @@ import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG } from "../constant
 import { VideoGenre } from "../constants/enums.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
-export const SCRIPT_QUALITY_THRESHOLDS = {
+const SCRIPT_QUALITY_THRESHOLDS = {
   CONTINUITY: 80,
   FACTUALITY: 85,
   REPETITION: 80,
@@ -25,7 +25,7 @@ export const SCRIPT_QUALITY_THRESHOLDS = {
   HOOK_WEIGHT_FACTUAL_SAFETY: 0.2,
 } as const;
 
-export const SCRIPT_QUALITY_MESSAGES = {
+const SCRIPT_QUALITY_MESSAGES = {
   MISSING_OR_EMPTY: "script_missing_or_empty",
   DURATION_OUT_OF_TARGET: "script_duration_out_of_target",
   CONTINUITY_BELOW_TARGET: "script_continuity_below_target",

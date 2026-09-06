@@ -6,7 +6,7 @@ export interface QualityProfile {
   upscale: "key_only" | "approved" | "all_approved";
 }
 
-export const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
+const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
   [QualityMode.Economy]: { draftCandidates: 1, upscale: "key_only" },
   [QualityMode.Balanced]: { draftCandidates: 1, upscale: "key_only" },
   [QualityMode.Premium]: { draftCandidates: 1, upscale: "all_approved" },

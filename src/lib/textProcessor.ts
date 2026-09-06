@@ -16,57 +16,6 @@ import {
 } from "../constants/index.js";
 import _ from "lodash";
 
-export const smartChunkScript = (
-  script: string,
-  maxChunkSize: number = TEXT_PROCESSOR_CONFIGS.MAX_CHUNK_SIZE,
-  minChunkSize: number = TEXT_PROCESSOR_CONFIGS.MIN_CHUNK_SIZE,
-): string[] => {
-  if (_.isEmpty(_.trim(script))) return [];
-  if (_.lte(script.length, maxChunkSize)) return [_.trim(script)];
-
-  const chunks: string[] = [];
-  let currentIdx = 0;
-
-  while (_.lt(currentIdx, script.length)) {
-    let endIdx = _.add(currentIdx, maxChunkSize);
-
-    if (_.gte(endIdx, script.length)) {
-      const finalChunk = _.trim(script.slice(currentIdx));
-      if (!_.isEmpty(finalChunk)) chunks.push(finalChunk);
-      break;
-    }
-
-    let cutPoint = endIdx;
-    let foundBoundary = false;
-
-    for (let i = endIdx; _.gt(i, _.add(currentIdx, minChunkSize)); i--) {
-      if (_.includes(boundaries, script[i])) {
-        cutPoint = _.add(i, 1);
-        foundBoundary = true;
-        break;
-      }
-    }
-
-    if (_.eq(foundBoundary, false)) {
-      for (let i = endIdx; _.gt(i, currentIdx); i--) {
-        if (_.eq(script[i], " ")) {
-          cutPoint = i;
-          break;
-        }
-      }
-    }
-
-    const chunkVal = _.trim(script.slice(currentIdx, cutPoint));
-    if (!_.isEmpty(chunkVal)) {
-      chunks.push(chunkVal);
-    }
-
-    currentIdx = cutPoint;
-  }
-
-  return chunks;
-};
-
 export const smartSplitSentences = (text: string): string[] => {
   if (_.isEmpty(text)) return [];
   const sentences: string[] = [];
@@ -151,3 +100,4 @@ export const splitSentenceSafely = (sent: string, maxWords: number = TEXT_PROCES
   const part2 = _.join(_.slice(words, mid), SPACE_CHAR);
   return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
 };
+

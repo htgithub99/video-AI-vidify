@@ -1,4 +1,3 @@
-import fs from "fs";
 import { Page } from "playwright";
 import { chromium } from "playwright-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
@@ -8,14 +7,8 @@ import _ from "lodash";
 
 chromium.use(stealthPlugin());
 
-export let globalPlaywrightPage: Page | null = null;
-export let globalBearerToken: string | null = null;
-
-export const ensureDirectoryExists = (dir: string): void => {
-  if (_.eq(fs.existsSync(dir), false)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
+let globalPlaywrightPage: Page | null = null;
+let globalBearerToken: string | null = null;
 
 export async function initPlaywright() {
   if (!_.isNil(globalPlaywrightPage)) {

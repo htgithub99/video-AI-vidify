@@ -43,7 +43,6 @@ const CHILD_VOICE_PRESET = "preset-vi-kid";
 const EMPTY_TIME = "00:00";
 const TIME_PADDING_LENGTH = 2;
 const SECONDS_PER_MINUTE = 60;
-const DEFAULT_TARGET_DURATION_SECONDS = 15;
 
 const isEmptyProjectValue = (value: unknown): boolean =>
   _.includes([undefined, null, REFACTOR_CONSTANTS.VD_EMPTY_STRING], value) || (_.isArray(value) && _.isEmpty(value)) || (_.isObject(value) && _.isEmpty(value));
@@ -73,7 +72,6 @@ export const safeResponseJson = async (response: Response, fallback: any): Promi
   }
 };
 
-export const getTargetDurationSeconds = (): number => DEFAULT_TARGET_DURATION_SECONDS;
 
 export const fetchSystemApi = async (url: string, payload?: RequestPayload | null, customHeaders?: RequestHeaders): Promise<Response> => {
   const headers = createAuthenticatedHeaders(
@@ -119,3 +117,5 @@ export const isProjectContentEqual = (firstProject: any, secondProject: any): bo
     return _.isEqual(firstValue, secondValue) || (isEmptyProjectValue(firstValue) && isEmptyProjectValue(secondValue));
   });
 };
+
+

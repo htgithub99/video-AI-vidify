@@ -1,5 +1,5 @@
 import { cn } from "../../lib/utils";
-import { ChevronDown, Clapperboard, Clock, Film, Globe, Layers3, Sparkles } from "lucide-react";
+import { ChevronDown, Clapperboard, Clock, Globe } from "lucide-react";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../../types";
 import { CINEMATIC_SETUP_TEXTS, UI_COMMON_TEXTS } from "../../constants/texts";
 import ChatPlanningSettingsBlock from "../common/ChatPlanningSettingsBlock";
@@ -19,10 +19,6 @@ interface Props {
   setLanguage: (value: ProjectLanguage) => void;
   duration: string;
   setDuration: (value: string) => void;
-  seriesMode: "single" | "series";
-  setSeriesMode: (value: "single" | "series") => void;
-  episodeCount: number;
-  setEpisodeCount: (value: number) => void;
   planningFallbackProvider: AiPlanningFallbackProvider;
   setPlanningFallbackProvider: (value: AiPlanningFallbackProvider) => void;
   planningChatModel: AiPlanningChatModel;
@@ -41,10 +37,6 @@ export default function CinematicFilmSetupSection({
   setLanguage,
   duration,
   setDuration,
-  seriesMode,
-  setSeriesMode,
-  episodeCount,
-  setEpisodeCount,
   planningFallbackProvider,
   setPlanningFallbackProvider,
   planningChatModel,
@@ -91,42 +83,7 @@ export default function CinematicFilmSetupSection({
         />
       </div>
 
-      <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
-        <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.FORMAT_LABEL}>
-            {texts.FORMAT_LABEL}
-          </span>
-          <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.FORMAT_LABEL}>
-            <Film className={cn("w-3.5 h-3.5 text-amber-400 mr-2 shrink-0")} />
-            <select
-              value={seriesMode}
-              onChange={(event) => setSeriesMode(event.target.value as "single" | "series")}
-              className={cn(SELECT_BASE_CLASSNAME)}>
-              <option value="single" className={cn("bg-slate-955 text-slate-200")}>{texts.SINGLE_EPISODE}</option>
-              <option value="series" className={cn("bg-slate-955 text-slate-200")}>{texts.SERIES_EPISODE}</option>
-            </select>
-            <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-          </div>
-        </div>
-
-        <div className={cn("space-y-1.5 min-w-0")}>
-          <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.EPISODES_LABEL}>
-            {texts.EPISODES_LABEL}
-          </span>
-          <div className={cn(FIELD_BASE_CLASSNAME, seriesMode === "single" && "opacity-40")} title={texts.EPISODES_LABEL}>
-            <Layers3 className={cn("w-3.5 h-3.5 text-rose-400 mr-2 shrink-0")} />
-            <input
-              type="number"
-              min={1}
-              max={24}
-              disabled={seriesMode === "single"}
-              value={seriesMode === "single" ? 1 : episodeCount}
-              onChange={(event) => setEpisodeCount(Math.max(2, Math.min(24, Number(event.target.value))))}
-              className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none disabled:text-slate-500 disabled:cursor-not-allowed")}
-            />
-          </div>
-        </div>
-
+      <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3")}>
         <div className={cn("space-y-1.5 min-w-0")}>
           <span className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block truncate")} title={texts.LANGUAGE_LABEL}>
             {texts.LANGUAGE_LABEL}
@@ -157,9 +114,10 @@ export default function CinematicFilmSetupSection({
               <option value="1 minute" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.ONE_MIN}</option>
               <option value="2 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TWO_MIN}</option>
               <option value="3 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.THREE_MIN}</option>
-              <option value="3-5 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.THREE_FIVE_MIN}</option>
-              <option value="5-10 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.FIVE_TEN_MIN}</option>
-              <option value="10-15 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TEN_FIFTEEN_MIN}</option>
+              <option value="5 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "5 phút" : "5 minutes"}</option>
+              <option value="8 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "8 phút" : "8 minutes"}</option>
+              <option value="10 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "10 phút" : "10 minutes"}</option>
+              <option value="15 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "15 phút" : "15 minutes"}</option>
             </select>
             <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
@@ -176,16 +134,14 @@ export default function CinematicFilmSetupSection({
         chromeHeadless={planningChromeHeadless}
         onChromeHeadlessChange={setPlanningChromeHeadless}
         currentLang={currentLang}
+        allowHybrid={false}
+        title={currentLang === "vi" ? "AI viết và đạo diễn" : "AI writer and director"}
+        note={
+          _.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)
+            ? texts.PLANNING_API_NOTE
+            : texts.PLANNING_ROOM_NOTE
+        }
       />
-
-      {seriesMode === "series" && (
-        <div
-          className={cn("rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-center gap-2 min-w-0")}
-          title={texts.SERIES_NOTICE(episodeCount)}>
-          <Sparkles className={cn("w-4 h-4 text-amber-400 shrink-0")} />
-          <span className={cn("truncate")}>{texts.SERIES_NOTICE(episodeCount)}</span>
-        </div>
-      )}
     </div>
   );
 }

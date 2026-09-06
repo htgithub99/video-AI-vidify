@@ -494,6 +494,7 @@ export const ROUTER_PATHS = {
   VALIDATE_FINAL_VIDEO: "/validate-final-video",
   ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips",
   REPAIR_VIDEO_PROMPT: "/repair-video-prompt",
+  REPAIR_VISUAL_PROMPT: "/repair-visual-prompt",
   EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame",
   REFERENCE_ASSETS: "/reference-assets/:projectId/:group",
   REFERENCE_AUDIO: "/reference-audio/:projectId",

@@ -8,7 +8,7 @@ export const SCENE_VISUAL_QUALITY_CONFIG = {
   TECHNICAL_ANATOMY_SCORE: 82,
   TECHNICAL_SUBJECT_COUNT_SCORE: 82,
   SEVERE_ALIGNMENT_SCORE: 70,
-  MAX_REGENERATION_ATTEMPTS: 2,
+  MAX_REGENERATION_ATTEMPTS: 1,
   SCORE_FIELDS: ["anatomy", "subjectCount", "narrativeAlignment", "environmentRelevance", "characterConsistency", "composition", "styleConsistency", "editability"],
 } as const;
 
@@ -79,12 +79,9 @@ export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boole
 export const getSceneVisualRegenerationReasons = (quality: SceneVisualQuality, textAllowed: boolean = false): string[] =>
   _.uniq(
     _.compact([
-      quality.anatomy < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_ANATOMY_SCORE && "invalid_anatomy_or_extra_limbs",
-      quality.subjectCount < SCENE_VISUAL_QUALITY_CONFIG.TECHNICAL_SUBJECT_COUNT_SCORE && "wrong_or_duplicated_subject_count",
       quality.duplicatedSubjects && "duplicated_primary_subjects",
       quality.multiPanelLayout && "unwanted_multi_panel_layout",
       quality.unwantedText && !textAllowed && "unwanted_readable_text",
-      quality.narrativeAlignment! < SCENE_VISUAL_QUALITY_CONFIG.SEVERE_ALIGNMENT_SCORE && "material_narrative_mismatch",
       !quality.usableForVideo && "image_not_usable_for_video",
       ..._.filter(quality.blockingErrors, (error) => TECHNICAL_DEFECT_PATTERN.test(error)),
     ]),
@@ -92,13 +89,6 @@ export const getSceneVisualRegenerationReasons = (quality: SceneVisualQuality, t
 
 export const shouldRegenerateSceneImage = (quality: SceneVisualQuality, textAllowed: boolean = false): boolean =>
   !_.isEmpty(getSceneVisualRegenerationReasons(quality, textAllowed));
-
-export const createTechnicalQaRegenerationPrompt = (prompt: string, reasons: string[]): string => {
-  const correction = `Fresh regeneration of the same exact scene; preserve all story, character, style, camera and composition requirements while correcting only these detected technical defects: ${_.join(reasons, ", ")}. Produce one coherent single-frame image with natural complete anatomy and exactly the requested primary subjects.`;
-  const aspectMatch = prompt.match(/\s+--ar\s+[^\s]+\s*$/i);
-  if (!aspectMatch || aspectMatch.index === undefined) return `${_.trim(prompt)} ${correction}`;
-  return `${_.trim(prompt.slice(0, aspectMatch.index))} ${correction}${aspectMatch[0]}`;
-};
 
 export const validateSceneImage = async (
   projectId: string,

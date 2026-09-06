@@ -5,6 +5,8 @@ import { Zap, X, Activity, Play } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { Lang } from "../../lib/lang";
+import { AppLanguage } from "../../constants/enums";
 
 interface ActionPanelSectionProps {
   scriptContent: string;
@@ -17,6 +19,10 @@ interface ActionPanelSectionProps {
   canContinue: boolean;
   cancelPipeline: () => void;
   T: ReturnType<typeof getAutoVideoTexts>;
+  cinematicMode?: boolean;
+  currentLang?: Lang;
+  estimatedClipCount?: number;
+  estimatedBatchCount?: number;
 }
 
 export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
@@ -30,8 +36,17 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
   canContinue,
   cancelPipeline,
   T,
+  cinematicMode = false,
+  currentLang = "vi",
+  estimatedClipCount = 0,
+  estimatedBatchCount = 0,
 }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
+  const isVi = _.isEqual(currentLang, AppLanguage.VI) || _.isEqual(currentLang, "vi") || _.startsWith(_.toLower(_.toString(currentLang)), "vi");
+  const cinematicPhaseIndex = stepProgress <= 20 ? 1 : stepProgress <= 45 ? 2 : stepProgress <= 75 ? 3 : stepProgress <= 90 ? 4 : 5;
+  const cinematicPhaseLabels = isVi
+    ? ["Kịch bản & nhân vật", "Phân cảnh & câu lệnh", "Tạo clip", "Chọn cảnh & dựng phim", "Kết xuất & hoàn tất"]
+    : ["Script & characters", "Storyboard & prompts", "Generate clips", "Select takes & edit", "Render & finish"];
 
   return (
     <div
@@ -109,7 +124,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
           <div className={cn("flex justify-between items-center text-xs font-mono font-bold")}>
             <span className={cn("text-amber-400 flex items-center gap-1.5 font-bold")}>
               <Activity className={cn("w-3.5 h-3.5 text-amber-400", { "animate-spin": isProcessing })} />
-              {T.progressNodeLabel} [{currentStepIndex}/4]
+              {cinematicMode ? `${cinematicPhaseLabels[cinematicPhaseIndex - 1]} [${cinematicPhaseIndex}/5]` : `${T.progressNodeLabel} [${currentStepIndex}/4]`}
             </span>
             <span className={cn("text-emerald-400 font-black tracking-wider text-sm")}>{stepProgress}%</span>
           </div>
@@ -119,6 +134,15 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
               style={{ width: `${stepProgress}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {cinematicMode && !isProcessing && (
+        <div className={cn("relative z-10 rounded-2xl border border-slate-800/90 bg-slate-955/70 px-3.5 py-3 text-left text-[11px] text-slate-300")}>
+          <span className={cn("font-bold text-amber-400")}>{isVi ? "Dự toán:" : "Estimate:"}</span>{" "}
+          {isVi
+            ? `${estimatedClipCount} clip · ${estimatedBatchCount} đợt câu lệnh · tối đa 2 Room song song`
+            : `${estimatedClipCount} clips · ${estimatedBatchCount} prompt batches · up to 2 parallel Rooms`}
         </div>
       )}
     </div>

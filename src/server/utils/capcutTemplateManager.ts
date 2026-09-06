@@ -15,7 +15,7 @@ export interface CapcutTemplate {
   filePath: string;
 }
 
-export function getTemplatesDirectory(): string {
+function getTemplatesDirectory(): string {
   const dataDir = getDataDirectory();
   const templatesDir = path.join(dataDir, TEMPLATE_CONFIG.DIR_NAME);
   if (!fs.existsSync(templatesDir)) {

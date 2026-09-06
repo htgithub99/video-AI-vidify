@@ -348,7 +348,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
   },
 };
 
-export const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
+const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
 
 export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
   [VideoGenre.CINEMATIC_EPISODE]: ["cinematic_photoreal", "fantasy_concept_art", "tien_hiep_3d"],

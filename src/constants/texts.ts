@@ -66,21 +66,6 @@ export const APP_TEXTS = {
   },
 };
 
-export const SCENE_SPLIT_PROMPTS = {
-  VN: {
-    DEFAULT_SCRIPT: (idx: number) => `Chi tiết cốt truyện hấp dẫn phần ${idx} tiếp nối mạch truyện đầy lôi cuốn.`,
-    EFFECTS: (style: string) => `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${style}`,
-    PROMPT: (context: string, style: string, aspectRatio: string) =>
-      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
-  },
-  EN: {
-    DEFAULT_SCRIPT: (idx: number) => `Interesting plot detail part ${idx} continuing the engaging narrative.`,
-    EFFECTS: (style: string) => `Soft light leaks overlays adhering to ${style} feel`,
-    PROMPT: (context: string, style: string, aspectRatio: string) =>
-      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
-  },
-};
-
 export const HTTP_METHODS = { PUT: "PUT", POST: "POST", GET: "GET", DELETE: "DELETE" };
 
 export const CONTENT_TYPES = { JSON: "application/json", NDJSON: "application/x-ndjson", JPEG: "image/jpeg" };
@@ -245,27 +230,6 @@ export const DEFAULT_PROJECT_CONFIGS = {
   VISUAL_QUALITY: "Standard",
 } as const;
 
-export const EXPORT_LOADING_TEXTS = {
-  vi: {
-    VIDEO_TITLE: "Đang kết xuất Video...",
-    VIDEO_DESC: "Vui lòng chờ trong giây lát, tiến trình này có thể mất chút thời gian...",
-    CAPCUT_TITLE: "Đang xuất CapCut...",
-    XML_TITLE: "Đang xuất cấu trúc XML...",
-    ZIP_TITLE: "Đang đóng gói ZIP...",
-    SRT_TITLE: "Đang xuất SRT...",
-  },
-  en: {
-    VIDEO_TITLE: "Rendering Video...",
-    VIDEO_DESC: "Please wait a moment, this process may take some time...",
-    CAPCUT_TITLE: "Exporting CapCut...",
-    XML_TITLE: "Exporting XML structure...",
-    ZIP_TITLE: "Packaging ZIP...",
-    SRT_TITLE: "Exporting SRT...",
-  },
-} as const;
-
-export const EXPORT_URLS = { DEFAULT_S3_BUCKET: "https://s3.amazonaws.com/your-bucket" } as const;
-
 export const EXTERNAL_AUDIO_TEXTS = {
   LOG_ACTION: "handleProcessExternalAudio",
   LOG_ERROR_KEY: "EXTERNAL_AUDIO_ALIGN_FAILED",
@@ -344,29 +308,6 @@ export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
 - Keep a clean, artistic, thought-provoking focus.`,
 };
 
-export const VOICE_OPTIMIZATION_TEXTS = {
-  vi: {
-    LAZY_ALIGN_START: "[Lazy Alignment] Đã đồng bộ ước lượng theo từ khóa (Thời lượng: {totalDuration}s)\n",
-    LAZY_ALIGN_ITEM: "- Cảnh {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
-    ALIGN_ERROR: "Lỗi lấy dữ liệu align từ Whisper",
-    SYNC_WHISPER_WAIT: "Đang đồng bộ Whisper và phân đoạn voice... Vui lòng đợi trong giây lát.",
-    SYNC_WHISPER_ERROR: "Lỗi đồng bộ giọng nói với Whisper",
-    PREPARE_ZIP: "Đang chuẩn bị gói dự án...",
-    ZIP_GEN_ERROR: "Lỗi đóng gói file ZIP.",
-  },
-  en: {
-    LAZY_ALIGN_START: "[Lazy Alignment] Synchronized estimated word-proportion duration (Duration: {totalDuration}s)\n",
-    LAZY_ALIGN_ITEM: "- Scene {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
-    ALIGN_ERROR: "Failed to retrieve alignment data from Whisper",
-    SYNC_WHISPER_WAIT: "Aligning voice with Whisper and segmenting... Please wait a moment.",
-    SYNC_WHISPER_ERROR: "Failed to align voice with Whisper",
-    PREPARE_ZIP: "Preparing project bundle...",
-    ZIP_GEN_ERROR: "Failed to generate ZIP project bundle.",
-  },
-} as const;
-
-export const LLM_CONFIG = { DEFAULT_MAX_RETRIES: 2, RETRY_DELAY_BASE: 1000, BATCH_WAIT_DELAY: 1500, DEFAULT_MAX_CHUNK_SIZE: 1300, DEFAULT_MIN_CHUNK_SIZE: 900 } as const;
-
 export const VITE_HMR_LOGS = {
   vi: {
     SERVER_CONNECTION_LOST: "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
@@ -384,8 +325,6 @@ export const VITE_HMR_LOGS = {
   },
 } as const;
 
-export const DEFAULT_AUDIO_ORDER_LIST = "intro, voice, outro";
-
 export const LOG_LEVEL_SYMBOLS = { INFO: "ℹ️", SUCCESS: "✅", WARN: "⚠️", ERROR: "❌" };
 
 export const PIPELINE_STEP5_TEXTS = {
@@ -397,47 +336,6 @@ export const PIPELINE_STEP5_TEXTS = {
   en: {
     VIDEO_ZIP_NAME: "independent_video_list.zip",
     IMAGE_ZIP_NAME: "independent_image_list.zip",
-  },
-} as const;
-
-export const PIPELINE_STEP6_TEXTS = { STDOUT_STDERR: "STDOUT / STDERR" } as const;
-
-export const LOG_KEYWORDS = { SUCCESS: "SUCCESS", ERROR: "ERROR" } as const;
-
-export const SETTINGS_TEXTS = {
-  vi: {
-    TITLE: "Cài đặt chung",
-    DESC: "Cấu hình API Keys và thông số kết nối Cổng Vẽ AI tại đây",
-    SANDBOX_TITLE: "Cổng Vẽ AI (Sandbox)",
-    MODAL_TITLE_CLEAR: "Xác nhận xóa dữ liệu",
-    MODAL_WARN_CLEAR: "Cảnh báo xóa dữ liệu",
-    MODAL_DESC_CLEAR_PREFIX: "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu cấu hình ",
-    MODAL_DESC_CLEAR_SUFFIX: " không?",
-    MODAL_IRREVERSIBLE: "Hành động này không thể hoàn tác.",
-    CANCEL: "Hủy bỏ",
-    CONFIRM_CLEAR: "Đồng ý xóa",
-    API_KEYS_LBL: "Khóa API",
-    SANDBOX_LBL: "Cổng Vẽ AI (Sandbox)",
-    SSE_MODE: "SSE Stream",
-    BATCH_MODE: "Batch",
-    CLEAR_BTN: "Xóa",
-  },
-  en: {
-    TITLE: "General Settings",
-    DESC: "Manage API keys and AI Drawing Port Sandbox configuration",
-    SANDBOX_TITLE: "AI Drawing Port (Sandbox)",
-    MODAL_TITLE_CLEAR: "Confirm clear data",
-    MODAL_WARN_CLEAR: "Clear data warning",
-    MODAL_DESC_CLEAR_PREFIX: "Are you sure you want to clear all ",
-    MODAL_DESC_CLEAR_SUFFIX: " configuration data?",
-    MODAL_IRREVERSIBLE: "This action cannot be undone.",
-    CANCEL: "Cancel",
-    CONFIRM_CLEAR: "Confirm Clear",
-    API_KEYS_LBL: "API Keys",
-    SANDBOX_LBL: "AI Drawing Port (Sandbox)",
-    SSE_MODE: "SSE Stream",
-    BATCH_MODE: "Batch",
-    CLEAR_BTN: "Clear",
   },
 } as const;
 
@@ -497,8 +395,6 @@ export const PIPELINE_STEP2_TEXTS = {
   },
 } as const;
 
-export const CURL_KEYWORDS = { STREAM_AGENT: "flowCreationAgent:streamChat", STREAM: "streamChat", NARWHAL: "NARWHAL" } as const;
-
 export const SIDEBAR_TEXTS = {
   vi: {
     DASHBOARD: "Tổng quan",
@@ -512,6 +408,7 @@ export const SIDEBAR_TEXTS = {
     NO_PROJECT_ACTIVE: "Chưa mở dự án",
     EXPAND: "Mở rộng",
     COLLAPSE: "Thu gọn",
+    CLOSE_MENU: "Đóng menu",
   },
   en: {
     DASHBOARD: "Dashboard",
@@ -525,6 +422,7 @@ export const SIDEBAR_TEXTS = {
     NO_PROJECT_ACTIVE: "No project active",
     EXPAND: "Expand",
     COLLAPSE: "Collapse",
+    CLOSE_MENU: "Close menu",
   },
 } as const;
 
@@ -605,99 +503,6 @@ export const PROJECT_LIST_CONSTANTS = {
   PAGINATION_DELIMITER: "/",
   DASH_DELIMITER: "-",
 } as const;
-
-export const INPUT_MODES = { ZIP: "zip", SPLIT: "split", CURRENT: "current" } as const;
-
-export const FOLDER_TYPES = { PARENT: "parent", SFX: "sfx", IMAGES: "images", VOICES: "voices", VIDEO_OUTPUT: "video_output" } as const;
-
-export const PIPELINE_STEP6_UI_TEXTS = {
-  TITLE_TEMPLATE: "Dự Án Mẫu",
-  TOOLTIP_TEMPLATE: "Chọn một dự án CapCut mẫu để áp dụng cấu trúc",
-  NO_TEMPLATE: "Chưa có mẫu nào. Hãy tải lên!",
-  BTN_UPLOAD: "Tải mẫu",
-  TITLE_MEDIA: "Nguồn Media",
-  TOOLTIP_MEDIA: "Nguồn chứa hình ảnh và âm thanh",
-  BTN_MODE_ZIP: "Chung (ZIP)",
-  BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
-  BTN_MODE_SPLIT: "Tách riêng",
-  BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh",
-  BTN_MODE_CURRENT: "Dự án hiện tại",
-  BTN_MODE_CURRENT_TOOLTIP: "Sử dụng hình ảnh và âm thanh từ dự án đang mở",
-  PLACEHOLDER_ZIP: "Đường dẫn thư mục hoặc File ZIP...",
-  PLACEHOLDER_IMAGES: "Thư mục Hình ảnh...",
-  PLACEHOLDER_VOICES: "Thư mục Âm thanh...",
-  TITLE_MOTION: "Hiệu ứng",
-  TOOLTIP_MOTION: "Hiệu ứng chuyển động của camera và hình ảnh",
-  TITLE_TRANSITION: "Chuyển tiếp",
-  TOOLTIP_TRANSITION: "Hiệu ứng chuyển tiếp giữa các phân cảnh",
-  BTN_AUTO: "Auto Mode (Tự Tạo Mới)",
-  BTN_MANUAL: "Manual (Sửa File Cũ)",
-  BTN_RUN_AUTO: "TỰ ĐỘNG TẠO DỰ ÁN & TỐI ƯU",
-  ERR_SELECT_TEMPLATE: "Vui lòng chọn Dự án Mẫu (Template)!",
-  ERR_SELECT_ZIP: "Vui lòng chọn Thư mục Cha chứa ảnh/audio hoặc File ZIP!",
-  ERR_SELECT_SPLIT: "Vui lòng chọn đủ Thư mục Ảnh và Thư mục Âm Thanh!",
-  LOG_UPLOADING: "Đang tải lên mẫu: ",
-  LOG_UPLOAD_SUCCESS: "Tải lên mẫu thành công!",
-  LOG_UPLOAD_ERROR: "Lỗi tải lên mẫu: ",
-  LOG_SELECT_PARENT: "Đã chọn thư mục cha: ",
-  LOG_SELECT_IMAGES: "Đã chọn thư mục ảnh: ",
-  LOG_SELECT_VOICES: "Đã chọn thư mục audio: ",
-  LOG_ERR_TEMPLATE: "Lỗi tải lên mẫu.",
-  MODAL_TITLE_DELETE: "Xóa mẫu",
-  MODAL_MSG_DELETE: "Bạn có chắc chắn muốn xoá mẫu này không?",
-  MODAL_TITLE_RENAME: "Đổi tên mẫu",
-  MODAL_MSG_RENAME: "Nhập tên mới cho mẫu này:",
-  MODAL_TITLE_UPLOAD: "Tải Mẫu Lên",
-  MODAL_MSG_UPLOAD: "Nhập tên cho mẫu dự án này:",
-  LOG_DELETE_SUCCESS: "Đã xoá mẫu thành công.",
-  LOG_DELETE_ERROR: "Xoá mẫu thất bại.",
-  LOG_RENAME_SUCCESS: "Đã đổi tên mẫu thành công.",
-  LOG_RENAME_ERROR: "Đổi tên mẫu thất bại.",
-  BTN_CONFIRM: "Xác nhận",
-  BTN_CANCEL: "Hủy",
-  TITLE_PROJECT_NAME: "TÊN DỰ ÁN CAPCUT",
-  TOOLTIP_PROJECT_NAME: "Tên dự án CapCut sẽ được sinh ra",
-  PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
-  NO_TEMPLATE_FOUND: "Chưa có mẫu nào",
-  SELECT_TEMPLATE: "Chọn mẫu...",
-  TITLE_EXPORT_VIDEO: "XUẤT VIDEO CAPCUT",
-  TOOLTIP_EXPORT_VIDEO: "Tự động xuất video sau khi tạo dự án CapCut thành công",
-  LABEL_EXPORT_VIDEO: "Tự động xuất video sau khi tạo xong",
-  TITLE_VIDEO_OUTPUT_DIR: "Thư mục lưu video",
-  TOOLTIP_VIDEO_OUTPUT_DIR: "Chọn thư mục để lưu file video xuất ra",
-  PLACEHOLDER_VIDEO_OUTPUT_DIR: "Đường dẫn thư mục lưu video...",
-  LOG_SELECT_VIDEO_OUTPUT: "Đã chọn thư mục xuất video: ",
-  ERR_SELECT_VIDEO_OUTPUT: "Vui lòng chọn thư mục lưu video!",
-  LOG_ERROR_PREFIX: "Lỗi: ",
-  DEFAULT_TEMPLATE_NAME: "Template Mới",
-  ERR_NO_TEMPLATE_NAME: "Vui lòng nhập tên template!",
-  AUTO_GET_MEDIA: "Tự động lấy ảnh và giọng nói từ dự án hiện tại.",
-} as const;
-
-export const PIPELINE_MODAL_TYPES = { CONFIRM: "confirm", PROMPT: "prompt" } as const;
-
-export const COMMON_OPTIONS = { NONE: "none" } as const;
-
-export const MOTION_OPTIONS = [
-  { value: "default", label: "Tự động (Mặc định)" },
-  { value: "tiktok", label: "Tiktok/Reels (Nhanh, thu hút)" },
-  { value: "podcast", label: "Podcast (Tĩnh, nhẹ nhàng)" },
-  { value: "review", label: "Bán hàng (Zoom cận, focus)" },
-  { value: "vlog", label: "Vlog/Du lịch (Đa dạng, lướt nhanh)" },
-  { value: "story", label: "Kể chuyện (Chậm rãi, huyền bí)" },
-  { value: "news", label: "Tin tức (Trang trọng, đều đặn)" },
-] as const;
-
-export const TRANSITION_OPTIONS = [
-  { value: "default", label: "Tự động (Mặc định)" },
-  { value: "tiktok", label: "Tiktok/Reels (Chớp nháy, cuộn)" },
-  { value: "podcast", label: "Podcast (Làm mờ mềm mại)" },
-  { value: "review", label: "Bán hàng (Trượt ngang, lật)" },
-  { value: "vlog", label: "Vlog/Du lịch (Xoay lốc, mờ ảo)" },
-  { value: "story", label: "Kể chuyện (Tan biến, bóng đen)" },
-  { value: "news", label: "Tin tức (Đẩy cảnh cơ bản)" },
-  { value: "none", label: "Không sử dụng", customClass: "text-rose-400" },
-] as const;
 
 export const URL_CONSTANTS = { IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"], ID_PARAMS: ["id", "docid", "name"] } as const;
 
@@ -930,6 +735,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
       `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng 3 tab dự phòng.`,
     logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
       `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
+    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") =>
+      `🎨 Đang thử lại ${mediaType === "video" ? "clip video" : "ảnh"} ${current}/${total}.`,
     logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
       `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
     startBtnProcessing: "Đang Tạo Video...",
@@ -1149,6 +956,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
       `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
     logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
       `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
+    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") =>
+      `🎨 Retrying fallback ${mediaType === "video" ? "video clip" : "image"} ${current}/${total}.`,
     logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
       `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
     startBtnProcessing: "Creating Video...",
@@ -1301,6 +1110,25 @@ export const VOICE_DIALOG_TEXTS = {
     favoriteTooltip: "Favorite",
   },
 } as const;
+
+export const VOICE_DIALOG_LANGUAGE_LABELS: Record<string, Record<"vi" | "en", string>> = {
+  "": { vi: "Tất cả", en: "All" },
+  en: { vi: "Tiếng Anh", en: "English" },
+  vi: { vi: "Tiếng Việt", en: "Vietnamese" },
+  fr: { vi: "Tiếng Pháp", en: "French" },
+  de: { vi: "Tiếng Đức", en: "German" },
+  es: { vi: "Tiếng Tây Ban Nha", en: "Spanish" },
+  ja: { vi: "Tiếng Nhật", en: "Japanese" },
+  ko: { vi: "Tiếng Hàn", en: "Korean" },
+  zh: { vi: "Tiếng Trung", en: "Chinese" },
+};
+
+export const VOICE_DIALOG_AGE_LABELS: Record<string, Record<"vi" | "en", string>> = {
+  "": { vi: "Tất cả", en: "All" },
+  young: { vi: "Trẻ tuổi", en: "Young" },
+  middle_aged: { vi: "Trung niên", en: "Middle Aged" },
+  old: { vi: "Cao tuổi", en: "Elderly" },
+};
 
 export const PIPELINE_STEP4_SHORT_TEXTS = {
   vi: {
@@ -1603,10 +1431,12 @@ export const CINEMATIC_SETUP_TEXTS = {
     PLANNING_MODEL_LABEL: "Mô hình",
     CHAT_CONFIG_TITLE: "AI Dự phòng",
     CHAT_CONFIG_NOTE: "Chọn nguồn lập kế hoạch, dịch vụ AI, mô hình và chế độ Chrome.",
+    PLANNING_ROOM_NOTE: "Toàn bộ nội dung sáng tạo chạy trong Room đã chọn.",
+    PLANNING_API_NOTE: "Toàn bộ nội dung sáng tạo chạy trực tiếp qua các API đã cấu hình.",
     PLANNING_MODE_LABEL: "Chế độ dùng",
     PLANNING_ROOM_ONLY: "Trình duyệt",
     PLANNING_HYBRID: "Kết hợp",
-    PLANNING_API_ONLY: "Chỉ API",
+    PLANNING_API_ONLY: "API",
     PLANNING_CHROME_LABEL: "Cửa sổ Chrome",
     PLANNING_CHROME_VISIBLE: "Hiển thị",
     PLANNING_CHROME_HIDDEN: "Chạy ngầm",
@@ -1620,7 +1450,17 @@ export const CINEMATIC_SETUP_TEXTS = {
     CLEAR_ROOM_CONFIRM: "Xóa toàn bộ cuộc trò chuyện {0} khỏi tài khoản? Dữ liệu này không thể khôi phục.",
     CLEAR_ROOM_SUCCESS: "Đã xóa {1} cuộc trò chuyện {0}.",
     CLEAR_ROOM_ERROR: "Chưa thể xóa phòng {0}. Hãy dừng tiến trình đang chạy rồi thử lại.",
-    DISABLED_CHAT_OPTION: "Không dùng",
+    GEMINI_BROWSER: "Trình duyệt Gemini",
+    GROK_BROWSER: "Trình duyệt Grok",
+    CHATGPT_BROWSER: "Trình duyệt ChatGPT",
+    CLEAR_AI_SESSIONS: "Dọn dẹp phiên chat AI",
+    CLEAR_AI_SHORT: "Dọn AI",
+    CLEAR_AI_MENU: "Dọn phiên AI",
+    CLOSE_HIDDEN_TABS: "Đóng tab ẩn",
+    CONFIRM_ROOM_CLEANUP: "Xác nhận xóa phòng chat",
+    CLEAR_ROOM_RESOURCE_NOTICE: "Hành động này sẽ đóng các tab trình duyệt AI và làm mới hoàn toàn phiên làm việc để giải phóng tài nguyên.",
+    CANCEL_FALLBACK: "Hủy",
+    DELETE_NOW_FALLBACK: "Xóa ngay",
     SINGLE_EPISODE: "Phim một tập",
     SERIES_EPISODE: "Loạt phim nhiều tập",
     DURATIONS: {
@@ -1645,10 +1485,12 @@ export const CINEMATIC_SETUP_TEXTS = {
     PLANNING_MODEL_LABEL: "Model",
     CHAT_CONFIG_TITLE: "AI Fallback",
     CHAT_CONFIG_NOTE: "Choose the planning source, AI service, model, and Chrome mode.",
+    PLANNING_ROOM_NOTE: "All creative work runs in the selected Room.",
+    PLANNING_API_NOTE: "All creative work runs directly through the configured APIs.",
     PLANNING_MODE_LABEL: "Use mode",
     PLANNING_ROOM_ONLY: "Browser",
     PLANNING_HYBRID: "Combined",
-    PLANNING_API_ONLY: "API only",
+    PLANNING_API_ONLY: "API",
     PLANNING_CHROME_LABEL: "Chrome window",
     PLANNING_CHROME_VISIBLE: "Visible",
     PLANNING_CHROME_HIDDEN: "Hidden",
@@ -1662,7 +1504,17 @@ export const CINEMATIC_SETUP_TEXTS = {
     CLEAR_ROOM_CONFIRM: "Delete every {0} conversation from the account? This cannot be undone.",
     CLEAR_ROOM_SUCCESS: "Deleted {1} {0} conversations.",
     CLEAR_ROOM_ERROR: "Could not clear {0} rooms. Stop the active run and try again.",
-    DISABLED_CHAT_OPTION: "Disabled",
+    GEMINI_BROWSER: "Gemini browser",
+    GROK_BROWSER: "Grok browser",
+    CHATGPT_BROWSER: "ChatGPT browser",
+    CLEAR_AI_SESSIONS: "Clear AI chat sessions",
+    CLEAR_AI_SHORT: "Clear AI",
+    CLEAR_AI_MENU: "Clear AI",
+    CLOSE_HIDDEN_TABS: "Close tabs",
+    CONFIRM_ROOM_CLEANUP: "Confirm room cleanup",
+    CLEAR_ROOM_RESOURCE_NOTICE: "This action will close AI browser tabs and completely refresh the session to free up resources.",
+    CANCEL_FALLBACK: "Cancel",
+    DELETE_NOW_FALLBACK: "Delete now",
     SINGLE_EPISODE: "Single Movie",
     SERIES_EPISODE: "Mini Series",
     DURATIONS: {

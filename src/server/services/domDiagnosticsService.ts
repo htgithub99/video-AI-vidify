@@ -7,7 +7,7 @@ import { logger } from "../../lib/logger.js";
 import { getDataDirectory } from "../utils/paths.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 
-export interface DomDiagnosticElement {
+interface DomDiagnosticElement {
   tag: string;
   id: string;
   className: string;

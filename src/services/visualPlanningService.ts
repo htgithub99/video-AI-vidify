@@ -10,7 +10,7 @@ const PHYSICAL_ACTION_PATTERN =
 
 const normalizePlanningText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value)))), " ");
 
-export const hasObservablePhysicalAction = (value: unknown): boolean => PHYSICAL_ACTION_PATTERN.test(_.toString(value));
+const hasObservablePhysicalAction = (value: unknown): boolean => PHYSICAL_ACTION_PATTERN.test(_.toString(value));
 
 export const getVisualShotPlanIssues = (source: Partial<StoryboardScene>, baseScene: StoryboardScene): string[] => {
   const issues: string[] = [];

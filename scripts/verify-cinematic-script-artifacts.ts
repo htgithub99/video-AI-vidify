@@ -9,11 +9,14 @@ import {
 import { getCinematicNarrativePlanPrompt, getCinematicStoryBiblePrompt } from "../src/constants/prompts";
 import {
   getCinematicArtifactIssues,
+  getBlockingCinematicArtifactIssues,
   getCinematicNarrativePlanIssues,
   getCinematicStoryBibleIssues,
   createCinematicScriptSourceSignature,
+  getCinematicScreenplayArtifactIssues,
   requestValidCinematicArtifact,
 } from "../src/server/services/cinematicScriptArtifactService";
+import { ProjectLanguage } from "../src/types";
 
 const storyBible = {
   schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
@@ -97,6 +100,38 @@ assert.deepEqual(getCinematicStoryBibleIssues(storyBible), []);
 assert.deepEqual(getCinematicNarrativePlanIssues(narrativePlan, 3, storyBible.artifactId), []);
 assert.ok(getCinematicNarrativePlanIssues({ ...narrativePlan, sourceStoryBibleArtifactId: "wrong" }, 3, storyBible.artifactId).includes("$root.sourceStoryBibleArtifactId:mismatch"));
 
+const screenplayChapters = [
+  { id: "ch_1", title: "One" },
+  { id: "ch_2", title: "Two" },
+];
+const firstScreenplayPartition = Array.from({ length: 38 }, () => "the action").join(" ");
+const secondScreenplayPartition = `${Array.from({ length: 37 }, () => "the action").join(" ")} the action.”`;
+const longButUsableScreenplay = `${firstScreenplayPartition} ${secondScreenplayPartition}`;
+const longButUsableIssues = getCinematicScreenplayArtifactIssues(
+  {
+    scriptSegment: longButUsableScreenplay,
+    sourceNarrativeArtifactId: narrativePlan.artifactId,
+    chapters: [
+      { ...screenplayChapters[0], scriptSegment: firstScreenplayPartition },
+      { ...screenplayChapters[1], scriptSegment: secondScreenplayPartition },
+    ],
+    continuityScore: 90,
+    repetitionScore: 90,
+    factualityScore: 90,
+    emotionalArcScore: 90,
+    conversationalScore: 90,
+    hookPayoffScore: 90,
+    blockingErrors: [],
+    suggestedPatches: [],
+  },
+  screenplayChapters,
+  100,
+  ProjectLanguage.EN,
+  narrativePlan.artifactId,
+);
+assert.equal(longButUsableIssues.some((issue) => issue.includes("word_ratio")), false);
+assert.equal(longButUsableIssues.some((issue) => issue.includes("incomplete_ending")), false);
+
 const artifactOptions = {
   artifactName: "cinematic_story_bible",
   schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.STORY_BIBLE_SCHEMA_VERSION,
@@ -108,8 +143,17 @@ assert.ok(
     issue.includes("completionMarker"),
   ),
 );
+assert.deepEqual(
+  getBlockingCinematicArtifactIssues(
+    JSON.stringify({ ...storyBible, completionMarker: undefined }),
+    { ...storyBible, completionMarker: undefined },
+    artifactOptions,
+  ),
+  [],
+);
 const nonTerminalMarker = { completionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER, ...storyBible, factCheckNotes: "after marker" };
 assert.ok(getCinematicArtifactIssues(JSON.stringify(nonTerminalMarker), nonTerminalMarker, artifactOptions).includes("completion_marker_not_terminal"));
+assert.deepEqual(getBlockingCinematicArtifactIssues(JSON.stringify(nonTerminalMarker), nonTerminalMarker, artifactOptions), []);
 
 const workers: string[] = [];
 let responseIndex = 0;
@@ -144,6 +188,10 @@ assert.deepEqual(transportWorkers, [
 ]);
 assert.ok(recoveredTransportResult.rotationLogs.some((log) => log.includes("room_response_failed:completion_marker_missing")));
 
+const artifactServiceSource = readFileSync(new URL("../src/server/services/cinematicScriptArtifactService.ts", import.meta.url), "utf8");
+assert.match(artifactServiceSource, /AiPlanningExecutionMode\.RoomOnly \? primaryWorkerId/);
+assert.match(artifactServiceSource, /finally[\s\S]*closeCurrentRoomExecution\(primaryWorkerId\)/);
+
 let truncatedAttempt = 0;
 const strictJsonResult = await requestValidCinematicArtifact(
   { contents: "Create story bible", config: {}, task: {} },
@@ -155,7 +203,47 @@ const strictJsonResult = await requestValidCinematicArtifact(
   },
 );
 assert.equal(strictJsonResult.value.artifactId, storyBible.artifactId);
-assert.equal(truncatedAttempt, 2);
+assert.equal(truncatedAttempt, 1);
+
+const screenplayOptions = {
+  artifactName: "cinematic_screenplay",
+  schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCREENPLAY_SCHEMA_VERSION,
+  schema: FINAL_CINEMATIC_SCREENPLAY_RESPONSE_SCHEMA,
+  validate: (value: Record<string, unknown>) =>
+    getCinematicScreenplayArtifactIssues(value, screenplayChapters, 100, ProjectLanguage.EN, narrativePlan.artifactId),
+};
+const editoriallyImperfectButUsable = {
+  scriptSegment: "A complete and usable screenplay is here even though its self-assessment is conservative",
+  chapters: [{ id: "ch_1", title: "Changed title", scriptSegment: "A complete and usable screenplay is here even though its self-assessment is conservative" }],
+  continuityScore: 40,
+  repetitionScore: 50,
+  factualityScore: 60,
+  emotionalArcScore: 45,
+  conversationalScore: 55,
+  hookPayoffScore: 35,
+  blockingErrors: ["the ending could be stronger"],
+};
+let usableAttempt = 0;
+const usableResult = await requestValidCinematicArtifact(
+  { contents: "Create screenplay", config: {}, task: {} },
+  screenplayOptions,
+  async () => {
+    usableAttempt++;
+    return { text: JSON.stringify(editoriallyImperfectButUsable) };
+  },
+);
+assert.equal(usableResult.value.scriptSegment, editoriallyImperfectButUsable.scriptSegment);
+assert.equal(usableAttempt, 1);
+assert.ok(usableResult.rotationLogs.some((log) => log.includes("advisory=")));
+
+assert.deepEqual(
+  getBlockingCinematicArtifactIssues(
+    JSON.stringify({ ...editoriallyImperfectButUsable, scriptSegment: "", chapters: [] }),
+    { ...editoriallyImperfectButUsable, scriptSegment: "", chapters: [] },
+    screenplayOptions,
+  ),
+  ["$root.scriptSegment:empty", "$root.chapters:no_usable_script_segment"],
+);
 
 const baseSourceSignature = createCinematicScriptSourceSignature({ originalInput: "A", genre: "Drama", creativityLevel: 5 });
 assert.equal(baseSourceSignature, createCinematicScriptSourceSignature({ creativityLevel: 5, genre: "Drama", originalInput: "A" }));

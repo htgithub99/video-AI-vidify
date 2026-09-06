@@ -15,5 +15,3 @@ export const STORAGE_KEYS = {
   AUTO_GENERATOR_CONFIG: "auto_generator_config",
   VOICE_DIALOG_FILTERS: "voice_dialog_filters",
 } as const;
-
-export type StorageKeyType = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

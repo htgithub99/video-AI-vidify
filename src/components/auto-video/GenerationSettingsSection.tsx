@@ -7,6 +7,7 @@ import { FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CON
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { Lang } from "../../lib/lang";
 
 interface GenerationSettingsSectionProps {
   generationMode: ImageGenerationMode;
@@ -29,6 +30,7 @@ interface GenerationSettingsSectionProps {
   setVideoDuration: (value: string) => void;
   videoResolution: string;
   setVideoResolution: (value: string) => void;
+  currentLang?: Lang;
 }
 
 const FIELD_BASE_CLASSNAME =
@@ -55,8 +57,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   setVideoDuration,
   videoResolution,
   setVideoResolution,
+  currentLang = "vi",
 }) => {
-  const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
+  const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, currentLang, AUTO_VIDEO_UI_TEXTS.vi);
   const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
   const maxVideosLabel = mediaMixTexts?.maxVideos || uiTexts.maxVideos;
   const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", uiTexts.maxVideosTooltip);
@@ -82,7 +85,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             className={cn(
               "w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20",
             )}>
-            {PIPELINE_STEPS.STEP_3}
+            {forceVideoOnly ? 2 : PIPELINE_STEPS.STEP_3}
           </span>
           <h3
             className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}
@@ -179,7 +182,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           {forceVideoOnly && setChromeHeadless && (
             <div className={cn("space-y-1")}>
-              <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblChromeHeadless}</span>
+              <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
+                {forceVideoOnly ? (currentLang === "vi" ? "Chrome tạo video" : "Video generation Chrome") : T.lblChromeHeadless}
+              </span>
               <div
                 className={cn(FIELD_BASE_CLASSNAME)}
                 title={T.lblChromeHeadlessTooltip}>

@@ -6,7 +6,7 @@ import { FFmpegRenderOptions, renderFFmpegVideo } from "../utils/ffmpegRender.js
 import { LicenseService } from "./licenseService.js";
 import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
 
-export enum JobStatus {
+enum JobStatus {
   PENDING = "pending",
   PROCESSING = "processing",
   COMPLETED = "completed",
@@ -14,7 +14,7 @@ export enum JobStatus {
   CANCELLED = "cancelled",
 }
 
-export interface RenderJob {
+interface RenderJob {
   id: string;
   payload: FFmpegRenderOptions;
   status: JobStatus;

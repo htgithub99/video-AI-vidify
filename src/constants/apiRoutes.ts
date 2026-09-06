@@ -27,10 +27,12 @@ export const API_ROUTES = {
   PIPELINE_GENERATE_BATCH_IMAGES: "/api/pipeline/generate-batch-images",
   PIPELINE_VALIDATE_SCENE_IMAGE: "/api/pipeline/validate-scene-image",
   PIPELINE_REPAIR_VIDEO_PROMPT: "/api/pipeline/repair-video-prompt",
+  PIPELINE_REPAIR_VISUAL_PROMPT: "/api/pipeline/repair-visual-prompt",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
   PIPELINE_CANCEL_ACTIVE_RUN: "/api/pipeline/cancel-active-run",
   PIPELINE_CLEAR_CHAT_ROOMS: "/api/pipeline/clear-chat-rooms",
+  PIPELINE_CLOSE_CHAT_PLANNING_ROOMS: "/api/pipeline/close-chat-planning-rooms",
   PIPELINE_PROJECT_ASSETS: "/api/pipeline/project-assets",
   PIPELINE_REFERENCE_ASSETS: "/api/pipeline/reference-assets",
   PIPELINE_REFERENCE_AUDIO: "/api/pipeline/reference-audio",
@@ -56,8 +58,8 @@ export const EXTERNAL_URLS = {
   FFMPEG_URL: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z",
   PLAYWRIGHT_CDP: "http://127.0.0.1:9222",
   GOOGLE_LABS: "https://labs.google/",
-  GOOGLE_LABS_FLOW_HOME: "https://labs.google/fx/vi/tools/flow",
-  GOOGLE_LABS_FLOW: "https://labs.google/fx/vi/tools/flow/project",
+  GOOGLE_LABS_FLOW_HOME: "https://flow.google.com/",
+  GOOGLE_LABS_FLOW: "https://flow.google.com/project",
   GOOGLE_ACCOUNTS: "https://accounts.google.com",
   GOOGLE_SIGN_IN: "https://accounts.google.com/ServiceLogin?hl=en",
   GOOGLE_LOGOUT: "https://accounts.google.com/Logout",
@@ -116,7 +118,6 @@ export const IMAGES_DIR_NAME = "images";
 export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
-export const UNSPLASH_IMAGE_REGEX = /https:\/\/images\.unsplash\.com\/featured\/800x450\/\?([a-zA-Z0-9%_,\-\+]+)/g;
 
 export const API_HEADERS = {
   AI33_API_KEY: "x-ai33-api-key",
@@ -127,3 +128,5 @@ export const API_HEADERS = {
 } as const;
 
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;
+
+

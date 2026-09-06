@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { StoryboardScene, VisualBible } from "../types";
 
-export const EDITING_POLICY_CONSTANTS = {
+const EDITING_POLICY_CONSTANTS = {
   MOTION_ZOOM_IN: "Zoom In",
   MOTION_ZOOM_OUT: "Zoom Out",
   MOTION_PAN_LEFT: "Pan Left",

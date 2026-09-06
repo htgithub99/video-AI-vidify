@@ -21,7 +21,8 @@ interface PlanningTexts {
   readonly GEMINI_CHAT_OPTION: string;
   readonly GROK_CHAT_OPTION: string;
   readonly CHATGPT_UI_OPTION: string;
-  readonly DISABLED_CHAT_OPTION: string;
+  readonly PLANNING_API_ONLY: string;
+  readonly PLANNING_HYBRID: string;
   readonly PLANNING_CHROME_HIDDEN: string;
   readonly PLANNING_CHROME_VISIBLE: string;
 }
@@ -38,6 +39,7 @@ interface ChatPlanningSettingsBlockProps {
   currentLang?: Lang;
   title?: string;
   note?: string;
+  allowHybrid?: boolean;
 }
 
 const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: PlanningTexts): string => {
@@ -52,7 +54,7 @@ const resolveBadgeSummary = (
   chromeHeadless: boolean,
   texts: PlanningTexts
 ): string => {
-  if (isApiOnly) return texts.DISABLED_CHAT_OPTION;
+  if (isApiOnly) return texts.PLANNING_API_ONLY;
   const name = resolveProviderName(provider, texts);
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return `${name} • ${modeText}`;
@@ -70,6 +72,7 @@ export default function ChatPlanningSettingsBlock({
   currentLang = "vi",
   title,
   note,
+  allowHybrid = true,
 }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
@@ -127,8 +130,8 @@ export default function ChatPlanningSettingsBlock({
             <option value={AiPlanningFallbackProvider.GeminiChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GEMINI_CHAT_OPTION}</option>
             <option value={AiPlanningFallbackProvider.GrokChat} className={cn("bg-slate-955 text-slate-200")}>{texts.GROK_CHAT_OPTION}</option>
             <option value={AiPlanningFallbackProvider.ChatGptUi} className={cn("bg-slate-955 text-slate-200")}>{texts.CHATGPT_UI_OPTION}</option>
-            <option value={AiPlanningExecutionMode.Hybrid} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_HYBRID}</option>
-            <option value={AiPlanningExecutionMode.ApiOnly} className={cn("bg-slate-955 text-slate-400")}>{texts.DISABLED_CHAT_OPTION}</option>
+            {allowHybrid && <option value={AiPlanningExecutionMode.Hybrid} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_HYBRID}</option>}
+            <option value={AiPlanningExecutionMode.ApiOnly} className={cn("bg-slate-955 text-slate-200")}>{texts.PLANNING_API_ONLY}</option>
           </select>
           <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
         </div>
@@ -149,7 +152,9 @@ export default function ChatPlanningSettingsBlock({
           <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
         </div>
 
-        <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_CHROME_LABEL}>
+        <div
+          className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")}
+          title={texts.PLANNING_CHROME_LABEL}>
           <Eye className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
           <select
             disabled={isApiOnly}

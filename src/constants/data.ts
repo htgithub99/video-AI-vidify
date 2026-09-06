@@ -2,220 +2,6 @@ import { SplitStrategy, VideoGenre } from "./enums";
 import { SCRIPT_SPEECH_RATE_CONFIG } from "./config";
 import _ from "lodash";
 
-export interface PipelineNode {
-  id: string;
-  nameVi: string;
-  nameEn: string;
-  stageGroup: number;
-  descVi: string;
-  descEn: string;
-}
-
-export const pipelineNodes = [
-  {
-    id: "In",
-    nameVi: "Đầu Vào",
-    nameEn: "Input Source",
-    stageGroup: 0,
-    descVi: "Thu thập kịch bản thô hoặc ý tưởng ban đầu.",
-    descEn: "Captures raw Original Script or short Story Idea.",
-  },
-  {
-    id: "HKG",
-    nameVi: "Tạo lời dẫn",
-    nameEn: "Hook Generator",
-    stageGroup: 1,
-    descVi: "Thiết kế câu mở đầu, câu giữ chân và kêu gọi hành động.",
-    descEn: "Calculates high click-rate Opening, Retention and CTA hooks.",
-  },
-  {
-    id: "SRW",
-    nameVi: "Viết Lại Kịch Bản",
-    nameEn: "Script Rewriter",
-    stageGroup: 2,
-    descVi: "Viết lại và điều chỉnh độ độc bản của câu chuyện.",
-    descEn: "Rewrites original words to bypass redundant phrases.",
-  },
-  {
-    id: "SEH",
-    nameVi: "Nâng Cấp Văn Phong",
-    nameEn: "Script Enhancer",
-    stageGroup: 2,
-    descVi: "Tối ưu độ trôi chảy và kịch tính hóa hội thoại.",
-    descEn: "Injects flow dramatic triggers and flow patterns.",
-  },
-  {
-    id: "LFE",
-    nameVi: "Mở Rộng Thời Lượng",
-    nameEn: "Long Form Expander",
-    stageGroup: 2,
-    descVi: "Mở rộng cốt truyện lên tới 60 phút bằng cách thêm bối cảnh.",
-    descEn: "Expands script lengths dynamically by adding contextual side stories.",
-  },
-  {
-    id: "FCK",
-    nameVi: "Kiểm Chứng Thực Tế",
-    nameEn: "Fact Checker",
-    stageGroup: 2,
-    descVi: "Rà soát tên riêng, năm, địa danh lịch sử chuẩn xác.",
-    descEn: "Validates factual events, metrics and chronologies.",
-  },
-  {
-    id: "CGT",
-    nameVi: "Thiết lập chương truyện",
-    nameEn: "Chapter Generator",
-    stageGroup: 2,
-    descVi: "Trực quan hóa cấu trúc câu chuyện thành chương mục.",
-    descEn: "Breaks large scripts into core semantic chapters.",
-  },
-  {
-    id: "SGE",
-    nameVi: "Dựng phân cảnh",
-    nameEn: "Storyboard Generator",
-    stageGroup: 3,
-    descVi: "Lập sơ độ phân cảnh chi tiết đồng bộ mốc thời gian.",
-    descEn: "Forms coordinates linking timing, narration, and screen actions.",
-  },
-  {
-    id: "SSP",
-    nameVi: "Phân dòng cảnh",
-    nameEn: "Scene Splitter",
-    stageGroup: 3,
-    descVi: "Cắt nhỏ kịch bản bám sát diễn biến bối cảnh.",
-    descEn: "Splits chapter narratives into granular scenes.",
-  },
-  {
-    id: "TGE",
-    nameVi: "Thiết Kế Sơ Đồ Thời Gian",
-    nameEn: "Timeline Generator",
-    stageGroup: 3,
-    descVi: "Ước lượng thời gian và thời lượng cho từng khung hình.",
-    descEn: "Calculates start-end frames based on reading speeds.",
-  },
-  {
-    id: "VPL",
-    nameVi: "Kế Hoạch Hình Ảnh",
-    nameEn: "Visual Planner",
-    stageGroup: 4,
-    descVi: "Định lượng số lượng ảnh cần thiết cho đoạn phim.",
-    descEn: "Optimizes assets count, preventing duplicate images.",
-  },
-  {
-    id: "ASM",
-    nameVi: "Tài nguyên hình ảnh",
-    nameEn: "Asset Manager",
-    stageGroup: 4,
-    descVi: "Nhập dữ liệu hình ảnh tải lên hoặc tự động khởi tạo.",
-    descEn: "Mixes imported CSV elements and system default textures.",
-  },
-  {
-    id: "PGE",
-    nameVi: "Mô tả hình ảnh",
-    nameEn: "Prompt Generator",
-    stageGroup: 4,
-    descVi: "Dựng từ khóa vẽ tranh chi tiết cho công cụ.",
-    descEn: "Enhances descriptive painting formulas for high quality.",
-  },
-  {
-    id: "CCM",
-    nameVi: "Duy Trì Nhân Vật",
-    nameEn: "Character Consistency",
-    stageGroup: 4,
-    descVi: "Khóa diện mạo, trang phục và tỷ lệ cơ thể nhân vật.",
-    descEn: "Locks key faces, clothing features and colors.",
-  },
-  {
-    id: "IMG",
-    nameVi: "Tạo Ảnh Thần Tốc",
-    nameEn: "Image Generator",
-    stageGroup: 4,
-    descVi: "Thực thi quy trình lập hình ảnh tự động.",
-    descEn: "Runs the latent diffusion rendering pipeline.",
-  },
-  {
-    id: "VGE",
-    nameVi: "Tạo giọng nói",
-    nameEn: "Voice Generator",
-    stageGroup: 5,
-    descVi: "Chuyển đổi văn bản thành tệp thu âm diễn cảm.",
-    descEn: "Transforms text strings into full wave audio files.",
-  },
-  {
-    id: "SGE_sub",
-    nameVi: "Hệ Thống Phụ Đề",
-    nameEn: "Subtitle Generator",
-    stageGroup: 5,
-    descVi: "Tạo tệp phụ đề định dạng chuẩn bám sát giọng đọc.",
-    descEn: "Drafts exact SRT subtitle alignments.",
-  },
-  {
-    id: "FAL",
-    nameVi: "Căn Khớp Giọng Nói",
-    nameEn: "Forced Alignment",
-    stageGroup: 5,
-    descVi: "Áp dụng thuật toán khớp âm thanh thực tế với chữ.",
-    descEn: "Aligns speech phonemes directly to text stamps.",
-  },
-  {
-    id: "TNG",
-    nameVi: "Thiết kế ảnh bìa",
-    nameEn: "Thumbnail Generator",
-    stageGroup: 4,
-    descVi: "Khởi sinh các mẫu ảnh bìa tăng tỷ lệ nhấn xem.",
-    descEn: "Generates high engagement MrBeast or History layouts.",
-  },
-  {
-    id: "TTG",
-    nameVi: "Dựng Tiêu Đề",
-    nameEn: "Title Generator",
-    stageGroup: 6,
-    descVi: "Tối ưu tiêu đề dễ tìm kiếm và thu hút đám đông.",
-    descEn: "Creates clickbait and standard search terms.",
-  },
-  {
-    id: "DSG",
-    nameVi: "Tạo phần mô tả",
-    nameEn: "Description Generator",
-    stageGroup: 6,
-    descVi: "Soạn nội dung giới thiệu tối ưu tìm kiếm.",
-    descEn: "Writes descriptive templates fitted for algorithm reach.",
-  },
-  { id: "HSG", nameVi: "Đề xuât chủ đề", nameEn: "Hashtag Generator", stageGroup: 6, descVi: "Gợi ý các thẻ nổi bật thịnh hành.", descEn: "Finds trending tags." },
-  { id: "TAG", nameVi: "Từ Khóa Tìm Kiếm", nameEn: "Tag Generator", stageGroup: 6, descVi: "Tổng hợp bộ nhãn tìm kiếm phim siêu tốc.", descEn: "Compiles search key phrases." },
-  {
-    id: "VDA",
-    nameVi: "Hệ thống điều phối",
-    nameEn: "Video Director AI",
-    stageGroup: 7,
-    descVi: "Tổng hợp điều khiển góc quay máy ảnh chuyển tiếp.",
-    descEn: "Ensures scene flow, camera transitions and visuals fit.",
-  },
-  {
-    id: "AVE",
-    nameVi: "Trình Biên Tập Tự Động",
-    nameEn: "Auto Video Editor",
-    stageGroup: 7,
-    descVi: "Tổng hòa các dải âm thanh, phụ đề và dữ liệu thành phim hoàn chỉnh.",
-    descEn: "Fuses visuals, subtitle layers and music track.",
-  },
-  {
-    id: "QCH",
-    nameVi: "Kiểm Soát Chất Lượng",
-    nameEn: "Quality Checker",
-    stageGroup: 7,
-    descVi: "Đánh giá tỷ lệ nén tệp tin, chuẩn khung hình và độ trong âm thanh.",
-    descEn: "Verifies file compressions and safely scales.",
-  },
-  {
-    id: "EXP",
-    nameVi: "Xuất bản phim",
-    nameEn: "Exporter Engine",
-    stageGroup: 7,
-    descVi: "Hỗ trợ tải tệp phim độ tương thích cao cực nhanh.",
-    descEn: "Allows professional raw file export in XML format.",
-  },
-] as const;
-
 export const genreLabels = {
   [VideoGenre.CINEMATIC_EPISODE]: "Phim truyện điện ảnh AI",
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Tóm tắt phim & truyện",
@@ -266,7 +52,7 @@ export const GENRE_OPTION_GROUPS = [
   },
 ] as const;
 
-export const GENRE_VALUE_ALIASES: Record<string, string> = {
+const GENRE_VALUE_ALIASES: Record<string, string> = {
   Storytelling: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
   Documentary: "History",
   Explanation: VideoGenre.NARRATIVE_EXPLAINER,
@@ -303,8 +89,6 @@ export const motionLabels = {
   Static: "Tĩnh",
 } as const;
 
-export const emotionMap = { Normal: "Bình thường", Excited: "Hào hứng", Serious: "Trang nghiêm", Dramatic: "Kịch tính", Mysterious: "Bí ẩn" } as const;
-
 export const stylePresetsKeywords = {
   Stickman:
     "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading",
@@ -323,10 +107,7 @@ export const stylePresetsKeywords = {
   Documentary: "raw documentary photography, photojournalism style, unposed authentic moment, natural ambient light",
   "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets",
 } as const;
-
-export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ["not found", "404", "unsupported"] as const;
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ["429", "quota", "Quota exceeded", "503", "500", "550", "fetch failed", "Timeout", "undici"] as const;
-export const STICKMAN_KEYWORDS = ["người que", "hình que", "nét que", "stickman", "stick figure", "hoạt hình", "stick"] as const;
 
 export const LOG_SUCCESS_KEYWORDS = ["thành công", "success", "hoàn thành"] as const;
 export const CONSOLE_LOG_IGNORED_MESSAGES = [
@@ -372,8 +153,6 @@ export const GEMINI_USER_MESSAGES = {
 
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
 
-export const GENRE_OPTIONS = _.flatMap(GENRE_OPTION_GROUPS, "options");
-
 export const AUDIENCE_OPTIONS = ["General Audience", "Kids", "Teenagers", "Adults", "Seniors"] as const;
 
 export const WRITING_STYLE_OPTIONS = ["Professional", "Documentary", "Viral", "Mystery", "Drama", "Educational", "Scientific"] as const;
@@ -408,8 +187,6 @@ export const DURATION_OPTIONS = [
   { val: "1h30m", label: "13500 từ (~1h30 phút)" },
   { val: "2h", label: "18000 từ (~2 giờ)" },
 ] as const;
-
-export const DEFAULT_IMAGE_KEYWORDS = "cinematic,landscape";
 
 export const ABBREVIATIONS = [
   "tp",
@@ -471,58 +248,6 @@ export const CONJUNCTIONS = [
   "for",
   "with",
 ] as const;
-
-export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Pan Up", "Pan Down", "Drift", "Cinematic Arc", "Push In", "Slow Reveal", "Static"] as const;
-
-const easeCubicInOut = (t: number): number => (t < 0.5 ? 4.0 * t * t * t : 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0);
-const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
-const easeExpoOut = (t: number): number => (t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t));
-
-export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale: number; dx: number; dy: number }> = {
-  "Zoom In": (p) => {
-    const t = easeCubicInOut(p);
-    return { scale: 1.0 + 0.06 * t, dx: 0, dy: 0 };
-  },
-  "Zoom Out": (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.06 - 0.06 * t, dx: 0, dy: 0 };
-  },
-  "Pan Left": (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.08, dx: 25.6 - 51.2 * t, dy: 0 };
-  },
-  "Pan Right": (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.08, dx: -25.6 + 51.2 * t, dy: 0 };
-  },
-  "Pan Up": (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.08, dx: 0, dy: 14.4 - 28.8 * t };
-  },
-  "Pan Down": (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.08, dx: 0, dy: -14.4 + 28.8 * t };
-  },
-  Drift: (p) => {
-    const t = easeSineInOut(p);
-    return { scale: 1.06 + 0.04 * Math.sin(t * Math.PI), dx: 30 * Math.sin(t * Math.PI * 1.5), dy: 20 * Math.cos(t * Math.PI * 1.2) };
-  },
-  "Cinematic Arc": (p) => {
-    const t = easeCubicInOut(p);
-    return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * Math.sin(t * Math.PI) };
-  },
-  "Push In": (p) => {
-    const t = easeExpoOut(p);
-    return { scale: 1.0 + 0.28 * t, dx: 20 * t, dy: -15 * t };
-  },
-  "Slow Reveal": (p) => {
-    const t = easeCubicInOut(p);
-    return { scale: 1.18 - 0.14 * t, dx: -30 * t, dy: 40 * t };
-  },
-  Static: () => ({ scale: 1.0, dx: 0, dy: 0 }),
-};
-
-export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Blur Dissolve", "Brightness Fade", "Fade out to black", "Slide", "Zoom transition", "Cut"] as const;
 
 export const AI_MOTION_EFFECT_IDS = [
   "zoom_in",
@@ -656,11 +381,6 @@ export const PROMPT_FILLER_WORDS = [
   "rendering",
 ] as const;
 
-export const STICKMAN_STYLE_MODIFIERS =
-  "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval eyes and tiny nose, restrained expressive eyebrows and mouth, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading, simple cutout-like composition";
-
-export const DEFAULT_SESSION_ID = ";1781857807598";
-
 export const VOICE_PROVIDER_OPTIONS = [
   { value: "edge", labelKey: "Edge_Microsoft" },
   { value: "elevenlabs", labelKey: "ElevenLabs" },
@@ -759,7 +479,6 @@ export const SPLIT_STRATEGY_OPTIONS = [
 export const VOICE_OWNERSHIP_KEY = "voice_ownership";
 export const VOICE_OWNERSHIP_COMMUNITY = "community";
 export const VBEE_PROVIDER_ID = "vbee";
-export const VBEE_VOICE_PREFIXES = ["vbee-", "vbee"];
 
 export const VOICE_PROVIDER_MAPPINGS = [
   { prefixes: ["gemini-cloud", "preset-"], provider: "Gemini Speech" },
@@ -800,3 +519,5 @@ export const AUDIO_PLAYBACK_FAILED_ERR = "AUDIO_PLAYBACK_FAILED";
 export const APP_LOCALES = { VI: "vi-VN", EN: "en-US", VI_SHORT: "vi", EN_SHORT: "en" } as const;
 
 export const DEFAULT_PROVIDER = "";
+
+

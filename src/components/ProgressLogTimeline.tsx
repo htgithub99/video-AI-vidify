@@ -5,6 +5,7 @@ import { isProgressLogVisible, PROGRESS_LOG_CONFIG, ProgressLogContext, Progress
 import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
+import { formatUserFacingLog } from "../lib/userLogFormatter";
 
 interface ProgressLogTimelineProps {
   logs: string[];
@@ -38,18 +39,21 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
 
 const formatSeamlessMessage = (msg: string): string => _.reduce(PROGRESS_LOG_CONFIG.SEAMLESS_REPLACEMENTS, (acc, rule) => acc.replace(rule.pattern, rule.replacement), msg);
 
-const parseProgressLog = (log: string) => {
+const parseProgressLog = (log: string, language?: string) => {
   const rawLog = _.toString(log);
   const timeMatch = rawLog.match(PROGRESS_LOG_CONFIG.TIME_PATTERN);
   const messageWithoutTime = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
-  const rawCleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
+  const userFacingMessage = formatUserFacingLog(messageWithoutTime, language);
+  const rawCleanMessage = _.trim(userFacingMessage.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
   const cleanMessage = formatSeamlessMessage(rawCleanMessage);
 
   return {
     time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
     message: cleanMessage,
-    rawMessage: rawLog,
-    tone: resolveProgressLogTone(messageWithoutTime),
+    rawMessage: !_.isEmpty(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT))
+      ? `[${_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT)}] ${userFacingMessage}`
+      : userFacingMessage,
+    tone: resolveProgressLogTone(userFacingMessage),
   };
 };
 
@@ -78,14 +82,14 @@ const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: A
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
 
-export const ProgressLogTimeline = memo(({ logs, theme, context = ProgressLogContext.Automatic }: ProgressLogTimelineProps) => {
+export const ProgressLogTimeline = memo(({ logs, theme, language, context = ProgressLogContext.Automatic }: ProgressLogTimelineProps) => {
   const entries = useMemo(
     () =>
       _.chain(logs)
         .filter((log) => isProgressLogVisible(log, context))
-        .map((log) => parseProgressLog(log))
+        .map((log) => parseProgressLog(log, language))
         .value(),
-    [context, logs],
+    [context, language, logs],
   );
   const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);

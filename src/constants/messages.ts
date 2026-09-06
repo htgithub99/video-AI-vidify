@@ -407,7 +407,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
   },
 };
 
-export const PIPELINE_LOGS_LOCALIZED = {
+const PIPELINE_LOGS_LOCALIZED = {
   vi: {
     HOOK_STEP1: "[Hook] B1: Phân tích chủ đề & đối tượng...",
     HOOK_AUTO_GENERATE: "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình...",

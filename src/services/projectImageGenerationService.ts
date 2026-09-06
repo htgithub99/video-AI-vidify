@@ -1,5 +1,12 @@
 import _ from "lodash";
-import { API_ROUTES, FLOW_VIDEO_MEDIA_CONFIG, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG, VIDEO_GENERATION_MOTION_DIRECTIVE } from "../constants";
+import {
+  API_ROUTES,
+  FLOW_DIRECT_VIDEO_CONFIG,
+  FLOW_VIDEO_MEDIA_CONFIG,
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+  SYSTEM_FETCH_CONFIG,
+} from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -75,14 +82,6 @@ const EDITORIAL_VIDEO_CONFIG = {
 } as const;
 
 const MOTION_REGEX = {
-  ASPECT_RATIO_FLAG: /\s+--ar\s+[^\s]+/gi,
-  MULTI_SHOT_EXACT: /exactly\s+[3-5]\s+chronological\s+(?:camera\s+setups|shots)/i,
-  MULTI_SHOT_RANGE: /(?:3\s+to\s+5|three\s+to\s+five)\s+(?:timed\s+)?chronological\s+shots/i,
-  MULTI_SHOT_ENUMERATED: /shot\s*1/i,
-  SHOT_2: /shot\s*2/i,
-  SHOT_3: /shot\s*3/i,
-  MOTION_DIRECTION_SUFFIX: /Video motion direction:[\s\S]*$/i,
-  HAS_MOTION_DIRECTION: /Video motion direction:/i,
   ACTION_PATTERN:
     /\b(?:walk(?:s|ed|ing)?|run(?:s|ning)?|turn(?:s|ed|ing)?|open(?:s|ed|ing)?|close(?:s|d|ing)?|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|drive|drives|driving|travel(?:s|ed|ing)?|fall(?:s|ing)?|rise|rises|rising|fight(?:s|ing)?|dance|dances|dancing|move(?:s|d|ing)?|pour(?:s|ed|ing)?|throw(?:s|ing)?|drop(?:s|ped|ping)?|reveal(?:s|ed|ing)?|transform(?:s|ed|ing)?|collapse|collapses|collapsed|chase|chases|chasing|exchange(?:s|d|ing)?|hand(?:s|ed|ing)? over|sign(?:s|ed|ing)?|hide|hides|hiding|discover(?:s|ed|ing)?|fold(?:s|ed|ing)?|unfold(?:s|ed|ing)?|flip(?:s|ped|ping)?|tear(?:s|ing)?|giằng|bước|chạy|mở|đóng|đổ|ném|rơi|biến đổi|sụp đổ|đuổi|trao|nhận|ký|giấu|phát hiện|gấp|lật|xé)\b/i,
   ENVIRONMENTAL_MOTION: /\b(?:rain|smoke|traffic|crowd|waves|wind|fire|machine|conveyor|storm|mưa|khói|giao thông|đám đông|sóng|gió|lửa|máy móc)\b/i,
@@ -113,18 +112,12 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
 export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value);
 export const isPersistedProjectVideoUrl = (value?: string): boolean => FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(_.toString(value));
 
-export const prepareProjectMediaPrompt = (item: ProjectImageItem): string => {
-  const prompt = _.trim(item.prompt);
-  if (!_.isEqual(item.generateType, GenerateType.Video)) return prompt;
-  const cleanPrompt = _.trim(prompt.replace(MOTION_REGEX.ASPECT_RATIO_FLAG, " "));
-  const isAiAuthoredMultiShotFilmClip =
-    MOTION_REGEX.MULTI_SHOT_EXACT.test(cleanPrompt) ||
-    MOTION_REGEX.MULTI_SHOT_RANGE.test(cleanPrompt) ||
-    (MOTION_REGEX.MULTI_SHOT_ENUMERATED.test(cleanPrompt) && MOTION_REGEX.SHOT_2.test(cleanPrompt) && MOTION_REGEX.SHOT_3.test(cleanPrompt));
-  if (isAiAuthoredMultiShotFilmClip) return _.trim(cleanPrompt.replace(MOTION_REGEX.MOTION_DIRECTION_SUFFIX, ""));
-  if (MOTION_REGEX.HAS_MOTION_DIRECTION.test(cleanPrompt)) return cleanPrompt;
-  return _.join([_.trimEnd(cleanPrompt, ". "), VIDEO_GENERATION_MOTION_DIRECTIVE], ". ");
+export const isNonRetryableFlowVideoError = (message?: string): boolean => {
+  const normalizedMessage = _.trim(_.toString(message));
+  return !_.isEmpty(normalizedMessage) && _.some(FLOW_DIRECT_VIDEO_CONFIG.NON_RETRYABLE_SETUP_ERRORS, (pattern) => pattern.test(normalizedMessage));
 };
+
+export const prepareProjectMediaPrompt = (item: ProjectImageItem): string => item.prompt;
 
 const hasImageResult = (result?: ProjectImageResult): boolean => _.every([result?.success, _.some([result?.base64, result?.fallbackUrl], isUsableGeneratedAssetUrl)], Boolean);
 const isGenerationCancelled = (cancelRef?: { current: boolean }): boolean => _.includes([true], Boolean(cancelRef?.current));
@@ -135,7 +128,11 @@ const cleanBatchSession = async (): Promise<void> => {
 export const generateProjectImageOnce = async (item: ProjectImageItem, createPayload: ImagePayloadFactory, signal?: AbortSignal): Promise<ProjectImageResult> => {
   const emptyResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
   if (signal?.aborted) return emptyResult;
-  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, { ...createPayload(item), sceneId: item.sceneId }, signal);
+  const response = await safeSystemFetch(
+    API_ROUTES.PIPELINE_GENERATE_IMAGE,
+    { ...createPayload(item), sceneId: item.sceneId, idempotencyKey: item.idempotencyKey },
+    signal,
+  );
   const base64 = _.defaultTo(_.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY), _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY));
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY, response.success);

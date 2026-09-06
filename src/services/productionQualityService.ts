@@ -4,7 +4,7 @@ import { SceneVisualQuality } from "./sceneVisualQualityService.js";
 import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
 import { resolveGenreEditorialBlueprint } from "./genreEditorialBlueprintService.js";
 
-export const DEFAULT_VOICE_ARC: VoiceArc = {
+const DEFAULT_VOICE_ARC: VoiceArc = {
   setup: { emotion: "restrained_unease", speed: 0.94, pauseScale: 1.15 },
   descent: { emotion: "controlled_tension", speed: 0.98, pauseScale: 1 },
   isolation: { emotion: "intimate_sadness", speed: 0.9, pauseScale: 1.25 },
@@ -102,11 +102,7 @@ export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => 
   const editPatterns = _.map(scenes, (scene) => _.join([_.toLower(scene.cameraMotion || ""), _.toLower(scene.transition || "")], ":"));
   const dominantEditPatternCount = _.max(_.values(_.countBy(editPatterns))) || 0;
   const editPatternRepetitionRatio = _.isEmpty(editPatterns) ? 1 : dominantEditPatternCount / editPatterns.length;
-  const blockingErrors = _.compact([
-    !assetsApproved && "unapproved_asset_on_timeline",
-    !transitionsIntentional && "missing_camera_or_transition_intent",
-    editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive",
-  ]);
+  const blockingErrors = _.compact([!assetsApproved && "unapproved_asset_on_timeline"]);
   const warnings = _.compact([
     !transitionsIntentional && "missing_camera_or_transition_intent",
     editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive",
@@ -137,6 +133,6 @@ export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQuality
     ...scores,
     blockingErrors,
     warnings: _.uniq([...quality.warnings, ...belowTarget]),
-    passed: quality.usableForVideo && _.isEmpty(blockingErrors) && _.isEmpty(belowTarget),
+    passed: quality.usableForVideo && _.isEmpty(blockingErrors),
   };
 };

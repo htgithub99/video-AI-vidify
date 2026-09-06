@@ -65,6 +65,56 @@ const cinematicCharacterSchema = {
   },
 } as const;
 
+const cinematicFilmPackageCharacterSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "name", "description", "referenceGenerationPrompt"],
+  properties: cinematicCharacterSchema.properties,
+} as const;
+
+const cinematicFilmPackageSceneSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "chapterId", "script", "subtitle"],
+  properties: {
+    id: stringSchema,
+    chapterId: stringSchema,
+    script: stringSchema,
+    subtitle: stringSchema,
+  },
+} as const;
+
+const cinematicFilmPackageChapterSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "title", "scriptSegment"],
+  properties: {
+    id: stringSchema,
+    title: stringSchema,
+    scriptSegment: stringSchema,
+  },
+} as const;
+
+export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["scriptSegment", "chapters", "characters", "scenes"],
+  properties: {
+    title: stringSchema,
+    logline: stringSchema,
+    theme: stringSchema,
+    visualDirection: stringSchema,
+    characterAnalysis: stringSchema,
+    characterSpecs: stringSchema,
+    identityContinuityRisks: stringArraySchema,
+    scriptSegment: stringSchema,
+    chapters: { type: "array", minItems: 1, items: cinematicFilmPackageChapterSchema },
+    characters: { type: "array", maxItems: 3, items: cinematicFilmPackageCharacterSchema },
+    scenes: { type: "array", minItems: 1, items: cinematicFilmPackageSceneSchema },
+    warnings: stringArraySchema,
+  },
+} as const;
+
 export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -408,59 +458,6 @@ const visualQaProperties = {
   warnings: stringArraySchema,
 } as const;
 export const VISUAL_QA_RESPONSE_SCHEMA = { type: "object", additionalProperties: false, required: Object.keys(visualQaProperties), properties: visualQaProperties } as const;
-
-export const VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "medium",
-    "characterType",
-    "characterDna",
-    "lineDna",
-    "shapeLanguage",
-    "colorDna",
-    "colorPhilosophy",
-    "renderingDna",
-    "lightingStyle",
-    "texture",
-    "detailLevel",
-    "visualComplexity",
-    "periodCues",
-    "worldRendering",
-    "compositionLanguage",
-    "facialExpressionLanguage",
-    "overallMood",
-    "adaptiveElements",
-    "negativeStylePrompt",
-    "sampleSpecificContent",
-    "lockedStyleElements",
-    "flexibleElements",
-  ],
-  properties: {
-    medium: stringSchema,
-    characterType: stringSchema,
-    characterDna: stringSchema,
-    lineDna: stringSchema,
-    shapeLanguage: stringSchema,
-    colorDna: stringSchema,
-    colorPhilosophy: stringSchema,
-    renderingDna: stringSchema,
-    lightingStyle: stringSchema,
-    texture: stringSchema,
-    detailLevel: stringSchema,
-    visualComplexity: stringSchema,
-    periodCues: stringSchema,
-    worldRendering: stringSchema,
-    compositionLanguage: stringSchema,
-    facialExpressionLanguage: stringSchema,
-    overallMood: stringSchema,
-    adaptiveElements: stringSchema,
-    negativeStylePrompt: stringSchema,
-    sampleSpecificContent: stringArraySchema,
-    lockedStyleElements: stringArraySchema,
-    flexibleElements: stringArraySchema,
-  },
-} as const;
 
 export const VISUAL_BIBLE_RESPONSE_SCHEMA = {
   type: "object",

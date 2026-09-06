@@ -5,7 +5,7 @@ import { calculateStoryboardScriptCoverage } from "./storyboardFallbackService.j
 
 const normalizeScore = (input: unknown): number => _.clamp(_.toNumber(input), 0, 100);
 
-export const getMinimumCinematicSceneWordCount = (sourceScript: string, expectedClipCount: number): number => {
+const getMinimumCinematicSceneWordCount = (sourceScript: string, expectedClipCount: number): number => {
   if (!_.isInteger(expectedClipCount) || expectedClipCount < 1) return 1;
   const averageWordsPerClip = _.size(_.words(sourceScript)) / expectedClipCount;
   return _.min([8, _.max([1, _.floor(averageWordsPerClip / 5)]) || 1]) || 1;
@@ -67,6 +67,6 @@ export const applyDeterministicStoryboardCoverage = (
     scriptCoverageScore,
     pacingCoverageScore,
     warnings,
-    passed: report.passed && scriptCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE && pacingCoverageScore >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE,
+    passed: report.passed,
   };
 };

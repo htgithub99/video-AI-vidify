@@ -20,7 +20,7 @@ import { jsonUtils } from "../../lib/json.js";
 
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
-export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
+async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
   if (!_.isNil(dbInstance)) {
     return dbInstance;
   }

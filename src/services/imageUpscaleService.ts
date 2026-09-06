@@ -7,7 +7,7 @@ import { selectScenesForUpscale } from "./qualityProfileService";
 const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string =>
   _.reduce(values, (message, value, key) => message.replace(`{${key}}`, _.toString(value)), template);
 
-export interface ImageUpscaleResult {
+interface ImageUpscaleResult {
   assetUrl: string;
   changed: boolean;
   sourceWidth: number;
@@ -41,7 +41,7 @@ export const calculateUpscaleDimensions = (width: number, height: number): { wid
   return { width: _.round(width * scale), height: _.round(height * scale), changed: true };
 };
 
-export const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleResult> => {
+const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleResult> => {
   if (_.isEmpty(assetUrl)) throw new Error(IMAGE_UPSCALE_CONFIG.SOURCE_MISSING_ERROR);
   const image = await loadImage(assetUrl);
   const sourceWidth = image.naturalWidth;

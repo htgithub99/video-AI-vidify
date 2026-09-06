@@ -4,7 +4,7 @@ import { API_ROUTES, HTTP_METHODS, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS
 import { REGENERATION_TARGET, PROJECT_ASSET_GROUP, AUTO_GENERATOR_CONSTANTS, PROJECT_ASSET_QUERY } from "../constants/config";
 import { storageUtils } from "../lib/storage";
 
-export const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScene => ({
+const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
   assetType: undefined,
   assetUrl: undefined,

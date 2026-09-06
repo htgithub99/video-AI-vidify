@@ -78,8 +78,21 @@ assert.deepEqual(selectedSceneReset.visualConfig.characters, project.visualConfi
 const projectControllerSource = await import("node:fs").then(({ readFileSync }) => (
   readFileSync("src/server/controllers/projectController.ts", "utf8")
 ));
+const autoVideoPipelineSource = await import("node:fs").then(({ readFileSync }) => (
+  readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8")
+));
 assert.match(projectControllerSource, /Boolean\(newProject\.allowBulkDeleteImages\)/);
 assert.match(projectControllerSource, /Boolean\(newProject\.allowAudioCleanup\)/);
 assert.match(projectControllerSource, /Boolean\(newProject\.allowReferenceCleanup\)/);
+assert.match(
+  autoVideoPipelineSource,
+  /allowBulkDeleteImages:\s*true,[\s\S]*?isRecreatingStoryboard:\s*true,[\s\S]*?allowAudioCleanup:\s*true,[\s\S]*?allowReferenceCleanup:\s*true,[\s\S]*?resetDerivedData:\s*true/,
+  "a new automatic-video run must authorize removal of stale generated references",
+);
+assert.match(
+  autoVideoPipelineSource,
+  /if \(!isContinuation\) appendLog\(AUTO_GENERATOR_CONSTANTS\.LOG_REFERENCE_CLEANUP_SUCCESS\)/,
+  "reference cleanup must be limited to a new run and reported to the user",
+);
 
 process.stdout.write("Project visual regeneration assertions passed.\n");

@@ -42,19 +42,13 @@ export enum AudioType {
 export enum Gender {
   Male = "male",
   Female = "female",
-  Neutral = "neutral",
-}
+  }
 
 export enum AgeGroup {
-  Child = "child",
-  Teen = "teen",
   Adult = "adult",
-  Senior = "senior",
-}
+  }
 
 export enum AssetsMode {
-  UserOnly = "user_only",
-  UserFirst = "user_first",
   Mixed = "mixed",
 }
 
@@ -119,7 +113,7 @@ export enum AspectRatio {
   ThreeFour = "3:4",
 }
 
-export type AssetType = "image" | "video";
+type AssetType = "image" | "video";
 
 export enum SceneAssetStatus {
   Pending = "pending",
@@ -144,7 +138,7 @@ export enum AssetAcceptance {
   Rejected = "rejected",
 }
 
-export type CinematicTakeDecision = "use" | "trim" | "cover" | "regenerate_once" | "omit";
+type CinematicTakeDecision = "use" | "trim" | "cover" | "regenerate_once" | "omit";
 
 export enum AudioCueType {
   Music = "music",
@@ -154,11 +148,11 @@ export enum AudioCueType {
 
 export enum AudioCueStatus {
   Planned = "planned",
-  Available = "available",
   Approved = "approved",
 }
 
 export enum SubtitleMode {
+  None = "none",
   BurnIn = "burn_in",
   Track = "track",
   Both = "both",
@@ -176,16 +170,16 @@ export enum ManualReviewStatus {
   Rejected = "rejected",
 }
 
-export type TooltipPosition = "top" | "bottom" | "left" | "right";
+type TooltipPosition = "top" | "bottom" | "left" | "right";
 
 export type ButtonVariant = "primary" | "secondary" | "success" | "info" | "purple" | "amber" | "danger" | "ghost" | "outline" | "unstyled";
 
-export interface ProjectInput {
+interface ProjectInput {
   type: ProjectInputType;
   content: string;
 }
 
-export interface ProjectConfig {
+interface ProjectConfig {
   genre: string;
   language: ProjectLanguage;
   duration: string;
@@ -199,6 +193,7 @@ export interface ProjectConfig {
   format?: string;
   splitStrategy?: string;
   musicAssetUrl?: string;
+  subtitleMode?: SubtitleMode;
   filmFormat?: "single" | "series";
   episodeCount?: number;
   seriesBibleRequired?: boolean;
@@ -239,7 +234,7 @@ export interface CreativeBrief {
   forbiddenDirections: string[];
 }
 
-export enum NarrativeBeatType {
+enum NarrativeBeatType {
   Hook = "hook",
   Setup = "setup",
   Temptation = "temptation",
@@ -252,7 +247,7 @@ export enum NarrativeBeatType {
   Payoff = "payoff",
 }
 
-export interface CharacterArc {
+interface CharacterArc {
   initialState: string;
   emotionalLack: string;
   externalGoal: string;
@@ -267,7 +262,7 @@ export interface CharacterArc {
   realization: string;
 }
 
-export interface NarrativeBeat {
+interface NarrativeBeat {
   id: string;
   type: NarrativeBeatType;
   event: string;
@@ -279,7 +274,7 @@ export interface NarrativeBeat {
   callbackId?: string;
 }
 
-export interface CallbackPlan {
+interface CallbackPlan {
   id: string;
   setupBeatId: string;
   payoffBeatId: string;
@@ -287,7 +282,7 @@ export interface CallbackPlan {
   changedMeaning: string;
 }
 
-export interface NarrativePlan {
+interface NarrativePlan {
   viewerPromise: string;
   centralQuestion: string;
   protagonist: CharacterArc;
@@ -296,7 +291,7 @@ export interface NarrativePlan {
   endingPayoff: string;
 }
 
-export interface ChapterPlan {
+interface ChapterPlan {
   id: string;
   title: string;
   description: string;
@@ -352,7 +347,7 @@ export interface ScriptQualityReport {
   passed: boolean;
 }
 
-export interface AiOperationMetric {
+interface AiOperationMetric {
   capability: string;
   provider: string;
   model: string;
@@ -366,7 +361,7 @@ export interface AiOperationMetric {
   fallbackIndex: number;
 }
 
-export interface HookConfig {
+interface HookConfig {
   type: string;
   duration: number;
   count: number;
@@ -478,7 +473,7 @@ export interface CharacterConfig {
   timelineStages?: CharacterTimelineStage[];
 }
 
-export interface CharacterTimelineStage {
+interface CharacterTimelineStage {
   id: string;
   label: string;
   outfit: string;
@@ -487,7 +482,7 @@ export interface CharacterTimelineStage {
   visibleCondition: string;
 }
 
-export interface VisualLocation {
+interface VisualLocation {
   id: string;
   name: string;
   visualAnchors: string[];
@@ -495,7 +490,7 @@ export interface VisualLocation {
   timeProgression: string;
 }
 
-export interface VisualProp {
+interface VisualProp {
   id: string;
   name: string;
   visualAnchors: string[];
@@ -703,7 +698,7 @@ export interface AssetRevision {
   operation?: "generated" | "retry" | "rollback" | "upscale";
 }
 
-export interface ProjectDependencyHashes {
+interface ProjectDependencyHashes {
   script?: string;
   storyboard?: string;
   voice?: string;
@@ -983,7 +978,7 @@ export interface SEOPackage {
   tags: string[];
 }
 
-export interface SavedAsset {
+interface SavedAsset {
   id: string;
   name: string;
   type: string;
@@ -991,14 +986,14 @@ export interface SavedAsset {
   sceneId?: string;
 }
 
-export interface ProjectVersion {
+interface ProjectVersion {
   id: string;
   timestamp: string;
   note: string;
   scriptPreview: string;
 }
 
-export interface SEOConfig {
+interface SEOConfig {
   numTitles: number;
   numDescriptions: number;
   numHashtags: number;
@@ -1031,6 +1026,7 @@ export interface VideoProject {
   chapterPlans?: ChapterPlan[];
   cinematicScriptArtifacts?: {
     sourceSignature: string;
+    filmPackage?: Record<string, unknown>;
     storyBible?: Record<string, unknown>;
     narrativePlan?: Record<string, unknown>;
     screenplayDraft?: Record<string, unknown>;
@@ -1118,16 +1114,6 @@ export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
   size?: "xs" | "sm" | "md" | "lg";
 }
 
-export interface Voice {
-  voiceURI: string;
-  name: string;
-  lang: string;
-  localService: boolean;
-  default: boolean;
-  gender?: string;
-  [key: string]: unknown;
-}
-
 export enum BackgroundMode {
   Auto = "auto",
   Minimal = "minimal",
@@ -1198,7 +1184,6 @@ export enum GeminiChatSelector {
   ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"]',
   ModelLabel = ".label",
   PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="thêm tệp" i], button[aria-label*="upload" i], button[aria-label*="add files" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button, gem-icon-button[data-test-id="action-menu-button"] button, gem-icon-button[data-test-id="action-menu-button"], button:has(mat-icon[fonticon="add"])',
-  MenuOptions = '.cdk-overlay-pane button, mat-menu button, [role="menuitem"]',
   PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
   ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
   SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
@@ -1216,9 +1201,7 @@ export const GEMINI_CHAT_MEDIA_SELECTORS = {
 export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",
   CreateImageVi = "Tạo hình ảnh",
-  CreateVideoRegexStr = "Tạo video|Video|Create video|Generate video",
-  CreateImageRegexStr = "Tạo hình ảnh|Tạo ảnh|Vẽ hình ảnh|Create (?:an )?image|Generate (?:an )?image|Create images|Generate images",
-}
+  }
 
 export enum ImageModelLabel {
   Veo3 = "VEO 3.0 FLUID",

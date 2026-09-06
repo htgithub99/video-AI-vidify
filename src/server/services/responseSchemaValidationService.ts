@@ -59,7 +59,7 @@ const matchesObjectSchema = (value: unknown, schema: ResponseSchema): boolean =>
 const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean =>
   _.isArray(value) && _.size(value) >= _.defaultTo(schema.minItems, 0) && (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
 
-export const matchesResponseSchema = (value: unknown, schema: ResponseSchema): boolean => {
+const matchesResponseSchema = (value: unknown, schema: ResponseSchema): boolean => {
   if (schema.enum && !_.includes(schema.enum, value)) return false;
   if (_.isEqual(schema.type, "object")) return matchesObjectSchema(value, schema);
   if (_.isEqual(schema.type, "array")) return matchesArraySchema(value, schema);

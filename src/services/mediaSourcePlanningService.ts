@@ -24,7 +24,7 @@ const getAuthenticEvidenceScore = (scene: StoryboardScene): number => {
   return _.size(text.match(new RegExp(AUTHENTIC_EVIDENCE_PATTERN.source, "gi")) || []);
 };
 
-export const getMinimumArchivalRatio = (genre?: string): number => _.get(FACTUAL_ARCHIVAL_RATIOS, genre || "", 0);
+const getMinimumArchivalRatio = (genre?: string): number => _.get(FACTUAL_ARCHIVAL_RATIOS, genre || "", 0);
 
 const REQUIRED_EDITORIAL_FIELDS: Array<keyof StoryboardScene> = ["visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "composition"];
 

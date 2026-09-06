@@ -22,7 +22,7 @@ assert.match(pipelineSource, /pipelineSystemFetch\(API_ROUTES\.PIPELINE_OPTIMIZE
 assert.match(pipelineSource, /let clipAnalysis = await pipelineSystemFetch/);
 assert.match(pipelineSource, /const finalQaResponse = await pipelineSystemFetch/);
 
-const roomBranchIndex = aiServiceSource.indexOf("const roomExecution = getRoomExecution()");
+const roomBranchIndex = aiServiceSource.indexOf("if (roomExecution) {");
 const apiBranchIndex = aiServiceSource.indexOf("const keys = await resolveApiKeys()", roomBranchIndex);
 assert.ok(roomBranchIndex >= 0 && apiBranchIndex > roomBranchIndex);
 const roomBranch = aiServiceSource.slice(roomBranchIndex, apiBranchIndex);
@@ -30,6 +30,16 @@ assert.match(roomBranch, /generatePlanningWithChatUi/);
 assert.doesNotMatch(roomBranch, /generateWithFreeProviders|GoogleGenAI|resolveApiKeys/);
 assert.match(aiServiceSource, /createRoomRequestPayload\(params\.contents\)/);
 assert.match(aiServiceSource, /attachments: roomPayload\.attachments/);
+assert.match(aiServiceSource, /closeRoomOnComplete: false/);
+assert.match(aiServiceSource, /resolveRoomWorkerId/);
+assert.match(aiServiceSource, /AiTaskCapability\.Thumbnail[\s\S]*CINEMATIC_ROOM_STAGE\.THUMBNAIL/);
+assert.match(aiServiceSource, /AiTaskCapability\.VisualPlanning[\s\S]*CINEMATIC_ROOM_STAGE\.PROMPT/);
+assert.match(aiServiceSource, /AiTaskCapability\.VisualQa[\s\S]*CINEMATIC_ROOM_STAGE\.VIDEO/);
+assert.match(pipelineSource, /workerIds: Object\.values\(CINEMATIC_ROOM_STAGE\)/);
+assert.match(pipelineSource, /const preparedThumbnailPlan = thumbnailPlanRequest \? await thumbnailPlanRequest\(\) : null/);
+assert.match(pipelineSource, /const seoRes = seoRequest \? await seoRequest\(\) : null/);
+assert.doesNotMatch(pipelineSource, /Promise\.all\(\[seoRequest, thumbnailPlanRequest\]\)/);
+assert.match(pipelineControllerSource, /roomWorkerId: _\.toString\(req\.body\?\.roomWorkerId \|\| CINEMATIC_ROOM_STAGE\.THUMBNAIL\)/);
 assert.match(aiServiceSource, /Room-only AI execution requires inline media data/);
 assert.match(aiServiceSource, /if \(roomOnlyContext && !roomExecution\)/);
 assert.ok(aiServiceSource.indexOf("if (roomOnlyContext && !roomExecution)") < aiServiceSource.indexOf("const keys = await resolveApiKeys()", roomBranchIndex));
@@ -64,6 +74,16 @@ const guardedExecution = resolvePipelineAiExecution(
 assert.equal(guardedExecution.mode, AiPlanningExecutionMode.RoomOnly);
 assert.equal(guardedExecution.provider, AiPlanningFallbackProvider.GeminiChat);
 
+const cinematicApiExecution = resolvePipelineAiExecution(
+  {
+    planningFallbackProvider: AiPlanningFallbackProvider.GeminiChat,
+    planningExecutionMode: AiPlanningExecutionMode.ApiOnly,
+  },
+  null,
+  true,
+);
+assert.equal(cinematicApiExecution.mode, AiPlanningExecutionMode.ApiOnly);
+
 const roomError = getRoomOnlyScriptError(
   AiPlanningFallbackProvider.GeminiChat,
   new Error("Không thể tạo nội dung. Hãy kiểm tra khóa Groq, Cerebras hoặc API key."),
@@ -71,5 +91,14 @@ const roomError = getRoomOnlyScriptError(
 );
 assert.match(roomError, /Gemini Chat|gemini-chat|Room/);
 assert.doesNotMatch(roomError, /kh[oó]a|API key|Groq|Cerebras/i);
+
+const semanticArtifactError = getRoomOnlyScriptError(
+  AiPlanningFallbackProvider.ChatGptUi,
+  new Error("cinematic_screenplay_invalid:$root.scriptSegment:word_ratio_1.520"),
+  true,
+);
+assert.match(semanticArtifactError, /đã trả dữ liệu/);
+assert.match(semanticArtifactError, /checkpoint/);
+assert.doesNotMatch(semanticArtifactError, /đăng nhập|giao diện room/);
 
 process.stdout.write("Room-only AI routing assertions passed.\n");

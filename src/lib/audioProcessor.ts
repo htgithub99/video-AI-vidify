@@ -3,7 +3,7 @@ import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI
 import { MimeType } from "../constants/enums.js";
 import _ from "lodash";
 
-export const bufferToWav = (buffer: AudioBuffer): Blob => {
+const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const format = 1;

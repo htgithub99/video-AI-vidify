@@ -5,7 +5,7 @@ import _ from "lodash";
 import { storageUtils } from "./storage";
 import { jsonUtils } from "./json";
 
-export interface SystemFetchSuccess<T = any> {
+interface SystemFetchSuccess<T = any> {
   success: true;
   data: T;
   error?: undefined;
@@ -164,17 +164,7 @@ export const getBatchDelayMs = (option?: BatchDelayOption | string): number => {
   return _.random(1000, 2000);
 };
 
-export const readFilesAsDataURL = (files: FileList, callback: (result: string) => void): void => {
-  _.forEach(_.toArray(files), (file) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (_.isString(reader.result)) {
-        callback(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-};
-
 export const generateRandomString = (): string =>
   Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+
+

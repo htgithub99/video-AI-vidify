@@ -2,7 +2,7 @@ import { appLog } from "../../lib/logger.js";
 import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
 import _ from "lodash";
 
-export const extractBalancedJSON = (text: string): string | null => {
+const extractBalancedJSON = (text: string): string | null => {
   const firstBrace = text.indexOf("{");
   const firstBracket = text.indexOf("[");
   let startIdx = -1;
@@ -54,7 +54,7 @@ export const extractBalancedJSON = (text: string): string | null => {
   return null;
 };
 
-export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
+const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
   let out = "";
   let inString = false;
   let escapeNext = false;
@@ -120,7 +120,7 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
   return out;
 };
 
-export const completeCutoffJSON = (jsonStr: string): string => {
+const completeCutoffJSON = (jsonStr: string): string => {
   let out = "";
   const stack: string[] = [];
   let inString = false;

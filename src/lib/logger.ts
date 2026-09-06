@@ -7,9 +7,7 @@ export const setLogLanguage = (lang: LogLang) => {
   currentLang = lang;
 };
 
-export const getLogLanguage = (): LogLang => currentLang;
-
-export const formatLogMessage = (template: string, ...args: any[]): string => {
+const formatLogMessage = (template: string, ...args: any[]): string => {
   let result = template;
   args.forEach((arg, index) => {
     const val = arg !== undefined && arg !== null ? String(arg) : "";

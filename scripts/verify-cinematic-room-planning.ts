@@ -16,6 +16,7 @@ import {
   getCinematicStoryboardContractIssues,
 } from "../src/services/cinematicProductionPolicyService";
 import { createScopedVisualBibleContext, getVisualShotPlanIssues } from "../src/services/visualPlanningService";
+import { partitionCinematicPlanningResponse } from "../src/services/cinematicPlanningRecoveryService";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, type StoryboardScene, type VisualBible } from "../src/types";
 
 const TEST_CONSTANTS = {
@@ -109,6 +110,10 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   assert.match(initialPrompt, /speakerCharacterId must exactly equal one ID in that same scene's characterIds array/i);
   assert.match(initialPrompt, /copy it character-for-character without translation/i);
   assert.match(initialPrompt, /literal hyphenated duration token "10-second"/i);
+  assert.match(initialPrompt, /FEATURE-FILM FIGHT DRAMATURGY/);
+  assert.match(initialPrompt, /center-of-mass travel/i);
+  assert.match(initialPrompt, /momentum, recoil, collision response, gravity/i);
+  assert.match(initialPrompt, /Production sound should layer foot contact/i);
   assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
 
   const apiPrompt = getCinematicVideoPlanningPrompt(
@@ -142,6 +147,8 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
   assert.match(repairPrompt, /speakerCharacterId must exactly equal one ID already present/i);
   assert.match(repairPrompt, /copy it character-for-character/i);
   assert.match(repairPrompt, /hyphenated duration token "10-second"/i);
+  assert.match(repairPrompt, /feature-film exchange driven by each combatant's immediate objective and tactic/i);
+  assert.match(repairPrompt, /force transfer, involuntary reaction, recovery/i);
   assert.doesNotMatch(repairPrompt, /deterministically compiles/);
 };
 
@@ -183,12 +190,12 @@ const verifyBlockingContractClassification = () => {
   assert(advisoryIssues.includes("sc_2:actionStartState:must_match_previous_end_state"));
   assert(advisoryIssues.includes("sc_2:screenDirection:continuity_break"));
   const continuityBlockers = getBlockingCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
-  assert(continuityBlockers.includes("sc_2:continuityFrom:must_reference_previous_clip"));
+  assert.equal(continuityBlockers.includes("sc_2:continuityFrom:must_reference_previous_clip"), false);
   assert.equal(continuityBlockers.includes("sc_2:actionStartState:must_match_previous_end_state"), false);
   assert.equal(continuityBlockers.includes("sc_2:screenDirection:continuity_break"), false);
 
   const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), soundDesignCues: [] } as StoryboardScene;
-  assert(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"));
+  assert.equal(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"), false);
 
   assert.deepEqual(
     getBlockingCinematicPlanningIssues([
@@ -198,15 +205,10 @@ const verifyBlockingContractClassification = () => {
       "sc_2:prompt:incomplete_or_outside_global_length_contract",
       "sc_2:textOverlay:must_be_empty_when_text_forbidden",
     ]),
-    ["sc_2:textOverlay:must_be_empty_when_text_forbidden"],
+    [],
   );
-  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), [
-    "sc_2:generationPrompt:missing",
-    "sc_2:soundDesignCues:invalid",
-  ]);
-  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:characterIds:unknown:varg", "sc_2:actionChoreography:aftermath_missing"]), [
-    "sc_2:characterIds:unknown:varg",
-  ]);
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), ["sc_2:generationPrompt:missing"]);
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:characterIds:unknown:varg", "sc_2:actionChoreography:aftermath_missing"]), []);
 };
 
 const verifyScopedVisualBibleIsolation = () => {
@@ -231,6 +233,22 @@ const verifyScopedVisualBibleIsolation = () => {
   assert.equal("characterSpecs" in scopedBible, false);
 };
 
+const verifyPartialBatchSceneRecovery = () => {
+  const requestedScenes = _.map(["scene_010", "scene_011", "scene_012"], (id) => ({ id, generationPrompt: "" })) as unknown as StoryboardScene[];
+  const partialResponse = [
+    { id: "scene_010", generationPrompt: "Complete AI-authored prompt for scene ten." },
+    { id: "scene_011", generationPrompt: "Complete AI-authored prompt for scene eleven." },
+  ] as unknown as StoryboardScene[];
+  const firstPartition = partitionCinematicPlanningResponse(requestedScenes, partialResponse, ["scene_012:result:missing_scene"]);
+  assert.deepEqual(_.map(firstPartition.completedScenes, "id"), ["scene_010", "scene_011"]);
+  assert.deepEqual(_.map(firstPartition.unresolvedScenes, "id"), ["scene_012"]);
+
+  const recoveredResponse = [{ id: "scene_012", generationPrompt: "Complete AI-authored prompt for scene twelve." }] as unknown as StoryboardScene[];
+  const recoveredPartition = partitionCinematicPlanningResponse(firstPartition.unresolvedScenes, recoveredResponse, []);
+  assert.deepEqual(_.map(recoveredPartition.completedScenes, "id"), ["scene_012"]);
+  assert.deepEqual(recoveredPartition.unresolvedScenes, []);
+};
+
 const verifyPipelineControllerSourceInvariants = () => {
   const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
   assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents, expectedSceneIds\)/);
@@ -252,7 +270,7 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
   assert.match(controllerSource, /planningMasterStoryboard/);
   assert.match(controllerSource, /continuityContext\.masterSequence/);
-  assert.match(controllerSource, /exactSceneSet/);
+  assert.match(controllerSource, /if \(_\.isArray\(parsed\)\) return parsed/);
   assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
   assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
@@ -261,24 +279,44 @@ const verifyPipelineControllerSourceInvariants = () => {
 const verifyPlanningRunIsolation = () => {
   const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
   const imageGeneratorSource = readFileSync(new URL(TEST_CONSTANTS.IMAGE_GENERATOR_SERVICE_PATH, import.meta.url), "utf8");
+  const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
   assert.match(planningServiceSource, /activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>/);
   assert.match(planningServiceSource, /runControllers\.get\(workerId\)\?\.controller\.abort\(\)/);
   assert.match(planningServiceSource, /planningMutexes = new Map<string, SimpleMutex>/);
   assert.match(planningServiceSource, /getPlanningRoomKey\(request\)/);
   assert.match(planningServiceSource, /difference\(expectedSceneIds, returnedSceneIds\)/);
-  assert.match(planningServiceSource, /belongsToCurrentRequest\) return latestText/);
-  assert.match(planningServiceSource, /closeChatPlanningRoomPage/);
+  assert.match(planningServiceSource, /belongsToCurrentRequest \|\| isCompleteJson/);
+  assert.match(planningServiceSource, /closeChatPlanningRoom/);
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
   assert.match(planningServiceSource, /const roomKey = getPlanningRoomKey\(request\)[\s\S]*rooms\.delete\(roomKey\)[\s\S]*page\.close\(\)/);
-  assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoomPage\(request\)[\s\S]*release\(\)/);
+  assert.match(planningServiceSource, /const createRoom[\s\S]*rooms\.set\(projectId, page\)[\s\S]*catch \(error\)[\s\S]*rooms\.delete\(projectId\)[\s\S]*page\.close\(\)/);
+  assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoom\(request\)[\s\S]*release\(\)/);
+  assert.match(planningServiceSource, /MODEL_PICKER_TIMEOUT_MS/);
+  assert.doesNotMatch(planningServiceSource, /throw new Error\(`\$\{CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\}: completion_marker_missing/);
+  assert.match(planningServiceSource, /sendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
+  assert.match(controllerSource, /closeRoomOnComplete: false/);
+  assert.match(controllerSource, /res\.once\("finish"[\s\S]*closePlanningRoom/);
   assert.match(planningServiceSource, /selectGeminiChatModel/);
   assert.match(planningServiceSource, /GEMINI_CHAT_BASE_MODEL_LABELS/);
   assert.match(planningServiceSource, /Thinking level\|Mức tư duy\|Cấp độ tư duy/);
-  assert.match(planningServiceSource, /grokBootstrapMutex = new SimpleMutex/);
+  assert.match(planningServiceSource, /grokBootstrapMutexes = new WeakMap<BrowserContext, SimpleMutex>/);
+  assert.match(planningServiceSource, /getGrokBootstrapMutex\(browser\.context\)\.acquire\(\)/);
   assert.match(planningServiceSource, /isGrokSecurityChallengeActive/);
   assert.match(planningServiceSource, /ensureGrokReady\(room, request\)/);
   assert.match(planningServiceSource, /Cloudflare yêu cầu xác minh[\s\S]*page\.bringToFront/);
-  assert.match(planningServiceSource, /releaseBootstrap = await grokBootstrapMutex\.acquire\(\)[\s\S]*createRoom[\s\S]*releaseBootstrap\(\)/);
+  assert.match(planningServiceSource, /releaseBootstrap = await getGrokBootstrapMutex\(browser\.context\)\.acquire\(\)[\s\S]*createRoom[\s\S]*releaseBootstrap\(\)/);
+  const grokReadinessSource = planningServiceSource.match(/const ensureGrokReady[\s\S]*?const ensureChatGptReady/)?.[0] || "";
+  assert.match(grokReadinessSource, /GROK_READY_STABLE_POLLS/);
+  assert.match(grokReadinessSource, /challengeActiveLastPoll/);
+  assert.match(grokReadinessSource, /grokReadyContexts\.delete\(context\)/);
+  assert.doesNotMatch(grokReadinessSource, /page\.(?:goto|reload)\(/);
+  assert.match(planningServiceSource, /input\.isEditable\(\)/);
+  assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS, 250);
+  assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 2);
+  assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
+  assert.match(planningServiceSource, /chờ hàng đợi/);
+  assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);
+  assert.match(planningServiceSource, /challengeBodyVisible = !chatReady/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
   assert.match(imageGeneratorSource, /if \(activeBrowserLaunchPromise\)[\s\S]*await activeBrowserLaunchPromise/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
@@ -327,16 +365,24 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /storyboard: pendingPlanningScenes/);
   assert.match(pipelineSource, /planningMasterStoryboard/);
   assert.match(pipelineSource, /allPlanningIssues/);
-  assert.match(pipelineSource, /recovery-\$\{batchIndex\}/);
-  assert.match(pipelineSource, /issueSceneIds[\s\S]*pendingPlanningScenes = _.filter\(pendingPlanningScenes/);
-  assert.match(pipelineSource, /completedResponseScenes[\s\S]*checkpointCompletedScenes/);
-  assert.match(pipelineSource, /PLANNING_WORKER_COUNT[\s\S]*Promise\.all/);
-  assert.match(pipelineSource, /if \(!batchResponse\.success && !_\.isEmpty\(responsePlanningIssues\)\)[\s\S]*break;/);
+  assert.doesNotMatch(pipelineSource, /recovery-\$\{batchIndex\}/);
+  assert.match(pipelineSource, /const planningWorkerId = CINEMATIC_ROOM_STAGE\.PROMPT/);
+  assert.match(pipelineSource, /partitionCinematicPlanningResponse\(requestedScenes, responseScenes, responsePlanningIssues\)/);
+  assert.match(pipelineSource, /pendingPlanningScenes = await applyPlanningResponse\(pendingPlanningScenes, batchResponse\)/);
+  assert.match(pipelineSource, /checkpointCompletedScenes\(partition\.completedScenes\)/);
+  assert.match(pipelineSource, /for \(let batchIndex = 0; batchIndex < planningBatches\.length; batchIndex\+\+\) await processPlanningBatch\(batchIndex\)/);
+  assert.doesNotMatch(pipelineSource, /Promise\.all\(_\.map\(_\.range\(planningWorkerCount\)/);
+  assert.doesNotMatch(pipelineSource, /Server đã hoàn tất lượt sửa hard gate/);
+  assert.match(pipelineSource, /CLIENT_SCENE_RECOVERY_ATTEMPTS/);
+  assert.match(pipelineSource, /for \(const recoveryScene of pendingPlanningScenes\)/);
+  assert.match(pipelineSource, /storyboard: scenePending/);
+  assert.match(pipelineSource, /scenePending = await applyPlanningResponse\(scenePending, sceneResponse\)/);
+  assert.match(pipelineSource, /if \(_\.isEmpty\(unresolvedAfterRecovery\)\) return/);
   assert.match(pipelineSource, /checkpointProject[\s\S]*await syncProject\(checkpointProject\)/);
   assert.match(pipelineSource, /checkpointPlanningState = async \(phase: string = "prompt_planning"\)/);
   assert.match(pipelineSource, /phase,\s*\r?\n\s*lastSuccessfulPhase/);
   assert.match(pipelineSource, /prompt_planning_completed/);
-  assert.match(pipelineSource, /Đang xử lý/);
+  assert.match(pipelineSource, /CINEMATIC_PLANNING_MESSAGES\.VI_BATCH_ATTEMPT/);
 };
 
 const runAllVerificationSuites = () => {
@@ -347,6 +393,7 @@ const runAllVerificationSuites = () => {
   verifyEnvironmentalActionRecognition();
   verifyBlockingContractClassification();
   verifyScopedVisualBibleIsolation();
+  verifyPartialBatchSceneRecovery();
   verifyPipelineControllerSourceInvariants();
   verifyPlanningRunIsolation();
   verifyCurrentGeminiModelPicker();

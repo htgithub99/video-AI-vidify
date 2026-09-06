@@ -1,31 +1,6 @@
-import { VoicePresetId, SceneDensity, VideoGenre } from "./enums";
-
-export const SCENE_DENSITY_MAP = {
-  [SceneDensity.THEO_TU]: { maxChars: 65, label: "Word-based (Ultra-dense)" },
-  [SceneDensity.CAU_NGAN]: { maxChars: 90, label: "Short sentence (Hyper-dense)" },
-  [SceneDensity.CAU_KET_HOP]: { maxChars: 135, label: "Mixed Sentences (Combined)" },
-  [SceneDensity.CAU_DAI]: { maxChars: 180, label: "Long sentence (Standard)" },
-  [SceneDensity.THEO_DOAN]: { maxChars: 350, label: "Paragraph-based (Slow-paced)" },
-} as const;
+import { VoicePresetId } from "./enums";
 
 export const boundaries = [".", "!", "?", "…", "\n"];
-
-export const pauseChars = [" ", ",", "."];
-export const closedKeywords = ["closed", "close", "context"];
-
-export const supportedTypes = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
-
-export const SYSTEM_STATUS = { READY: "ready", PROCESSING: "processing", COMPLETED: "completed", ERROR: "error" };
-
-export const defaultVoiceConfig = { provider: "AI33Pro", voiceURI: VoicePresetId.PRESET_VI_BAC_FEMALE, speed: 1.0, pitch: 1.0, emotion: "neutral", volume: 1.0 };
-
-export const defaultProjectInput = { topic: "", genre: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, duration: 60, writingStyle: "Documentary" };
-
-export const defaultProjectConfig = { aspectRatio: "16:9", visualStyle: "Photorealistic", complexity: "medium", fps: 30 };
-
-export const defaultHookConfig = { type: "Auto", duration: 10, positions: "start" };
-
-export const defaultVisualConfig = { referenceImages: [], globalStyleReference: null, colorPalette: "" };
 
 export const AUTO_VIDEO_DEFAULTS = { CONFIG_VERSION: 3, CHROME_HEADLESS: true, RESUME_MODE: true } as const;
 
@@ -50,7 +25,6 @@ export const DEFAULT_SCENE_CAMERA_MOTION = "Zoom In";
 export const DEFAULT_SCENE_EFFECTS = "Soft natural lighting";
 export const DEFAULT_SCENE_LIGHTING_EFFECT = "natural_light";
 export const DEFAULT_SCENE_TRANSITION = "None";
-export const DEFAULT_SCENE_PROMPT_PREFIX = "A clean cinematic visual illustrating: ";
 
 export const TEXT_PROCESSOR_CONFIGS = {
   MAX_CHUNK_SIZE: 2500,
@@ -67,15 +41,6 @@ export const TEXT_PROCESSOR_CONFIGS = {
   WORDS_PER_SECOND_RATIO: 2.2,
   MIN_PARAGRAPH_LENGTH: 10,
 } as const;
-
-export const STRATEGY_WORDS_LIMITS = { mixed_sentences: 18, ultradense: 12, word: 12, hyperdense: 12, short_sentence: 12, highpaced: 15 } as const;
-
-export const STRATEGY_SENTENCE_CHUNKS = { dramatic: 2, paragraph: 3, epic: 4, cinematic: 5, artistic: 6, slowpaced: 7, super_slow: 10 } as const;
-
-export const DEFAULT_STYLE = "Realistic";
-export const DEFAULT_CHAPTER = { id: "ch_1", titleEn: "Chapter 1", titleVi: "Chương 1" } as const;
-export const MIN_PARAGRAPHS_COUNT = 3;
 export const NEWLINE_CHAR = "\n";
 export const SPACE_CHAR = " ";
 export const SINGLE_WHITESPACE_REGEX = /\s/;
-export const MULTIPLE_NEWLINES_REGEX = /\n+/;

@@ -117,33 +117,4 @@ export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount 
   return selected;
 }
 
-export async function markAccountError(email: string): Promise<void> {
-  logger.warn(REFACTOR_CONSTANTS.LOG_MARK_ERR.replace("{0}", email));
 
-  const localAccounts = getLocalAccounts();
-  const localIdx = _.findIndex(localAccounts, { email });
-  if (localIdx !== -1) {
-    localAccounts[localIdx].status = AccountStatus.ERROR;
-    saveLocalAccounts(localAccounts);
-    return;
-  }
-
-  try {
-    const gasAccounts = await getGasAccounts();
-    const gasAcc = _.find(gasAccounts, { email });
-    if (gasAcc) {
-      await fetch(SecurityConstants.GAS_API_URL, {
-        method: SecurityConstants.HTTP_POST,
-        headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: jsonUtils.safeStringify({
-          action: GasActions.UPDATE_ACCOUNT_STATUS,
-          email: email,
-          status: AccountStatus.ERROR,
-        }),
-      });
-      logger.info(REFACTOR_CONSTANTS.LOG_REPORT_GAS_ERR.replace("{0}", email));
-    }
-  } catch (err) {
-    logger.error(REFACTOR_CONSTANTS.LOG_REPORT_GAS_ERR_FAILED.replace("{0}", email), err);
-  }
-}

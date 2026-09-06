@@ -137,7 +137,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
           <button
             onClick={onCloseMobile}
             className={cn("lg:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border-none transition-colors")}
-            title="Đóng menu">
+            title={texts.CLOSE_MENU}>
             <X className={cn("w-4 h-4")} />
           </button>
         )}

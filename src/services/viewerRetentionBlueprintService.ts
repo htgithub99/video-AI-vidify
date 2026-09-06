@@ -1,8 +1,8 @@
 import _ from "lodash";
 
-export type RetentionFormat = "short" | "compact" | "standard" | "longform";
+type RetentionFormat = "short" | "compact" | "standard" | "longform";
 
-export const resolveRetentionFormat = (durationSeconds: unknown): RetentionFormat => {
+const resolveRetentionFormat = (durationSeconds: unknown): RetentionFormat => {
   const duration = _.toNumber(durationSeconds);
   if (!_.isFinite(duration) || duration <= 0) return "compact";
   if (duration <= 60) return "short";

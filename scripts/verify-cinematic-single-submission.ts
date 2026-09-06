@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
 import {
   getBlockingCinematicPromptPreflightIssues,
@@ -7,7 +8,17 @@ import {
 } from "../src/services/cinematicPromptPreflightService";
 import { GenerateType, ProjectLanguage, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
-import { createFlowMediaRedirectUrl, normalizeFlowMediaId } from "../src/server/services/imageGeneratorService";
+import { isNonRetryableFlowVideoError } from "../src/services/projectImageGenerationService";
+import {
+  createFlowDurationOptionPattern,
+  createFlowMediaRedirectUrl,
+  createFlowVideoConfigState,
+  isFlowProjectPageUrl,
+  isFlowPromptValueApplied,
+  isFlowVideoConfigSummaryMatching,
+  normalizeFlowPromptValue,
+  normalizeFlowMediaId,
+} from "../src/server/services/imageGeneratorService";
 
 const scene = {
   id: "sc_preflight",
@@ -98,4 +109,47 @@ const flowMediaId = "84a69b3c-7dda-487c-a735-227c6b76b6b9";
 const duplicatedFlowMediaUrl = `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`;
 assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
 assert.equal(createFlowMediaRedirectUrl(duplicatedFlowMediaUrl), `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`);
+assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
+assert.equal(isFlowProjectPageUrl("https://labs.google/fx/vi/tools/flow/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
+assert.equal(createFlowDurationOptionPattern("10s").test("10 giây"), true);
+assert.equal(createFlowDurationOptionPattern("10s").test("8 giây"), false);
+assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2");
+assert.equal(isFlowPromptValueApplied("Shot 1\n\nShot 2", "Shot 1 Shot 2"), true);
+assert.equal(isFlowPromptValueApplied("Shot 1", "Shot 1 Shot 2"), false);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · x1", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), true);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
+assert.equal(isNonRetryableFlowVideoError("Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn."), true);
+assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow xác nhận tải lên."), true);
+assert.equal(isNonRetryableFlowVideoError("Kết nối mạng tạm thời bị gián đoạn."), false);
+assert.notEqual(
+  createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }),
+  createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "720p", videoDuration: "8s" }),
+);
+const flowAutomationSource = fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8");
+const cinematicPipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+assert.match(flowAutomationSource, /replaceFlowPromptInput/);
+assert.match(flowAutomationSource, /normalizeFlowPromptValue/);
+assert.match(flowAutomationSource, /waitForFlowPromptApplied/);
+assert.match(flowAutomationSource, /expected=.*observed=/);
+assert.match(flowAutomationSource, /flow-submit-disabled-after-prompt/);
+assert.match(flowAutomationSource, /FLOW_DIRECT_VIDEO_CONFIG\.SETTINGS_PANEL/);
+assert.match(flowAutomationSource, /\[role="radio"\]/);
+assert.match(flowAutomationSource, /if \(attempts >= maxAttempts\) throw error;[\s\S]*browserSessionUnavailable/);
+assert.doesNotMatch(flowAutomationSource, /navigator\.clipboard\.writeText\(text\), targetPrompt/);
+assert.match(cinematicPipelineSource, /generateCount: isCinematicEpisodeGenre\(config\.genre\)[\s\S]*SecurityConstants\.DEFAULT_AMOUNT/);
+assert.match(cinematicPipelineSource, /isNonRetryableFlowVideoError\(failureReason\)/);
+assert.match(cinematicPipelineSource, /PIPELINE_CLEAN_BATCH_IMAGES/);
+assert.match(cinematicPipelineSource, /idempotencyKey: _\.join\(\[voiceUpdatedProj\.id, sc\.id, sc\.dependencyHash\]/);
+assert.match(cinematicPipelineSource, /await generateFilmThumbnails\(\);[\s\S]*await runSceneGeneration\(remainingTargetScenes, false\)/);
+assert.doesNotMatch(cinematicPipelineSource, /Promise\.all\(\[runSceneGeneration\(remainingTargetScenes, false\), generateFilmThumbnails\(\)\]\)/);
+assert.match(flowAutomationSource, /remoteVideoMediaId/);
+const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+assert.match(pipelineControllerSource, /activeVideoSubmissionKeys/);
+assert.match(pipelineControllerSource, /completedVideoSubmissionResults/);
+assert.match(pipelineControllerSource, /completedSubmission && _\.get\(completedSubmission, "success"\)/);
+assert.match(pipelineControllerSource, /completedVideoSubmissionResults\.delete\(requestedIdempotencyKey\)/);
+assert.match(pipelineControllerSource, /!_\.isEmpty\(requestedIdempotencyKey\) && result\?\.success/);
+assert.doesNotMatch(pipelineControllerSource, /_\.some\(\[result\?\.success, result\?\.remoteMediaCreated\]/);
+assert.match(cinematicPipelineSource, /const recoverPendingFlowDownloads = async/);
+assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
 process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, shots: 3 }));
