@@ -103,7 +103,7 @@ import { applyOptionalMusicAsset, createAudioCueSheet, resolveAutomaticMusicProf
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
 import { resolvePipelineAiExecution } from "../services/pipelineAiExecutionService";
-import { formatUserFacingLog } from "../lib/userLogFormatter";
+import { formatSceneDisplayName, formatSceneList, formatUserFacingLog } from "../lib/userLogFormatter";
 import { partitionCinematicPlanningResponse } from "../services/cinematicPlanningRecoveryService";
 
 const getRestoredPipelineProgress = (project: VideoProject): { step: number; progress: number } => {
@@ -1784,7 +1784,7 @@ export function useAutoVideoPipeline(
               appendLog(
                 attemptTemplate
                   .replace("{0}", planningWorkerId)
-                  .replace("{1}", _.join(_.map(pendingPlanningScenes, "id"), ", "))
+                  .replace("{1}", formatSceneList(pendingPlanningScenes, config.language))
                   .replace("{2}", _.toString(attempt + 1))
                   .replace("{3}", _.toString(CINEMATIC_POLICY_CONFIG.CLIENT_PLANNING_ATTEMPTS)),
               );
@@ -1818,7 +1818,7 @@ export function useAutoVideoPipeline(
                 const pendingSceneIds = _.map(pendingPlanningScenes, "id");
                 const retryTemplate =
                   config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_BATCH_RETRY : CINEMATIC_PLANNING_MESSAGES.EN_BATCH_RETRY;
-                appendLog(retryTemplate.replace("{0}", planningWorkerId).replace("{1}", _.join(pendingSceneIds, ", ")));
+                appendLog(retryTemplate.replace("{0}", planningWorkerId).replace("{1}", formatSceneList(pendingSceneIds, config.language)));
                 await checkpointPlanningState();
               }
             }
@@ -1845,7 +1845,7 @@ export function useAutoVideoPipeline(
                 appendLog(
                   recoveryAttemptTemplate
                     .replace("{0}", CINEMATIC_ROOM_STAGE.PROMPT)
-                    .replace("{1}", recoveryScene.id)
+                    .replace("{1}", formatSceneDisplayName(recoveryScene.id, config.language))
                     .replace("{2}", _.toString(recoveryAttempt + 1))
                     .replace("{3}", _.toString(CINEMATIC_POLICY_CONFIG.CLIENT_SCENE_RECOVERY_ATTEMPTS)),
                 );
@@ -1867,7 +1867,7 @@ export function useAutoVideoPipeline(
                     config.language === ProjectLanguage.VI
                       ? CINEMATIC_PLANNING_MESSAGES.VI_SCENE_RECOVERED
                       : CINEMATIC_PLANNING_MESSAGES.EN_SCENE_RECOVERED;
-                  appendLog(recoveredTemplate.replace("{0}", recoveryScene.id));
+                  appendLog(recoveredTemplate.replace("{0}", formatSceneDisplayName(recoveryScene.id, config.language)));
                   break;
                 }
               }
@@ -1890,7 +1890,7 @@ export function useAutoVideoPipeline(
               config.language === ProjectLanguage.VI
                 ? CINEMATIC_PLANNING_MESSAGES.VI_SCENE_RECOVERY_FAILED
                 : CINEMATIC_PLANNING_MESSAGES.EN_SCENE_RECOVERY_FAILED;
-            appendLog(recoveryFailedTemplate.replace("{0}", _.join(_.map(unresolvedAfterRecovery, "id"), ", ")));
+            appendLog(recoveryFailedTemplate.replace("{0}", formatSceneList(unresolvedAfterRecovery, config.language)));
             await checkpointPlanningState("prompt_planning_failed");
             planningFailures.push({
               ...batchResponse,

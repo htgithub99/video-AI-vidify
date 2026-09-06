@@ -21,7 +21,7 @@ export enum ProgressLogContext {
 
 export const PROGRESS_LOG_CONFIG = {
   TIME_PATTERN: /^\[([^\]]+)\]\s*/,
-  PREFIX_PATTERN: /^(?:🚀|📌|✅|✓|⚠️?|❌|🎨|♻️?)\s*/u,
+  PREFIX_PATTERN: /^(?:🚀|📌|✅|✓|⚠️?|❌|🎨|♻️?|⏱️?|🎬|🎙️?|📁|⚙️?|📝|🧩|🎉|✨|🖼️?|🎞️?)\s*/u,
   STEP_PATTERN: /^(bước\s*\d+(?:\.\d+)?(?:\/\d+)?)(?:\s*:\s*)?/i,
   EMPTY_VALUE: "",
   LIGHT_THEME: AppTheme.LIGHT,
