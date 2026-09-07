@@ -3,11 +3,12 @@ import React from "react";
 import _ from "lodash";
 import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react";
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
-import { AUTO_VIDEO_DEFAULTS, FLOW_AGENT_VIDEO_ASPECT_RATIOS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
+import { AUTO_VIDEO_DEFAULTS, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { Lang } from "../../lib/lang";
+import { getVideoModelCapabilities, normalizeVideoModelSettings } from "../../services/videoModelCapabilityService";
 
 interface GenerationSettingsSectionProps {
   generationMode: ImageGenerationMode;
@@ -73,9 +74,18 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
       )
     : allEngineOptions;
   const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
-  const aspectRatioOptions = forceVideoOnly && !isGrokProvider ? FLOW_AGENT_VIDEO_ASPECT_RATIOS : _.values(AspectRatio);
-  const videoDurationOptions = isGrokProvider ? REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS : REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS;
-  const videoResolutionOptions = isGrokProvider ? REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS : REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS;
+  const videoModelCapabilities = getVideoModelCapabilities(imageGeneratorEngine);
+  const aspectRatioOptions = forceVideoOnly ? videoModelCapabilities.aspectRatios : _.values(AspectRatio);
+  const videoDurationOptions = videoModelCapabilities.durations;
+  const videoResolutionOptions = videoModelCapabilities.resolutions;
+
+  const applyVideoModel = (nextEngine: ImageGeneratorEngine): void => {
+    const normalized = normalizeVideoModelSettings(nextEngine, { duration: videoDuration, resolution: videoResolution, aspectRatio });
+    setImageGeneratorEngine(nextEngine);
+    if (!_.isEqual(videoDuration, normalized.duration)) setVideoDuration(normalized.duration);
+    if (!_.isEqual(videoResolution, normalized.resolution)) setVideoResolution(normalized.resolution);
+    if (!_.isEqual(aspectRatio, normalized.aspectRatio)) setAspectRatio(normalized.aspectRatio);
+  };
 
   return (
     <div className={cn("space-y-4")}>
@@ -139,15 +149,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   onChange={(event) => {
                     setGenerationMode(ImageGenerationMode.LabsFlow);
                     const nextEngine = _.isEqual(event.target.value, ImageGeneratorEngine.GrokImagine) ? ImageGeneratorEngine.GrokImagine : ImageGeneratorEngine.Veo3;
-                    setImageGeneratorEngine(nextEngine);
-                    if (_.isEqual(nextEngine, ImageGeneratorEngine.GrokImagine)) {
-                      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, videoDuration)) setVideoDuration(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
-                      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
-                    } else {
-                      if (!_.includes(FLOW_AGENT_VIDEO_ASPECT_RATIOS, aspectRatio as (typeof FLOW_AGENT_VIDEO_ASPECT_RATIOS)[number])) setAspectRatio(AspectRatio.SixteenNine);
-                      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS, videoDuration)) setVideoDuration(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION);
-                      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION);
-                    }
+                    applyVideoModel(nextEngine);
                   }}
                   className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                   <option value={ImageGenerationMode.LabsFlow} className={cn("bg-slate-955 text-slate-300")}>
@@ -168,7 +170,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
               <select
                 value={imageGeneratorEngine}
-                onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)}
+                onChange={(e) => applyVideoModel(e.target.value as ImageGeneratorEngine)}
                 className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(engineOptions, (opt) => (
                   <option key={opt.value + opt.label} value={opt.value} className={cn("bg-slate-955 text-slate-300")}>

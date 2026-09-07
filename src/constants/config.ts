@@ -1,5 +1,6 @@
 import { AspectRatio, ImageGenerationMode, ImageGeneratorEngine, SubtitleMode } from "../types";
 import { CINEMATIC_ROOM_STAGE } from "./cinematicConstants";
+import { REFACTOR_CONSTANTS } from "./refactor";
 
 export const APP_CONFIG = { TOAST_DURATION: 3000 };
 
@@ -1528,6 +1529,62 @@ export const FLOW_AGENT_UI_CONFIG = {
 } as const;
 
 export const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRatio.NineSixteen] as const;
+const VEO_31_DURATIONS = ["4s", "6s", "8s"] as const;
+const VEO_31_RESOLUTIONS = ["720p"] as const;
+const VEO_31_REFERENCE_DURATIONS = ["8s"] as const;
+const VEO_31_DEFAULT_DURATION = "8s";
+const VEO_31_DEFAULT_RESOLUTION = "720p";
+
+export const VIDEO_MODEL_CAPABILITY_CONFIG = {
+  MODELS: {
+    [ImageGeneratorEngine.Veo3]: {
+      durations: REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS,
+      resolutions: REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS,
+      aspectRatios: FLOW_AGENT_VIDEO_ASPECT_RATIOS,
+      defaultDuration: VEO_31_DEFAULT_DURATION,
+      defaultResolution: VEO_31_DEFAULT_RESOLUTION,
+      supportsReferences: true,
+      referenceDurations: REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS,
+    },
+    [ImageGeneratorEngine.Veo3Lite]: {
+      durations: VEO_31_DURATIONS,
+      resolutions: VEO_31_RESOLUTIONS,
+      aspectRatios: FLOW_AGENT_VIDEO_ASPECT_RATIOS,
+      defaultDuration: VEO_31_DEFAULT_DURATION,
+      defaultResolution: VEO_31_DEFAULT_RESOLUTION,
+      supportsReferences: true,
+      referenceDurations: VEO_31_REFERENCE_DURATIONS,
+    },
+    [ImageGeneratorEngine.Veo3Fast]: {
+      durations: VEO_31_DURATIONS,
+      resolutions: VEO_31_RESOLUTIONS,
+      aspectRatios: FLOW_AGENT_VIDEO_ASPECT_RATIOS,
+      defaultDuration: VEO_31_DEFAULT_DURATION,
+      defaultResolution: VEO_31_DEFAULT_RESOLUTION,
+      supportsReferences: true,
+      referenceDurations: VEO_31_REFERENCE_DURATIONS,
+    },
+    [ImageGeneratorEngine.Veo3Quality]: {
+      durations: VEO_31_DURATIONS,
+      resolutions: VEO_31_RESOLUTIONS,
+      aspectRatios: FLOW_AGENT_VIDEO_ASPECT_RATIOS,
+      defaultDuration: VEO_31_DEFAULT_DURATION,
+      defaultResolution: VEO_31_DEFAULT_RESOLUTION,
+      supportsReferences: false,
+      referenceDurations: [],
+    },
+    [ImageGeneratorEngine.GrokImagine]: {
+      durations: REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS,
+      resolutions: REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS,
+      aspectRatios: Object.values(AspectRatio),
+      defaultDuration: REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION,
+      defaultResolution: REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION,
+      supportsReferences: true,
+      referenceDurations: REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS,
+    },
+  },
+  REFERENCE_UNSUPPORTED_ERROR: "Model video đã chọn không hỗ trợ ảnh tham chiếu nhân vật trên Google Flow.",
+} as const;
 
 export const FLOW_DIRECT_VIDEO_CONFIG = {
   SETTINGS_PANEL: "flow-prompt-box-settings.settings-content-overlay, .cdk-overlay-pane flow-prompt-box-settings",
@@ -1535,14 +1592,10 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   MODEL_BUTTON_LABEL: /Chọn nhóm mô hình|Choose model group/i,
   VIDEO_TAB: /(?:videocam\s*)?(?:Video)/i,
   COMPONENTS_TAB: /(?:chrome_extension\s*)?(?:Thành phần|Components)/i,
-  RESOLUTIONS: ["360p", "720p"],
-  RESOLUTION_FALLBACKS: {
-    "360p": ["360p", "720p"],
-    "720p": ["720p"],
-  },
-  DURATIONS: ["4s", "6s", "8s", "10s"],
-  DEFAULT_RESOLUTION: "720p",
-  DEFAULT_DURATION: "8s",
+  RESOLUTIONS: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].resolutions,
+  DURATIONS: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].durations,
+  DEFAULT_RESOLUTION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultResolution,
+  DEFAULT_DURATION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultDuration,
   SINGLE_OUTPUT: "x1",
   PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
   CONFIG_VERIFY_TIMEOUT_MS: 5000,

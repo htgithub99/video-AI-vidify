@@ -8,7 +8,7 @@ import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, TextInImageMode, SubtitleMode } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
-import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG } from "../constants/config";
 import { CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_POLICY_CONFIG } from "../constants/cinematicConstants";
@@ -37,6 +37,7 @@ import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
 import { genreLabels } from "../constants/data";
 import { AutoVideoStudioSkeleton } from "./ui/Skeleton";
 import { ProgressLogContext } from "../constants/progressLog";
+import { normalizeVideoModelSettings } from "../services/videoModelCapabilityService";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -251,13 +252,14 @@ export default function AutoVideoGenerator({
     if (!_.some(videoEngines, (option) => _.isEqual(option.value, imageGeneratorEngine))) {
       setImageGeneratorEngine(_.get(_.first(videoEngines), "value", ImageGeneratorEngine.Veo3));
     }
-    if (_.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine)) {
-      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_DURATIONS, videoDuration)) setVideoDuration(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_DURATION);
-      if (!_.includes(REFACTOR_CONSTANTS.GROK_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(REFACTOR_CONSTANTS.GROK_FREE_VIDEO_RESOLUTION);
-    } else {
-      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS, videoDuration)) setVideoDuration(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION);
-      if (!_.includes(REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS, videoResolution)) setVideoResolution(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION);
-    }
+    const normalizedVideoSettings = normalizeVideoModelSettings(imageGeneratorEngine, {
+      duration: videoDuration,
+      resolution: videoResolution,
+      aspectRatio,
+    });
+    if (!_.isEqual(videoDuration, normalizedVideoSettings.duration)) setVideoDuration(normalizedVideoSettings.duration);
+    if (!_.isEqual(videoResolution, normalizedVideoSettings.resolution)) setVideoResolution(normalizedVideoSettings.resolution);
+    if (!_.isEqual(aspectRatio, normalizedVideoSettings.aspectRatio)) setAspectRatio(normalizedVideoSettings.aspectRatio);
   }, [
     cinematicMode,
     duration,
@@ -265,6 +267,7 @@ export default function AutoVideoGenerator({
     generationMode,
     generateType,
     imageGeneratorEngine,
+    aspectRatio,
     inputType,
     stylePreset,
     thumbnailStylePreset,
@@ -278,6 +281,7 @@ export default function AutoVideoGenerator({
     setImageGeneratorEngine,
     setVideoDuration,
     setVideoResolution,
+    setAspectRatio,
     setStylePreset,
     setThumbnailStylePreset,
   ]);

@@ -44,9 +44,9 @@ import {
   GEMINI_ACTIVE_VIDEO_MODE_REGEX,
   GEMINI_ACTIVE_IMAGE_MODE_REGEX,
   FLOW_AGENT_UI_CONFIG,
-  FLOW_AGENT_VIDEO_ASPECT_RATIOS,
   FLOW_DIRECT_VIDEO_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
+  VIDEO_MODEL_CAPABILITY_CONFIG,
   PROVIDER_REFERENCE_UPLOAD_CONFIG,
   PROVIDER_REFERENCE_UPLOAD_MESSAGES,
 } from "../../constants";
@@ -78,6 +78,7 @@ import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
+import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
 
 interface BrowserSession {
   context: BrowserContext;
@@ -376,19 +377,17 @@ const FLOW_SINGLE_OUTPUT_PATTERN = /^(?:x1|1x)$/i;
 
 export const isFlowVideoConfigSummaryMatching = (summary: string, visualConfig?: ImageGeneratorOptions["visualConfig"]): boolean => {
   const normalizedSummary = _.replace(_.trim(summary), /\s+/g, " ");
-  const targetResolution = _.includes(FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS, visualConfig?.videoResolution as (typeof FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS)[number])
-    ? visualConfig?.videoResolution
-    : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION;
-  const targetDuration = _.includes(FLOW_DIRECT_VIDEO_CONFIG.DURATIONS, visualConfig?.videoDuration as (typeof FLOW_DIRECT_VIDEO_CONFIG.DURATIONS)[number])
-    ? visualConfig?.videoDuration
-    : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION;
+  const normalizedSettings = normalizeVideoModelSettings(
+    _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
+    { duration: visualConfig?.videoDuration, resolution: visualConfig?.videoResolution, aspectRatio: visualConfig?.aspectRatio as AspectRatio },
+    !_.isEmpty(visualConfig?.referenceImages),
+  );
   const visibleResolution = _.trim(normalizedSummary.match(/(?:360|720)p/i)?.[0] || "");
   const visibleDuration = _.trim(normalizedSummary.match(/\d+\s*(?:s|sec(?:ond)?s?|giây)/i)?.[0] || "");
-  const acceptedResolutions = FLOW_DIRECT_VIDEO_CONFIG.RESOLUTION_FALLBACKS[targetResolution];
   return (
     /Video/i.test(normalizedSummary) &&
-    acceptedResolutions.some((resolution) => _.isEqual(_.lowerCase(visibleResolution), _.lowerCase(resolution))) &&
-    createFlowDurationOptionPattern(targetDuration).test(visibleDuration) &&
+    _.isEqual(_.lowerCase(visibleResolution), _.lowerCase(normalizedSettings.resolution)) &&
+    createFlowDurationOptionPattern(normalizedSettings.duration).test(visibleDuration) &&
     /(?:^|\s|·)(?:x1|1x)(?:$|\s|·)/i.test(normalizedSummary)
   );
 };
@@ -874,19 +873,19 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
     await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
   }
 
-  const targetRatio = _.includes(FLOW_AGENT_VIDEO_ASPECT_RATIOS, visualConfig?.aspectRatio as (typeof FLOW_AGENT_VIDEO_ASPECT_RATIOS)[number])
-    ? visualConfig?.aspectRatio
-    : AspectRatio.SixteenNine;
-  const targetResolution = _.includes(FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS, visualConfig?.videoResolution as (typeof FLOW_DIRECT_VIDEO_CONFIG.RESOLUTIONS)[number])
-    ? visualConfig?.videoResolution
-    : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION;
-  const targetDuration = _.includes(FLOW_DIRECT_VIDEO_CONFIG.DURATIONS, visualConfig?.videoDuration as (typeof FLOW_DIRECT_VIDEO_CONFIG.DURATIONS)[number])
-    ? visualConfig?.videoDuration
-    : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION;
+  const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
+  const normalizedSettings = normalizeVideoModelSettings(
+    engine,
+    { duration: visualConfig?.videoDuration, resolution: visualConfig?.videoResolution, aspectRatio: visualConfig?.aspectRatio as AspectRatio },
+    !_.isEmpty(visualConfig?.referenceImages),
+  );
+  if (!normalizedSettings.supportsReferences) throw createAppError(VIDEO_MODEL_CAPABILITY_CONFIG.REFERENCE_UNSUPPORTED_ERROR);
+  const targetRatio = normalizedSettings.aspectRatio;
+  const targetResolution = normalizedSettings.resolution;
+  const targetDuration = normalizedSettings.duration;
   const targetRatioPattern = new RegExp(`^(?:crop_[^\\s]+\\s*)?${_.escapeRegExp(_.toString(targetRatio))}$`, "i");
   const targetResolutionPattern = new RegExp(`^(?:hd\\s*)?${_.escapeRegExp(_.toString(targetResolution))}(?:\\s*info)?$`, "i");
   const targetDurationPattern = createFlowDurationOptionPattern(targetDuration);
-  const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
   const targetEngine =
     engine === ImageGeneratorEngine.Veo3Lite
       ? FLOW_AGENT_UI_CONFIG.VEO_LITE_MODEL
@@ -1601,10 +1600,33 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
 
 export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
-  const { prompt, visualConfig, sandboxConfig = {} } = options;
+  const { prompt, sandboxConfig = {} } = options;
+  const requestedVisualConfig = options.visualConfig;
+  const requestedEngine = _.defaultTo(requestedVisualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
+  const normalizedModelSettings = normalizeVideoModelSettings(
+    requestedEngine,
+    {
+      duration: requestedVisualConfig?.videoDuration,
+      resolution: requestedVisualConfig?.videoResolution,
+      aspectRatio: requestedVisualConfig?.aspectRatio as AspectRatio,
+    },
+    !_.isEmpty(requestedVisualConfig?.referenceImages),
+  );
+  if (_.isEqual(requestedVisualConfig?.generateType, GenerateType.Video) && !normalizedModelSettings.supportsReferences) {
+    return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: VIDEO_MODEL_CAPABILITY_CONFIG.REFERENCE_UNSUPPORTED_ERROR };
+  }
+  const visualConfig = _.isEqual(requestedVisualConfig?.generateType, GenerateType.Video)
+    ? {
+        ...requestedVisualConfig,
+        videoDuration: normalizedModelSettings.duration,
+        videoResolution: normalizedModelSettings.resolution,
+        aspectRatio: normalizedModelSettings.aspectRatio,
+      }
+    : requestedVisualConfig;
+  const normalizedOptions = { ...options, visualConfig };
 
-  if (visualConfig?.imageGeneratorEngine === ImageGeneratorEngine.GrokImagine) return generateMediaWithGrokImagine(options);
-  if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) return generateImageWithGeminiChat(options);
+  if (visualConfig?.imageGeneratorEngine === ImageGeneratorEngine.GrokImagine) return generateMediaWithGrokImagine(normalizedOptions);
+  if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) return generateImageWithGeminiChat(normalizedOptions);
 
   const finalPrompt = _.defaultTo(prompt, "");
 
