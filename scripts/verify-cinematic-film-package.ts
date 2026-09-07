@@ -3,8 +3,7 @@ import fs from "node:fs";
 import { CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA } from "../src/constants/responseSchemas";
 import { CINEMATIC_CONFIG } from "../src/constants/config";
 import {
-  getCinematicEditDecisionPrompt,
-  getCinematicEditSceneMediaLabel,
+  getCinematicGlobalEditDecisionPrompt,
   getCinematicFilmPackagePrompt,
   getCinematicFilmPackageRepairPrompt,
   getCinematicFinalVideoQualityPrompt,
@@ -86,10 +85,11 @@ const thumbnailRepairPrompt = getCinematicThumbnailTechnicalRepairPrompt(vietnam
 assert.match(thumbnailRepairPrompt, /generationPrompt and all visual\/directorial metadata are English/i);
 assert.match(thumbnailRepairPrompt, /only the exact visible headline may use the selected screenplay language/i);
 
-const editPrompt = getCinematicEditDecisionPrompt([{ sceneId: "scene_001" }]);
-assert.match(editPrompt, /continuous take is valid/i);
+const editPrompt = getCinematicGlobalEditDecisionPrompt([{ sceneId: "scene_001" }], [{ sceneId: "scene_001", segments: [] }]);
+assert.match(editPrompt, /deterministic libraries have already produced a complete renderable cut/i);
+assert.match(editPrompt, /never tighten, expand or create a time boundary/i);
+assert.match(editPrompt, /No production audio is attached/i);
 assert.doesNotMatch(editPrompt, /expected to contain at least three|shot_count_below_3/i);
-assert.match(getCinematicEditSceneMediaLabel("scene_001"), /SCENE scene_001: chronological contact sheet/i);
 assert.match(getCinematicFinalVideoQualityPrompt("Screenplay", "Promise"), /creative improvements in warnings/i);
 const cinematicSeoPrompt = getCinematicSeoPrompt("Screenplay", false, 3, 2, 5, 6, "drama", "adult");
 assert.match(cinematicSeoPrompt, /accurate film publishing metadata/i);

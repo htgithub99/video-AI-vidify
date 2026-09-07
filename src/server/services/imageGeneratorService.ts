@@ -1886,6 +1886,11 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             .map((video) => video.currentSrc || video.src)
             .filter(Boolean),
         );
+        const oldVideoThumbnailSources = await activePage.evaluate(() =>
+          Array.from(document.querySelectorAll('img[alt*="video" i]'))
+            .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
+            .filter(Boolean),
+        );
         const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? await getFlowVideoEditIds(activePage) : [];
         if (_.isEqual(visualConfig?.generateType, GenerateType.Video)) {
           flowResponseListener = (response: any) => {
@@ -1931,7 +1936,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         let finalBase64: string;
         if (visualConfig?.generateType === GenerateType.Video) {
           const mediaHandle = await activePage.waitForFunction(
-            ([oldEditIds, oldVideoSourcesList]) => {
+            ([oldEditIds, oldVideoSourcesList, oldVideoThumbnailSourcesList]) => {
               const generatedEditId = Array.from(document.querySelectorAll('a[href*="/edit/"]'))
                 .filter((link) => {
                   const container = link.closest("button") || link.parentElement;
@@ -1943,13 +1948,21 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               const generatedVideo = Array.from(document.querySelectorAll("video"))
                 .map((video) => ({ video, src: video.currentSrc || video.src }))
                 .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && video.readyState >= 1);
+              const generatedThumbnail = Array.from(document.querySelectorAll('img[alt*="video" i]'))
+                .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
+                .find((src) => src && !oldVideoThumbnailSourcesList.includes(src));
               if (generatedEditId) return { editId: generatedEditId, videoSrc: null };
-              return generatedVideo ? { editId: null, videoSrc: generatedVideo.src } : null;
+              if (generatedVideo) return { editId: null, videoSrc: generatedVideo.src, thumbnailSrc: null };
+              return generatedThumbnail ? { editId: null, videoSrc: null, thumbnailSrc: generatedThumbnail } : null;
             },
-            [oldVideoEditIds, oldVideoSources] as const,
+            [oldVideoEditIds, oldVideoSources, oldVideoThumbnailSources] as const,
             { timeout: 300000 },
           );
-          const generatedMedia = (await mediaHandle.jsonValue()) as { editId?: string | null; videoSrc?: string | null } | null;
+          const generatedMedia = (await mediaHandle.jsonValue()) as {
+            editId?: string | null;
+            videoSrc?: string | null;
+            thumbnailSrc?: string | null;
+          } | null;
           if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
 
           let downloadedVideoFromCard: FlowDownloadedVideo | null = null;
@@ -1959,6 +1972,15 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               activePage,
               currentProjectId,
               generatedMedia.editId,
+              parseConfiguredVideoDuration(visualConfig?.videoDuration),
+            );
+          } else if (generatedMedia.thumbnailSrc) {
+            const thumbnail = activePage.locator(`img[src="${generatedMedia.thumbnailSrc}"]`).last();
+            const mediaCard = thumbnail.locator("xpath=ancestor::flow-grid-tile-container[1]");
+            downloadedVideoFromCard = await downloadFlowVideoFromCard(
+              activePage,
+              mediaCard,
+              oldVideoSources,
               parseConfiguredVideoDuration(visualConfig?.videoDuration),
             );
           } else {
@@ -1980,6 +2002,13 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             downloadedVideoFromCard || (await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration)));
           remoteVideoMediaId = extractFlowMediaIdFromUrl(downloadedVideo.mediaUrl) || generatedMedia.editId || undefined;
           finalBase64 = `data:${downloadedVideo.mimeType};base64,${downloadedVideo.buffer.toString("base64")}`;
+          if (currentProjectId) {
+            await activePage.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`, {
+              waitUntil: "domcontentloaded",
+              timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
+            });
+            await dismissFlowOnboarding(activePage);
+          }
         } else {
           const base64Data = await activePage.waitForFunction(
             ([oldIdsList, getImgIdStr, jpegMimeType]) => {

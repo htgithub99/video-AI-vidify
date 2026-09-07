@@ -79,6 +79,13 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   PAGE_READY_TIMEOUT_MS: 20000,
   MODEL_PICKER_TIMEOUT_MS: 2500,
   PROMPT_SUBMIT_SETTLE_MS: 150,
+  ATTACHMENT_READY_TIMEOUT_MS: 120000,
+  SUBMISSION_VERIFY_TIMEOUT_MS: 10000,
+  SUBMISSION_POLL_MS: 250,
+  COMPOSER_EMPTY_MAX_CHARACTERS: 0,
+  ATTACHMENT_SUBMIT_BLOCKED_ERROR: "chat_planning_attachments_not_ready",
+  SUBMISSION_NOT_CONFIRMED_ERROR: "chat_planning_submission_not_confirmed",
+  SUBMISSION_CONFIRMED_LOG: "[AI Chat Planning] Room đã nhận yêu cầu ({0} ký tự).",
   NAVIGATION_TIMEOUT_MS: 60000,
   GEMINI_RESPONSE_SELECTOR:
     'model-response, [data-test-id="model-response"], [data-testid="model-response"], [data-message-author-role="assistant"], .model-response-text',

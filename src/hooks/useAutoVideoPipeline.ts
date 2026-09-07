@@ -206,7 +206,6 @@ import {
   applyCinematicClipAnalysisDecisions,
   countCinematicTimelineShots,
   createCinematicEditTimeline,
-  trimCinematicTimelineToDialogue,
 } from "../services/cinematicEditTimelineService";
 import { getBlockingCinematicPromptPreflightIssues } from "../services/cinematicPromptPreflightService";
 import { Lang } from "../lib/lang";
@@ -3853,6 +3852,7 @@ export function useAutoVideoPipeline(
       );
 
       let cinematicEditorialReviewAvailable = false;
+      let cinematicLibraryAnalysisAvailable = false;
       if (nativeFilmAudio) {
         let clipAnalysis = await pipelineSystemFetch(
           API_ROUTES.PIPELINE_ANALYZE_CINEMATIC_CLIPS,
@@ -3861,6 +3861,7 @@ export function useAutoVideoPipeline(
             scenes: _.map(realScenes as StoryboardScene[], (scene) =>
               _.pick(scene, [
                 "id",
+                "script",
                 "assetUrl",
                 "assetType",
                 "visualIntent",
@@ -3888,7 +3889,8 @@ export function useAutoVideoPipeline(
         );
         for (
           let reviewAttempt = 1;
-          reviewAttempt < CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_REVIEW_ATTEMPTS && (!clipAnalysis.success || !clipAnalysis.data?.editorialReviewAvailable);
+          reviewAttempt < CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_REVIEW_ATTEMPTS &&
+          (!clipAnalysis.success || (!clipAnalysis.data?.libraryAnalysisAvailable && !clipAnalysis.data?.editorialReviewAvailable));
           reviewAttempt++
         ) {
           appendLog(
@@ -3903,6 +3905,7 @@ export function useAutoVideoPipeline(
               scenes: _.map(realScenes as StoryboardScene[], (scene) =>
                 _.pick(scene, [
                   "id",
+                  "script",
                   "assetUrl",
                   "assetType",
                   "visualIntent",
@@ -3931,6 +3934,7 @@ export function useAutoVideoPipeline(
           );
         }
         if (clipAnalysis.success && _.isArray(clipAnalysis.data?.decisions)) {
+          cinematicLibraryAnalysisAvailable = Boolean(clipAnalysis.data?.libraryAnalysisAvailable);
           realScenes = applyCinematicClipAnalysisDecisions(realScenes as StoryboardScene[], clipAnalysis.data.decisions);
           const adjustedCount = _.size(
             _.filter(realScenes, (scene) => _.gt(_.defaultTo(scene.sourceTrimStartSeconds, 0), 0) || _.gt(_.defaultTo(scene.sourceTrimEndSeconds, 0), 0)),
@@ -3939,8 +3943,8 @@ export function useAutoVideoPipeline(
             cinematicEditorialReviewAvailable = true;
             appendLog(
               config.language === ProjectLanguage.VI
-                ? `[Dựng phim] AI đã xem hình và nghe audio của ${realScenes.length} clip; áp dụng điểm in/out mới cho ${adjustedCount} clip.`
-                : `[Film edit] AI reviewed picture and production audio for ${realScenes.length} clips; new in/out points were applied to ${adjustedCount} clips.`,
+                ? `[Dựng phim] Thư viện đã đo ${realScenes.length} clip; AI chỉ xem thêm ${_.toNumber(clipAnalysis.data?.aiReviewedSceneCount)} clip cần quyết định mạch truyện. Đã điều chỉnh ${adjustedCount} clip.`
+                : `[Film edit] Libraries measured ${realScenes.length} clips; AI reviewed only ${_.toNumber(clipAnalysis.data?.aiReviewedSceneCount)} clips needing story decisions. ${adjustedCount} clips were adjusted.`,
             );
             _.forEach(realScenes, (scene) => {
               const sourceDuration = _.toNumber(scene.duration);
@@ -3965,8 +3969,12 @@ export function useAutoVideoPipeline(
           } else {
             appendLog(
               config.language === ProjectLanguage.VI
-                ? `[Dựng phim] Chỉ hoàn tất kiểm tra kỹ thuật ${realScenes.length} clip; AI chưa đọc được nội dung và audio nên không ghi nhận là đã chọn điểm dựng.`
-                : `[Film edit] Technical checks completed for ${realScenes.length} clips; AI could not review story and audio, so no editorial selection is claimed.`,
+                ? cinematicLibraryAnalysisAvailable
+                  ? `[Dựng phim] Thư viện đã chọn điểm cắt cho ${realScenes.length} clip; AI không khả dụng nên phim vẫn tiếp tục dựng bình thường.`
+                  : `[Dựng phim] Đã kiểm tra kỹ thuật ${realScenes.length} clip; giữ các take hợp lệ để hoàn thành phim.`
+                : cinematicLibraryAnalysisAvailable
+                  ? `[Film edit] Libraries selected cuts for ${realScenes.length} clips; AI is unavailable, so editing continues normally.`
+                  : `[Film edit] Technical checks completed for ${realScenes.length} clips; valid takes remain in the final edit.`,
             );
           }
         }
@@ -3996,14 +4004,7 @@ export function useAutoVideoPipeline(
         }
       }
       const editedTimeline = nativeFilmAudio ? createCinematicEditTimeline(acceptedScenes) : acceptedScenes;
-      const dialogueTrimmedScenes = nativeFilmAudio ? trimCinematicTimelineToDialogue(editedTimeline) : editedTimeline;
-      const renderableScenes = nativeFilmAudio && _.isEmpty(dialogueTrimmedScenes) ? acceptedScenes : dialogueTrimmedScenes;
-      if (nativeFilmAudio && _.isEmpty(dialogueTrimmedScenes))
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? "[Dựng phim] QA chưa xác định được biên thoại; giữ toàn bộ take do AI tạo và tiếp tục render."
-            : "[Film edit] QA could not determine dialogue boundaries; keeping the complete AI-generated takes and continuing to render.",
-        );
+      const renderableScenes = editedTimeline;
       const omittedCount = _.subtract(realScenes.length, acceptedScenes.length);
       if (omittedCount > 0)
         appendLog(
@@ -4015,15 +4016,15 @@ export function useAutoVideoPipeline(
       if (nativeFilmAudio)
         appendLog(
           config.language === ProjectLanguage.VI
-            ? `[Timeline] Bản dựng gồm ${countCinematicTimelineShots(acceptedScenes)} shot được AI chọn từ ${acceptedScenes.length} clip nguồn; thời lượng ${_.round(expectedRenderDuration, 1)} giây.`
-            : `[Timeline] The edit contains ${countCinematicTimelineShots(acceptedScenes)} AI-selected shots from ${acceptedScenes.length} source clips; duration ${_.round(expectedRenderDuration, 1)} seconds.`,
+            ? `[Dựng phim] Bản dựng có ${countCinematicTimelineShots(acceptedScenes)} đoạn từ ${acceptedScenes.length} clip; dài ${_.round(expectedRenderDuration, 1)} giây. ${cinematicEditorialReviewAvailable ? "AI đã hỗ trợ kiểm tra mạch truyện." : cinematicLibraryAnalysisAvailable ? "Thư viện tự chọn điểm cắt." : "Đã dùng điểm cắt an toàn."}`
+            : `[Film edit] The timeline has ${countCinematicTimelineShots(acceptedScenes)} segments from ${acceptedScenes.length} clips and runs ${_.round(expectedRenderDuration, 1)} seconds. ${cinematicEditorialReviewAvailable ? "AI assisted with story continuity." : cinematicLibraryAnalysisAvailable ? "Libraries selected the cuts." : "Safe technical cuts were used."}`,
         );
       appendLog(T.logRenderPlan(_.size(renderableScenes), expectedRenderDuration, !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl)));
 
       const renderPayload = {
         projectId: newProj.id,
-        expectedSourceSceneIds: _.map(realScenes, "id"),
-        expectedDurationSeconds: parseTargetDurationSeconds(config.duration),
+        expectedSourceSceneIds: _.map(acceptedScenes, "id"),
+        expectedDurationSeconds: expectedRenderDuration,
         scenes: _.map(renderableScenes, (sc) => ({
           id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
           duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,

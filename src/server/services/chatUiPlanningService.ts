@@ -532,14 +532,10 @@ const waitForStableResponse = async (
       "text",
     );
     const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
+    const sceneContractCandidates = _.compact(_.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)));
+    const completeJsonCandidates = _.compact(_.map(responseCandidates, extractCompleteJsonValue));
     const selectedResponse =
-      _.findLast(
-        _.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)),
-        (value) => !_.isEmpty(value),
-      ) ||
-      _.findLast(_.map(responseCandidates, extractCompleteJsonValue), (value) => !_.isEmpty(value)) ||
-      _.last(responseCandidates) ||
-      "";
+      _.maxBy(sceneContractCandidates, "length") || _.maxBy(completeJsonCandidates, "length") || _.maxBy(responseCandidates, "length") || "";
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
@@ -558,7 +554,7 @@ const waitForStableResponse = async (
       JSON.parse(latestText);
       isCompleteJson = true;
     } catch {}
-    if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && belongsToCurrentRequest && isCompleteJson) {
+    if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && belongsToCurrentRequest && isCompleteJson && !isBusy) {
       appLog(`[AI Chat Planning] Đã lấy JSON hoàn chỉnh ngay khi room trả đủ dữ liệu (${latestText.length} ký tự, ${Date.now() - startedAt} ms).`);
       return latestText;
     }
@@ -633,7 +629,44 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
   }
 
   if (!uploaded) throw new Error("Room-only AI execution could not attach the required media files to the selected chat room.");
-  await page.waitForTimeout(1500);
+};
+
+const getComposerText = async (input: Locator): Promise<string> =>
+  _.trim(
+    await input
+      .inputValue()
+      .catch(() => input.textContent())
+      .catch(() => ""),
+  );
+
+const waitForSendButtonReady = async (sendButton: Locator, signal?: AbortSignal): Promise<boolean> => {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS) {
+    throwIfPlanningCancelled(signal);
+    if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) return true;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  return false;
+};
+
+const waitForSubmissionConfirmation = async (
+  page: Page,
+  input: Locator,
+  busySelector: string,
+  responseSelector: string,
+  initialResponseCount: number,
+  signal?: AbortSignal,
+): Promise<boolean> => {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS) {
+    throwIfPlanningCancelled(signal);
+    const composerIsEmpty = (await getComposerText(input)).length <= CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS;
+    const responseStarted = (await page.locator(responseSelector).count().catch(() => 0)) > initialResponseCount;
+    const roomIsBusy = (await page.locator(busySelector).filter({ visible: true }).count().catch(() => 0)) > 0;
+    if (composerIsEmpty || responseStarted || roomIsBusy) return true;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  return false;
 };
 
 const submitPrompt = async (
@@ -671,9 +704,13 @@ const submitPrompt = async (
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
   await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
   const sendButton = page.locator(sendSelector).filter({ visible: true }).last();
-  if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) await sendButton.click();
-  else await input.press("Enter");
-  appLog(`[AI Chat Planning] Đã nhập và gửi yêu cầu vào room (${normalizedPrompt.length} ký tự).`);
+  const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
+  if (sendButtonReady) await sendButton.click();
+  else if (_.isEmpty(attachments)) await input.press("Enter");
+  else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+  const submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+  if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);
+  appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace("{0}", _.toString(normalizedPrompt.length)));
   return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseSnapshots, completionMarker, signal);
 };
 

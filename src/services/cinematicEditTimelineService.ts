@@ -42,11 +42,11 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
       cinematicTakeDecisionReason: _.join(_.compact([scene.cinematicTakeDecisionReason, decision.reason]), ";"),
       transition: _.toString(decision.recommendedTransition || scene.transition),
       cinematicAudioBridgeMode: decision.audioBridgeMode,
-      cinematicContinuityScore: _.toNumber(decision.continuityScore),
-      cinematicStoryClarityScore: _.toNumber(decision.storyClarityScore),
-      cinematicPerformanceScore: _.toNumber(decision.performanceScore),
-      cinematicDialogueCoverageScore: _.toNumber(decision.dialogueCoverageScore),
-      cinematicDialogueDetected: Boolean(decision.dialogueDetected),
+      cinematicContinuityScore: _.isNumber(decision.continuityScore) ? decision.continuityScore : scene.cinematicContinuityScore,
+      cinematicStoryClarityScore: _.isNumber(decision.storyClarityScore) ? decision.storyClarityScore : scene.cinematicStoryClarityScore,
+      cinematicPerformanceScore: _.isNumber(decision.performanceScore) ? decision.performanceScore : scene.cinematicPerformanceScore,
+      cinematicDialogueCoverageScore: _.isNumber(decision.dialogueCoverageScore) ? decision.dialogueCoverageScore : scene.cinematicDialogueCoverageScore,
+      cinematicDialogueDetected: _.isBoolean(decision.dialogueDetected) ? decision.dialogueDetected : scene.cinematicDialogueDetected,
       cinematicObservedShotCount: _.toNumber(decision.observedShotCount),
       cinematicEditSegments: _.castArray(decision.segments || []),
       cinematicSupportShotType: decision.supportShotType,
@@ -84,15 +84,6 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
     },
     [],
   );
-
-export const trimCinematicTimelineToDialogue = (timeline: StoryboardScene[]): StoryboardScene[] => {
-  const dialogueIndexes = _.filter(
-    _.map(timeline, (scene, index) => (!_.isEmpty(_.trim(scene.spokenDialogue)) ? index : undefined)),
-    _.isNumber,
-  );
-  if (_.isEmpty(dialogueIndexes)) return [];
-  return _.slice(timeline, _.first(dialogueIndexes), _.add(_.last(dialogueIndexes)!, 1));
-};
 
 export const countCinematicTimelineShots = (scenes: StoryboardScene[]): number =>
   _.sumBy(scenes, (scene) => (_.isEmpty(scene.cinematicEditSegments) ? 1 : _.size(scene.cinematicEditSegments)));

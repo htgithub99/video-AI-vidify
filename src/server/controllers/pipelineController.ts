@@ -173,8 +173,7 @@ import {
   STYLE_IDENTITY_BOUNDARY,
 } from "../../constants";
 import {
-  getCinematicEditDecisionPrompt,
-  getCinematicEditSceneMediaLabel,
+  getCinematicGlobalEditDecisionPrompt,
   getCinematicCharacterAnalysisPrompt,
   getCinematicFilmPackagePrompt,
   getCinematicFilmPackageRepairPrompt,
@@ -206,6 +205,7 @@ import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
 import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
+import { analyzeCinematicClipsWithLibraries } from "../services/cinematicClipAnalyzerService.js";
 
 import {
   AspectRatio,
@@ -3839,11 +3839,12 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
   const analysisDir = path.join(dataRoot, `${CINEMATIC_EDIT_ANALYSIS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
   fs.mkdirSync(analysisDir, { recursive: true });
-  const analyzeScene = async (scene: any) => {
+  const analyzeScene = async (scene: any, includeReviewMedia = false) => {
     const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), "?")) || "", "/\\");
     const candidate = path.resolve(dataRoot, relativePath);
     const isSafe = _.startsWith(_.toLower(candidate), _.toLower(`${projectRoot}${path.sep}`)) && fs.existsSync(candidate);
-    if (!isSafe) return { sceneId: scene.id, warnings: ["clip_missing"], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: "omit", reason: "clip_missing" };
+    if (!isSafe)
+      return { sceneId: scene.id, sourcePath: "", warnings: ["clip_missing"], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: "omit", reason: "clip_missing" };
     const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean }>((resolve) =>
       ffmpeg.ffprobe(candidate, (error, metadata) => {
         const videoStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, "video"));
@@ -3930,9 +3931,9 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
           ? _.join(warnings, ",") || "safe_edge_cleanup"
           : "technical_clip_analysis_passed";
     let contactSheetData = "";
-    let productionAudioData = "";
-    if (_.gt(duration, 0)) {
-      const contactSheetPath = path.join(analysisDir, `${path.basename(_.toString(scene.id))}-${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`);
+    let contactSheetPath = "";
+    if (includeReviewMedia && _.gt(duration, 0)) {
+      contactSheetPath = path.join(analysisDir, `${path.basename(_.toString(scene.id))}-${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`);
       const frameRate = CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / duration;
       const tileRows = Math.ceil(CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS);
       const contactSheetFilter = `fps=${frameRate},scale=${Math.floor(CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_WIDTH / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS)}:-2,tile=${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS}x${tileRows}`;
@@ -3949,28 +3950,10 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
           resolve();
         });
       });
-      if (mediaInfo.hasAudio) {
-        const audioPath = path.join(analysisDir, `${path.basename(_.toString(scene.id))}-${CINEMATIC_EDIT_ANALYSIS_CONFIG.AUDIO_FILE_NAME}`);
-        await new Promise<void>((resolve) => {
-          const process = spawn(executable, ["-y", "-i", candidate, "-vn", "-ac", "1", "-b:a", CINEMATIC_EDIT_ANALYSIS_CONFIG.AUDIO_BITRATE, audioPath], {
-            windowsHide: true,
-            stdio: "ignore",
-          });
-          const timeout = setTimeout(() => process.kill(), CINEMATIC_EDIT_ANALYSIS_CONFIG.FFMPEG_TIMEOUT_MS);
-          process.once("error", () => {
-            clearTimeout(timeout);
-            resolve();
-          });
-          process.once("exit", () => {
-            clearTimeout(timeout);
-            if (fs.existsSync(audioPath)) productionAudioData = fs.readFileSync(audioPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-            resolve();
-          });
-        });
-      }
     }
     return {
       sceneId: scene.id,
+      sourcePath: candidate,
       duration,
       trimStartSeconds,
       trimEndSeconds,
@@ -3980,18 +3963,92 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       reason,
       hasAudio: mediaInfo.hasAudio,
       contactSheetData,
-      productionAudioData,
+      contactSheetPath,
     };
   };
   const technicalDecisions: any[] = [];
+  let analyzedDecisions: any[] = [];
+  let libraryAnalysisAvailable = false;
   try {
     for (const batch of _.chunk(scenes, 3)) technicalDecisions.push(...(await Promise.all(_.map(batch, analyzeScene))));
-    const reviewableDecisions = _.filter(technicalDecisions, "contactSheetData");
-    if (_.isEmpty(reviewableDecisions) || !(await isAiProviderAvailable())) {
+    analyzedDecisions = technicalDecisions;
+    const libraryResult = await analyzeCinematicClipsWithLibraries(
+      _.map(
+        _.filter(technicalDecisions, (decision) => !_.isEmpty(decision.sourcePath)),
+        (decision) => {
+          const scene = _.find(scenes, { id: decision.sceneId });
+          return {
+            sceneId: _.toString(decision.sceneId),
+            path: _.toString(decision.sourcePath),
+            hasAudio: Boolean(decision.hasAudio),
+            protectDialogue:
+              _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene?.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene?.spokenDialogue))),
+          };
+        },
+      ),
+      executable,
+      analysisDir,
+    );
+    libraryAnalysisAvailable = libraryResult.success && libraryResult.libraryAnalysisAvailable;
+    const libraryByScene = _.keyBy(libraryResult.decisions, "sceneId");
+    analyzedDecisions = _.map(technicalDecisions, (technical) => {
+      const library = libraryByScene[technical.sceneId];
+      if (!library) return technical;
+      return {
+        ...technical,
+        ...library,
+        sourcePath: technical.sourcePath,
+        contactSheetData: technical.contactSheetData,
+        contactSheetPath: technical.contactSheetPath,
+        warnings: _.uniq([..._.castArray(technical.warnings), ..._.castArray(library.warnings)]),
+        reason: _.join(_.compact([library.reason, technical.reason]), ";"),
+      };
+    });
+    if (!libraryAnalysisAvailable || !(await isAiProviderAvailable())) {
       return res.json({
         success: true,
-        decisions: _.map(technicalDecisions, (decision) => _.omit(decision, ["contactSheetData", "productionAudioData"])),
+        decisions: _.map(analyzedDecisions, (decision) =>
+          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
+        ),
+        libraryAnalysisAvailable,
         editorialReviewAvailable: false,
+        timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
+      });
+    }
+    const aiReviewSceneIds = new Set(
+      _.map(
+        _.filter(analyzedDecisions, (decision) => !_.isEqual(decision.takeDecision, "omit") && !_.isEmpty(decision.candidateSegments)),
+        (decision) => _.toString(decision.sceneId),
+      ),
+    );
+    const reviewMediaDecisions: any[] = [];
+    for (const batch of _.chunk(_.filter(scenes, (scene) => aiReviewSceneIds.has(_.toString(scene.id))), CINEMATIC_EDIT_ANALYSIS_CONFIG.MEDIA_WORKERS)) {
+      reviewMediaDecisions.push(...(await Promise.all(_.map(batch, (scene) => analyzeScene(scene, true)))));
+    }
+    const reviewMediaByScene = _.keyBy(reviewMediaDecisions, "sceneId");
+    analyzedDecisions = _.map(analyzedDecisions, (decision) => {
+      const media = reviewMediaByScene[decision.sceneId];
+      return media
+        ? {
+            ...decision,
+            contactSheetData: media.contactSheetData,
+            contactSheetPath: media.contactSheetPath,
+          }
+        : decision;
+    });
+    const reviewableDecisions = _.filter(
+      analyzedDecisions,
+      (decision) => !_.isEmpty(decision.contactSheetData) && aiReviewSceneIds.has(_.toString(decision.sceneId)),
+    );
+    if (_.isEmpty(reviewableDecisions)) {
+      return res.json({
+        success: true,
+        decisions: _.map(analyzedDecisions, (decision) =>
+          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
+        ),
+        libraryAnalysisAvailable,
+        editorialReviewAvailable: false,
+        timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
       });
     }
     const metadata = _.map(reviewableDecisions, (decision) => {
@@ -3999,6 +4056,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       return {
         ..._.pick(scene, [
           "id",
+          "script",
           "visualIntent",
           "visibleAction",
           "reaction",
@@ -4022,16 +4080,62 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         technicalTrimStartSeconds: decision.trimStartSeconds,
         technicalTrimEndSeconds: decision.trimEndSeconds,
         technicalWarnings: decision.warnings,
+        libraryCandidateSegments: decision.candidateSegments,
+        libraryShotBoundaries: decision.shotBoundaries,
+        libraryConfidence: decision.libraryConfidence,
+        sharpnessScore: decision.sharpnessScore,
+        motionScore: decision.motionScore,
+        duplicateFrameRatio: decision.duplicateFrameRatio,
+        visuallySimilarToSceneId: decision.visuallySimilarToSceneId,
+        visualSimilarityScore: decision.visualSimilarityScore,
       };
     });
-    const parts: any[] = [{ text: getCinematicEditDecisionPrompt(metadata) }];
-    _.forEach(reviewableDecisions, (decision) => {
-      parts.push({ text: getCinematicEditSceneMediaLabel(decision.sceneId) });
-      parts.push({ inlineData: { mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE, data: decision.contactSheetData } });
-      if (!_.isEmpty(decision.productionAudioData)) parts.push({ inlineData: { mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.AUDIO_MIME_TYPE, data: decision.productionAudioData } });
+    const overviewPath = path.join(analysisDir, CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_FILE_NAME);
+    const overviewSources = _.filter(reviewableDecisions, (decision) => !_.isEmpty(decision.contactSheetPath) && fs.existsSync(decision.contactSheetPath));
+    const overviewInputs = _.flatMap(overviewSources, (decision) => ["-i", decision.contactSheetPath]);
+    const overviewFilterParts = _.map(overviewSources, (_decision, index) =>
+      `[${index}:v]scale=${CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_WIDTH}:${CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_HEIGHT}[scene${index}]`,
+    );
+    const overviewLayout = _.join(
+      _.map(overviewSources, (_decision, index) => {
+        const column = index % CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_COLUMNS;
+        const row = Math.floor(index / CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_COLUMNS);
+        return `${column * CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_WIDTH}_${row * CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_HEIGHT}`;
+      }),
+      "|",
+    );
+    const overviewLabels = _.join(_.map(overviewSources, (_decision, index) => `[scene${index}]`), "");
+    const overviewFilter = `${_.join(overviewFilterParts, ";")};${overviewLabels}xstack=inputs=${overviewSources.length}:layout=${overviewLayout}`;
+    await new Promise<void>((resolve) => {
+      const process = spawn(executable, ["-y", ...overviewInputs, "-filter_complex", overviewFilter, "-frames:v", "1", overviewPath], {
+        windowsHide: true,
+        stdio: "ignore",
+      });
+      const timeout = setTimeout(() => process.kill(), CINEMATIC_EDIT_ANALYSIS_CONFIG.FFMPEG_TIMEOUT_MS);
+      process.once("error", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      process.once("exit", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
     });
-    const editorialResponse = await generateContentWithRetry({
-      contents: [{ role: "user", parts }],
+    const libraryObservations = _.map(reviewableDecisions, (decision) =>
+      _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
+    );
+    const globalEditParts: any[] = [{ text: getCinematicGlobalEditDecisionPrompt(metadata, libraryObservations) }];
+    if (fs.existsSync(overviewPath)) {
+      globalEditParts.push({ text: CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_LABEL });
+      globalEditParts.push({
+        inlineData: {
+          mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE,
+          data: fs.readFileSync(overviewPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
+        },
+      });
+    }
+    const globalEditResponse = await generateContentWithRetry({
+      contents: [{ role: "user", parts: globalEditParts }],
       config: {
         responseMimeType: CONTENT_TYPES.JSON,
         responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
@@ -4039,46 +4143,58 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       },
       task: { capability: AiTaskCapability.VisualQa },
     });
-    const editorialByScene = _.keyBy(_.castArray(safeParseJSON(editorialResponse.text, {})?.decisions), "sceneId");
-    const decisions = _.map(technicalDecisions, (technical) => {
+    const editorialDecisions = _.castArray(safeParseJSON(globalEditResponse.text, {})?.decisions);
+    const editorialAiMetadata = globalEditResponse.aiMetadata;
+    const editorialByScene = _.keyBy(editorialDecisions, "sceneId");
+    const decisions = _.map(analyzedDecisions, (technical) => {
       const editorial = editorialByScene[technical.sceneId];
-      if (!editorial) return _.omit(technical, ["contactSheetData", "productionAudioData"]);
-      const maxTrim = technical.duration * CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_EDGE_TRIM_RATIO;
-      const editorialStart = _.clamp(_.toNumber(editorial.bestInSeconds), 0, maxTrim);
-      const editorialOut = _.clamp(_.toNumber(editorial.bestOutSeconds), editorialStart + CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS, technical.duration);
-      const segments = _.compact(
+      if (!editorial) return _.omit(technical, ["contactSheetData", "contactSheetPath"]);
+      const technicalUsableStart = _.toNumber(technical.trimStartSeconds);
+      const technicalUsableEnd = _.max([technicalUsableStart, technical.duration - _.toNumber(technical.trimEndSeconds)]) || technical.duration;
+      const librarySegments = _.castArray(technical.candidateSegments || technical.segments);
+      const editorialSegments = _.uniqBy(
+        _.compact(
         _.map(_.castArray(editorial.segments), (segment, segmentIndex) => {
-          const inSeconds = _.clamp(_.toNumber(segment.inSeconds), 0, technical.duration);
-          const outSeconds = _.clamp(_.toNumber(segment.outSeconds), inSeconds, technical.duration);
+          const selectedLibrarySegment = _.minBy(
+            librarySegments,
+            (candidate) =>
+              Math.abs(_.toNumber(candidate.inSeconds) - _.toNumber(segment.inSeconds)) +
+              Math.abs(_.toNumber(candidate.outSeconds) - _.toNumber(segment.outSeconds)),
+          );
+          if (!selectedLibrarySegment) return undefined;
+          const inSeconds = _.clamp(_.toNumber(selectedLibrarySegment.inSeconds), technicalUsableStart, technicalUsableEnd);
+          const outSeconds = _.clamp(_.toNumber(selectedLibrarySegment.outSeconds), inSeconds, technicalUsableEnd);
           if (_.lt(outSeconds - inSeconds, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS)) return undefined;
           return {
-            segmentId: _.trim(_.toString(segment.segmentId)) || `${technical.sceneId}_segment_${segmentIndex + 1}`,
+            segmentId: _.trim(_.toString(selectedLibrarySegment.segmentId)) || `${technical.sceneId}_segment_${segmentIndex + 1}`,
             inSeconds,
             outSeconds,
             shotRole: segment.shotRole,
             storyContribution: _.trim(_.toString(segment.storyContribution)),
             transition: segment.transition,
-            audioBridgeMode: segment.audioBridgeMode,
-            containsDialogue: Boolean(segment.containsDialogue),
+            audioBridgeMode: selectedLibrarySegment.audioBridgeMode,
+            containsDialogue: Boolean(selectedLibrarySegment.containsDialogue),
           };
         }),
+        ),
+        "segmentId",
       );
+      const segments = _.isEmpty(editorialSegments) ? librarySegments : editorialSegments;
+      const editorialStart = _.min(_.map(segments, (segment) => _.toNumber(segment.inSeconds))) ?? technicalUsableStart;
+      const editorialOut = _.max(_.map(segments, (segment) => _.toNumber(segment.outSeconds))) ?? technicalUsableEnd;
       const trimStartSeconds = _.max([technical.trimStartSeconds, editorialStart]) || 0;
       const trimEndSeconds = _.max([technical.trimEndSeconds, technical.duration - editorialOut]) || 0;
       const usableDuration = technical.duration - trimStartSeconds - trimEndSeconds;
       const editorialTakeDecision = _.lt(usableDuration, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS) ? technical.takeDecision : editorial.takeDecision;
       return {
-        ..._.omit(technical, ["contactSheetData", "productionAudioData"]),
+        ..._.omit(technical, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
         trimStartSeconds,
         trimEndSeconds,
         takeDecision: _.isEqual(technical.takeDecision, "omit") ? "omit" : editorialTakeDecision,
         recommendedTransition: editorial.recommendedTransition,
-        audioBridgeMode: editorial.audioBridgeMode,
         continuityScore: editorial.continuityScore,
         storyClarityScore: editorial.storyClarityScore,
         performanceScore: editorial.performanceScore,
-        dialogueCoverageScore: editorial.dialogueCoverageScore,
-        dialogueDetected: editorial.dialogueDetected,
         observedShotCount: editorial.observedShotCount,
         segments,
         supportShotType: editorial.supportShotType,
@@ -4091,16 +4207,25 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     });
     return res.json({
       success: true,
-      decisions: _.map(decisions, (decision) => _.omit(decision, ["productionAudioData"])),
+      decisions: _.map(decisions, (decision) =>
+        _.omit(decision, ["sourcePath", "contactSheetPath", "contactSheetData", "candidateSegments", "shotBoundaries"]),
+      ),
+      libraryAnalysisAvailable,
       editorialReviewAvailable: true,
-      aiMetadata: editorialResponse.aiMetadata,
+      aiReviewedSceneCount: reviewableDecisions.length,
+      timelineProvenance: "library_ai_refined",
+      aiMetadata: editorialAiMetadata,
     });
   } catch (error) {
     logger.warn(LogEvent.VISUAL_QA_ERROR, error);
     return res.json({
       success: true,
-      decisions: _.map(technicalDecisions, (decision) => _.omit(decision, ["contactSheetData", "productionAudioData"])),
+      decisions: _.map(analyzedDecisions, (decision) =>
+        _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
+      ),
+      libraryAnalysisAvailable,
       editorialReviewAvailable: false,
+      timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
     });
   } finally {
     fs.rmSync(analysisDir, { recursive: true, force: true });

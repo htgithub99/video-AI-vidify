@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createCinematicEditTimeline, trimCinematicTimelineToDialogue } from "../src/services/cinematicEditTimelineService";
+import { createCinematicEditTimeline } from "../src/services/cinematicEditTimelineService";
 import { GenerateType, StoryboardScene } from "../src/types";
 
 const scene = {
@@ -30,7 +30,4 @@ assert.deepEqual(timeline.map((item) => item.duration), [2.4, 3.6, 2.4]);
 assert.equal(timeline[0].spokenDialogue, "");
 assert.equal(timeline[1].spokenDialogue, "One line");
 assert.equal(timeline[2].spokenDialogue, "");
-const dialogueTimeline = trimCinematicTimelineToDialogue(timeline);
-assert.equal(dialogueTimeline.length, 1);
-assert.equal(dialogueTimeline[0].id, "sc_1__speaker");
 process.stdout.write(JSON.stringify({ passed: true, timelineShots: timeline.length }));

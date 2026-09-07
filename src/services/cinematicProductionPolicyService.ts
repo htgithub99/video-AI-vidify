@@ -98,7 +98,11 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], _expe
 
 export const getCinematicDialogueTakeIssues = (scenes: StoryboardScene[]): string[] =>
   _.flatMap(
-    _.filter(scenes, (scene) => _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene.dialogueMode))),
+    _.filter(
+      scenes,
+      (scene) =>
+        _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene.dialogueMode)) && _.isBoolean(scene.cinematicDialogueDetected),
+    ),
     (scene) =>
       _.compact([
         !scene.cinematicDialogueDetected && `${scene.id}:dialogue:not_detected`,
