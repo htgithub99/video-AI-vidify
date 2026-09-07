@@ -4,6 +4,7 @@ import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy, VideoGenre } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
 import { THUMBNAIL_LAYOUT_LIBRARY_PROMPT, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT } from "./thumbnail.js";
+import { CHARACTER_REFERENCE_SHEET_DIRECTION } from "./cinematicPrompts.js";
 
 export const NO_FRAME_RULE = `Use a natural full-frame composition. Add "No frame" only when the scene could reasonably be mistaken for framed artwork.`;
 
@@ -184,42 +185,24 @@ export const getQuickVideoPlanningPrompt = (
   generateType: GenerateType = GenerateType.Image,
 ): string => {
   const requiresVideoPrompt = _.includes([GenerateType.Video, GenerateType.Mixed], generateType);
-  return `You are the visual director for QUICK VIDEO production. Build a fast, standalone scene plan and return one complete result for every source scene in this response.
+  return `Create the final visual prompt for every source scene in this QUICK VIDEO production request. Make the creative and directorial choices yourself.
 
 ${UNTRUSTED_INPUT_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
 
-[QUICK PRODUCTION PROFILE]
-- Output media mode: ${generateType}.
-- Content profile: ${editorialContext || "Infer the clearest treatment from the supplied source scene."}
-- Prioritize immediate clarity, generation reliability and speed. Give each scene one dominant subject, one primary physical action and one visible result.
-- Do not create screenplay chapters, multi-shot coverage, edit timelines, dialogue direction, cinematicBeats or film-package metadata.
-- A recurring character keeps the supplied identity anchors, but do not repeat a long biography or force that character into an unrelated scene.
-- Use the exact story event from the current scene. Neighboring context may clarify identity or continuity but must not replace the current event.
-- For ordinary action, show a readable start state, one achievable motion and a stable end state. Avoid simultaneous incompatible actions, morphing, duplicated people or props.
-- For conflict, use one decisive attack, one specific defence/contact and one physical consequence. Keep grounded footing, readable distance and believable momentum; forbid rhythmic flurries, decorative spins and dance-like fighting.
-
-[STYLE AND USER SETTINGS]
-- Style: ${referenceStyle || visualStyle || "Choose one coherent style appropriate to the source."}
-- Canvas: ${aspectRatio}; background: ${backgroundMode}; text: ${textMode}; framing: ${focusMode}.
-- Character cards: ${charactersJson || "None supplied"}
-- Visual context: ${visualBibleJson || "None supplied"}
-- Neighbor context: ${continuityContext || "None supplied"}
-- Locations: ${locationLibraryJson || "None supplied"}
-- Props: ${propLibraryJson || "None supplied"}
-- References: ${referenceContext}
+Follow the scene and these user settings: mode=${generateType}; style=${referenceStyle || visualStyle || "choose freely"}; canvas=${aspectRatio}; background=${backgroundMode}; text=${textMode}; framing=${focusMode}.
+Keep only the basic recurring-character identity from these cards: ${charactersJson || "none"}.
+Use context only when useful: ${editorialContext || visualBibleJson || continuityContext || locationLibraryJson || propLibraryJson || "none"}.
+Reference image: ${referenceContext}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
-[AI-AUTHORED DELIVERABLE]
-- Write prompt as one complete 60-95 word English image prompt: style, exact identity/subject, visible action, visible result, necessary environment, composition, lighting and concise negative constraints.
+Write one complete English image prompt for each scene. Keep the event clear and the character recognizable. Do not add unrelated people, text or objects.
 ${
   requiresVideoPrompt
-    ? `- Also write generationPrompt as one complete self-contained 90-170 word English video prompt. The application sends it unchanged. Direct one continuous clip with a clear opening state, one causal action, natural performance, physically plausible movement, motivated camera movement, synchronized production sound and a stable visible payoff. State the requested identity, environment, aspect composition and unwanted artifacts inside this prompt; do not refer to other fields or ask application code to append anything.`
-    : `- Set generationPrompt to an empty string because this run does not generate video.`
+    ? `Also write one complete English video generationPrompt that can be sent unchanged. Let the AI direct the scene freely while preserving the event, character identity and user settings. Keep motion physically readable and avoid content likely to be refused by the video provider.`
+    : `Set generationPrompt to an empty string.`
 }
-- AI must author both deliverables in full. Never return a patch, placeholder, ellipsis, summary or instruction for code to concatenate creative text.
-- Keep visible text absent unless textAllowed is true. When allowed, textOverlay is the only exact visible wording.
-- Set assetStrategy from the literal scene need: archival only for identifiable factual evidence; otherwise ai_generated.
+Return final prompts, not drafts or instructions for code to join.
 
 ${
   correctionIssuesJson
@@ -230,7 +213,8 @@ Return every source scene again as a complete object. Fix omissions without expa
 }
 
 [OUTPUT CONTRACT]
-Output only a raw JSON array. Every object must contain: id, prompt, generationPrompt, visualIntent, visibleAction, reaction, storyEvidence, visualHook, characterIds, expectedSubjectCount, allowBackgroundPeople, layout, textAllowed, textOverlay, shotPurpose, shotSize, cameraAngle, composition, locationId, propIds, continuityFrom, continuityNotes, lighting, assetStrategy, archivalSearchQuery and archivalRationale.
+Output only a raw JSON array using this compact shape:
+[{"id":"scene_id","prompt":"final English image prompt","generationPrompt":"final English video prompt or empty","characterIds":[],"textAllowed":false,"textOverlay":""}]
 Return the exact source IDs once each. No Markdown or commentary.
 
 Source scenes:
@@ -863,7 +847,7 @@ export const getCharacterAnalysisPrompt = (
   script: string,
   visualStyle: string = "",
   sourceContext: string = "",
-): string => `You are the character-design editor for a non-film video workflow. Identify at most three recurring, visually important characters and return concise reusable identity cards.
+): string => `Identify at most three recurring, visually important characters and return concise reusable identity cards for quick-video consistency.
 
 Authoritative source context:
 ${sourceContext || "No separate premise supplied; use only explicit script evidence."}
@@ -871,12 +855,13 @@ ${sourceContext || "No separate premise supplied; use only explicit script evide
 Target visual style:
 ${visualStyle || "Use concise style-compatible identity anchors."}
 
-Preserve explicit name, culture, gender presentation, age, species and canonical form. Do not turn a named creature, historical figure or clearly gendered subject into a generic person. Separate stable identity from current pose, emotion, action, location, lighting, handheld props and temporary clothing. Use a stable proper name for each recurring person. Exclude narrators, audiences, crowds and one-off mentions.
+Use only basic stable details: name, age, gender/species, body type, face, hair, skin tone, exact outfit, shoes, accessories, colors and signature equipment. Exclude narrators, crowds, one-off mentions, current emotion, location and temporary action.
 
-Each referenceGenerationPrompt must be a complete standalone English prompt for one unobstructed character in a neutral three-quarter full-body identity pose, using the selected visual style and baseline wardrobe. It must contain no story action, handheld prop, other person, collage, readable text, logo, watermark, border or dramatic scene lighting.
+Write each referenceGenerationPrompt in English using this direction:
+${CHARACTER_REFERENCE_SHEET_DIRECTION}
 
 Return only a raw JSON array:
-[{"name":"","narrativeRole":"","sourceIdentityEvidence":"","speciesPresentation":"","genderPresentation":"","ageRange":"","ethnicitySkinTone":"","bodyBuild":"","faceShape":"","eyes":"","nose":"","hair":"","signatureClothing":"","accessories":"","colorPalette":"","silhouette":"","description":"","prompt":"","referenceGenerationPrompt":"","timelineStages":[{"id":"base","label":"","outfit":"","expressionRange":"","posture":"","visibleCondition":""}]}]
+[{"name":"","genderPresentation":"","ageRange":"","ethnicitySkinTone":"","bodyBuild":"","faceShape":"","hair":"","signatureClothing":"","accessories":"","colorPalette":"","description":"concise basic identity","prompt":"concise reusable English identity","referenceGenerationPrompt":"complete English master reference-sheet prompt"}]
 
 Script:
 ${script}`;

@@ -30,7 +30,7 @@ const plannerPrompt = getQuickVideoPlanningPrompt(
   JSON.stringify([{ id: "char_1", name: "Player" }]),
 );
 assert.match(plannerPrompt, /QUICK VIDEO production/i);
-assert.match(plannerPrompt, /one complete 60-95 word English image prompt/i);
+assert.match(plannerPrompt, /one complete English image prompt/i);
 assert.match(plannerPrompt, /Set generationPrompt to an empty string/i);
 assert.doesNotMatch(plannerPrompt, /3-5 chronological shots|cinematicBeats must agree/i);
 
@@ -80,9 +80,9 @@ const quickVideoPrompt = getQuickVideoPlanningPrompt(
   "action",
   GenerateType.Video,
 );
-assert.match(quickVideoPrompt, /self-contained 90-170 word English video prompt/i);
-assert.match(quickVideoPrompt, /application sends it unchanged/i);
-assert.match(quickVideoPrompt, /one dominant subject, one primary physical action and one visible result/i);
+assert.match(quickVideoPrompt, /one complete English video generationPrompt/i);
+assert.match(quickVideoPrompt, /sent unchanged/i);
+assert.match(quickVideoPrompt, /preserving the event, character identity and user settings/i);
 assert.doesNotMatch(quickVideoPrompt, /cinematicBeats must agree|3-5 explicitly numbered timed shots/i);
 
 const aiAuthoredVideoPrompt = "One continuous clip: the courier slams the steel door, the latch catches, and the pursuer collides with it.";

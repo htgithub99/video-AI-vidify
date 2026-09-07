@@ -631,38 +631,16 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const sceneIds = _.map(chunkItem, (item) => _.toString(_.get(item, "id")));
       const chunkSourceScenes = _.filter(plannedScenes, (scene) => _.includes(sceneIds, scene.id));
       const chunkCharacterIds = new Set(_.flatMap(chunkSourceScenes, (scene) => scene.characterIds || []));
-      const chunkCharactersJson = jsonUtils.safeStringify(
-        isCinematicPlanning ? promptCharacters : _.filter(promptCharacters, (character) => chunkCharacterIds.has(_.toString(character.id))),
-      );
+      const chunkCharacters = isCinematicPlanning
+        ? _.map(promptCharacters, (character) => _.pick(character, ["id", "name", "prompt"]))
+        : _.filter(promptCharacters, (character) => chunkCharacterIds.has(_.toString(character.id)));
+      const chunkCharactersJson = jsonUtils.safeStringify(chunkCharacters);
       const chunkVisualBibleJson = jsonUtils.safeStringify(createScopedVisualBibleContext(resolvedVisualBible, chunkSourceScenes));
       const masterStartIndex = _.findIndex(planningMasterScenes, { id: _.toString(_.get(_.first(chunkItem), "id")) });
       const continuitySource = _.gte(masterStartIndex, 0) ? planningMasterScenes : plannedScenes;
       const continuityStartIndex = _.gte(masterStartIndex, 0) ? masterStartIndex : chunkStartIndex;
       const continuityContext = createBatchContinuityContext(continuitySource, continuityStartIndex, chunkItem.length);
       if (_.lt(masterStartIndex, 0) && _.isEqual(chunkIndex, 0) && req.body?.planningPreviousScene) continuityContext.previousScene = req.body.planningPreviousScene;
-      if (isCinematicPlanning) {
-        continuityContext.masterSequence = _.map(planningMasterScenes, (scene) =>
-          _.pick(scene, [
-            "id",
-            "chapterId",
-            "script",
-            "characterIds",
-            "locationId",
-            "propIds",
-            "sequenceId",
-            "shotPurpose",
-            "dialogueMode",
-            "spokenDialogue",
-            "speakerCharacterId",
-            "actionStartState",
-            "actionEndState",
-            "screenDirection",
-            "locationState",
-            "wardrobeState",
-            "propState",
-          ]),
-        );
-      }
       const continuityContextJson = jsonUtils.safeStringify(continuityContext);
       const quickGenerateType = resolvedVisualConfig.generateType || GenerateType.Image;
       const quickVideoPromptRequired = _.includes([GenerateType.Video, GenerateType.Mixed], quickGenerateType);
@@ -738,29 +716,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               "id",
               "prompt",
               ...(quickVideoPromptRequired ? ["generationPrompt"] : []),
-              "visualIntent",
-              "visibleAction",
-              "reaction",
-              "storyEvidence",
-              "visualHook",
               "characterIds",
-              "expectedSubjectCount",
-              "allowBackgroundPeople",
-              "layout",
               "textAllowed",
               "textOverlay",
-              "shotPurpose",
-              "shotSize",
-              "cameraAngle",
-              "composition",
-              "locationId",
-              "propIds",
-              "continuityFrom",
-              "continuityNotes",
-              "lighting",
-              "assetStrategy",
-              "archivalSearchQuery",
-              "archivalRationale",
             ],
           properties: isCinematicPlanning
             ? createCinematicPlanningProperties(expectedSceneIds)
@@ -768,53 +726,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             id: { type: "string", enum: expectedSceneIds },
             prompt: planningString,
             generationPrompt: planningString,
-            visualIntent: planningString,
-            visibleAction: planningString,
-            reaction: planningString,
-            storyEvidence: planningString,
-            visualHook: planningString,
             characterIds: { type: "array", items: planningString },
-            expectedSubjectCount: { type: "integer", minimum: 0 },
-            allowBackgroundPeople: { type: "boolean" },
-            layout: planningString,
             textAllowed: { type: "boolean" },
             textOverlay: planningString,
-            shotPurpose: {
-              type: "string",
-              enum: [
-                "setup",
-                "action",
-                "reaction",
-                "punchline",
-                "reveal",
-                "callback",
-                "montage",
-                "emotional_hold",
-                "obstacle",
-                "decision",
-                "escalation",
-                "reversal",
-                "climax",
-                "payoff",
-                "transition",
-              ],
-            },
-            shotSize: planningString,
-            cameraAngle: planningString,
-            composition: planningString,
-            locationId: planningString,
-            propIds: { type: "array", items: planningString },
-            continuityFrom: planningString,
-            continuityNotes: planningString,
-            lighting: planningString,
-            soundDesignCues: {
-              type: "array",
-              maxItems: CINEMATIC_CHAT_PLANNING_CONFIG.API_MAX_SOUND_DESIGN_CUES,
-              items: planningString,
-            },
-            assetStrategy: { type: "string", enum: ["archival", "ai_generated"] },
-            archivalSearchQuery: planningString,
-            archivalRationale: planningString,
           },
         },
       }) as const;
@@ -1372,6 +1286,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
         config: {
           responseMimeType: CONTENT_TYPES.JSON,
           ...(requiresCompleteArtifact ? { responseJsonSchema: CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA } : {}),
+          includeRoomSchemaContract: false,
         },
         task: { capability: AiTaskCapability.TextPlanning },
       });
@@ -1906,6 +1821,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
             config: {
               responseMimeType: CONTENT_TYPES.JSON,
               responseJsonSchema: createCinematicFilmPackageResponseSchema(targetClipCount),
+              includeRoomSchemaContract: false,
               maxOutputTokens: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_OUTPUT_TOKENS,
               roomCompletionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
               roomArtifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,

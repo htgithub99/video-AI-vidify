@@ -34,8 +34,8 @@ assert.match(
 );
 assert.match(
   controllerSource,
-  /isCinematicPlanning \? promptCharacters : _\.filter/,
-  "Room planning does not receive the complete AI-authored cast artifact",
+  /_\.map\(promptCharacters, \(character\) => _\.pick\(character, \["id", "name", "prompt"\]\)\)/,
+  "Room planning does not receive compact AI-authored identity cards",
 );
 assert.doesNotMatch(promptSource, /clipDurationSeconds \/ 3|\(clipDurationSeconds \* 2\) \/ 3/, "prompt template still injects equal shot timing from code");
 

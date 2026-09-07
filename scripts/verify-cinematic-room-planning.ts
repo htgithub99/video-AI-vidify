@@ -7,6 +7,7 @@ import {
   CINEMATIC_CHAT_PLANNING_CONFIG,
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
+  normalizeCinematicArtifactIdentity,
 } from "../src/constants/cinematicConstants";
 import {
   getCinematicVideoPlanningPrompt,
@@ -23,6 +24,7 @@ import {
 import { createScopedVisualBibleContext, getVisualShotPlanIssues } from "../src/services/visualPlanningService";
 import { partitionCinematicPlanningResponse } from "../src/services/cinematicPlanningRecoveryService";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, type StoryboardScene, type VisualBible } from "../src/types";
+import { safeParseJSON } from "../src/server/utils/helpers";
 
 const TEST_CONSTANTS = {
   DEFAULT_CLIP_DURATION_SECONDS: 10,
@@ -263,7 +265,7 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /forChatUi \? chunkCharactersJson : charactersJson/);
   assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
-  assert.match(controllerSource, /isCinematicPlanning \? promptCharacters : _\.filter/);
+  assert.match(controllerSource, /_\.map\(promptCharacters, \(character\) => _\.pick\(character, \["id", "name", "prompt"\]\)\)/);
   assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
   assert.match(controllerSource, /createCinematicPlanningProperties/);
   assert.match(controllerSource, /generationPrompt: planningString/);
@@ -277,7 +279,7 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /targetRepairSceneIds[\s\S]*createRepairPrompt\(parsedItems, correctionIssues, targetRepairSceneIds\)/);
   assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
   assert.match(controllerSource, /planningMasterStoryboard/);
-  assert.match(controllerSource, /continuityContext\.masterSequence/);
+  assert.doesNotMatch(controllerSource, /continuityContext\.masterSequence/);
   assert.match(controllerSource, /const parsedScenes = isCinematicPlanning \? _\.get\(parsed, "scenes"\) : parsed/);
   assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
@@ -332,6 +334,7 @@ const verifyPlanningRunIsolation = () => {
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 2);
   assert.match(CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, /parseable directly with JSON\.parse/i);
   assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
+  assert.match(planningServiceSource, /const parsedLatest = tryParseJSON\(latestText\)/);
   assert.match(planningServiceSource, /INVALID_JSON_RESPONSE_ERROR/);
   assert.match(planningServiceSource, /chờ hàng đợi/);
   assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);
@@ -386,6 +389,19 @@ const verifyProviderRoomCleanup = () => {
   assert.doesNotMatch(headerSource, /CINEMATIC_SETUP_TEXTS\[isVietnamese \? UIConstants\.LANG_VI/);
 };
 
+const verifyProviderJsonVariants = () => {
+  const samples = [
+    '{"requestId":"room-json-test :video_prompts "}',
+    '```json\n{"requestId":"room-json-test:video_prompts"}\n```',
+    'Here is the result: {"requestId":"room-json-test:video_prompts"}',
+    '{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}',
+  ];
+  _.forEach(samples, (sample) => {
+    const parsed = safeParseJSON(sample, {});
+    assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
+  });
+};
+
 const verifyCinematicPlanningCheckpointing = () => {
   const pipelineSource = readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8");
   assert.match(pipelineSource, /generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION/);
@@ -424,6 +440,7 @@ const runAllVerificationSuites = () => {
   verifyPlanningRunIsolation();
   verifyCurrentGeminiModelPicker();
   verifyProviderRoomCleanup();
+  verifyProviderJsonVariants();
   verifyCinematicPlanningCheckpointing();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);
 };

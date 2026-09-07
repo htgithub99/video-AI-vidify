@@ -12,6 +12,7 @@ import {
 } from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
+import { tryParseJSON } from "../utils/helpers.js";
 import { getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
 interface ChatRoomAttachment {
@@ -487,20 +488,16 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
 
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
-  try {
-    const parsed = JSON.parse(text);
-    const scenes = _.isArray(parsed) ? parsed : _.get(parsed, "scenes");
-    if (!_.isArray(scenes)) return false;
-    const returnedSceneIds = _.map(scenes, (item) => _.toString(_.get(item, "id")));
-    return (
-      _.isEqual(returnedSceneIds.length, expectedSceneIds.length) &&
-      _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) &&
-      _.isEmpty(_.difference(expectedSceneIds, returnedSceneIds)) &&
-      _.isEmpty(_.difference(returnedSceneIds, expectedSceneIds))
-    );
-  } catch {
-    return false;
-  }
+  const parsed = tryParseJSON(text);
+  const scenes = _.isArray(parsed) ? parsed : _.get(parsed, "scenes");
+  if (!_.isArray(scenes)) return false;
+  const returnedSceneIds = _.map(scenes, (item) => _.toString(_.get(item, "id")));
+  return (
+    _.isEqual(returnedSceneIds.length, expectedSceneIds.length) &&
+    _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) &&
+    _.isEmpty(_.difference(expectedSceneIds, returnedSceneIds)) &&
+    _.isEmpty(_.difference(returnedSceneIds, expectedSceneIds))
+  );
 };
 
 const waitForStableResponse = async (
@@ -549,10 +546,7 @@ const waitForStableResponse = async (
       .count()
       .then((visibleCount) => visibleCount > 0)
       .catch(() => false);
-    let parsedLatest: unknown;
-    try {
-      parsedLatest = JSON.parse(latestText);
-    } catch {}
+    const parsedLatest = tryParseJSON(latestText);
     const returnedCompletionMarker = _.trim(_.toString(_.get(parsedLatest, "completionMarker")));
     const returnedArtifactType = _.trim(_.toString(_.get(parsedLatest, "artifactType")));
     const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedLatest, "requestId"));
