@@ -824,7 +824,7 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
 export const PROVIDER_REFERENCE_UPLOAD_CONFIG = {
   FILE_INPUT: 'input[type="file"]',
   ATTACHMENT_REMOVE_BUTTON:
-    'button[aria-label*="remove attachment" i], button[aria-label*="remove image" i], button[aria-label*="remove file" i], button[aria-label*="remove reference" i], button[aria-label*="remove ingredient" i], button[aria-label*="xóa ảnh" i], button[aria-label*="xóa tệp" i], button[aria-label*="xóa tham chiếu" i], button[aria-label*="delete attachment" i], button[data-testid*="remove-attachment" i], button[data-test-id*="remove-attachment" i]',
+    'button:has(img[alt="Hình ảnh thành phần"]), button:has(img[alt="Component image"]), button[aria-label*="remove attachment" i], button[aria-label*="remove image" i], button[aria-label*="remove file" i], button[aria-label*="remove reference" i], button[aria-label*="remove ingredient" i], button[aria-label*="xóa ảnh" i], button[aria-label*="xóa tệp" i], button[aria-label*="xóa tham chiếu" i], button[aria-label*="delete attachment" i], button[data-testid*="remove-attachment" i], button[data-test-id*="remove-attachment" i]',
   ATTACHMENT_PREVIEW:
     '[data-testid*="attachment" i], [data-test-id*="attachment" i], [data-testid*="ingredient" i], [data-test-id*="ingredient" i], .attachment-container, .image-preview',
   FLOW_UPLOAD_BUTTON: /upload|tải ảnh|tải tệp|thêm ảnh|add image|ingredient|reference/i,
