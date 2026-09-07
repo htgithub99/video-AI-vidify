@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA } from "../src/constants/responseSchemas";
-import { CINEMATIC_CONFIG } from "../src/constants/config";
+import { CINEMATIC_CONFIG, CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "../src/constants/config";
 import {
   getCinematicGlobalEditDecisionPrompt,
   getCinematicFilmPackagePrompt,
@@ -35,6 +35,8 @@ assert.match(prompt, /Application code will store these fields unchanged/i);
 assert.match(prompt, /Let the later video-prompt director decide shot count/i);
 assert.match(prompt, /characterIds containing only IDs from characters (?:who are )?visibly present/i);
 assert.match(prompt, /completionMarker must be the final property/i);
+assert.match(prompt, /at least 30 clips of 10 seconds/i);
+assert.match(prompt, /returning fewer than 30 clips is incomplete/i);
 assert.match(prompt, /characters\[\]\.prompt and characters\[\]\.referenceGenerationPrompt must be written entirely in English/i);
 assert.match(prompt, /only exact dialogue or deliberately rendered on-image text may remain in the selected screenplay language/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
@@ -158,6 +160,8 @@ assert.equal(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS, true, "cinema
 assert.match(generatorSource, /useState<SubtitleMode>\(SubtitleMode\.None\)/);
 assert.match(episodeServiceSource, /GenerateType\.Video\) \? _\.toString\(scene\.generationPrompt\) : basePrompt/);
 assert.match(imageGeneratorSource, /itemVisualConfig\.preserveAiPromptText[\s\S]*item\.prompt \|\| ""/);
+assert.match(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_BELOW_TARGET_TEMPLATE, /scenes:count_below_target/);
+assert.match(controllerSource, /SCENE_COUNT_BELOW_TARGET_TEMPLATE/);
 assert.match(cinematicPromptSource, /getCinematicFilmPackagePrompt/);
 assert.doesNotMatch(cinematicPromptSource, /Quick Video|YouTube|TikTok|viewer retention/i);
 assert.doesNotMatch(sharedPromptSource, /getCinematicFilmPackagePrompt|getCinematicVideoPlanningPrompt|getCinematicThumbnailPrompt/);

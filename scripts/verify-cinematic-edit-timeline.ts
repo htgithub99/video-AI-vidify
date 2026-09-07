@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createCinematicEditTimeline } from "../src/services/cinematicEditTimelineService";
 import { GenerateType, StoryboardScene } from "../src/types";
 
@@ -30,4 +31,6 @@ assert.deepEqual(timeline.map((item) => item.duration), [2.4, 3.6, 2.4]);
 assert.equal(timeline[0].spokenDialogue, "");
 assert.equal(timeline[1].spokenDialogue, "One line");
 assert.equal(timeline[2].spokenDialogue, "");
+const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+assert.match(pipelineSource, /expectedRenderDuration = nativeFilmAudio[\s\S]*_\.sumBy\(renderableScenes/);
 process.stdout.write(JSON.stringify({ passed: true, timelineShots: timeline.length }));

@@ -552,11 +552,11 @@ const waitForFlowMediaCardReady = async (page: Page, mediaId: string): Promise<L
   throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
 };
 
-const downloadFlowVideoFromCard = async (page: Page, mediaCard: Locator, previousVideoSources: string[], expectedDurationSeconds: number): Promise<FlowDownloadedVideo | null> => {
+const downloadFlowVideoFromCard = async (page: Page, mediaCard: Locator, previousVideoSources: string[], expectedDurationSeconds: number, mediaId: string): Promise<FlowDownloadedVideo | null> => {
   await mediaCard.scrollIntoViewIfNeeded();
   await mediaCard.click({ force: true });
   await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
-  const videoUrls = await collectFlowVideoUrls(page);
+  const videoUrls = await collectFlowVideoUrls(page, mediaId);
   return downloadValidatedVideo(
     page.context(),
     _.filter(videoUrls, (url) => !_.includes(previousVideoSources, url)),
@@ -588,7 +588,7 @@ const downloadFlowVideoFromEdit = async (page: Page, flowProjectId: string, edit
     undefined,
     { timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS },
   );
-  const videoUrls = await collectFlowVideoUrls(page);
+  const videoUrls = await collectFlowVideoUrls(page, editId);
   return downloadValidatedVideo(page.context(), videoUrls, expectedDurationSeconds).catch(() => null);
 };
 
@@ -624,15 +624,11 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
     if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
     if (!downloadedVideo) {
       await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
-      const availableEditIds = await getFlowVideoEditIds(page);
-      for (const editId of _.uniq([mediaId, ...availableEditIds])) {
-        downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, editId, expectedDurationSeconds).catch(() => null);
-        if (downloadedVideo) break;
-      }
+      downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
       if (!downloadedVideo) {
         await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
         const mediaCard = await waitForFlowMediaCardReady(page, mediaId);
-        downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds);
+        downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
       }
     }
     if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
@@ -689,7 +685,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
       return [...elementUrls, ...resourceUrls].filter(
         (url) =>
           /media\.getMediaUrlRedirect|googleusercontent|storage|\.(?:mp4|webm|mov)(?:\?|$)/i.test(url) &&
-          (!targetMediaId || url.includes(targetMediaId) || /media\.getMediaUrlRedirect/i.test(url)),
+          (!targetMediaId || url.includes(targetMediaId)),
       );
     },
     { targetMediaId: mediaId || null, mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER },
@@ -1144,6 +1140,7 @@ export interface ImageGeneratorOptions {
     localProjectId?: string;
     flowProjectId?: string;
     projectId?: string;
+    knownVideoMediaIds?: string[];
   };
 }
 
@@ -1895,7 +1892,12 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
             .filter(Boolean),
         );
-        const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? await getFlowVideoEditIds(activePage) : [];
+        const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video)
+          ? _.uniq([
+              ...(await getFlowVideoEditIds(activePage)),
+              ..._.map(sandboxConfig.knownVideoMediaIds || [], normalizeFlowMediaId),
+            ])
+          : [];
         if (_.isEqual(visualConfig?.generateType, GenerateType.Video)) {
           flowResponseListener = (response: any) => {
             const responseUrl = _.toString(response.url());
@@ -1951,10 +1953,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                 .find((editId) => editId && !oldEditIds.includes(editId));
               const generatedVideo = Array.from(document.querySelectorAll("video"))
                 .map((video) => ({ video, src: video.currentSrc || video.src }))
-                .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && video.readyState >= 1);
+                .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && !oldEditIds.some((id) => src.includes(id)) && video.readyState >= 1);
               const generatedThumbnail = Array.from(document.querySelectorAll('img[alt*="video" i]'))
                 .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
-                .find((src) => src && !oldVideoThumbnailSourcesList.includes(src));
+                .find((src) => src && !oldVideoThumbnailSourcesList.includes(src) && !oldEditIds.some((id) => src.includes(id)));
               if (generatedEditId) return { editId: generatedEditId, videoSrc: null };
               if (generatedVideo) return { editId: null, videoSrc: generatedVideo.src, thumbnailSrc: null };
               return generatedThumbnail ? { editId: null, videoSrc: null, thumbnailSrc: generatedThumbnail } : null;
@@ -1979,6 +1981,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               parseConfiguredVideoDuration(visualConfig?.videoDuration),
             );
           } else if (generatedMedia.thumbnailSrc) {
+            remoteVideoMediaId = extractFlowMediaIdFromUrl(generatedMedia.thumbnailSrc);
+            if (!remoteVideoMediaId) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
             const thumbnail = activePage.locator(`img[src="${generatedMedia.thumbnailSrc}"]`).last();
             const mediaCard = thumbnail.locator("xpath=ancestor::flow-grid-tile-container[1]");
             downloadedVideoFromCard = await downloadFlowVideoFromCard(
@@ -1986,6 +1990,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               mediaCard,
               oldVideoSources,
               parseConfiguredVideoDuration(visualConfig?.videoDuration),
+              remoteVideoMediaId,
             );
           } else {
             const expectedDurationSeconds = parseConfiguredVideoDuration(visualConfig?.videoDuration);
@@ -2001,7 +2006,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             );
           }
           if (!browserInstance) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
-          const videoUrls = _.uniq(_.concat(await collectFlowVideoUrls(activePage, generatedMedia.editId, generatedMedia.videoSrc), flowResponseUrls));
+          const targetMediaId = generatedMedia.editId || remoteVideoMediaId || extractFlowMediaIdFromUrl(generatedMedia.videoSrc || SecurityConstants.EMPTY_STRING);
+          const matchingResponseUrls = _.filter(flowResponseUrls, (url) =>
+            targetMediaId ? _.isEqual(extractFlowMediaIdFromUrl(url), targetMediaId) : _.isEqual(url, generatedMedia.videoSrc),
+          );
+          const videoUrls = _.uniq([
+            ...(targetMediaId ? await collectFlowVideoUrls(activePage, targetMediaId, generatedMedia.videoSrc) : _.compact([generatedMedia.videoSrc])),
+            ...matchingResponseUrls,
+          ]);
           const downloadedVideo =
             downloadedVideoFromCard || (await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration)));
           remoteVideoMediaId = extractFlowMediaIdFromUrl(downloadedVideo.mediaUrl) || generatedMedia.editId || undefined;

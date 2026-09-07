@@ -67,6 +67,7 @@ import {
   FLOW_VIDEO_MEDIA_CONFIG,
   PROJECT_IMAGE_FALLBACK_CONFIG,
   PIPELINE_GUARANTEE_CONFIG,
+  PIPELINE_COMPLETION_CONFIG,
   PIPELINE_FETCH_FAILURE_KEY,
   REFERENCE_ASSET_GROUP,
 } from "../constants/config";
@@ -3822,7 +3823,10 @@ export function useAutoVideoPipeline(
       } else {
         realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
       }
-      const subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
+      const effectiveSubtitleMode = isCinematicPipeline
+        ? _.defaultTo(config.subtitleMode, SubtitleMode.None)
+        : FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE;
+      const subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[], effectiveSubtitleMode);
       const editorQa = evaluateEdit(realScenes as StoryboardScene[]);
       slicedUpdatedProj = {
         ...slicedUpdatedProj,
@@ -4012,7 +4016,9 @@ export function useAutoVideoPipeline(
             ? `[Dựng phim] Bỏ ${omittedCount} take hỏng kỹ thuật khỏi bản dựng; giữ nguyên các take hợp lệ để hoàn thành phim.`
             : `[Film edit] Omitted ${omittedCount} technically broken takes and retained all valid takes for completion.`,
         );
-      const expectedRenderDuration = calculateSceneDuration(renderableScenes);
+      const expectedRenderDuration = nativeFilmAudio
+        ? _.sumBy(renderableScenes, (scene) => _.max([SecurityConstants.ZERO, _.toNumber(scene.duration)]) || SecurityConstants.ZERO)
+        : calculateSceneDuration(renderableScenes);
       if (nativeFilmAudio)
         appendLog(
           config.language === ProjectLanguage.VI
@@ -4050,7 +4056,7 @@ export function useAutoVideoPipeline(
         globalAudioUrl: globalAudioUrl || undefined,
         globalAudioBase64: globalAudioBase64 || undefined,
         aspectRatio: _.isEqual(config.aspectRatio, AspectRatio.NineSixteen) ? FFMPEG_RENDER_CONSTANTS.ASPECT_RATIO_9_16 : REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_16_9,
-        subtitleMode: isCinematicPipeline ? _.defaultTo(config.subtitleMode, SubtitleMode.None) : FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
+        subtitleMode: effectiveSubtitleMode,
         audioTracks: createRenderAudioTracks(slicedUpdatedProj.audioCueSheet),
         autoMusicProfile: _.isEmpty(config.musicAssetUrl) ? resolveAutomaticMusicProfile(config.genre) : undefined,
         preserveVideoAudio: nativeFilmAudio,
@@ -4150,10 +4156,16 @@ export function useAutoVideoPipeline(
             const finalQc = evaluateFinalQuality(renderCandidateProj);
             const benchmark = createPipelineBenchmark(renderCandidateProj, pipelineStartedAt);
             const shadowComparison = renderCandidateProj.rollout?.shadowMode ? createShadowComparison(existingTargetProj, { ...renderCandidateProj, benchmark }) : undefined;
-            const renderCompletedProj = { ...renderCandidateProj, finalQc, benchmark, shadowComparison, status: REFACTOR_CONSTANTS.STATUS_COMPLETED };
+            const renderCompletedProj = {
+              ...renderCandidateProj,
+              finalQc,
+              benchmark,
+              shadowComparison,
+              status: finalQc.publishable ? REFACTOR_CONSTANTS.STATUS_COMPLETED : REFACTOR_CONSTANTS.STATUS_PARTIAL,
+            };
             renderCompletedProj.generationCheckpoint = {
               intent: runIntent,
-              phase: "completed",
+              phase: finalQc.publishable ? REFACTOR_CONSTANTS.STATUS_COMPLETED : PIPELINE_COMPLETION_CONFIG.RENDERED_WITH_BLOCKERS_PHASE,
               lastSuccessfulPhase: "render",
               completedSceneIds: _.map(realScenes, "id"),
               pendingSceneIds: [],

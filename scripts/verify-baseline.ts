@@ -5,7 +5,7 @@ import { GENRE_OPTION_GROUPS, normalizeGenreValue } from "../src/constants/data.
 import { VideoGenre } from "../src/constants/enums.ts";
 import { resolveVisualConfig } from "../src/services/autoVideoConfigResolver.ts";
 import { createDependencyHash, createSceneDependencyHash, inheritApprovedSceneAsset } from "../src/services/dependencyHashService.ts";
-import { evaluateFinalQuality } from "../src/services/finalQualityService.ts";
+import { createManualReviewItems, evaluateFinalQuality } from "../src/services/finalQualityService.ts";
 import { getSceneAssetSummary } from "../src/services/projectImageGenerationService.ts";
 import { evaluateAudioTiming, evaluateThumbnail } from "../src/services/productionQualityService.ts";
 import { normalizeHookScore, normalizeScriptQualityReport, parseTargetDurationSeconds } from "../src/services/scriptQualityService.ts";
@@ -143,7 +143,13 @@ assert(evaluateFinalQuality(publishableProject).publishable, "valid final projec
 const unavailableFinalQa = evaluateFinalQuality({ ...publishableProject, finalMultimodalQa: { passed: false, reviewAvailable: false, warnings: ["final_multimodal_qa_unavailable"] } });
 assert(unavailableFinalQa.publishable && unavailableFinalQa.warnings.includes("final_multimodal_qa_unavailable"), "unavailable final QA blocked a complete video");
 const lowFinalQa = evaluateFinalQuality({ ...publishableProject, finalMultimodalQa: { passed: false, reviewAvailable: true, blockingErrors: ["broken_frame"], warnings: [] } });
-assert(lowFinalQa.publishable && lowFinalQa.warnings.includes("final_quality_review_recommended"), "low final QA blocked a physically complete video");
+assert(!lowFinalQa.publishable && lowFinalQa.blockingErrors.includes("broken_frame"), "a confirmed broken final frame was allowed to publish");
+const advisoryReviewItems = createManualReviewItems({
+  ...publishableProject,
+  storyboard: [{ id: "scene_warning", assetUrl: "asset", assetStatus: SceneAssetStatus.Approved, acceptance: "accepted_with_warning" }],
+  finalMultimodalQa: { passed: false, reviewAvailable: true, blockingErrors: [], warnings: ["pacing_could_improve"] },
+});
+assert(advisoryReviewItems.length === 0, "advisory warnings created mandatory manual-review work");
 
 const promptFiles = ["prompts.ts", "promptGuidelines.ts", "texts.ts", "data.ts"]
   .map(file => fs.readFileSync(path.resolve("src/constants", file), "utf8"))

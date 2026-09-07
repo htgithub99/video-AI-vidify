@@ -1,12 +1,12 @@
 import _ from "lodash";
-import { AssetAcceptance, FinalQualityReport, ManualReviewItem, ManualReviewStatus, QaStatus, SceneAssetStatus, VideoProject } from "../types";
+import { AssetAcceptance, FinalQualityReport, ManualReviewItem, ManualReviewStatus, QaStatus, SceneAssetStatus, SubtitleMode, VideoProject } from "../types";
 import { getFinalCompletionReadiness } from "./pipelineCompletionPolicyService";
 
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
 
   const scenes: ManualReviewItem[] = _.map(
-    _.filter(project.storyboard || [], (scene) => scene.assetStatus !== SceneAssetStatus.Approved || scene.acceptance === AssetAcceptance.AcceptedWithWarning),
+    _.filter(project.storyboard || [], (scene) => scene.assetStatus !== SceneAssetStatus.Approved || scene.acceptance === AssetAcceptance.Rejected),
     (scene) => ({
       id: `review_scene_${scene.id}`,
       scope: "scene" as const,
@@ -18,7 +18,7 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
   );
 
   const thumbnails: ManualReviewItem[] = _.map(
-    _.filter(project.thumbnails || [], (thumbnail) => thumbnail.acceptance !== AssetAcceptance.Approved),
+    _.filter(project.thumbnails || [], (thumbnail) => thumbnail.acceptance === AssetAcceptance.Rejected),
     (thumbnail) => ({
       id: `review_thumbnail_${thumbnail.id}`,
       scope: "thumbnail" as const,
@@ -30,7 +30,7 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
   );
 
   const audio: ManualReviewItem[] =
-    project.voiceConfig.audioQa && !project.voiceConfig.audioQa.passed
+    project.voiceConfig.audioQa && !_.isEmpty(project.voiceConfig.audioQa.blockingErrors)
       ? [
           {
             id: "review_audio",
@@ -43,7 +43,7 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
       : [];
 
   const subtitles: ManualReviewItem[] =
-    project.subtitleQa && !project.subtitleQa.passed
+    project.config?.subtitleMode !== SubtitleMode.None && project.subtitleQa && !_.isEmpty(project.subtitleQa.blockingErrors)
       ? [
           {
             id: "review_subtitle",
@@ -56,7 +56,7 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
       : [];
 
   const finalVideo: ManualReviewItem[] =
-    project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !project.finalMultimodalQa.passed
+    project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !_.isEmpty(project.finalMultimodalQa.blockingErrors)
       ? [
           {
             id: "review_final",
@@ -73,13 +73,17 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
 };
 
 export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport => {
+  const subtitlesEnabled = project.config?.subtitleMode !== SubtitleMode.None;
   const missingAssets = _.size(_.filter(project.storyboard, (scene) => _.isEmpty(scene.assetUrl)));
   const unapprovedScenes = _.size(_.filter(project.storyboard, (scene) => scene.acceptance === AssetAcceptance.Rejected || scene.assetStatus !== SceneAssetStatus.Approved));
   const unapprovedThumbnails = _.size(_.filter(project.thumbnails, (thumbnail) => thumbnail.acceptance === AssetAcceptance.Rejected));
   const audioBlockingErrors = _.size(project.voiceConfig.audioQa?.blockingErrors);
-  const subtitleBlockingErrors = _.size(project.subtitleQa?.blockingErrors);
+  const subtitleBlockingErrors = subtitlesEnabled ? _.size(project.subtitleQa?.blockingErrors) : 0;
   const completionReadiness = getFinalCompletionReadiness(project);
-  const blockingErrors = completionReadiness.blockers;
+  const blockingErrors = _.uniq([
+    ...completionReadiness.blockers,
+    ...(project.finalMultimodalQa?.reviewAvailable === false ? [] : _.defaultTo(project.finalMultimodalQa?.blockingErrors, [])),
+  ]);
 
   const warnings = _.uniq(
     _.compact(
@@ -87,7 +91,7 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
         project.scriptQa?.warnings,
         project.storyboardQa?.warnings,
         project.voiceConfig.audioQa?.warnings,
-        project.subtitleQa?.warnings,
+        subtitlesEnabled ? project.subtitleQa?.warnings : [],
         project.editorQa?.warnings,
         _.some(project.storyboard, (scene) => scene.qaStatus === QaStatus.Unavailable || scene.assetError === "visual_qa_unavailable") ? ["scene_visual_qa_unavailable"] : [],
         _.some(project.storyboard, (scene) => scene.assetStatus === SceneAssetStatus.Approved && scene.assetError === "visual_quality_below_target")
@@ -99,7 +103,7 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
         unapprovedScenes > 0 ? ["scene_quality_review_recommended"] : [],
         unapprovedThumbnails > 0 ? ["thumbnail_quality_review_recommended"] : [],
         project.voiceConfig.audioQa && !project.voiceConfig.audioQa.passed ? ["audio_quality_review_recommended"] : [],
-        project.subtitleQa && !project.subtitleQa.passed ? ["subtitle_quality_review_recommended"] : [],
+        subtitlesEnabled && project.subtitleQa && !project.subtitleQa.passed ? ["subtitle_quality_review_recommended"] : [],
         project.editorQa && !project.editorQa.passed ? ["editor_quality_review_recommended"] : [],
         project.scriptQa && !project.scriptQa.passed ? ["script_quality_review_recommended"] : [],
         project.storyboardQa && !project.storyboardQa.passed ? ["storyboard_quality_review_recommended"] : [],

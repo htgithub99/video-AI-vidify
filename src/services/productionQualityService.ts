@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { AssetAcceptance, AudioQualityReport, EditorQualityReport, SceneAssetStatus, StoryboardScene, SubtitleQualityReport, ThumbnailQualityReport, VoiceArc } from "../types.js";
+import { AssetAcceptance, AudioQualityReport, EditorQualityReport, SceneAssetStatus, StoryboardScene, SubtitleMode, SubtitleQualityReport, ThumbnailQualityReport, VoiceArc } from "../types.js";
 import { SceneVisualQuality } from "./sceneVisualQualityService.js";
 import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
 import { resolveGenreEditorialBlueprint } from "./genreEditorialBlueprintService.js";
@@ -68,7 +68,17 @@ export const evaluateAudioTiming = (actual: number, target: number): AudioQualit
   };
 };
 
-export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityReport => {
+export const evaluateSubtitles = (scenes: StoryboardScene[], subtitleMode: SubtitleMode = SubtitleMode.BurnIn): SubtitleQualityReport => {
+  if (_.isEqual(subtitleMode, SubtitleMode.None)) {
+    return {
+      maxTwoLines: true,
+      semanticBreaks: true,
+      readingTimeFit: true,
+      blockingErrors: [],
+      warnings: [],
+      passed: true,
+    };
+  }
   const subtitleCues = _.flatMap(scenes, (scene) => scene.subtitleCues || []);
   const lineErrors = _.filter(subtitleCues, (cue) => _.size(_.split(cue.text, "\n")) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES);
   const longLines = _.filter(subtitleCues, (cue) => _.some(_.split(cue.text, "\n"), (line) => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE));

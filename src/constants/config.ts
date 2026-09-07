@@ -1222,6 +1222,8 @@ export const PIPELINE_COMPLETION_CONFIG = {
   NARRATION_MISSING: "narration_missing",
   CONTENT_SAFETY_BLOCKED: "content_safety_blocked",
   FINAL_RENDER_MISSING: "final_render_missing",
+  RENDERED_WITH_BLOCKERS_PHASE: "rendered_with_blockers",
+  MEDIA_REPAIR_PHASE: "media_generation",
 } as const;
 
 export const MANUAL_REVIEW_CONFIG = { ITEM_NOT_FOUND_ERROR: "Manual review item was not found.", SCOPE_SCENE: "scene", SCOPE_THUMBNAIL: "thumbnail" } as const;
@@ -1319,6 +1321,9 @@ export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
   MAX_RESPONSE_ATTEMPTS: 2,
   PRIMARY_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
   FILM_PACKAGE_INCOMPLETE_ERROR: "response:incomplete",
+  SCENE_COUNT_BELOW_TARGET_TEMPLATE: "scenes:count_below_target:{actual}/{target}",
+  ACTUAL_COUNT_TOKEN: "{actual}",
+  TARGET_COUNT_TOKEN: "{target}",
 } as const;
 
 export const ROOM_ONLY_SCRIPT_ERROR_CONFIG = {
@@ -1575,6 +1580,11 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   MEDIA_REDIRECT_PATH: "fx/api/trpc/media.getMediaUrlRedirect?name={mediaId}",
   MEDIA_ID_TOKEN: "{mediaId}",
   FILE_EXTENSION: ".mp4",
+  SCENE_VIDEO_FILE_PATTERN: /^scene_.+\.mp4$/i,
+  CONTENT_HASH_ALGORITHM: "sha256",
+  CONTENT_HASH_ENCODING: "hex",
+  DUPLICATE_MEDIA_ERROR: "Flow trả lại video của một cảnh trước đó; hệ thống sẽ tạo lại riêng cảnh hiện tại.",
+  DUPLICATE_MEDIA_ID_ERROR: "Flow trả lại mã video đã dùng cho cảnh khác; hệ thống sẽ tạo lại riêng cảnh hiện tại.",
   REMOTE_DOWNLOAD_PENDING_ERROR: "Video đã được tạo trên Flow nhưng chưa tải về được; hệ thống sẽ không tạo lại clip này.",
   VI_RECOVERY_START: "Đang tải lại clip đã tạo cho {0}; không gửi yêu cầu tạo mới.",
   EN_RECOVERY_START: "Downloading the existing clip for {0}; no new generation request will be sent.",

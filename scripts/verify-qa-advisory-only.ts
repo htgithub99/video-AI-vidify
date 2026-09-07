@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { PIPELINE_COMPLETION_CONFIG } from "../src/constants/config.ts";
+import { CINEMATIC_CONFIG, PIPELINE_COMPLETION_CONFIG } from "../src/constants/config.ts";
 import { getFinalCompletionReadiness, getRenderReadiness } from "../src/services/pipelineCompletionPolicyService.ts";
 
 const pipelineController = fs.readFileSync(
@@ -34,6 +34,10 @@ const completeProject = {
 assert.equal(getRenderReadiness(completeProject).ready, true);
 assert.equal(getFinalCompletionReadiness(completeProject).ready, true);
 assert.deepEqual(getRenderReadiness({ ...completeProject, voiceConfig: {} }).blockers, [PIPELINE_COMPLETION_CONFIG.NARRATION_MISSING]);
+assert.deepEqual(
+  getRenderReadiness({ ...completeProject, voiceConfig: { provider: CINEMATIC_CONFIG.PIPELINE_PROFILE.VOICE_PROVIDER } }).blockers,
+  [],
+);
 assert.deepEqual(getRenderReadiness({ ...completeProject, storyboard: [{ id: "scene_1" }] }).blockers, [PIPELINE_COMPLETION_CONFIG.SCENE_ASSETS_MISSING]);
 assert.deepEqual(getFinalCompletionReadiness({ ...completeProject, renderedVideoUrl: undefined }).blockers, [PIPELINE_COMPLETION_CONFIG.FINAL_RENDER_MISSING]);
 

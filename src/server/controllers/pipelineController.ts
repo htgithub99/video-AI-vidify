@@ -1806,6 +1806,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
           _.isEmpty(_.castArray(value?.chapters || [])) && "chapters:missing",
           _.isEmpty(scenes) && "scenes:missing",
+          _.lt(_.size(scenes), targetClipCount) &&
+            _.replace(
+              _.replace(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_BELOW_TARGET_TEMPLATE, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.ACTUAL_COUNT_TOKEN, _.toString(_.size(scenes))),
+              CINEMATIC_SCRIPT_ARTIFACT_CONFIG.TARGET_COUNT_TOKEN,
+              _.toString(targetClipCount),
+            ),
           _.some(sceneIds, _.isEmpty) && "scenes:id_missing",
           _.uniq(sceneIds).length !== sceneIds.length && "scenes:id_duplicate",
           _.some(scenes, (scene) => _.isEmpty(_.trim(_.toString(scene?.script)))) && "scenes:script_missing",
@@ -3329,6 +3335,19 @@ const persistProjectVideo = async (localProjectId: string, sceneId: string, base
   await fs.promises.mkdir(videoDirectory, { recursive: true });
   const videoFilename = `${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
   const videoPath = path.join(videoDirectory, videoFilename);
+  const candidateHash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM).update(videoBuffer).digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
+  const existingSceneVideoFiles = _.filter(
+    await fs.promises.readdir(videoDirectory),
+    (filename) => FLOW_VIDEO_MEDIA_CONFIG.SCENE_VIDEO_FILE_PATTERN.test(filename) && !_.isEqual(filename, videoFilename),
+  );
+  for (const existingFilename of existingSceneVideoFiles) {
+    const existingPath = path.join(videoDirectory, existingFilename);
+    const existingStats = await fs.promises.stat(existingPath);
+    if (!_.isEqual(existingStats.size, videoBuffer.length)) continue;
+    const existingBuffer = await fs.promises.readFile(existingPath);
+    const existingHash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM).update(existingBuffer).digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
+    if (_.isEqual(existingHash, candidateHash)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ERROR);
+  }
   await fs.promises.writeFile(videoPath, videoBuffer);
   const persistedSize = (await fs.promises.stat(videoPath)).size;
   if (_.lt(persistedSize, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
@@ -3441,7 +3460,21 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       return res.json(recoveredResponse);
     }
 
-    const resolvedSandboxConfig = { ...sandboxConfig, localProjectId, flowProjectId: persistedFlowProjectId || undefined, projectId: undefined };
+    const knownVideoMediaIds = _.uniq(
+      _.compact(
+        _.map(
+          _.filter(localProject?.storyboard || [], (scene) => !_.isEqual(scene.id, sceneId)),
+          (scene) => _.trim(_.toString(scene.remoteVideoMediaId)),
+        ),
+      ),
+    );
+    const resolvedSandboxConfig = {
+      ...sandboxConfig,
+      localProjectId,
+      flowProjectId: persistedFlowProjectId || undefined,
+      projectId: undefined,
+      knownVideoMediaIds,
+    };
 
     if (!_.isEmpty(persistedFlowProjectId)) {
       logger.info(`[Google Flow] Reusing shared room ${persistedFlowProjectId} for local project ${localProjectId}.`);
@@ -3457,11 +3490,19 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
 
     const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     const generatedRemoteMediaId = _.trim(_.toString(result?.remoteMediaId));
+    if (
+      localProject &&
+      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
+      !_.isEmpty(generatedRemoteMediaId) &&
+      _.includes(knownVideoMediaIds, generatedRemoteMediaId)
+    ) {
+      throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ID_ERROR);
+    }
     if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(generatedRemoteMediaId)) {
       const generatedScene = _.find(localProject.storyboard, { id: sceneId });
-      if (generatedScene) {
+      if (generatedScene && _.isEmpty(result.base64)) {
         generatedScene.remoteVideoMediaId = generatedRemoteMediaId;
-        generatedScene.remoteVideoDownloadPending = _.isEmpty(result.base64);
+        generatedScene.remoteVideoDownloadPending = true;
       }
       localProject.visualConfig = {
         ...localProject.visualConfig,

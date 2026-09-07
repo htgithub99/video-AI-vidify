@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { GenerateType, ProjectKind, SceneAssetStatus, VideoProject } from "../../types.js";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import _ from "lodash";
 
 import {
@@ -28,17 +28,37 @@ import {
   ALIGN_CONFIG,
   PROJECT_VISUAL_ASSET_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
+  PIPELINE_COMPLETION_CONFIG,
 } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
 
+const persistedVideoContentHashCache = new Map<string, { size: number; modifiedAtMs: number; hash: string }>();
+
+const getPersistedVideoContentHash = (videoPath: string): string => {
+  const stats = fs.statSync(videoPath);
+  const cached = persistedVideoContentHashCache.get(videoPath);
+  if (cached && _.isEqual(cached.size, stats.size) && _.isEqual(cached.modifiedAtMs, stats.mtimeMs)) return cached.hash;
+  const hash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM)
+    .update(fs.readFileSync(videoPath))
+    .digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
+  persistedVideoContentHashCache.set(videoPath, { size: stats.size, modifiedAtMs: stats.mtimeMs, hash });
+  while (_.gt(persistedVideoContentHashCache.size, FLOW_VIDEO_MEDIA_CONFIG.IDEMPOTENCY_CACHE_MAX_ENTRIES)) {
+    const oldestPath = persistedVideoContentHashCache.keys().next().value;
+    if (_.isString(oldestPath)) persistedVideoContentHashCache.delete(oldestPath);
+    else break;
+  }
+  return hash;
+};
+
 async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
     const project = await getProjectDetailFromDb(id);
     if (!project) return null;
-
-    return project;
+    const validatedProject = validatePersistedVideoAssets(project);
+    if (!_.isEqual(validatedProject, project)) await saveProjectDetailToDb(validatedProject);
+    return validatedProject;
   } catch (error) {
     appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
     return null;
@@ -348,6 +368,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
   if (!_.isArray(project.storyboard)) return project;
   let changed = false;
+  const sceneIdByContentHash = new Map<string, string>();
   const storyboard = _.map(project.storyboard, (scene) => {
     if (!_.isEqual(scene.assetType, GenerateType.Video) || _.isEmpty(scene.assetUrl)) return scene;
     const assetUrl = _.toString(scene.assetUrl);
@@ -360,7 +381,26 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
       isInsideProjectsRoot &&
       fs.existsSync(resolvedAssetPath) &&
       _.gte(fs.statSync(resolvedAssetPath).size, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES);
-    if (hasValidLocalFile) return scene;
+    if (hasValidLocalFile) {
+      const contentHash = getPersistedVideoContentHash(resolvedAssetPath);
+      const originalSceneId = sceneIdByContentHash.get(contentHash);
+      if (!originalSceneId) {
+        sceneIdByContentHash.set(contentHash, scene.id);
+        return scene;
+      }
+      changed = true;
+      return {
+        ...scene,
+        assetUrl: undefined,
+        assetUrls: [],
+        assetStatus: SceneAssetStatus.Failed,
+        assetError: FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ERROR,
+        remoteVideoMediaId: undefined,
+        remoteVideoDownloadPending: false,
+        cinematicTakeDecision: undefined,
+        cinematicTakeDecisionReason: undefined,
+      };
+    }
     if (isInsideProjectsRoot && fs.existsSync(resolvedAssetPath) && fs.statSync(resolvedAssetPath).isFile()) {
       try {
         fs.unlinkSync(resolvedAssetPath);
@@ -371,7 +411,6 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
     changed = true;
     return { ...scene, assetUrl: undefined, assetUrls: [], assetStatus: SceneAssetStatus.Failed, assetError: FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR };
   });
-  if (!project.generationCheckpoint) return changed ? { ...project, storyboard } : project;
   const completedSceneIds = _.map(
     _.filter(storyboard, (scene) => !_.isEmpty(scene.assetUrl)),
     "id",
@@ -384,10 +423,31 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
     _.filter(storyboard, (scene) => _.isEqual(scene.assetStatus, SceneAssetStatus.Failed)),
     "id",
   );
+  const requiresMediaRepair = changed || (!_.isEmpty(project.renderedVideoUrl) && !_.isEmpty(pendingSceneIds));
+  const validatedProject = requiresMediaRepair
+    ? {
+        ...project,
+        storyboard,
+        renderedVideoUrl: undefined,
+        finalQc: undefined,
+        finalMultimodalQa: undefined,
+        manualReviewItems: [],
+        status: REFACTOR_CONSTANTS.STATUS_PARTIAL,
+      }
+    : changed
+      ? { ...project, storyboard }
+      : project;
+  if (!project.generationCheckpoint) return validatedProject;
   return {
-    ...project,
-    storyboard,
-    generationCheckpoint: { ...project.generationCheckpoint, completedSceneIds, pendingSceneIds, failedSceneIds },
+    ...validatedProject,
+    generationCheckpoint: {
+      ...project.generationCheckpoint,
+      phase: requiresMediaRepair ? PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE : project.generationCheckpoint.phase,
+      completedSceneIds,
+      pendingSceneIds,
+      failedSceneIds,
+      renderJobId: requiresMediaRepair ? null : project.generationCheckpoint.renderJobId,
+    },
   };
 };
 

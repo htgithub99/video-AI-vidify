@@ -5,7 +5,7 @@ import { evaluateEdit, evaluateSubtitles, evaluateThumbnail } from "../src/servi
 import { isSceneVisualQualityApproved } from "../src/services/sceneVisualQualityService";
 import { normalizeStoryboardQuality } from "../src/services/storyboardQualityService";
 import { normalizeContentSafety } from "../src/services/contentSafetyService";
-import { SceneAssetStatus } from "../src/types";
+import { SceneAssetStatus, SubtitleMode } from "../src/types";
 
 const lowScoreAiDecision = {
   anatomy: 45,
@@ -34,6 +34,9 @@ const invalidSubtitleReport = evaluateSubtitles([{
 } as any]);
 assert.equal(invalidSubtitleReport.passed, true);
 assert.ok(invalidSubtitleReport.warnings.includes("subtitle_reading_time_insufficient"));
+const disabledSubtitleReport = evaluateSubtitles([], SubtitleMode.None);
+assert.equal(disabledSubtitleReport.passed, true);
+assert.deepEqual(disabledSubtitleReport.blockingErrors, []);
 
 const repetitiveEditReport = evaluateEdit(Array.from({ length: 8 }, (_, index) => ({
   id: `sc_edit_${index}`,
