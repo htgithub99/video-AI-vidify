@@ -163,6 +163,8 @@ export const SecurityConstants = {
   DATA_STATUS_PATH: "data.status",
   PLACEHOLDER_0: "{0}",
   PLACEHOLDER_1: "{1}",
+  PLACEHOLDER_2: "{2}",
+  PLACEHOLDER_3: "{3}",
   PROP_PLAN_ID: "plan_id",
   PROP_STATUS: "status",
   PROP_EXPIRES_AT: "expires_at",

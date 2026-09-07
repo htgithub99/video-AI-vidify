@@ -85,18 +85,6 @@ export const normalizeThumbnailIdeas = (generatedItems: Partial<ThumbnailItem>[]
   return _.map(sourceItems, (item, index) => normalizeThumbnail(item, index, usedLayoutIds, textMode));
 };
 
-export const preserveAiThumbnailIdeas = (generatedItems: Partial<ThumbnailItem>[], requestedCount: number): ThumbnailItem[] =>
-  _.map(
-    _.take(
-      _.filter(generatedItems, (item) => !_.isEmpty(_.trim(_.toString(item.generationPrompt)))),
-      requestedCount,
-    ),
-    (item) => {
-      const generationPrompt = _.toString(item.generationPrompt);
-      return { ...item, prompt: generationPrompt, generationPrompt } as ThumbnailItem;
-    },
-  );
-
 export const resolveThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
   cinematicMode: boolean,
@@ -112,17 +100,43 @@ export const resolveThumbnailGenerationPrompt = (
 export const getThumbnailTechnicalPlanningIssues = (
   generatedItems: Array<Partial<ThumbnailItem>>,
   requestedCount: number = _.size(generatedItems),
+  textMode: string = ThumbnailTextMode.Headline,
 ): string[] =>
   (() => {
     const ids = _.map(generatedItems, (item) => _.trim(_.toString(item.id)));
     return _.uniq(
-      _.compact([
-      _.lt(_.size(generatedItems), requestedCount) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT,
-      _.some(ids, _.isEmpty) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_ID,
-      _.uniq(ids).length !== ids.length && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.DUPLICATE_ID,
-      _.some(generatedItems, (item) => _.isEmpty(_.trim(_.toString(item.generationPrompt)))) &&
-        THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
-      ]),
+      _.compact(
+        _.concat(
+          [
+            _.lt(_.size(generatedItems), requestedCount) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT,
+            _.some(ids, _.isEmpty) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_ID,
+            _.uniq(ids).length !== ids.length && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.DUPLICATE_ID,
+          ],
+          _.flatMap(generatedItems, (item) => {
+            const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
+            const generationPrompt = cleanTextValue(item.generationPrompt || item.prompt);
+            const headline = cleanTextValue(item.textText);
+            const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
+            const headlineWordCount = _.size(_.words(headline, /[^\s]+/g));
+            return _.compact([
+              _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
+              !layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT,
+              layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
+              hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
+              hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline.normalize("NFC")) &&
+                THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
+              hasText &&
+                (headlineWordCount > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS || _.size(headline) > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_CHARACTERS) &&
+                THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_TOO_LONG,
+              layout &&
+                _.includes(layout.arrowPolicy, "required") &&
+                !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt) &&
+                THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH,
+              !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH,
+            ]);
+          }),
+        ),
+      ),
     );
   })();
 

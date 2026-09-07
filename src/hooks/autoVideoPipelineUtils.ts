@@ -34,6 +34,9 @@ export interface GenerationCheckpointSceneProgress {
   failedSceneIds: string[];
 }
 
+export const mergeContinuationLogs = (...logSources: Array<string[] | null | undefined>): string[] =>
+  _.uniq(_.flatMap(logSources, (source) => _.defaultTo(source, [])));
+
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;
 

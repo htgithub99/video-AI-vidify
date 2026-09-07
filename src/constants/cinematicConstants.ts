@@ -4,19 +4,32 @@ export const CINEMATIC_POLICY_CONFIG = {
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
-  PLANNING_CHUNK_SIZE: 3,
+  PLANNING_CHUNK_SIZE: Number.MAX_SAFE_INTEGER,
   PLANNING_WORKER_COUNT: 1,
-  CLIENT_PLANNING_ATTEMPTS: 1,
-  CLIENT_SCENE_RECOVERY_ATTEMPTS: 1,
+  CLIENT_PLANNING_ATTEMPTS: 2,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
 
+export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v3-compact";
+
 export const CINEMATIC_ROOM_STAGE = {
-  SCRIPT: "script-room",
-  PROMPT: "prompt-room",
-  THUMBNAIL: "thumbnail-room",
+  SCRIPT: "film-planning-room",
+  PROMPT: "film-planning-room",
+  THUMBNAIL: "film-planning-room",
   VIDEO: "video-room",
 } as const;
+
+export const CINEMATIC_ARTIFACT_TYPE = {
+  FILM_PACKAGE: "film_package",
+  VIDEO_PROMPTS: "video_prompts",
+  THUMBNAILS: "thumbnails",
+  SEO: "seo",
+} as const;
+
+export const CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN = /\s+/g;
+
+export const normalizeCinematicArtifactIdentity = (value: unknown): string =>
+  String(value ?? "").replace(CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN, "");
 
 export const CINEMATIC_PROGRESS_STAGE = {
   SCRIPT: 1,
@@ -38,8 +51,11 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_START: "Bước 4/4 · Đang tạo video cho {0} cảnh.",
     VIDEO_PROGRESS: "Bước 4/4 · Đã tạo xong {0}/{1} cảnh.",
     VIDEO_READY: "Bước 4/4 · Video đã hoàn tất.",
-    PLANNING_STOPPED: "Bước {0}/4 tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
-    VIDEO_STOPPED: "Bước 4/4 tạm dừng vì khâu tạo hoặc ghép video chưa hoàn tất. Các cảnh đã xong được giữ lại; hãy chọn Tiếp tục dự án.",
+    PLANNING_STOPPED: "Bước {0}/4 · Tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
+    PLANNING_FORMAT_STOPPED:
+      "Bước 1/4 · AI đã trả lời nhưng định dạng dữ liệu chưa đọc được. Hệ thống đã giữ dữ liệu cũ; chọn Tiếp tục để nhận lại kịch bản.",
+    PROMPT_STOPPED: "Bước 2/4 · Đã giữ {0}/{1} prompt; còn thiếu {2}. Hãy chọn Tiếp tục để hoàn thành riêng các cảnh này.",
+    VIDEO_STOPPED: "Bước 4/4 · Tạm dừng vì khâu tạo hoặc ghép video chưa hoàn tất. Các cảnh đã xong được giữ lại; hãy chọn Tiếp tục dự án.",
     CANCELLED: "Đã dừng quy trình an toàn. Mọi kết quả đã hoàn thành đều được giữ lại.",
   },
   en: {
@@ -53,14 +69,20 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_START: "Step 4/4 · Creating video for {0} scenes.",
     VIDEO_PROGRESS: "Step 4/4 · Completed {0}/{1} scenes.",
     VIDEO_READY: "Step 4/4 · The video is complete.",
-    PLANNING_STOPPED: "Step {0}/4 paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
-    VIDEO_STOPPED: "Step 4/4 paused because video creation or assembly did not finish. Completed scenes are kept; continue the project to resume.",
+    PLANNING_STOPPED: "Step {0}/4 · Paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
+    PLANNING_FORMAT_STOPPED:
+      "Step 1/4 · AI responded, but its data format could not be read. Existing data was kept; continue to request the screenplay again.",
+    PROMPT_STOPPED: "Step 2/4 · Kept {0}/{1} prompts; still missing {2}. Continue to complete only these scenes.",
+    VIDEO_STOPPED: "Step 4/4 · Paused because video creation or assembly did not finish. Completed scenes are kept; continue the project to resume.",
     CANCELLED: "Production stopped safely. Every completed result has been kept.",
   },
 } as const;
 
 export const CINEMATIC_CHECKPOINT_CONFIG = {
   MEDIA_PHASE_PATTERN: /media|render|completed/i,
+  SCENE_COUNT_MISMATCH_TEMPLATE: "storyboard:scene_count_mismatch:{actual}/{expected}",
+  ACTUAL_COUNT_TOKEN: "{actual}",
+  EXPECTED_COUNT_TOKEN: "{expected}",
 } as const;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
@@ -156,14 +178,12 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONVERSATION_DELETE_FALLBACK_PATTERN: /(?:Xóa|Xoá|Delete)/i,
 } as const;
 
+export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string =>
+  `${String(runId ?? "").trim() || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE}:${artifactType}`;
+
 export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
   "id",
   "generationPrompt",
-  "characterIds",
-  "dialogueMode",
-  "spokenDialogue",
-  "speakerCharacterId",
-  "lipSyncRequired",
 ] as const;
 
 export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [
@@ -227,12 +247,6 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_BATCH_ATTEMPT: "Generating prompt and visual details for {1} (attempt {2}/{3}).",
   VI_BATCH_RETRY: "Đang bổ sung thêm chi tiết hình ảnh và chuyển động cho {1}...",
   EN_BATCH_RETRY: "Refining visual and motion details for {1}...",
-  VI_SCENE_RECOVERY_START: "Đang tiến hành hoàn thiện riêng biệt cho {0} phân cảnh chưa đạt...",
-  EN_SCENE_RECOVERY_START: "Refining {0} remaining scenes individually...",
-  VI_SCENE_RECOVERY_ATTEMPT: "Đang tối ưu hóa chi tiết và tính nhất quán cho {1} (lượt {2}/{3}).",
-  EN_SCENE_RECOVERY_ATTEMPT: "Optimizing details and continuity for {1} (attempt {2}/{3}).",
-  VI_SCENE_RECOVERED: "Đã hoàn tất xây dựng câu lệnh và mô tả đạt chuẩn cho {0}.",
-  EN_SCENE_RECOVERED: "Completed verified prompt description for {0}.",
   VI_SCENE_RECOVERY_FAILED: "AI chưa trả prompt cho {0}. Đã giữ các cảnh hoàn thành và tạm dừng tại những cảnh còn thiếu.",
   EN_SCENE_RECOVERY_FAILED: "AI did not return prompts for {0}. Completed scenes were kept and production paused at the missing scenes.",
   VI_REQUIRED: "AI chưa trả đủ prompt video. Các cảnh đã hoàn thành được giữ lại để tiếp tục ở lần sau.",

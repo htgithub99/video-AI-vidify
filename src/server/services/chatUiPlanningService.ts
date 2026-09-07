@@ -7,6 +7,7 @@ import {
   EXTERNAL_URLS,
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
+  normalizeCinematicArtifactIdentity,
   SecurityConstants,
 } from "../../constants/index.js";
 import { delayAsync } from "../../lib/shared-utils.js";
@@ -35,6 +36,8 @@ interface ChatPlanningRequest {
   signal?: AbortSignal;
   attachments?: ChatRoomAttachment[];
   completionMarker?: string;
+  artifactType?: string;
+  requestId?: string;
   closeRoomOnComplete?: boolean;
 }
 
@@ -486,8 +489,9 @@ const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): 
   if (_.isEmpty(text)) return false;
   try {
     const parsed = JSON.parse(text);
-    if (!_.isArray(parsed)) return false;
-    const returnedSceneIds = _.map(parsed, (item) => _.toString(_.get(item, "id")));
+    const scenes = _.isArray(parsed) ? parsed : _.get(parsed, "scenes");
+    if (!_.isArray(scenes)) return false;
+    const returnedSceneIds = _.map(scenes, (item) => _.toString(_.get(item, "id")));
     return (
       _.isEqual(returnedSceneIds.length, expectedSceneIds.length) &&
       _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) &&
@@ -507,6 +511,8 @@ const waitForStableResponse = async (
   expectedSceneIds: string[],
   initialResponseSnapshots: ChatResponseSnapshot[],
   completionMarker?: string,
+  artifactType?: string,
+  requestId?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   const startedAt = Date.now();
@@ -543,17 +549,26 @@ const waitForStableResponse = async (
       .count()
       .then((visibleCount) => visibleCount > 0)
       .catch(() => false);
-    const hasRequiredCompletionMarker = _.isEmpty(completionMarker) || _.includes(latestText, completionMarker);
-    const belongsToCurrentRequest = (_.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds)) && hasRequiredCompletionMarker;
+    let parsedLatest: unknown;
+    try {
+      parsedLatest = JSON.parse(latestText);
+    } catch {}
+    const returnedCompletionMarker = _.trim(_.toString(_.get(parsedLatest, "completionMarker")));
+    const returnedArtifactType = _.trim(_.toString(_.get(parsedLatest, "artifactType")));
+    const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedLatest, "requestId"));
+    const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
+    const hasRequiredCompletionMarker =
+      _.isEmpty(completionMarker) || _.isEmpty(returnedCompletionMarker) || _.isEqual(returnedCompletionMarker, completionMarker);
+    const hasRequiredArtifactIdentity =
+      (_.isEmpty(artifactType) || _.isEmpty(returnedArtifactType) || _.isEqual(returnedArtifactType, artifactType)) &&
+      (_.isEmpty(normalizedExpectedRequestId) || _.isEmpty(returnedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
+    const belongsToCurrentRequest =
+      (_.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds)) && hasRequiredCompletionMarker && hasRequiredArtifactIdentity;
     lastResponseCount = count;
     lastCandidateLength = latestText.length;
     lastBusyState = isBusy;
     lastIdentityMatch = belongsToCurrentRequest;
-    let isCompleteJson = false;
-    try {
-      JSON.parse(latestText);
-      isCompleteJson = true;
-    } catch {}
+    const isCompleteJson = !_.isUndefined(parsedLatest);
     if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && belongsToCurrentRequest && isCompleteJson && !isBusy) {
       appLog(`[AI Chat Planning] Đã lấy JSON hoàn chỉnh ngay khi room trả đủ dữ liệu (${latestText.length} ký tự, ${Date.now() - startedAt} ms).`);
       return latestText;
@@ -679,6 +694,8 @@ const submitPrompt = async (
   expectedSceneIds: string[],
   attachments: ChatRoomAttachment[] = [],
   completionMarker?: string,
+  artifactType?: string,
+  requestId?: string,
   signal?: AbortSignal,
 ): Promise<string> => {
   throwIfPlanningCancelled(signal);
@@ -711,7 +728,18 @@ const submitPrompt = async (
   const submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
   if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);
   appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace("{0}", _.toString(normalizedPrompt.length)));
-  return waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseSnapshots, completionMarker, signal);
+  return waitForStableResponse(
+    page,
+    responseSelector,
+    busySelector,
+    initialCount,
+    expectedSceneIds,
+    initialResponseSnapshots,
+    completionMarker,
+    artifactType,
+    requestId,
+    signal,
+  );
 };
 
 const getChatModelOption = (page: Page, modelLabel: RegExp) =>
@@ -948,6 +976,8 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     request.expectedSceneIds || [],
     request.attachments || [],
     request.completionMarker,
+    request.artifactType,
+    request.requestId,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -976,6 +1006,8 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     request.expectedSceneIds || [],
     request.attachments || [],
     request.completionMarker,
+    request.artifactType,
+    request.requestId,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();
@@ -997,6 +1029,8 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     request.expectedSceneIds || [],
     request.attachments || [],
     request.completionMarker,
+    request.artifactType,
+    request.requestId,
     request.signal,
   );
   scheduleGlobalBrowserCleanup();

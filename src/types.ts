@@ -546,6 +546,7 @@ export interface StoryboardScene {
   subtitleCues?: SubtitleCue[];
   prompt: string;
   generationPrompt?: string;
+  generationPromptProfileVersion?: string;
   assetName?: string;
   assetType?: AssetType;
   assetUrl?: string;
@@ -1187,7 +1188,7 @@ export enum GeminiChatSelector {
   ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"]',
   ModelLabel = ".label",
   PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="thêm tệp" i], button[aria-label*="upload" i], button[aria-label*="add files" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button, gem-icon-button[data-test-id="action-menu-button"] button, gem-icon-button[data-test-id="action-menu-button"], button:has(mat-icon[fonticon="add"])',
-  PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
+  PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], [role="menuitemcheckbox"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
   ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
   SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GenerationBusy = "gem-icon-button.send-button.stop",

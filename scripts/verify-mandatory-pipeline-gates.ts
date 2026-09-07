@@ -17,8 +17,9 @@ import { getCinematicStoryboardRecoveryPrompt } from "../src/constants/cinematic
 import { getUnderfilledCinematicSceneIds } from "../src/services/storyboardQualityService";
 
 const cinematicSplitPrompt = getCinematicStoryboardRecoveryPrompt("Chapter One\nA complete playable event unfolds.", "[]", 1, 10, false);
-assert.match(cinematicSplitPrompt, /film scene editor recovering production scenes/i);
-assert.match(cinematicSplitPrompt, /attach headings and speaker labels/i);
+assert.match(cinematicSplitPrompt, /Split the screenplay into exactly 1 clear, ordered 10-second scenes/i);
+assert.match(cinematicSplitPrompt, /Choose the best pacing yourself/i);
+assert.match(cinematicSplitPrompt, /unique scene IDs and exact scene dialogue/i);
 assert.doesNotMatch(cinematicSplitPrompt, /storyboardQa|score of 85/i);
 const longCinematicSource = _.join(_.fill(Array(200), "playable"), " ");
 assert.deepEqual(getUnderfilledCinematicSceneIds([{ id: "title_only", script: "Biển Lửa Hỏa Diệm" } as any], longCinematicSource, 5), ["title_only"]);
@@ -134,7 +135,7 @@ assert.deepEqual(
     2,
     { passed: true, scriptCoverageScore: 100, pacingCoverageScore: 100 } as any,
   ),
-  [],
+  ["storyboard:scene_count_mismatch:1/2"],
 );
 assert.deepEqual(
   getCinematicStoryboardReadinessIssues(
@@ -290,7 +291,7 @@ assert.match(previewSource, /setIsSceneDialogOpen\(true\)/, "clip regeneration d
 assert.match(autoGeneratorSource, /deleteProjectRegenerationAssets\(project\.id, target, sceneId\)/, "selected clip ID is not sent to targeted cleanup");
 assert.match(autoGeneratorSource, /forceRegenerateScenes: _\.isEmpty\(sceneId\)/, "selected clip retry still forces every scene to regenerate");
 assert.match(controllerSource, /clearProjectSceneOutput\(project, sceneId\)/, "server does not isolate selected clip cleanup");
-assert.match(controllerSource, /CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA/, "cinematic film package is not returned as one AI-authored artifact");
+assert.match(controllerSource, /createCinematicFilmPackageResponseSchema/, "cinematic film package is not constrained to the configured scene count");
 assert.match(controllerSource, /getCinematicFilmPackagePrompt/, "single film-package prompt is not connected");
 assert.match(controllerSource, /productionScenes: _\.castArray\(cinematicFilmPackage\?\.scenes/, "AI-authored production scenes are not returned with the film package");
 assert.match(controllerSource, /characters: _\.castArray\(cinematicFilmPackage\?\.characters/, "AI-authored cast is not returned with the film package");

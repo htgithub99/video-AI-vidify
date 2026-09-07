@@ -56,7 +56,6 @@ import {
   getThumbnailPlanningIssues,
   getThumbnailTechnicalPlanningIssues,
   normalizeThumbnailIdeas,
-  preserveAiThumbnailIdeas,
 } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectSceneOutput, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
@@ -155,7 +154,7 @@ import {
   SCRIPT_PLAN_RESPONSE_SCHEMA,
   CHAPTER_RESPONSE_SCHEMA,
   FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
-  CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
+  createCinematicFilmPackageResponseSchema,
   CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
@@ -265,8 +264,12 @@ import {
 } from "../../services/cinematicProductionPolicyService.js";
 import {
   CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
+  CINEMATIC_ARTIFACT_TYPE,
+  normalizeCinematicArtifactIdentity,
   CINEMATIC_CHAT_PLANNING_CONFIG,
   CINEMATIC_ROOM_STAGE,
+  CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
+  createCinematicArtifactRequestId,
   resolveCinematicClipDuration,
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
@@ -546,7 +549,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const resolvedVisualConfig = visualConfig as VisualConfig;
     const resolvedVisualBible = visualBible as VisualBible;
     const characters = _.defaultTo(resolvedVisualConfig.characters, []);
-    const knownCharacterIds = new Set(_.map(characters, (character) => _.toString(character.id)));
     const visualStyle = resolvedVisualConfig.style;
     const isCinematicPlanning = isCinematicEpisodeGenre(_.toString(req.body?.genre || req.body?.config?.genre));
     const promptCharacters = isCinematicPlanning
@@ -619,7 +621,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       ? _.cloneDeep(sourceScenes)
       : resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
-    const chunks = _.chunk(planningPayload, chunkSize);
+    const chunks = isCinematicPlanning ? [planningPayload] : _.chunk(planningPayload, chunkSize);
+    const videoPromptsRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS);
     const optimizedMap = new Map<string, StoryboardScene>();
     const planningWarnings: string[] = [];
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
@@ -676,6 +679,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             clipDurationSeconds,
             CINEMATIC_DIALOGUE_DIRECTIVES.FOLLOW_SOURCE,
             isVi ? "Vietnamese" : "English",
+            videoPromptsRequestId,
           );
         }
         return getQuickVideoPlanningPrompt(
@@ -713,19 +717,15 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           clipDurationSeconds,
           CINEMATIC_DIALOGUE_DIRECTIVES.FOLLOW_SOURCE,
           isVi ? "Vietnamese" : "English",
+          videoPromptsRequestId,
         );
       };
       const planningString = { type: "string" } as const;
       const createCinematicPlanningProperties = (expectedSceneIds: string[]) => ({
         id: { type: "string", enum: expectedSceneIds },
         generationPrompt: planningString,
-        characterIds: { type: "array", items: planningString },
-        dialogueMode: { type: "string", enum: ["on_screen_dialogue", "off_screen_dialogue", "silent_action"] },
-        spokenDialogue: planningString,
-        speakerCharacterId: planningString,
-        lipSyncRequired: { type: "boolean" },
       }) as const;
-      const createPlanningSchema = (expectedSceneIds: string[] = sceneIds) => ({
+      const createPlanningItemsSchema = (expectedSceneIds: string[] = sceneIds) => ({
         type: "array",
         minItems: expectedSceneIds.length,
         maxItems: expectedSceneIds.length,
@@ -818,6 +818,20 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           },
         },
       }) as const;
+      const createPlanningSchema = (expectedSceneIds: string[] = sceneIds) =>
+        isCinematicPlanning
+          ? ({
+              type: "object",
+              additionalProperties: false,
+              required: ["artifactType", "requestId", "scenes", "completionMarker"],
+              properties: {
+                artifactType: { type: "string", enum: [CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS] },
+                requestId: { type: "string", enum: [videoPromptsRequestId] },
+                scenes: createPlanningItemsSchema(expectedSceneIds),
+                completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
+              },
+            } as const)
+          : createPlanningItemsSchema(expectedSceneIds);
       const requestChatUiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         let lastError: unknown;
         for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_RESPONSE_ATTEMPTS; attempt++) {
@@ -831,11 +845,24 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               workerId: planningWorkerId,
               chromeHeadless: planningChromeHeadless,
               expectedSceneIds,
+              completionMarker: isCinematicPlanning ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
+              artifactType: isCinematicPlanning ? CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS : undefined,
+              requestId: isCinematicPlanning ? videoPromptsRequestId : undefined,
               signal: planningRun.signal,
               closeRoomOnComplete: false,
             });
             const parsed = safeParseJSON(response.text, null);
-            if (_.isArray(parsed)) return parsed;
+            const parsedScenes = isCinematicPlanning ? (_.isArray(parsed) ? parsed : _.get(parsed, "scenes")) : parsed;
+            const returnedArtifactType = _.trim(_.toString(_.get(parsed, "artifactType")));
+            const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsed, "requestId"));
+            const normalizedVideoPromptsRequestId = normalizeCinematicArtifactIdentity(videoPromptsRequestId);
+            const returnedCompletionMarker = _.trim(_.toString(_.get(parsed, "completionMarker")));
+            const artifactMatches =
+              !isCinematicPlanning ||
+              ((_.isEmpty(returnedArtifactType) || _.isEqual(returnedArtifactType, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS)) &&
+                (_.isEmpty(returnedRequestId) || _.isEqual(returnedRequestId, normalizedVideoPromptsRequestId)) &&
+                (_.isEmpty(returnedCompletionMarker) || _.isEqual(returnedCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)));
+            if (artifactMatches && _.isArray(parsedScenes)) return parsedScenes;
             lastError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
           } catch (error) {
             if (planningRun.signal.aborted) throw error;
@@ -854,7 +881,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           task: { capability: AiTaskCapability.VisualPlanning },
         });
         const parsed = safeParseJSON(response.text, []);
-        return _.isArray(parsed) ? parsed : [];
+        const parsedScenes = isCinematicPlanning ? _.get(parsed, "scenes") : parsed;
+        return _.isArray(parsedScenes) ? parsedScenes : [];
       };
       const requestVisualPlan = async (apiContents: string, chatUiContents: string, preferChatUi = false, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
         if (_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)) return requestApiPlan(apiContents, expectedSceneIds);
@@ -891,11 +919,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             const sceneId = _.toString(_.get(item, "id"));
             if (!_.includes(sceneIds, sceneId)) return;
             if (_.isEmpty(_.trim(_.toString(_.get(item, "generationPrompt"))))) issues.push(`${sceneId}:generationPrompt:missing`);
-            if (!_.isArray(_.get(item, "characterIds"))) issues.push(`${sceneId}:characterIds:must_be_array`);
-            _.forEach(
-              _.reject(_.map(_.castArray(_.get(item, "characterIds", [])), _.toString), (id) => knownCharacterIds.has(id)),
-              (id) => issues.push(`${sceneId}:characterIds:unknown:${id}`),
-            );
           });
           return _.uniq(issues);
         }
@@ -1114,7 +1137,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         const returnedItem = returnedById[sceneId];
         if (!baseScene || !returnedItem) return;
         const normalizedScene = isCinematicPlanning
-          ? ({ ...baseScene, ...returnedItem, id: sceneId } as StoryboardScene)
+          ? ({
+              ...baseScene,
+              ...returnedItem,
+              id: sceneId,
+              generationPromptProfileVersion: CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
+            } as StoryboardScene)
           : normalizeVisualShotPlan(returnedItem, baseScene, {
               characters,
               visualBible: resolvedVisualBible,
@@ -1178,6 +1206,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       planningIssues: planningFailureIssues,
       storyboard: planningPartialStoryboard,
       rotationLogs: error.rotationLogs,
+      diagnostic: _.toString(error?.message),
     });
   }
 });
@@ -1778,7 +1807,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     if (isCinematicScript) {
       const clipDurationSeconds = resolveCinematicClipDuration(config?.videoDuration);
       const targetClipCount = Math.max(1, Math.ceil(parseTargetDurationSeconds(rawDurationText) / clipDurationSeconds));
-      cinematicSourceSignature = createCinematicScriptSourceSignature({
+      const filmPackageRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE);
+      const cinematicSourceSignatureInput = {
         originalInput,
         inputType,
         genre: config.genre,
@@ -1792,36 +1822,60 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         rewriteLevel: _.clamp(_.toNumber(config.rewriteLevel), 0, 100),
         creativityLevel: _.clamp(_.toNumber(config.creativityLevel), 0, 10),
         similarityReduction: _.clamp(_.toNumber(config.similarityReduction), 0, 10),
+      };
+      cinematicSourceSignature = createCinematicScriptSourceSignature({
+        ...cinematicSourceSignatureInput,
         artifactSchemas: { filmPackage: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION },
       });
+      const compatibleCinematicSourceSignatures = _.map(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS, (schemaVersion) =>
+        createCinematicScriptSourceSignature({
+          ...cinematicSourceSignatureInput,
+          artifactSchemas: { filmPackage: schemaVersion },
+        }),
+      );
       const checkpointProjectId = path.basename(_.toString(req.body?.projectId));
       cinematicCheckpointProject = _.isEmpty(checkpointProjectId) ? null : await getProjectDetailFromDb(checkpointProjectId).catch(() => null);
       canReuseCinematicCheckpoint =
         !bypassCache &&
-        _.isEqual(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature, cinematicSourceSignature);
-      const getFilmPackageIssues = (value: Record<string, any> | undefined): string[] => {
+        _.includes(
+          [cinematicSourceSignature, ...compatibleCinematicSourceSignatures],
+          _.toString(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature),
+        );
+      const getFilmPackageIssues = (value: Record<string, any> | undefined, requireRequestIdentity: boolean = true): string[] => {
         const scenes = _.castArray(value?.scenes || []);
         const sceneIds = _.map(scenes, (scene) => _.trim(_.toString(scene?.id)));
         return _.compact([
           _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
+          !_.isEmpty(_.trim(_.toString(value?.artifactType))) && !_.isEqual(value?.artifactType, CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE) && "artifact:type_mismatch",
+          requireRequestIdentity &&
+            !_.isEmpty(_.trim(_.toString(value?.requestId))) &&
+            !_.isEqual(value?.requestId, filmPackageRequestId) &&
+            "artifact:request_mismatch",
           _.isEmpty(_.castArray(value?.chapters || [])) && "chapters:missing",
           _.isEmpty(scenes) && "scenes:missing",
-          _.lt(_.size(scenes), targetClipCount) &&
+          !_.isEqual(_.size(scenes), targetClipCount) &&
             _.replace(
-              _.replace(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_BELOW_TARGET_TEMPLATE, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.ACTUAL_COUNT_TOKEN, _.toString(_.size(scenes))),
+              _.replace(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.ACTUAL_COUNT_TOKEN, _.toString(_.size(scenes))),
               CINEMATIC_SCRIPT_ARTIFACT_CONFIG.TARGET_COUNT_TOKEN,
               _.toString(targetClipCount),
             ),
           _.some(sceneIds, _.isEmpty) && "scenes:id_missing",
           _.uniq(sceneIds).length !== sceneIds.length && "scenes:id_duplicate",
           _.some(scenes, (scene) => _.isEmpty(_.trim(_.toString(scene?.script)))) && "scenes:script_missing",
-          !_.isEqual(value?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) &&
+          !_.isEmpty(_.trim(_.toString(value?.completionMarker))) &&
+            !_.isEqual(value?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) &&
             CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_INCOMPLETE_ERROR,
         ]);
       };
       const savedFilmPackage = canReuseCinematicCheckpoint ? cinematicCheckpointProject?.cinematicScriptArtifacts?.filmPackage : undefined;
-      if (_.isEmpty(getFilmPackageIssues(savedFilmPackage))) {
-        cinematicFilmPackage = savedFilmPackage;
+      if (_.isEmpty(getFilmPackageIssues(savedFilmPackage, false))) {
+        cinematicFilmPackage = {
+          artifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,
+          requestId: filmPackageRequestId,
+          completionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
+          ...savedFilmPackage,
+        };
+        await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "filmPackage", cinematicFilmPackage, cinematicSourceSignature);
         multiStepLogs.push("[cinematic_film_package] reused_valid_checkpoint");
       } else {
         const filmPackagePrompt = getCinematicFilmPackagePrompt(
@@ -1831,6 +1885,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           targetWordCount,
           targetClipCount,
           clipDurationSeconds,
+          filmPackageRequestId,
           {
             inputType,
             audience: config.audience,
@@ -1850,15 +1905,23 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
                 : getCinematicFilmPackageRepairPrompt(filmPackagePrompt, latestIssues),
             config: {
               responseMimeType: CONTENT_TYPES.JSON,
-              responseJsonSchema: CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
+              responseJsonSchema: createCinematicFilmPackageResponseSchema(targetClipCount),
               maxOutputTokens: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_OUTPUT_TOKENS,
               roomCompletionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
+              roomArtifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,
+              roomRequestId: filmPackageRequestId,
             },
             task: { capability: AiTaskCapability.ScriptWriting, roomWorkerId: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.PRIMARY_WORKER_ID },
           });
           if (filmPackageResponse.aiMetadata) aiMetrics.push(filmPackageResponse.aiMetadata);
           if (filmPackageResponse.rotationLogs) multiStepLogs.push(...filmPackageResponse.rotationLogs);
-          const candidate = safeParseJSON(filmPackageResponse.text, {}) as Record<string, any>;
+          const parsedCandidate = safeParseJSON(filmPackageResponse.text, {}) as Record<string, any>;
+          const candidate = {
+            artifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,
+            requestId: filmPackageRequestId,
+            completionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
+            ...parsedCandidate,
+          };
           latestIssues = getFilmPackageIssues(candidate);
           if (_.isEmpty(latestIssues)) {
             cinematicFilmPackage = candidate;
@@ -2202,7 +2265,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       retryable: Boolean(error?.retryable) || scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
     });
   } finally {
-    await closeCurrentRoomExecution(CINEMATIC_ROOM_STAGE.SCRIPT);
+    if (!isCinematicScript) await closeCurrentRoomExecution(CINEMATIC_ROOM_STAGE.SCRIPT);
   }
 });
 
@@ -2644,7 +2707,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             properties: {
               scenes: {
                 type: "array",
-                minItems: 1,
+                minItems: cinematicClipCount,
+                maxItems: cinematicClipCount,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -2680,7 +2744,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         !_.every(splitScenes, (s: any) =>
           _.every([s.id, s.chapterId, s.script], (value) => !_.isEmpty(_.trim(_.toString(value)))),
         ) ||
-        _.uniq(_.map(splitScenes, (scene: any) => _.trim(_.toString(scene.id)))).length !== splitScenes.length
+        _.uniq(_.map(splitScenes, (scene: any) => _.trim(_.toString(scene.id)))).length !== splitScenes.length ||
+        (isCinematicStoryboard && !_.isEqual(splitScenes.length, cinematicClipCount))
       ) {
         throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
       } else {
@@ -2955,17 +3020,23 @@ router.post("/seo", async (req: Request, res: Response) => {
 
   try {
     const isVi = config.language === ProjectLanguage.VI;
+    const seoRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.SEO);
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
     const genre = config.genre || req.body?.genre || req.body?.project?.config?.genre;
     const combinedSeoPrompt = isCinematicSeo
-      ? getCinematicSeoPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre, config.audience)
+      ? getCinematicSeoPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre, config.audience, seoRequestId)
       : `${getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}`;
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,
-      config: { responseMimeType: "application/json" },
+      config: {
+        responseMimeType: "application/json",
+        roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
+        roomArtifactType: isCinematicSeo ? CINEMATIC_ARTIFACT_TYPE.SEO : undefined,
+        roomRequestId: isCinematicSeo ? seoRequestId : undefined,
+      },
       task: { capability: AiTaskCapability.TextPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
     });
 
@@ -2976,6 +3047,18 @@ router.post("/seo", async (req: Request, res: Response) => {
       hashtags: [],
       tags: [],
     });
+    const returnedSeoArtifactType = _.trim(_.toString(seoResult.artifactType));
+    const returnedSeoRequestId = _.trim(_.toString(seoResult.requestId));
+    const returnedSeoCompletionMarker = _.trim(_.toString(seoResult.completionMarker));
+    if (
+      isCinematicSeo &&
+      ((!_.isEmpty(returnedSeoArtifactType) && !_.isEqual(returnedSeoArtifactType, CINEMATIC_ARTIFACT_TYPE.SEO)) ||
+        (!_.isEmpty(returnedSeoRequestId) && !_.isEqual(returnedSeoRequestId, seoRequestId)) ||
+        (!_.isEmpty(returnedSeoCompletionMarker) &&
+          !_.isEqual(returnedSeoCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)))
+    ) {
+      throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+    }
 
     logSeoStep(`${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`);
     if (combinedResponse.rotationLogs) seoLogs.push(...combinedResponse.rotationLogs);
@@ -3060,6 +3143,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 
   try {
     const isVi = config.language === ProjectLanguage.VI;
+    const thumbnailRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS);
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
@@ -3070,6 +3154,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const thumbnailCharacters = createPromptCharacterCards(_.defaultTo(visualConfig?.characters, []));
     const combinedThumbnailsPrompt = isCinematicThumbnail
       ? getCinematicThumbnailPrompt({
+          requestId: thumbnailRequestId,
           rewrittenScript,
           thumbnailCount,
           referenceDirection: visualConfig.thumbnailReferencePrompt || "",
@@ -3132,20 +3217,37 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     ]);
     const combinedResponse = await generateContentWithRetry({
       contents: requestParts,
-      config: { responseMimeType: "application/json" },
+      config: {
+        responseMimeType: "application/json",
+        roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
+        roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined,
+        roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined,
+      },
       task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
     });
     const parsedResult = safeParseJSON(combinedResponse.text, {
       concepts: [],
       thumbnails: [],
     });
+    const returnedThumbnailArtifactType = _.trim(_.toString(parsedResult.artifactType));
+    const returnedThumbnailRequestId = _.trim(_.toString(parsedResult.requestId));
+    const returnedThumbnailCompletionMarker = _.trim(_.toString(parsedResult.completionMarker));
+    if (
+      isCinematicThumbnail &&
+      ((!_.isEmpty(returnedThumbnailArtifactType) && !_.isEqual(returnedThumbnailArtifactType, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS)) ||
+        (!_.isEmpty(returnedThumbnailRequestId) && !_.isEqual(returnedThumbnailRequestId, thumbnailRequestId)) ||
+        (!_.isEmpty(returnedThumbnailCompletionMarker) &&
+          !_.isEqual(returnedThumbnailCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)))
+    ) {
+      throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+    }
     thumbsResult = {
       concepts: _.castArray(parsedResult.concepts || []),
       thumbnails: _.castArray(parsedResult.thumbnails || []),
     };
     if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
     let planningIssues = isCinematicThumbnail
-      ? getThumbnailTechnicalPlanningIssues(thumbsResult.thumbnails, thumbnailCount)
+      ? getThumbnailTechnicalPlanningIssues(thumbsResult.thumbnails, thumbnailCount, thumbnailTextMode)
       : getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
     if (!_.isEmpty(planningIssues)) {
       thumbLogs.push(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX} ${_.join(planningIssues, ", ")}`);
@@ -3153,13 +3255,18 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
         contents: isCinematicThumbnail
           ? getCinematicThumbnailTechnicalRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues)
           : getThumbnailContractRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues),
-        config: { responseMimeType: "application/json" },
+        config: {
+          responseMimeType: "application/json",
+          roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
+          roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined,
+          roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined,
+        },
         task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
       });
       const repairedResult = safeParseJSON(repairResponse.text, { concepts: [], thumbnails: [] });
       const repairedThumbnails = _.castArray(repairedResult.thumbnails || []);
       const repairedIssues = isCinematicThumbnail
-        ? getThumbnailTechnicalPlanningIssues(repairedThumbnails, thumbnailCount)
+        ? getThumbnailTechnicalPlanningIssues(repairedThumbnails, thumbnailCount, thumbnailTextMode)
         : getThumbnailPlanningIssues(repairedThumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
       if (!_.isEmpty(repairedThumbnails) && _.size(repairedIssues) < _.size(planningIssues)) {
         thumbsResult = { concepts: _.castArray(repairedResult.concepts || []), thumbnails: repairedThumbnails };
@@ -3184,9 +3291,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
 
-    let normalizedThumbnails = isCinematicThumbnail
-      ? preserveAiThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount)
-      : normalizeThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount, thumbnailTextMode);
+    let normalizedThumbnails = normalizeThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount, thumbnailTextMode);
     if (!isCinematicThumbnail && _.lt(_.size(normalizedThumbnails), thumbnailCount)) {
       const sourceFallbacks = createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode);
       normalizedThumbnails = normalizeThumbnailIdeas(_.concat(normalizedThumbnails, _.drop(sourceFallbacks, _.size(normalizedThumbnails))), thumbnailCount, thumbnailTextMode);

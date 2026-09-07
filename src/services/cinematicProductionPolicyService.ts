@@ -3,6 +3,7 @@ import {
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_POLICY_REQUIRED_FIELDS,
   CINEMATIC_PRODUCTION_BLOCKER_PATTERNS,
+  CINEMATIC_CHECKPOINT_CONFIG,
 } from "../constants/cinematicConstants";
 import { VideoGenre } from "../constants/enums";
 import {
@@ -76,12 +77,18 @@ export const getCinematicScriptReadinessIssues = (
 
 export const getCinematicStoryboardReadinessIssues = (
   scenes: StoryboardScene[],
-  _expectedClipCount: number,
+  expectedClipCount: number,
   _quality?: StoryboardQualityReport,
 ): string[] =>
   _.uniq(
     _.compact([
       _.isEmpty(scenes) && "storyboard:missing",
+      !_.isEmpty(scenes) &&
+        !_.isEqual(scenes.length, expectedClipCount) &&
+        CINEMATIC_CHECKPOINT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE.replace(
+          CINEMATIC_CHECKPOINT_CONFIG.ACTUAL_COUNT_TOKEN,
+          _.toString(scenes.length),
+        ).replace(CINEMATIC_CHECKPOINT_CONFIG.EXPECTED_COUNT_TOKEN, _.toString(expectedClipCount)),
       _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
     ]),
   );

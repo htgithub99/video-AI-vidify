@@ -1964,7 +1964,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         let finalBase64: string;
         if (visualConfig?.generateType === GenerateType.Video) {
           const mediaHandle = await activePage.waitForFunction(
-            ([oldEditIds, oldVideoSourcesList, oldVideoThumbnailSourcesList]) => {
+            ([oldEditIds, oldVideoSourcesList, oldVideoThumbnailSourcesList, generationFailurePatternSource]) => {
+              const failurePattern = new RegExp(generationFailurePatternSource, "i");
+              if (failurePattern.test(document.body?.innerText || "")) return { generationError: true };
               const generatedEditId = Array.from(document.querySelectorAll('a[href*="/edit/"]'))
                 .filter((link) => {
                   const container = link.closest("button") || link.parentElement;
@@ -1983,15 +1985,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               if (generatedVideo) return { editId: null, videoSrc: generatedVideo.src, thumbnailSrc: null };
               return generatedThumbnail ? { editId: null, videoSrc: null, thumbnailSrc: generatedThumbnail } : null;
             },
-            [oldVideoEditIds, oldVideoSources, oldVideoThumbnailSources] as const,
+            [oldVideoEditIds, oldVideoSources, oldVideoThumbnailSources, FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source] as const,
             { timeout: 300000 },
           );
           const generatedMedia = (await mediaHandle.jsonValue()) as {
             editId?: string | null;
             videoSrc?: string | null;
             thumbnailSrc?: string | null;
+            generationError?: boolean;
           } | null;
           if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
+          if (generatedMedia.generationError) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);
 
           let downloadedVideoFromCard: FlowDownloadedVideo | null = null;
           if (generatedMedia.editId) {
@@ -2448,8 +2452,8 @@ const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisu
 };
 
 export async function closeAllBatchPages() {
+  const openPageCount = _.size(_.filter(_.uniq(_.compact([...globalBatchPages, activeBrowserInstance?.page, grokPage])), (page) => !page.isClosed()));
   await closeActiveBrowser();
-  appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_CLOSE_TABS.replace("{0}", globalBatchPages.length.toString()));
   for (const page of globalBatchPages) {
     try {
       if (!page.isClosed()) {
@@ -2457,7 +2461,13 @@ export async function closeAllBatchPages() {
       }
     } catch (e) {}
   }
+  if (grokPage && !grokPage.isClosed()) await grokPage.close().catch(() => undefined);
+  if (grokBrowser?.isConnected()) await grokBrowser.close().catch(() => undefined);
   globalBatchPages = [];
+  grokPage = null;
+  grokBrowser = null;
+  activeGrokLocalProjectId = null;
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_CLOSE_TABS.replace("{0}", _.toString(openPageCount)));
 }
 
 export async function cancelAllActiveMediaGeneration(): Promise<void> {
@@ -2475,6 +2485,7 @@ export async function cancelAllActiveMediaGeneration(): Promise<void> {
   if (activeBrowserInstance?.ownsContext !== false) {
     await activeBrowserInstance?.context.close().catch(() => undefined);
   }
+  if (grokBrowser?.isConnected()) await grokBrowser.close().catch(() => undefined);
   globalBatchPages = [];
   activeBrowserInstance = null;
   activeBrowserHeadless = undefined;

@@ -10,7 +10,7 @@ import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerati
 import { createSceneSubtitleCues } from "../src/services/subtitleService.ts";
 import { appendAssetRevision } from "../src/services/dependencyHashService.ts";
 import { removeRedundantSceneAudioBase64 } from "../src/services/voiceTimelineService.ts";
-import { getGenerationCheckpointSceneProgress, hasCompleteSceneAlignment } from "../src/hooks/autoVideoPipelineUtils.ts";
+import { getGenerationCheckpointSceneProgress, hasCompleteSceneAlignment, mergeContinuationLogs } from "../src/hooks/autoVideoPipelineUtils.ts";
 import fs from "node:fs";
 
 const values = new Map<string, string>();
@@ -50,6 +50,12 @@ const interruptedPromptProgress = getGenerationCheckpointSceneProgress({
 } as any);
 assert(interruptedPromptProgress.completedSceneIds.join(",") === "scene_001,scene_002", "completed AI prompts were lost from the interrupted checkpoint");
 assert(interruptedPromptProgress.pendingSceneIds.join(",") === "scene_003", "interrupted checkpoint did not isolate the missing prompt");
+const resumedLogs = mergeContinuationLogs(
+  ["[10:00:00] Kịch bản đã hoàn tất.", "[10:01:00] Đang viết prompt."],
+  ["[10:01:00] Đang viết prompt.", "[10:02:00] Quy trình đã tạm dừng."],
+);
+assert(resumedLogs.length === 3, "continuation discarded or duplicated saved generation logs");
+assert(resumedLogs[0].includes("Kịch bản đã hoàn tất"), "continuation lost the earlier project history");
 
 
 const sourceHookText = "A real opening sentence from the supplied script.";
@@ -113,6 +119,7 @@ const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.t
 const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8");
 const generationSettingsSource = fs.readFileSync("src/components/auto-video/GenerationSettingsSection.tsx", "utf8");
 const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+const pipelineHookSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 const ffmpegRenderSource = fs.readFileSync("src/server/utils/ffmpegRender.ts", "utf8");
 assert(/const handleStartAutoGenerate[\s\S]*: Promise<void> =>/.test(autoGeneratorSource), "pipeline start promise is not exposed to regeneration");
 assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regeneration does not await the active pipeline");
@@ -128,6 +135,10 @@ assert(
   "server storyboard input does not isolate cinematic screenplay from narration cleanup",
 );
 assert(/regenerateVideoClips=\{cinematicMode\}/.test(autoGeneratorSource), "cinematic preview does not expose clip regeneration");
+assert(
+  /scriptRewritten: existingTargetProj\.scriptRewritten[\s\S]*storyboard: existingTargetProj\.storyboard[\s\S]*renderedVideoUrl: existingTargetProj\.renderedVideoUrl/.test(pipelineHookSource),
+  "continuation clears saved production data before replacement data is ready",
+);
 assert(/regenerateVideoClips \? regenerationTexts\.clips : regenerationTexts\.images/.test(previewSource), "cinematic preview still labels clip regeneration as images");
 assert(/hasGlobalNarration[\s\S]*audioPath = hasGlobalNarration \? undefined/.test(ffmpegRenderSource), "global narration does not suppress per-scene audio sources");
 

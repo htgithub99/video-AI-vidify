@@ -1316,13 +1316,14 @@ export const SCRIPT_PLAN_CONFIG = {
 } as const;
 
 export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
-  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v2-english-visual-prompts",
+  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v3-correlated-final-artifact",
+  LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS: ["cinematic-film-package-v2-english-visual-prompts"],
   COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
   MAX_OUTPUT_TOKENS: 24_576,
   MAX_RESPONSE_ATTEMPTS: 2,
   PRIMARY_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,
   FILM_PACKAGE_INCOMPLETE_ERROR: "response:incomplete",
-  SCENE_COUNT_BELOW_TARGET_TEMPLATE: "scenes:count_below_target:{actual}/{target}",
+  SCENE_COUNT_MISMATCH_TEMPLATE: "scenes:count_mismatch:{actual}/{target}",
   ACTUAL_COUNT_TOKEN: "{actual}",
   TARGET_COUNT_TOKEN: "{target}",
 } as const;
@@ -1604,6 +1605,9 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   PROMPT_ACTION_TIMEOUT_MS: 5_000,
   CONFIG_MISMATCH_ERROR: "Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn.",
   PROMPT_NOT_READY_ERROR: "Google Flow chưa nhận đủ prompt nên chưa thể gửi tạo video.",
+  GENERATION_FAILURE_PATTERN:
+    /(?:Không thành công|Unsuccessful)[\s\S]{0,600}(?:vi phạm chính sách|người nổi tiếng|violat(?:e|es|ed|ing).*policy|celebrity)/i,
+  GENERATION_REJECTED_ERROR: "Google Flow đã từ chối cảnh hiện tại; hệ thống sẽ thử lại riêng cảnh này.",
   NON_RETRYABLE_SETUP_ERRORS: [
     /Google Flow chưa áp dụng đúng cấu hình video/i,
     /Google Flow chưa nhận đủ prompt/i,

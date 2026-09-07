@@ -1,4 +1,5 @@
 import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config";
+import { CINEMATIC_ARTIFACT_TYPE } from "./cinematicConstants";
 
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
@@ -101,8 +102,10 @@ const cinematicFilmPackageChapterSchema = {
 export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["scriptSegment", "chapters", "characters", "scenes", "completionMarker"],
+  required: ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "completionMarker"],
   properties: {
+    artifactType: { type: "string", enum: [CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE] },
+    requestId: stringSchema,
     title: stringSchema,
     logline: stringSchema,
     theme: stringSchema,
@@ -114,17 +117,28 @@ export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
     chapters: { type: "array", minItems: 1, items: cinematicFilmPackageChapterSchema },
     characters: { type: "array", maxItems: 3, items: cinematicFilmPackageCharacterSchema },
     scenes: { type: "array", minItems: 1, items: cinematicFilmPackageSceneSchema },
-    warnings: stringArraySchema,
     completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
   },
 } as const;
 
+export const createCinematicFilmPackageResponseSchema = (sceneCount: number) => ({
+  ...CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
+  properties: {
+    ...CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties,
+    scenes: {
+      ...CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.scenes,
+      minItems: sceneCount,
+      maxItems: sceneCount,
+    },
+  },
+});
+
 export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["characters", "characterAnalysis", "characterSpecs", "identityContinuityRisks"],
+  required: ["characters"],
   properties: {
-    characters: { type: "array", minItems: 1, maxItems: 3, items: cinematicCharacterSchema },
+    characters: { type: "array", minItems: 1, maxItems: 3, items: cinematicFilmPackageCharacterSchema },
     characterAnalysis: stringSchema,
     characterSpecs: stringSchema,
     identityContinuityRisks: stringArraySchema,

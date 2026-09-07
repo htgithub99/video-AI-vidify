@@ -3,7 +3,7 @@ import { AspectRatio, GenerateType } from "../types.js";
 import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy, VideoGenre } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
-import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_CATALOG } from "./thumbnail.js";
+import { THUMBNAIL_LAYOUT_LIBRARY_PROMPT, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT } from "./thumbnail.js";
 
 export const NO_FRAME_RULE = `Use a natural full-frame composition. Add "No frame" only when the scene could reasonably be mistaken for framed artwork.`;
 
@@ -717,16 +717,10 @@ ${audienceMarketDirective}
 ${charactersJson ? `- Recurring character profiles:\n${charactersJson}` : "- No recurring character profile was supplied."}
 
 [APPROVED LAYOUT LIBRARY]
-${_.join(
-  _.map(THUMBNAIL_LAYOUT_CATALOG, (layout) => `- ${layout.id}: ${layout.composition} Best suited to ${layout.bestFor}.`),
-  "\n",
-)}
+${THUMBNAIL_LAYOUT_LIBRARY_PROMPT}
 
 [APPROVED TYPOGRAPHY LIBRARY]
-${_.join(
-  _.map(THUMBNAIL_TYPOGRAPHY_CATALOG, (typography) => `- ${typography.id}: ${typography.description} Best suited to ${typography.bestFor}.`),
-  "\n",
-)}
+${THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT}
 
 [SIMPLE GEMINI THUMBNAIL RULES]
 1. Choose exactly one of the eight layout IDs. Use its locked typography ID and arrow policy without inventing or combining templates.

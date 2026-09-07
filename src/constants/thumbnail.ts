@@ -260,6 +260,14 @@ export const THUMBNAIL_TYPOGRAPHY_CATALOG = [
   },
 ] as const;
 
+export const THUMBNAIL_LAYOUT_LIBRARY_PROMPT = THUMBNAIL_LAYOUT_CATALOG.map(
+  (layout) => `- ${layout.id}: ${layout.composition} Best suited to ${layout.bestFor}. Locked typography: ${layout.typographyId}. Arrow policy: ${layout.arrowPolicy}.`,
+).join("\n");
+
+export const THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT = THUMBNAIL_TYPOGRAPHY_CATALOG.map(
+  (typography) => `- ${typography.id}: ${typography.description} Best suited to ${typography.bestFor}.`,
+).join("\n");
+
 export const THUMBNAIL_PROMPT_CONFIG = {
   DEFAULT_COUNT: 2,
   NO_TEXT_MODE: "no_text",
@@ -274,7 +282,7 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   MAX_GENERATION_CHARACTER_REFERENCES: 1,
   DEFAULT_STYLE: "Professional editorial thumbnail",
   DEFAULT_TYPOGRAPHY: "Bold condensed sans-serif with strong contrast",
-  LAYOUT_PROFILE_VERSION: "exact-eight-template-catalog-v7-short-curiosity-headline",
+  LAYOUT_PROFILE_VERSION: "exact-eight-template-catalog-v8-cinematic-layout-contract",
   DEFAULT_TYPOGRAPHY_ID: ThumbnailTypographyId.CondensedImpact,
   DEFAULT_COLOR: "High subject-background contrast with a restrained accent color",
   SAFE_ZONE: "keep the bottom-right timestamp zone and a narrow outer edge margin free of faces, essential objects, and text",

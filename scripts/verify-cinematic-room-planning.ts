@@ -108,25 +108,15 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
     TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
   );
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
-  assert.match(initialPrompt, /natural Vietnamese/);
-  assert.match(initialPrompt, /stores and sends generationPrompt unchanged/i);
-  assert.match(initialPrompt, /one focused cinematic moment/i);
-  assert.match(initialPrompt, /Use only the Veo elements that strengthen this moment/i);
-  assert.match(initialPrompt, /Prefer one continuous shot/i);
-  assert.match(initialPrompt, /There is no mandatory word count/i);
-  assert.match(initialPrompt, /Every object must contain only: id, generationPrompt, characterIds, dialogueMode, spokenDialogue, speakerCharacterId and lipSyncRequired/i);
-  assert.match(initialPrompt, /one decisive attack-defence-consequence exchange/i);
-  assert.match(initialPrompt, /body orientation and eyeline/i);
-  assert.match(initialPrompt, /camera's position relative to the action axis/i);
-  assert.match(initialPrompt, /must face and look toward that target/i);
-  assert.match(initialPrompt, /Never turn a subject toward the camera merely to display identity/i);
-  assert.match(initialPrompt, /contact point readable in the same frame/i);
-  assert.match(initialPrompt, /must remain through the final frame/i);
-  assert.match(initialPrompt, /avoid repeating a long visual biography/i);
-  assert.match(initialPrompt, /Do not wrap those words in quotation marks inside generationPrompt/i);
-  assert.match(initialPrompt, /response must parse directly with JSON\.parse/i);
-  assert(initialPrompt.includes('as \\"'));
-  assert.doesNotMatch(initialPrompt, /3-5 chronological shots|center-of-mass travel/i);
+  assert.match(initialPrompt, /Language: Vietnamese/);
+  assert.match(initialPrompt, /Make all creative and directorial choices yourself/i);
+  assert.match(initialPrompt, /at least three connected shots without repeating content/i);
+  assert.match(initialPrompt, /story, continuity, character references, visual style and text settings/i);
+  assert.match(initialPrompt, /include supplied dialogue exactly once with its speaker/i);
+  assert.match(initialPrompt, /request no dialogue and no narration for a silent scene/i);
+  assert.match(initialPrompt, /Return valid raw JSON only/i);
+  assert.match(initialPrompt, /artifactType.*requestId.*generationPrompt.*completionMarker/i);
+  assert.doesNotMatch(initialPrompt, /whip-pans|action axis|contact point|decorative spinning|three to five unmistakable anchors/i);
   assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
 
   const apiPrompt = getCinematicVideoPlanningPrompt(
@@ -152,27 +142,20 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
     TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED,
     TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
   );
-  assert.match(repairPrompt, /Rewrite every supplied failed scene as one complete production artifact/);
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
-  assert.match(repairPrompt, /Previous rejected response/);
-  assert.match(repairPrompt, /forwards generationPrompt unchanged/);
-  assert.match(repairPrompt, /one focused 10-second moment/i);
-  assert.match(repairPrompt, /Use only the Veo elements that strengthen the moment/i);
-  assert.match(repairPrompt, /body orientation and eyeline/i);
-  assert.match(repairPrompt, /camera relative to the action axis/i);
-  assert.match(repairPrompt, /faces and looks toward that target/i);
-  assert.match(repairPrompt, /one exact contact point or evasion/i);
-  assert.match(repairPrompt, /remains visible through the last frame/i);
-  assert.doesNotMatch(repairPrompt, /Set layout|3 to 5 chronological beats|hyphenated duration token/i);
-  assert.doesNotMatch(repairPrompt, /deterministically compiles/);
+  assert.match(repairPrompt, /Previous response/);
+  assert.match(repairPrompt, /best complete Veo 3 prompt for each 10-second scene/i);
+  assert.match(repairPrompt, /at least three connected shots/i);
+  assert.match(repairPrompt, /Return the complete corrected raw JSON object only/i);
+  assert.doesNotMatch(repairPrompt, /Set layout|hyphenated duration token|deterministically compiles/);
 
   const policyRepairPrompt = getCinematicVideoPromptPolicyRepairPrompt("A safe action prompt");
-  assert.match(policyRepairPrompt, /spatial blocking, eyeline, action axis, contact readability/i);
+  assert.match(policyRepairPrompt, /change only the unsafe detail and preserve the story, characters, dialogue and creative direction/i);
 
   const technicalRepairPrompt = getCinematicVideoPromptRepairPrompt("A failed action prompt", ["contact_missing"], MOCK_CURRENT_SCENE);
-  assert.match(technicalRepairPrompt, /body orientation and eyeline toward the intended target/i);
-  assert.match(technicalRepairPrompt, /camera relative to the action axis/i);
-  assert.match(technicalRepairPrompt, /final state that persists through the last frame/i);
+  assert.match(technicalRepairPrompt, /Make all creative and directorial choices yourself/i);
+  assert.match(technicalRepairPrompt, /at least three connected shots/i);
+  assert.doesNotMatch(technicalRepairPrompt, /whip-pans|action axis|exact block or evasion/i);
 };
 
 const verifyDialogueContractExemption = () => {
@@ -295,7 +278,7 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
   assert.match(controllerSource, /planningMasterStoryboard/);
   assert.match(controllerSource, /continuityContext\.masterSequence/);
-  assert.match(controllerSource, /if \(_\.isArray\(parsed\)\) return parsed/);
+  assert.match(controllerSource, /const parsedScenes = isCinematicPlanning \? _\.get\(parsed, "scenes"\) : parsed/);
   assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
   assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
@@ -405,8 +388,9 @@ const verifyProviderRoomCleanup = () => {
 
 const verifyCinematicPlanningCheckpointing = () => {
   const pipelineSource = readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8");
-  assert.match(pipelineSource, /scenesToPlan = shouldReuseCompletedPlans \? _.filter\(realScenes, \(scene\) => _.isEmpty\(_.trim\(scene\.generationPrompt\)\)\) : realScenes/);
-  assert.match(pipelineSource, /planningBatches = _.chunk\(scenesToPlan, CINEMATIC_POLICY_CONFIG\.PLANNING_CHUNK_SIZE\)/);
+  assert.match(pipelineSource, /generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION/);
+  assert.match(pipelineSource, /!hasSceneAsset\(scene\).*generationPromptProfileVersion/s);
+  assert.match(pipelineSource, /planningBatches = _\.isEmpty\(scenesToPlan\) \? \[\] : \[scenesToPlan\]/);
   assert.match(pipelineSource, /storyboard: pendingPlanningScenes/);
   assert.match(pipelineSource, /planningMasterStoryboard/);
   assert.match(pipelineSource, /allPlanningIssues/);
@@ -418,11 +402,7 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /for \(let batchIndex = 0; batchIndex < planningBatches\.length; batchIndex\+\+\) await processPlanningBatch\(batchIndex\)/);
   assert.doesNotMatch(pipelineSource, /Promise\.all\(_\.map\(_\.range\(planningWorkerCount\)/);
   assert.doesNotMatch(pipelineSource, /Server đã hoàn tất lượt sửa hard gate/);
-  assert.match(pipelineSource, /CLIENT_SCENE_RECOVERY_ATTEMPTS/);
-  assert.match(pipelineSource, /for \(const recoveryScene of pendingPlanningScenes\)/);
-  assert.match(pipelineSource, /storyboard: scenePending/);
-  assert.match(pipelineSource, /scenePending = await applyPlanningResponse\(scenePending, sceneResponse\)/);
-  assert.match(pipelineSource, /if \(_\.isEmpty\(unresolvedAfterRecovery\)\) return/);
+  assert.doesNotMatch(pipelineSource, /CLIENT_SCENE_RECOVERY_ATTEMPTS|for \(const recoveryScene of pendingPlanningScenes\)/);
   assert.match(pipelineSource, /checkpointProject[\s\S]*await syncProject\(checkpointProject\)/);
   assert.match(pipelineSource, /checkpointPlanningState = async \(phase: string = "prompt_planning"\)/);
   assert.match(pipelineSource, /phase,\s*\r?\n\s*lastSuccessfulPhase/);

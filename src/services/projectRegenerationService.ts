@@ -39,6 +39,7 @@ export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene =
   ...clearSceneGeneratedAsset(scene),
   prompt: "",
   generationPrompt: undefined,
+  generationPromptProfileVersion: undefined,
 });
 
 const clearMatchingSceneAssets = (scenes: StoryboardScene[] | undefined, predicate: (scene: StoryboardScene) => boolean): StoryboardScene[] =>

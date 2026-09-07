@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getCinematicCharacterAnalysisPrompt } from "../src/constants/cinematicPrompts";
+import { CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA } from "../src/constants/responseSchemas";
 import { createSceneGenerationContext, resolveCinematicSceneCharacterReferences } from "../src/services/sceneReferenceService";
 import { CharacterConfig, StoryboardScene } from "../src/types";
 
@@ -21,14 +22,13 @@ assert.deepEqual(automaticContext.referenceImages, []);
 
 const characterPrompt = getCinematicCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "");
 assert.match(characterPrompt, /referenceGenerationPrompt/);
-assert.match(characterPrompt, /character-continuity director/i);
-assert.match(characterPrompt, /Separate immutable identity from scene action/i);
-assert.match(characterPrompt, /sourceIdentityEvidence/);
-assert.match(characterPrompt, /speciesPresentation/);
-assert.match(characterPrompt, /identityContinuityRisks/);
-assert.match(characterPrompt, /characters\[\]\.prompt and characters\[\]\.referenceGenerationPrompt entirely in English/i);
-assert.match(characterPrompt, /Preserve canonical proper names exactly/i);
-assert.match(characterPrompt, /no readable text/i);
+assert.match(characterPrompt, /Create the best character-reference prompt/i);
+assert.match(characterPrompt, /Design the appearance yourself/i);
+assert.match(characterPrompt, /prompt and referenceGenerationPrompt in English/i);
+assert.match(characterPrompt, /each referenceGenerationPrompt shows only that character clearly/i);
+assert.doesNotMatch(characterPrompt, /sourceIdentityEvidence|speciesPresentation|identityContinuityRisks|faceShape|timelineStages/i);
+assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.required, ["characters"]);
+assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.items.required, ["id", "name", "description", "referenceGenerationPrompt"]);
 
 const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
 assert.match(pipelineControllerSource, /identityContinuityRisks: _\.castArray/);

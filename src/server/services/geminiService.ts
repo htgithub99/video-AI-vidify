@@ -161,6 +161,8 @@ export const generateContentWithRetry = async (
       attachments: roomPayload.attachments,
       workerId: resolveRoomWorkerId(params.task?.capability, params.task?.roomWorkerId),
       completionMarker: params.config?.roomCompletionMarker,
+      artifactType: params.config?.roomArtifactType,
+      requestId: params.config?.roomRequestId,
       closeRoomOnComplete: false,
     });
     return {
