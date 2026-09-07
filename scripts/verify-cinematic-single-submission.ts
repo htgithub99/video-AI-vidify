@@ -118,6 +118,7 @@ assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2")
 assert.equal(isFlowPromptValueApplied("Shot 1\n\nShot 2", "Shot 1 Shot 2"), true);
 assert.equal(isFlowPromptValueApplied("Shot 1", "Shot 1 Shot 2"), false);
 assert.equal(isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · x1", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), true);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 10 giây · x1", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), true);
 assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
 assert.equal(isNonRetryableFlowVideoError("Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn."), true);
 assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow xác nhận tải lên."), true);
@@ -134,6 +135,8 @@ assert.match(flowAutomationSource, /waitForFlowPromptApplied/);
 assert.match(flowAutomationSource, /expected=.*observed=/);
 assert.match(flowAutomationSource, /flow-submit-disabled-after-prompt/);
 assert.match(flowAutomationSource, /FLOW_DIRECT_VIDEO_CONFIG\.SETTINGS_PANEL/);
+assert.match(flowAutomationSource, /FLOW_DIRECT_VIDEO_CONFIG\.CONFIG_BUTTON_SELECTOR/);
+assert.match(flowAutomationSource, /CONFIG_APPLY_ATTEMPTS/);
 assert.match(flowAutomationSource, /\[role="radio"\]/);
 assert.match(flowAutomationSource, /if \(attempts >= maxAttempts\) throw error;[\s\S]*browserSessionUnavailable/);
 assert.doesNotMatch(flowAutomationSource, /navigator\.clipboard\.writeText\(text\), targetPrompt/);

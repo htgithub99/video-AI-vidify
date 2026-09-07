@@ -384,9 +384,10 @@ export const isFlowVideoConfigSummaryMatching = (summary: string, visualConfig?:
     : FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION;
   const visibleResolution = _.trim(normalizedSummary.match(/(?:360|720)p/i)?.[0] || "");
   const visibleDuration = _.trim(normalizedSummary.match(/\d+\s*(?:s|sec(?:ond)?s?|giây)/i)?.[0] || "");
+  const acceptedResolutions = FLOW_DIRECT_VIDEO_CONFIG.RESOLUTION_FALLBACKS[targetResolution];
   return (
     /Video/i.test(normalizedSummary) &&
-    _.isEqual(_.lowerCase(visibleResolution), _.lowerCase(_.toString(targetResolution))) &&
+    acceptedResolutions.some((resolution) => _.isEqual(_.lowerCase(visibleResolution), _.lowerCase(resolution))) &&
     createFlowDurationOptionPattern(targetDuration).test(visibleDuration) &&
     /(?:^|\s|·)(?:x1|1x)(?:$|\s|·)/i.test(normalizedSummary)
   );
@@ -877,16 +878,6 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
     await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
   }
 
-  const configButton = page.locator("button").filter({ hasText: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON }).last();
-  if (!(await configButton.isVisible().catch(() => false))) return false;
-  await configButton.click();
-  const menu = page.locator(FLOW_DIRECT_VIDEO_CONFIG.SETTINGS_PANEL).last();
-  await menu.waitFor({ state: "visible", timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => undefined);
-  if (!(await menu.isVisible().catch(() => false))) return false;
-
-  if (!(await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.VIDEO_TAB))) return false;
-  if (!_.isEmpty(visualConfig?.referenceImages)) await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.COMPONENTS_TAB);
-
   const targetRatio = _.includes(FLOW_AGENT_VIDEO_ASPECT_RATIOS, visualConfig?.aspectRatio as (typeof FLOW_AGENT_VIDEO_ASPECT_RATIOS)[number])
     ? visualConfig?.aspectRatio
     : AspectRatio.SixteenNine;
@@ -899,11 +890,6 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
   const targetRatioPattern = new RegExp(`^(?:crop_[^\\s]+\\s*)?${_.escapeRegExp(_.toString(targetRatio))}$`, "i");
   const targetResolutionPattern = new RegExp(`^(?:hd\\s*)?${_.escapeRegExp(_.toString(targetResolution))}(?:\\s*info)?$`, "i");
   const targetDurationPattern = createFlowDurationOptionPattern(targetDuration);
-  for (const pattern of [targetRatioPattern, targetResolutionPattern, targetDurationPattern, FLOW_SINGLE_OUTPUT_PATTERN]) {
-    if (!(await selectFlowChoice(menu, pattern))) return false;
-    await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
-  }
-
   const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
   const targetEngine =
     engine === ImageGeneratorEngine.Veo3Lite
@@ -913,31 +899,49 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
         : engine === ImageGeneratorEngine.Veo3Quality
           ? FLOW_AGENT_UI_CONFIG.VEO_QUALITY_MODEL
           : FLOW_AGENT_UI_CONFIG.OMNI_MODEL;
-  const modelButton = menu.locator("button").filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN }).last();
-  if (!(await modelButton.isVisible().catch(() => false))) return false;
-  if (!targetEngine.test(_.defaultTo(await modelButton.textContent(), ""))) {
-    await modelButton.click();
-    const modelItem = page.locator('[role="menuitem"], [role="menuitemradio"], [role="option"]').filter({ hasText: targetEngine }).last();
-    if (!(await modelItem.isVisible().catch(() => false))) return false;
-    await modelItem.click({ force: true });
-  }
+  const configButton = page.locator(FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON_SELECTOR).last();
+  if (!(await configButton.isVisible().catch(() => false))) return false;
 
-  const selectedModel = targetEngine.test(
-    _.defaultTo(
-      await menu
-        .locator("button")
-        .filter({ hasText: FLOW_AGENT_UI_CONFIG.MODEL_PATTERN })
-        .last()
-        .textContent()
-        .catch(() => ""),
-      "",
-    ),
-  );
-  if (!selectedModel) return false;
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
-  const appliedSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => ""), ""), /\s+/g, " ");
-  return isFlowVideoConfigSummaryMatching(appliedSummary, visualConfig);
+  for (let attempt = 0; attempt < FLOW_DIRECT_VIDEO_CONFIG.CONFIG_APPLY_ATTEMPTS; attempt += 1) {
+    await configButton.click();
+    let menu = page.locator(FLOW_DIRECT_VIDEO_CONFIG.SETTINGS_PANEL).last();
+    await menu.waitFor({ state: "visible", timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => undefined);
+    if (!(await menu.isVisible().catch(() => false))) return false;
+    if (!(await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.VIDEO_TAB))) return false;
+
+    const modelButton = menu.getByRole("button", { name: FLOW_DIRECT_VIDEO_CONFIG.MODEL_BUTTON_LABEL }).last();
+    if (!(await modelButton.isVisible().catch(() => false))) return false;
+    if (!targetEngine.test(_.defaultTo(await modelButton.textContent(), ""))) {
+      await modelButton.click();
+      const modelItem = page.locator('[role="menuitem"], [role="menuitemradio"], [role="option"]').filter({ hasText: targetEngine }).last();
+      if (!(await modelItem.isVisible().catch(() => false))) return false;
+      await modelItem.click({ force: true });
+      await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
+      menu = page.locator(FLOW_DIRECT_VIDEO_CONFIG.SETTINGS_PANEL).last();
+      await menu.waitFor({ state: "visible", timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => undefined);
+    }
+
+    if (!_.isEmpty(visualConfig?.referenceImages)) await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.COMPONENTS_TAB);
+    for (const pattern of [targetRatioPattern, targetDurationPattern, FLOW_SINGLE_OUTPUT_PATTERN]) {
+      if (!(await selectFlowChoice(menu, pattern))) return false;
+      await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
+    }
+    const resolutionChoice = findFlowChoice(menu, targetResolutionPattern);
+    if (await resolutionChoice.isVisible().catch(() => false)) await selectFlowChoice(menu, targetResolutionPattern);
+
+    const selectedModel = targetEngine.test(
+      _.defaultTo(
+        await menu.getByRole("button", { name: FLOW_DIRECT_VIDEO_CONFIG.MODEL_BUTTON_LABEL }).last().textContent().catch(() => ""),
+        "",
+      ),
+    );
+    if (!selectedModel) return false;
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
+    const appliedSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => ""), ""), /\s+/g, " ");
+    if (isFlowVideoConfigSummaryMatching(appliedSummary, visualConfig)) return true;
+  }
+  return false;
 };
 
 const captureGeminiDomState = (page: Page, state: string): Promise<void> =>
@@ -1718,7 +1722,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         try {
           const currentConfigState = createFlowVideoConfigState(visualConfig);
           const isDirectVideo = _.isEqual(visualConfig?.generateType, GenerateType.Video);
-          const currentConfigButton = activePage.locator("button").filter({ hasText: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON }).last();
+          const currentConfigButton = activePage.locator(FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON_SELECTOR).last();
           const currentConfigSummary = isDirectVideo
             ? _.defaultTo(await currentConfigButton.textContent().catch(() => ""), "")
             : "";

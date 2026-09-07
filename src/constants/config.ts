@@ -1526,16 +1526,22 @@ export const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRa
 
 export const FLOW_DIRECT_VIDEO_CONFIG = {
   SETTINGS_PANEL: "flow-prompt-box-settings.settings-content-overlay, .cdk-overlay-pane flow-prompt-box-settings",
+  CONFIG_BUTTON_SELECTOR: 'button.settings-trigger-button[aria-label], button[aria-label="Điều kiện kích hoạt cài đặt"]',
+  MODEL_BUTTON_LABEL: /Chọn nhóm mô hình|Choose model group/i,
   VIDEO_TAB: /(?:videocam\s*)?(?:Video)/i,
   COMPONENTS_TAB: /(?:chrome_extension\s*)?(?:Thành phần|Components)/i,
-  CONFIG_BUTTON: /Video\s*·|Nano Banana|Omni(?:\s+1\.1)?\s+Flash|Veo 3\.1/i,
   RESOLUTIONS: ["360p", "720p"],
+  RESOLUTION_FALLBACKS: {
+    "360p": ["360p", "720p"],
+    "720p": ["720p"],
+  },
   DURATIONS: ["4s", "6s", "8s", "10s"],
   DEFAULT_RESOLUTION: "720p",
   DEFAULT_DURATION: "8s",
   SINGLE_OUTPUT: "x1",
   PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
   CONFIG_VERIFY_TIMEOUT_MS: 5000,
+  CONFIG_APPLY_ATTEMPTS: 2,
   PROMPT_APPLY_TIMEOUT_MS: 2_000,
   PROMPT_ACTION_TIMEOUT_MS: 5_000,
   CONFIG_MISMATCH_ERROR: "Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn.",
