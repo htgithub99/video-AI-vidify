@@ -5,6 +5,7 @@ import { SplitStrategy, VideoGenre } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
 import { THUMBNAIL_LAYOUT_LIBRARY_PROMPT, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT } from "./thumbnail.js";
 import { CHARACTER_REFERENCE_SHEET_DIRECTION } from "./cinematicPrompts.js";
+import { CINEMATIC_CHARACTER_PACK_CONFIG } from "./cinematicConstants.js";
 
 export const NO_FRAME_RULE = `Use a natural full-frame composition. Add "No frame" only when the scene could reasonably be mistaken for framed artwork.`;
 
@@ -847,7 +848,7 @@ export const getCharacterAnalysisPrompt = (
   script: string,
   visualStyle: string = "",
   sourceContext: string = "",
-): string => `Identify at most three recurring, visually important characters and create simple Veo-ready visual references.
+): string => `Identify every recurring, visually important character needed by the video, up to ${CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS}, and create simple Veo-ready visual references.
 
 Authoritative source context:
 ${sourceContext || "No separate premise supplied; use only explicit script evidence."}
@@ -857,7 +858,7 @@ ${visualStyle || "Use concise style-compatible identity anchors."}
 
 Keep only stable identity details that help recognition. Exclude narrators, crowds, one-off mentions, current emotion, location and temporary action. Design unspecified appearance freely.
 
-Write each referenceGenerationPrompt in English using this direction:
+Write each referenceGenerationPrompt in English, include the exact character name, and use this direction:
 ${CHARACTER_REFERENCE_SHEET_DIRECTION}
 
 Return only a raw JSON array:

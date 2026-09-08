@@ -10,7 +10,13 @@ import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerati
 import { createSceneSubtitleCues } from "../src/services/subtitleService.ts";
 import { appendAssetRevision } from "../src/services/dependencyHashService.ts";
 import { removeRedundantSceneAudioBase64 } from "../src/services/voiceTimelineService.ts";
-import { getGenerationCheckpointSceneProgress, hasCompleteSceneAlignment, mergeContinuationLogs } from "../src/hooks/autoVideoPipelineUtils.ts";
+import {
+  getGenerationCheckpointSceneProgress,
+  hasCompleteSceneAlignment,
+  mergeContinuationLogs,
+  resolveCinematicContinuationStage,
+} from "../src/hooks/autoVideoPipelineUtils.ts";
+import { CINEMATIC_PROGRESS_STAGE } from "../src/constants/cinematicConstants.ts";
 import fs from "node:fs";
 
 const values = new Map<string, string>();
@@ -56,6 +62,16 @@ const resumedLogs = mergeContinuationLogs(
 );
 assert(resumedLogs.length === 3, "continuation discarded or duplicated saved generation logs");
 assert(resumedLogs[0].includes("Kịch bản đã hoàn tất"), "continuation lost the earlier project history");
+assert(
+  resolveCinematicContinuationStage({ scriptRewritten: "screenplay", storyboard: [{ id: "scene_001", generationPrompt: "video prompt", assetUrl: undefined }], thumbnails: [{ id: "thumbnail_001", imageUrl: "/cover.jpg" }] } as any) ===
+    CINEMATIC_PROGRESS_STAGE.VIDEO,
+  "continuation replayed completed screenplay, prompt or thumbnail steps instead of resuming video",
+);
+assert(
+  resolveCinematicContinuationStage({ scriptRewritten: "screenplay", storyboard: [{ id: "scene_001", generationPrompt: "" }], thumbnails: [{ id: "thumbnail_001", imageUrl: "/cover.jpg" }] } as any) ===
+    CINEMATIC_PROGRESS_STAGE.PROMPT,
+  "continuation skipped an unfinished prompt step",
+);
 
 
 const sourceHookText = "A real opening sentence from the supplied script.";
@@ -138,6 +154,30 @@ assert(/regenerateVideoClips=\{cinematicMode\}/.test(autoGeneratorSource), "cine
 assert(
   /scriptRewritten: existingTargetProj\.scriptRewritten[\s\S]*storyboard: existingTargetProj\.storyboard[\s\S]*renderedVideoUrl: existingTargetProj\.renderedVideoUrl/.test(pipelineHookSource),
   "continuation clears saved production data before replacement data is ready",
+);
+assert(
+  /const completedRunLogs = isContinuation[\s\S]*let currentLogs: string\[\] = _\.clone\(completedRunLogs\)/.test(pipelineHookSource),
+  "continuation clears the visible log history instead of appending the resumed step",
+);
+assert(
+  /cinematicResumeStage[\s\S]*_\.lte\(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE\.SCRIPT\)/.test(pipelineHookSource),
+  "continuation replays progress messages for cinematic stages that already completed",
+);
+assert(
+  /const isVideoStageContinuation =[\s\S]*CINEMATIC_PROGRESS_STAGE\.VIDEO[\s\S]*const seoRequest = cachedSeoData \|\| isVideoStageContinuation[\s\S]*const shouldPlanThumbnails =[\s\S]*!isVideoStageContinuation/.test(
+    pipelineHookSource,
+  ),
+  "video-stage continuation can reopen a creative planning room for SEO or thumbnail planning",
+);
+assert(
+  /if \(seoRes\?\.success && preparedSeoData\)[\s\S]*seo: preparedSeoData as VideoProject\["seo"\]/.test(pipelineHookSource),
+  "successful SEO room output is not checkpointed before media generation",
+);
+assert(
+  /appendCinematicLog\(cinematicProgressMessages\.VIDEO_READY[\s\S]*appendLog\(T\.logPipelineElapsed[\s\S]*await syncProject\(renderCompletedProj\)/.test(
+    pipelineHookSource,
+  ),
+  "completion messages are appended after the final project checkpoint and disappear on reload",
 );
 assert(/regenerateVideoClips \? regenerationTexts\.clips : regenerationTexts\.images/.test(previewSource), "cinematic preview still labels clip regeneration as images");
 assert(/hasGlobalNarration[\s\S]*audioPath = hasGlobalNarration \? undefined/.test(ffmpegRenderSource), "global narration does not suppress per-scene audio sources");

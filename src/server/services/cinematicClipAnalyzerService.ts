@@ -51,6 +51,8 @@ export interface CinematicLibraryDecision {
   needsAiReview?: boolean;
   visuallySimilarToSceneId?: string;
   visualSimilarityScore?: number;
+  speechAnalysisAvailable?: boolean;
+  detectedSpeechRanges?: Array<[number, number]>;
 }
 
 export interface CinematicLibraryAnalysisResult {

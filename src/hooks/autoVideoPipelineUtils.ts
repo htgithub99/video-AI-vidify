@@ -2,7 +2,7 @@ import _ from "lodash";
 import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
-import { CINEMATIC_CHECKPOINT_CONFIG } from "../constants/cinematicConstants";
+import { CINEMATIC_CHECKPOINT_CONFIG, CINEMATIC_PROGRESS_STAGE } from "../constants/cinematicConstants";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
@@ -36,6 +36,20 @@ export interface GenerationCheckpointSceneProgress {
 
 export const mergeContinuationLogs = (...logSources: Array<string[] | null | undefined>): string[] =>
   _.uniq(_.flatMap(logSources, (source) => _.defaultTo(source, [])));
+
+export const resolveCinematicContinuationStage = (project?: VideoProject | null): number => {
+  if (_.isEmpty(_.trim(project?.scriptRewritten))) return CINEMATIC_PROGRESS_STAGE.SCRIPT;
+  const scenes = _.defaultTo(project?.storyboard, []);
+  if (_.isEmpty(scenes) || _.some(scenes, (scene) => _.isEmpty(_.trim(scene.generationPrompt)))) return CINEMATIC_PROGRESS_STAGE.PROMPT;
+  const missingCharacterReference = _.some(
+    project?.visualConfig?.characters,
+    (character) => !_.isEmpty(_.trim(character.referenceGenerationPrompt)) && _.isEmpty(character.images),
+  );
+  const thumbnails = _.defaultTo(project?.thumbnails, []);
+  const missingThumbnail = _.isEmpty(thumbnails) || _.some(thumbnails, (thumbnail) => _.isEmpty(_.trim(thumbnail.imageUrl)));
+  if (missingCharacterReference || missingThumbnail) return CINEMATIC_PROGRESS_STAGE.THUMBNAIL;
+  return CINEMATIC_PROGRESS_STAGE.VIDEO;
+};
 
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;

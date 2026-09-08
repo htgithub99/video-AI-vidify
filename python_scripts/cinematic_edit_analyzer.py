@@ -8,6 +8,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 import cv2
@@ -94,6 +95,13 @@ class AnalyzerConfig:
     motion_reference_quantile: float
     exposure_midpoint: float
     dialogue_silence_ratio: float
+    dialogue_context_seconds: float
+    whisper_model: str
+    whisper_device: str
+    whisper_compute_type: str
+    whisper_beam_size: int
+    whisper_no_speech_probability: float
+    whisper_local_files_only: bool
     duplicate_warning_ratio: float
     ai_review_confidence: float
     score_scale: float
@@ -342,6 +350,48 @@ def _protect_speech_window(start: float, end: float, shot_start: float, shot_end
     return min(start, overlaps[0][0]), max(end, overlaps[-1][1])
 
 
+def _load_speech_model(config: AnalyzerConfig) -> Any | None:
+    try:
+        from faster_whisper import WhisperModel
+
+        return WhisperModel(
+            config.whisper_model,
+            device=config.whisper_device,
+            compute_type=config.whisper_compute_type,
+            local_files_only=config.whisper_local_files_only,
+        )
+    except Exception:
+        return None
+
+
+def _detect_speech_ranges(
+    video_path: str,
+    speech_model: Any | None,
+    speech_model_lock: Lock | None,
+    config: AnalyzerConfig,
+) -> list[list[float]]:
+    if speech_model is None or speech_model_lock is None:
+        return []
+    try:
+        with speech_model_lock:
+            segments, _ = speech_model.transcribe(
+                video_path,
+                beam_size=config.whisper_beam_size,
+                vad_filter=True,
+                condition_on_previous_text=False,
+            )
+            detected_segments = list(segments)
+        return [
+            [max(0.0, _number(segment.start)), max(0.0, _number(segment.end))]
+            for segment in detected_segments
+            if str(segment.text or EMPTY_TEXT).strip()
+            and _number(segment.end) > _number(segment.start)
+            and _number(segment.no_speech_prob, 1.0) <= config.whisper_no_speech_probability
+        ]
+    except Exception:
+        return []
+
+
 def _resolve_crop(crops: list[tuple[int, int, int, int]], width: int, height: int, config: AnalyzerConfig) -> str:
     counts: dict[tuple[int, int, int, int], int] = {}
     for crop in crops:
@@ -371,7 +421,13 @@ def _missing_decision(scene_id: str) -> dict[str, Any]:
     }
 
 
-def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig) -> dict[str, Any]:
+def analyze_clip(
+    clip: dict[str, Any],
+    ffmpeg_path: str,
+    config: AnalyzerConfig,
+    speech_model: Any | None = None,
+    speech_model_lock: Lock | None = None,
+) -> dict[str, Any]:
     scene_id = str(clip.get("sceneId", EMPTY_TEXT))
     video_path = str(clip.get("path", EMPTY_TEXT))
     if not video_path or not Path(video_path).is_file():
@@ -385,6 +441,11 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
     has_audio = bool(clip.get("hasAudio", True))
     protect_dialogue = bool(clip.get("protectDialogue", False))
     ffmpeg_metrics = _run_ffmpeg_probe(video_path, ffmpeg_path, config, has_audio, duration)
+    detected_speech_ranges = (
+        _detect_speech_ranges(video_path, speech_model, speech_model_lock, config)
+        if has_audio and protect_dialogue
+        else []
+    )
     damaged_ranges = ffmpeg_metrics["blackRanges"] + ffmpeg_metrics["freezeRanges"]
     safe_start, safe_end = _safe_edge_bounds(duration, damaged_ranges, config)
     opencv_boundaries = _opencv_cut_boundaries(metrics, config)
@@ -397,14 +458,25 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
         if shot_end - shot_start < config.min_usable_seconds:
             continue
         segment_start, segment_end, score = _best_window(metrics, shot_start, shot_end, config)
-        if has_audio:
-            segment_start, segment_end = _protect_speech_window(
-                segment_start,
-                segment_end,
-                0.0,
-                duration,
-                ffmpeg_metrics["silenceRanges"],
-            )
+        if has_audio and protect_dialogue:
+            shot_speech_ranges = [
+                speech_range
+                for speech_range in detected_speech_ranges
+                if _overlaps(shot_start, shot_end, [speech_range])
+            ]
+            if shot_speech_ranges:
+                speech_start = max(shot_start, min(speech_range[0] for speech_range in shot_speech_ranges) - config.dialogue_context_seconds)
+                speech_end = min(shot_end, max(speech_range[1] for speech_range in shot_speech_ranges) + config.dialogue_context_seconds)
+                segment_start = min(segment_start, speech_start)
+                segment_end = max(segment_end, speech_end)
+            elif not detected_speech_ranges:
+                segment_start, segment_end = _protect_speech_window(
+                    segment_start,
+                    segment_end,
+                    shot_start,
+                    shot_end,
+                    ffmpeg_metrics["silenceRanges"],
+                )
         if _overlaps(segment_start, segment_end, damaged_ranges):
             continue
         candidates.append(
@@ -416,7 +488,11 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
                 "storyContribution": EMPTY_TEXT,
                 "transition": TRANSITION_CUT,
                 "audioBridgeMode": AUDIO_BRIDGE_HARD,
-                "containsDialogue": protect_dialogue and _contains_speech(segment_start, segment_end, ffmpeg_metrics["silenceRanges"], config),
+                "containsDialogue": protect_dialogue and (
+                    _overlaps(segment_start, segment_end, detected_speech_ranges)
+                    if detected_speech_ranges
+                    else _contains_speech(segment_start, segment_end, ffmpeg_metrics["silenceRanges"], config)
+                ),
                 "libraryScore": round(score * config.score_scale, 2),
             }
         )
@@ -424,7 +500,7 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
     # so they cannot replay the same words when selected consecutively.
     merged_candidates: list[dict[str, Any]] = []
     for candidate in candidates:
-        if merged_candidates and candidate["inSeconds"] <= merged_candidates[-1]["outSeconds"]:
+        if merged_candidates and candidate["inSeconds"] < merged_candidates[-1]["outSeconds"]:
             previous = merged_candidates[-1]
             previous["outSeconds"] = max(previous["outSeconds"], candidate["outSeconds"])
             previous["containsDialogue"] = previous["containsDialogue"] or candidate["containsDialogue"]
@@ -486,6 +562,8 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
         "library": library,
         "libraryConfidence": round(confidence, 2),
         "needsAiReview": confidence < config.ai_review_confidence or len(candidates) > 1,
+        "speechAnalysisAvailable": bool(speech_model) if protect_dialogue else False,
+        "detectedSpeechRanges": [[round(value, 3) for value in speech_range] for speech_range in detected_speech_ranges],
         "_visualFingerprint": metrics["visualFingerprint"],
     }
 
@@ -523,8 +601,16 @@ def main() -> int:
     config = AnalyzerConfig.from_payload(payload["config"])
     ffmpeg_path = str(payload["ffmpegPath"])
     clips = payload.get("clips", [])
+    needs_speech_analysis = any(bool(clip.get("hasAudio", True)) and bool(clip.get("protectDialogue", False)) for clip in clips)
+    speech_model = _load_speech_model(config) if needs_speech_analysis else None
+    speech_model_lock = Lock() if speech_model is not None else None
     with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
-        decisions = list(executor.map(lambda clip: analyze_clip(clip, ffmpeg_path, config), clips))
+        decisions = list(
+            executor.map(
+                lambda clip: analyze_clip(clip, ffmpeg_path, config, speech_model, speech_model_lock),
+                clips,
+            )
+        )
     _mark_visually_similar_clips(decisions, config)
     result = {"success": True, "libraryAnalysisAvailable": bool(decisions), "decisions": decisions}
     sys.stdout.write(json.dumps(result, ensure_ascii=False, separators=JSON_SEPARATORS))

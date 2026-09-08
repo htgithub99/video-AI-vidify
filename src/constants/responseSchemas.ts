@@ -1,5 +1,5 @@
 import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config";
-import { CINEMATIC_ARTIFACT_TYPE } from "./cinematicConstants";
+import { CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG } from "./cinematicConstants";
 
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
@@ -115,7 +115,7 @@ export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
     identityContinuityRisks: stringArraySchema,
     scriptSegment: stringSchema,
     chapters: { type: "array", minItems: 1, items: cinematicFilmPackageChapterSchema },
-    characters: { type: "array", maxItems: 3, items: cinematicFilmPackageCharacterSchema },
+    characters: { type: "array", maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS, items: cinematicFilmPackageCharacterSchema },
     scenes: { type: "array", minItems: 1, items: cinematicFilmPackageSceneSchema },
     completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
   },
@@ -138,7 +138,7 @@ export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
   additionalProperties: false,
   required: ["characters"],
   properties: {
-    characters: { type: "array", minItems: 1, maxItems: 3, items: cinematicFilmPackageCharacterSchema },
+    characters: { type: "array", minItems: 1, maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS, items: cinematicFilmPackageCharacterSchema },
     characterAnalysis: stringSchema,
     characterSpecs: stringSchema,
     identityContinuityRisks: stringArraySchema,

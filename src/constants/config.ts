@@ -803,6 +803,12 @@ export const GEMINI_CHAT_RECOVERY_CONFIG = {
 export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   MAX_REFERENCE_IMAGES: 3,
   FILE_PREFIX: "gemini-reference-",
+  CHARACTER_FILE_PREFIX: "character-",
+  CHARACTER_FILE_SEPARATOR: "-",
+  CHARACTER_NAME_DIACRITIC_PATTERN: /\p{M}/gu,
+  CHARACTER_NAME_D_PATTERN: /đ/gi,
+  CHARACTER_NAME_D_REPLACEMENT: "d",
+  CHARACTER_NAME_NORMALIZATION_FORM: "NFD" as const,
   FILE_HASH_LENGTH: 16,
   MIME_PREFIX: "image/",
   EXTENSION_SEPARATOR: ".",
@@ -1456,6 +1462,12 @@ export const CINEMATIC_EDIT_ANALYSIS_CONFIG = {
   FFMPEG_TIMEOUT_MS: 30000,
   MEDIA_WORKERS: 3,
   DIALOGUE_PROMPT_PATTERN: /\b(?:speaks?|says?|dialogue|lip[ -]?sync|spoken line|voice line)\b|\b(?:nói|thoại|lời thoại)\b/i,
+  DIALOGUE_NEGATION_PROMPT_PATTERN: /\b(?:no|without)\s+(?:spoken\s+)?(?:dialogue|speech|voice\s+line|narration)\b|\b(?:không|không có)\s+(?:lời\s+)?thoại\b/i,
+  TIMELINE_SEGMENT_ID_SEPARATOR: "__",
+  TIMELINE_SEGMENT_FALLBACK_PREFIX: "segment",
+  TIMELINE_INDEX_OFFSET: 1,
+  TIMELINE_NUMBER_PRECISION: 3,
+  TIMELINE_ZERO_SECONDS: 0,
   LIBRARY_SCRIPT_PATH: "python_scripts/cinematic_edit_analyzer.py",
   LIBRARY_REQUEST_FILE_NAME: "library-analysis.json",
   LIBRARY_TIMEOUT_MS: 180000,
@@ -1504,6 +1516,13 @@ export const CINEMATIC_EDIT_ANALYSIS_CONFIG = {
     motion_reference_quantile: 0.8,
     exposure_midpoint: 128,
     dialogue_silence_ratio: 0.8,
+    dialogue_context_seconds: 0.35,
+    whisper_model: "tiny",
+    whisper_device: "cpu",
+    whisper_compute_type: "int8",
+    whisper_beam_size: 1,
+    whisper_no_speech_probability: 0.75,
+    whisper_local_files_only: true,
     duplicate_warning_ratio: 0.45,
     ai_review_confidence: 55,
     score_scale: 100,
@@ -1591,7 +1610,7 @@ export const VIDEO_MODEL_CAPABILITY_CONFIG = {
 export const FLOW_DIRECT_VIDEO_CONFIG = {
   SETTINGS_PANEL: "flow-prompt-box-settings.settings-content-overlay, .cdk-overlay-pane flow-prompt-box-settings",
   CONFIG_BUTTON_SELECTOR: 'button.settings-trigger-button[aria-label], button[aria-label="Điều kiện kích hoạt cài đặt"]',
-  MODEL_BUTTON_LABEL: /Chọn nhóm mô hình|Choose model group/i,
+  MODEL_BUTTON_LABEL: /Chọn (?:nhóm|dòng|họ) mô hình|Choose model group|Select model family/i,
   VIDEO_TAB: /(?:videocam\s*)?(?:Video)/i,
   COMPONENTS_TAB: /(?:chrome_extension\s*)?(?:Thành phần|Components)/i,
   RESOLUTIONS: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].resolutions,
@@ -1600,6 +1619,9 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   DEFAULT_DURATION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultDuration,
   SINGLE_OUTPUT: "x1",
   PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
+  PROJECT_ERROR_URL_PATTERN: /\/404(?:[/?#]|$)/i,
+  PROJECT_BODY_SELECTOR: "body",
+  PAGE_READY_LOAD_STATE: "domcontentloaded" as const,
   CONFIG_VERIFY_TIMEOUT_MS: 5000,
   CONFIG_APPLY_ATTEMPTS: 2,
   PROMPT_APPLY_TIMEOUT_MS: 2_000,
@@ -1617,7 +1639,7 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
     /Không tìm thấy thao tác tải ảnh nhân vật.*Flow/i,
     /Ảnh nhân vật chưa được Flow xác nhận tải lên/i,
   ],
-  PROJECT_ERROR_HEADING: /Đã xảy ra lỗi|Something went wrong/i,
+  PROJECT_ERROR_HEADING: /Đã xảy ra lỗi|Something went wrong|Không tìm thấy dự án|Project not found/i,
   PROJECT_UNAVAILABLE_LOG: "[Google Flow] Room hiện tại không khả dụng; hệ thống đang tạo room mới cho dự án.",
   PROJECT_REPLACED_LOG: "[Google Flow] Đã thay room lỗi bằng room mới: {0}.",
 } as const;
@@ -1653,7 +1675,31 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   PERSISTENCE_ERROR: "Clip video chưa được lưu thành tệp cục bộ.",
 } as const;
 
-export const CINEMATIC_GENERATION_RECOVERY_CONFIG = { POLICY_REPAIR_MAX_OUTPUT_TOKENS: 4096 } as const;
+export const CINEMATIC_GENERATION_RECOVERY_CONFIG = {
+  POLICY_REPAIR_MAX_OUTPUT_TOKENS: 4096,
+  DEFAULT_VISUAL_PURPOSE: "scene image",
+  THUMBNAIL_VISUAL_PURPOSE: "thumbnail",
+  CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE: "cinematic_character_reference_provider_rejection",
+  SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE: "cinematic_scene_image_provider_rejection",
+  THUMBNAIL_PROVIDER_REJECTION_PURPOSE: "cinematic_thumbnail_provider_rejection",
+  PROVIDER_REPAIR_ATTEMPTS: 2,
+  VISUAL_PROMPT_REQUIRED_ERROR: "Visual prompt is required.",
+  VI_CHARACTER_REFERENCE_REPAIRING: "[Nhân vật] {0}: AI đang viết lại prompt bị nhà cung cấp từ chối; chỉ tạo lại ảnh này.",
+  EN_CHARACTER_REFERENCE_REPAIRING: "[Characters] {0}: AI is rewriting the provider-rejected prompt; only this image will be retried.",
+  VI_CHARACTER_REFERENCE_REPAIRED: "[Nhân vật] {0}: AI đã điều chỉnh prompt; đang tạo lại ảnh tham chiếu.",
+  EN_CHARACTER_REFERENCE_REPAIRED: "[Characters] {0}: AI repaired the prompt; retrying the reference image.",
+  VI_CHARACTER_REFERENCE_RETRYING: "[Nhân vật] {0}: lần tạo chưa thành công; đang thử lại riêng ảnh này ({1}/{2}).",
+  EN_CHARACTER_REFERENCE_RETRYING: "[Characters] {0}: generation did not complete; retrying only this image ({1}/{2}).",
+  VI_CHARACTER_REFERENCE_REQUIRED: "Chưa tạo được ảnh tham chiếu cho {0} sau {1} lần retry. Kết quả đã hoàn tất được lưu; hãy chọn Tiếp tục dự án để thử lại riêng ảnh này.",
+  EN_CHARACTER_REFERENCE_REQUIRED: "The reference image for {0} could not be created after {1} retries. Completed results were saved; resume to retry only this image.",
+  VI_SCENE_IMAGE_REPAIRING: "[Hình ảnh] {0}: prompt bị nhà cung cấp từ chối; AI đang điều chỉnh và tạo lại riêng cảnh này.",
+  EN_SCENE_IMAGE_REPAIRING: "[Image] {0}: the provider rejected the prompt; AI is repairing and retrying only this scene.",
+  VI_THUMBNAIL_RETRYING: "[Ảnh bìa] {0}: đang tạo lại riêng ảnh này ({1}/{2}).",
+  EN_THUMBNAIL_RETRYING: "[Thumbnail] {0}: retrying only this image ({1}/{2}).",
+  VI_THUMBNAIL_REQUIRED: "Chưa tạo được ảnh bìa sau {0} lần retry. Kết quả đã hoàn tất được lưu; hãy chọn Tiếp tục dự án để chạy lại riêng ảnh bìa.",
+  EN_THUMBNAIL_REQUIRED: "The thumbnail could not be created after {0} retries. Completed results were saved; resume to retry only the thumbnail.",
+  CHARACTER_REFERENCE_DEBUG: "[Character Reference] {0}: {1}",
+} as const;
 
 export const PIPELINE_GUARANTEE_CONFIG = {
   SCRIPT_ATTEMPTS: 1,
@@ -1813,6 +1859,8 @@ export const GEMINI_MEDIA_ERRORS = {
   VIDEO_MEDIA_TYPE: "video",
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
+  PROVIDER_REJECTION_PATTERN:
+    /(?:interests? of third-party content providers|third-party content|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi)/i,
 } as const;
 
 export const CINEMATIC_CONFIG = {

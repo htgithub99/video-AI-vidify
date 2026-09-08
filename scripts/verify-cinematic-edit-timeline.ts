@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
+import { countCinematicTimelineShots, createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
 import { GenerateType, StoryboardScene } from "../src/types";
 
 const scene = {
@@ -18,12 +18,56 @@ const scene = {
 } as StoryboardScene;
 
 const timeline = createCinematicEditTimeline([scene]);
-assert.equal(timeline.length, 1);
-assert.deepEqual(timeline.map((item) => [item.sourceTrimStartSeconds, item.sourceTrimEndSeconds]), [[0, 0]]);
-assert.deepEqual(timeline.map((item) => item.duration), [10]);
-assert.equal(timeline[0].spokenDialogue, "One line");
+assert.equal(timeline.length, 3);
+assert.deepEqual(timeline.map((item) => [item.sourceTrimStartSeconds, item.sourceTrimEndSeconds]), [[0.4, 7.2], [3.1, 3.3], [7.2, 0.4]]);
+assert.deepEqual(timeline.map((item) => item.duration), [2.4, 3.6, 2.4]);
+assert.deepEqual(timeline.map((item) => item.spokenDialogue), ["", "One line", ""]);
+assert.deepEqual(timeline.map((item) => item.id), ["sc_1__master-1", "sc_1__speaker-2", "sc_1__reaction-3"]);
+assert.equal(countCinematicTimelineShots([scene]), 3);
 assert.equal(hasCinematicSceneDialogue(scene), true);
 assert.equal(hasCinematicSceneDialogue({ generationPrompt: "The hero speaks once in Vietnamese with natural lip sync." }), true);
+assert.equal(hasCinematicSceneDialogue({ generationPrompt: "Production sound only. No dialogue." }), false);
+
+const overlappingTimeline = createCinematicEditTimeline([{
+  ...scene,
+  id: "sc_overlap",
+  subtitle: "",
+  spokenDialogue: "",
+  cinematicEditSegments: [
+    { ...scene.cinematicEditSegments![0], segmentId: "first", inSeconds: 0.2, outSeconds: 3 },
+    { ...scene.cinematicEditSegments![0], segmentId: "overlap", inSeconds: 2.8, outSeconds: 5 },
+  ],
+}]);
+assert.equal(overlappingTimeline.length, 1);
+assert.deepEqual(
+  [overlappingTimeline[0].sourceTrimStartSeconds, overlappingTimeline[0].sourceTrimEndSeconds, overlappingTimeline[0].duration],
+  [0.2, 5, 4.8],
+);
+
+const adjacentTimeline = createCinematicEditTimeline([{
+  ...scene,
+  id: "sc_adjacent",
+  subtitle: "",
+  spokenDialogue: "",
+  cinematicEditSegments: [
+    { ...scene.cinematicEditSegments![0], segmentId: "first", inSeconds: 0.2, outSeconds: 3 },
+    { ...scene.cinematicEditSegments![0], segmentId: "next", inSeconds: 3, outSeconds: 5 },
+  ],
+}]);
+assert.equal(adjacentTimeline.length, 2);
+
+const fallbackTimeline = createCinematicEditTimeline([{
+  ...scene,
+  id: "sc_fallback",
+  sourceTrimStartSeconds: 1,
+  sourceTrimEndSeconds: 2,
+  cinematicEditSegments: [],
+}]);
+assert.deepEqual(
+  [fallbackTimeline[0].sourceTrimStartSeconds, fallbackTimeline[0].sourceTrimEndSeconds, fallbackTimeline[0].duration],
+  [1, 2, 7],
+);
 const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 assert.match(pipelineSource, /expectedRenderDuration = nativeFilmAudio[\s\S]*_\.sumBy\(renderableScenes/);
+assert.match(pipelineSource, /storyboard: _\.cloneDeep\(realScenes\)/);
 process.stdout.write(JSON.stringify({ passed: true, timelineShots: timeline.length }));

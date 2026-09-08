@@ -3,6 +3,7 @@ import {
   API_ROUTES,
   FLOW_DIRECT_VIDEO_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
+  GEMINI_MEDIA_ERRORS,
   REFACTOR_CONSTANTS,
   SecurityConstants,
   SYSTEM_FETCH_CONFIG,
@@ -16,6 +17,7 @@ export interface ProjectImageItem {
   generateType?: GenerateType;
   idempotencyKey?: string;
   referenceImages?: string[];
+  referenceImageNames?: string[];
   continuityKey?: string;
 }
 export interface ProjectImageResult {
@@ -111,6 +113,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
 
 export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value);
 export const isPersistedProjectVideoUrl = (value?: string): boolean => FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(_.toString(value));
+export const isProviderGenerationRejection = (value?: string): boolean => GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(_.toString(value));
 
 export const isNonRetryableFlowVideoError = (message?: string): boolean => {
   const normalizedMessage = _.trim(_.toString(message));

@@ -71,7 +71,6 @@ import {
   ENCODING_UTF8,
   ASSETS_DIR_NAME,
   PROJECTS_DIR_NAME,
-  THUMBNAILS_DIR_NAME,
   API_ROUTES,
   BACKEND_MESSAGES,
   getBackendMsg,
@@ -179,7 +178,10 @@ import {
   getCinematicFinalVideoQualityPrompt,
   getCinematicSeoPrompt,
   getCinematicStoryboardRecoveryPrompt,
+  getCinematicCharacterReferenceProviderRepairPrompt,
+  getCinematicSceneImageProviderRepairPrompt,
   getCinematicThumbnailPrompt,
+  getCinematicThumbnailProviderRepairPrompt,
   getCinematicThumbnailTechnicalRepairPrompt,
   getCinematicVideoPlanningPrompt,
   getCinematicVideoPlanningRepairPrompt,
@@ -205,6 +207,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 import { analyzeCinematicClipsWithLibraries } from "../services/cinematicClipAnalyzerService.js";
+import { hasCinematicSceneDialogue } from "../../services/cinematicEditTimelineService.js";
 
 import {
   AspectRatio,
@@ -255,6 +258,7 @@ import {
   normalizeVisualShotPlan,
 } from "../services/imagePromptPlanningService.js";
 import {
+  createCinematicPlanningBatches,
   CINEMATIC_PRODUCTION_POLICY,
   getBlockingCinematicPlanningIssues,
   getBlockingCinematicStoryboardContractIssues,
@@ -621,19 +625,20 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       ? _.cloneDeep(sourceScenes)
       : resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
-    const chunks = isCinematicPlanning ? [planningPayload] : _.chunk(planningPayload, chunkSize);
+    const chunks = isCinematicPlanning ? createCinematicPlanningBatches(planningPayload) : _.chunk(planningPayload, chunkSize);
     const videoPromptsRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS);
     const optimizedMap = new Map<string, StoryboardScene>();
     const planningWarnings: string[] = [];
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunkItem = chunks[chunkIndex];
-      const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
+      const chunkStartIndex = _.sumBy(_.take(chunks, chunkIndex), (chunk) => chunk.length);
       const sceneIds = _.map(chunkItem, (item) => _.toString(_.get(item, "id")));
       const chunkSourceScenes = _.filter(plannedScenes, (scene) => _.includes(sceneIds, scene.id));
       const chunkCharacterIds = new Set(_.flatMap(chunkSourceScenes, (scene) => scene.characterIds || []));
+      const relevantChunkCharacters = _.filter(promptCharacters, (character) => chunkCharacterIds.has(_.toString(character.id)));
       const chunkCharacters = isCinematicPlanning
-        ? _.map(promptCharacters, (character) => _.pick(character, ["id", "name", "prompt"]))
-        : _.filter(promptCharacters, (character) => chunkCharacterIds.has(_.toString(character.id)));
+        ? _.map(_.isEmpty(relevantChunkCharacters) ? promptCharacters : relevantChunkCharacters, (character) => _.pick(character, ["id", "name", "prompt"]))
+        : relevantChunkCharacters;
       const chunkCharactersJson = jsonUtils.safeStringify(chunkCharacters);
       const chunkVisualBibleJson = jsonUtils.safeStringify(createScopedVisualBibleContext(resolvedVisualBible, chunkSourceScenes));
       const masterStartIndex = _.findIndex(planningMasterScenes, { id: _.toString(_.get(_.first(chunkItem), "id")) });
@@ -645,8 +650,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const quickGenerateType = resolvedVisualConfig.generateType || GenerateType.Image;
       const quickVideoPromptRequired = _.includes([GenerateType.Video, GenerateType.Mixed], quickGenerateType);
       const createPlanningPrompt = (correctionIssuesJson: string = "", forChatUi = false) => {
-        const scopedCharactersJson = forChatUi ? chunkCharactersJson : charactersJson;
-        const scopedVisualBibleJson = forChatUi ? chunkVisualBibleJson : jsonUtils.safeStringify(resolvedVisualBible);
+        const scopedCharactersJson = isCinematicPlanning || forChatUi ? chunkCharactersJson : charactersJson;
+        const scopedVisualBibleJson = isCinematicPlanning || forChatUi ? chunkVisualBibleJson : jsonUtils.safeStringify(resolvedVisualBible);
         if (isCinematicPlanning) {
           return getCinematicVideoPlanningPrompt(
             jsonUtils.safeStringify(chunkItem),
@@ -3875,10 +3880,21 @@ router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response
 router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Response) => {
   const prompt = _.toString(req.body?.prompt);
   const qaIssues = _.compact(_.map(_.castArray(req.body?.qaIssues), _.toString));
-  if (_.isEmpty(_.trim(prompt))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Visual prompt is required." });
+  if (_.isEmpty(_.trim(prompt))) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: CINEMATIC_GENERATION_RECOVERY_CONFIG.VISUAL_PROMPT_REQUIRED_ERROR });
+  }
   try {
+    const purpose = _.toString(req.body?.purpose || CINEMATIC_GENERATION_RECOVERY_CONFIG.DEFAULT_VISUAL_PURPOSE);
+    const visualContext = req.body?.scene || {};
+    const repairPrompt = _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.THUMBNAIL_PROVIDER_REJECTION_PURPOSE)
+      ? getCinematicThumbnailProviderRepairPrompt(prompt, visualContext)
+      : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE)
+        ? getCinematicCharacterReferenceProviderRepairPrompt(prompt, visualContext)
+        : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE)
+          ? getCinematicSceneImageProviderRepairPrompt(prompt, visualContext)
+          : getVisualPromptQaRepairPrompt(prompt, qaIssues, visualContext, purpose);
     const response = await generateContentWithRetry({
-      contents: getVisualPromptQaRepairPrompt(prompt, qaIssues, req.body?.scene || {}, _.toString(req.body?.purpose || "scene image")),
+      contents: repairPrompt,
       config: {
         responseMimeType: CONTENT_TYPES.JSON,
         responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
@@ -4033,12 +4049,6 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   let libraryAnalysisAvailable = false;
   try {
     for (const batch of _.chunk(scenes, 3)) technicalDecisions.push(...(await Promise.all(_.map(batch, analyzeScene))));
-    for (const decision of technicalDecisions) {
-      if (decision.hasAudio && decision.takeDecision !== "omit") {
-        decision.trimStartSeconds = 0;
-        decision.trimEndSeconds = 0;
-      }
-    }
     analyzedDecisions = technicalDecisions;
     const libraryResult = await analyzeCinematicClipsWithLibraries(
       _.map(
@@ -4049,10 +4059,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
             sceneId: _.toString(decision.sceneId),
             path: _.toString(decision.sourcePath),
             hasAudio: Boolean(decision.hasAudio),
-            protectDialogue:
-              (_.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene?.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene?.spokenDialogue)))) ||
-              !_.isEmpty(_.trim(_.toString(scene?.subtitle))) ||
-              CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_PROMPT_PATTERN.test(_.toString(scene?.generationPrompt)),
+            protectDialogue: hasCinematicSceneDialogue(scene || {}),
           };
         },
       ),
@@ -4064,15 +4071,16 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     analyzedDecisions = _.map(technicalDecisions, (technical) => {
       const library = libraryByScene[technical.sceneId];
       if (!library) return technical;
+      const technicalRejected = _.isEqual(technical.takeDecision, "omit");
       return {
         ...technical,
         ...library,
         sourcePath: technical.sourcePath,
         contactSheetData: technical.contactSheetData,
         contactSheetPath: technical.contactSheetPath,
-        trimStartSeconds: technical.trimStartSeconds,
-        trimEndSeconds: technical.trimEndSeconds,
-        takeDecision: technical.takeDecision,
+        trimStartSeconds: technicalRejected ? technical.trimStartSeconds : library.trimStartSeconds,
+        trimEndSeconds: technicalRejected ? technical.trimEndSeconds : library.trimEndSeconds,
+        takeDecision: technicalRejected ? technical.takeDecision : library.takeDecision,
         warnings: _.uniq([..._.castArray(technical.warnings), ..._.castArray(library.warnings)]),
         reason: _.join(_.compact([library.reason, technical.reason]), ";"),
       };
@@ -4222,8 +4230,8 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const decisions = _.map(analyzedDecisions, (technical) => {
       const editorial = editorialByScene[technical.sceneId];
       if (!editorial) return _.omit(technical, ["contactSheetData", "contactSheetPath"]);
-      const technicalUsableStart = technical.hasAudio ? 0 : _.toNumber(technical.trimStartSeconds);
-      const technicalUsableEnd = technical.hasAudio ? technical.duration : (_.max([technicalUsableStart, technical.duration - _.toNumber(technical.trimEndSeconds)]) || technical.duration);
+      const technicalUsableStart = _.toNumber(technical.trimStartSeconds);
+      const technicalUsableEnd = _.max([technicalUsableStart, technical.duration - _.toNumber(technical.trimEndSeconds)]) || technical.duration;
       const librarySegments = _.castArray(technical.candidateSegments || technical.segments);
       const editorialSegments = _.uniqBy(
         _.compact(
@@ -4258,15 +4266,22 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       const validSelection = Number.isFinite(selectedStart) && Number.isFinite(selectedEnd) &&
         selectedStart >= technicalUsableStart && selectedEnd <= technicalUsableEnd &&
         selectedEnd - selectedStart >= CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS;
+      const editorialTakeDecision = _.includes(["use", "trim", "omit"], editorial.takeDecision)
+        ? editorial.takeDecision
+        : technical.takeDecision;
+      const takeDecision = _.isEqual(technical.takeDecision, "omit") ? technical.takeDecision : editorialTakeDecision;
       return {
         ..._.omit(technical, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
         trimStartSeconds: validSelection ? selectedStart : technicalUsableStart,
         trimEndSeconds: validSelection ? technical.duration - selectedEnd : technical.duration - technicalUsableEnd,
-        takeDecision: technical.takeDecision,
+        takeDecision,
         recommendedTransition: editorial.recommendedTransition,
+        audioBridgeMode: editorial.audioBridgeMode,
         continuityScore: editorial.continuityScore,
         storyClarityScore: editorial.storyClarityScore,
         performanceScore: editorial.performanceScore,
+        dialogueCoverageScore: editorial.dialogueCoverageScore,
+        dialogueDetected: editorial.dialogueDetected,
         observedShotCount: editorial.observedShotCount,
         segments,
         supportShotType: editorial.supportShotType,
@@ -4302,30 +4317,6 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   } finally {
     fs.rmSync(analysisDir, { recursive: true, force: true });
   }
-});
-
-router.post(ROUTER_PATHS.EXTRACT_THUMBNAIL_FRAME, async (req: Request, res: Response) => {
-  const projectId = path.basename(_.toString(req.body?.projectId));
-  const thumbnailId = path.basename(_.toString(req.body?.thumbnailId));
-  const assetUrl = _.trim(_.toString(req.body?.assetUrl));
-  const dataRoot = path.resolve(getDataDirectory());
-  const projectRoot = path.resolve(dataRoot, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
-  const sourcePath = path.resolve(dataRoot, _.trimStart(_.first(_.split(assetUrl, "?")) || "", "/\\"));
-  if (!_.startsWith(_.toLower(sourcePath), _.toLower(`${projectRoot}${path.sep}`)) || !fs.existsSync(sourcePath)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Thumbnail source clip is missing." });
-  }
-  const outputDir = path.join(projectRoot, THUMBNAILS_DIR_NAME);
-  fs.mkdirSync(outputDir, { recursive: true });
-  const outputPath = path.join(outputDir, `${thumbnailId}.jpg`);
-  const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
-  const duration = await new Promise<number>((resolve) => ffmpeg.ffprobe(sourcePath, (error, metadata) => resolve(error ? 0 : _.toNumber(metadata?.format?.duration))));
-  const seekSeconds = _.clamp(duration * 0.42, 0.1, _.max([0.1, duration - 0.1]) || 0.1);
-  await new Promise<void>((resolve, reject) => {
-    const process = spawn(executable, ["-y", "-ss", _.toString(seekSeconds), "-i", sourcePath, "-frames:v", "1", "-q:v", "2", outputPath], { windowsHide: true, stdio: "ignore" });
-    process.once("error", reject);
-    process.once("exit", (code) => (code === 0 && fs.existsSync(outputPath) ? resolve() : reject(new Error("Could not extract thumbnail frame."))));
-  });
-  return res.json({ success: true, imageUrl: `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${THUMBNAILS_DIR_NAME}/${thumbnailId}.jpg` });
 });
 
 router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => {

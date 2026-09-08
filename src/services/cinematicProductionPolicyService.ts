@@ -20,7 +20,41 @@ import {
 } from "../types";
 import { hasSceneAsset } from "./projectImageGenerationService";
 
-export const CINEMATIC_PRODUCTION_POLICY = { PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS } as const;
+export const CINEMATIC_PRODUCTION_POLICY = {
+  PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE,
+  PLANNING_CHUNK_MAX_INPUT_CHARACTERS: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS,
+  REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS,
+} as const;
+
+export const createCinematicPlanningBatches = <T>(items: T[]): T[][] => {
+  const batches: T[][] = [];
+  let currentBatch: T[] = [];
+  let currentInputCharacters: number = CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS;
+  _.forEach(items, (item) => {
+    const itemInputCharacters = _.size(JSON.stringify(item));
+    const separatorCharacters = _.isEmpty(currentBatch) ? 0 : CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_SEPARATOR_CHARACTERS;
+    const exceedsSceneLimit = _.gte(currentBatch.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE);
+    const exceedsInputLimit =
+      !_.isEmpty(currentBatch) &&
+      _.gt(
+        _.sum([currentInputCharacters, separatorCharacters, itemInputCharacters]),
+        CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS,
+      );
+    if (exceedsSceneLimit || exceedsInputLimit) {
+      batches.push(currentBatch);
+      currentBatch = [];
+      currentInputCharacters = CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS;
+    }
+    currentInputCharacters = _.sum([
+      currentInputCharacters,
+      _.isEmpty(currentBatch) ? 0 : CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_SEPARATOR_CHARACTERS,
+      itemInputCharacters,
+    ]);
+    currentBatch.push(item);
+  });
+  if (!_.isEmpty(currentBatch)) batches.push(currentBatch);
+  return batches;
+};
 
 export const isCinematicEpisodeGenre = (genre?: string): boolean => _.isEqual(_.trim(genre), VideoGenre.CINEMATIC_EPISODE);
 

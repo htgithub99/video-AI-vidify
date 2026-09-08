@@ -421,6 +421,7 @@ export interface VisualConfig {
   sceneReferenceImages?: string[];
   referenceImage?: string;
   referenceImages?: string[];
+  referenceImageNames?: string[];
   referencePrompt?: string;
   styleFingerprint?: string;
   styleReferenceLocked?: boolean;

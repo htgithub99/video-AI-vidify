@@ -5,6 +5,7 @@ import {
   CINEMATIC_CHAT_MODEL_LABELS,
   CINEMATIC_CHAT_MODEL_OPTIONS,
   CINEMATIC_CHAT_PLANNING_CONFIG,
+  CINEMATIC_POLICY_CONFIG,
   GEMINI_CHAT_BASE_MODEL_LABELS,
   GEMINI_CHAT_THINKING_LEVEL_LABELS,
   normalizeCinematicArtifactIdentity,
@@ -17,6 +18,7 @@ import {
 } from "../src/constants/cinematicPrompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
 import {
+  createCinematicPlanningBatches,
   getBlockingCinematicPlanningIssues,
   getBlockingCinematicStoryboardContractIssues,
   getCinematicStoryboardContractIssues,
@@ -263,10 +265,11 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
-  assert.match(controllerSource, /forChatUi \? chunkCharactersJson : charactersJson/);
+  assert.match(controllerSource, /isCinematicPlanning \|\| forChatUi \? chunkCharactersJson : charactersJson/);
   assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
-  assert.match(controllerSource, /_\.map\(promptCharacters, \(character\) => _\.pick\(character, \["id", "name", "prompt"\]\)\)/);
-  assert.match(controllerSource, /forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
+  assert.match(controllerSource, /relevantChunkCharacters/);
+  assert.match(controllerSource, /_\.pick\(character, \["id", "name", "prompt"\]\)/);
+  assert.match(controllerSource, /isCinematicPlanning \|\| forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
   assert.match(controllerSource, /createCinematicPlanningProperties/);
   assert.match(controllerSource, /generationPrompt: planningString/);
   assert.match(controllerSource, /if \(isCinematicPlanning\) \{[\s\S]*generationPrompt:missing[\s\S]*return _\.uniq\(issues\)/);
@@ -276,6 +279,7 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /getBlockingCinematicPlanningIssues\(planningIssues\)/);
   assert.match(controllerSource, /candidateBlockingCount[\s\S]*currentBlockingCount/);
   assert.match(controllerSource, /chunkSize = isCinematicPlanning \? CINEMATIC_PRODUCTION_POLICY\.PLANNING_CHUNK_SIZE/);
+  assert.match(controllerSource, /isCinematicPlanning \? createCinematicPlanningBatches\(planningPayload\)/);
   assert.match(controllerSource, /targetRepairSceneIds[\s\S]*createRepairPrompt\(parsedItems, correctionIssues, targetRepairSceneIds\)/);
   assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
   assert.match(controllerSource, /planningMasterStoryboard/);
@@ -406,13 +410,15 @@ const verifyCinematicPlanningCheckpointing = () => {
   const pipelineSource = readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8");
   assert.match(pipelineSource, /generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION/);
   assert.match(pipelineSource, /!hasSceneAsset\(scene\).*generationPromptProfileVersion/s);
-  assert.match(pipelineSource, /planningBatches = _\.isEmpty\(scenesToPlan\) \? \[\] : \[scenesToPlan\]/);
+  assert.match(pipelineSource, /planningBatches = createCinematicPlanningBatches\(scenesToPlan\)/);
   assert.match(pipelineSource, /storyboard: pendingPlanningScenes/);
   assert.match(pipelineSource, /planningMasterStoryboard/);
   assert.match(pipelineSource, /allPlanningIssues/);
   assert.doesNotMatch(pipelineSource, /recovery-\$\{batchIndex\}/);
   assert.match(pipelineSource, /const planningWorkerId = CINEMATIC_ROOM_STAGE\.PROMPT/);
   assert.match(pipelineSource, /partitionCinematicPlanningResponse\(requestedScenes, responseScenes, responsePlanningIssues\)/);
+  assert.doesNotMatch(pipelineSource, /if \(!response\.success\) return requestedScenes/);
+  assert.match(pipelineSource, /if \(_\.isEmpty\(responseScenes\)\) return requestedScenes/);
   assert.match(pipelineSource, /pendingPlanningScenes = await applyPlanningResponse\(pendingPlanningScenes, batchResponse\)/);
   assert.match(pipelineSource, /checkpointCompletedScenes\(partition\.completedScenes\)/);
   assert.match(pipelineSource, /for \(let batchIndex = 0; batchIndex < planningBatches\.length; batchIndex\+\+\) await processPlanningBatch\(batchIndex\)/);
@@ -424,7 +430,26 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /phase,\s*\r?\n\s*lastSuccessfulPhase/);
   assert.match(pipelineSource, /prompt_planning_completed/);
   assert.match(pipelineSource, /CINEMATIC_PLANNING_MESSAGES\.VI_BATCH_ATTEMPT/);
+  assert.match(pipelineSource, /latestPlanningMasterStoryboard/);
+  assert.match(pipelineSource, /firstPendingSceneIndex/);
   assert.match(pipelineSource, /const latestProject = activeProjectSnapshotRef\.current \|\| currentProject/);
+};
+
+const verifyLongFilmPlanningBatches = () => {
+  const twentyMinuteScenes = _.map(_.range(120), (index) => ({
+    id: `scene_${_.padStart(_.toString(index + 1), 3, "0")}`,
+    script: `Story beat ${index + 1}`,
+    generationPrompt: "",
+  }));
+  const batches = createCinematicPlanningBatches(twentyMinuteScenes);
+  assert.equal(_.sumBy(batches, "length"), twentyMinuteScenes.length);
+  assert.equal(batches.length, _.ceil(_.divide(twentyMinuteScenes.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE)));
+  assert(_.every(batches, (batch) => _.lte(batch.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE)));
+
+  const largeScenes = _.map(_.range(4), (index) => ({ id: `large_${index}`, script: "x".repeat(9000) }));
+  const sizeBoundBatches = createCinematicPlanningBatches(largeScenes);
+  assert(_.gt(sizeBoundBatches.length, 1));
+  assert.deepEqual(_.flatten(sizeBoundBatches), largeScenes);
 };
 
 const runAllVerificationSuites = () => {
@@ -442,6 +467,7 @@ const runAllVerificationSuites = () => {
   verifyProviderRoomCleanup();
   verifyProviderJsonVariants();
   verifyCinematicPlanningCheckpointing();
+  verifyLongFilmPlanningBatches();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);
 };
 

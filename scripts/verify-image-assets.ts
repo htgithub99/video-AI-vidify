@@ -43,6 +43,8 @@ try {
   assert.equal(referenceFiles[1].buffer.toString(), imageBuffer.toString());
   assert.match(referenceFiles[0].name, /^gemini-reference-[a-f0-9]{16}\.webp$/);
   assert.equal(createGeminiReferenceFiles(["data:image/webp;base64,aW1hZ2U="])[0].name, referenceFiles[0].name);
+  const namedReferenceFile = createGeminiReferenceFiles(["data:image/webp;base64,aW1hZ2U="], ["Tôn Ngộ Không"])[0];
+  assert.match(namedReferenceFile.name, /^character-ton-ngo-khong-[a-f0-9]{16}\.webp$/);
 
   const reversedReferenceFiles = createGeminiReferenceFiles([
     "/assets/projects/test/images/reference.png",
@@ -58,6 +60,9 @@ try {
   assert.ok(flowAttachSource.indexOf("const missingFiles") < flowAttachSource.indexOf("uploadFilesFromButton(page, uploadButton, missingFiles)"));
   assert.doesNotMatch(flowAttachSource, /uploadFilesFromButton\(page, uploadButton, files\)/);
   assert.match(generatorSource, /PROVIDER_REFERENCE_UPLOAD_MESSAGES\.REUSED/);
+  assert.doesNotMatch(generatorSource, /const referenceFiles = \[_\.first\(allReferenceFiles\)!\]/);
+  assert.match(generatorSource, /expectedCount: referenceFiles\.length/);
+  assert.match(generatorSource, /roomReferenceSignatureMap\.get\(page\)/);
 
   writeVerificationLog("Image asset assertions passed");
 } finally {

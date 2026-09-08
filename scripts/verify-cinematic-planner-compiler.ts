@@ -34,8 +34,8 @@ assert.match(
 );
 assert.match(
   controllerSource,
-  /_\.map\(promptCharacters, \(character\) => _\.pick\(character, \["id", "name", "prompt"\]\)\)/,
-  "Room planning does not receive compact AI-authored identity cards",
+  /_\.map\(_\.isEmpty\(relevantChunkCharacters\) \? promptCharacters : relevantChunkCharacters, \(character\) => _\.pick\(character, \["id", "name", "prompt"\]\)\)/,
+  "Room planning must receive compact AI-authored identity cards scoped to the current chunk",
 );
 assert.doesNotMatch(promptSource, /clipDurationSeconds \/ 3|\(clipDurationSeconds \* 2\) \/ 3/, "prompt template still injects equal shot timing from code");
 

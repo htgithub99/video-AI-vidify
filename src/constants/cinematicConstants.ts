@@ -4,7 +4,10 @@ export const CINEMATIC_POLICY_CONFIG = {
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
-  PLANNING_CHUNK_SIZE: Number.MAX_SAFE_INTEGER,
+  PLANNING_CHUNK_SIZE: 16,
+  PLANNING_CHUNK_MAX_INPUT_CHARACTERS: 24000,
+  PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS: 2,
+  PLANNING_CHUNK_JSON_SEPARATOR_CHARACTERS: 1,
   PLANNING_WORKER_COUNT: 1,
   CLIENT_PLANNING_ATTEMPTS: 2,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
@@ -276,13 +279,24 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_CHARACTER_PACK_START: "Step 3/4 · Creating a reference image for each character.",
   VI_CHARACTER_PACK_READY: "Bước 3/4 · Ảnh tham chiếu nhân vật đã được tạo và lưu.",
   EN_CHARACTER_PACK_READY: "Step 3/4 · Character reference images have been created and saved.",
-  VI_CHARACTER_PACK_PARTIAL: "Bước 3/4 · Một số ảnh tham chiếu nhân vật chưa tạo được; hệ thống giữ hồ sơ nhận diện do AI viết để tiếp tục.",
-  EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some character reference images were unavailable; production will continue with the AI-authored identity profiles.",
+  VI_CHARACTER_PACK_PARTIAL: "Bước 3/4 · Một số ảnh tham chiếu nhân vật chưa tạo được; dự án đã lưu và tạm dừng tại bước này.",
+  EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some character reference images are still missing; the project was saved and paused at this step.",
   VI_CHARACTER_PACK_FAILED: "Không thể hoàn thành ảnh nhận diện nhân vật. Đã dừng trước khi tạo clip để tránh video sai nhân vật.",
   EN_CHARACTER_PACK_FAILED: "The character identity pack could not be completed. Production stopped before clip generation to avoid inconsistent characters.",
 } as const;
 
-export const CINEMATIC_CHARACTER_PACK_CONFIG = { REFERENCE_COUNT_PER_CHARACTER: 1, MAX_CHARACTERS: 3 } as const;
+export const CINEMATIC_CHARACTER_PACK_CONFIG = {
+  REFERENCE_COUNT_PER_CHARACTER: 1,
+  MAX_CHARACTERS: 8,
+  MAX_REFERENCES_PER_SCENE: 3,
+} as const;
+
+export const CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG = {
+  MIN_NAME_TOKEN_MATCHES: 2,
+  MIN_NAME_MATCH_RATIO: 0.4,
+  EXCLUSION_PREFIXES: ["no", "without", "exclude", "khong co", "khong thay"],
+  EXCLUSION_SUFFIXES: ["is not visible", "not visible", "does not appear", "khong xuat hien"],
+} as const;
 
 export const resolveCinematicClipDuration = (value?: string | number): number => {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));

@@ -6,14 +6,16 @@ import {
   getCinematicPromptPreflightIssues,
   resolveAuthoritativeCinematicPrompt,
 } from "../src/services/cinematicPromptPreflightService";
-import { GenerateType, ImageGeneratorEngine, StoryboardScene } from "../src/types";
+import { AspectRatio, GenerateType, ImageGeneratorEngine, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { isNonRetryableFlowVideoError } from "../src/services/projectImageGenerationService";
+import { FLOW_DIRECT_VIDEO_CONFIG } from "../src/constants/config";
 import {
   createFlowDurationOptionPattern,
   createFlowMediaRedirectUrl,
   createFlowVideoConfigState,
   isFlowProjectPageUrl,
+  isFlowProjectUnavailableState,
   isFlowPromptValueApplied,
   isFlowVideoConfigSummaryMatching,
   normalizeFlowPromptValue,
@@ -112,6 +114,10 @@ assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
 assert.equal(createFlowMediaRedirectUrl(duplicatedFlowMediaUrl), `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`);
 assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
 assert.equal(isFlowProjectPageUrl("https://labs.google/fx/vi/tools/flow/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
+assert.equal(isFlowProjectUnavailableState("https://flow.google.com/404?reason=project", ""), true);
+assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/missing", "Không tìm thấy dự án."), true);
+assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/active", "Create a video"), false);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.MODEL_BUTTON_LABEL.test("Select model family"), true);
 assert.equal(createFlowDurationOptionPattern("10s").test("10 giây"), true);
 assert.equal(createFlowDurationOptionPattern("10s").test("8 giây"), false);
 assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2");
@@ -125,6 +131,26 @@ assert.equal(
     videoDuration: "10s",
   }),
   true,
+);
+assert.equal(
+  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · x1", {
+    generateType: GenerateType.Video,
+    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+    aspectRatio: AspectRatio.SixteenNine,
+    videoResolution: "360p",
+    videoDuration: "10s",
+  }),
+  true,
+);
+assert.equal(
+  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · x1", {
+    generateType: GenerateType.Video,
+    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+    aspectRatio: AspectRatio.SixteenNine,
+    videoResolution: "360p",
+    videoDuration: "10s",
+  }),
+  false,
 );
 assert.equal(
   isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x1", {

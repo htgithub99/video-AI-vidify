@@ -1,9 +1,12 @@
 import _ from "lodash";
 import { CharacterConfig, StoryboardScene, VisualConfig } from "../types";
+import { CINEMATIC_CHARACTER_PACK_CONFIG, CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG } from "../constants/cinematicConstants";
 import { IMAGE_PROMPT_CONDITIONAL_RULES } from "../constants/imagePromptRules";
 
 export const SCENE_REFERENCE_CONFIG = {
-  MAX_IMAGES: 3,
+  MAX_IMAGES: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_REFERENCES_PER_SCENE,
+  MIN_NAME_TOKEN_MATCHES: CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG.MIN_NAME_TOKEN_MATCHES,
+  MIN_NAME_MATCH_RATIO: CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG.MIN_NAME_MATCH_RATIO,
   MIN_IDENTITY_TOKEN_MATCHES: 3,
   MIN_IDENTITY_MATCH_RATIO: 0.18,
   MIN_IDENTITY_ANCHOR_MATCHES: 2,
@@ -34,12 +37,15 @@ export const SCENE_REFERENCE_CONFIG = {
   SINGLE_CHARACTER_SUBJECT_PATTERN:
     /\b(?:person|character|man|woman|male|female|worker|employee|professional|office worker|girl|boy|she|he|her|him|nhan vien|phu nu|co ay|anh ay)\b/i,
   CONTINUING_PRONOUN_PATTERN: /^(?:anh|co|ong|ba|han|nguoi nay|he|she|him|her|his|their)\b/i,
+  CHARACTER_EXCLUSION_PREFIXES: CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG.EXCLUSION_PREFIXES,
+  CHARACTER_EXCLUSION_SUFFIXES: CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG.EXCLUSION_SUFFIXES,
 } as const;
 
 export interface SceneGenerationContext {
   characterIds: string[];
   prompt: string;
   referenceImages: string[];
+  referenceImageNames: string[];
   referenceRoles: string[];
 }
 
@@ -99,13 +105,32 @@ export const createCharacterIdentityBlocks = (characters: CharacterConfig[]): st
   );
 };
 
+const isCharacterExplicitlyExcluded = (sceneText: string, character: CharacterConfig): boolean => {
+  const normalizedSceneText = normalizeSearchText(sceneText);
+  const normalizedName = normalizeSearchText(character.name);
+  if (_.isEmpty(normalizedName)) return false;
+  const searchableText = ` ${normalizedSceneText} `;
+  return (
+    _.some(SCENE_REFERENCE_CONFIG.CHARACTER_EXCLUSION_PREFIXES, (prefix) => _.includes(searchableText, ` ${prefix} ${normalizedName} `)) ||
+    _.some(SCENE_REFERENCE_CONFIG.CHARACTER_EXCLUSION_SUFFIXES, (suffix) => _.includes(searchableText, ` ${normalizedName} ${suffix} `))
+  );
+};
+
 const isCharacterMentioned = (sceneText: string, character: CharacterConfig): boolean => {
+  if (isCharacterExplicitlyExcluded(sceneText, character)) return false;
   const normalizedSceneText = normalizeSearchText(sceneText);
   if (_.isEqual(character.narrativeRole, "second_person_protagonist") && /\b(?:you|your|yours|ban|cua ban)\b/i.test(normalizedSceneText)) return true;
   const sceneTokens = normalizeTokens(sceneText);
   const sceneNameTokens = _.uniq(_.words(normalizedSceneText));
   const nameTokens = _.uniq(_.words(normalizeSearchText(character.name)));
-  if (!_.isEmpty(nameTokens) && _.every(nameTokens, (token) => _.includes(sceneNameTokens, token))) return true;
+  const nameMatches = _.size(_.intersection(nameTokens, sceneNameTokens));
+  const requiredNameMatches = _.min([SCENE_REFERENCE_CONFIG.MIN_NAME_TOKEN_MATCHES, _.size(nameTokens)])!;
+  if (
+    !_.isEmpty(nameTokens) &&
+    _.gte(nameMatches, requiredNameMatches) &&
+    _.gte(_.divide(nameMatches, _.max([_.size(nameTokens), 1])!), SCENE_REFERENCE_CONFIG.MIN_NAME_MATCH_RATIO)
+  )
+    return true;
   const identityTokens = normalizeTokens(getCharacterIdentityText(character));
   const identityAnchors = _.compact([character.hair, character.signatureClothing, character.accessories]);
   const anchorMatches = _.size(
@@ -114,7 +139,11 @@ const isCharacterMentioned = (sceneText: string, character: CharacterConfig): bo
       return !_.isEmpty(anchorTokens) && _.gte(_.divide(_.size(_.intersection(anchorTokens, sceneTokens)), _.size(anchorTokens)), SCENE_REFERENCE_CONFIG.MIN_ANCHOR_TOKEN_RATIO);
     }),
   );
-  if (_.gte(anchorMatches, _.min([SCENE_REFERENCE_CONFIG.MIN_IDENTITY_ANCHOR_MATCHES, _.size(identityAnchors)])!)) return true;
+  if (
+    !_.isEmpty(identityAnchors) &&
+    _.gte(anchorMatches, _.min([SCENE_REFERENCE_CONFIG.MIN_IDENTITY_ANCHOR_MATCHES, _.size(identityAnchors)])!)
+  )
+    return true;
   if (!_.isEmpty(identityAnchors)) return false;
   const matches = _.size(_.intersection(identityTokens, sceneTokens));
   const matchRatio = _.divide(matches, _.max([_.size(identityTokens), 1])!);
@@ -122,21 +151,38 @@ const isCharacterMentioned = (sceneText: string, character: CharacterConfig): bo
 };
 
 export const resolveSceneCharacterIds = (
-  scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">,
+  scene: Partial<StoryboardScene>,
   characters: CharacterConfig[],
 ): string[] => {
   const validIds = new Set(_.map(characters, "id"));
-  const explicitIds = _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id));
-  if (!_.isEmpty(explicitIds)) return explicitIds;
-  const sceneText = _.join(_.compact([scene.prompt, scene.script, scene.subtitle, scene.visualIntent, scene.visibleAction, scene.reaction]), " ");
+  const charactersById = _.keyBy(characters, "id");
+  const sceneText = _.join(
+    _.compact([
+      scene.generationPrompt,
+      scene.prompt,
+      scene.script,
+      scene.subtitle,
+      scene.visualIntent,
+      scene.visibleAction,
+      scene.reaction,
+      scene.spokenDialogue,
+      scene.characterBlocking,
+    ]),
+    " ",
+  );
+  const explicitIds = _.filter(
+    _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id)),
+    (id) => !isCharacterExplicitlyExcluded(sceneText, charactersById[id]),
+  );
   const matchedIds = _.map(
     _.filter(characters, (character) => isCharacterMentioned(sceneText, character)),
     "id",
   );
-  if (_.isEmpty(matchedIds) && _.isEqual(_.size(characters), 1) && SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_SUBJECT_PATTERN.test(normalizeSearchText(sceneText))) {
+  const resolvedIds = _.uniq(_.concat(explicitIds, matchedIds));
+  if (_.isEmpty(resolvedIds) && _.isEqual(_.size(characters), 1) && SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_SUBJECT_PATTERN.test(normalizeSearchText(sceneText))) {
     return [characters[0].id];
   }
-  return matchedIds;
+  return resolvedIds;
 };
 
 export const resolveStoryboardCharacterIds = (scenes: StoryboardScene[], characters: CharacterConfig[]): StoryboardScene[] => {
@@ -182,20 +228,25 @@ export const createSceneGenerationContext = (
 ): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
-  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceRoles: [] };
+  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceImageNames: [], referenceRoles: [] };
 };
 
 export const resolveCinematicSceneCharacterReferences = (
   scene: StoryboardScene,
   characters: CharacterConfig[],
-): Pick<SceneGenerationContext, "characterIds" | "referenceImages" | "referenceRoles"> => {
+): Pick<SceneGenerationContext, "characterIds" | "referenceImages" | "referenceImageNames" | "referenceRoles"> => {
   const characterIds = resolveSceneCharacterIds(scene, characters);
   const charactersById = _.keyBy(characters, "id");
   const visibleCharacters = _.compact(_.map(characterIds, (characterId) => charactersById[characterId]));
-  const referenceImages = _.take(_.compact(_.map(visibleCharacters, (character) => _.first(_.filter(character.images, _.isString)))), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
+  const referenceCharacters = _.take(
+    _.filter(visibleCharacters, (character) => !_.isEmpty(_.first(_.filter(character.images, _.isString)))),
+    SCENE_REFERENCE_CONFIG.MAX_IMAGES,
+  );
+  const referenceImages = _.map(referenceCharacters, (character) => _.first(_.filter(character.images, _.isString))!);
   return {
-    characterIds: _.take(characterIds, SCENE_REFERENCE_CONFIG.MAX_IMAGES),
+    characterIds,
     referenceImages,
+    referenceImageNames: _.map(referenceCharacters, "name"),
     referenceRoles: _.map(referenceImages, () => SCENE_REFERENCE_CONFIG.CHARACTER_ROLE),
   };
 };

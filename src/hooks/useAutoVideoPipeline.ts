@@ -61,6 +61,7 @@ import {
   AUTO_GENERATOR_CONSTANTS,
   AUTO_VIDEO_PIPELINE_PROGRESS,
   CINEMATIC_EDIT_ANALYSIS_CONFIG,
+  CINEMATIC_GENERATION_RECOVERY_CONFIG,
   CINEMATIC_CONFIG,
   CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
   FFMPEG_RENDER_CONSTANTS,
@@ -83,6 +84,7 @@ import {
   generateProjectImageOnce,
   getSceneAssetSummary,
   hasSceneAsset,
+  isProviderGenerationRejection,
   isPersistedProjectVideoUrl,
   isNonRetryableFlowVideoError,
   isUsableGeneratedAssetUrl,
@@ -205,6 +207,7 @@ import {
   getCinematicGeneratedTakeIssues,
   getCinematicScriptReadinessIssues,
   getCinematicStoryboardReadinessIssues,
+  createCinematicPlanningBatches,
   isCinematicEpisodeGenre,
 } from "../services/cinematicProductionPolicyService";
 import {
@@ -235,6 +238,7 @@ import {
   getGenerationCheckpointSceneProgress,
   mergeContinuationLogs,
   preserveInterruptedStoryboardCheckpoint,
+  resolveCinematicContinuationStage,
   hasCompleteSceneAlignment,
   resolveTargetProject,
 } from "./autoVideoPipelineUtils";
@@ -574,14 +578,16 @@ export function useAutoVideoPipeline(
       ? jsonUtils.safeParse<string[]>(cachedContinuationLogsValue, [])
       : [];
     const visibleContinuationLogs = _.isEqual(activeCreatedProject?.id, presentationTarget?.id) ? logs : [];
-    let currentLogs: string[] = isContinuation
+    const completedRunLogs = isContinuation
       ? mergeContinuationLogs(hydratedContinuationTarget?.generationLogs, presentationTarget?.generationLogs, cachedContinuationLogs, visibleContinuationLogs)
       : [];
+    let currentLogs: string[] = _.clone(completedRunLogs);
     setLogs(_.clone(currentLogs));
     storageUtils.set(currentLogsStorageKey, jsonUtils.safeStringify(currentLogs));
     let currentLogProjectId = isContinuation ? continuationProjectId : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
     const cinematicProgressMessages = config.language === ProjectLanguage.VI ? CINEMATIC_PROGRESS_MESSAGES.vi : CINEMATIC_PROGRESS_MESSAGES.en;
-    let cinematicProgressStage: number = CINEMATIC_PROGRESS_STAGE.SCRIPT;
+    const cinematicResumeStage = isCinematicPipeline && isContinuation ? resolveCinematicContinuationStage(presentationTarget) : CINEMATIC_PROGRESS_STAGE.SCRIPT;
+    let cinematicProgressStage: number = cinematicResumeStage;
     const appendLog = (msg: string, cinematicUserVisible = false) => {
       if (!_.isEqual(activePipelineRunIdRef.current, pipelineRunId)) return;
       if (isCinematicPipeline && !cinematicUserVisible) return;
@@ -599,7 +605,7 @@ export function useAutoVideoPipeline(
     };
     const appendCinematicLog = (msg: string, stage?: number) => {
       if (!isCinematicPipeline) return;
-      if (_.isNumber(stage)) cinematicProgressStage = stage;
+      if (_.isNumber(stage)) cinematicProgressStage = _.max([cinematicProgressStage, stage]) || cinematicProgressStage;
       appendLog(msg, true);
     };
 
@@ -607,8 +613,20 @@ export function useAutoVideoPipeline(
     let currentProject: VideoProject | null = resetDerivedPresentation ? null : activeCreatedProject;
     let latestCheckpointStoryboard: StoryboardScene[] = [];
     let roomCleanupProvider = AiPlanningFallbackProvider.Disabled;
-    if (isCinematicPipeline) appendCinematicLog(cinematicProgressMessages.SCRIPT_START, CINEMATIC_PROGRESS_STAGE.SCRIPT);
-    else appendLog(T.logPipelineStart);
+    if (isCinematicPipeline) {
+      if (_.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.SCRIPT)) {
+        appendCinematicLog(cinematicProgressMessages.SCRIPT_START, CINEMATIC_PROGRESS_STAGE.SCRIPT);
+      } else if (_.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.PROMPT)) {
+        appendCinematicLog(cinematicProgressMessages.PROMPT_START, CINEMATIC_PROGRESS_STAGE.PROMPT);
+      } else if (_.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.THUMBNAIL)) {
+        appendCinematicLog(cinematicProgressMessages.THUMBNAIL_START, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+      } else {
+        appendCinematicLog(
+          _.replace(cinematicProgressMessages.VIDEO_START, SecurityConstants.PLACEHOLDER_0, _.toString(presentationTarget?.storyboard?.length || SecurityConstants.ZERO)),
+          CINEMATIC_PROGRESS_STAGE.VIDEO,
+        );
+      }
+    } else appendLog(T.logPipelineStart);
     appendLog(T.logConfigSummary(config.genre, config.language, config.duration, config.generationMode, config.resumeMode));
 
     try {
@@ -713,6 +731,7 @@ export function useAutoVideoPipeline(
           seo: existingTargetProj.seo,
           renderedVideoUrl: existingTargetProj.renderedVideoUrl,
           manualReviewItems: existingTargetProj.manualReviewItems,
+          generationLogs: _.clone(currentLogs),
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           activeRunId: pipelineRunLease.runId,
           input: { type: config.inputType, content: config.scriptContent },
@@ -1288,7 +1307,9 @@ export function useAutoVideoPipeline(
         );
         throwIfCancelled();
         let rawAnalyzedCharacters: any[] =
-          analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters) ? _.take(analyzeCharacterRes.data.characters, REFACTOR_CONSTANTS.HOOK_COUNT) : [];
+          analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)
+            ? _.take(analyzeCharacterRes.data.characters, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS)
+            : [];
         const cinematicCharacterIssues = isCinematicPipeline && analyzeCharacterRes.success ? getCinematicCharacterArtifactIssues(analyzeCharacterRes.data) : [];
         if (isCinematicPipeline && (!analyzeCharacterRes.success || !_.isEmpty(cinematicCharacterIssues))) {
           throw new Error(
@@ -1645,8 +1666,12 @@ export function useAutoVideoPipeline(
       appendLog(T.logReferenceSummary(_.size(config.referenceImages), _.size(config.sceneReferenceImages), SecurityConstants.ZERO, isCinematicPipeline));
       if (isCinematicEpisodeGenre(config.genre)) setCurrentStepIndex(2);
       if (isCinematicPipeline) {
-        appendCinematicLog(cinematicProgressMessages.SCRIPT_READY, CINEMATIC_PROGRESS_STAGE.SCRIPT);
-        appendCinematicLog(cinematicProgressMessages.PROMPT_START, CINEMATIC_PROGRESS_STAGE.PROMPT);
+        if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.SCRIPT)) {
+          appendCinematicLog(cinematicProgressMessages.SCRIPT_READY, CINEMATIC_PROGRESS_STAGE.SCRIPT);
+        }
+        if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.PROMPT)) {
+          appendCinematicLog(cinematicProgressMessages.PROMPT_START, CINEMATIC_PROGRESS_STAGE.PROMPT);
+        }
       }
 
       const requiresCinematicPlanRepair = isCinematicEpisodeGenre(config.genre)
@@ -1734,7 +1759,7 @@ export function useAutoVideoPipeline(
                   (!hasSceneAsset(scene) && !_.isEqual(scene.generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION)),
               )
             : realScenes;
-          const planningBatches = _.isEmpty(scenesToPlan) ? [] : [scenesToPlan];
+          const planningBatches = createCinematicPlanningBatches(scenesToPlan);
           const plannedById = new Map(_.map(realScenes, (scene) => [scene.id, scene]));
           const planningWarnings: string[] = [];
           const planningFailures: Array<Awaited<ReturnType<typeof safeSystemFetch>>> = [];
@@ -1785,16 +1810,14 @@ export function useAutoVideoPipeline(
           const processPlanningBatch = async (batchIndex: number) => {
             throwIfCancelled();
             const planningBatch = planningBatches[batchIndex];
-            const firstSceneIndex = _.findIndex(planningMasterStoryboard, { id: _.first(planningBatch)?.id });
-            const planningPreviousScene = _.gt(firstSceneIndex, 0) ? planningMasterStoryboard[firstSceneIndex - 1] : undefined;
             let batchResponse: Awaited<ReturnType<typeof safeSystemFetch>> = { success: false, error: CINEMATIC_PLANNING_MESSAGES.VI_REQUIRED };
             let pendingPlanningScenes = planningBatch;
             const applyPlanningResponse = async (
               requestedScenes: StoryboardScene[],
               response: Awaited<ReturnType<typeof safeSystemFetch>>,
             ): Promise<StoryboardScene[]> => {
-              if (!response.success) return requestedScenes;
               const responseScenes = _.castArray(response.data?.storyboard || []) as StoryboardScene[];
+              if (_.isEmpty(responseScenes)) return requestedScenes;
               const responsePlanningIssues = _.castArray(response.data?.planningIssues || []);
               const partition = partitionCinematicPlanningResponse(requestedScenes, responseScenes, responsePlanningIssues);
               await checkpointCompletedScenes(partition.completedScenes);
@@ -1813,12 +1836,15 @@ export function useAutoVideoPipeline(
                   .replace(SecurityConstants.PLACEHOLDER_3, _.toString(CINEMATIC_POLICY_CONFIG.CLIENT_PLANNING_ATTEMPTS)),
               );
               await checkpointPlanningState();
+              const latestPlanningMasterStoryboard = _.map(planningMasterStoryboard, (scene) => plannedById.get(scene.id) || scene);
+              const firstPendingSceneIndex = _.findIndex(latestPlanningMasterStoryboard, { id: _.first(pendingPlanningScenes)?.id });
+              const planningPreviousScene = _.gt(firstPendingSceneIndex, 0) ? latestPlanningMasterStoryboard[firstPendingSceneIndex - 1] : undefined;
               batchResponse = await pipelineSystemFetch(
                 API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS,
                 {
                   ...optimizePayload,
                   storyboard: pendingPlanningScenes,
-                  planningMasterStoryboard,
+                  planningMasterStoryboard: latestPlanningMasterStoryboard,
                   planningPreviousScene,
                   planningAttempt: attempt + 1,
                   planningWorkerId,
@@ -2050,8 +2076,12 @@ export function useAutoVideoPipeline(
         );
       }
       if (isCinematicPipeline) {
-        appendCinematicLog(cinematicProgressMessages.PROMPT_READY, CINEMATIC_PROGRESS_STAGE.PROMPT);
-        appendCinematicLog(cinematicProgressMessages.THUMBNAIL_START, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+        if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.PROMPT)) {
+          appendCinematicLog(cinematicProgressMessages.PROMPT_READY, CINEMATIC_PROGRESS_STAGE.PROMPT);
+        }
+        if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.THUMBNAIL)) {
+          appendCinematicLog(cinematicProgressMessages.THUMBNAIL_START, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+        }
       }
       voiceUpdatedProj = {
         ...voiceUpdatedProj,
@@ -2082,6 +2112,7 @@ export function useAutoVideoPipeline(
         styleReferenceImages: [],
         sceneReferenceImages: [],
         referenceImages: [],
+        referenceImageNames: [],
         thumbnailReferenceImages: [],
         thumbnailSceneReferenceImages: [],
         contentLanguage: config.language,
@@ -2107,72 +2138,119 @@ export function useAutoVideoPipeline(
             CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
           );
           const generatedReferences = new Map<string, string>();
+          const failedCharacterReferences: string[] = [];
           for (const character of charactersMissingReferences) {
             throwIfCancelled();
             try {
-              if (_.isEmpty(character.referenceGenerationPrompt)) {
-                appendLog(
-                  config.language === ProjectLanguage.VI
-                    ? `[Nhân vật] ${character.name}: AI chưa trả prompt ảnh tham chiếu; giữ định danh văn bản và tiếp tục.`
-                    : `[Characters] ${character.name}: AI did not return a reference-image prompt; keeping the text identity and continuing.`,
+              let currentPrompt = _.trim(_.toString(character.referenceGenerationPrompt));
+              let result: ProjectImageResult | undefined;
+              for (
+                let attempt = SecurityConstants.ZERO;
+                attempt <= CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS;
+                attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)
+              ) {
+                throwIfCancelled();
+                if (_.isEmpty(currentPrompt)) break;
+                if (_.gt(attempt, SecurityConstants.ZERO)) {
+                  const retryMessage =
+                    config.language === ProjectLanguage.VI
+                      ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_RETRYING
+                      : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_RETRYING;
+                  appendLog(
+                    retryMessage
+                      .replace(SecurityConstants.PLACEHOLDER_0, character.name)
+                      .replace(SecurityConstants.PLACEHOLDER_1, _.toString(attempt))
+                      .replace(SecurityConstants.PLACEHOLDER_2, _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)),
+                  );
+                }
+                result = await generateProjectImageOnce(
+                  {
+                    sceneId: `character_${character.id}`,
+                    prompt: currentPrompt,
+                    generateType: GenerateType.Image,
+                  },
+                  () => ({
+                    prompt: currentPrompt,
+                    style: currentStylePreset,
+                    resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                    bypassCache: _.gt(attempt, SecurityConstants.ZERO),
+                    engine: ImageGeneratorEngine.LabsSandbox,
+                    sandboxConfig: sandboxConfigPayload,
+                    visualConfig: {
+                      ...thumbnailVisualConfigPayload,
+                      aspectRatio: AspectRatio.SixteenNine,
+                      generateType: GenerateType.Image,
+                      generationMode: ImageGenerationMode.GeminiChat,
+                      imageGeneratorEngine: ImageGeneratorEngine.LabsSandbox,
+                      generateCount: CINEMATIC_CHARACTER_PACK_CONFIG.REFERENCE_COUNT_PER_CHARACTER,
+                      referenceImages: [],
+                      referenceImageNames: [],
+                    },
+                  }),
+                  requestSignal,
                 );
+                if (result.success) break;
+                if (attempt >= CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS) break;
+                if (isProviderGenerationRejection(result.warning)) {
+                  const repairingMessage =
+                    config.language === ProjectLanguage.VI
+                      ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_REPAIRING
+                      : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_REPAIRING;
+                  appendLog(repairingMessage.replace(SecurityConstants.PLACEHOLDER_0, character.name));
+                  const repairResponse = await pipelineSystemFetch(
+                    API_ROUTES.PIPELINE_REPAIR_VISUAL_PROMPT,
+                    {
+                      prompt: currentPrompt,
+                      qaIssues: [result.warning],
+                      scene: character,
+                      purpose: CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE,
+                      bypassCache: true,
+                      roomWorkerId: CINEMATIC_ROOM_STAGE.THUMBNAIL,
+                    },
+                    requestSignal,
+                  );
+                  const repairedPrompt = _.trim(_.toString(repairResponse.data?.review?.repairedPrompt));
+                  if (repairResponse.success && !_.isEmpty(repairedPrompt)) {
+                    currentPrompt = repairedPrompt;
+                    character.referenceGenerationPrompt = repairedPrompt;
+                    const repairedMessage =
+                      config.language === ProjectLanguage.VI
+                        ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_REPAIRED
+                        : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_REPAIRED;
+                    appendLog(repairedMessage.replace(SecurityConstants.PLACEHOLDER_0, character.name));
+                  }
+                }
+              }
+              if (!result) {
+                failedCharacterReferences.push(character.name);
                 continue;
               }
-              const result = await generateProjectImageOnce(
-              {
-                sceneId: `character_${character.id}`,
-                prompt: character.referenceGenerationPrompt,
-                generateType: GenerateType.Image,
-              },
-              () => ({
-                prompt: character.referenceGenerationPrompt,
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-                bypassCache: false,
-                engine: ImageGeneratorEngine.LabsSandbox,
-                sandboxConfig: sandboxConfigPayload,
-                visualConfig: {
-                  ...thumbnailVisualConfigPayload,
-                  aspectRatio: AspectRatio.ThreeFour,
-                  generateType: GenerateType.Image,
-                  generationMode: ImageGenerationMode.GeminiChat,
-                  imageGeneratorEngine: ImageGeneratorEngine.LabsSandbox,
-                  generateCount: CINEMATIC_CHARACTER_PACK_CONFIG.REFERENCE_COUNT_PER_CHARACTER,
-                  referenceImages: [],
-                },
-              }),
-              requestSignal,
-            );
               const generatedImage = createProjectImageUrl(result);
               if (!result.success || _.isEmpty(generatedImage)) {
-                appendLog(
-                  config.language === ProjectLanguage.VI
-                    ? `[Nhân vật] ${character.name}: chưa tạo được ảnh tham chiếu; tiếp tục bằng identity prompt do AI viết.`
-                    : `[Characters] ${character.name}: reference image was unavailable; continuing with the AI-authored identity prompt.`,
-                );
+                failedCharacterReferences.push(character.name);
                 continue;
               }
               const persisted = await pipelineSystemFetch(
-              `${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${voiceUpdatedProj.id}/${REFERENCE_ASSET_GROUP.CHARACTER}`,
-              { images: [generatedImage] },
-              requestSignal,
-            );
+                `${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${voiceUpdatedProj.id}/${REFERENCE_ASSET_GROUP.CHARACTER}`,
+                { images: [generatedImage] },
+                requestSignal,
+              );
               const persistedImage = _.first(_.defaultTo(persisted.data?.assets, []));
               if (!persisted.success || _.isEmpty(persistedImage)) {
-                appendLog(
-                  config.language === ProjectLanguage.VI
-                    ? `[Nhân vật] ${character.name}: chưa lưu được ảnh tham chiếu; tiếp tục bằng identity prompt do AI viết.`
-                    : `[Characters] ${character.name}: reference image could not be persisted; continuing with the AI-authored identity prompt.`,
-                );
+                failedCharacterReferences.push(character.name);
                 continue;
               }
               generatedReferences.set(character.id, _.toString(persistedImage));
             } catch (characterReferenceError) {
-              appendLog(
-                config.language === ProjectLanguage.VI
-                  ? `[Nhân vật] ${character.name}: bước ảnh tham chiếu chưa khả dụng; giữ hồ sơ AI và tiếp tục.`
-                  : `[Characters] ${character.name}: reference-image step was unavailable; keeping the AI-authored profile and continuing.`,
+              logger.warn(
+                CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_REFERENCE_DEBUG
+                  .replace(SecurityConstants.PLACEHOLDER_0, character.name)
+                  .replace(
+                    SecurityConstants.PLACEHOLDER_1,
+                    characterReferenceError instanceof Error ? characterReferenceError.message : REFACTOR_CONSTANTS.ERR_UNKNOWN,
+                  ),
               );
+              failedCharacterReferences.push(character.name);
             }
           }
           const charactersWithReferences = _.map(existingCharacters, (character) => {
@@ -2201,10 +2279,23 @@ export function useAutoVideoPipeline(
                 : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_PARTIAL,
             CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
           );
+          if (!_.isEmpty(failedCharacterReferences)) {
+            const failureTemplate =
+              config.language === ProjectLanguage.VI
+                ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_REQUIRED
+                : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_REQUIRED;
+            throw new Error(
+              failureTemplate
+                .replace(SecurityConstants.PLACEHOLDER_0, _.join(_.uniq(failedCharacterReferences), ", "))
+                .replace(SecurityConstants.PLACEHOLDER_1, _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)),
+            );
+          }
         }
       }
+      const isVideoStageContinuation =
+        isCinematicPipeline && isContinuation && _.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.VIDEO);
       const cachedSeoData = isContinuation && newProj.seo ? newProj.seo : null;
-      const seoRequest = cachedSeoData
+      const seoRequest = cachedSeoData || isVideoStageContinuation
         ? null
         : _.isEqual(runIntent, "render_only")
           ? null
@@ -2235,6 +2326,7 @@ export function useAutoVideoPipeline(
       const reusableThumbnails = config.resumeMode && !shouldRegenerateThumbnails ? _.defaultTo(newProj.thumbnails, []) : [];
       const hasReusableThumbnailAssets = !_.isEmpty(reusableThumbnails) && _.every(reusableThumbnails, (thumb) => !_.isEmpty(thumb.imageUrl));
       const shouldPlanThumbnails =
+        !isVideoStageContinuation &&
         !_.isEqual(runIntent, "render_only") &&
         !hasReusableThumbnailAssets &&
         _.some([_.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat), isCinematicEpisodeGenre(config.genre)], Boolean);
@@ -2266,6 +2358,12 @@ export function useAutoVideoPipeline(
           : isCinematicPipeline
             ? undefined
             : createSourceGroundedSeo(realScript, newProj.seoConfig);
+      }
+      if (seoRes?.success && preparedSeoData) {
+        voiceUpdatedProj = await syncProject({
+          ...voiceUpdatedProj,
+          seo: preparedSeoData as VideoProject["seo"],
+        });
       }
 
       const visualDependencies = {
@@ -2323,6 +2421,7 @@ export function useAutoVideoPipeline(
         prompt: string;
         generateType: GenerateType.Image;
         referenceImages: string[];
+        referenceImageNames?: string[];
         continuityKey: string;
         idempotencyKey: string;
       }> = [];
@@ -2366,6 +2465,7 @@ export function useAutoVideoPipeline(
       targetScenesToGen = _.map(targetScenesToGen, (targetScene) => _.find(realScenes as StoryboardScene[], { id: targetScene.id }) || targetScene);
       voiceUpdatedProj = {
         ...voiceUpdatedProj,
+        seo: preparedSeoData as VideoProject["seo"],
         storyboard: realScenes as VideoProject["storyboard"],
         thumbnails: unifiedBatchThumbnails || voiceUpdatedProj.thumbnails,
       };
@@ -2612,6 +2712,7 @@ export function useAutoVideoPipeline(
           targetScenesToGen,
           (scene) => !hasSceneAsset(scene) && !scene.remoteVideoDownloadPending,
         );
+        const providerRepairAttemptsByScene = new Map<string, number>();
         const runSceneGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
           let nonRetryableFlowError: Error | null = null;
           const generateScene = async (sc: StoryboardScene, i: number): Promise<void> => {
@@ -2649,7 +2750,12 @@ export function useAutoVideoPipeline(
                   engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
                   sandboxConfig: sandboxConfigPayload,
                   visualConfig: visualConfigPayload
-                    ? { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: sceneGenerateType }
+                    ? {
+                        ...visualConfigPayload,
+                        referenceImages: requestContext.referenceImages,
+                        referenceImageNames: requestContext.referenceImageNames,
+                        generateType: sceneGenerateType,
+                      }
                     : visualConfigPayload,
                 }),
                 requestSignal,
@@ -2713,6 +2819,36 @@ export function useAutoVideoPipeline(
                 throw new Error(_.defaultTo(imageResult.warning, REFACTOR_CONSTANTS.ERR_UNKNOWN));
               }
             } catch (error) {
+              const initialFailureReason = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_UNKNOWN;
+              if (_.isEqual(sceneGenerateType, GenerateType.Image) && isProviderGenerationRejection(initialFailureReason)) {
+                const completedRepairAttempts = _.defaultTo(providerRepairAttemptsByScene.get(sc.id), SecurityConstants.ZERO);
+                if (_.lt(completedRepairAttempts, CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)) {
+                  const repairAttempt = _.add(completedRepairAttempts, SecurityConstants.DEFAULT_AMOUNT);
+                  providerRepairAttemptsByScene.set(sc.id, repairAttempt);
+                  const repairMessage =
+                    config.language === ProjectLanguage.VI
+                      ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_SCENE_IMAGE_REPAIRING
+                      : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_SCENE_IMAGE_REPAIRING;
+                  appendLog(repairMessage.replace(SecurityConstants.PLACEHOLDER_0, sc.id));
+                  const repairResponse = await pipelineSystemFetch(
+                    API_ROUTES.PIPELINE_REPAIR_VISUAL_PROMPT,
+                    {
+                      prompt: requestContext.prompt,
+                      qaIssues: [initialFailureReason],
+                      scene: sc,
+                      purpose: CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE,
+                      bypassCache: true,
+                      roomWorkerId: CINEMATIC_ROOM_STAGE.PROMPT,
+                    },
+                    requestSignal,
+                  );
+                  const repairedPrompt = _.trim(_.toString(repairResponse.data?.review?.repairedPrompt));
+                  if (repairResponse.success && !_.isEmpty(repairedPrompt)) {
+                    sc.prompt = repairedPrompt;
+                    sc.generationPrompt = repairedPrompt;
+                  }
+                }
+              }
               let recoveredAsImage = false;
               if (_.isEqual(executionVisualConfig.generateType, GenerateType.Mixed) && _.isEqual(sceneGenerateType, GenerateType.Video)) {
                 try {
@@ -2730,7 +2866,12 @@ export function useAutoVideoPipeline(
                       bypassCache: true,
                       engine: ImageGeneratorEngine.Imagen,
                       sandboxConfig: sandboxConfigPayload,
-                      visualConfig: { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: GenerateType.Image },
+                      visualConfig: {
+                        ...visualConfigPayload,
+                        referenceImages: requestContext.referenceImages,
+                        referenceImageNames: requestContext.referenceImageNames,
+                        generateType: GenerateType.Image,
+                      },
                     }),
                     requestSignal,
                   );
@@ -2752,7 +2893,7 @@ export function useAutoVideoPipeline(
                 }
               }
               if (!recoveredAsImage) {
-                const failureReason = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_UNKNOWN;
+                const failureReason = initialFailureReason;
                 sc.assetStatus = SceneAssetStatus.Failed;
                 sc.assetError = failureReason;
                 await persistImageCheckpoint();
@@ -2794,11 +2935,12 @@ export function useAutoVideoPipeline(
               idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], ":"),
               prompt: requestContext.prompt,
               referenceImages: requestContext.referenceImages,
+              referenceImageNames: requestContext.referenceImageNames,
               continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
               generateType: sceneGenerateType,
             };
           });
-          const batchItems = _.concat(sceneBatchItems, unifiedThumbnailItems);
+          const batchItems = [...sceneBatchItems, ...unifiedThumbnailItems];
           let completedCount = SecurityConstants.ZERO;
           let batchFailureCount = SecurityConstants.ZERO;
 
@@ -2841,6 +2983,7 @@ export function useAutoVideoPipeline(
                 idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash, "fallback"], ":"),
                 prompt: requestContext.prompt,
                 referenceImages: requestContext.referenceImages,
+                referenceImageNames: requestContext.referenceImageNames,
                 continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
                 generateType: fallbackGenerateType,
               };
@@ -2927,6 +3070,17 @@ export function useAutoVideoPipeline(
                 ? "[Ảnh bìa] Gemini đang tạo ảnh bìa song song với clip phim."
                 : "[Thumbnail] Gemini is generating thumbnails in parallel with film clips.",
             );
+            const thumbnailResults = new Map<string, ProjectImageResult>();
+            const applyThumbnailResult = (result: ProjectImageResult): void => {
+              thumbnailResults.set(result.sceneId, result);
+              if (!result.success) return;
+              const thumbnail = _.find(unifiedBatchThumbnails || [], { id: result.sceneId });
+              const imageUrl = createProjectImageUrl(result);
+              if (thumbnail && !_.isEmpty(imageUrl)) {
+                thumbnail.imageUrl = imageUrl;
+                void persistImageCheckpoint();
+              }
+            };
             await generateProjectImages({
               items: unifiedThumbnailItems,
               visualConfig: {
@@ -2938,20 +3092,90 @@ export function useAutoVideoPipeline(
               sandboxConfig: sandboxConfigPayload,
               cancelRef: cancellationRef,
               retainBrowserSession: false,
-              onBatchResult: (result) => {
-                if (!result.success) return;
-                const thumbnail = _.find(unifiedBatchThumbnails || [], { id: result.sceneId });
-                const imageUrl = createProjectImageUrl(result);
-                if (thumbnail && !_.isEmpty(imageUrl)) {
-                  thumbnail.imageUrl = imageUrl;
-                  void persistImageCheckpoint();
-                }
-              },
+              onBatchResult: applyThumbnailResult,
             });
+            for (let attempt = 0; attempt < CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS; attempt++) {
+              const failedItems = _.filter(unifiedThumbnailItems, (item) => !thumbnailResults.get(item.sceneId)?.success);
+              if (_.isEmpty(failedItems) || cancellationRef.current) break;
+              for (const item of failedItems) {
+                const thumbnail = _.find(unifiedBatchThumbnails || [], { id: item.sceneId });
+                const previousFailure = thumbnailResults.get(item.sceneId);
+                const repairResponse = await pipelineSystemFetch(
+                  API_ROUTES.PIPELINE_REPAIR_VISUAL_PROMPT,
+                  {
+                    prompt: item.prompt,
+                    qaIssues: [previousFailure?.warning || REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR],
+                    scene: thumbnail,
+                    purpose: isProviderGenerationRejection(previousFailure?.warning)
+                      ? CINEMATIC_GENERATION_RECOVERY_CONFIG.THUMBNAIL_PROVIDER_REJECTION_PURPOSE
+                      : CINEMATIC_GENERATION_RECOVERY_CONFIG.THUMBNAIL_VISUAL_PURPOSE,
+                    roomWorkerId: CINEMATIC_ROOM_STAGE.THUMBNAIL,
+                  },
+                  requestSignal,
+                );
+                const repairedPrompt = _.trim(_.toString(repairResponse.data?.review?.repairedPrompt));
+                const retryPrompt = repairResponse.success && !_.isEmpty(repairedPrompt) ? repairedPrompt : item.prompt;
+                if (!_.isEqual(retryPrompt, item.prompt)) {
+                  item.prompt = retryPrompt;
+                  if (thumbnail) {
+                    thumbnail.prompt = retryPrompt;
+                    thumbnail.generationPrompt = retryPrompt;
+                  }
+                }
+                const retryMessage =
+                  config.language === ProjectLanguage.VI
+                    ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_THUMBNAIL_RETRYING
+                    : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_THUMBNAIL_RETRYING;
+                appendLog(
+                    retryMessage
+                      .replace(SecurityConstants.PLACEHOLDER_0, item.sceneId)
+                      .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT)))
+                      .replace(SecurityConstants.PLACEHOLDER_2, _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)),
+                );
+                const retryResult = await generateProjectImageOnce(
+                  item,
+                  () => ({
+                    prompt: retryPrompt,
+                    style: currentThumbnailStyle || currentStylePreset,
+                    resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                    bypassCache: true,
+                    engine: ImageGeneratorEngine.LabsSandbox,
+                    sandboxConfig: sandboxConfigPayload,
+                    visualConfig: {
+                      ...thumbnailVisualConfigPayload,
+                      style: currentThumbnailStyle || currentStylePreset,
+                      batchTabCount: SecurityConstants.DEFAULT_AMOUNT,
+                    },
+                  }),
+                  requestSignal,
+                );
+                applyThumbnailResult(retryResult);
+              }
+            }
+            await safeSystemFetch(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS, {
+              provider: resolvedAiExecution.provider,
+              projectId: newProjectId,
+              workerIds: [CINEMATIC_ROOM_STAGE.THUMBNAIL],
+            }).catch(() => undefined);
             await imageCheckpointQueue;
+            const unresolvedThumbnails = _.filter(unifiedThumbnailItems, (item) => !thumbnailResults.get(item.sceneId)?.success);
+            if (!_.isEmpty(unresolvedThumbnails)) {
+              const failureMessage =
+                config.language === ProjectLanguage.VI
+                  ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_THUMBNAIL_REQUIRED
+                  : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_THUMBNAIL_REQUIRED;
+              throw new Error(
+                failureMessage.replace(
+                  SecurityConstants.PLACEHOLDER_0,
+                  _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS),
+                ),
+              );
+            }
           };
           await generateFilmThumbnails();
-          appendCinematicLog(cinematicProgressMessages.THUMBNAIL_READY, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+          if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.THUMBNAIL)) {
+            appendCinematicLog(cinematicProgressMessages.THUMBNAIL_READY, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
+          }
           appendCinematicLog(
             _.replace(cinematicProgressMessages.VIDEO_START, SecurityConstants.PLACEHOLDER_0, _.toString(realScenes.length)),
             CINEMATIC_PROGRESS_STAGE.VIDEO,
@@ -3121,7 +3345,12 @@ export function useAutoVideoPipeline(
               bypassCache: true,
               engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
               sandboxConfig: sandboxConfigPayload,
-              visualConfig: { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: GenerateType.Image },
+              visualConfig: {
+                ...visualConfigPayload,
+                referenceImages: requestContext.referenceImages,
+                referenceImageNames: requestContext.referenceImageNames,
+                generateType: GenerateType.Image,
+              },
             }),
             requestSignal,
           );
@@ -3247,7 +3476,12 @@ export function useAutoVideoPipeline(
                 bypassCache: true,
                 engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
                 sandboxConfig: sandboxConfigPayload,
-                visualConfig: { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: GenerateType.Video },
+                visualConfig: {
+                  ...visualConfigPayload,
+                  referenceImages: requestContext.referenceImages,
+                  referenceImageNames: requestContext.referenceImageNames,
+                  generateType: GenerateType.Video,
+                },
               }),
               requestSignal,
             );
@@ -3603,34 +3837,6 @@ export function useAutoVideoPipeline(
             : "[Thumbnail] Gemini thumbnail results are synchronized with the film project.",
         );
       }
-      if (isCinematicEpisodeGenre(config.genre)) {
-        const mayUseTextFreeFilmFrame = _.isEqual(config.thumbnailTextInImageMode, ThumbnailTextMode.NoText);
-        const missingFilmThumbnails = mayUseTextFreeFilmFrame ? _.filter(thumbnailsList, (thumbnail) => _.isEmpty(thumbnail.imageUrl)) : [];
-        const sourceVideoScenes = _.filter(realScenes as StoryboardScene[], (scene) => _.isEqual(scene.assetType, GenerateType.Video) && !_.isEmpty(scene.assetUrl));
-        for (let index = 0; index < missingFilmThumbnails.length; index++) {
-          const thumbnail = missingFilmThumbnails[index];
-          const sourceScene = sourceVideoScenes[index % _.max([1, sourceVideoScenes.length])!];
-          if (!sourceScene) break;
-          const extracted = await pipelineSystemFetch(
-            API_ROUTES.PIPELINE_EXTRACT_THUMBNAIL_FRAME,
-            {
-              projectId: newProj.id,
-              thumbnailId: thumbnail.id,
-              assetUrl: sourceScene.assetUrl,
-            },
-            requestSignal,
-          );
-          if (extracted.success && !_.isEmpty(extracted.data?.imageUrl)) {
-            thumbnail.imageUrl = extracted.data.imageUrl;
-            thumbnail.approved = true;
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[Ảnh bìa] Gemini chưa trả ảnh cho ${thumbnail.id}; đã dùng keyframe sạch từ cảnh phim để không để trống thumbnail.`
-                : `[Thumbnail] Gemini did not return ${thumbnail.id}; using a clean film keyframe so the thumbnail is never blank.`,
-            );
-          }
-        }
-      }
       for (const thumbnail of thumbnailsList) {
         if (!isUsableGeneratedAssetUrl(thumbnail.imageUrl)) {
           thumbnail.approved = false;
@@ -3964,6 +4170,10 @@ export function useAutoVideoPipeline(
             );
           }
         }
+        slicedUpdatedProj = await syncProject({
+          ...slicedUpdatedProj,
+          storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
+        });
       }
 
       if (
@@ -4014,10 +4224,11 @@ export function useAutoVideoPipeline(
         ? _.sumBy(renderableScenes, (scene) => _.max([SecurityConstants.ZERO, _.toNumber(scene.duration)]) || SecurityConstants.ZERO)
         : calculateSceneDuration(renderableScenes);
       if (nativeFilmAudio)
-        appendLog(
+        appendCinematicLog(
           config.language === ProjectLanguage.VI
             ? `[Dựng phim] Bản dựng có ${countCinematicTimelineShots(acceptedScenes)} đoạn từ ${acceptedScenes.length} clip; dài ${_.round(expectedRenderDuration, 1)} giây. ${cinematicEditorialReviewAvailable ? "AI đã hỗ trợ kiểm tra mạch truyện." : cinematicLibraryAnalysisAvailable ? "Thư viện tự chọn điểm cắt." : "Đã dùng điểm cắt an toàn."}`
             : `[Film edit] The timeline has ${countCinematicTimelineShots(acceptedScenes)} segments from ${acceptedScenes.length} clips and runs ${_.round(expectedRenderDuration, 1)} seconds. ${cinematicEditorialReviewAvailable ? "AI assisted with story continuity." : cinematicLibraryAnalysisAvailable ? "Libraries selected the cuts." : "Safe technical cuts were used."}`,
+          CINEMATIC_PROGRESS_STAGE.VIDEO,
         );
       appendLog(T.logRenderPlan(_.size(renderableScenes), expectedRenderDuration, !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl)));
 
@@ -4075,6 +4286,7 @@ export function useAutoVideoPipeline(
         activeRenderJobIdRef.current = jobId;
         await syncProject({
           ...slicedUpdatedProj,
+          storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
           generationCheckpoint: {
             intent: runIntent,
             phase: "rendering",
@@ -4138,6 +4350,7 @@ export function useAutoVideoPipeline(
             }
             const renderCandidateBase: VideoProject = {
               ...slicedUpdatedProj,
+              storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
               seo: _.defaultTo(seoData as VideoProject["seo"], undefined),
               thumbnails: _.defaultTo(thumbnailsList, undefined),
               renderedVideoUrl: statusData.url,
@@ -4167,7 +4380,6 @@ export function useAutoVideoPipeline(
               renderJobId: null,
               updatedAt: new Date().toISOString(),
             };
-            await syncProject(renderCompletedProj);
             setRenderedVideoUrl(statusData.url);
             appendCinematicLog(cinematicProgressMessages.VIDEO_READY, CINEMATIC_PROGRESS_STAGE.VIDEO);
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
@@ -4185,6 +4397,7 @@ export function useAutoVideoPipeline(
                     : `[Release] Film file was created with ${finalQc.blockingErrors.length} release-blocking issues.`,
             );
             appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
+            await syncProject(renderCompletedProj);
             continue;
           }
           if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) throw new Error(statusData.error || REFACTOR_CONSTANTS.ERR_RENDER_FAILED);
