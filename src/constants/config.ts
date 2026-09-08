@@ -1455,6 +1455,7 @@ export const CINEMATIC_EDIT_ANALYSIS_CONFIG = {
   EDITORIAL_REVIEW_ATTEMPTS: 2,
   FFMPEG_TIMEOUT_MS: 30000,
   MEDIA_WORKERS: 3,
+  DIALOGUE_PROMPT_PATTERN: /\b(?:speaks?|says?|dialogue|lip[ -]?sync|spoken line|voice line)\b|\b(?:nói|thoại|lời thoại)\b/i,
   LIBRARY_SCRIPT_PATH: "python_scripts/cinematic_edit_analyzer.py",
   LIBRARY_REQUEST_FILE_NAME: "library-analysis.json",
   LIBRARY_TIMEOUT_MS: 180000,

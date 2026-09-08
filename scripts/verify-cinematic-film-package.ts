@@ -37,10 +37,12 @@ const prompt = getCinematicFilmPackagePrompt("A courier must cross a flooded cit
 assert.match(prompt, /Write a complete, coherent and engaging film from the input/i);
 assert.match(prompt, /Make all creative choices yourself/i);
 assert.match(prompt, /language=English.*genre=cinematic_episode.*targetWords≈900.*exactScenes=30.*secondsPerScene=10/i);
-assert.match(prompt, /include only visible recurring-character IDs and exact scene dialogue/i);
+assert.match(prompt, /Include only characters visible in each scene and put exact spoken dialogue in subtitle/i);
+assert.match(prompt, /Write all screenplay, scene summaries, dialogue and subtitles in natural English/i);
+assert.match(prompt, /No extra views, panels, duplicate character, detached props/i);
 assert.match(prompt, /completionMarker must be the final property/i);
 assert.match(prompt, /return exactly 30 ordered, non-duplicated scenes/i);
-assert.match(prompt, /write each character prompt and referenceGenerationPrompt in English/i);
+assert.match(prompt, /character identity and referenceGenerationPrompt fields in English/i);
 assert.doesNotMatch(prompt, /escalating sequence arc|attack-counter tactics|exact defence|lateral tracking|dance-like fighting/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return the complete valid JSON again/i);

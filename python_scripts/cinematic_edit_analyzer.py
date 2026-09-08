@@ -397,12 +397,12 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
         if shot_end - shot_start < config.min_usable_seconds:
             continue
         segment_start, segment_end, score = _best_window(metrics, shot_start, shot_end, config)
-        if has_audio and protect_dialogue:
+        if has_audio:
             segment_start, segment_end = _protect_speech_window(
                 segment_start,
                 segment_end,
-                shot_start,
-                shot_end,
+                0.0,
+                duration,
                 ffmpeg_metrics["silenceRanges"],
             )
         if _overlaps(segment_start, segment_end, damaged_ranges):
@@ -420,6 +420,17 @@ def analyze_clip(clip: dict[str, Any], ffmpeg_path: str, config: AnalyzerConfig)
                 "libraryScore": round(score * config.score_scale, 2),
             }
         )
+    # Speech/sound can span camera cuts. Merge overlapping protected windows
+    # so they cannot replay the same words when selected consecutively.
+    merged_candidates: list[dict[str, Any]] = []
+    for candidate in candidates:
+        if merged_candidates and candidate["inSeconds"] <= merged_candidates[-1]["outSeconds"]:
+            previous = merged_candidates[-1]
+            previous["outSeconds"] = max(previous["outSeconds"], candidate["outSeconds"])
+            previous["containsDialogue"] = previous["containsDialogue"] or candidate["containsDialogue"]
+        else:
+            merged_candidates.append(candidate.copy())
+    candidates = merged_candidates
     warnings: list[str] = []
     if ffmpeg_metrics["blackRanges"]:
         warnings.append(WARNING_BLACK)

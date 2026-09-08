@@ -113,9 +113,9 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   assert.match(initialPrompt, /Language: Vietnamese/);
   assert.match(initialPrompt, /Make all creative and directorial choices yourself/i);
   assert.match(initialPrompt, /at least three connected shots without repeating content/i);
-  assert.match(initialPrompt, /story, continuity, character references, visual style and text settings/i);
-  assert.match(initialPrompt, /include supplied dialogue exactly once with its speaker/i);
-  assert.match(initialPrompt, /request no dialogue and no narration for a silent scene/i);
+  assert.match(initialPrompt, /Follow the supplied story and user settings/i);
+  assert.match(initialPrompt, /preserve the supplied dialogue exactly once/i);
+  assert.match(initialPrompt, /scene has no supplied dialogue, do not invent dialogue or narration/i);
   assert.match(initialPrompt, /Return valid raw JSON only/i);
   assert.match(initialPrompt, /artifactType.*requestId.*generationPrompt.*completionMarker/i);
   assert.doesNotMatch(initialPrompt, /whip-pans|action axis|contact point|decorative spinning|three to five unmistakable anchors/i);

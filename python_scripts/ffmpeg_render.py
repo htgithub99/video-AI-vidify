@@ -1515,11 +1515,13 @@ def main():
                 # not jump tens of decibels at edit points. Do not fade every
                 # generated take: repeated fades expose the 10-second clip
                 # boundaries and destroy continuous dialogue/room tone.
-                embedded_audio_filters = ["loudnorm=I=-20:TP=-2:LRA=11"]
-                if i == 0:
-                    embedded_audio_filters.insert(0, f"afade=t=in:st=0:d={fade_dur}")
-                if i == len(scenes) - 1:
-                    embedded_audio_filters.insert(0, f"afade=t=out:st={max(0, duration-fade_dur)}:d={fade_dur}")
+                # Native audio must use exactly the same source interval as
+                # picture. Fading unknown speech at either edge loses words.
+                embedded_audio_filters = [
+                    f"atrim=start={scene_trim_start}:duration={duration}",
+                    "asetpts=PTS-STARTPTS",
+                    "loudnorm=I=-20:TP=-2:LRA=11",
+                ]
                 af_effect = ",".join(embedded_audio_filters)
             elif audioPath:
                 cmd.extend(["-i", audioPath])

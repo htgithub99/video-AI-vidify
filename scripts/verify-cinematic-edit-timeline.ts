@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createCinematicEditTimeline } from "../src/services/cinematicEditTimelineService";
+import { createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
 import { GenerateType, StoryboardScene } from "../src/types";
 
 const scene = {
@@ -18,19 +18,12 @@ const scene = {
 } as StoryboardScene;
 
 const timeline = createCinematicEditTimeline([scene]);
-assert.equal(timeline.length, 3);
-assert.deepEqual(
-  timeline.map((item) => [item.sourceTrimStartSeconds, item.sourceTrimEndSeconds]),
-  [
-    [0.4, 7.2],
-    [3.1, 3.3],
-    [7.2, 0.4],
-  ],
-);
-assert.deepEqual(timeline.map((item) => item.duration), [2.4, 3.6, 2.4]);
-assert.equal(timeline[0].spokenDialogue, "");
-assert.equal(timeline[1].spokenDialogue, "One line");
-assert.equal(timeline[2].spokenDialogue, "");
+assert.equal(timeline.length, 1);
+assert.deepEqual(timeline.map((item) => [item.sourceTrimStartSeconds, item.sourceTrimEndSeconds]), [[0, 0]]);
+assert.deepEqual(timeline.map((item) => item.duration), [10]);
+assert.equal(timeline[0].spokenDialogue, "One line");
+assert.equal(hasCinematicSceneDialogue(scene), true);
+assert.equal(hasCinematicSceneDialogue({ generationPrompt: "The hero speaks once in Vietnamese with natural lip sync." }), true);
 const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 assert.match(pipelineSource, /expectedRenderDuration = nativeFilmAudio[\s\S]*_\.sumBy\(renderableScenes/);
 process.stdout.write(JSON.stringify({ passed: true, timelineShots: timeline.length }));

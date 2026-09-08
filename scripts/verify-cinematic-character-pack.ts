@@ -22,10 +22,12 @@ assert.deepEqual(automaticContext.referenceImages, []);
 
 const characterPrompt = getCinematicCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "");
 assert.match(characterPrompt, /referenceGenerationPrompt/);
-assert.match(characterPrompt, /Create the best character-reference prompt/i);
+assert.match(characterPrompt, /Create one effective Veo character-reference prompt/i);
 assert.match(characterPrompt, /Design the appearance yourself/i);
-assert.match(characterPrompt, /prompt and referenceGenerationPrompt in English/i);
-assert.match(characterPrompt, /each referenceGenerationPrompt shows only that character clearly/i);
+assert.match(characterPrompt, /identity fields and referenceGenerationPrompt in English/i);
+assert.match(characterPrompt, /exactly one character/i);
+assert.match(characterPrompt, /No extra views, panels, duplicate character, detached props/i);
+assert.doesNotMatch(characterPrompt, /front, three-quarter, side and back views|face close-up/i);
 assert.doesNotMatch(characterPrompt, /sourceIdentityEvidence|speciesPresentation|identityContinuityRisks|faceShape|timelineStages/i);
 assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.required, ["characters"]);
 assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.items.required, ["id", "name", "description", "referenceGenerationPrompt"]);

@@ -89,8 +89,8 @@ ${rawText}`;
 
 export const getGeneratedMediaLanguageDirective = (isVi: boolean): string =>
   isVi
-    ? `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Keep the technical image/video prompt in English, but every human-readable word rendered inside the scene (signs, screens, labels, documents, captions, UI, posters) MUST be natural Vietnamese with correct diacritics. If generated media contains speech, dialogue, narration, singing, lip-sync, or any audible human voice, it MUST be spoken exclusively in Vietnamese with natural Vietnamese pronunciation. Never render or speak English unless the scene script explicitly quotes an English term. Do not invent visible text or dialogue when the script does not require it.`
-    : `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Every human-readable word rendered inside the scene and every spoken or lip-synced line in generated media MUST be in natural English. Do not invent visible text or dialogue when the script does not require it.`;
+    ? `LANGUAGE: Write technical image/video prompts in English. Keep every required visible word and every spoken, narrated or lip-synced line in natural Vietnamese with correct diacritics, exactly following the source. Do not invent text or speech.`
+    : `LANGUAGE: Write technical image/video prompts in English. Keep every required visible word and every spoken, narrated or lip-synced line in natural English, exactly following the source. Do not invent text or speech.`;
 
 const PROMPT_DIRECTIVE_LABELS = { background: "BACKGROUND POLICY", text: "TEXT-IN-IMAGE POLICY", focus: "IMAGE FOCUS & COMPOSITION POLICY" } as const;
 
@@ -847,7 +847,7 @@ export const getCharacterAnalysisPrompt = (
   script: string,
   visualStyle: string = "",
   sourceContext: string = "",
-): string => `Identify at most three recurring, visually important characters and return concise reusable identity cards for quick-video consistency.
+): string => `Identify at most three recurring, visually important characters and create simple Veo-ready visual references.
 
 Authoritative source context:
 ${sourceContext || "No separate premise supplied; use only explicit script evidence."}
@@ -855,7 +855,7 @@ ${sourceContext || "No separate premise supplied; use only explicit script evide
 Target visual style:
 ${visualStyle || "Use concise style-compatible identity anchors."}
 
-Use only basic stable details: name, age, gender/species, body type, face, hair, skin tone, exact outfit, shoes, accessories, colors and signature equipment. Exclude narrators, crowds, one-off mentions, current emotion, location and temporary action.
+Keep only stable identity details that help recognition. Exclude narrators, crowds, one-off mentions, current emotion, location and temporary action. Design unspecified appearance freely.
 
 Write each referenceGenerationPrompt in English using this direction:
 ${CHARACTER_REFERENCE_SHEET_DIRECTION}

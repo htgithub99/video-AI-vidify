@@ -4033,6 +4033,12 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   let libraryAnalysisAvailable = false;
   try {
     for (const batch of _.chunk(scenes, 3)) technicalDecisions.push(...(await Promise.all(_.map(batch, analyzeScene))));
+    for (const decision of technicalDecisions) {
+      if (decision.hasAudio && decision.takeDecision !== "omit") {
+        decision.trimStartSeconds = 0;
+        decision.trimEndSeconds = 0;
+      }
+    }
     analyzedDecisions = technicalDecisions;
     const libraryResult = await analyzeCinematicClipsWithLibraries(
       _.map(
@@ -4044,7 +4050,9 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
             path: _.toString(decision.sourcePath),
             hasAudio: Boolean(decision.hasAudio),
             protectDialogue:
-              _.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene?.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene?.spokenDialogue))),
+              (_.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene?.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene?.spokenDialogue)))) ||
+              !_.isEmpty(_.trim(_.toString(scene?.subtitle))) ||
+              CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_PROMPT_PATTERN.test(_.toString(scene?.generationPrompt)),
           };
         },
       ),
@@ -4062,6 +4070,9 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         sourcePath: technical.sourcePath,
         contactSheetData: technical.contactSheetData,
         contactSheetPath: technical.contactSheetPath,
+        trimStartSeconds: technical.trimStartSeconds,
+        trimEndSeconds: technical.trimEndSeconds,
+        takeDecision: technical.takeDecision,
         warnings: _.uniq([..._.castArray(technical.warnings), ..._.castArray(library.warnings)]),
         reason: _.join(_.compact([library.reason, technical.reason]), ";"),
       };
@@ -4211,8 +4222,8 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const decisions = _.map(analyzedDecisions, (technical) => {
       const editorial = editorialByScene[technical.sceneId];
       if (!editorial) return _.omit(technical, ["contactSheetData", "contactSheetPath"]);
-      const technicalUsableStart = _.toNumber(technical.trimStartSeconds);
-      const technicalUsableEnd = _.max([technicalUsableStart, technical.duration - _.toNumber(technical.trimEndSeconds)]) || technical.duration;
+      const technicalUsableStart = technical.hasAudio ? 0 : _.toNumber(technical.trimStartSeconds);
+      const technicalUsableEnd = technical.hasAudio ? technical.duration : (_.max([technicalUsableStart, technical.duration - _.toNumber(technical.trimEndSeconds)]) || technical.duration);
       const librarySegments = _.castArray(technical.candidateSegments || technical.segments);
       const editorialSegments = _.uniqBy(
         _.compact(
@@ -4242,17 +4253,16 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         "segmentId",
       );
       const segments = _.isEmpty(editorialSegments) ? librarySegments : editorialSegments;
-      const editorialStart = _.min(_.map(segments, (segment) => _.toNumber(segment.inSeconds))) ?? technicalUsableStart;
-      const editorialOut = _.max(_.map(segments, (segment) => _.toNumber(segment.outSeconds))) ?? technicalUsableEnd;
-      const trimStartSeconds = _.max([technical.trimStartSeconds, editorialStart]) || 0;
-      const trimEndSeconds = _.max([technical.trimEndSeconds, technical.duration - editorialOut]) || 0;
-      const usableDuration = technical.duration - trimStartSeconds - trimEndSeconds;
-      const editorialTakeDecision = _.lt(usableDuration, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS) ? technical.takeDecision : editorial.takeDecision;
+      const selectedStart = _.minBy(segments, "inSeconds")?.inSeconds;
+      const selectedEnd = _.maxBy(segments, "outSeconds")?.outSeconds;
+      const validSelection = Number.isFinite(selectedStart) && Number.isFinite(selectedEnd) &&
+        selectedStart >= technicalUsableStart && selectedEnd <= technicalUsableEnd &&
+        selectedEnd - selectedStart >= CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS;
       return {
         ..._.omit(technical, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
-        trimStartSeconds,
-        trimEndSeconds,
-        takeDecision: _.isEqual(technical.takeDecision, "omit") ? "omit" : editorialTakeDecision,
+        trimStartSeconds: validSelection ? selectedStart : technicalUsableStart,
+        trimEndSeconds: validSelection ? technical.duration - selectedEnd : technical.duration - technicalUsableEnd,
+        takeDecision: technical.takeDecision,
         recommendedTransition: editorial.recommendedTransition,
         continuityScore: editorial.continuityScore,
         storyClarityScore: editorial.storyClarityScore,

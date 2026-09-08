@@ -211,6 +211,7 @@ import {
   applyCinematicClipAnalysisDecisions,
   countCinematicTimelineShots,
   createCinematicEditTimeline,
+  hasCinematicSceneDialogue,
 } from "../services/cinematicEditTimelineService";
 import { getBlockingCinematicPromptPreflightIssues } from "../services/cinematicPromptPreflightService";
 import { Lang } from "../lib/lang";
@@ -3794,7 +3795,7 @@ export function useAutoVideoPipeline(
       if (nativeFilmAudio) {
         realScenes = _.map(realScenes as StoryboardScene[], (scene) => ({
           ...scene,
-          subtitle: _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode) ? _.trim(scene.spokenDialogue) : REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          subtitle: hasCinematicSceneDialogue(scene) ? _.trim(scene.spokenDialogue || scene.subtitle) : REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           subtitleCues: [],
         }));
       } else {
@@ -3843,6 +3844,8 @@ export function useAutoVideoPipeline(
               _.pick(scene, [
                 "id",
                 "script",
+                "subtitle",
+                "generationPrompt",
                 "assetUrl",
                 "assetType",
                 "visualIntent",
@@ -3887,6 +3890,8 @@ export function useAutoVideoPipeline(
                 _.pick(scene, [
                   "id",
                   "script",
+                  "subtitle",
+                  "generationPrompt",
                   "assetUrl",
                   "assetType",
                   "visualIntent",
@@ -3931,7 +3936,7 @@ export function useAutoVideoPipeline(
               const sourceDuration = _.toNumber(scene.duration);
               const start = _.toNumber(scene.sourceTrimStartSeconds);
               const end = _.max([start, sourceDuration - _.toNumber(scene.sourceTrimEndSeconds)]) || sourceDuration;
-              const dialogueStatus = _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode)
+              const dialogueStatus = hasCinematicSceneDialogue(scene)
                 ? scene.cinematicDialogueDetected
                   ? `${_.round(scene.cinematicDialogueCoverageScore || 0)}%`
                   : config.language === ProjectLanguage.VI
