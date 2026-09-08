@@ -43,10 +43,19 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
 }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
   const isVi = _.isEqual(currentLang, AppLanguage.VI) || _.isEqual(currentLang, "vi") || _.startsWith(_.toLower(_.toString(currentLang)), "vi");
-  const cinematicPhaseIndex = stepProgress <= 20 ? 1 : stepProgress <= 45 ? 2 : stepProgress <= 75 ? 3 : stepProgress <= 90 ? 4 : 5;
+  const cinematicPhaseIndex =
+    currentStepIndex > 0
+      ? Math.min(Math.max(currentStepIndex, 1), 4)
+      : stepProgress <= 25
+        ? 1
+        : stepProgress <= 50
+          ? 2
+          : stepProgress <= 75
+            ? 3
+            : 4;
   const cinematicPhaseLabels = isVi
-    ? ["Kịch bản & nhân vật", "Phân cảnh & câu lệnh", "Tạo clip", "Chọn cảnh & dựng phim", "Kết xuất & hoàn tất"]
-    : ["Script & characters", "Storyboard & prompts", "Generate clips", "Select takes & edit", "Render & finish"];
+    ? ["Kịch bản & nhân vật", "Phân cảnh & câu lệnh", "Tham chiếu & ảnh bìa", "Tạo clip & dựng phim"]
+    : ["Script & characters", "Storyboard & prompts", "References & thumbnail", "Generate clips & finish"];
 
   return (
     <div
@@ -124,7 +133,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
           <div className={cn("flex justify-between items-center text-xs font-mono font-bold")}>
             <span className={cn("text-amber-400 flex items-center gap-1.5 font-bold")}>
               <Activity className={cn("w-3.5 h-3.5 text-amber-400", { "animate-spin": isProcessing })} />
-              {cinematicMode ? `${cinematicPhaseLabels[cinematicPhaseIndex - 1]} [${cinematicPhaseIndex}/5]` : `${T.progressNodeLabel} [${currentStepIndex}/4]`}
+              {cinematicMode ? `${cinematicPhaseLabels[cinematicPhaseIndex - 1]} [${cinematicPhaseIndex}/4]` : `${T.progressNodeLabel} [${currentStepIndex}/4]`}
             </span>
             <span className={cn("text-emerald-400 font-black tracking-wider text-sm")}>{stepProgress}%</span>
           </div>

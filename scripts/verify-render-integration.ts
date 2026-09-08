@@ -4,7 +4,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { renderFFmpegVideo } from "../src/server/utils/ffmpegRender.ts";
 import { VideoQuality } from "../src/constants/enums.ts";
-import { AudioCueType, SubtitleMode } from "../src/types.ts";
+import { AudioCueType, GenerateType, SubtitleMode } from "../src/types.ts";
 import { readVisualQaAssets } from "../src/server/services/visualQaMediaService.ts";
 
 const execFileAsync = promisify(execFile);
@@ -79,12 +79,37 @@ const sceneAudioOutputUrl = await renderFFmpegVideo({
   aspectRatio: "16:9",
   scenes: renderScenes.map(scene => ({ ...scene, audioBase64: createSilentWav(1) })),
 });
+const nativeSourcePath = path.join(PROJECT_DIRECTORY, "native-source.mp4");
+fs.mkdirSync(PROJECT_DIRECTORY, { recursive: true });
+await execFileAsync("ffmpeg", [
+  "-y", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=24:d=6",
+  "-f", "lavfi", "-i", "sine=frequency=440:duration=6", "-shortest", "-c:v", "mpeg4", "-c:a", "aac", nativeSourcePath,
+]);
+const nativeSourceUrl = `/${path.relative(process.cwd(), nativeSourcePath).replaceAll(path.sep, "/")}`;
+const nativeAudioOutputUrl = await renderFFmpegVideo({
+  projectId: PROJECT_ID,
+  quality: VideoQuality.LOW,
+  aspectRatio: "16:9",
+  preserveVideoAudio: true,
+  expectedSourceSceneIds: ["native_1", "native_2"],
+  expectedDurationSeconds: 4,
+  scenes: [
+    { id: "native_1", imageUrl: nativeSourceUrl, assetType: GenerateType.Video, duration: 2, sourceTrimStartSeconds: 0.5, sourceTrimEndSeconds: 3.5, cinematicAudioBridgeMode: "ambience", cinematicDialogueDetected: false },
+    { id: "native_2", imageUrl: nativeSourceUrl, assetType: GenerateType.Video, duration: 2, sourceTrimStartSeconds: 3, sourceTrimEndSeconds: 1, cinematicAudioBridgeMode: "hard", cinematicDialogueDetected: true },
+  ],
+});
+const nativeAudioOutputPath = path.resolve(process.cwd(), nativeAudioOutputUrl.replace(/^\//, ""));
+const { stdout: nativeAudioProbeOutput } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_type", "-of", "json", nativeAudioOutputPath]);
+const nativeAudioProbe = JSON.parse(nativeAudioProbeOutput);
+const nativeAudioDuration = Number(nativeAudioProbe.format?.duration || 0);
+if (nativeAudioDuration < 3.95 || nativeAudioDuration > 4.05) throw new Error(`Native-audio edit drifted: ${nativeAudioDuration}`);
+if (!nativeAudioProbe.streams?.some((stream: any) => stream.codec_type === "audio")) throw new Error("Native-audio edit lost production sound");
 const sceneAudioOutputPath = path.resolve(process.cwd(), sceneAudioOutputUrl.replace(/^\//, ""));
 if (!fs.existsSync(sceneAudioOutputPath) || fs.statSync(sceneAudioOutputPath).size === 0) throw new Error("Scene-audio fallback render is missing");
 const { stdout: sceneAudioProbeOutput } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_type", "-of", "json", sceneAudioOutputPath]);
 const sceneAudioProbe = JSON.parse(sceneAudioProbeOutput);
 const sceneAudioDuration = Number(sceneAudioProbe.format?.duration || 0);
-if (sceneAudioDuration < 2.8 || sceneAudioDuration > 3.2) throw new Error(`Scene-audio timeline drifted: ${sceneAudioDuration}`);
+if (sceneAudioDuration < 2.95 || sceneAudioDuration > 3.05) throw new Error(`Scene-audio timeline drifted: ${sceneAudioDuration}`);
 if (!sceneAudioProbe.streams?.some((stream: any) => stream.codec_type === "audio")) throw new Error("Scene-audio fallback lost its audio stream");
 const outputPath = path.resolve(process.cwd(), outputUrl.replace(/^\//, ""));
 if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) throw new Error("Rendered MP4 is missing or empty");
@@ -102,4 +127,4 @@ if (!probe.streams?.some((stream: any) => stream.codec_type === "subtitle" && st
 const visualQaFrames = await readVisualQaAssets(outputUrl);
 if (visualQaFrames.length === 0 || visualQaFrames.some(frame => frame.mimeType !== "image/jpeg" || frame.data.length === 0)) throw new Error("Rendered video frames are unavailable for Vision QA");
 removeTestProject();
-process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, sceneAudioDuration, meanVolume, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));
+process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, sceneAudioDuration, nativeAudioDuration, meanVolume, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));

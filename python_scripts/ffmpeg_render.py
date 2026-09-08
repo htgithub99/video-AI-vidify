@@ -99,6 +99,10 @@ class FFMPEG_CONSTANTS:
     KEY_SUBTITLE_CUE_DURATION = "durationSeconds"
     KEY_SUBTITLE_MODE = "subtitleMode"
     KEY_AUDIO_TRACKS = "audioTracks"
+    KEY_CINEMATIC_AUDIO_BRIDGE_MODE = "cinematicAudioBridgeMode"
+    KEY_CINEMATIC_DIALOGUE_DETECTED = "cinematicDialogueDetected"
+    AUDIO_BRIDGE_AMBIENCE = "ambience"
+    AUDIO_EDGE_SMOOTH_SECONDS = 0.04
     KEY_SAFE_PROFILE = "safeProfile"
     SUBTITLE_MODE_BURN_IN = "burn_in"
     SUBTITLE_MODE_TRACK = "track"
@@ -1495,6 +1499,8 @@ def main():
             scene_trim_end = max(0.0, float(scenes[i].get("sourceTrimEndSeconds", video_trim_end) or 0))
             scene_source_crop = str(scenes[i].get("sourceCrop") or "").strip()
             use_embedded_audio = preserve_video_audio and is_video and media_has_audio_stream(ffmpegCmd, mediaPath)
+            audio_bridge_mode = str(scenes[i].get(FFMPEG_CONSTANTS.KEY_CINEMATIC_AUDIO_BRIDGE_MODE) or FFMPEG_CONSTANTS.EMPTY_STRING)
+            contains_dialogue = bool(scenes[i].get(FFMPEG_CONSTANTS.KEY_CINEMATIC_DIALOGUE_DETECTED))
             
             fade_dur = min(0.5, duration / 3.0)
             fade_dur = max(fade_dur, 0.15)
@@ -1520,8 +1526,14 @@ def main():
                 embedded_audio_filters = [
                     f"atrim=start={scene_trim_start}:duration={duration}",
                     "asetpts=PTS-STARTPTS",
-                    "loudnorm=I=-20:TP=-2:LRA=11",
+                    "aresample=48000:async=1:first_pts=0",
                 ]
+                if audio_bridge_mode == FFMPEG_CONSTANTS.AUDIO_BRIDGE_AMBIENCE and not contains_dialogue:
+                    smooth_duration = min(FFMPEG_CONSTANTS.AUDIO_EDGE_SMOOTH_SECONDS, duration / 4.0)
+                    embedded_audio_filters.extend([
+                        f"afade=t=in:st=0:d={smooth_duration}",
+                        f"afade=t=out:st={max(0, duration - smooth_duration)}:d={smooth_duration}",
+                    ])
                 af_effect = ",".join(embedded_audio_filters)
             elif audioPath:
                 cmd.extend(["-i", audioPath])
@@ -1849,7 +1861,7 @@ def main():
                     add_subtitle_output(normalizeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
                 else:
                     normalizeAudioCmd.extend(["-c:v", FFMPEG_CONSTANTS.COPY_CODEC])
-                normalizeAudioCmd.append(finalOutputPath)
+                normalizeAudioCmd.extend(["-t", str(expected_output_duration), finalOutputPath])
                 subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, cwd=tempDir)
             else:
                 if subtitle_path:

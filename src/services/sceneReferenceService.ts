@@ -46,6 +46,7 @@ export interface SceneGenerationContext {
   prompt: string;
   referenceImages: string[];
   referenceImageNames: string[];
+  referenceCharacterNames: string[];
   referenceRoles: string[];
 }
 
@@ -228,25 +229,31 @@ export const createSceneGenerationContext = (
 ): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
-  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceImageNames: [], referenceRoles: [] };
+  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceImageNames: [], referenceCharacterNames: [], referenceRoles: [] };
 };
 
 export const resolveCinematicSceneCharacterReferences = (
   scene: StoryboardScene,
   characters: CharacterConfig[],
-): Pick<SceneGenerationContext, "characterIds" | "referenceImages" | "referenceImageNames" | "referenceRoles"> => {
-  const characterIds = resolveSceneCharacterIds(scene, characters);
+): Pick<SceneGenerationContext, "characterIds" | "referenceImages" | "referenceImageNames" | "referenceCharacterNames" | "referenceRoles"> => {
+  const validCharacterIds = new Set(_.map(characters, "id"));
   const charactersById = _.keyBy(characters, "id");
+  const characterIds = _.isArray(scene.characterIds)
+    ? _.filter(
+        _.uniq(scene.characterIds),
+        (characterId) => validCharacterIds.has(characterId) && !isCharacterExplicitlyExcluded(_.join(_.compact([scene.generationPrompt, scene.prompt, scene.script, scene.subtitle]), " "), charactersById[characterId]),
+      )
+    : resolveSceneCharacterIds(scene, characters);
   const visibleCharacters = _.compact(_.map(characterIds, (characterId) => charactersById[characterId]));
   const referenceCharacters = _.take(
-    _.filter(visibleCharacters, (character) => !_.isEmpty(_.first(_.filter(character.images, _.isString)))),
+    _.filter(visibleCharacters, (character) => !_.isEmpty(_.trim(character.flowCharacterName))),
     SCENE_REFERENCE_CONFIG.MAX_IMAGES,
   );
-  const referenceImages = _.map(referenceCharacters, (character) => _.first(_.filter(character.images, _.isString))!);
   return {
     characterIds,
-    referenceImages,
-    referenceImageNames: _.map(referenceCharacters, "name"),
-    referenceRoles: _.map(referenceImages, () => SCENE_REFERENCE_CONFIG.CHARACTER_ROLE),
+    referenceImages: [],
+    referenceImageNames: [],
+    referenceCharacterNames: _.compact(_.map(referenceCharacters, (character) => _.trim(character.flowCharacterName))),
+    referenceRoles: [],
   };
 };

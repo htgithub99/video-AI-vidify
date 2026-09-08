@@ -28,21 +28,6 @@ const cleanupDirectory = (directoryPath: string): void => {
   }
 };
 
-const cleanupAbandonedRenderDirectories = (activeDirectory: string): void => {
-  const dataDirectory = path.resolve(getDataDirectory());
-  try {
-    _.forEach(fs.readdirSync(dataDirectory, { withFileTypes: true }), (entry) => {
-      if (!entry.isDirectory() || !_.startsWith(entry.name, FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX)) return;
-      const candidate = path.resolve(dataDirectory, entry.name);
-      if (!_.isEqual(candidate, activeDirectory) && _.isEqual(path.dirname(candidate), dataDirectory)) {
-        cleanupDirectory(candidate);
-      }
-    });
-  } catch (error) {
-    logger.warn(FFMPEG_RENDER_CONSTANTS.LOG_CLEANUP_WARNING, dataDirectory, error);
-  }
-};
-
 const getFirstValue = <T>(values: Array<T | undefined>): T | undefined => _.find(values, (value) => !_.isNil(value));
 
 const BASE64_DATA_PREFIX = /^data:[\w.+-]+\/[\w.+-]+;base64,/i;
@@ -86,6 +71,8 @@ export interface FFmpegRenderOptions {
     sourceTrimStartSeconds?: number;
     sourceTrimEndSeconds?: number;
     sourceCrop?: string;
+    cinematicAudioBridgeMode?: "hard" | "j_cut" | "l_cut" | "ambience";
+    cinematicDialogueDetected?: boolean;
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;
@@ -188,7 +175,6 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
   }
 
   const tempDir = path.join(getDataDirectory(), `${FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX}${uuidv4()}`);
-  cleanupAbandonedRenderDirectories(tempDir);
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }

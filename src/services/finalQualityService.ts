@@ -1,12 +1,30 @@
 import _ from "lodash";
 import { AssetAcceptance, FinalQualityReport, ManualReviewItem, ManualReviewStatus, QaStatus, SceneAssetStatus, SubtitleMode, VideoProject } from "../types";
 import { getFinalCompletionReadiness } from "./pipelineCompletionPolicyService";
+import { hasSceneAsset } from "./projectImageGenerationService";
+
+// A final multimodal review may be unavailable (for example when the optional
+// frame/audio extraction or AI review service is offline).  That must not turn
+// an otherwise rendered film into a failed/partial pipeline: the file is still
+// usable and the missing review is advisory only.
+const FINAL_QA_EVIDENCE_UNAVAILABLE_PATTERN = /(?:no chronological frames|rendered audio mix.*(?:supplied|provided)|final[_ ]?qa.*(?:unavailable|missing)|visual[_ ]?qa.*unavailable)/i;
+
+const getUsableFinalQaBlockingErrors = (project: VideoProject): string[] =>
+  _.filter(
+    _.defaultTo(project.finalMultimodalQa?.blockingErrors, []),
+    (error) => !FINAL_QA_EVIDENCE_UNAVAILABLE_PATTERN.test(_.toString(error)),
+  );
+
+const requiresSceneReview = (scene: VideoProject["storyboard"][number]): boolean =>
+  !hasSceneAsset(scene) ||
+  scene.acceptance === AssetAcceptance.Rejected ||
+  _.includes([SceneAssetStatus.Rejected, SceneAssetStatus.Failed], scene.assetStatus);
 
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
 
   const scenes: ManualReviewItem[] = _.map(
-    _.filter(project.storyboard || [], (scene) => scene.assetStatus !== SceneAssetStatus.Approved || scene.acceptance === AssetAcceptance.Rejected),
+    _.filter(project.storyboard || [], requiresSceneReview),
     (scene) => ({
       id: `review_scene_${scene.id}`,
       scope: "scene" as const,
@@ -75,14 +93,15 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
 export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport => {
   const subtitlesEnabled = project.config?.subtitleMode !== SubtitleMode.None;
   const missingAssets = _.size(_.filter(project.storyboard, (scene) => _.isEmpty(scene.assetUrl)));
-  const unapprovedScenes = _.size(_.filter(project.storyboard, (scene) => scene.acceptance === AssetAcceptance.Rejected || scene.assetStatus !== SceneAssetStatus.Approved));
+  const unapprovedScenes = _.size(_.filter(project.storyboard, requiresSceneReview));
   const unapprovedThumbnails = _.size(_.filter(project.thumbnails, (thumbnail) => thumbnail.acceptance === AssetAcceptance.Rejected));
   const audioBlockingErrors = _.size(project.voiceConfig.audioQa?.blockingErrors);
   const subtitleBlockingErrors = subtitlesEnabled ? _.size(project.subtitleQa?.blockingErrors) : 0;
   const completionReadiness = getFinalCompletionReadiness(project);
+  const finalQaBlockingErrors = getUsableFinalQaBlockingErrors(project);
   const blockingErrors = _.uniq([
     ...completionReadiness.blockers,
-    ...(project.finalMultimodalQa?.reviewAvailable === false ? [] : _.defaultTo(project.finalMultimodalQa?.blockingErrors, [])),
+    ...(project.finalMultimodalQa?.reviewAvailable === false ? [] : finalQaBlockingErrors),
   ]);
 
   const warnings = _.uniq(
@@ -100,6 +119,9 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
         _.some(project.thumbnails, (thumbnail) => thumbnail.acceptance === AssetAcceptance.AcceptedWithWarning) ? ["thumbnail_quality_below_target"] : [],
         !project.finalMultimodalQa ? ["final_multimodal_qa_missing"] : [],
         project.finalMultimodalQa?.warnings,
+        _.some(project.finalMultimodalQa?.blockingErrors, (error) => FINAL_QA_EVIDENCE_UNAVAILABLE_PATTERN.test(_.toString(error)))
+          ? ["final_multimodal_qa_unavailable"]
+          : [],
         unapprovedScenes > 0 ? ["scene_quality_review_recommended"] : [],
         unapprovedThumbnails > 0 ? ["thumbnail_quality_review_recommended"] : [],
         project.voiceConfig.audioQa && !project.voiceConfig.audioQa.passed ? ["audio_quality_review_recommended"] : [],

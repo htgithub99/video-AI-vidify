@@ -506,6 +506,7 @@ export const ROUTER_PATHS = {
   REPAIR_VIDEO_PROMPT: "/repair-video-prompt",
   REPAIR_VISUAL_PROMPT: "/repair-visual-prompt",
   EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame",
+  ENSURE_FLOW_CHARACTERS: "/ensure-flow-characters",
   REFERENCE_ASSETS: "/reference-assets/:projectId/:group",
   REFERENCE_AUDIO: "/reference-audio/:projectId",
   SELECT_VIDEO_SCENES: "/select-video-scenes",

@@ -17,7 +17,8 @@ const imageEngineOptions = readSource("src/components/auto-video/autoVideoGenera
 
 assert.doesNotMatch(autoPipeline, /generateCharacterReferenceLibrary|includeCharacterImages/);
 assert.match(sceneReferences, /createSceneGenerationContext[\s\S]*referenceImages: \[\]/);
-assert.match(sceneReferences, /resolveCinematicSceneCharacterReferences[\s\S]*character\.images/);
+assert.match(sceneReferences, /resolveCinematicSceneCharacterReferences[\s\S]*flowCharacterName/);
+assert.doesNotMatch(sceneReferences, /resolveCinematicSceneCharacterReferences[\s\S]*character\.images/);
 assert.doesNotMatch(thumbnails, /character\.images|includeCharacterImages/);
 assert.match(selectors, /ModelMenu = ["']\[data-test-id=\\?"gem-mode-menu\\?"\]["']/);
 assert.match(selectors, /ModelOption = ["']gem-menu-item\[role=\\?"menuitem\\?"\]\[data-test-id\^=\\?"bard-mode-option-\\?"\]["']/);
@@ -63,7 +64,7 @@ assert.match(imageGeneration, /const reportMissingResults/);
 assert.match(imageGeneration, /PROJECT_IMAGE_BATCH_INCOMPLETE/);
 assert.match(autoPipeline, /failedScene\.assetStatus = SceneAssetStatus\.Failed/);
 assert.match(autoPipeline, /const completedThumbnailCount = _.size/);
-assert.match(autoPipeline, /_.concat\(sceneBatchItems, unifiedThumbnailItems\)/);
+assert.match(autoPipeline, /\[\.\.\.sceneBatchItems, \.\.\.unifiedThumbnailItems\]/);
 assert.match(projectController, /Boolean\(newProject\.allowAudioCleanup\)/);
 assert.match(imageEngineOptions, /ENGINE_LABS_SANDBOX[\s\S]*ENGINE_VEO3[\s\S]*ENGINE_IMAGEN/);
 

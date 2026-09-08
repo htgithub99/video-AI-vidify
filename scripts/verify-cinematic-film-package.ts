@@ -42,8 +42,10 @@ assert.match(prompt, /language=English.*genre=cinematic_episode.*targetWords≈9
 assert.match(prompt, /Include every character who is visibly present in each scene in characterIds/i);
 assert.match(prompt, /exclude names that are absent, off-screen or only mentioned/i);
 assert.match(prompt, /Write all screenplay, scene summaries, dialogue and subtitles in natural English/i);
-assert.match(prompt, /large full-body front and back views/i);
-assert.match(prompt, /exact character name once/i);
+assert.match(prompt, /reusable Flow Character/i);
+assert.match(prompt, /Show only that character/i);
+assert.match(prompt, /full body in a natural three-quarter standing view/i);
+assert.match(prompt, /exact character name/i);
 assert.match(prompt, /completionMarker must be the final property/i);
 assert.match(prompt, /return exactly 30 ordered, non-duplicated scenes/i);
 assert.match(prompt, /character identity and referenceGenerationPrompt fields in English/i);
@@ -52,8 +54,10 @@ assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return the complete valid JSON again/i);
 
 const videoDirectorPrompt = getCinematicVideoPlanningPrompt("[]", "[]", "", "", "", 10);
-assert.match(videoDirectorPrompt, /Name every visibly present recurring character exactly as supplied/i);
+assert.match(videoDirectorPrompt, /restate each visible recurring character's exact supplied name/i);
 assert.match(videoDirectorPrompt, /omit absent and off-screen characters/i);
+assert.match(videoDirectorPrompt, /separate starting position, action, weapon or prop, and reaction/i);
+assert.match(videoDirectorPrompt, /never merge, swap, replace or duplicate identities/i);
 
 const cinematicThumbnailPrompt = getCinematicThumbnailPrompt({
   requestId: "run:thumbnails",
@@ -128,10 +132,10 @@ assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, 16);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS, 24000);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_WORKER_COUNT, 1);
 assert.deepEqual(Object.values(CINEMATIC_ROOM_STAGE), ["film-planning-room", "film-planning-room", "film-planning-room", "video-room"]);
-assert.match(CINEMATIC_PROGRESS_MESSAGES.vi.THUMBNAIL_START, /ảnh tham chiếu nhân vật và ảnh bìa/i);
-assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START, /Bước 3\/4.*ảnh tham chiếu/i);
-assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY, /đã được tạo và lưu/i);
-assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL, /chưa tạo được/i);
+assert.match(CINEMATIC_PROGRESS_MESSAGES.vi.THUMBNAIL_START, /Flow Characters.*ảnh bìa/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START, /Bước 3\/4.*Flow.*Character/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY, /Flow Character.*dùng lại/i);
+assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL, /Flow Character.*chưa hoàn tất/i);
 
 const aiThumbnailPrompt = "AI-authored key-art prompt preserved byte-for-byte.\n";
 const aiThumbnail = {
@@ -173,7 +177,8 @@ assert.doesNotMatch(controllerSource, /getCinematicNarrativePlanPrompt/);
 assert.match(pipelineSource, /const shouldAnalyzeCharacters\s*=\s*!isCinematicPipeline/);
 assert.match(pipelineSource, /requiresCinematicVisualPromptLanguageUpgrade/);
 assert.match(pipelineSource, /cinematicScriptArtifacts: scriptData\.cinematicScriptArtifacts \|\| newProj\.cinematicScriptArtifacts/);
-assert.match(pipelineSource, /const characterReferencesComplete = _\.every/);
+assert.match(pipelineSource, /const characterReferencesComplete = Boolean/);
+assert.match(pipelineSource, /PIPELINE_ENSURE_FLOW_CHARACTERS/);
 assert.match(pipelineSource, /CINEMATIC_PLANNING_MESSAGES\.VI_CHARACTER_PACK_PARTIAL/);
 assert.match(pipelineSource, /PIPELINE_CLOSE_CHAT_PLANNING_ROOMS/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);
@@ -202,10 +207,12 @@ assert.match(episodeServiceSource, /GenerateType\.Video\) \? _\.toString\(scene\
 assert.match(imageGeneratorSource, /itemVisualConfig\.preserveAiPromptText[\s\S]*item\.prompt \|\| ""/);
 assert.match(imageGeneratorSource, /PROVIDER_REJECTION_PATTERN/);
 assert.match(imageGeneratorSource, /image_generation_rejected/);
+assert.match(imageGeneratorSource, /attachFlowCharactersByName/);
+assert.match(imageGeneratorSource, /ensureFlowCharacters/);
 assert.match(imageGeneratorSource, /if \(grokBrowser\?\.isConnected\(\)\) await grokBrowser\.close/);
 assert.match(
   pipelineSource,
-  /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*PIPELINE_CLOSE_CHAT_PLANNING_ROOMS[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/,
+  /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*closeCompletedPlanningWorkers\(Object\.values\(CINEMATIC_ROOM_STAGE\)\)[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/,
 );
 assert.match(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, /scenes:count_mismatch/);
 assert.match(controllerSource, /SCENE_COUNT_MISMATCH_TEMPLATE/);

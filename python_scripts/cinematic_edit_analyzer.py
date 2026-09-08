@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import difflib
 import json
 import math
 import re
 import subprocess
 import sys
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +38,7 @@ TAKE_OMIT = "omit"
 SHOT_ROLE_MASTER = "master"
 TRANSITION_CUT = "cut"
 AUDIO_BRIDGE_HARD = "hard"
+AUDIO_BRIDGE_AMBIENCE = "ambience"
 WARNING_CLIP_MISSING = "clip_missing"
 WARNING_INVALID_DURATION = "invalid_duration"
 WARNING_BLACK = "black_frames_detected"
@@ -45,10 +48,14 @@ WARNING_LOW_SHARPNESS = "low_sharpness"
 WARNING_LOW_MOTION = "low_motion"
 WARNING_DUPLICATE_FRAMES = "duplicate_frames"
 WARNING_SIMILAR_CLIP = "possible_repeated_visual_content"
+WARNING_REPEATED_CLIP_OMITTED = "repeated_visual_content_omitted"
+WARNING_DIALOGUE_MISMATCH = "dialogue_does_not_match_screenplay"
 REASON_MISSING = "clip_missing"
 REASON_INVALID = "invalid_duration"
 REASON_UNUSABLE = "insufficient_usable_duration_after_library_analysis"
 REASON_LIBRARY = "library_selected_clean_visual_span"
+REASON_REPEATED = "library_omitted_near_exact_repeated_clip"
+REASON_DIALOGUE_MISMATCH = "library_omitted_wrong_or_repeated_dialogue"
 EMPTY_TEXT = ""
 
 
@@ -96,6 +103,9 @@ class AnalyzerConfig:
     exposure_midpoint: float
     dialogue_silence_ratio: float
     dialogue_context_seconds: float
+    dialogue_text_match_threshold: float
+    dialogue_sequence_match_weight: float
+    dialogue_token_match_weight: float
     whisper_model: str
     whisper_device: str
     whisper_compute_type: str
@@ -107,6 +117,14 @@ class AnalyzerConfig:
     score_scale: float
     min_sample_fps: float
     duplicate_clip_similarity_threshold: float
+    duplicate_clip_perceptual_threshold: float
+    duplicate_clip_auto_omit_threshold: float
+    internal_segment_similarity_threshold: float
+    silent_selection_ratio: float
+    max_selected_segments: int
+    segment_merge_gap_seconds: float
+    perceptual_hash_size: int
+    perceptual_sequence_samples: int
     max_workers: int
 
     @classmethod
@@ -214,6 +232,7 @@ def _frame_metrics(video_path: str, config: AnalyzerConfig) -> dict[str, Any]:
     luma: list[float] = []
     motion: list[float] = []
     content_change: list[float] = []
+    perceptual_hashes: list[int] = []
     previous_gray: np.ndarray | None = None
     previous_hist: np.ndarray | None = None
     histogram_sum: np.ndarray | None = None
@@ -237,6 +256,13 @@ def _frame_metrics(video_path: str, config: AnalyzerConfig) -> dict[str, Any]:
         luma.append(float(np.mean(gray)))
         motion.append(0.0 if previous_gray is None else float(np.mean(cv2.absdiff(gray, previous_gray))))
         content_change.append(0.0 if previous_hist is None else float(cv2.compareHist(previous_hist, histogram, cv2.HISTCMP_BHATTACHARYYA)))
+        resized_hash_frame = cv2.resize(gray, (config.perceptual_hash_size + 1, config.perceptual_hash_size), interpolation=cv2.INTER_AREA)
+        difference = resized_hash_frame[:, 1:] > resized_hash_frame[:, :-1]
+        hash_value = 0
+        for bit_index, enabled in enumerate(difference.flatten()):
+            if enabled:
+                hash_value |= 1 << bit_index
+        perceptual_hashes.append(hash_value)
         previous_gray = gray
         previous_hist = histogram
         frame_index += 1
@@ -253,6 +279,7 @@ def _frame_metrics(video_path: str, config: AnalyzerConfig) -> dict[str, Any]:
         "luma": luma,
         "motion": motion,
         "contentChange": content_change,
+        "perceptualHashes": perceptual_hashes,
         "visualFingerprint": [] if histogram_sum is None else cv2.normalize(histogram_sum, histogram_sum).flatten().astype(float).tolist(),
     }
 
@@ -364,32 +391,169 @@ def _load_speech_model(config: AnalyzerConfig) -> Any | None:
         return None
 
 
-def _detect_speech_ranges(
+def _detect_speech(
     video_path: str,
     speech_model: Any | None,
     speech_model_lock: Lock | None,
+    dialogue_language: str,
     config: AnalyzerConfig,
-) -> list[list[float]]:
+) -> dict[str, Any]:
     if speech_model is None or speech_model_lock is None:
-        return []
+        return {"ranges": [], "transcript": EMPTY_TEXT}
     try:
         with speech_model_lock:
+            transcription_options: dict[str, Any] = {
+                "beam_size": config.whisper_beam_size,
+                "vad_filter": True,
+                "condition_on_previous_text": False,
+            }
+            if re.fullmatch(r"[a-z]{2}", dialogue_language):
+                transcription_options["language"] = dialogue_language
             segments, _ = speech_model.transcribe(
                 video_path,
-                beam_size=config.whisper_beam_size,
-                vad_filter=True,
-                condition_on_previous_text=False,
+                **transcription_options,
             )
             detected_segments = list(segments)
-        return [
-            [max(0.0, _number(segment.start)), max(0.0, _number(segment.end))]
+        accepted_segments = [
+            segment
             for segment in detected_segments
             if str(segment.text or EMPTY_TEXT).strip()
             and _number(segment.end) > _number(segment.start)
             and _number(segment.no_speech_prob, 1.0) <= config.whisper_no_speech_probability
         ]
+        return {
+            "ranges": [[max(0.0, _number(segment.start)), max(0.0, _number(segment.end))] for segment in accepted_segments],
+            "transcript": " ".join(str(segment.text or EMPTY_TEXT).strip() for segment in accepted_segments),
+        }
     except Exception:
+        return {"ranges": [], "transcript": EMPTY_TEXT}
+
+
+def _hash_similarity(left: int, right: int, bit_count: int) -> float:
+    return 1.0 - ((left ^ right).bit_count() / max(1, bit_count))
+
+
+def _normalize_dialogue(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.lower().replace("đ", "d"))
+    without_marks = "".join(character for character in normalized if not unicodedata.combining(character))
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", without_marks).split())
+
+
+def _dialogue_text_match_score(expected: str, recognized: str, config: AnalyzerConfig) -> float:
+    normalized_expected = _normalize_dialogue(expected)
+    normalized_recognized = _normalize_dialogue(recognized)
+    if not normalized_expected or not normalized_recognized:
+        return 0.0
+    sequence_score = difflib.SequenceMatcher(None, normalized_expected, normalized_recognized).ratio()
+    expected_tokens = set(normalized_expected.split())
+    recognized_tokens = set(normalized_recognized.split())
+    token_score = len(expected_tokens & recognized_tokens) / max(1, len(expected_tokens | recognized_tokens))
+    return config.dialogue_sequence_match_weight * sequence_score + config.dialogue_token_match_weight * token_score
+
+
+def _sample_sequence(values: list[int], sample_count: int) -> list[int]:
+    if not values:
         return []
+    if len(values) <= sample_count:
+        return values
+    indexes = np.linspace(0, len(values) - 1, sample_count).round().astype(int)
+    return [values[index] for index in indexes]
+
+
+def _perceptual_sequence_similarity(left: list[int], right: list[int], config: AnalyzerConfig) -> float:
+    left_samples = _sample_sequence(left, config.perceptual_sequence_samples)
+    right_samples = _sample_sequence(right, config.perceptual_sequence_samples)
+    if not left_samples or not right_samples:
+        return 0.0
+    sample_count = min(len(left_samples), len(right_samples))
+    left_samples = _sample_sequence(left_samples, sample_count)
+    right_samples = _sample_sequence(right_samples, sample_count)
+    bit_count = config.perceptual_hash_size * config.perceptual_hash_size
+    return float(np.mean([_hash_similarity(left, right, bit_count) for left, right in zip(left_samples, right_samples)]))
+
+
+def _segment_hashes(metrics: dict[str, Any], start: float, end: float) -> list[int]:
+    return [
+        value
+        for value, timestamp in zip(metrics["perceptualHashes"], metrics["times"])
+        if start <= timestamp <= end
+    ]
+
+
+def _merge_segments(segments: list[dict[str, Any]], config: AnalyzerConfig) -> list[dict[str, Any]]:
+    merged: list[dict[str, Any]] = []
+    for segment in sorted(segments, key=lambda item: (item["inSeconds"], item["outSeconds"])):
+        previous = merged[-1] if merged else None
+        if previous and segment["inSeconds"] <= previous["outSeconds"] + config.segment_merge_gap_seconds:
+            previous["outSeconds"] = max(previous["outSeconds"], segment["outSeconds"])
+            previous["containsDialogue"] = previous["containsDialogue"] or segment["containsDialogue"]
+            previous["libraryScore"] = max(previous.get("libraryScore", 0), segment.get("libraryScore", 0))
+            previous["_perceptualHashes"] = previous.get("_perceptualHashes", []) + segment.get("_perceptualHashes", [])
+        else:
+            merged.append(segment.copy())
+    return merged
+
+
+def _selected_duration(segments: list[dict[str, Any]]) -> float:
+    return sum(max(0.0, segment["outSeconds"] - segment["inSeconds"]) for segment in segments)
+
+
+def _select_fallback_segments(
+    candidates: list[dict[str, Any]],
+    safe_start: float,
+    safe_end: float,
+    protect_dialogue: bool,
+    speech_analysis_available: bool,
+    detected_speech_ranges: list[list[float]],
+    metrics: dict[str, Any],
+    config: AnalyzerConfig,
+) -> list[dict[str, Any]]:
+    if protect_dialogue and (not speech_analysis_available or not detected_speech_ranges):
+        return [{
+            "segmentId": "dialogue_safe_1",
+            "inSeconds": round(safe_start, 3),
+            "outSeconds": round(safe_end, 3),
+            "shotRole": SHOT_ROLE_MASTER,
+            "storyContribution": EMPTY_TEXT,
+            "transition": TRANSITION_CUT,
+            "audioBridgeMode": AUDIO_BRIDGE_HARD,
+            "containsDialogue": True,
+            "libraryScore": round(_window_score(metrics, safe_start, safe_end, config) * config.score_scale, 2),
+            "_perceptualHashes": _segment_hashes(metrics, safe_start, safe_end),
+        }]
+    if protect_dialogue and detected_speech_ranges:
+        return [{
+            "segmentId": "dialogue_safe_1",
+            "inSeconds": round(safe_start, 3),
+            "outSeconds": round(safe_end, 3),
+            "shotRole": SHOT_ROLE_MASTER,
+            "storyContribution": EMPTY_TEXT,
+            "transition": TRANSITION_CUT,
+            "audioBridgeMode": AUDIO_BRIDGE_HARD,
+            "containsDialogue": True,
+            "libraryScore": round(_window_score(metrics, safe_start, safe_end, config) * config.score_scale, 2),
+            "_perceptualHashes": _segment_hashes(metrics, safe_start, safe_end),
+        }]
+    if not candidates:
+        return []
+    duration_budget = max(config.min_selection_seconds, (safe_end - safe_start) * config.silent_selection_ratio)
+    ranked = sorted(candidates, key=lambda item: item.get("libraryScore", 0), reverse=True)
+    selected: list[dict[str, Any]] = []
+    for candidate in ranked:
+        if len(selected) >= config.max_selected_segments:
+            break
+        repeated = any(
+            _perceptual_sequence_similarity(candidate.get("_perceptualHashes", []), kept.get("_perceptualHashes", []), config)
+            >= config.internal_segment_similarity_threshold
+            for kept in selected
+        )
+        if repeated:
+            continue
+        candidate_duration = candidate["outSeconds"] - candidate["inSeconds"]
+        if selected and _selected_duration(selected) + candidate_duration > duration_budget:
+            continue
+        selected.append(candidate)
+    return sorted(selected or [ranked[0]], key=lambda item: item["inSeconds"])
 
 
 def _resolve_crop(crops: list[tuple[int, int, int, int]], width: int, height: int, config: AnalyzerConfig) -> str:
@@ -441,11 +605,12 @@ def analyze_clip(
     has_audio = bool(clip.get("hasAudio", True))
     protect_dialogue = bool(clip.get("protectDialogue", False))
     ffmpeg_metrics = _run_ffmpeg_probe(video_path, ffmpeg_path, config, has_audio, duration)
-    detected_speech_ranges = (
-        _detect_speech_ranges(video_path, speech_model, speech_model_lock, config)
+    speech_analysis = (
+        _detect_speech(video_path, speech_model, speech_model_lock, str(clip.get("dialogueLanguage", EMPTY_TEXT)).lower(), config)
         if has_audio and protect_dialogue
-        else []
+        else {"ranges": [], "transcript": EMPTY_TEXT}
     )
+    detected_speech_ranges = speech_analysis["ranges"]
     damaged_ranges = ffmpeg_metrics["blackRanges"] + ffmpeg_metrics["freezeRanges"]
     safe_start, safe_end = _safe_edge_bounds(duration, damaged_ranges, config)
     opencv_boundaries = _opencv_cut_boundaries(metrics, config)
@@ -487,13 +652,14 @@ def analyze_clip(
                 "shotRole": SHOT_ROLE_MASTER,
                 "storyContribution": EMPTY_TEXT,
                 "transition": TRANSITION_CUT,
-                "audioBridgeMode": AUDIO_BRIDGE_HARD,
+                "audioBridgeMode": AUDIO_BRIDGE_HARD if protect_dialogue or not has_audio else AUDIO_BRIDGE_AMBIENCE,
                 "containsDialogue": protect_dialogue and (
                     _overlaps(segment_start, segment_end, detected_speech_ranges)
                     if detected_speech_ranges
                     else _contains_speech(segment_start, segment_end, ffmpeg_metrics["silenceRanges"], config)
                 ),
                 "libraryScore": round(score * config.score_scale, 2),
+                "_perceptualHashes": _segment_hashes(metrics, segment_start, segment_end),
             }
         )
     # Speech/sound can span camera cuts. Merge overlapping protected windows
@@ -504,9 +670,62 @@ def analyze_clip(
             previous = merged_candidates[-1]
             previous["outSeconds"] = max(previous["outSeconds"], candidate["outSeconds"])
             previous["containsDialogue"] = previous["containsDialogue"] or candidate["containsDialogue"]
+            previous["_perceptualHashes"] = previous.get("_perceptualHashes", []) + candidate.get("_perceptualHashes", [])
         else:
             merged_candidates.append(candidate.copy())
     candidates = merged_candidates
+    if protect_dialogue and detected_speech_ranges:
+        for candidate in candidates:
+            candidate["containsDialogue"] = False
+        speech_candidates = _merge_segments(
+            [
+                {
+                    "segmentId": f"speech_{speech_index}",
+                    "inSeconds": round(max(safe_start, speech_start - config.dialogue_context_seconds), 3),
+                    "outSeconds": round(min(safe_end, speech_end + config.dialogue_context_seconds), 3),
+                    "shotRole": SHOT_ROLE_MASTER,
+                    "storyContribution": EMPTY_TEXT,
+                    "transition": TRANSITION_CUT,
+                    "audioBridgeMode": AUDIO_BRIDGE_HARD,
+                    "containsDialogue": True,
+                    "libraryScore": round(
+                        _window_score(
+                            metrics,
+                            max(safe_start, speech_start - config.dialogue_context_seconds),
+                            min(safe_end, speech_end + config.dialogue_context_seconds),
+                            config,
+                        ) * config.score_scale,
+                        2,
+                    ),
+                    "_perceptualHashes": _segment_hashes(
+                        metrics,
+                        max(safe_start, speech_start - config.dialogue_context_seconds),
+                        min(safe_end, speech_end + config.dialogue_context_seconds),
+                    ),
+                }
+                for speech_index, (speech_start, speech_end) in enumerate(detected_speech_ranges, start=1)
+                if speech_end > speech_start
+            ],
+            config,
+        )
+        for speech_index, candidate in enumerate(speech_candidates, start=1):
+            candidate["segmentId"] = f"speech_{speech_index}"
+        candidates.extend(speech_candidates)
+    selected_segments = _select_fallback_segments(
+        candidates,
+        safe_start,
+        safe_end,
+        protect_dialogue,
+        speech_model is not None,
+        detected_speech_ranges,
+        metrics,
+        config,
+    )
+    if protect_dialogue and not detected_speech_ranges:
+        candidates = [segment.copy() for segment in selected_segments]
+    elif not protect_dialogue:
+        candidate_ids = {segment["segmentId"] for segment in candidates}
+        candidates.extend(segment.copy() for segment in selected_segments if segment["segmentId"] not in candidate_ids)
     warnings: list[str] = []
     if ffmpeg_metrics["blackRanges"]:
         warnings.append(WARNING_BLACK)
@@ -524,20 +743,47 @@ def analyze_clip(
         warnings.append(WARNING_LOW_MOTION)
     if duplicate_ratio >= config.duplicate_warning_ratio:
         warnings.append(WARNING_DUPLICATE_FRAMES)
-    if not candidates:
+    if not selected_segments:
         take_decision = TAKE_OMIT
         reason = REASON_UNUSABLE
         trim_start = safe_start
         trim_end = max(0.0, duration - safe_end)
         confidence = 0.0
     else:
-        first_start = min(segment["inSeconds"] for segment in candidates)
-        last_end = max(segment["outSeconds"] for segment in candidates)
+        first_start = min(segment["inSeconds"] for segment in selected_segments)
+        last_end = max(segment["outSeconds"] for segment in selected_segments)
         trim_start = first_start
         trim_end = max(0.0, duration - last_end)
         take_decision = TAKE_TRIM if trim_start > 0 or trim_end > 0 or source_crop else TAKE_USE
         reason = REASON_LIBRARY
-        confidence = float(np.mean([segment["libraryScore"] for segment in candidates]))
+        confidence = float(np.mean([segment["libraryScore"] for segment in selected_segments]))
+    speech_duration = sum(max(0.0, speech_end - speech_start) for speech_start, speech_end in detected_speech_ranges)
+    covered_speech_duration = sum(
+        max(0.0, min(segment["outSeconds"], speech_end) - max(segment["inSeconds"], speech_start))
+        for segment in selected_segments
+        for speech_start, speech_end in detected_speech_ranges
+    )
+    dialogue_coverage_ratio = min(1.0, covered_speech_duration / speech_duration) if speech_duration > 0 else (1.0 if protect_dialogue and selected_segments else 0.0)
+    expected_dialogue = str(clip.get("expectedDialogue", EMPTY_TEXT)).strip()
+    recognized_transcript = str(speech_analysis["transcript"]).strip()
+    dialogue_text_match_score = _dialogue_text_match_score(expected_dialogue, recognized_transcript, config)
+    dialogue_mismatch = bool(
+        protect_dialogue
+        and expected_dialogue
+        and recognized_transcript
+        and dialogue_text_match_score < config.dialogue_text_match_threshold
+    )
+    if dialogue_mismatch:
+        warnings.append(WARNING_DIALOGUE_MISMATCH)
+        take_decision = TAKE_OMIT
+        reason = REASON_DIALOGUE_MISMATCH
+        selected_segments = []
+        trim_start = safe_start
+        trim_end = max(0.0, duration - safe_end)
+        confidence = 0.0
+        dialogue_coverage_ratio = 0.0
+    public_candidates = [{key: value for key, value in segment.items() if not key.startswith("_")} for segment in candidates]
+    public_selected_segments = [{key: value for key, value in segment.items() if not key.startswith("_")} for segment in selected_segments]
     return {
         "sceneId": scene_id,
         "duration": round(duration, 3),
@@ -550,8 +796,8 @@ def analyze_clip(
         "warnings": warnings,
         "takeDecision": take_decision,
         "reason": reason,
-        "segments": candidates,
-        "candidateSegments": candidates,
+        "segments": public_selected_segments,
+        "candidateSegments": public_candidates,
         "shotBoundaries": [round(value, 3) for value in boundaries],
         "observedShotCount": max(1, len(shot_edges) - 1),
         "sharpnessScore": round(min(config.score_scale, average_sharpness / max(config.min_sharpness, 1.0) * config.score_scale), 2),
@@ -564,7 +810,15 @@ def analyze_clip(
         "needsAiReview": confidence < config.ai_review_confidence or len(candidates) > 1,
         "speechAnalysisAvailable": bool(speech_model) if protect_dialogue else False,
         "detectedSpeechRanges": [[round(value, 3) for value in speech_range] for speech_range in detected_speech_ranges],
+        "recognizedTranscript": recognized_transcript,
+        "dialogueCoverageRatio": round(dialogue_coverage_ratio, 4),
+        "dialogueTextMatchScore": round(dialogue_text_match_score * config.score_scale, 2),
+        "dialogueMismatch": dialogue_mismatch,
+        "selectedDuration": round(_selected_duration(selected_segments), 3),
+        "analysisProvenance": list(dict.fromkeys([LIBRARY_OPENCV, library, "faster-whisper" if speech_model is not None and protect_dialogue else "ffmpeg-silencedetect"])),
         "_visualFingerprint": metrics["visualFingerprint"],
+        "_perceptualSequence": metrics["perceptualHashes"],
+        "_protectDialogue": protect_dialogue,
     }
 
 
@@ -580,18 +834,33 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
 def _mark_visually_similar_clips(decisions: list[dict[str, Any]], config: AnalyzerConfig) -> None:
     for current_index, current in enumerate(decisions):
         current_fingerprint = current.get("_visualFingerprint", [])
-        best_match: tuple[dict[str, Any] | None, float] = (None, 0.0)
+        current_sequence = current.get("_perceptualSequence", [])
+        best_match: tuple[dict[str, Any] | None, float, float] = (None, 0.0, 0.0)
         for previous in decisions[:current_index]:
-            similarity = _cosine_similarity(current_fingerprint, previous.get("_visualFingerprint", []))
-            if similarity > best_match[1]:
-                best_match = (previous, similarity)
-        if best_match[0] is not None and best_match[1] >= config.duplicate_clip_similarity_threshold:
+            histogram_similarity = _cosine_similarity(current_fingerprint, previous.get("_visualFingerprint", []))
+            perceptual_similarity = _perceptual_sequence_similarity(current_sequence, previous.get("_perceptualSequence", []), config)
+            if histogram_similarity + perceptual_similarity > best_match[1] + best_match[2]:
+                best_match = (previous, histogram_similarity, perceptual_similarity)
+        repeated_visual = (
+            best_match[0] is not None
+            and best_match[1] >= config.duplicate_clip_similarity_threshold
+            and best_match[2] >= config.duplicate_clip_perceptual_threshold
+        )
+        if repeated_visual:
             current["warnings"] = list(dict.fromkeys(current.get("warnings", []) + [WARNING_SIMILAR_CLIP]))
             current["visuallySimilarToSceneId"] = best_match[0]["sceneId"]
-            current["visualSimilarityScore"] = round(best_match[1] * config.score_scale, 2)
+            current["visualSimilarityScore"] = round(best_match[2] * config.score_scale, 2)
             current["needsAiReview"] = True
+            if best_match[2] >= config.duplicate_clip_auto_omit_threshold and not current.get("_protectDialogue", False):
+                current["warnings"] = list(dict.fromkeys(current["warnings"] + [WARNING_REPEATED_CLIP_OMITTED]))
+                current["takeDecision"] = TAKE_OMIT
+                current["reason"] = REASON_REPEATED
+                current["segments"] = []
+                current["selectedDuration"] = 0.0
     for decision in decisions:
         decision.pop("_visualFingerprint", None)
+        decision.pop("_perceptualSequence", None)
+        decision.pop("_protectDialogue", None)
 
 
 def main() -> int:
@@ -613,7 +882,7 @@ def main() -> int:
         )
     _mark_visually_similar_clips(decisions, config)
     result = {"success": True, "libraryAnalysisAvailable": bool(decisions), "decisions": decisions}
-    sys.stdout.write(json.dumps(result, ensure_ascii=False, separators=JSON_SEPARATORS))
+    sys.stdout.buffer.write(json.dumps(result, ensure_ascii=False, separators=JSON_SEPARATORS).encode(INPUT_ENCODING))
     return 0
 
 

@@ -307,6 +307,11 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /belongsToCurrentRequest \|\| mayUseUnmarkedJsonFallback/);
   assert.match(planningServiceSource, /closeChatPlanningRoom/);
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
+  assert.match(planningServiceSource, /pendingRoomResponses = new Map<string, PendingRoomResponse>/);
+  assert.match(planningServiceSource, /RESPONSE_RESUME_LOG/);
+  assert.match(planningServiceSource, /if \(responseProgressed \|\| isBusy\)/);
+  assert.match(planningServiceSource, /responseCompleted && \(request\.closeRoomOnComplete/);
+  assert.match(planningServiceSource, /if \(!isResponseTimeoutError\(error\)\) pendingRoomResponses\.delete\(roomKey\)/);
   assert.match(planningServiceSource, /CLOSED_ROOM_ERROR_PATTERN\.test\(errorMessage\)/);
   assert.match(planningServiceSource, /canRecoverClosedRoom[\s\S]*await closeChatPlanningRoom\(request\)/);
   assert.match(planningServiceSource, /const roomKey = getPlanningRoomKey\(request\)[\s\S]*rooms\.delete\(roomKey\)[\s\S]*page\.close\(\)/);
@@ -336,6 +341,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /input\.isEditable\(\)/);
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS, 250);
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 2);
+  assert(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS > CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS);
   assert.match(CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, /parseable directly with JSON\.parse/i);
   assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
   assert.match(planningServiceSource, /const parsedLatest = tryParseJSON\(latestText\)/);
@@ -433,6 +439,14 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /latestPlanningMasterStoryboard/);
   assert.match(pipelineSource, /firstPendingSceneIndex/);
   assert.match(pipelineSource, /const latestProject = activeProjectSnapshotRef\.current \|\| currentProject/);
+  assert.match(pipelineSource, /const pipelineArtifactRunId =/);
+  assert.match(pipelineSource, /presentationTarget\?\.lastRunId/);
+  assert.match(pipelineSource, /pipelineRunId: pipelineArtifactRunId/);
+  assert.match(pipelineSource, /retainPlanningRoomsForResume =/);
+  assert.match(pipelineSource, /!retainPlanningRoomsForResume &&/);
+  assert.match(pipelineSource, /const closeCompletedPlanningWorkers = async/);
+  assert.match(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.SCRIPT\]\)/);
+  assert.match(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.PROMPT\]\)/);
 };
 
 const verifyLongFilmPlanningBatches = () => {

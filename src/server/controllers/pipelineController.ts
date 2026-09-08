@@ -48,6 +48,7 @@ import {
   VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG,
   SCRIPT_SPEECH_RATE_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
+  FLOW_CHARACTER_CONFIG,
 } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
@@ -178,7 +179,6 @@ import {
   getCinematicFinalVideoQualityPrompt,
   getCinematicSeoPrompt,
   getCinematicStoryboardRecoveryPrompt,
-  getCinematicCharacterReferenceProviderRepairPrompt,
   getCinematicSceneImageProviderRepairPrompt,
   getCinematicThumbnailPrompt,
   getCinematicThumbnailProviderRepairPrompt,
@@ -200,13 +200,14 @@ import {
   cancelAllActiveMediaGeneration,
   getOrLaunchGlobalBrowser,
   recoverExistingFlowVideo,
+  ensureFlowCharacters,
 } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
 import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
-import { analyzeCinematicClipsWithLibraries } from "../services/cinematicClipAnalyzerService.js";
+import { analyzeCinematicClipsWithLibraries, validateCinematicEditorialDecisions } from "../services/cinematicClipAnalyzerService.js";
 import { hasCinematicSceneDialogue } from "../../services/cinematicEditTimelineService.js";
 
 import {
@@ -3414,6 +3415,47 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
 const activeVideoSubmissionKeys = new Set<string>();
 const completedVideoSubmissionResults = new Map<string, unknown>();
 
+router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
+  try {
+    const localProjectId = path.basename(_.toString(req.body?.projectId));
+    const localProject = await getProjectDetailFromDb(localProjectId);
+    if (!localProject) return res.status(404).json({ success: false, error: PROJECT_ASSET_INVALID_REQUEST });
+
+    const requestedCharacters = _.map(_.castArray(req.body?.characters || []), (character) => {
+      const flowPrompt = _.trim(_.toString(character?.referenceGenerationPrompt));
+      const identityPrompt = _.trim(_.toString(character?.prompt || character?.description));
+      return {
+        id: _.trim(_.toString(character?.id)),
+        name: _.trim(_.toString(character?.name)),
+        prompt:
+          _.isEmpty(flowPrompt) || FLOW_CHARACTER_CONFIG.LEGACY_REFERENCE_PROMPT_PATTERN.test(flowPrompt)
+            ? identityPrompt || flowPrompt
+            : flowPrompt,
+        info: _.trim(_.toString(character?.description || character?.prompt)),
+      };
+    });
+    const result = await ensureFlowCharacters({
+      characters: requestedCharacters,
+      flowProjectId: _.toString(localProject.visualConfig?.flowProjectId),
+      chromeHeadless: _.isBoolean(req.body?.chromeHeadless) ? req.body.chromeHeadless : localProject.visualConfig?.chromeHeadless,
+      language: req.body?.language,
+      retainBrowserSession: true,
+    });
+    if (!_.isEmpty(result.newProjectId)) {
+      localProject.visualConfig = {
+        ...localProject.visualConfig,
+        flowProjectId: result.newProjectId,
+      };
+      await saveProjectDetailToDb(localProject);
+    }
+    if (result.success) await incrementFeatureUsage(req, FeatureType.IMAGE, result.characters.length);
+    return res.json(result);
+  } catch (error) {
+    logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
+    return res.json({ success: false, characters: [], warning: error instanceof Error ? error.message : PROJECT_ASSET_INVALID_REQUEST });
+  }
+});
+
 router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
   let activeVideoSubmissionKey = "";
   try {
@@ -3888,9 +3930,7 @@ router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Respons
     const visualContext = req.body?.scene || {};
     const repairPrompt = _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.THUMBNAIL_PROVIDER_REJECTION_PURPOSE)
       ? getCinematicThumbnailProviderRepairPrompt(prompt, visualContext)
-      : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE)
-        ? getCinematicCharacterReferenceProviderRepairPrompt(prompt, visualContext)
-        : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE)
+      : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE)
           ? getCinematicSceneImageProviderRepairPrompt(prompt, visualContext)
           : getVisualPromptQaRepairPrompt(prompt, qaIssues, visualContext, purpose);
     const response = await generateContentWithRetry({
@@ -4060,6 +4100,8 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
             path: _.toString(decision.sourcePath),
             hasAudio: Boolean(decision.hasAudio),
             protectDialogue: hasCinematicSceneDialogue(scene || {}),
+            expectedDialogue: _.trim(_.toString(scene?.spokenDialogue || scene?.subtitle)),
+            dialogueLanguage: _.toString(req.body?.language),
           };
         },
       ),
@@ -4169,63 +4211,62 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         duplicateFrameRatio: decision.duplicateFrameRatio,
         visuallySimilarToSceneId: decision.visuallySimilarToSceneId,
         visualSimilarityScore: decision.visualSimilarityScore,
+        speechAnalysisAvailable: decision.speechAnalysisAvailable,
+        detectedSpeechRanges: decision.detectedSpeechRanges,
+        recognizedTranscript: decision.recognizedTranscript,
+        dialogueCoverageRatio: decision.dialogueCoverageRatio,
+        dialogueTextMatchScore: decision.dialogueTextMatchScore,
+        dialogueMismatch: decision.dialogueMismatch,
+        selectedDuration: decision.selectedDuration,
       };
-    });
-    const overviewPath = path.join(analysisDir, CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_FILE_NAME);
-    const overviewSources = _.filter(reviewableDecisions, (decision) => !_.isEmpty(decision.contactSheetPath) && fs.existsSync(decision.contactSheetPath));
-    const overviewInputs = _.flatMap(overviewSources, (decision) => ["-i", decision.contactSheetPath]);
-    const overviewFilterParts = _.map(overviewSources, (_decision, index) =>
-      `[${index}:v]scale=${CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_WIDTH}:${CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_HEIGHT}[scene${index}]`,
-    );
-    const overviewLayout = _.join(
-      _.map(overviewSources, (_decision, index) => {
-        const column = index % CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_COLUMNS;
-        const row = Math.floor(index / CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_COLUMNS);
-        return `${column * CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_WIDTH}_${row * CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_ITEM_HEIGHT}`;
-      }),
-      "|",
-    );
-    const overviewLabels = _.join(_.map(overviewSources, (_decision, index) => `[scene${index}]`), "");
-    const overviewFilter = `${_.join(overviewFilterParts, ";")};${overviewLabels}xstack=inputs=${overviewSources.length}:layout=${overviewLayout}`;
-    await new Promise<void>((resolve) => {
-      const process = spawn(executable, ["-y", ...overviewInputs, "-filter_complex", overviewFilter, "-frames:v", "1", overviewPath], {
-        windowsHide: true,
-        stdio: "ignore",
-      });
-      const timeout = setTimeout(() => process.kill(), CINEMATIC_EDIT_ANALYSIS_CONFIG.FFMPEG_TIMEOUT_MS);
-      process.once("error", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
-      process.once("exit", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
     });
     const libraryObservations = _.map(reviewableDecisions, (decision) =>
       _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
     );
     const globalEditParts: any[] = [{ text: getCinematicGlobalEditDecisionPrompt(metadata, libraryObservations) }];
-    if (fs.existsSync(overviewPath)) {
-      globalEditParts.push({ text: CINEMATIC_EDIT_ANALYSIS_CONFIG.GLOBAL_CONTACT_SHEET_LABEL });
+    _.forEach(reviewableDecisions, (decision) => {
+      globalEditParts.push({ text: `${CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_MEDIA_LABEL_PREFIX}: ${decision.sceneId}` });
       globalEditParts.push({
         inlineData: {
           mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE,
-          data: fs.readFileSync(overviewPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
+          data: decision.contactSheetData,
         },
       });
-    }
-    const globalEditResponse = await generateContentWithRetry({
-      contents: [{ role: "user", parts: globalEditParts }],
-      config: {
-        responseMimeType: CONTENT_TYPES.JSON,
-        responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
-        maxOutputTokens: CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_OUTPUT_TOKENS,
-      },
-      task: { capability: AiTaskCapability.VisualQa },
     });
-    const editorialDecisions = _.castArray(safeParseJSON(globalEditResponse.text, {})?.decisions);
-    const editorialAiMetadata = globalEditResponse.aiMetadata;
+    let editorialDecisions: any[] = [];
+    let editorialAiMetadata: unknown;
+    let editorialValidationError: string = CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_INVALID_RESPONSE_ERROR;
+    for (let attempt = 0; attempt < CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_REVIEW_ATTEMPTS; attempt++) {
+      const globalEditResponse = await generateContentWithRetry({
+        contents: [{ role: "user", parts: globalEditParts }],
+        config: {
+          responseMimeType: CONTENT_TYPES.JSON,
+          responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
+          maxOutputTokens: CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_OUTPUT_TOKENS,
+        },
+        task: { capability: AiTaskCapability.VisualQa },
+      });
+      const candidateDecisions = _.castArray(safeParseJSON(globalEditResponse.text, {})?.decisions);
+      const validation = validateCinematicEditorialDecisions(reviewableDecisions, candidateDecisions);
+      if (validation.valid) {
+        editorialDecisions = candidateDecisions;
+        editorialAiMetadata = globalEditResponse.aiMetadata;
+        break;
+      }
+      editorialValidationError = validation.error || CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_INVALID_RESPONSE_ERROR;
+    }
+    if (_.isEmpty(editorialDecisions)) {
+      return res.json({
+        success: true,
+        decisions: _.map(analyzedDecisions, (decision) =>
+          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
+        ),
+        libraryAnalysisAvailable,
+        editorialReviewAvailable: false,
+        editorialReviewError: editorialValidationError,
+        timelineProvenance: "library",
+      });
+    }
     const editorialByScene = _.keyBy(editorialDecisions, "sceneId");
     const decisions = _.map(analyzedDecisions, (technical) => {
       const editorial = editorialByScene[technical.sceneId];
@@ -4236,12 +4277,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       const editorialSegments = _.uniqBy(
         _.compact(
         _.map(_.castArray(editorial.segments), (segment, segmentIndex) => {
-          const selectedLibrarySegment = _.minBy(
-            librarySegments,
-            (candidate) =>
-              Math.abs(_.toNumber(candidate.inSeconds) - _.toNumber(segment.inSeconds)) +
-              Math.abs(_.toNumber(candidate.outSeconds) - _.toNumber(segment.outSeconds)),
-          );
+          const selectedLibrarySegment = _.find(librarySegments, { segmentId: _.toString(segment.segmentId) });
           if (!selectedLibrarySegment) return undefined;
           const inSeconds = _.clamp(_.toNumber(selectedLibrarySegment.inSeconds), technicalUsableStart, technicalUsableEnd);
           const outSeconds = _.clamp(_.toNumber(selectedLibrarySegment.outSeconds), inSeconds, technicalUsableEnd);
@@ -4260,7 +4296,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         ),
         "segmentId",
       );
-      const segments = _.isEmpty(editorialSegments) ? librarySegments : editorialSegments;
+      const segments = _.isEqual(editorial.takeDecision, "omit") ? [] : editorialSegments;
       const selectedStart = _.minBy(segments, "inSeconds")?.inSeconds;
       const selectedEnd = _.maxBy(segments, "outSeconds")?.outSeconds;
       const validSelection = Number.isFinite(selectedStart) && Number.isFinite(selectedEnd) &&
@@ -4276,18 +4312,18 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         trimEndSeconds: validSelection ? technical.duration - selectedEnd : technical.duration - technicalUsableEnd,
         takeDecision,
         recommendedTransition: editorial.recommendedTransition,
-        audioBridgeMode: editorial.audioBridgeMode,
         continuityScore: editorial.continuityScore,
         storyClarityScore: editorial.storyClarityScore,
         performanceScore: editorial.performanceScore,
-        dialogueCoverageScore: editorial.dialogueCoverageScore,
-        dialogueDetected: editorial.dialogueDetected,
+        dialogueCoverageScore: _.round(_.toNumber(technical.dialogueCoverageRatio) * 100, 2),
+        dialogueDetected: !_.isEmpty(technical.detectedSpeechRanges),
         observedShotCount: editorial.observedShotCount,
         segments,
         supportShotType: editorial.supportShotType,
         entryStateObserved: editorial.entryStateObserved,
         exitStateObserved: editorial.exitStateObserved,
         dominantAction: editorial.dominantAction,
+        selectedDuration: _.sumBy(segments, (segment) => _.toNumber(segment.outSeconds) - _.toNumber(segment.inSeconds)),
         warnings: _.uniq([...technical.warnings, ..._.castArray(editorial.warnings)]),
         reason: _.join(_.compact([technical.reason, editorial.reason]), ";"),
       };

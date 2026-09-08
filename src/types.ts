@@ -422,6 +422,7 @@ export interface VisualConfig {
   referenceImage?: string;
   referenceImages?: string[];
   referenceImageNames?: string[];
+  referenceCharacterNames?: string[];
   referencePrompt?: string;
   styleFingerprint?: string;
   styleReferenceLocked?: boolean;
@@ -458,6 +459,9 @@ export interface CharacterConfig {
   images: string[];
   prompt?: string;
   referenceGenerationPrompt?: string;
+  flowCharacterName?: string;
+  flowCharacterProjectId?: string;
+  flowCharacterProfileVersion?: string;
   extracted?: boolean;
   narrativeRole?: string;
   genderPresentation?: string;
@@ -651,6 +655,15 @@ export interface StoryboardScene {
   cinematicPerformanceScore?: number;
   cinematicDialogueCoverageScore?: number;
   cinematicDialogueDetected?: boolean;
+  cinematicSpeechAnalysisAvailable?: boolean;
+  cinematicDetectedSpeechRanges?: Array<[number, number]>;
+  cinematicRecognizedTranscript?: string;
+  cinematicDialogueCoverageRatio?: number;
+  cinematicDialogueTextMatchScore?: number;
+  cinematicDialogueMismatch?: boolean;
+  cinematicSelectedDuration?: number;
+  cinematicSimilarSceneId?: string;
+  cinematicVisualSimilarityScore?: number;
   cinematicObservedShotCount?: number;
   cinematicEditSegments?: CinematicEditSegment[];
   cinematicAudioBridgeMode?: "hard" | "j_cut" | "l_cut" | "ambience";

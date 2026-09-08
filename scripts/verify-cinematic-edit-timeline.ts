@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { countCinematicTimelineShots, createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
+import { applyCinematicClipAnalysisDecisions, countCinematicTimelineShots, createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
 import { GenerateType, StoryboardScene } from "../src/types";
 
 const scene = {
@@ -27,6 +27,11 @@ assert.equal(countCinematicTimelineShots([scene]), 3);
 assert.equal(hasCinematicSceneDialogue(scene), true);
 assert.equal(hasCinematicSceneDialogue({ generationPrompt: "The hero speaks once in Vietnamese with natural lip sync." }), true);
 assert.equal(hasCinematicSceneDialogue({ generationPrompt: "Production sound only. No dialogue." }), false);
+const refreshedDecision = applyCinematicClipAnalysisDecisions(
+  [{ ...scene, cinematicTakeDecision: "omit" }],
+  [{ sceneId: scene.id, takeDecision: "use", segments: scene.cinematicEditSegments }],
+);
+assert.equal(refreshedDecision[0].cinematicTakeDecision, "use");
 
 const overlappingTimeline = createCinematicEditTimeline([{
   ...scene,
@@ -54,7 +59,11 @@ const adjacentTimeline = createCinematicEditTimeline([{
     { ...scene.cinematicEditSegments![0], segmentId: "next", inSeconds: 3, outSeconds: 5 },
   ],
 }]);
-assert.equal(adjacentTimeline.length, 2);
+assert.equal(adjacentTimeline.length, 1);
+assert.deepEqual(
+  [adjacentTimeline[0].sourceTrimStartSeconds, adjacentTimeline[0].sourceTrimEndSeconds, adjacentTimeline[0].duration],
+  [0.2, 5, 4.8],
+);
 
 const fallbackTimeline = createCinematicEditTimeline([{
   ...scene,

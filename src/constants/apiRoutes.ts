@@ -22,6 +22,7 @@ export const API_ROUTES = {
   PIPELINE_SEO: "/api/pipeline/seo",
   PIPELINE_THUMBNAILS: "/api/pipeline/thumbnails",
   PIPELINE_GENERATE_IMAGE: "/api/pipeline/generate-image",
+  PIPELINE_ENSURE_FLOW_CHARACTERS: "/api/pipeline/ensure-flow-characters",
   PIPELINE_RECOVER_FLOW_VIDEO: "/api/pipeline/recover-flow-video",
   PIPELINE_SEARCH_ARCHIVAL_IMAGE: "/api/pipeline/search-archival-image",
   PIPELINE_GENERATE_BATCH_IMAGES: "/api/pipeline/generate-batch-images",
@@ -127,4 +128,3 @@ export const API_HEADERS = {
 } as const;
 
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;
-

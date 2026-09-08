@@ -13,7 +13,7 @@ export const CINEMATIC_POLICY_CONFIG = {
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
 } as const;
 
-export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v3-compact";
+export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v4-flow-characters";
 
 export const CINEMATIC_ROOM_STAGE = {
   SCRIPT: "film-planning-room",
@@ -49,7 +49,7 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     PROMPT_START: "Bước 2/4 · AI đang viết prompt video cho từng cảnh.",
     PROMPT_PROGRESS: "Bước 2/4 · Đã hoàn thành prompt {0}/{1} cảnh.",
     PROMPT_READY: "Bước 2/4 · Prompt video đã hoàn tất.",
-    THUMBNAIL_START: "Bước 3/4 · Đang chuẩn bị ảnh tham chiếu nhân vật và ảnh bìa.",
+    THUMBNAIL_START: "Bước 3/4 · Đang chuẩn bị Flow Characters và ảnh bìa.",
     THUMBNAIL_READY: "Bước 3/4 · Ảnh bìa đã hoàn tất.",
     VIDEO_START: "Bước 4/4 · Đang tạo video cho {0} cảnh.",
     VIDEO_PROGRESS: "Bước 4/4 · Đã tạo xong {0}/{1} cảnh.",
@@ -67,7 +67,7 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     PROMPT_START: "Step 2/4 · AI is writing the video prompt for each scene.",
     PROMPT_PROGRESS: "Step 2/4 · Completed prompts for {0}/{1} scenes.",
     PROMPT_READY: "Step 2/4 · Video prompts are complete.",
-    THUMBNAIL_START: "Step 3/4 · Preparing character references and the film cover.",
+    THUMBNAIL_START: "Step 3/4 · Preparing Flow Characters and the film cover.",
     THUMBNAIL_READY: "Step 3/4 · The thumbnail is complete.",
     VIDEO_START: "Step 4/4 · Creating video for {0} scenes.",
     VIDEO_PROGRESS: "Step 4/4 · Completed {0}/{1} scenes.",
@@ -91,6 +91,8 @@ export const CINEMATIC_CHECKPOINT_CONFIG = {
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 1,
   RESPONSE_TIMEOUT_MS: 120000,
+  RESPONSE_MAX_TIMEOUT_MS: 600000,
+  RESPONSE_ACTIVITY_GRACE_MS: 120000,
   RESPONSE_POLL_MS: 250,
   RESPONSE_STABLE_POLLS: 2,
   MIN_RESPONSE_CHARACTERS: 20,
@@ -111,6 +113,11 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ATTACHMENT_SUBMIT_BLOCKED_ERROR: "chat_planning_attachments_not_ready",
   SUBMISSION_NOT_CONFIRMED_ERROR: "chat_planning_submission_not_confirmed",
   SUBMISSION_CONFIRMED_LOG: "[AI Chat Planning] Room đã nhận yêu cầu ({0} ký tự).",
+  RESPONSE_BUSY_WAIT_LOG: "[AI Chat Planning] AI vẫn đang tạo nội dung; tiếp tục chờ room hiện tại thay vì gửi lại yêu cầu.",
+  RESPONSE_RESUME_LOG: "[AI Chat Planning] Tiếp tục lấy phản hồi đang tạo trong room; không gửi lại yêu cầu.",
+  RESPONSE_TIMEOUT_CODE: "chat_planning_response_timeout",
+  RESPONSE_TIMEOUT_MESSAGE:
+    "AI Chat vẫn chưa hoàn tất phản hồi. Room được giữ nguyên; hãy chọn Tiếp tục để lấy kết quả đang tạo mà không gửi lại yêu cầu.",
   NAVIGATION_TIMEOUT_MS: 60000,
   GEMINI_RESPONSE_SELECTOR:
     'model-response, [data-test-id="model-response"], [data-testid="model-response"], [data-message-author-role="assistant"], .model-response-text',
@@ -275,20 +282,20 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_PREFLIGHT_FAILED_SCENES: "Scenes needing adjustment: {0}.",
   PREFLIGHT_LOG_PREFIX: "[Cinematic preflight]",
   PROJECT_SAFETY_APPROVED_RATIONALE: "project_content_safety_approved",
-  VI_CHARACTER_PACK_START: "Bước 3/4 · Đang tạo ảnh tham chiếu cho từng nhân vật.",
-  EN_CHARACTER_PACK_START: "Step 3/4 · Creating a reference image for each character.",
-  VI_CHARACTER_PACK_READY: "Bước 3/4 · Ảnh tham chiếu nhân vật đã được tạo và lưu.",
-  EN_CHARACTER_PACK_READY: "Step 3/4 · Character reference images have been created and saved.",
-  VI_CHARACTER_PACK_PARTIAL: "Bước 3/4 · Một số ảnh tham chiếu nhân vật chưa tạo được; dự án đã lưu và tạm dừng tại bước này.",
-  EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some character reference images are still missing; the project was saved and paused at this step.",
-  VI_CHARACTER_PACK_FAILED: "Không thể hoàn thành ảnh nhận diện nhân vật. Đã dừng trước khi tạo clip để tránh video sai nhân vật.",
-  EN_CHARACTER_PACK_FAILED: "The character identity pack could not be completed. Production stopped before clip generation to avoid inconsistent characters.",
+  VI_CHARACTER_PACK_START: "Bước 3/4 · Flow đang tạo và lưu từng Character.",
+  EN_CHARACTER_PACK_START: "Step 3/4 · Flow is creating and saving each Character.",
+  VI_CHARACTER_PACK_READY: "Bước 3/4 · Các Flow Character đã sẵn sàng để dùng lại.",
+  EN_CHARACTER_PACK_READY: "Step 3/4 · Flow Characters are ready for reuse.",
+  VI_CHARACTER_PACK_PARTIAL: "Bước 3/4 · Một số Flow Character chưa hoàn tất; dự án đã lưu tại bước này.",
+  EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some Flow Characters are incomplete; the project was saved at this step.",
+  VI_CHARACTER_PACK_FAILED: "Flow Character chưa hoàn tất. Đã dừng trước khi tạo clip để tránh sai nhân vật.",
+  EN_CHARACTER_PACK_FAILED: "Flow Characters are incomplete. Production stopped before clip generation to avoid incorrect identities.",
 } as const;
 
 export const CINEMATIC_CHARACTER_PACK_CONFIG = {
-  REFERENCE_COUNT_PER_CHARACTER: 1,
   MAX_CHARACTERS: 8,
   MAX_REFERENCES_PER_SCENE: 3,
+  FLOW_CHARACTER_PROFILE_VERSION: "flow-character-v1-single-subject",
 } as const;
 
 export const CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG = {

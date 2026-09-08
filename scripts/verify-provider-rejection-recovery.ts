@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  getCinematicCharacterReferenceProviderRepairPrompt,
   getCinematicSceneImageProviderRepairPrompt,
   getCinematicThumbnailProviderRepairPrompt,
 } from "../src/constants/cinematicPrompts";
@@ -14,16 +13,6 @@ const providerRejection =
 assert.equal(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS, 2);
 assert.equal(isProviderGenerationRejection(providerRejection), true);
 assert.equal(isProviderGenerationRejection("temporary network timeout"), false);
-
-const characterRepairPrompt = getCinematicCharacterReferenceProviderRepairPrompt(
-  "Create Sun Wukong in a cinematic reference sheet.",
-  { id: "char_wukong", name: "Sun Wukong" },
-);
-assert.match(characterRepairPrompt, /complete standalone replacement prompt/i);
-assert.match(characterRepairPrompt, /original public-domain interpretation/i);
-assert.match(characterRepairPrompt, /preserve the character's face, body, hair, costume/i);
-assert.match(characterRepairPrompt, /modern film, series, game, animation, actor likeness/i);
-assert.match(characterRepairPrompt, /Sun Wukong/);
 
 const sceneRepairPrompt = getCinematicSceneImageProviderRepairPrompt(
   "Sun Wukong faces the celestial gate.",
@@ -44,7 +33,7 @@ assert.match(imageGeneratorSource, /terminalWarning = errorMessage/);
 assert.match(imageGeneratorSource, /warning: terminalWarning/);
 
 const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
-assert.match(pipelineSource, /CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE/);
+assert.doesNotMatch(pipelineSource, /CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /VI_CHARACTER_REFERENCE_REQUIRED/);
 assert.match(pipelineSource, /VI_THUMBNAIL_REQUIRED/);
@@ -53,7 +42,7 @@ assert.doesNotMatch(pipelineSource, /clean film keyframe|keyframe sạch/i);
 assert.doesNotMatch(pipelineSource, /PIPELINE_EXTRACT_THUMBNAIL_FRAME/);
 
 const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-assert.match(controllerSource, /getCinematicCharacterReferenceProviderRepairPrompt/);
+assert.doesNotMatch(controllerSource, /getCinematicCharacterReferenceProviderRepairPrompt/);
 assert.match(controllerSource, /getCinematicSceneImageProviderRepairPrompt/);
 assert.doesNotMatch(controllerSource, /EXTRACT_THUMBNAIL_FRAME/);
 

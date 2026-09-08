@@ -17,6 +17,15 @@ export interface CinematicClipAnalysisDecision {
   performanceScore?: number;
   dialogueCoverageScore?: number;
   dialogueDetected?: boolean;
+  speechAnalysisAvailable?: boolean;
+  detectedSpeechRanges?: Array<[number, number]>;
+  recognizedTranscript?: string;
+  dialogueCoverageRatio?: number;
+  dialogueTextMatchScore?: number;
+  dialogueMismatch?: boolean;
+  selectedDuration?: number;
+  visuallySimilarToSceneId?: string;
+  visualSimilarityScore?: number;
   observedShotCount?: number;
   segments?: CinematicEditSegment[];
   supportShotType?: StoryboardScene["cinematicSupportShotType"];
@@ -38,7 +47,7 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
       ? "omit"
       : _.isEqual(technicalDecision, "trim")
         ? "trim"
-        : scene.cinematicTakeDecision || "use";
+        : "use";
     return {
       ...scene,
       sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
@@ -54,6 +63,33 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
       cinematicPerformanceScore: _.isNumber(decision.performanceScore) ? decision.performanceScore : scene.cinematicPerformanceScore,
       cinematicDialogueCoverageScore: _.isNumber(decision.dialogueCoverageScore) ? decision.dialogueCoverageScore : scene.cinematicDialogueCoverageScore,
       cinematicDialogueDetected: _.isBoolean(decision.dialogueDetected) ? decision.dialogueDetected : scene.cinematicDialogueDetected,
+      cinematicSpeechAnalysisAvailable: _.isBoolean(decision.speechAnalysisAvailable)
+        ? decision.speechAnalysisAvailable
+        : scene.cinematicSpeechAnalysisAvailable,
+      cinematicDetectedSpeechRanges: _.isArray(decision.detectedSpeechRanges)
+        ? decision.detectedSpeechRanges
+        : scene.cinematicDetectedSpeechRanges,
+      cinematicRecognizedTranscript: _.isString(decision.recognizedTranscript)
+        ? decision.recognizedTranscript
+        : scene.cinematicRecognizedTranscript,
+      cinematicDialogueCoverageRatio: _.isNumber(decision.dialogueCoverageRatio)
+        ? decision.dialogueCoverageRatio
+        : scene.cinematicDialogueCoverageRatio,
+      cinematicDialogueTextMatchScore: _.isNumber(decision.dialogueTextMatchScore)
+        ? decision.dialogueTextMatchScore
+        : scene.cinematicDialogueTextMatchScore,
+      cinematicDialogueMismatch: _.isBoolean(decision.dialogueMismatch)
+        ? decision.dialogueMismatch
+        : scene.cinematicDialogueMismatch,
+      cinematicSelectedDuration: _.isNumber(decision.selectedDuration)
+        ? decision.selectedDuration
+        : scene.cinematicSelectedDuration,
+      cinematicSimilarSceneId: _.isString(decision.visuallySimilarToSceneId)
+        ? decision.visuallySimilarToSceneId
+        : scene.cinematicSimilarSceneId,
+      cinematicVisualSimilarityScore: _.isNumber(decision.visualSimilarityScore)
+        ? decision.visualSimilarityScore
+        : scene.cinematicVisualSimilarityScore,
       cinematicObservedShotCount: _.toNumber(decision.observedShotCount),
       cinematicEditSegments: _.castArray(decision.segments || []),
       cinematicSupportShotType: decision.supportShotType,
@@ -85,7 +121,7 @@ const normalizeCinematicEditSegments = (
     validSegments,
     (segments, segment) => {
       const previous = _.last(segments);
-      if (previous && _.lt(segment.inSeconds, previous.outSeconds)) {
+      if (previous && _.lte(segment.inSeconds, previous.outSeconds + CINEMATIC_EDIT_ANALYSIS_CONFIG.LIBRARY.segment_merge_gap_seconds)) {
         previous.outSeconds = _.max([previous.outSeconds, segment.outSeconds]) || previous.outSeconds;
         previous.containsDialogue = previous.containsDialogue || segment.containsDialogue;
         previous.storyContribution = _.join(
