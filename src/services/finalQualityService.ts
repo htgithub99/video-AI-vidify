@@ -22,6 +22,7 @@ const requiresSceneReview = (scene: VideoProject["storyboard"][number]): boolean
 
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
+  const finalQaBlockingErrors = getUsableFinalQaBlockingErrors(project);
 
   const scenes: ManualReviewItem[] = _.map(
     _.filter(project.storyboard || [], requiresSceneReview),
@@ -74,12 +75,12 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
       : [];
 
   const finalVideo: ManualReviewItem[] =
-    project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !_.isEmpty(project.finalMultimodalQa.blockingErrors)
+    project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !_.isEmpty(finalQaBlockingErrors)
       ? [
           {
             id: "review_final",
             scope: "final" as const,
-            reason: _.join(project.finalMultimodalQa.blockingErrors, ",") || "final_multimodal_qa_failed",
+            reason: _.join(finalQaBlockingErrors, ",") || "final_multimodal_qa_failed",
             status: ManualReviewStatus.Pending,
             createdAt,
           },

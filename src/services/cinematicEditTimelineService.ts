@@ -39,23 +39,40 @@ export const hasCinematicSceneDialogue = (scene: Partial<StoryboardScene>): bool
 
 export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], decisions: CinematicClipAnalysisDecision[]): StoryboardScene[] => {
   const decisionsByScene = _.keyBy(decisions, "sceneId");
-  return _.map(scenes, (scene) => {
+  return _.map(scenes, (scene, sceneIndex) => {
     const decision = decisionsByScene[scene.id];
     if (!decision) return scene;
     const technicalDecision = _.toString(decision.takeDecision);
-    const takeDecision: StoryboardScene["cinematicTakeDecision"] = _.isEqual(technicalDecision, "omit")
+    const isNarrativeBookend = _.includes([0, scenes.length - 1], sceneIndex);
+    const preserveNarrativeBookend = Boolean(
+      CINEMATIC_EDIT_ANALYSIS_CONFIG.PRESERVE_NARRATIVE_BOOKENDS && isNarrativeBookend && _.isEqual(technicalDecision, "omit"),
+    );
+    const takeDecision: StoryboardScene["cinematicTakeDecision"] = preserveNarrativeBookend
+      ? "use"
+      : _.isEqual(technicalDecision, "omit")
       ? "omit"
       : _.isEqual(technicalDecision, "trim")
         ? "trim"
         : "use";
+    const preservedSegments = preserveNarrativeBookend ? [] : _.castArray(decision.segments || []);
     return {
       ...scene,
-      sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
-      sourceTrimEndSeconds: _.toNumber(decision.trimEndSeconds),
+      sourceTrimStartSeconds: preserveNarrativeBookend ? CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_ZERO_SECONDS : _.toNumber(decision.trimStartSeconds),
+      sourceTrimEndSeconds: preserveNarrativeBookend ? CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_ZERO_SECONDS : _.toNumber(decision.trimEndSeconds),
       sourceCrop: _.toString(decision.sourceCrop || ""),
-      clipQaWarnings: _.castArray(decision.warnings || []),
+      clipQaWarnings: _.uniq([
+        ..._.castArray(decision.warnings || []),
+        ...(preserveNarrativeBookend ? [CINEMATIC_EDIT_ANALYSIS_CONFIG.BOOKEND_PRESERVED_WARNING] : []),
+      ]),
       cinematicTakeDecision: takeDecision,
-      cinematicTakeDecisionReason: _.join(_.compact([scene.cinematicTakeDecisionReason, decision.reason]), ";"),
+      cinematicTakeDecisionReason: _.join(
+        _.compact([
+          scene.cinematicTakeDecisionReason,
+          decision.reason,
+          preserveNarrativeBookend ? CINEMATIC_EDIT_ANALYSIS_CONFIG.BOOKEND_PRESERVED_REASON : "",
+        ]),
+        ";",
+      ),
       transition: _.toString(decision.recommendedTransition || scene.transition),
       cinematicAudioBridgeMode: decision.audioBridgeMode,
       cinematicContinuityScore: _.isNumber(decision.continuityScore) ? decision.continuityScore : scene.cinematicContinuityScore,
@@ -91,7 +108,7 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
         ? decision.visualSimilarityScore
         : scene.cinematicVisualSimilarityScore,
       cinematicObservedShotCount: _.toNumber(decision.observedShotCount),
-      cinematicEditSegments: _.castArray(decision.segments || []),
+      cinematicEditSegments: preservedSegments,
       cinematicSupportShotType: decision.supportShotType,
     };
   });

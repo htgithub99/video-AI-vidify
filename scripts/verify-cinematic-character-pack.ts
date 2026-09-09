@@ -83,6 +83,8 @@ assert.match(characterPrompt, /reusable Flow Character/i);
 assert.match(characterPrompt, /Show only that character/i);
 assert.match(characterPrompt, /three-quarter standing view/i);
 assert.match(characterPrompt, /plain or softly segmented neutral background/i);
+assert.match(characterPrompt, /hands, feet and complete silhouette/i);
+assert.match(characterPrompt, /no fused or extra limbs/i);
 assert.match(characterPrompt, /Do not include another subject, scenery, story action, collage, turnaround sheet, duplicate body/i);
 assert.match(characterPrompt, /exact character name/i);
 assert.doesNotMatch(characterPrompt, /sourceIdentityEvidence|speciesPresentation|identityContinuityRisks|faceShape|timelineStages/i);
@@ -104,6 +106,9 @@ assert.doesNotMatch(pipelineSource, /hasCompleteCharacterReferences/);
 assert.match(imageGeneratorSource, /attachFlowCharactersByName/);
 assert.match(imageGeneratorSource, /FLOW_CHARACTER_CONFIG\.CHARACTER_FILTER/);
 assert.match(imageGeneratorSource, /ensureFlowCharacters/);
+assert.match(imageGeneratorSource, /captureFlowCharacterReference/);
+assert.match(imageGeneratorSource, /imageUrl/);
+assert.match(pipelineSource, /characterImages: _\.compact/);
 
 process.stdout.write(
   JSON.stringify({ passed: true, cinematicFlowCharacterCount: cinematicReferences.referenceCharacterNames.length, automaticReferencesUnchanged: true }),

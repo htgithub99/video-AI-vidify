@@ -3436,6 +3436,7 @@ router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAG
     });
     const result = await ensureFlowCharacters({
       characters: requestedCharacters,
+      projectId: localProjectId,
       flowProjectId: _.toString(localProject.visualConfig?.flowProjectId),
       chromeHeadless: _.isBoolean(req.body?.chromeHeadless) ? req.body.chromeHeadless : localProject.visualConfig?.chromeHeadless,
       language: req.body?.language,

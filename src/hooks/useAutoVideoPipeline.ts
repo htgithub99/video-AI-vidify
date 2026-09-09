@@ -2152,96 +2152,6 @@ export function useAutoVideoPipeline(
       const resolvedThumbnailReferenceImages = resolveThumbnailReferenceImages(voiceUpdatedProj.visualConfig);
 
       const sandboxConfigPayload = { localProjectId: voiceUpdatedProj.id, flowProjectId: voiceUpdatedProj.visualConfig?.flowProjectId };
-      if (isCinematicEpisodeGenre(config.genre) && !_.isEqual(runIntent, "render_only")) {
-        const existingCharacters = _.take(_.defaultTo(voiceUpdatedProj.visualConfig.characters, []), CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS);
-        const charactersMissingReferences = _.filter(
-          existingCharacters,
-          (character) =>
-            !_.isEqual(character.flowCharacterProfileVersion, CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION) ||
-            !_.isEqual(character.flowCharacterProjectId, sandboxConfigPayload.flowProjectId) ||
-            !_.isEqual(character.flowCharacterName, character.name),
-        );
-        if (!_.isEmpty(charactersMissingReferences)) {
-          appendCinematicLog(
-            config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_START,
-            CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
-          );
-          const flowCharacterResult = await pipelineSystemFetch(
-            API_ROUTES.PIPELINE_ENSURE_FLOW_CHARACTERS,
-            {
-              projectId: voiceUpdatedProj.id,
-              characters: charactersMissingReferences,
-              chromeHeadless: config.chromeHeadless,
-              language: config.language,
-            },
-            requestSignal,
-          );
-          const createdCharacterIds = new Set(
-            _.map(_.filter(_.castArray(flowCharacterResult.data?.characters || []), (result) => result?.success), "id"),
-          );
-          const resolvedFlowProjectId = _.trim(_.toString(flowCharacterResult.data?.newProjectId || sandboxConfigPayload.flowProjectId));
-          if (!_.isEmpty(resolvedFlowProjectId)) sandboxConfigPayload.flowProjectId = resolvedFlowProjectId;
-          const charactersWithReferences = _.map(existingCharacters, (character) =>
-            createdCharacterIds.has(character.id)
-              ? {
-                  ...character,
-                  images: [],
-                  flowCharacterName: character.name,
-                  flowCharacterProjectId: resolvedFlowProjectId,
-                  flowCharacterProfileVersion: CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION,
-                  extracted: true,
-                }
-              : character,
-          );
-          voiceUpdatedProj = {
-            ...voiceUpdatedProj,
-            visualConfig: {
-              ...voiceUpdatedProj.visualConfig,
-              characters: charactersWithReferences,
-              flowProjectId: resolvedFlowProjectId || voiceUpdatedProj.visualConfig.flowProjectId,
-              characterImages: [],
-              characterExtracted: _.every(charactersWithReferences, (character) => !_.isEmpty(character.flowCharacterName)),
-              characterConsistency: !_.isEmpty(charactersWithReferences),
-            },
-          };
-          voiceUpdatedProj = await syncProject(voiceUpdatedProj);
-          const characterReferencesComplete = Boolean(
-            flowCharacterResult.success &&
-              _.every(
-                charactersWithReferences,
-                (character) =>
-                  _.isEqual(character.flowCharacterName, character.name) &&
-                  _.isEqual(character.flowCharacterProjectId, resolvedFlowProjectId) &&
-                  _.isEqual(character.flowCharacterProfileVersion, CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION),
-              ),
-          );
-          appendCinematicLog(
-            config.language === ProjectLanguage.VI
-              ? characterReferencesComplete
-                ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY
-                : CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL
-              : characterReferencesComplete
-                ? CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_READY
-                : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_PARTIAL,
-            CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
-          );
-          if (!characterReferencesComplete) {
-            const failedCharacterReferences = _.map(
-              _.filter(_.castArray(flowCharacterResult.data?.characters || []), (result) => !result?.success),
-              "name",
-            );
-            const failureTemplate =
-              config.language === ProjectLanguage.VI
-                ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_REQUIRED
-                : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_REQUIRED;
-            throw new Error(
-              failureTemplate
-                .replace(SecurityConstants.PLACEHOLDER_0, _.join(_.uniq(failedCharacterReferences), ", ") || _.toString(flowCharacterResult.error || flowCharacterResult.data?.warning))
-                .replace(SecurityConstants.PLACEHOLDER_1, _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)),
-            );
-          }
-        }
-      }
       const isVideoStageContinuation =
         isCinematicPipeline && isContinuation && _.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.VIDEO);
       const cachedSeoData = isContinuation && newProj.seo ? newProj.seo : null;
@@ -3117,6 +3027,102 @@ export function useAutoVideoPipeline(
             }
           };
           await generateFilmThumbnails();
+
+          // Create each Flow Character only after the cover and SEO planning
+          // stage has completed. This keeps the production order predictable
+          // and lets the generated portrait be saved for later inspection,
+          // while scene generation still uses Flow's native Characters.
+          if (!_.isEqual(runIntent, "render_only")) {
+            const existingCharacters = _.take(_.defaultTo(voiceUpdatedProj.visualConfig.characters, []), CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS);
+            const charactersMissingReferences = _.filter(
+              existingCharacters,
+              (character) =>
+                !_.isEqual(character.flowCharacterProfileVersion, CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION) ||
+                !_.isEqual(character.flowCharacterProjectId, sandboxConfigPayload.flowProjectId) ||
+                !_.isEqual(character.flowCharacterName, character.name) ||
+                _.isEmpty(character.images),
+            );
+            if (!_.isEmpty(charactersMissingReferences)) {
+              appendCinematicLog(
+                config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_START,
+                CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
+              );
+              const flowCharacterResult = await pipelineSystemFetch(
+                API_ROUTES.PIPELINE_ENSURE_FLOW_CHARACTERS,
+                {
+                  projectId: voiceUpdatedProj.id,
+                  characters: charactersMissingReferences,
+                  chromeHeadless: config.chromeHeadless,
+                  language: config.language,
+                },
+                requestSignal,
+              );
+              const successfulCharacterResults = _.filter(_.castArray(flowCharacterResult.data?.characters || []), (result) => result?.success);
+              const createdCharacterIds = new Set(_.map(successfulCharacterResults, "id"));
+              const resolvedFlowProjectId = _.trim(_.toString(flowCharacterResult.data?.newProjectId || sandboxConfigPayload.flowProjectId));
+              if (!_.isEmpty(resolvedFlowProjectId)) sandboxConfigPayload.flowProjectId = resolvedFlowProjectId;
+              const characterImagesById = _.keyBy(successfulCharacterResults, "id");
+              const charactersWithReferences = _.map(existingCharacters, (character) =>
+                createdCharacterIds.has(character.id)
+                  ? {
+                      ...character,
+                      images: _.compact(_.castArray(characterImagesById[character.id]?.imageUrl || character.images)),
+                      flowCharacterName: character.name,
+                      flowCharacterProjectId: resolvedFlowProjectId,
+                      flowCharacterProfileVersion: CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION,
+                      extracted: true,
+                    }
+                  : character,
+              );
+              voiceUpdatedProj = {
+                ...voiceUpdatedProj,
+                visualConfig: {
+                  ...voiceUpdatedProj.visualConfig,
+                  characters: charactersWithReferences,
+                  flowProjectId: resolvedFlowProjectId || voiceUpdatedProj.visualConfig.flowProjectId,
+                  characterImages: _.compact(_.map(charactersWithReferences, (character) => _.first(character.images))),
+                  characterExtracted: _.every(charactersWithReferences, (character) => !_.isEmpty(character.flowCharacterName)),
+                  characterConsistency: !_.isEmpty(charactersWithReferences),
+                },
+              };
+              voiceUpdatedProj = await syncProject(voiceUpdatedProj);
+              const characterReferencesComplete = Boolean(
+                flowCharacterResult.success &&
+                  _.every(
+                    charactersWithReferences,
+                    (character) =>
+                      _.isEqual(character.flowCharacterName, character.name) &&
+                      _.isEqual(character.flowCharacterProjectId, resolvedFlowProjectId) &&
+                      _.isEqual(character.flowCharacterProfileVersion, CINEMATIC_CHARACTER_PACK_CONFIG.FLOW_CHARACTER_PROFILE_VERSION),
+                  ),
+              );
+              appendCinematicLog(
+                config.language === ProjectLanguage.VI
+                  ? characterReferencesComplete
+                    ? CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY
+                    : CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL
+                  : characterReferencesComplete
+                    ? CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_READY
+                    : CINEMATIC_PLANNING_MESSAGES.EN_CHARACTER_PACK_PARTIAL,
+                CINEMATIC_PROGRESS_STAGE.THUMBNAIL,
+              );
+              if (!characterReferencesComplete) {
+                const failedCharacterReferences = _.map(
+                  _.filter(_.castArray(flowCharacterResult.data?.characters || []), (result) => !result?.success),
+                  "name",
+                );
+                const failureTemplate =
+                  config.language === ProjectLanguage.VI
+                    ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_CHARACTER_REFERENCE_REQUIRED
+                    : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_CHARACTER_REFERENCE_REQUIRED;
+                throw new Error(
+                  failureTemplate
+                    .replace(SecurityConstants.PLACEHOLDER_0, _.join(_.uniq(failedCharacterReferences), ", ") || _.toString(flowCharacterResult.error || flowCharacterResult.data?.warning))
+                    .replace(SecurityConstants.PLACEHOLDER_1, _.toString(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS)),
+                );
+              }
+            }
+          }
           if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.THUMBNAIL)) {
             appendCinematicLog(cinematicProgressMessages.THUMBNAIL_READY, CINEMATIC_PROGRESS_STAGE.THUMBNAIL);
           }
