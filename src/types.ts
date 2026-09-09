@@ -577,6 +577,11 @@ export interface StoryboardScene {
   layout?: "single_frame" | "split_screen" | "collage";
   textAllowed?: boolean;
   narrativeBeatId?: string;
+  narrativeRole?: string;
+  storyQuestion?: string;
+  storyChange?: string;
+  isFilmIntro?: boolean;
+  introTitle?: string;
   shotPurpose?: ShotPurpose;
   characterStage?: string;
   locationId?: string;

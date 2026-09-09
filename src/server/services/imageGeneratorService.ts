@@ -1493,10 +1493,23 @@ const getFlowCharacterPageUrl = (projectId: string): string =>
 const getFlowProjectUrl = (projectId: string): string => `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${projectId}`;
 
 const isFlowCharacterAvailable = async (page: Page, projectId: string, characterName: string): Promise<boolean> => {
-  await page.goto(getFlowProjectUrl(projectId), {
-    waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
-    timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS,
-  });
+  const projectUrl = getFlowProjectUrl(projectId).replace(/\/$/, "");
+  const currentUrl = _.trimEnd(_.trim(page.url()), "/");
+  const isSameProjectPage = (() => {
+    try {
+      const expected = new URL(projectUrl);
+      const current = new URL(currentUrl);
+      return _.isEqual(expected.origin, current.origin) && _.isEqual(_.trimEnd(expected.pathname, "/"), _.trimEnd(current.pathname, "/"));
+    } catch {
+      return _.isEqual(currentUrl, projectUrl);
+    }
+  })();
+  if (!isSameProjectPage) {
+    await page.goto(projectUrl, {
+      waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
+      timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS,
+    });
+  }
   await dismissFlowOnboarding(page);
   const projectCharacterNavigation = page.getByText(FLOW_CHARACTER_CONFIG.CHARACTER_FILTER, { exact: true }).first();
   if (await projectCharacterNavigation.isVisible().catch(() => false)) {
@@ -1592,9 +1605,6 @@ const captureFlowCharacterReference = async (page: Page, projectId: string | und
   const filename = `${GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_FILE_PREFIX}${_.kebabCase(character.name)}${REFACTOR_CONSTANTS.FILE_EXT_PNG}`;
   const imagePath = path.join(imageDirectory, filename);
 
-  // Flow may leave us on the project library after pressing Done. Prefer the
-  // generated portrait on the character page; fall back to the portrait
-  // image inside the library card when Flow keeps the detail view closed.
   let imageLocator = page.locator(FLOW_CHARACTER_CONFIG.GENERATED_CHARACTER_IMAGE_SELECTOR).last();
   if (!(await imageLocator.isVisible().catch(() => false))) {
     const characterCard = locateFlowCharacterCard(page, character.name);
@@ -1612,28 +1622,43 @@ const captureFlowCharacterReference = async (page: Page, projectId: string | und
 
   if (!(await imageLocator.isVisible().catch(() => false))) return undefined;
   await imageLocator.screenshot({ path: imagePath, type: "png" });
+  if (!fs.existsSync(imagePath) || _.lte(fs.statSync(imagePath).size, SecurityConstants.ZERO)) return undefined;
   return `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${_.trim(projectId)}/${PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY}/${REFERENCE_ASSET_GROUP.CHARACTER}/${filename}`;
 };
 
-const createFlowCharacter = async (page: Page, projectId: string, character: FlowCharacterInput): Promise<void> => {
-  if (await isFlowCharacterAvailable(page, projectId, character.name)) return;
+const createFlowCharacter = async (page: Page, projectId: string, localProjectId: string | undefined, character: FlowCharacterInput): Promise<string> => {
+  if (await isFlowCharacterAvailable(page, projectId, character.name)) {
+    const existingImageUrl = await captureFlowCharacterReference(page, localProjectId, character);
+    if (!_.isEmpty(existingImageUrl)) return existingImageUrl;
+    throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
+  }
 
   let lastError: unknown;
+  let editorOpened = false;
+  let savedImageUrl = "";
   for (let attempt = SecurityConstants.ZERO; attempt < FLOW_CHARACTER_CONFIG.MAX_CREATE_ATTEMPTS; attempt++) {
     try {
-      // Re-check after a transient Flow timeout. The previous attempt may
-      // already have committed the character; creating again would duplicate
-      // the portrait in the Characters library.
-      if (await isFlowCharacterAvailable(page, projectId, character.name)) return;
       let nameInput = locateFlowCharacterNameInput(page);
-      const canReuseDraft = FLOW_CHARACTER_CONFIG.CHARACTER_DETAIL_URL_PATTERN.test(page.url()) && (await nameInput.isVisible().catch(() => false));
-      if (!canReuseDraft) {
-        await page.goto(getFlowCharacterPageUrl(projectId), {
-          waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
-          timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS,
-        });
-        await dismissFlowOnboarding(page);
-        let promptInput = page.locator(`${FLOW_CHARACTER_CONFIG.PROMPT_SELECTOR}:visible`).last();
+      let promptInput = page.locator(`${FLOW_CHARACTER_CONFIG.PROMPT_SELECTOR}:visible`).last();
+      const canReuseGeneratedDraft =
+        FLOW_CHARACTER_CONFIG.CHARACTER_DETAIL_URL_PATTERN.test(page.url()) &&
+        (await nameInput.isVisible().catch(() => false)) &&
+        ((await hasFlowCharacterImage(page)) ||
+          (await page
+            .getByRole("button", { name: FLOW_CHARACTER_CONFIG.CREATE_PORTRAIT_BUTTON })
+            .last()
+            .isVisible()
+            .catch(() => false)));
+      if (!canReuseGeneratedDraft) {
+        if (!editorOpened || !FLOW_CHARACTER_CONFIG.CHARACTER_DETAIL_URL_PATTERN.test(page.url())) {
+          await page.goto(getFlowCharacterPageUrl(projectId), {
+            waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
+            timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS,
+          });
+          await dismissFlowOnboarding(page);
+          editorOpened = true;
+        }
+        promptInput = page.locator(`${FLOW_CHARACTER_CONFIG.PROMPT_SELECTOR}:visible`).last();
         if (!(await promptInput.isVisible().catch(() => false))) {
           const newCharacterButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.NEW_CHARACTER_BUTTON }).last();
           if (await newCharacterButton.isVisible().catch(() => false)) await newCharacterButton.click();
@@ -1659,6 +1684,8 @@ const createFlowCharacter = async (page: Page, projectId: string, character: Flo
             .isVisible()
             .catch(() => false);
           if (nameReady && (imageReady || portraitCanBeStarted)) break;
+          const bodyText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText().catch(() => "");
+          if (FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_PATTERN.test(bodyText)) throw createAppError(FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_ERROR);
           const nextButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.NEXT_BUTTON }).last();
           if (!nameReady && (await nextButton.isEnabled().catch(() => false))) {
             await nextButton.click();
@@ -1672,7 +1699,12 @@ const createFlowCharacter = async (page: Page, projectId: string, character: Flo
         throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       }
       if (!(await ensureFlowCharacterImage(page, character))) {
-        throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
+        const bodyText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText().catch(() => "");
+        throw createAppError(
+          FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_PATTERN.test(bodyText)
+            ? FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_ERROR
+            : FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name),
+        );
       }
       if (!(await finalizeFlowCharacterName(page, character.name))) {
         throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
@@ -1682,27 +1714,20 @@ const createFlowCharacter = async (page: Page, projectId: string, character: Flo
         const infoInput = page.getByLabel(FLOW_CHARACTER_CONFIG.INFO_LABEL).last();
         if (await infoInput.isVisible().catch(() => false)) await infoInput.fill(_.trim(character.info));
       }
-      const doneButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.DONE_BUTTON }).last();
-      await doneButton.waitFor({ state: "visible", timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS });
-      await doneButton.click();
-      await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
-      if (!(await isFlowCharacterAvailable(page, projectId, character.name))) {
+      savedImageUrl = _.defaultTo(await captureFlowCharacterReference(page, localProjectId, character), "");
+      if (_.isEmpty(savedImageUrl)) {
         throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       }
-      return;
+      const doneButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.DONE_BUTTON }).last();
+      await doneButton.click({ timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS }).catch(() => undefined);
+      return savedImageUrl;
     } catch (error) {
       lastError = error;
-      if ((await hasFlowCharacterImage(page)) && (await finalizeFlowCharacterName(page, character.name))) {
-        const doneButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.DONE_BUTTON }).last();
-        if (await doneButton.isVisible().catch(() => false)) {
-          await doneButton.click().catch(() => undefined);
-          await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
-          if (await isFlowCharacterAvailable(page, projectId, character.name)) return;
-        }
-      }
-      await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
-      if (await isFlowCharacterAvailable(page, projectId, character.name)) return;
+      if (!_.isEmpty(savedImageUrl)) return savedImageUrl;
       await captureGeminiDomState(page, `flow-character-${_.kebabCase(character.name)}-attempt-${_.add(attempt, 1)}`).catch(() => undefined);
+      if (_.lt(attempt + SecurityConstants.DEFAULT_AMOUNT, FLOW_CHARACTER_CONFIG.MAX_CREATE_ATTEMPTS)) {
+        await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
+      }
     }
   }
   throw lastError instanceof Error
@@ -1741,8 +1766,8 @@ export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions)
         : FLOW_CHARACTER_CONFIG.VI_CREATE_START;
       appLog(startMessage.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       try {
-        await createFlowCharacter(page, currentProjectId, character);
-        const imageUrl = await captureFlowCharacterReference(page, options.projectId, character).catch(() => undefined);
+        const imageUrl = await createFlowCharacter(page, currentProjectId, options.projectId, character);
+        if (_.isEmpty(imageUrl)) throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
         results.push({ id: character.id, name: character.name, success: true, imageUrl });
         const successMessage = _.isEqual(options.language, ProjectLanguage.EN)
           ? FLOW_CHARACTER_CONFIG.EN_CREATE_SUCCESS

@@ -147,6 +147,19 @@ assert.deepEqual(
 );
 assert.deepEqual(
   getCinematicStoryboardReadinessIssues(
+    [
+      { id: "scene_intro", script: "Opening title image.", isFilmIntro: true },
+      { id: "content_1", script: "Mở đầu câu chuyện." },
+      { id: "content_2", script: "Kết thúc câu chuyện." },
+    ] as any,
+    2,
+    { passed: true, scriptCoverageScore: 100, pacingCoverageScore: 100 } as any,
+  ),
+  [],
+  "The separate intro must not replace or increase the requested content-scene count",
+);
+assert.deepEqual(
+  getCinematicStoryboardReadinessIssues(
     [{ id: "missing_story", script: "Một cảnh quá thiếu." }] as any,
     1,
     { passed: true, scriptCoverageScore: 64, pacingCoverageScore: 90, blockingErrors: [] } as any,

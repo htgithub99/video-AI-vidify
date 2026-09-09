@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  getCinematicCharacterProviderRepairPrompt,
   getCinematicSceneImageProviderRepairPrompt,
   getCinematicThumbnailProviderRepairPrompt,
 } from "../src/constants/cinematicPrompts";
@@ -28,12 +29,20 @@ const thumbnailRepairPrompt = getCinematicThumbnailProviderRepairPrompt(
 );
 assert.match(thumbnailRepairPrompt, /approved layout and exact visible headline/i);
 
+const characterRepairPrompt = getCinematicCharacterProviderRepairPrompt(
+  "A highly detailed original mythic warrior character reference.",
+  { id: "char_001", name: "Warrior", description: "Adult original fantasy warrior" },
+);
+assert.match(characterRepairPrompt, /Google Flow Characters/i);
+assert.match(characterRepairPrompt, /complete standalone prompt/i);
+
 const imageGeneratorSource = readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8");
 assert.match(imageGeneratorSource, /terminalWarning = errorMessage/);
 assert.match(imageGeneratorSource, /warning: terminalWarning/);
 
 const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
-assert.doesNotMatch(pipelineSource, /CHARACTER_REFERENCE_PROVIDER_REJECTION_PURPOSE/);
+assert.match(pipelineSource, /CHARACTER_PROVIDER_REJECTION_PURPOSE/);
+assert.match(pipelineSource, /VI_CHARACTER_PROMPT_REPAIRING/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /VI_CHARACTER_REFERENCE_REQUIRED/);
 assert.match(pipelineSource, /VI_THUMBNAIL_REQUIRED/);
@@ -42,7 +51,7 @@ assert.doesNotMatch(pipelineSource, /clean film keyframe|keyframe sạch/i);
 assert.doesNotMatch(pipelineSource, /PIPELINE_EXTRACT_THUMBNAIL_FRAME/);
 
 const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-assert.doesNotMatch(controllerSource, /getCinematicCharacterReferenceProviderRepairPrompt/);
+assert.match(controllerSource, /getCinematicCharacterProviderRepairPrompt/);
 assert.match(controllerSource, /getCinematicSceneImageProviderRepairPrompt/);
 assert.doesNotMatch(controllerSource, /EXTRACT_THUMBNAIL_FRAME/);
 

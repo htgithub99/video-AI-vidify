@@ -11,6 +11,12 @@ export const CINEMATIC_POLICY_CONFIG = {
   PLANNING_WORKER_COUNT: 1,
   CLIENT_PLANNING_ATTEMPTS: 2,
   MIN_DIALOGUE_COVERAGE_SCORE: 70,
+  INTRO_SCENE_ID: "scene_intro",
+  INTRO_CHAPTER_ID: "intro",
+  INTRO_NARRATIVE_ROLE: "intro",
+  INTRO_TIMECODE: "00:00",
+  INTRO_ASSET_STRATEGY: "ai_generated",
+  NARRATIVE_ANCHOR_ROLES: ["intro", "setup", "inciting_incident", "climax", "consequence", "resolution", "payoff"],
 } as const;
 
 export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v4-flow-characters";
@@ -290,6 +296,10 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   EN_CHARACTER_PACK_PARTIAL: "Step 3/4 · Some Flow Characters are incomplete; the project was saved at this step.",
   VI_CHARACTER_PACK_FAILED: "Flow Character chưa hoàn tất. Đã dừng trước khi tạo clip để tránh sai nhân vật.",
   EN_CHARACTER_PACK_FAILED: "Flow Characters are incomplete. Production stopped before clip generation to avoid incorrect identities.",
+  VI_STORY_PLAN_READY: "AI đã viết {0} nhịp truyện và một clip intro riêng; mỗi clip {1} giây tập trung vào một khoảnh khắc rõ ràng.",
+  EN_STORY_PLAN_READY: "AI authored {0} story beats plus one separate intro clip; each {1}-second clip focuses on one clear moment.",
+  VI_STORY_PLAN_COUNT_NOTE: "AI trả {0}/{1} cảnh nội dung; intro được xử lý riêng và không làm mất nhịp truyện.",
+  EN_STORY_PLAN_COUNT_NOTE: "AI returned {0}/{1} content scenes; the intro is handled separately and does not replace a story beat.",
 } as const;
 
 export const CINEMATIC_CHARACTER_PACK_CONFIG = {

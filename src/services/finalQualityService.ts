@@ -3,10 +3,6 @@ import { AssetAcceptance, FinalQualityReport, ManualReviewItem, ManualReviewStat
 import { getFinalCompletionReadiness } from "./pipelineCompletionPolicyService";
 import { hasSceneAsset } from "./projectImageGenerationService";
 
-// A final multimodal review may be unavailable (for example when the optional
-// frame/audio extraction or AI review service is offline).  That must not turn
-// an otherwise rendered film into a failed/partial pipeline: the file is still
-// usable and the missing review is advisory only.
 const FINAL_QA_EVIDENCE_UNAVAILABLE_PATTERN = /(?:no chronological frames|rendered audio mix.*(?:supplied|provided)|final[_ ]?qa.*(?:unavailable|missing)|visual[_ ]?qa.*unavailable)/i;
 
 const getUsableFinalQaBlockingErrors = (project: VideoProject): string[] =>

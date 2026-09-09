@@ -180,6 +180,7 @@ import {
   getCinematicSeoPrompt,
   getCinematicStoryboardRecoveryPrompt,
   getCinematicSceneImageProviderRepairPrompt,
+  getCinematicCharacterProviderRepairPrompt,
   getCinematicThumbnailPrompt,
   getCinematicThumbnailProviderRepairPrompt,
   getCinematicThumbnailTechnicalRepairPrompt,
@@ -275,6 +276,7 @@ import {
   CINEMATIC_ROOM_STAGE,
   CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
   createCinematicArtifactRequestId,
+  CINEMATIC_POLICY_CONFIG,
   resolveCinematicClipDuration,
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
@@ -1764,6 +1766,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         );
       const getFilmPackageIssues = (value: Record<string, any> | undefined, requireRequestIdentity: boolean = true): string[] => {
         const scenes = _.castArray(value?.scenes || []);
+        const intro = value?.intro;
         const sceneIds = _.map(scenes, (scene) => _.trim(_.toString(scene?.id)));
         return _.compact([
           _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
@@ -1774,6 +1777,10 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
             "artifact:request_mismatch",
           _.isEmpty(_.castArray(value?.chapters || [])) && "chapters:missing",
           _.isEmpty(scenes) && "scenes:missing",
+          _.isEmpty(intro) && "intro:missing",
+          !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.script))) && "intro:script_missing",
+          !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.introTitle))) && "intro:title_missing",
+          !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.generationPrompt))) && "intro:generationPrompt_missing",
           !_.isEqual(_.size(scenes), targetClipCount) &&
             _.replace(
               _.replace(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.ACTUAL_COUNT_TOKEN, _.toString(_.size(scenes))),
@@ -1917,6 +1924,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         scriptQa: undefined,
         chapters: finalChapters,
         characters: _.castArray(cinematicFilmPackage?.characters || []),
+        intro: cinematicFilmPackage?.intro,
         characterAnalysis: _.toString(cinematicFilmPackage?.characterAnalysis),
         characterSpecs: _.toString(cinematicFilmPackage?.characterSpecs),
         identityContinuityRisks: _.castArray(cinematicFilmPackage?.identityContinuityRisks || []),
@@ -3933,6 +3941,8 @@ router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Respons
       ? getCinematicThumbnailProviderRepairPrompt(prompt, visualContext)
       : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE)
           ? getCinematicSceneImageProviderRepairPrompt(prompt, visualContext)
+          : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_PROVIDER_REJECTION_PURPOSE)
+            ? getCinematicCharacterProviderRepairPrompt(prompt, visualContext)
           : getVisualPromptQaRepairPrompt(prompt, qaIssues, visualContext, purpose);
     const response = await generateContentWithRetry({
       contents: repairPrompt,
@@ -4101,6 +4111,8 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
             path: _.toString(decision.sourcePath),
             hasAudio: Boolean(decision.hasAudio),
             protectDialogue: hasCinematicSceneDialogue(scene || {}),
+            narrativeRole: _.toString(scene?.narrativeRole),
+            protectNarrative: Boolean(scene?.isFilmIntro) || _.includes(CINEMATIC_POLICY_CONFIG.NARRATIVE_ANCHOR_ROLES, _.toLower(_.toString(scene?.narrativeRole))),
             expectedDialogue: _.trim(_.toString(scene?.spokenDialogue || scene?.subtitle)),
             dialogueLanguage: _.toString(req.body?.language),
           };
@@ -4182,6 +4194,11 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
           "id",
           "script",
           "visualIntent",
+          "narrativeRole",
+          "storyQuestion",
+          "storyChange",
+          "isFilmIntro",
+          "introTitle",
           "visibleAction",
           "reaction",
           "storyEvidence",

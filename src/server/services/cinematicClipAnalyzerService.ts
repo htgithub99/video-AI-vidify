@@ -11,6 +11,8 @@ export interface CinematicLibraryClipInput {
   path: string;
   hasAudio: boolean;
   protectDialogue: boolean;
+  narrativeRole?: string;
+  protectNarrative?: boolean;
   expectedDialogue?: string;
   dialogueLanguage?: string;
 }
@@ -98,12 +100,9 @@ export const validateCinematicEditorialDecisions = (
     if (!_.isEqual(editorial.takeDecision, "omit") && _.isEmpty(segments)) return { valid: false, error: `segments_missing:${sceneId}` };
     const candidatesById = _.keyBy(library.candidateSegments || library.segments, "segmentId");
     const protectedDialogueIds = _.map(
-      _.filter(library.candidateSegments || library.segments, (segment) => segment.containsDialogue && !library.dialogueMismatch),
+      _.filter(library.candidateSegments || library.segments, (segment) => segment.containsDialogue),
       "segmentId",
     );
-    if (_.isEqual(editorial.takeDecision, "omit") && !_.isEmpty(protectedDialogueIds)) {
-      return { valid: false, error: `dialogue_scene_omitted:${sceneId}` };
-    }
     const seenSegmentIds = new Set<string>();
     for (const segment of segments) {
       const segmentId = _.trim(_.toString(segment.segmentId));
@@ -114,7 +113,7 @@ export const validateCinematicEditorialDecisions = (
         return { valid: false, error: `segment_boundary_mismatch:${sceneId}` };
       }
     }
-    if (!_.every(protectedDialogueIds, (segmentId) => seenSegmentIds.has(segmentId))) {
+    if (!_.isEqual(editorial.takeDecision, "omit") && !_.every(protectedDialogueIds, (segmentId) => seenSegmentIds.has(segmentId))) {
       return { valid: false, error: `dialogue_segment_missing:${sceneId}` };
     }
   }

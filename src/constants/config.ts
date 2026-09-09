@@ -891,6 +891,9 @@ export const FLOW_CHARACTER_CONFIG = {
     /(?:reference sheet|turnaround sheet|front and back views|multiple views|face close-?ups?|title label|collage|separate(?:ly)?\s+(?:displayed\s+)?(?:weapon|prop))/i,
   CHARACTER_CARD_ROLE_SELECTOR: '[role="option"], [role="button"], button',
   CHARACTER_DETAIL_URL_PATTERN: /\/character\/[^/?#]+$/i,
+  PROVIDER_REJECTION_PATTERN:
+    /(?:couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|third-party content|không thể tạo|tạo ảnh thất bại|quy tắc cộng đồng|vi phạm chính sách)/i,
+  PROVIDER_REJECTION_ERROR: "Flow couldn't generate this Character because the provider rejected the prompt.",
   ESCAPE_KEY: "Escape",
   NAME_COMMIT_KEY: "Enter",
   ATTACHMENT_VERIFY_TIMEOUT_MS: 15000,
@@ -1368,8 +1371,8 @@ export const SCRIPT_PLAN_CONFIG = {
 } as const;
 
 export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
-  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v3-correlated-final-artifact",
-  LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS: ["cinematic-film-package-v2-english-visual-prompts"],
+  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v4-story-arc-intro-artifact",
+  LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS: ["cinematic-film-package-v3-correlated-final-artifact", "cinematic-film-package-v2-english-visual-prompts"],
   COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
   MAX_OUTPUT_TOKENS: 24_576,
   MAX_RESPONSE_ATTEMPTS: 2,
@@ -1511,9 +1514,6 @@ export const CINEMATIC_EDIT_ANALYSIS_CONFIG = {
   TIMELINE_INDEX_OFFSET: 1,
   TIMELINE_NUMBER_PRECISION: 3,
   TIMELINE_ZERO_SECONDS: 0,
-  PRESERVE_NARRATIVE_BOOKENDS: true,
-  BOOKEND_PRESERVED_WARNING: "narrative_bookend_preserved",
-  BOOKEND_PRESERVED_REASON: "opening_and_resolution_must_remain_in_final_film",
   LIBRARY_SCRIPT_PATH: "python_scripts/cinematic_edit_analyzer.py",
   LIBRARY_REQUEST_FILE_NAME: "library-analysis.json",
   LIBRARY_TIMEOUT_MS: 180000,
@@ -1576,9 +1576,9 @@ export const CINEMATIC_EDIT_ANALYSIS_CONFIG = {
     ai_review_confidence: 55,
     score_scale: 100,
     min_sample_fps: 1,
-    duplicate_clip_similarity_threshold: 0.995,
-    duplicate_clip_perceptual_threshold: 0.965,
-    duplicate_clip_auto_omit_threshold: 0.992,
+    duplicate_clip_similarity_threshold: 0.985,
+    duplicate_clip_perceptual_threshold: 0.94,
+    duplicate_clip_auto_omit_threshold: 0.94,
     internal_segment_similarity_threshold: 0.94,
     silent_selection_ratio: 0.68,
     max_selected_segments: 2,
@@ -1737,6 +1737,7 @@ export const CINEMATIC_GENERATION_RECOVERY_CONFIG = {
   DEFAULT_VISUAL_PURPOSE: "scene image",
   THUMBNAIL_VISUAL_PURPOSE: "thumbnail",
   SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE: "cinematic_scene_image_provider_rejection",
+  CHARACTER_PROVIDER_REJECTION_PURPOSE: "cinematic_character_provider_rejection",
   THUMBNAIL_PROVIDER_REJECTION_PURPOSE: "cinematic_thumbnail_provider_rejection",
   PROVIDER_REPAIR_ATTEMPTS: 2,
   VISUAL_PROMPT_REQUIRED_ERROR: "Visual prompt is required.",
@@ -1744,6 +1745,10 @@ export const CINEMATIC_GENERATION_RECOVERY_CONFIG = {
   EN_CHARACTER_REFERENCE_REQUIRED: "Flow did not finish saving Character {0} after {1} attempts. The project was preserved to resume this step.",
   VI_SCENE_IMAGE_REPAIRING: "[Hình ảnh] {0}: prompt bị nhà cung cấp từ chối; AI đang điều chỉnh và tạo lại riêng cảnh này.",
   EN_SCENE_IMAGE_REPAIRING: "[Image] {0}: the provider rejected the prompt; AI is repairing and retrying only this scene.",
+  VI_CHARACTER_PROMPT_REPAIRING: "[Nhân vật] {0}: nhà cung cấp từ chối prompt; AI đang viết lại prompt riêng rồi thử lại.",
+  EN_CHARACTER_PROMPT_REPAIRING: "[Characters] {0}: the provider rejected the prompt; AI is rewriting only this Character prompt and retrying.",
+  VI_CHARACTER_RETRYING: "[Nhân vật] {0}: đang tạo lại sau khi AI sửa prompt.",
+  EN_CHARACTER_RETRYING: "[Characters] {0}: retrying after AI repaired the prompt.",
   VI_THUMBNAIL_RETRYING: "[Ảnh bìa] {0}: đang tạo lại riêng ảnh này ({1}/{2}).",
   EN_THUMBNAIL_RETRYING: "[Thumbnail] {0}: retrying only this image ({1}/{2}).",
   VI_THUMBNAIL_REQUIRED: "Chưa tạo được ảnh bìa sau {0} lần retry. Kết quả đã hoàn tất được lưu; hãy chọn Tiếp tục dự án để chạy lại riêng ảnh bìa.",
@@ -1909,7 +1914,7 @@ export const GEMINI_MEDIA_ERRORS = {
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
   PROVIDER_REJECTION_PATTERN:
-    /(?:interests? of third-party content providers|third-party content|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi)/i,
+    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|vi phạm chính sách)/i,
 } as const;
 
 export const CINEMATIC_CONFIG = {

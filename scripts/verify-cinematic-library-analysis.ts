@@ -102,6 +102,11 @@ try {
     })),
   }));
   assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, completeEditorialDecisions).valid, true);
+  const dialogueOmitDecisions = [
+    completeEditorialDecisions[1],
+    { sceneId: protectedDialogueDecision.sceneId, takeDecision: "omit", segments: [] },
+  ];
+  assert.equal(validateCinematicEditorialDecisions([ambienceDecision, protectedDialogueDecision], dialogueOmitDecisions).valid, true);
   assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, completeEditorialDecisions.slice(0, 1)).valid, false);
   assert.equal(
     validateCinematicEditorialDecisions(expectedEditorialDecisions, [completeEditorialDecisions[0], completeEditorialDecisions[0]]).valid,

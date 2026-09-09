@@ -112,6 +112,11 @@ export const normalizeVisualShotPlan = (source: Partial<StoryboardScene>, baseSc
   return {
     ...baseScene,
     ..._.pick(source, [
+      "narrativeRole",
+      "storyQuestion",
+      "storyChange",
+      "isFilmIntro",
+      "introTitle",
       "narrativeBeatId",
       "characterStage",
       "visualIntent",
@@ -179,6 +184,11 @@ export const createVisualPlanningPayload = (scenes: StoryboardScene[]): Record<s
       "chapterId",
       "script",
       "subtitle",
+      "narrativeRole",
+      "storyQuestion",
+      "storyChange",
+      "isFilmIntro",
+      "introTitle",
       "narrativeBeatId",
       "characterStateBefore",
       "characterStateAfter",

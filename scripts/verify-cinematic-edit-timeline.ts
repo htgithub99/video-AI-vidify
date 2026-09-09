@@ -33,7 +33,7 @@ const refreshedDecision = applyCinematicClipAnalysisDecisions(
 );
 assert.equal(refreshedDecision[0].cinematicTakeDecision, "use");
 
-const protectedBookends = applyCinematicClipAnalysisDecisions(
+const rejectedBookends = applyCinematicClipAnalysisDecisions(
   [
     { ...scene, id: "opening" },
     { ...scene, id: "middle" },
@@ -45,9 +45,7 @@ const protectedBookends = applyCinematicClipAnalysisDecisions(
     { sceneId: "resolution", takeDecision: "omit", segments: [], reason: "duplicate" },
   ],
 );
-assert.deepEqual(protectedBookends.map((item) => item.cinematicTakeDecision), ["use", "omit", "use"]);
-assert.equal(protectedBookends[0].sourceTrimStartSeconds, 0);
-assert.equal(protectedBookends[2].sourceTrimEndSeconds, 0);
+assert.deepEqual(rejectedBookends.map((item) => item.cinematicTakeDecision), ["omit", "omit", "omit"]);
 
 const overlappingTimeline = createCinematicEditTimeline([{
   ...scene,

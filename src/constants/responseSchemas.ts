@@ -85,6 +85,22 @@ const cinematicFilmPackageSceneSchema = {
     script: stringSchema,
     subtitle: stringSchema,
     characterIds: stringArraySchema,
+    narrativeRole: stringSchema,
+    storyQuestion: stringSchema,
+    storyChange: stringSchema,
+  },
+} as const;
+
+const cinematicFilmPackageIntroSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "script", "introTitle", "generationPrompt"],
+  properties: {
+    id: stringSchema,
+    script: stringSchema,
+    subtitle: stringSchema,
+    introTitle: stringSchema,
+    generationPrompt: stringSchema,
   },
 } as const;
 
@@ -102,7 +118,7 @@ const cinematicFilmPackageChapterSchema = {
 export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "completionMarker"],
+  required: ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "intro", "completionMarker"],
   properties: {
     artifactType: { type: "string", enum: [CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE] },
     requestId: stringSchema,
@@ -117,6 +133,7 @@ export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
     chapters: { type: "array", minItems: 1, items: cinematicFilmPackageChapterSchema },
     characters: { type: "array", maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS, items: cinematicFilmPackageCharacterSchema },
     scenes: { type: "array", minItems: 1, items: cinematicFilmPackageSceneSchema },
+    intro: cinematicFilmPackageIntroSchema,
     completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
   },
 } as const;

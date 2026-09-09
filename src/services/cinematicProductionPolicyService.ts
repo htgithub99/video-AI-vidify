@@ -118,10 +118,10 @@ export const getCinematicStoryboardReadinessIssues = (
     _.compact([
       _.isEmpty(scenes) && "storyboard:missing",
       !_.isEmpty(scenes) &&
-        !_.isEqual(scenes.length, expectedClipCount) &&
+        !_.isEqual(_.size(_.reject(scenes, (scene) => Boolean(scene.isFilmIntro))), expectedClipCount) &&
         CINEMATIC_CHECKPOINT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE.replace(
           CINEMATIC_CHECKPOINT_CONFIG.ACTUAL_COUNT_TOKEN,
-          _.toString(scenes.length),
+          _.toString(_.size(_.reject(scenes, (scene) => Boolean(scene.isFilmIntro)))),
         ).replace(CINEMATIC_CHECKPOINT_CONFIG.EXPECTED_COUNT_TOKEN, _.toString(expectedClipCount)),
       _.some(scenes, (scene) => _.isEmpty(_.trim(scene.script))) && "storyboard:scene_script_missing",
     ]),

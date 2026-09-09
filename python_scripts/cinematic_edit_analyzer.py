@@ -55,8 +55,8 @@ REASON_INVALID = "invalid_duration"
 REASON_UNUSABLE = "insufficient_usable_duration_after_library_analysis"
 REASON_LIBRARY = "library_selected_clean_visual_span"
 REASON_REPEATED = "library_omitted_near_exact_repeated_clip"
-REASON_DIALOGUE_MISMATCH = "library_omitted_wrong_or_repeated_dialogue"
 EMPTY_TEXT = ""
+NARRATIVE_ANCHOR_ROLES = frozenset({"intro", "setup", "inciting_incident", "climax", "consequence", "resolution", "payoff"})
 
 
 @dataclass(frozen=True)
@@ -604,6 +604,8 @@ def analyze_clip(
         return decision
     has_audio = bool(clip.get("hasAudio", True))
     protect_dialogue = bool(clip.get("protectDialogue", False))
+    narrative_role = str(clip.get("narrativeRole", EMPTY_TEXT)).strip().lower()
+    protect_narrative = bool(clip.get("protectNarrative", False)) or narrative_role in NARRATIVE_ANCHOR_ROLES
     ffmpeg_metrics = _run_ffmpeg_probe(video_path, ffmpeg_path, config, has_audio, duration)
     speech_analysis = (
         _detect_speech(video_path, speech_model, speech_model_lock, str(clip.get("dialogueLanguage", EMPTY_TEXT)).lower(), config)
@@ -775,13 +777,6 @@ def analyze_clip(
     )
     if dialogue_mismatch:
         warnings.append(WARNING_DIALOGUE_MISMATCH)
-        take_decision = TAKE_OMIT
-        reason = REASON_DIALOGUE_MISMATCH
-        selected_segments = []
-        trim_start = safe_start
-        trim_end = max(0.0, duration - safe_end)
-        confidence = 0.0
-        dialogue_coverage_ratio = 0.0
     public_candidates = [{key: value for key, value in segment.items() if not key.startswith("_")} for segment in candidates]
     public_selected_segments = [{key: value for key, value in segment.items() if not key.startswith("_")} for segment in selected_segments]
     return {
@@ -814,6 +809,8 @@ def analyze_clip(
         "dialogueCoverageRatio": round(dialogue_coverage_ratio, 4),
         "dialogueTextMatchScore": round(dialogue_text_match_score * config.score_scale, 2),
         "dialogueMismatch": dialogue_mismatch,
+        "narrativeRole": narrative_role,
+        "protectNarrative": protect_narrative,
         "selectedDuration": round(_selected_duration(selected_segments), 3),
         "analysisProvenance": list(dict.fromkeys([LIBRARY_OPENCV, library, "faster-whisper" if speech_model is not None and protect_dialogue else "ffmpeg-silencedetect"])),
         "_visualFingerprint": metrics["visualFingerprint"],

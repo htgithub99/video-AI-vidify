@@ -27,10 +27,11 @@ import {
 import { ThumbnailLayoutId, ThumbnailTypographyId } from "../src/constants/thumbnail";
 import type { ThumbnailItem } from "../src/types";
 
-assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.required, ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "completionMarker"]);
+assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.required, ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "intro", "completionMarker"]);
 assert("completionMarker" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties);
 assert(!("continuityScore" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties));
 assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.scenes.items.required, ["id", "chapterId", "script", "subtitle", "characterIds"]);
+assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.intro.required, ["id", "script", "introTitle", "generationPrompt"]);
 const exactSceneSchema = createCinematicFilmPackageResponseSchema(12);
 assert.equal(exactSceneSchema.properties.scenes.minItems, 12);
 assert.equal(exactSceneSchema.properties.scenes.maxItems, 12);
@@ -47,10 +48,12 @@ assert.match(prompt, /Show only that character/i);
 assert.match(prompt, /full body in a natural three-quarter standing view/i);
 assert.match(prompt, /exact character name/i);
 assert.match(prompt, /completionMarker must be the final property/i);
-assert.match(prompt, /return exactly 30 ordered, non-duplicated scenes/i);
+assert.match(prompt, /return exactly 30 ordered, non-duplicated content scenes/i);
 assert.match(prompt, /character identity and referenceGenerationPrompt fields in English/i);
-assert.match(prompt, /scene 1 is a clear cinematic establishing\/opening beat/i);
-assert.match(prompt, /final two scenes must show the climax's visible consequence and an earned resolution\/aftermath/i);
+assert.match(prompt, /establish who the protagonist is, what they want, why the conflict happens now/i);
+assert.match(prompt, /show the consequence and a real ending/i);
+assert.match(prompt, /one separate intro clip/i);
+assert.match(prompt, /premium television-style opening/i);
 assert.doesNotMatch(prompt, /escalating sequence arc|attack-counter tactics|exact defence|lateral tracking|dance-like fighting/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return the complete valid JSON again/i);
