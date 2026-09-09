@@ -46,12 +46,14 @@ export const inheritApprovedSceneAsset = (scene: StoryboardScene, previous?: Sto
         assetRevisionId: previous.assetRevisionId,
         assetRevisions: previous.assetRevisions,
       }
-    : previous?.remoteVideoDownloadPending && !_.isEmpty(previous.remoteVideoMediaId)
+    : previous?.remoteVideoDownloadPending && (!_.isEmpty(previous.remoteVideoMediaIds) || !_.isEmpty(previous.remoteVideoMediaId))
       ? {
           ...scene,
           assetStatus: SceneAssetStatus.Failed,
           assetError: previous.assetError,
           remoteVideoMediaId: previous.remoteVideoMediaId,
+          remoteVideoMediaIds: previous.remoteVideoMediaIds,
+          remoteVideoExpectedCount: previous.remoteVideoExpectedCount,
           remoteVideoDownloadPending: true,
         }
     : scene;

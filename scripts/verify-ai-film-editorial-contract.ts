@@ -69,4 +69,4 @@ assert.equal(
   aiPrompt,
 );
 
-console.log("AI film editorial contract verified: AI-owned 3–5 shots, timing and prompt remain unchanged.");
+console.log("AI film editorial contract verified: AI-owned minimum 4 shots, timing and prompt remain unchanged.");

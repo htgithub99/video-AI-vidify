@@ -49,6 +49,8 @@ import {
   SCRIPT_SPEECH_RATE_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
   FLOW_CHARACTER_CONFIG,
+  GEMINI_MEDIA_ERRORS,
+  PIPELINE_COMPLETION_CONFIG,
 } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
@@ -3358,7 +3360,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     });
   }
 });
-const persistProjectVideo = async (localProjectId: string, sceneId: string, base64: string): Promise<string> => {
+const persistProjectVideo = async (localProjectId: string, sceneId: string, base64: string, variantIndex?: number): Promise<string> => {
   const safeProjectId = path.basename(_.toString(localProjectId));
   const safeSceneId = path.basename(_.toString(sceneId));
   if (_.some([safeProjectId, safeSceneId, base64], _.isEmpty)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
@@ -3368,12 +3370,18 @@ const persistProjectVideo = async (localProjectId: string, sceneId: string, base
   const videoBuffer = Buffer.from(base64, REFACTOR_CONSTANTS.ENCODING_BASE64);
   if (_.lt(videoBuffer.length, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
   await fs.promises.mkdir(videoDirectory, { recursive: true });
-  const videoFilename = `${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
+  const variantSuffix = _.isNumber(variantIndex)
+    ? `${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}${_.add(variantIndex, FLOW_VIDEO_MEDIA_CONFIG.VARIANT_INDEX_OFFSET)}`
+    : SecurityConstants.EMPTY_STRING;
+  const videoFilename = `${safeSceneId}${variantSuffix}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
   const videoPath = path.join(videoDirectory, videoFilename);
   const candidateHash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM).update(videoBuffer).digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
   const existingSceneVideoFiles = _.filter(
     await fs.promises.readdir(videoDirectory),
-    (filename) => FLOW_VIDEO_MEDIA_CONFIG.SCENE_VIDEO_FILE_PATTERN.test(filename) && !_.isEqual(filename, videoFilename),
+    (filename) =>
+      FLOW_VIDEO_MEDIA_CONFIG.SCENE_VIDEO_FILE_PATTERN.test(filename) &&
+      !_.isEqual(filename, videoFilename) &&
+      !_.startsWith(filename, `${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`),
   );
   for (const existingFilename of existingSceneVideoFiles) {
     const existingPath = path.join(videoDirectory, existingFilename);
@@ -3389,26 +3397,153 @@ const persistProjectVideo = async (localProjectId: string, sceneId: string, base
   return `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${safeProjectId}/${PROJECT_ASSET_GROUP.VIDEOS}/${videoFilename}`;
 };
 
+const persistProjectVideoVariants = async (localProjectId: string, sceneId: string, base64s: string[]): Promise<string[]> => {
+  if (_.lt(_.size(base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR);
+  const fallbackUrls: string[] = [];
+  for (const [variantIndex, base64] of _.take(base64s, FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT).entries()) {
+    fallbackUrls.push(await persistProjectVideo(localProjectId, sceneId, base64, variantIndex));
+  }
+  return fallbackUrls;
+};
+
+const createProjectVideoVariantUrl = (localProjectId: string, sceneId: string, variantIndex: number): string => {
+  const safeProjectId = path.basename(_.toString(localProjectId));
+  const safeSceneId = path.basename(_.toString(sceneId));
+  const variantNumber = _.add(variantIndex, FLOW_VIDEO_MEDIA_CONFIG.VARIANT_INDEX_OFFSET);
+  return `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${safeProjectId}/${PROJECT_ASSET_GROUP.VIDEOS}/${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}${variantNumber}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
+};
+
+const getPersistedProjectVideoVariantUrl = (localProjectId: string, sceneId: string, variantIndex: number): string | undefined => {
+  const candidateUrl = createProjectVideoVariantUrl(localProjectId, sceneId, variantIndex);
+  const candidatePath = resolveLocalProjectAssetPath(candidateUrl);
+  if (!candidatePath || !fs.existsSync(candidatePath)) return undefined;
+  return _.gte(fs.statSync(candidatePath).size, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES) ? candidateUrl : undefined;
+};
+
+const persistRecoveredFlowScene = async (project: any, scene: StoryboardScene, mediaIds: string[], fallbackUrls: string[]): Promise<void> => {
+  scene.assetUrl = _.head(fallbackUrls);
+  scene.assetUrls = fallbackUrls;
+  scene.assetType = GenerateType.Video;
+  scene.assetStatus = SceneAssetStatus.Generated;
+  scene.assetError = undefined;
+  scene.remoteVideoDownloadPending = false;
+  scene.remoteVideoMediaId = _.head(mediaIds);
+  scene.remoteVideoMediaIds = mediaIds;
+  scene.remoteVideoExpectedCount = _.size(mediaIds);
+  const completedSceneIds = _.map(
+    _.filter(project.storyboard, (candidate) => !_.isEmpty(candidate.assetUrl) || _.some(candidate.assetUrls, (assetUrl) => !_.isEmpty(assetUrl))),
+    REFACTOR_CONSTANTS.AVG_ID_KEY,
+  );
+  const pendingSceneIds = _.map(_.reject(project.storyboard, (candidate) => _.includes(completedSceneIds, candidate.id)), REFACTOR_CONSTANTS.AVG_ID_KEY);
+  const failedSceneIds = _.map(
+    _.filter(project.storyboard, (candidate) => _.includes(pendingSceneIds, candidate.id) && _.isEqual(candidate.assetStatus, SceneAssetStatus.Failed)),
+    REFACTOR_CONSTANTS.AVG_ID_KEY,
+  );
+  project.generationCheckpoint = {
+    ...project.generationCheckpoint,
+    phase: _.isEmpty(pendingSceneIds) ? PIPELINE_COMPLETION_CONFIG.MEDIA_COMPLETED_PHASE : PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE,
+    completedSceneIds,
+    pendingSceneIds,
+    failedSceneIds,
+    updatedAt: new Date().toISOString(),
+  };
+  await saveProjectDetailToDb(project);
+};
+
 router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
     const localProjectId = path.basename(_.toString(req.body?.projectId));
     const sceneId = path.basename(_.toString(req.body?.sceneId));
-    const mediaId = _.trim(_.toString(req.body?.mediaId));
     const project = await getProjectDetailFromDb(localProjectId);
     const flowProjectId = _.trim(_.toString(project?.visualConfig?.flowProjectId));
-    if (_.some([localProjectId, sceneId, mediaId, flowProjectId], _.isEmpty)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
     const scene = _.find(project?.storyboard, { id: sceneId });
-    if (!scene || !_.isEqual(scene.remoteVideoMediaId, mediaId)) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+    const persistedMediaIds = _.uniq(
+      _.compact(
+        _.map(
+          !_.isEmpty(scene?.remoteVideoMediaIds) ? scene?.remoteVideoMediaIds : [scene?.remoteVideoMediaId],
+          (mediaId) => _.trim(_.toString(mediaId)),
+        ),
+      ),
+    );
+    const requestedMediaIds = _.uniq(
+      _.compact(_.map(!_.isEmpty(req.body?.mediaIds) ? _.castArray(req.body.mediaIds) : [req.body?.mediaId], (mediaId) => _.trim(_.toString(mediaId)))),
+    );
+    const expectedOutputCount = _.defaultTo(
+      scene?.remoteVideoExpectedCount,
+      !_.isEmpty(scene?.remoteVideoMediaIds) ? FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT : SecurityConstants.DEFAULT_AMOUNT,
+    );
+    if (_.some([localProjectId, sceneId, flowProjectId], _.isEmpty) || _.isEmpty(requestedMediaIds)) {
+      throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+    }
+    if (!scene || !_.isEqual(requestedMediaIds, persistedMediaIds)) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
 
-    const result = await recoverExistingFlowVideo({
-      flowProjectId,
-      mediaId,
-      expectedDuration: _.toString(project?.visualConfig?.videoDuration),
-      retainBrowserSession: true,
+    const fallbackUrls: string[] = [];
+    let recoveryWarning: string = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
+    for (const [variantIndex, mediaId] of persistedMediaIds.entries()) {
+      const existingVariantUrl = _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT)
+        ? getPersistedProjectVideoVariantUrl(localProjectId, sceneId, variantIndex)
+        : (() => {
+            const existingVideoUrl = _.toString(scene.assetUrl);
+            return FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(existingVideoUrl) && resolveLocalProjectAssetPath(existingVideoUrl)
+              ? existingVideoUrl
+              : undefined;
+          })();
+      if (existingVariantUrl) {
+        fallbackUrls.push(existingVariantUrl);
+        continue;
+      }
+      const result = await recoverExistingFlowVideo({
+        flowProjectId,
+        mediaId,
+        expectedDuration: _.toString(project?.visualConfig?.videoDuration),
+        chromeHeadless: project?.visualConfig?.chromeHeadless,
+        retainBrowserSession: true,
+      });
+      if (!result.success || _.isEmpty(result.base64)) {
+        recoveryWarning = _.defaultTo(result.warning, recoveryWarning);
+        break;
+      }
+      fallbackUrls.push(
+        await persistProjectVideo(
+          localProjectId,
+          sceneId,
+          result.base64!,
+          _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined,
+        ),
+      );
+    }
+    if (_.lt(_.size(fallbackUrls), expectedOutputCount)) {
+      const recoveryWasRejected = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(recoveryWarning);
+      scene.remoteVideoDownloadPending = !recoveryWasRejected;
+      scene.remoteVideoExpectedCount = expectedOutputCount;
+      scene.assetStatus = SceneAssetStatus.Failed;
+      scene.assetError = recoveryWarning;
+      if (recoveryWasRejected) {
+        scene.remoteVideoMediaId = undefined;
+        scene.remoteVideoMediaIds = undefined;
+      }
+      await saveProjectDetailToDb(project);
+      return res.json({
+        success: false,
+        base64: null,
+        fallbackUrl: SecurityConstants.EMPTY_STRING,
+        fallbackUrls: [],
+        warning: recoveryWarning,
+        remoteMediaId: recoveryWasRejected ? undefined : _.head(persistedMediaIds),
+        remoteMediaIds: recoveryWasRejected ? [] : persistedMediaIds,
+        remoteMediaCreated: !recoveryWasRejected,
+      });
+    }
+    await persistRecoveredFlowScene(project, scene, persistedMediaIds, fallbackUrls);
+    return res.json({
+      success: true,
+      base64: null,
+      fallbackUrl: _.head(fallbackUrls),
+      fallbackUrls,
+      remoteMediaId: _.head(persistedMediaIds),
+      remoteMediaIds: persistedMediaIds,
+      remoteMediaCreated: true,
     });
-    if (!result.success || _.isEmpty(result.base64)) return res.json(result);
-    const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, result.base64!);
-    return res.json({ ...result, base64: null, fallbackUrl });
   } catch (error) {
     logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
     return res.json({
@@ -3421,6 +3556,7 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
 });
 
 const activeVideoSubmissionKeys = new Set<string>();
+const activeVideoProjectKeys = new Set<string>();
 const completedVideoSubmissionResults = new Map<string, unknown>();
 
 router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
@@ -3467,10 +3603,12 @@ router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAG
 
 router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
   let activeVideoSubmissionKey = "";
+  let activeVideoProjectKey = "";
   try {
     const { prompt, style, visualConfig, sandboxConfig, sceneId } = req.body;
+    const isVideoRequest = _.isEqual(visualConfig?.generateType, GenerateType.Video);
     const requestedIdempotencyKey = _.trim(_.toString(req.body?.idempotencyKey));
-    if (_.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(requestedIdempotencyKey)) {
+    if (isVideoRequest && !_.isEmpty(requestedIdempotencyKey)) {
       const completedSubmission = completedVideoSubmissionResults.get(requestedIdempotencyKey);
       if (completedSubmission && _.get(completedSubmission, "success")) return res.json(completedSubmission);
       if (completedSubmission) completedVideoSubmissionResults.delete(requestedIdempotencyKey);
@@ -3495,42 +3633,119 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       persistedFlowProjectId = _.toString(localProject?.visualConfig?.flowProjectId || persistedFlowProjectId);
     }
 
+    const requestedVideoProjectKey = isVideoRequest ? _.toString(localProjectId || persistedFlowProjectId) : "";
+    if (!_.isEmpty(requestedVideoProjectKey)) {
+      if (activeVideoProjectKeys.has(requestedVideoProjectKey)) {
+        return res.json({
+          success: false,
+          base64: null,
+          fallbackUrl: "",
+          warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
+          remoteSubmissionPending: true,
+        });
+      }
+      activeVideoProjectKey = requestedVideoProjectKey;
+      activeVideoProjectKeys.add(activeVideoProjectKey);
+    }
+
     const persistedScene = _.find(localProject?.storyboard, { id: sceneId });
+    const persistedRemoteMediaIds = _.uniq(
+      _.compact(
+        _.map(
+          !_.isEmpty(persistedScene?.remoteVideoMediaIds) ? persistedScene.remoteVideoMediaIds : [persistedScene?.remoteVideoMediaId],
+          (mediaId) => _.trim(_.toString(mediaId)),
+        ),
+      ),
+    );
+    const anotherPendingVideoScene = _.find(
+      localProject?.storyboard,
+      (scene) =>
+        !_.isEqual(scene.id, sceneId) &&
+        scene.remoteVideoDownloadPending &&
+        _.isEmpty(scene.assetUrl) &&
+        _.isEmpty(scene.assetUrls),
+    );
+    if (isVideoRequest && anotherPendingVideoScene) {
+      return res.json({
+        success: false,
+        base64: null,
+        fallbackUrl: "",
+        warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
+        remoteSubmissionPending: true,
+      });
+    }
     if (
       _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
       !_.isEmpty(persistedFlowProjectId) &&
-      !_.isEmpty(persistedScene?.remoteVideoMediaId) &&
+      !_.isEmpty(persistedRemoteMediaIds) &&
+      persistedScene?.remoteVideoDownloadPending &&
       _.isEmpty(persistedScene?.assetUrl) &&
       _.isEmpty(persistedScene?.assetUrls)
     ) {
-      const recoveredResult = await recoverExistingFlowVideo({
-        flowProjectId: persistedFlowProjectId,
-        mediaId: persistedScene.remoteVideoMediaId,
-        expectedDuration: _.toString(visualConfig?.videoDuration),
-        retainBrowserSession: true,
-      });
-      if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
+      const expectedOutputCount = _.defaultTo(
+        persistedScene.remoteVideoExpectedCount,
+        !_.isEmpty(persistedScene.remoteVideoMediaIds) ? FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT : SecurityConstants.DEFAULT_AMOUNT,
+      );
+      const fallbackUrls: string[] = [];
+      let recoveryWarning: string = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
+      for (const [variantIndex, mediaId] of persistedRemoteMediaIds.entries()) {
+        const existingVariantUrl = _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT)
+          ? getPersistedProjectVideoVariantUrl(localProjectId, sceneId, variantIndex)
+          : undefined;
+        if (existingVariantUrl) {
+          fallbackUrls.push(existingVariantUrl);
+          continue;
+        }
+        const recoveredResult = await recoverExistingFlowVideo({
+          flowProjectId: persistedFlowProjectId,
+          mediaId,
+          expectedDuration: _.toString(visualConfig?.videoDuration),
+          chromeHeadless: visualConfig?.chromeHeadless,
+          retainBrowserSession: true,
+        });
+        if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
+          recoveryWarning = _.defaultTo(recoveredResult.warning, recoveryWarning);
+          break;
+        }
+        fallbackUrls.push(
+          await persistProjectVideo(
+            localProjectId,
+            sceneId,
+            recoveredResult.base64!,
+            _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined,
+          ),
+        );
+      }
+      if (_.lt(_.size(fallbackUrls), expectedOutputCount)) {
+        const recoveryWasRejected = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(recoveryWarning);
+        if (recoveryWasRejected && _.isEmpty(fallbackUrls)) {
+          persistedScene.remoteVideoMediaId = undefined;
+          persistedScene.remoteVideoMediaIds = undefined;
+          persistedScene.remoteVideoDownloadPending = false;
+        } else {
+          persistedScene.remoteVideoDownloadPending = true;
+        }
+        persistedScene.assetError = recoveryWarning;
+        await saveProjectDetailToDb(localProject);
         return res.json({
-          ...recoveredResult,
           success: false,
-          remoteMediaId: persistedScene.remoteVideoMediaId,
-          remoteMediaCreated: true,
-          warning: FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
+          base64: null,
+          fallbackUrl: SecurityConstants.EMPTY_STRING,
+          fallbackUrls: [],
+          remoteMediaId: recoveryWasRejected ? undefined : _.head(persistedRemoteMediaIds),
+          remoteMediaIds: recoveryWasRejected ? [] : persistedRemoteMediaIds,
+          remoteMediaCreated: !recoveryWasRejected,
+          warning: recoveryWasRejected ? recoveryWarning : FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
         });
       }
-      const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, recoveredResult.base64!);
-      persistedScene.assetUrl = fallbackUrl;
-      persistedScene.assetUrls = [fallbackUrl];
-      persistedScene.assetType = GenerateType.Video;
-      persistedScene.assetStatus = SceneAssetStatus.Generated;
-      persistedScene.remoteVideoDownloadPending = false;
-      await saveProjectDetailToDb(localProject);
+      await persistRecoveredFlowScene(localProject, persistedScene, persistedRemoteMediaIds, fallbackUrls);
       const recoveredResponse = {
-        ...recoveredResult,
         success: true,
         base64: null,
-        fallbackUrl,
-        remoteMediaId: persistedScene.remoteVideoMediaId,
+        fallbackUrl: _.head(fallbackUrls),
+        fallbackUrls,
+        remoteMediaId: _.head(persistedRemoteMediaIds),
+        remoteMediaIds: persistedRemoteMediaIds,
         remoteMediaCreated: true,
       };
       if (!_.isEmpty(requestedIdempotencyKey)) completedVideoSubmissionResults.set(requestedIdempotencyKey, recoveredResponse);
@@ -3539,9 +3754,13 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
 
     const knownVideoMediaIds = _.uniq(
       _.compact(
-        _.map(
+        _.flatMap(
           _.filter(localProject?.storyboard || [], (scene) => !_.isEqual(scene.id, sceneId)),
-          (scene) => _.trim(_.toString(scene.remoteVideoMediaId)),
+          (scene) =>
+            _.map(
+              !_.isEmpty(scene.remoteVideoMediaIds) ? scene.remoteVideoMediaIds : [scene.remoteVideoMediaId],
+              (mediaId) => _.trim(_.toString(mediaId)),
+            ),
         ),
       ),
     );
@@ -3566,20 +3785,28 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
     });
 
     const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
-    const generatedRemoteMediaId = _.trim(_.toString(result?.remoteMediaId));
+    const generatedRemoteMediaIds = _.uniq(
+      _.compact(
+        _.map(!_.isEmpty(result?.remoteMediaIds) ? result.remoteMediaIds : [result?.remoteMediaId], (mediaId) => _.trim(_.toString(mediaId))),
+      ),
+    );
+    const generatedRemoteMediaId = _.head(generatedRemoteMediaIds);
     if (
       localProject &&
       _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
-      !_.isEmpty(generatedRemoteMediaId) &&
-      _.includes(knownVideoMediaIds, generatedRemoteMediaId)
+      _.some(generatedRemoteMediaIds, (mediaId) => _.includes(knownVideoMediaIds, mediaId))
     ) {
       throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ID_ERROR);
     }
-    if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(generatedRemoteMediaId)) {
+    if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(generatedRemoteMediaIds)) {
       const generatedScene = _.find(localProject.storyboard, { id: sceneId });
-      if (generatedScene && _.isEmpty(result.base64)) {
+      if (generatedScene) {
+        const hasCompleteRemoteBatch = _.gte(_.size(generatedRemoteMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT);
         generatedScene.remoteVideoMediaId = generatedRemoteMediaId;
-        generatedScene.remoteVideoDownloadPending = true;
+        generatedScene.remoteVideoMediaIds = generatedRemoteMediaIds;
+        generatedScene.remoteVideoExpectedCount = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT;
+        generatedScene.remoteVideoDownloadPending =
+          hasCompleteRemoteBatch && (_.isEmpty(result.base64s) || _.lt(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT));
       }
       localProject.visualConfig = {
         ...localProject.visualConfig,
@@ -3590,42 +3817,89 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
     if (
       _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
       result?.remoteMediaCreated &&
-      _.isEmpty(result.base64) &&
+      _.lt(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT) &&
       !_.isEmpty(generatedFlowProjectId) &&
-      !_.isEmpty(generatedRemoteMediaId)
+      _.gte(_.size(generatedRemoteMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)
     ) {
-      const recoveredResult = await recoverExistingFlowVideo({
-        flowProjectId: generatedFlowProjectId,
-        mediaId: generatedRemoteMediaId,
-        expectedDuration: _.toString(visualConfig?.videoDuration),
-        retainBrowserSession: !_.isEmpty(localProjectId),
-      });
-      if (recoveredResult.success && !_.isEmpty(recoveredResult.base64)) {
+      const recoveredFallbackUrls: string[] = [];
+      let generatedRecoveryWarning: string = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
+      for (const [variantIndex, mediaId] of _.take(generatedRemoteMediaIds, FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT).entries()) {
+        const existingVariantUrl = getPersistedProjectVideoVariantUrl(localProjectId, sceneId, variantIndex);
+        if (existingVariantUrl) {
+          recoveredFallbackUrls.push(existingVariantUrl);
+          continue;
+        }
+        const recoveredResult = await recoverExistingFlowVideo({
+          flowProjectId: generatedFlowProjectId,
+          mediaId,
+          expectedDuration: _.toString(visualConfig?.videoDuration),
+          chromeHeadless: visualConfig?.chromeHeadless,
+          retainBrowserSession: !_.isEmpty(localProjectId),
+        });
+        if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
+          generatedRecoveryWarning = _.defaultTo(recoveredResult.warning, generatedRecoveryWarning);
+          break;
+        }
+        recoveredFallbackUrls.push(await persistProjectVideo(localProjectId, sceneId, recoveredResult.base64!, variantIndex));
+      }
+      if (_.gte(_.size(recoveredFallbackUrls), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
+        const completedScene = _.find(localProject?.storyboard, { id: sceneId });
+        if (completedScene) await persistRecoveredFlowScene(localProject, completedScene, generatedRemoteMediaIds, recoveredFallbackUrls);
         result = {
           ...result,
-          ...recoveredResult,
           success: true,
+          base64: null,
+          base64s: [],
+          fallbackUrl: _.head(recoveredFallbackUrls)!,
+          fallbackUrls: recoveredFallbackUrls,
           newProjectId: result.newProjectId,
           remoteMediaId: generatedRemoteMediaId,
+          remoteMediaIds: generatedRemoteMediaIds,
           remoteMediaCreated: true,
+        };
+      } else if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(generatedRecoveryWarning)) {
+        const rejectedScene = _.find(localProject?.storyboard, { id: sceneId });
+        if (rejectedScene) {
+          rejectedScene.remoteVideoMediaId = undefined;
+          rejectedScene.remoteVideoMediaIds = undefined;
+          rejectedScene.remoteVideoDownloadPending = false;
+          rejectedScene.assetError = generatedRecoveryWarning;
+          await saveProjectDetailToDb(localProject);
+        }
+        result = {
+          ...result,
+          success: false,
+          warning: generatedRecoveryWarning,
+          remoteMediaId: undefined,
+          remoteMediaIds: [],
+          remoteMediaCreated: false,
         };
       }
     }
 
-    if (result?.success && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(result.base64)) {
-      const fallbackUrl = await persistProjectVideo(localProjectId, sceneId, result.base64);
+    if (
+      result?.success &&
+      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
+      _.gte(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)
+    ) {
+      const fallbackUrls = await persistProjectVideoVariants(localProjectId, sceneId, result.base64s!);
+      const fallbackUrl = _.head(fallbackUrls)!;
       result = {
         ...result,
         base64: null,
+        base64s: [],
         fallbackUrl,
+        fallbackUrls,
       };
       const completedScene = _.find(localProject?.storyboard, { id: sceneId });
       if (completedScene) {
         completedScene.assetUrl = fallbackUrl;
-        completedScene.assetUrls = [fallbackUrl];
+        completedScene.assetUrls = fallbackUrls;
         completedScene.assetType = GenerateType.Video;
         completedScene.assetStatus = SceneAssetStatus.Generated;
         completedScene.remoteVideoMediaId = generatedRemoteMediaId || completedScene.remoteVideoMediaId;
+        completedScene.remoteVideoMediaIds = generatedRemoteMediaIds;
+        completedScene.remoteVideoExpectedCount = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT;
         completedScene.remoteVideoDownloadPending = false;
         await saveProjectDetailToDb(localProject);
       }
@@ -3670,6 +3944,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
     });
   } finally {
     if (!_.isEmpty(activeVideoSubmissionKey)) activeVideoSubmissionKeys.delete(activeVideoSubmissionKey);
+    if (!_.isEmpty(activeVideoProjectKey)) activeVideoProjectKeys.delete(activeVideoProjectKey);
   }
 });
 

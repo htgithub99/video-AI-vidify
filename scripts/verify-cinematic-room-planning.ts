@@ -114,7 +114,7 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
   assert.match(initialPrompt, /Language: Vietnamese/);
   assert.match(initialPrompt, /Make all creative and directorial choices yourself/i);
-  assert.match(initialPrompt, /at least three connected shots without repeating content/i);
+  assert.match(initialPrompt, /at least 4 clearly distinct, connected shots\/camera setups/i);
   assert.match(initialPrompt, /Follow the supplied story and user settings/i);
   assert.match(initialPrompt, /preserve the supplied dialogue exactly once/i);
   assert.match(initialPrompt, /scene has no supplied dialogue, do not invent dialogue or narration/i);
@@ -149,7 +149,7 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
   assert.match(repairPrompt, /Previous response/);
   assert.match(repairPrompt, /best complete Veo 3 prompt for each 10-second scene/i);
-  assert.match(repairPrompt, /at least three connected shots/i);
+  assert.match(repairPrompt, /at least 4 clearly distinct, connected shots\/camera setups/i);
   assert.match(repairPrompt, /Return the complete corrected raw JSON object only/i);
   assert.doesNotMatch(repairPrompt, /Set layout|hyphenated duration token|deterministically compiles/);
 
@@ -158,7 +158,7 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
 
   const technicalRepairPrompt = getCinematicVideoPromptRepairPrompt("A failed action prompt", ["contact_missing"], MOCK_CURRENT_SCENE);
   assert.match(technicalRepairPrompt, /Make all creative and directorial choices yourself/i);
-  assert.match(technicalRepairPrompt, /at least three connected shots/i);
+  assert.match(technicalRepairPrompt, /at least 4 clearly distinct, connected shots\/camera setups/i);
   assert.doesNotMatch(technicalRepairPrompt, /whip-pans|action axis|exact block or evasion/i);
 };
 

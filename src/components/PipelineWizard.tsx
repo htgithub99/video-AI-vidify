@@ -937,17 +937,23 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           "w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner",
                         )}>
                         {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat
-                          ? [
-                              <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className={cn("bg-slate-900 text-slate-200")}>
-                                {t.Gemini_Pro}
-                              </option>,
-                              <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className={cn("bg-slate-900 text-slate-200")}>
-                                {t.Gemini_Flash}
-                              </option>,
-                              <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className={cn("bg-slate-900 text-slate-200")}>
-                                {t.Gemini_Flash_Lite}
-                              </option>,
-                            ]
+                          ? _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType)
+                            ? [
+                                <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className={cn("bg-slate-900 text-slate-200")}>
+                                  {t.Gemini_Pro}
+                                </option>,
+                                <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className={cn("bg-slate-900 text-slate-200")}>
+                                  {t.Gemini_Flash}
+                                </option>,
+                                <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className={cn("bg-slate-900 text-slate-200")}>
+                                  {t.Gemini_Flash_Lite}
+                                </option>,
+                              ]
+                            : [
+                                <option key="gemini-images" value={ImageGeneratorEngine.LabsSandbox} className={cn("bg-slate-900 text-slate-200")}>
+                                  {t.Nano_Banana_2}
+                                </option>,
+                              ]
                           : _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType)
                             ? [
                                 <option key="omni-flash" value={ImageGeneratorEngine.Veo3} className={cn("bg-slate-900 text-slate-200")}>

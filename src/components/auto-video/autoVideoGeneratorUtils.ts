@@ -24,11 +24,7 @@ export const getImageEngineOptions = (generationMode: ImageGenerationMode, gener
         { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
       ];
     }
-    return [
-      { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
-      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
-      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
-    ];
+    return [{ value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_GEMINI_IMAGES }];
   }
 
   if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {

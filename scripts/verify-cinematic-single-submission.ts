@@ -124,7 +124,7 @@ assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2")
 assert.equal(isFlowPromptValueApplied("Shot 1\n\nShot 2", "Shot 1 Shot 2"), true);
 assert.equal(isFlowPromptValueApplied("Shot 1", "Shot 1 Shot 2"), false);
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · x1", {
+  isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · x2", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     videoResolution: "360p",
@@ -133,7 +133,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · x1", {
+  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · x2", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     aspectRatio: AspectRatio.SixteenNine,
@@ -143,7 +143,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · x1", {
+  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · x2", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     aspectRatio: AspectRatio.SixteenNine,
@@ -153,7 +153,7 @@ assert.equal(
   false,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x1", {
+  isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
     videoResolution: "360p",
@@ -162,7 +162,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · x1", {
+  isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · x2", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
     videoResolution: "360p",
@@ -170,7 +170,8 @@ assert.equal(
   }),
   false,
 );
-assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x1", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT, 2);
 assert.equal(isNonRetryableFlowVideoError("Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn."), true);
 assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow xác nhận tải lên."), true);
 assert.equal(isNonRetryableFlowVideoError("Kết nối mạng tạm thời bị gián đoạn."), false);
@@ -198,10 +199,14 @@ assert.match(cinematicPipelineSource, /idempotencyKey: _\.join\(\[voiceUpdatedPr
 assert.match(cinematicPipelineSource, /await generateFilmThumbnails\(\);[\s\S]*await runSceneGeneration\(remainingTargetScenes, false\)/);
 assert.doesNotMatch(cinematicPipelineSource, /Promise\.all\(\[runSceneGeneration\(remainingTargetScenes, false\), generateFilmThumbnails\(\)\]\)/);
 assert.match(flowAutomationSource, /remoteVideoMediaId/);
+assert.match(flowAutomationSource, /waitForFlowGeneratedMediaBatch/);
+assert.match(flowAutomationSource, /FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COUNT/);
+assert.match(flowAutomationSource, /remoteMediaIds: remoteVideoMediaIds/);
+assert.match(flowAutomationSource, /else if \(!isFlowVideoGeneration\)[\s\S]*activePage\.reload/);
 assert.match(flowAutomationSource, /sandboxConfig\.knownVideoMediaIds/);
 assert.match(flowAutomationSource, /collectFlowVideoUrls\(page, editId\)/);
-assert.match(flowAutomationSource, /matchingResponseUrls/);
-assert.match(flowAutomationSource, /_\.isEqual\(extractFlowMediaIdFromUrl\(url\), targetMediaId\)/);
+assert.match(flowAutomationSource, /collectNewFlowGeneratedMedia/);
+assert.match(flowAutomationSource, /for \(const targetMediaId of remoteVideoMediaIds\)/);
 assert.doesNotMatch(flowAutomationSource, /collectFlowVideoUrls\(page\)/);
 const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const projectControllerSource = fs.readFileSync("src/server/controllers/projectController.ts", "utf8");
@@ -214,8 +219,12 @@ assert.doesNotMatch(pipelineControllerSource, /_\.some\(\[result\?\.success, res
 assert.match(pipelineControllerSource, /CONTENT_HASH_ALGORITHM/);
 assert.match(pipelineControllerSource, /DUPLICATE_MEDIA_ERROR/);
 assert.match(pipelineControllerSource, /DUPLICATE_MEDIA_ID_ERROR/);
+assert.match(pipelineControllerSource, /persistProjectVideoVariants/);
+assert.match(pipelineControllerSource, /completedScene\.assetUrls = fallbackUrls/);
+assert.match(pipelineControllerSource, /remoteVideoMediaIds = generatedRemoteMediaIds/);
 assert.match(projectControllerSource, /sceneIdByContentHash/);
 assert.match(projectControllerSource, /remoteVideoMediaId: undefined/);
+assert.match(projectControllerSource, /assetUrls = _\.uniq\(\[assetUrl, \.\.\.assetUrls\]\)/);
 assert.match(cinematicPipelineSource, /const recoverPendingFlowDownloads = async/);
 assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
-process.stdout.write(JSON.stringify({ passed: true, videoSubmissionLimit: 1, creativeQaBlockers: 0 }));
+process.stdout.write(JSON.stringify({ passed: true, promptSubmissionLimit: 1, videosPerSubmission: 2, creativeQaBlockers: 0 }));

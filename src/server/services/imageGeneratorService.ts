@@ -36,6 +36,7 @@ import {
   GEMINI_CHAT_RECOVERY_CONFIG,
   GEMINI_CHAT_VIDEO_INPUT_CONFIG,
   GEMINI_CHAT_VIDEO_SELECTORS,
+  GEMINI_IMAGES_ASPECT_CONFIG,
   GEMINI_CHAT_PACING_CONFIG,
   PIPELINE_CONFIG,
   GEMINI_DOM_DIAGNOSTICS_CONFIG,
@@ -460,7 +461,9 @@ export const createFlowVideoConfigState = (visualConfig?: ImageGeneratorOptions[
   jsonUtils.safeStringify({
     generateType: _.defaultTo(visualConfig?.generateType, GenerateType.Image),
     aspectRatio: _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine),
-    generateCount: _.defaultTo(visualConfig?.generateCount, 1),
+    generateCount: _.isEqual(visualConfig?.generateType, GenerateType.Video)
+      ? FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT
+      : _.defaultTo(visualConfig?.generateCount, SecurityConstants.DEFAULT_AMOUNT),
     imageGeneratorEngine: _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
     videoDuration: _.defaultTo(visualConfig?.videoDuration, FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION),
     videoResolution: _.defaultTo(visualConfig?.videoResolution, FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION),
@@ -471,8 +474,6 @@ export const createFlowDurationOptionPattern = (duration?: string): RegExp => {
   const seconds = _.replace(_.defaultTo(duration, FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION), /[^0-9.]/g, "");
   return new RegExp(`^(?:schedule\\s*)?${_.escapeRegExp(seconds)}\\s*(?:s|sec(?:ond)?s?|giây)?$`, "i");
 };
-
-const FLOW_SINGLE_OUTPUT_PATTERN = /^(?:x1|1x)$/i;
 
 export const isFlowVideoConfigSummaryMatching = (summary: string, visualConfig?: ImageGeneratorOptions["visualConfig"]): boolean => {
   const normalizedSummary = _.replace(_.trim(summary), /\s+/g, " ");
@@ -492,7 +493,7 @@ export const isFlowVideoConfigSummaryMatching = (summary: string, visualConfig?:
     resolutionMatches &&
     aspectRatioMatches &&
     createFlowDurationOptionPattern(normalizedSettings.duration).test(visibleDuration) &&
-    /(?:^|\s|·)(?:x1|1x)(?:$|\s|·)/i.test(normalizedSummary)
+    new RegExp(`(?:^|\\s|·)${_.escapeRegExp(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_LABEL)}(?:$|\\s|·)`, "i").test(normalizedSummary)
   );
 };
 
@@ -643,22 +644,74 @@ const extractFlowMediaIdFromUrl = (mediaUrl: string): string => {
   }
 };
 
-const waitForFlowMediaCardReady = async (page: Page, mediaId: string): Promise<Locator> => {
-  const resultThumb = page.locator(`img[src*="name=${mediaId}"]`).last();
-  const resultButton = resultThumb.locator("xpath=ancestor::button[1]");
-  const deadline = Date.now() + FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS;
+const findFlowMediaCard = async (page: Page, mediaId: string): Promise<Locator | null> => {
+  const normalizedMediaId = normalizeFlowMediaId(mediaId);
+  const mediaCandidates = page.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SOURCE_SELECTOR);
+  const mediaCandidateCount = await mediaCandidates.count();
+  for (let index = _.subtract(mediaCandidateCount, SecurityConstants.DEFAULT_AMOUNT); index >= SecurityConstants.ZERO; index--) {
+    const candidate = mediaCandidates.nth(index);
+    const candidateUrl = _.toString(await candidate.getAttribute(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE).catch(() => null));
+    if (!_.includes(candidateUrl, normalizedMediaId)) continue;
+    const mediaCard = candidate.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_XPATH);
+    if (_.gt(await mediaCard.count(), SecurityConstants.ZERO)) return mediaCard;
+  }
+  return null;
+};
+
+const throwIfFlowMediaCardRejected = async (page: Page, mediaId: string): Promise<void> => {
+  const resultContainer = await findFlowMediaCard(page, mediaId);
+  const containerText = resultContainer ? await resultContainer.textContent().catch(() => SecurityConstants.EMPTY_STRING) : SecurityConstants.EMPTY_STRING;
+  if (FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.test(containerText)) {
+    throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);
+  }
+};
+
+const waitForFlowMediaCardReady = async (
+  page: Page,
+  mediaId: string,
+  timeoutMs = FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS,
+): Promise<Locator> => {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (await resultButton.isVisible().catch(() => false)) {
-      const state = await resultButton
-        .evaluate((element) => ({
+    await throwIfFlowMediaCardRejected(page, mediaId);
+    const resultContainer = await findFlowMediaCard(page, mediaId);
+    if (resultContainer && (await resultContainer.isVisible().catch(() => false))) {
+      const state = await resultContainer
+        .evaluate((element, mediaConfig) => {
+          const video = element.querySelector(mediaConfig.videoSelector) as HTMLVideoElement | null;
+          const videoSource =
+            video?.currentSrc ||
+            video?.getAttribute(mediaConfig.sourceAttribute) ||
+            video?.querySelector(mediaConfig.nestedSourceSelector)?.getAttribute(mediaConfig.sourceAttribute) ||
+            "";
+          const videoReady = Boolean(
+            video &&
+              videoSource &&
+              video.readyState >= mediaConfig.readyStateMinimum &&
+              Number.isFinite(video.duration) &&
+              video.duration &&
+              video.videoWidth &&
+              video.videoHeight,
+          );
+          return {
           busy: element.getAttribute("aria-busy") === "true" || element.getAttribute("data-state") === "loading",
           hasProgress: Boolean(element.querySelector('[role="progressbar"], progress, [aria-valuenow]')),
           text: element.textContent || "",
+          videoReady,
           thumbnailReady: Array.from(element.querySelectorAll("img")).some((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
-        }))
+          };
+        }, {
+          nestedSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_NESTED_SOURCE_SELECTOR,
+          readyStateMinimum: FLOW_VIDEO_MEDIA_CONFIG.VIDEO_READY_STATE_MINIMUM,
+          sourceAttribute: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE,
+          videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR,
+        })
         .catch(() => null);
+      if (state?.videoReady) return resultContainer;
       const hasProgressText = FLOW_VIDEO_MEDIA_CONFIG.PROGRESS_TEXT_PATTERN.test(_.defaultTo(state?.text, ""));
-      if (state?.thumbnailReady && !state.busy && !state.hasProgress && !hasProgressText) return resultButton;
+      const cardSettled = Boolean(state?.thumbnailReady && !state.busy && !state.hasProgress && !hasProgressText);
+      const hasCompletionSignal = Boolean(FLOW_VIDEO_MEDIA_CONFIG.COMPLETION_TEXT_PATTERN.test(_.defaultTo(state?.text, "")) || cardSettled);
+      if (state?.thumbnailReady && hasCompletionSignal && !state.busy && !state.hasProgress && !hasProgressText) return resultContainer;
     }
     await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
   }
@@ -667,14 +720,23 @@ const waitForFlowMediaCardReady = async (page: Page, mediaId: string): Promise<L
 
 const downloadFlowVideoFromCard = async (page: Page, mediaCard: Locator, previousVideoSources: string[], expectedDurationSeconds: number, mediaId: string): Promise<FlowDownloadedVideo | null> => {
   await mediaCard.scrollIntoViewIfNeeded();
+  const readyVideoUrls = await collectFlowVideoUrls(page, mediaId);
+  const directlyDownloadedVideo = await downloadValidatedVideo(
+    page.context(),
+    _.filter(readyVideoUrls, (url) => !_.includes(previousVideoSources, url)),
+    expectedDurationSeconds,
+  ).catch(() => null);
+  if (directlyDownloadedVideo) return directlyDownloadedVideo;
   await mediaCard.click({ force: true });
   await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
   const videoUrls = await collectFlowVideoUrls(page, mediaId);
-  return downloadValidatedVideo(
+  const downloadedVideo = await downloadValidatedVideo(
     page.context(),
     _.filter(videoUrls, (url) => !_.includes(previousVideoSources, url)),
     expectedDurationSeconds,
   ).catch(() => null);
+  await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY).catch(() => undefined);
+  return downloadedVideo;
 };
 
 const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
@@ -688,6 +750,123 @@ const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
       .map((link) => link.getAttribute("href")?.split("/edit/").pop() || "")
       .filter(Boolean),
   );
+
+interface FlowGeneratedMediaCandidate {
+  editId?: string | null;
+  videoSrc?: string | null;
+  thumbnailSrc?: string | null;
+}
+
+interface FlowGeneratedMediaBatch {
+  media: FlowGeneratedMediaCandidate[];
+  rejected: boolean;
+  timedOut: boolean;
+}
+
+const collectNewFlowGeneratedMedia = async (
+  page: Page,
+  oldEditIds: string[],
+  oldVideoSources: string[],
+  oldVideoThumbnailSources: string[],
+  responseUrls: string[],
+): Promise<FlowGeneratedMediaCandidate[]> => {
+  const domCandidates = await page.evaluate(
+    ({
+      completionTextPatternSource,
+      editLinkSelector,
+      editPathMarker,
+      mediaIdPatternSource,
+      oldEditIds: previousEditIds,
+      oldVideoSources: previousVideoSources,
+      oldVideoThumbnailSources: previousThumbnailSources,
+      thumbnailSelector,
+      videoSelector,
+    }) => {
+      const candidates = new Map<string, FlowGeneratedMediaCandidate>();
+      const extractMediaId = (value: string): string => value.match(new RegExp(mediaIdPatternSource, "i"))?.[0] || "";
+      const addCandidate = (candidate: FlowGeneratedMediaCandidate): void => {
+        const mediaId = candidate.editId || extractMediaId(candidate.videoSrc || "") || extractMediaId(candidate.thumbnailSrc || "");
+        const key = mediaId || candidate.videoSrc || candidate.thumbnailSrc || "";
+        if (!key || previousEditIds.includes(mediaId)) return;
+        candidates.set(key, { ...candidates.get(key), ...candidate, editId: mediaId || candidate.editId });
+      };
+
+      Array.from(document.querySelectorAll(editLinkSelector)).forEach((link) => {
+        const href = link.getAttribute("href") || "";
+        const editId = href.split(editPathMarker).pop() || "";
+        const container = link.closest("button") || link.parentElement;
+        const completionPattern = new RegExp(completionTextPatternSource, "i");
+        if (editId && !previousEditIds.includes(editId) && (completionPattern.test(container?.textContent || "") || Boolean(link.querySelector(thumbnailSelector)))) {
+          addCandidate({ editId });
+        }
+      });
+
+      Array.from(document.querySelectorAll(videoSelector)).forEach((element) => {
+        const video = element as HTMLVideoElement;
+        const videoSrc = video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src") || "";
+        if (videoSrc && !previousVideoSources.includes(videoSrc)) addCandidate({ videoSrc });
+      });
+
+      Array.from(document.querySelectorAll(thumbnailSelector)).forEach((element) => {
+        const image = element as HTMLImageElement;
+        const thumbnailSrc = image.currentSrc || image.getAttribute("src") || "";
+        if (thumbnailSrc && !previousThumbnailSources.includes(thumbnailSrc)) addCandidate({ thumbnailSrc });
+      });
+      return Array.from(candidates.values());
+    },
+    {
+      completionTextPatternSource: FLOW_VIDEO_MEDIA_CONFIG.COMPLETION_TEXT_PATTERN.source,
+      editLinkSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_EDIT_LINK_SELECTOR,
+      editPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_EDIT_PATH_MARKER,
+      mediaIdPatternSource: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source,
+      oldEditIds,
+      oldVideoSources,
+      oldVideoThumbnailSources,
+      thumbnailSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_THUMBNAIL_SELECTOR,
+      videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR,
+    },
+  );
+  const candidatesByMediaId = new Map<string, FlowGeneratedMediaCandidate>();
+  _.forEach(domCandidates, (candidate) => {
+    const mediaId = normalizeFlowMediaId(
+      _.toString(candidate.editId || extractFlowMediaIdFromUrl(candidate.videoSrc || "") || extractFlowMediaIdFromUrl(candidate.thumbnailSrc || "")),
+    );
+    if (_.isEmpty(mediaId) || _.includes(oldEditIds, mediaId)) return;
+    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), ...candidate, editId: mediaId });
+  });
+  _.forEach(responseUrls, (responseUrl) => {
+    const mediaId = normalizeFlowMediaId(extractFlowMediaIdFromUrl(responseUrl));
+    if (_.isEmpty(mediaId) || _.includes(oldEditIds, mediaId)) return;
+    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), editId: mediaId });
+  });
+  return Array.from(candidatesByMediaId.values());
+};
+
+const waitForFlowGeneratedMediaBatch = async (
+  page: Page,
+  oldEditIds: string[],
+  oldVideoSources: string[],
+  oldVideoThumbnailSources: string[],
+  oldGenerationFailureCount: number,
+  responseUrls: string[],
+): Promise<FlowGeneratedMediaBatch> => {
+  const deadline = _.add(Date.now(), FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS);
+  let media: FlowGeneratedMediaCandidate[] = [];
+  while (_.lt(Date.now(), deadline)) {
+    media = await collectNewFlowGeneratedMedia(page, oldEditIds, oldVideoSources, oldVideoThumbnailSources, responseUrls);
+    if (_.gte(_.size(media), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
+      return { media: _.take(media, FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT), rejected: false, timedOut: false };
+    }
+    const failureCount = await page.evaluate(
+      (generationFailurePatternSource) =>
+        (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
+      FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source,
+    );
+    if (_.gt(failureCount, oldGenerationFailureCount)) return { media, rejected: true, timedOut: false };
+    await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
+  }
+  return { media, rejected: false, timedOut: true };
+};
 
 const downloadFlowVideoFromEdit = async (page: Page, flowProjectId: string, editId: string, expectedDurationSeconds: number): Promise<FlowDownloadedVideo | null> => {
   await page.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}/edit/${editId}`, {
@@ -709,6 +888,7 @@ export interface FlowVideoRecoveryOptions {
   flowProjectId: string;
   mediaId: string;
   expectedDuration?: string;
+  chromeHeadless?: boolean;
   retainBrowserSession?: boolean;
 }
 
@@ -722,28 +902,30 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
   const release = await imageGenMutex.acquire();
   let browserInstance: BrowserSession | null = null;
   try {
-    browserInstance = await getOrLaunchGlobalBrowser();
+    browserInstance = await getOrLaunchGlobalBrowser(options.chromeHeadless);
     const page = browserInstance.page;
     const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}`;
-    if (!_.includes(page.url(), flowProjectId)) {
+    if (!isFlowProjectPageUrl(page.url(), flowProjectId) || _.includes(page.url(), "/edit/")) {
       await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
     }
     await dismissFlowOnboarding(page);
     if (await isFlowProjectUnavailable(page)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+    await throwIfFlowMediaCardRejected(page, mediaId);
 
     const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
+    const mediaCard = await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
+    let downloadedVideo = mediaCard ? await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId) : null;
+    const projectMediaUrls = await collectFlowVideoUrls(page, mediaId);
+    if (!downloadedVideo) downloadedVideo = await downloadValidatedVideo(browserInstance.context, projectMediaUrls, expectedDurationSeconds).catch(() => null);
     const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
-    let downloadedVideo = await downloadValidatedVideo(browserInstance.context, [directMediaUrl], expectedDurationSeconds).catch(() => null);
+    if (!downloadedVideo)
+      downloadedVideo = await downloadValidatedVideo(
+        browserInstance.context,
+        [directMediaUrl],
+        expectedDurationSeconds,
+        FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
+      ).catch(() => null);
     if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
-    if (!downloadedVideo) {
-      await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
-      downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
-      if (!downloadedVideo) {
-        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
-        const mediaCard = await waitForFlowMediaCardReady(page, mediaId);
-        downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
-      }
-    }
     if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
     return {
       success: true,
@@ -772,7 +954,7 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
 
 const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directVideoSrc?: string | null): Promise<string[]> => {
   const pageUrls = await page.evaluate(
-    ({ targetMediaId, mediaApiPathMarker }) => {
+    ({ downloadableUrlPatternSource, mediaApiPathMarker, mediaSourceSelector, targetMediaId }) => {
       const normalizeMediaUrl = (value: string | null | undefined): string => {
         if (!value || value.startsWith("blob:")) return "";
         try {
@@ -784,7 +966,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
           return "";
         }
       };
-      const elementUrls = Array.from(document.querySelectorAll("video, source, a[href]"))
+      const elementUrls = Array.from(document.querySelectorAll(mediaSourceSelector))
         .flatMap((element) => [
           (element as HTMLVideoElement).currentSrc,
           element.getAttribute("src"),
@@ -795,13 +977,17 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
         .map(normalizeMediaUrl)
         .filter(Boolean);
       const resourceUrls = performance.getEntriesByType("resource").map((entry) => normalizeMediaUrl(entry.name));
+      const downloadableUrlPattern = new RegExp(downloadableUrlPatternSource, "i");
       return [...elementUrls, ...resourceUrls].filter(
-        (url) =>
-          /media\.getMediaUrlRedirect|googleusercontent|storage|\.(?:mp4|webm|mov)(?:\?|$)/i.test(url) &&
-          (!targetMediaId || url.includes(targetMediaId)),
+        (url) => downloadableUrlPattern.test(url) && (!targetMediaId || url.includes(targetMediaId)),
       );
     },
-    { targetMediaId: mediaId || null, mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER },
+    {
+      downloadableUrlPatternSource: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOADABLE_URL_PATTERN.source,
+      mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER,
+      mediaSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_SELECTOR,
+      targetMediaId: mediaId || null,
+    },
   );
   const normalizedDirectUrl = (() => {
     try {
@@ -813,10 +999,15 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
   return _.uniq(_.compact([normalizedDirectUrl, ...pageUrls]));
 };
 
-const downloadValidatedVideo = async (context: BrowserContext, urls: string[], expectedDurationSeconds: number): Promise<FlowDownloadedVideo> => {
+const downloadValidatedVideo = async (
+  context: BrowserContext,
+  urls: string[],
+  expectedDurationSeconds: number,
+  timeoutMs = FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
+): Promise<FlowDownloadedVideo> => {
   for (const mediaUrl of _.reverse(_.clone(urls))) {
     try {
-      const response = await context.request.get(mediaUrl, { timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
+      const response = await context.request.get(mediaUrl, { timeout: timeoutMs });
       if (!response.ok()) continue;
       const buffer = await response.body();
       await inspectGeneratedVideoBuffer(buffer, expectedDurationSeconds);
@@ -924,7 +1115,9 @@ const configureFlowAgentSettings = async (page: Page, visualConfig?: ImageGenera
   if (!(await ratioTab.isVisible().catch(() => false))) return false;
   await ratioTab.click();
 
-  const requestedCount = isVideo ? 1 : _.clamp(_.defaultTo(visualConfig?.generateCount, 1), 1, 4);
+  const requestedCount = isVideo
+    ? FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT
+    : _.clamp(_.defaultTo(visualConfig?.generateCount, SecurityConstants.DEFAULT_AMOUNT), SecurityConstants.DEFAULT_AMOUNT, 4);
   const countTab = tabLists
     .nth(1)
     .getByRole("tab", { name: new RegExp(`^x${requestedCount}$`, "i") })
@@ -1033,7 +1226,7 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
     if (!_.isEmpty(visualConfig?.referenceImages) || !_.isEmpty(visualConfig?.referenceCharacterNames)) {
       await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.COMPONENTS_TAB);
     }
-    for (const pattern of [targetRatioPattern, targetDurationPattern, FLOW_SINGLE_OUTPUT_PATTERN]) {
+    for (const pattern of [targetRatioPattern, targetDurationPattern, FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_PATTERN]) {
       if (!(await selectFlowChoice(menu, pattern))) return false;
       await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
     }
@@ -1264,10 +1457,13 @@ export interface ImageGeneratorOptions {
 export interface ImageGeneratorResult {
   success: boolean;
   base64: string | null;
+  base64s?: string[];
   fallbackUrl: string;
+  fallbackUrls?: string[];
   warning?: string;
   newProjectId?: string;
   remoteMediaId?: string;
+  remoteMediaIds?: string[];
   remoteMediaCreated?: boolean;
 }
 
@@ -2101,6 +2297,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   let responseText = "";
   let lastGenerationError = BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR;
   let remoteVideoMediaId: string | undefined;
+  let remoteVideoMediaIds: string[] = [];
   let success = false;
   let attempts = 0;
   const maxAttempts = SecurityConstants.DEFAULT_AMOUNT;
@@ -2388,9 +2585,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video)
           ? _.uniq([
               ...(await getFlowVideoEditIds(activePage)),
+              ..._.compact(_.map([...oldVideoSources, ...oldVideoThumbnailSources], extractFlowMediaIdFromUrl)),
               ..._.map(sandboxConfig.knownVideoMediaIds || [], normalizeFlowMediaId),
             ])
           : [];
+        const oldVideoGenerationFailureCount = _.isEqual(visualConfig?.generateType, GenerateType.Video)
+          ? await activePage.evaluate(
+              (generationFailurePatternSource) =>
+                (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
+              FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source,
+            )
+          : SecurityConstants.ZERO;
         if (_.isEqual(visualConfig?.generateType, GenerateType.Video)) {
           flowResponseListener = (response: any) => {
             const responseUrl = _.toString(response.url());
@@ -2433,95 +2638,38 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
         let finalBase64: string;
+        let finalBase64s: string[] = [];
         if (visualConfig?.generateType === GenerateType.Video) {
-          const mediaHandle = await activePage.waitForFunction(
-            ([oldEditIds, oldVideoSourcesList, oldVideoThumbnailSourcesList, generationFailurePatternSource]) => {
-              const failurePattern = new RegExp(generationFailurePatternSource, "i");
-              if (failurePattern.test(document.body?.innerText || "")) return { generationError: true };
-              const generatedEditId = Array.from(document.querySelectorAll('a[href*="/edit/"]'))
-                .filter((link) => {
-                  const container = link.closest("button") || link.parentElement;
-                  const text = container?.textContent || "";
-                  return /play_circle|360p|720p/i.test(text) || Boolean(link.querySelector('img[alt*="video" i], img[alt*="Hình thu nhỏ video" i]'));
-                })
-                .map((link) => link.getAttribute("href")?.split("/edit/").pop() || "")
-                .find((editId) => editId && !oldEditIds.includes(editId));
-              const generatedVideo = Array.from(document.querySelectorAll("video"))
-                .map((video) => ({ video, src: video.currentSrc || video.src }))
-                .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && !oldEditIds.some((id) => src.includes(id)) && video.readyState >= 1);
-              const generatedThumbnail = Array.from(document.querySelectorAll('img[alt*="video" i]'))
-                .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
-                .find((src) => src && !oldVideoThumbnailSourcesList.includes(src) && !oldEditIds.some((id) => src.includes(id)));
-              if (generatedEditId) return { editId: generatedEditId, videoSrc: null };
-              if (generatedVideo) return { editId: null, videoSrc: generatedVideo.src, thumbnailSrc: null };
-              return generatedThumbnail ? { editId: null, videoSrc: null, thumbnailSrc: generatedThumbnail } : null;
-            },
-            [oldVideoEditIds, oldVideoSources, oldVideoThumbnailSources, FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source] as const,
-            { timeout: 300000 },
+          const generatedBatch = await waitForFlowGeneratedMediaBatch(
+            activePage,
+            oldVideoEditIds,
+            oldVideoSources,
+            oldVideoThumbnailSources,
+            oldVideoGenerationFailureCount,
+            flowResponseUrls,
           );
-          const generatedMedia = (await mediaHandle.jsonValue()) as {
-            editId?: string | null;
-            videoSrc?: string | null;
-            thumbnailSrc?: string | null;
-            generationError?: boolean;
-          } | null;
-          if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
-          if (generatedMedia.generationError) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);
-
-          let downloadedVideoFromCard: FlowDownloadedVideo | null = null;
-          if (generatedMedia.editId) {
-            remoteVideoMediaId = generatedMedia.editId;
-            downloadedVideoFromCard = await downloadFlowVideoFromEdit(
-              activePage,
-              currentProjectId,
-              generatedMedia.editId,
-              parseConfiguredVideoDuration(visualConfig?.videoDuration),
-            );
-          } else if (generatedMedia.thumbnailSrc) {
-            remoteVideoMediaId = extractFlowMediaIdFromUrl(generatedMedia.thumbnailSrc);
-            if (!remoteVideoMediaId) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
-            const thumbnail = activePage.locator(`img[src="${generatedMedia.thumbnailSrc}"]`).last();
-            const mediaCard = thumbnail.locator("xpath=ancestor::flow-grid-tile-container[1]");
-            downloadedVideoFromCard = await downloadFlowVideoFromCard(
-              activePage,
-              mediaCard,
-              oldVideoSources,
-              parseConfiguredVideoDuration(visualConfig?.videoDuration),
-              remoteVideoMediaId,
-            );
-          } else {
-            const expectedDurationSeconds = parseConfiguredVideoDuration(visualConfig?.videoDuration);
-            await activePage.waitForFunction(
-              ({ directVideoSrc, previousVideoSources, expectedDuration }) => {
-                const video =
-                  Array.from(document.querySelectorAll("video")).find((item) => (item.currentSrc || item.src) === directVideoSrc) ||
-                  Array.from(document.querySelectorAll("video")).find((item) => !previousVideoSources.includes(item.currentSrc || item.src));
-                return Boolean(video && video.readyState >= HTMLMediaElement.HAVE_METADATA && video.duration >= Math.max(0.1, expectedDuration * 0.7));
-              },
-              { directVideoSrc: generatedMedia.videoSrc || null, previousVideoSources: oldVideoSources, expectedDuration: expectedDurationSeconds },
-              { timeout: FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS },
-            );
-          }
-          if (!browserInstance) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
-          const targetMediaId = generatedMedia.editId || remoteVideoMediaId || extractFlowMediaIdFromUrl(generatedMedia.videoSrc || SecurityConstants.EMPTY_STRING);
-          const matchingResponseUrls = _.filter(flowResponseUrls, (url) =>
-            targetMediaId ? _.isEqual(extractFlowMediaIdFromUrl(url), targetMediaId) : _.isEqual(url, generatedMedia.videoSrc),
+          remoteVideoMediaIds = _.uniq(
+            _.compact(
+              _.map(generatedBatch.media, (generatedMedia) =>
+                normalizeFlowMediaId(
+                  _.toString(
+                    generatedMedia.editId ||
+                      extractFlowMediaIdFromUrl(generatedMedia.thumbnailSrc || SecurityConstants.EMPTY_STRING) ||
+                      extractFlowMediaIdFromUrl(generatedMedia.videoSrc || SecurityConstants.EMPTY_STRING),
+                  ),
+                ),
+              ),
+            ),
           );
-          const videoUrls = _.uniq([
-            ...(targetMediaId ? await collectFlowVideoUrls(activePage, targetMediaId, generatedMedia.videoSrc) : _.compact([generatedMedia.videoSrc])),
-            ...matchingResponseUrls,
-          ]);
-          const downloadedVideo =
-            downloadedVideoFromCard || (await downloadValidatedVideo(browserInstance.context, videoUrls, parseConfiguredVideoDuration(visualConfig?.videoDuration)));
-          remoteVideoMediaId = extractFlowMediaIdFromUrl(downloadedVideo.mediaUrl) || generatedMedia.editId || undefined;
-          finalBase64 = `data:${downloadedVideo.mimeType};base64,${downloadedVideo.buffer.toString("base64")}`;
-          if (currentProjectId) {
-            await activePage.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`, {
-              waitUntil: "domcontentloaded",
-              timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
-            });
-            await dismissFlowOnboarding(activePage);
+          remoteVideoMediaId = _.head(remoteVideoMediaIds);
+          if (generatedBatch.rejected && _.isEmpty(remoteVideoMediaIds)) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);
+          if (generatedBatch.timedOut || _.lt(_.size(remoteVideoMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
+            throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR);
           }
+          for (const targetMediaId of remoteVideoMediaIds) {
+            await waitForFlowMediaCardReady(activePage, targetMediaId);
+          }
+          finalBase64 = SecurityConstants.EMPTY_STRING;
         } else {
           const base64Data = await activePage.waitForFunction(
             ([oldIdsList, getImgIdStr, jpegMimeType]) => {
@@ -2564,9 +2712,13 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           );
           finalBase64 = await base64Data.jsonValue();
         }
-        appLog(BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
+        appLog(
+          _.isEqual(visualConfig?.generateType, GenerateType.Video)
+            ? FLOW_VIDEO_MEDIA_CONFIG.OUTPUT_BATCH_READY_LOG
+            : BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS,
+        );
 
-        responseText = jsonUtils.safeStringify({ directBase64: finalBase64 });
+        responseText = jsonUtils.safeStringify({ directBase64: finalBase64, directBase64s: finalBase64s });
         success = true;
       } catch (error: unknown) {
         lastGenerationError = getErrorMessage(error);
@@ -2579,7 +2731,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           await closeActiveBrowser();
           browserInstance = null;
           activePage = null;
-        } else {
+        } else if (!isFlowVideoGeneration) {
           await activePage.reload({ waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => undefined);
         }
       } finally {
@@ -2603,25 +2755,43 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   }
 
   try {
-    const parsed = jsonUtils.safeParse<{ directBase64?: string }>(responseText, {});
+    const parsed = jsonUtils.safeParse<{ directBase64?: string; directBase64s?: string[] }>(responseText, {});
     if (parsed.directBase64) {
-      let cleanBase64 = parsed.directBase64;
-      if (_.includes(cleanBase64, ",")) {
-        cleanBase64 = _.split(cleanBase64, ",")[1];
-      }
+      const encodedOutputs = _.isEmpty(parsed.directBase64s) ? [parsed.directBase64] : parsed.directBase64s!;
+      const cleanBase64s = _.map(encodedOutputs, (encodedOutput) =>
+        _.includes(encodedOutput, ",") ? _.toString(_.last(_.split(encodedOutput, ","))) : encodedOutput,
+      );
+      const cleanBase64 = _.head(cleanBase64s)!;
 
-      return { success: true, base64: cleanBase64, fallbackUrl: parsed.directBase64, newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined };
+      return {
+        success: true,
+        base64: cleanBase64,
+        base64s: cleanBase64s,
+        fallbackUrl: parsed.directBase64,
+        fallbackUrls: encodedOutputs,
+        newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
+        remoteMediaId: remoteVideoMediaId,
+        remoteMediaIds: remoteVideoMediaIds,
+        remoteMediaCreated: !_.isEmpty(remoteVideoMediaIds) || !_.isEmpty(remoteVideoMediaId),
+      };
     }
   } catch (e) {}
 
+  const generationWasRejected = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastGenerationError);
   return {
     success: false,
     base64: null,
     fallbackUrl: SecurityConstants.EMPTY_STRING,
-    warning: remoteVideoMediaId ? FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR : lastGenerationError,
+    warning:
+      generationWasRejected && _.isEmpty(remoteVideoMediaIds)
+        ? lastGenerationError
+        : !_.isEmpty(remoteVideoMediaIds) || !_.isEmpty(remoteVideoMediaId)
+          ? FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR
+          : lastGenerationError,
     newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
-    remoteMediaId: remoteVideoMediaId,
-    remoteMediaCreated: !_.isEmpty(remoteVideoMediaId),
+    remoteMediaId: generationWasRejected && _.isEmpty(remoteVideoMediaIds) ? undefined : remoteVideoMediaId,
+    remoteMediaIds: generationWasRejected && _.isEmpty(remoteVideoMediaIds) ? [] : remoteVideoMediaIds,
+    remoteMediaCreated: !_.isEmpty(remoteVideoMediaIds) || (!generationWasRejected && !_.isEmpty(remoteVideoMediaId)),
   };
 }
 
@@ -2676,6 +2846,10 @@ const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number):
 };
 
 const roomReferenceSignatureMap = new WeakMap<Page, string>();
+const geminiAspectControlUnavailablePages = new WeakSet<Page>();
+
+const getGeminiWorkspaceUrl = (generateType?: GenerateType): string =>
+  _.isEqual(generateType, GenerateType.Video) ? EXTERNAL_URLS.GEMINI_CHAT : EXTERNAL_URLS.GEMINI_IMAGES;
 
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
@@ -2737,12 +2911,13 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
         if (needNewRoom) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
-          await activePage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+          await activePage.goto(getGeminiWorkspaceUrl(visualConfig?.generateType), {
             waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
             timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
           });
           await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
           roomReferenceSignatureMap.delete(activePage);
+          geminiAspectControlUnavailablePages.delete(activePage);
           consecutiveGeminiErrors = 0;
         } else {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
@@ -2983,10 +3158,10 @@ async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number
 
 const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => context.newPage();
 
-const createPreparedGeminiBatchPage = async (context: BrowserContext, tabIndex: number): Promise<Page> => {
+const createPreparedGeminiBatchPage = async (context: BrowserContext, tabIndex: number, generateType: GenerateType = GenerateType.Image): Promise<Page> => {
   const page = await createGeminiBatchPage(context);
   try {
-    await prepareGeminiBatchPage(page, tabIndex);
+    await prepareGeminiBatchPage(page, tabIndex, generateType);
     return page;
   } catch (error) {
     await page.close().catch(() => {});
@@ -2994,16 +3169,17 @@ const createPreparedGeminiBatchPage = async (context: BrowserContext, tabIndex: 
   }
 };
 
-const prepareGeminiBatchPage = async (page: Page, index: number): Promise<void> => {
+const prepareGeminiBatchPage = async (page: Page, index: number, generateType: GenerateType = GenerateType.Image): Promise<void> => {
   const tabNumber = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
   try {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber)));
-    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+    await page.goto(getGeminiWorkspaceUrl(generateType), {
       waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
       timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
     });
     await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
     roomReferenceSignatureMap.delete(page);
+    geminiAspectControlUnavailablePages.delete(page);
     batchPagesErrors.set(page, SecurityConstants.ZERO);
   } catch (error: any) {
     appError(
@@ -3082,10 +3258,14 @@ export async function generateBatchImagesWithGeminiChat(
     await Promise.allSettled(_.map(surplusPages, (page) => page.close()));
     while (_.lt(_.size(candidates), maxTabs)) candidates.push(await createGeminiBatchPage(context));
 
+    const initialBatchGenerateType = _.every(items, (item) => _.isEqual(resolveBatchAssetType(item), GenerateType.Video))
+      ? GenerateType.Video
+      : GenerateType.Image;
+
     const prepareExistingTab = async (page: Page, index: number): Promise<Page | null> => {
       for (let attempt = SecurityConstants.ZERO; attempt < GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM; attempt++) {
         try {
-          await prepareGeminiBatchPage(page, index);
+          await prepareGeminiBatchPage(page, index, initialBatchGenerateType);
           return page;
         } catch (error) {
           appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
@@ -3140,12 +3320,13 @@ export async function generateBatchImagesWithGeminiChat(
                 .replace("{2}", maxRoomAttempts.toString()),
             );
             try {
-              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+              await page.goto(getGeminiWorkspaceUrl(itemVisualConfig.generateType), {
                 waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
                 timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
               });
               await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
               roomReferenceSignatureMap.delete(page);
+              geminiAspectControlUnavailablePages.delete(page);
               batchPagesErrors.set(page, 0);
             } catch (err: any) {
               appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", err.message));
@@ -3203,7 +3384,8 @@ export async function generateBatchImagesWithGeminiChat(
               const isConfigChanged = currentConfigState !== lastConfig;
               const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
-              await configureGeminiModel(page, itemVisualConfig).catch(() => false);
+              const modelConfigured = await configureGeminiModel(page, itemVisualConfig).catch(() => false);
+              if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
               const generateTypeConfigured = await configureGeminiGenerateType(page, itemVisualConfig);
               if (!generateTypeConfigured) {
                 throw new Error(
@@ -3307,10 +3489,10 @@ export async function generateBatchImagesWithGeminiChat(
 
     const workerQueues = distributeItemsByContinuity(items, activePages.length);
 
-    const createReplacementWorkerPage = async (tabIndex: number): Promise<Page | null> => {
+    const createReplacementWorkerPage = async (tabIndex: number, generateType: GenerateType): Promise<Page | null> => {
       for (let attempt = SecurityConstants.ZERO; attempt < GEMINI_BATCH_SETUP_CONFIG.WORKER_REPLACEMENT_MAX_ATTEMPTS; attempt++) {
         try {
-          return await createPreparedGeminiBatchPage(context, tabIndex);
+          return await createPreparedGeminiBatchPage(context, tabIndex, generateType);
         } catch (error) {
           appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
         }
@@ -3350,7 +3532,7 @@ export async function generateBatchImagesWithGeminiChat(
           const failedPage = workerPage;
           globalBatchPages = _.without(globalBatchPages, failedPage);
           if (_.isEmpty(workerQueue)) return;
-          const replacementPage = await createReplacementWorkerPage(tabIndex);
+          const replacementPage = await createReplacementWorkerPage(tabIndex, resolveBatchAssetType(workerQueue[SecurityConstants.ZERO]));
           if (!replacementPage) return;
           workerPage = replacementPage;
           globalBatchPages.push(replacementPage);
@@ -3503,7 +3685,12 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   let targetModelText = GeminiChatModelName.Pro;
   let targetModelRegex = GEMINI_MODEL_PRO_REGEX;
   let fallbackModelRegex: RegExp | null = null;
-  if (_.includes([ImageGeneratorEngine.LabsSandbox, ImageGeneratorEngine.Veo3Lite], engine)) {
+  const isImageGeneration = !_.isEqual(visualConfig?.generateType, GenerateType.Video);
+  if (isImageGeneration) {
+    targetModelText = GeminiChatModelName.Flash;
+    targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
+    fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
+  } else if (_.includes([ImageGeneratorEngine.LabsSandbox, ImageGeneratorEngine.Veo3Lite], engine)) {
     targetModelText = GeminiChatModelName.FlashLite;
     targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
   } else if (_.includes([ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Fast], engine)) {
@@ -3524,9 +3711,11 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     if (!modelMenu) continue;
     const currentModelLabel = await getSelectedGeminiModelLabel(modelMenu);
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentModelLabel));
-    const currentModelMatches = targetModelRegex.test(currentModelLabel);
+    const currentModelMatchesTarget = targetModelRegex.test(currentModelLabel);
     targetModelRegex.lastIndex = SecurityConstants.ZERO;
-    if (currentModelMatches) {
+    const currentModelMatchesFallback = Boolean(fallbackModelRegex?.test(currentModelLabel));
+    if (fallbackModelRegex) fallbackModelRegex.lastIndex = SecurityConstants.ZERO;
+    if (currentModelMatchesTarget || currentModelMatchesFallback) {
       await closeGeminiModelMenu(modelPickerBtn, modelMenu);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
       return true;
@@ -3699,35 +3888,88 @@ export const createGeminiReferenceFiles = (referenceImages: unknown, referenceIm
     .compact()
     .value();
 
-async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
-  await page.bringToFront().catch(() => {});
-  const isVideoGeneration = _.some([visualConfig?.generateType], (generateType) => _.isEqual(generateType, GenerateType.Video));
-  if (isVideoGeneration) {
-    const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
-    const aspectButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_BUTTON).first();
+const readGeminiAspectControlLabel = async (control: Locator): Promise<string> =>
+  _.trim(
+    _.join(
+      [await control.innerText().catch(() => SecurityConstants.EMPTY_STRING), await control.getAttribute(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ARIA_LABEL_ATTRIBUTE).catch(() => null)],
+      REFACTOR_CONSTANTS.VD_BLANK,
+    ),
+  );
 
-    if (await aspectButton.isVisible()) {
-      const currentLabel = await aspectButton.getAttribute(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ARIA_LABEL_ATTRIBUTE);
-      if (!_.includes(currentLabel, targetRatio)) {
-        await aspectButton.click();
-        await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
-        const ratioOption = page
-          .locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_OPTIONS)
-          .filter({ hasText: new RegExp(_.escapeRegExp(targetRatio)) })
-          .first();
-        if (await ratioOption.isVisible()) {
-          await ratioOption.click();
-          await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
-          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, targetRatio));
-        } else {
-          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND.replace(SecurityConstants.PLACEHOLDER_0, targetRatio));
-          await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY);
-        }
-      }
-    } else {
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND);
+const findGeminiAspectControl = async (page: Page): Promise<Locator | null> => {
+  const primaryCandidates = page.locator(GEMINI_IMAGES_ASPECT_CONFIG.BUTTON_SELECTOR);
+  const primaryCount = await primaryCandidates.count();
+  for (let index = SecurityConstants.ZERO; index < primaryCount; index = _.add(index, SecurityConstants.DEFAULT_AMOUNT)) {
+    const candidate = primaryCandidates.nth(index);
+    if (await candidate.isVisible().catch(() => false)) return candidate;
+  }
+
+  const fallbackCandidates = page.locator(GEMINI_IMAGES_ASPECT_CONFIG.FALLBACK_BUTTON_SELECTOR);
+  const fallbackCount = await fallbackCandidates.count();
+  for (let index = SecurityConstants.ZERO; index < fallbackCount; index = _.add(index, SecurityConstants.DEFAULT_AMOUNT)) {
+    const candidate = fallbackCandidates.nth(index);
+    if (!(await candidate.isVisible().catch(() => false))) continue;
+    const candidateLabel = await readGeminiAspectControlLabel(candidate);
+    if (GEMINI_IMAGES_ASPECT_CONFIG.CONTROL_LABEL_PATTERN.test(candidateLabel)) return candidate;
+  }
+  return null;
+};
+
+const configureGeminiAspectRatio = async (page: Page, targetRatio: AspectRatio): Promise<boolean> => {
+  if (geminiAspectControlUnavailablePages.has(page)) return false;
+  const targetPattern = GEMINI_IMAGES_ASPECT_CONFIG.VALUE_PATTERNS[targetRatio];
+  const aspectButton = await findGeminiAspectControl(page);
+  if (!aspectButton) {
+    await delayAsync(GEMINI_IMAGES_ASPECT_CONFIG.CONTROL_TIMEOUT_MS);
+    const delayedAspectButton = await findGeminiAspectControl(page);
+    if (delayedAspectButton) return configureGeminiAspectRatio(page, targetRatio);
+    geminiAspectControlUnavailablePages.add(page);
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND);
+    return false;
+  }
+  geminiAspectControlUnavailablePages.delete(page);
+
+  const currentLabel = await readGeminiAspectControlLabel(aspectButton);
+  if (targetPattern.test(currentLabel)) return true;
+
+  await aspectButton.click();
+  await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
+  const ratioOptions = page.locator(GEMINI_IMAGES_ASPECT_CONFIG.OPTION_SELECTOR);
+  let ratioOption: Locator | null = null;
+  const optionCount = await ratioOptions.count();
+  for (let optionIndex = SecurityConstants.ZERO; optionIndex < optionCount; optionIndex = _.add(optionIndex, SecurityConstants.DEFAULT_AMOUNT)) {
+    const candidate = ratioOptions.nth(optionIndex);
+    if (!(await candidate.isVisible().catch(() => false))) continue;
+    const optionLabel = await readGeminiAspectControlLabel(candidate);
+    if (targetPattern.test(optionLabel)) {
+      ratioOption = candidate;
+      break;
     }
   }
+  if (!ratioOption) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND.replace(SecurityConstants.PLACEHOLDER_0, targetRatio));
+    await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY);
+    return false;
+  }
+
+  await ratioOption.click();
+  const verifyDeadline = _.add(Date.now(), GEMINI_IMAGES_ASPECT_CONFIG.VERIFY_TIMEOUT_MS);
+  while (_.lt(Date.now(), verifyDeadline)) {
+    const updatedLabel = await readGeminiAspectControlLabel(aspectButton);
+    const selectedOption = page.locator(GEMINI_IMAGES_ASPECT_CONFIG.SELECTED_STATE_SELECTOR).filter({ hasText: targetPattern }).first();
+    if (targetPattern.test(updatedLabel) || (await selectedOption.isVisible().catch(() => false))) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, targetRatio));
+      return true;
+    }
+    await delayAsync(GEMINI_IMAGES_ASPECT_CONFIG.VERIFY_POLL_MS);
+  }
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND.replace(SecurityConstants.PLACEHOLDER_0, targetRatio));
+  return false;
+};
+
+async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
+  await page.bringToFront().catch(() => {});
+  await configureGeminiAspectRatio(page, (visualConfig?.aspectRatio || AspectRatio.SixteenNine) as AspectRatio);
 
   const rawReferences = !_.isEmpty(visualConfig?.referenceImages)
     ? visualConfig.referenceImages

@@ -130,6 +130,23 @@ assert.deepEqual(
   [],
 );
 assert.deepEqual(
+  getCinematicGeneratedTakeIssues(
+    [
+      {
+        id: "sc_failed_qa_but_downloaded",
+        assetUrl: "/assets/projects/test/videos/sc_failed_qa_but_downloaded.mp4",
+        assetType: GenerateType.Video,
+        assetStatus: SceneAssetStatus.Failed,
+        qaStatus: QaStatus.Failed,
+        acceptance: AssetAcceptance.Rejected,
+      },
+    ] as any,
+    1,
+  ),
+  [],
+  "Downloaded video with failed QA remains eligible for editor/library analysis",
+);
+assert.deepEqual(
   getCinematicStoryboardReadinessIssues(
     [{ id: "only_clip", script: "Một cảnh." }] as any,
     2,

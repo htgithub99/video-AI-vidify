@@ -5,7 +5,7 @@ import {
   getCinematicSceneImageProviderRepairPrompt,
   getCinematicThumbnailProviderRepairPrompt,
 } from "../src/constants/cinematicPrompts";
-import { CINEMATIC_GENERATION_RECOVERY_CONFIG } from "../src/constants/config";
+import { CINEMATIC_GENERATION_RECOVERY_CONFIG, FLOW_VIDEO_MEDIA_CONFIG } from "../src/constants/config";
 import { isProviderGenerationRejection } from "../src/services/projectImageGenerationService";
 
 const providerRejection =
@@ -13,7 +13,10 @@ const providerRejection =
 
 assert.equal(CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS, 2);
 assert.equal(isProviderGenerationRejection(providerRejection), true);
+assert.equal(isProviderGenerationRejection("Google Flow đã từ chối cảnh hiện tại"), true);
+assert.equal(isProviderGenerationRejection("Không thành công vì vi phạm quy tắc cộng đồng"), true);
 assert.equal(isProviderGenerationRejection("temporary network timeout"), false);
+assert.equal(FLOW_VIDEO_MEDIA_CONFIG.DOWNLOADABLE_URL_PATTERN.test("https://flow-content.google/video/42d2fb8c-0329-47fd-9336-6b422eb397d9"), true);
 
 const sceneRepairPrompt = getCinematicSceneImageProviderRepairPrompt(
   "Sun Wukong faces the celestial gate.",
@@ -46,6 +49,14 @@ assert.match(pipelineSource, /VI_CHARACTER_PROMPT_REPAIRING/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /VI_CHARACTER_REFERENCE_REQUIRED/);
 assert.match(pipelineSource, /VI_THUMBNAIL_REQUIRED/);
+assert.match(pipelineSource, /VI_VIDEO_PROMPT_REPAIRING/);
+assert.match(pipelineSource, /requestAiRewrittenVideoPrompt\(rejectedScene, currentPrompt, \[\]\)/);
+assert.match(pipelineSource, /cinematicPreflightPrompts\.set\(rejectedScene\.id, repairedPrompt\)/);
+assert.match(pipelineSource, /remoteVideoDownloadPending = false/);
+assert.match(pipelineSource, /const runCinematicVideoQueue = async/);
+assert.match(pipelineSource, /for \(const scene of scenesToProcess\)/);
+assert.match(pipelineSource, /await runSceneGeneration\(\[scene\]/);
+assert.match(pipelineSource, /if \(!hasSceneAsset\(scene\)\) break/);
 assert.doesNotMatch(pipelineSource, /continuing with the AI-authored identity prompt/i);
 assert.doesNotMatch(pipelineSource, /clean film keyframe|keyframe sạch/i);
 assert.doesNotMatch(pipelineSource, /PIPELINE_EXTRACT_THUMBNAIL_FRAME/);
@@ -54,5 +65,26 @@ const controllerSource = readFileSync(new URL("../src/server/controllers/pipelin
 assert.match(controllerSource, /getCinematicCharacterProviderRepairPrompt/);
 assert.match(controllerSource, /getCinematicSceneImageProviderRepairPrompt/);
 assert.doesNotMatch(controllerSource, /EXTRACT_THUMBNAIL_FRAME/);
+assert.match(controllerSource, /const recoveryWasRejected = GEMINI_MEDIA_ERRORS\.PROVIDER_REJECTION_PATTERN/);
+assert.match(controllerSource, /const activeVideoProjectKeys = new Set<string>\(\)/);
+assert.match(controllerSource, /const anotherPendingVideoScene = _\.find/);
+
+assert.match(imageGeneratorSource, /oldVideoGenerationFailureCount/);
+assert.match(imageGeneratorSource, /_\.gt\(failureCount, oldGenerationFailureCount\)/);
+assert.match(imageGeneratorSource, /waitForFlowGeneratedMediaBatch/);
+assert.match(imageGeneratorSource, /_\.gte\(_\.size\(media\), FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COUNT\)/);
+assert.match(imageGeneratorSource, /RECOVERY_READY_TIMEOUT_MS/);
+assert.match(imageGeneratorSource, /await throwIfFlowMediaCardRejected\(page, mediaId\)/);
+assert.match(imageGeneratorSource, /const hasCompletionSignal = Boolean/);
+assert.match(imageGeneratorSource, /state\?\.thumbnailReady && hasCompletionSignal/);
+assert.match(imageGeneratorSource, /if \(state\?\.videoReady\) return resultContainer/);
+assert.match(imageGeneratorSource, /const projectMediaUrls = await collectFlowVideoUrls\(page, mediaId\)/);
+assert.match(imageGeneratorSource, /DOWNLOADABLE_URL_PATTERN\.source/);
+assert.match(imageGeneratorSource, /const mediaCard = await waitForFlowMediaCardReady\(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_READY_TIMEOUT_MS\)[\s\S]*const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)/);
+assert.match(imageGeneratorSource, /FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_REDIRECT_TIMEOUT_MS/);
+assert.match(imageGeneratorSource, /getOrLaunchGlobalBrowser\(options\.chromeHeadless\)/);
+assert.match(imageGeneratorSource, /else if \(!isFlowVideoGeneration\) \{\s*await activePage\.reload/);
+assert.match(imageGeneratorSource, /const generationWasRejected = GEMINI_MEDIA_ERRORS\.PROVIDER_REJECTION_PATTERN/);
+assert.match(imageGeneratorSource, /remoteMediaIds: generationWasRejected && _\.isEmpty\(remoteVideoMediaIds\) \? \[\] : remoteVideoMediaIds/);
 
 process.stdout.write(JSON.stringify({ passed: true, providerRetries: CINEMATIC_GENERATION_RECOVERY_CONFIG.PROVIDER_REPAIR_ATTEMPTS }));

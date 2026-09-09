@@ -66,6 +66,7 @@ export const EXTERNAL_URLS = {
   GOOGLE_MY_ACCOUNT: "https://myaccount.google.com/?hl=vi",
   GOOGLE_ACCOUNT_ABOUT: "https://www.google.com/account/about",
   GEMINI_CHAT: "https://gemini.google.com/app",
+  GEMINI_IMAGES: "https://gemini.google.com/images",
   GEMINI_CHAT_BASE: "https://gemini.google.com",
   GEMINI_ACTIVITY: "https://myactivity.google.com/product/gemini",
   GROK_IMAGINE: "https://grok.com/imagine",

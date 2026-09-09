@@ -61,4 +61,4 @@ export const FANTASY_LEAK_REGEX =
 export const FANTASY_STORY_REGEX =
   /\b(?:fantasy|magic(?:al)?|wizard|witch|spell|immortal|cultivat(?:or|ion)|celestial|spiritual|talisman|temple|ancient kingdom|tu tien|tien hiep|phep thuat|than tien|tu tien|linh luc|tien nhan)\b/i;
 export const GEMINI_ACTIVE_VIDEO_MODE_REGEX = /^\s*(?:video|tạo video|create video|generate video)\s*$/i;
-export const GEMINI_ACTIVE_IMAGE_MODE_REGEX = /^\s*(?:hình ảnh|image|images)\s*$/i;
+export const GEMINI_ACTIVE_IMAGE_MODE_REGEX = /^\s*(?:hình ảnh|image|images|bỏ chọn hình ảnh|deselect image)\s*$/i;

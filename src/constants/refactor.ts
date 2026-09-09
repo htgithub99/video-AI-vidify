@@ -132,6 +132,7 @@ export const REFACTOR_CONSTANTS = {
   ENGINE_IMAGEN_3_BATCH: "Imagen 3 Batch",
   ENGINE_VEO_3_0_FLUID: "VEO 3.0 Fluid",
   ENGINE_LABS_SANDBOX_STILL: "Labs Sandbox",
+  ENGINE_GEMINI_IMAGES: "Gemini Images · Nano Banana 2",
   MODE_LABS_FLOW: "Flow Veo 3",
   MODE_GEMINI_ROOM: "Gemini Room",
   RATIO_TIKTOK_SUFFIX: " (TikTok)",

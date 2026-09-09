@@ -827,6 +827,36 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   VIDEO_SOURCE_POLL_ATTEMPTS: 30,
 } as const;
 
+export const GEMINI_IMAGES_ASPECT_CONFIG = {
+  BUTTON_SELECTOR: [
+    'button[data-test-id*="aspect-ratio" i]',
+    'button[data-testid*="aspect-ratio" i]',
+    'button[aria-label*="aspect ratio" i]',
+    'button[aria-label*="tỷ lệ" i]',
+    'button[aria-label*="khung hình" i]',
+    'button[aria-label*="16:9"]',
+    'button[aria-label*="9:16"]',
+    'button[aria-label*="4:3"]',
+    'button[aria-label*="3:4"]',
+    'button[aria-label*="1:1"]',
+  ].join(", "),
+  FALLBACK_BUTTON_SELECTOR: 'button[aria-haspopup="menu"], [role="button"][aria-haspopup="menu"]',
+  CONTROL_LABEL_PATTERN: /(?:aspect\s*ratio|tỷ\s*lệ|khung\s*hình|16\s*:\s*9|9\s*:\s*16|4\s*:\s*3|3\s*:\s*4|1\s*:\s*1)/i,
+  OPTION_SELECTOR:
+    '[role="menuitemradio"], [role="option"], [role="radio"], [role="menu"] button, [role="listbox"] button, .cdk-overlay-pane button, [data-test-id*="aspect-ratio" i], [data-testid*="aspect-ratio" i]',
+  SELECTED_STATE_SELECTOR: '[aria-checked="true"], [aria-selected="true"], [data-state="checked"], [data-state="selected"]',
+  VALUE_PATTERNS: {
+    [AspectRatio.SixteenNine]: /16\s*:\s*9/i,
+    [AspectRatio.NineSixteen]: /9\s*:\s*16/i,
+    [AspectRatio.OneOne]: /1\s*:\s*1/i,
+    [AspectRatio.FourThree]: /4\s*:\s*3/i,
+    [AspectRatio.ThreeFour]: /3\s*:\s*4/i,
+  },
+  CONTROL_TIMEOUT_MS: 2500,
+  VERIFY_TIMEOUT_MS: 5000,
+  VERIFY_POLL_MS: 250,
+} as const;
+
 export const PROVIDER_REFERENCE_UPLOAD_CONFIG = {
   FILE_INPUT: 'input[type="file"]',
   ATTACHMENT_REMOVE_BUTTON:
@@ -915,8 +945,6 @@ export const FLOW_CHARACTER_CONFIG = {
 } as const;
 
 export const GEMINI_CHAT_VIDEO_SELECTORS = {
-  ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
-  ASPECT_OPTIONS: '[role="menuitemradio"]',
   REFERENCE_INPUT:
     'input[type="file"].hidden-file-input, uploader input[type="file"], input[type="file"], input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
   REFERENCE_CHIPS:
@@ -1280,6 +1308,7 @@ export const PIPELINE_COMPLETION_CONFIG = {
   FINAL_RENDER_MISSING: "final_render_missing",
   RENDERED_WITH_BLOCKERS_PHASE: "rendered_with_blockers",
   MEDIA_REPAIR_PHASE: "media_generation",
+  MEDIA_COMPLETED_PHASE: "media_completed",
 } as const;
 
 export const MANUAL_REVIEW_CONFIG = { ITEM_NOT_FOUND_ERROR: "Manual review item was not found.", SCOPE_SCENE: "scene", SCOPE_THUMBNAIL: "thumbnail" } as const;
@@ -1674,7 +1703,9 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   DURATIONS: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].durations,
   DEFAULT_RESOLUTION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultResolution,
   DEFAULT_DURATION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultDuration,
-  SINGLE_OUTPUT: "x1",
+  VIDEO_OUTPUT_COUNT: 2,
+  VIDEO_OUTPUT_LABEL: "x2",
+  VIDEO_OUTPUT_PATTERN: /^(?:x2|2x)$/i,
   PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
   PROJECT_ERROR_URL_PATTERN: /\/404(?:[/?#]|$)/i,
   PROJECT_BODY_SELECTOR: "body",
@@ -1686,7 +1717,7 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   CONFIG_MISMATCH_ERROR: "Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn.",
   PROMPT_NOT_READY_ERROR: "Google Flow chưa nhận đủ prompt nên chưa thể gửi tạo video.",
   GENERATION_FAILURE_PATTERN:
-    /(?:Không thành công|Unsuccessful)[\s\S]{0,600}(?:vi phạm chính sách|người nổi tiếng|violat(?:e|es|ed|ing).*policy|celebrity)/i,
+    /(?:Không thành công|Không thể tạo|Unsuccessful|Generation failed|Couldn['’]?t generate|Try a different prompt|vi phạm (?:chính sách|quy tắc cộng đồng)|violat(?:e|es|ed|ing).*policy|community guidelines|celebrity)/i,
   GENERATION_REJECTED_ERROR: "Google Flow đã từ chối cảnh hiện tại; hệ thống sẽ thử lại riêng cảnh này.",
   NON_RETRYABLE_SETUP_ERRORS: [
     /Google Flow chưa áp dụng đúng cấu hình video/i,
@@ -1702,9 +1733,12 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
 } as const;
 
 export const FLOW_VIDEO_MEDIA_CONFIG = {
+  EXPECTED_OUTPUT_COUNT: FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT,
   GLOBAL_BROWSER_IDLE_TIMEOUT_MS: 2 * 60_000,
   IDEMPOTENCY_CACHE_MAX_ENTRIES: 500,
   GENERATION_TIMEOUT_MS: 8 * 60_000,
+  RECOVERY_READY_TIMEOUT_MS: 30_000,
+  RECOVERY_REDIRECT_TIMEOUT_MS: 15_000,
   DOWNLOAD_TIMEOUT_MS: 2 * 60_000,
   READY_POLL_INTERVAL_MS: 1_500,
   MIN_FILE_BYTES: 100_000,
@@ -1716,7 +1750,23 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   MEDIA_API_PATH_MARKER: "/fx/api/",
   MEDIA_REDIRECT_PATH: "fx/api/trpc/media.getMediaUrlRedirect?name={mediaId}",
   MEDIA_ID_TOKEN: "{mediaId}",
+  MEDIA_EDIT_LINK_SELECTOR: 'a[href*="/edit/"]',
+  MEDIA_EDIT_PATH_MARKER: "/edit/",
+  MEDIA_CARD_SELECTOR: "flow-grid-tile-container",
+  MEDIA_VIDEO_SELECTOR: "video",
+  MEDIA_VIDEO_THUMBNAIL_SELECTOR: 'img[alt*="video" i], img[alt*="Hình thu nhỏ video" i]',
+  MEDIA_CARD_SOURCE_SELECTOR: "video, source, img",
+  MEDIA_SOURCE_SELECTOR: "video, source, img, a[href]",
+  MEDIA_NESTED_SOURCE_SELECTOR: "source",
+  MEDIA_IMAGE_SELECTOR: "img",
+  MEDIA_SOURCE_ATTRIBUTE: "src",
+  MEDIA_CARD_XPATH: "xpath=ancestor::flow-grid-tile-container[1]",
+  VIDEO_READY_STATE_MINIMUM: 1,
+  DOWNLOADABLE_URL_PATTERN: /media\.getMediaUrlRedirect|flow-content\.google\/video\/|googleusercontent|storage|\.(?:mp4|webm|mov)(?:\?|$)/i,
+  COMPLETION_TEXT_PATTERN: /play_circle|360p|720p/i,
   FILE_EXTENSION: ".mp4",
+  VARIANT_SEPARATOR: "_variant_",
+  VARIANT_INDEX_OFFSET: 1,
   SCENE_VIDEO_FILE_PATTERN: /^scene_.+\.mp4$/i,
   CONTENT_HASH_ALGORITHM: "sha256",
   CONTENT_HASH_ENCODING: "hex",
@@ -1729,6 +1779,8 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   EN_RECOVERY_SUCCESS: "✓ Downloaded and saved the existing clip for {0}.",
   SUBMISSION_IN_PROGRESS_ERROR: "Video này đang được tạo; hệ thống sẽ không gửi thêm yêu cầu trùng lặp.",
   INVALID_MEDIA_ERROR: "Flow chưa trả về tệp video hoàn chỉnh.",
+  INCOMPLETE_OUTPUT_BATCH_ERROR: "Flow chưa tạo đủ 2 video cho cảnh hiện tại; hệ thống giữ kết quả đã có và không gửi lại prompt.",
+  OUTPUT_BATCH_READY_LOG: "[Google Flow] Đã tạo xong 2 video; bắt đầu lưu và tải cả hai.",
   PERSISTENCE_ERROR: "Clip video chưa được lưu thành tệp cục bộ.",
 } as const;
 
@@ -1740,11 +1792,20 @@ export const CINEMATIC_GENERATION_RECOVERY_CONFIG = {
   CHARACTER_PROVIDER_REJECTION_PURPOSE: "cinematic_character_provider_rejection",
   THUMBNAIL_PROVIDER_REJECTION_PURPOSE: "cinematic_thumbnail_provider_rejection",
   PROVIDER_REPAIR_ATTEMPTS: 2,
+  VIDEO_POLICY_REPAIR_ATTEMPTS: 1,
   VISUAL_PROMPT_REQUIRED_ERROR: "Visual prompt is required.",
   VI_CHARACTER_REFERENCE_REQUIRED: "Flow chưa lưu xong Character {0} sau {1} lần thử. Dự án đã được giữ lại để tiếp tục riêng bước này.",
   EN_CHARACTER_REFERENCE_REQUIRED: "Flow did not finish saving Character {0} after {1} attempts. The project was preserved to resume this step.",
   VI_SCENE_IMAGE_REPAIRING: "[Hình ảnh] {0}: prompt bị nhà cung cấp từ chối; AI đang điều chỉnh và tạo lại riêng cảnh này.",
   EN_SCENE_IMAGE_REPAIRING: "[Image] {0}: the provider rejected the prompt; AI is repairing and retrying only this scene.",
+  VI_VIDEO_PROMPT_REPAIRING: "[Video] {0}: Flow vẫn từ chối sau {1} lần thử lại; AI đang điều chỉnh tối thiểu phần có nguy cơ vi phạm.",
+  EN_VIDEO_PROMPT_REPAIRING: "[Video] {0}: Flow still rejected the prompt after {1} retries; AI is minimally adjusting the refusal-risk detail.",
+  VI_VIDEO_PROMPT_RETRYING: "[Video] {0}: đang tạo lại riêng cảnh này bằng prompt an toàn do AI trả về.",
+  EN_VIDEO_PROMPT_RETRYING: "[Video] {0}: retrying only this scene with the safer AI-authored prompt.",
+  VI_VIDEO_SCENE_RETRYING: "[Video] {0}: thử lại {1}/{2}; chưa chuyển sang cảnh kế tiếp.",
+  EN_VIDEO_SCENE_RETRYING: "[Video] {0}: retry {1}/{2}; the next scene has not been submitted.",
+  VI_VIDEO_SCENE_WAITING: "[Video] Flow đang hoàn tất {0}; hệ thống sẽ tải clip này trước khi tạo cảnh kế tiếp.",
+  EN_VIDEO_SCENE_WAITING: "[Video] Flow is finishing {0}; this clip will be downloaded before the next scene is submitted.",
   VI_CHARACTER_PROMPT_REPAIRING: "[Nhân vật] {0}: nhà cung cấp từ chối prompt; AI đang viết lại prompt riêng rồi thử lại.",
   EN_CHARACTER_PROMPT_REPAIRING: "[Characters] {0}: the provider rejected the prompt; AI is rewriting only this Character prompt and retrying.",
   VI_CHARACTER_RETRYING: "[Nhân vật] {0}: đang tạo lại sau khi AI sửa prompt.",
@@ -1914,7 +1975,7 @@ export const GEMINI_MEDIA_ERRORS = {
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
   PROVIDER_REJECTION_PATTERN:
-    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|vi phạm chính sách)/i,
+    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|không thành công|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|từ chối|vi phạm (?:chính sách|quy tắc cộng đồng))/i,
 } as const;
 
 export const CINEMATIC_CONFIG = {

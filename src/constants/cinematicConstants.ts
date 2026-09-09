@@ -4,6 +4,7 @@ export const CINEMATIC_POLICY_CONFIG = {
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
+  MIN_SHOTS_PER_VIDEO: 4,
   PLANNING_CHUNK_SIZE: 16,
   PLANNING_CHUNK_MAX_INPUT_CHARACTERS: 24000,
   PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS: 2,
@@ -60,11 +61,13 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_START: "Bước 4/4 · Đang tạo video cho {0} cảnh.",
     VIDEO_PROGRESS: "Bước 4/4 · Đã tạo xong {0}/{1} cảnh.",
     VIDEO_READY: "Bước 4/4 · Video đã hoàn tất.",
+    VIDEO_QA_ADVISORY: "[QA video] {0} clip có cảnh báo chất lượng nhưng vẫn được chuyển cho thư viện dựng để chọn đoạn dùng được.",
     PLANNING_STOPPED: "Bước {0}/4 · Tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
     PLANNING_FORMAT_STOPPED:
       "Bước 1/4 · AI đã trả lời nhưng định dạng dữ liệu chưa đọc được. Hệ thống đã giữ dữ liệu cũ; chọn Tiếp tục để nhận lại kịch bản.",
     PROMPT_STOPPED: "Bước 2/4 · Đã giữ {0}/{1} prompt; còn thiếu {2}. Hãy chọn Tiếp tục để hoàn thành riêng các cảnh này.",
-    VIDEO_STOPPED: "Bước 4/4 · Tạm dừng vì khâu tạo hoặc ghép video chưa hoàn tất. Các cảnh đã xong được giữ lại; hãy chọn Tiếp tục dự án.",
+    VIDEO_STOPPED: "Bước 4/4 · Đã giữ {0}/{1} clip. Còn thiếu {2}; hãy chọn Tiếp tục để chỉ tải lại hoặc hoàn thành các clip này.",
+    VIDEO_RENDER_STOPPED: "Bước 4/4 · Các clip đã hoàn tất nhưng chưa ghép xong phim. Hãy chọn Tiếp tục để tiếp tục render.",
     CANCELLED: "Đã dừng quy trình an toàn. Mọi kết quả đã hoàn thành đều được giữ lại.",
   },
   en: {
@@ -78,11 +81,13 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_START: "Step 4/4 · Creating video for {0} scenes.",
     VIDEO_PROGRESS: "Step 4/4 · Completed {0}/{1} scenes.",
     VIDEO_READY: "Step 4/4 · The video is complete.",
+    VIDEO_QA_ADVISORY: "[Video QA] {0} clips have quality warnings but will still go to the edit libraries for usable-segment selection.",
     PLANNING_STOPPED: "Step {0}/4 · Paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
     PLANNING_FORMAT_STOPPED:
       "Step 1/4 · AI responded, but its data format could not be read. Existing data was kept; continue to request the screenplay again.",
     PROMPT_STOPPED: "Step 2/4 · Kept {0}/{1} prompts; still missing {2}. Continue to complete only these scenes.",
-    VIDEO_STOPPED: "Step 4/4 · Paused because video creation or assembly did not finish. Completed scenes are kept; continue the project to resume.",
+    VIDEO_STOPPED: "Step 4/4 · Kept {0}/{1} clips. Still missing {2}; continue to download or complete only these clips.",
+    VIDEO_RENDER_STOPPED: "Step 4/4 · All clips are complete, but the film has not finished rendering. Continue to resume rendering.",
     CANCELLED: "Production stopped safely. Every completed result has been kept.",
   },
 } as const;

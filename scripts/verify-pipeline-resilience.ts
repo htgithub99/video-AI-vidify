@@ -56,6 +56,34 @@ const interruptedPromptProgress = getGenerationCheckpointSceneProgress({
 } as any);
 assert(interruptedPromptProgress.completedSceneIds.join(",") === "scene_001,scene_002", "completed AI prompts were lost from the interrupted checkpoint");
 assert(interruptedPromptProgress.pendingSceneIds.join(",") === "scene_003", "interrupted checkpoint did not isolate the missing prompt");
+const interruptedMediaProgress = getGenerationCheckpointSceneProgress({
+  storyboard: [
+    { id: "scene_001", assetUrl: "/assets/projects/project_1/videos/scene_001.mp4" },
+    {
+      id: "scene_005",
+      remoteVideoMediaId: "4e0d5a34-1936-4dc5-a947-33ea6ad5d050",
+      remoteVideoDownloadPending: true,
+      assetError: "Flow chưa trả về tệp video hoàn chỉnh.",
+    },
+    {
+      id: "scene_007",
+      remoteVideoMediaId: "15aff451-76f7-45a7-a2f3-84fdffeb0d6a",
+      remoteVideoDownloadPending: true,
+      assetError: "Flow chưa trả về tệp video hoàn chỉnh.",
+    },
+  ],
+  generationCheckpoint: {
+    intent: "continue",
+    phase: "media_generation",
+    completedSceneIds: ["scene_001"],
+    pendingSceneIds: ["scene_005", "scene_007"],
+    failedSceneIds: ["scene_005", "scene_007"],
+    updatedAt: new Date().toISOString(),
+  },
+} as any);
+assert(interruptedMediaProgress.completedSceneIds.join(",") === "scene_001", "completed video clip was lost from the media checkpoint");
+assert(interruptedMediaProgress.pendingSceneIds.join(",") === "scene_005,scene_007", "media checkpoint did not preserve the missing clips");
+assert(interruptedMediaProgress.failedSceneIds.join(",") === "scene_005,scene_007", "media checkpoint did not preserve failed clip details");
 const resumedLogs = mergeContinuationLogs(
   ["[10:00:00] Kịch bản đã hoàn tất.", "[10:01:00] Đang viết prompt."],
   ["[10:01:00] Đang viết prompt.", "[10:02:00] Quy trình đã tạm dừng."],
@@ -136,6 +164,7 @@ const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSec
 const generationSettingsSource = fs.readFileSync("src/components/auto-video/GenerationSettingsSection.tsx", "utf8");
 const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const pipelineHookSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const imageGeneratorSource = fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8");
 const ffmpegRenderSource = fs.readFileSync("src/server/utils/ffmpegRender.ts", "utf8");
 assert(/const handleStartAutoGenerate[\s\S]*: Promise<void> =>/.test(autoGeneratorSource), "pipeline start promise is not exposed to regeneration");
 assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regeneration does not await the active pipeline");
@@ -178,6 +207,38 @@ assert(
     pipelineHookSource,
   ),
   "completion messages are appended after the final project checkpoint and disappear on reload",
+);
+assert(
+    /const generatedBatch = await waitForFlowGeneratedMediaBatch/.test(imageGeneratorSource) &&
+    /remoteVideoMediaIds = _\.uniq/.test(imageGeneratorSource) &&
+    /_\.lt\(_\.size\(remoteVideoMediaIds\), FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COUNT\)/.test(imageGeneratorSource) &&
+    /for \(const targetMediaId of remoteVideoMediaIds\)/.test(imageGeneratorSource) &&
+    /await waitForFlowMediaCardReady\(activePage, targetMediaId\)/.test(imageGeneratorSource),
+  "Flow did not wait for and preserve the complete x2 media batch before download",
+);
+assert(
+  /voiceUpdatedProj = \{ \.\.\.persistedProject, storyboard: realScenes as VideoProject\["storyboard"\] \};\s*latestCheckpointStoryboard = _\.cloneDeep\(realScenes\);\s*activeProjectSnapshotRef\.current = voiceUpdatedProj;/.test(
+    pipelineHookSource,
+  ),
+  "media checkpoint did not update the latest recoverable storyboard snapshot",
+);
+assert(
+  /manualReviewItems: checkpointSourceProject \? createManualReviewItems\(checkpointSourceProject\)/.test(pipelineHookSource) &&
+    /generationDiagnostics: _\.concat\(checkpointSourceProject\?\.generationDiagnostics/.test(pipelineHookSource),
+  "pipeline failure rebuilt diagnostics from a stale project snapshot",
+);
+assert(
+  /if \(isContinuation && hasSceneAsset\(sc\)\) return false;[\s\S]*if \(isContinuation\) await recoverPendingFlowDownloads\(\);[\s\S]*!scene\.remoteVideoDownloadPending/.test(
+    pipelineHookSource,
+  ),
+  "continuation can regenerate completed clips or resubmit clips that only need downloading",
+);
+assert(
+  /const persistRecoveredFlowScene =[\s\S]*scene\.assetUrl = _\.head\(fallbackUrls\);[\s\S]*scene\.assetUrls = fallbackUrls;[\s\S]*scene\.remoteVideoDownloadPending = false;[\s\S]*project\.generationCheckpoint = \{[\s\S]*completedSceneIds,[\s\S]*pendingSceneIds,[\s\S]*failedSceneIds,[\s\S]*await saveProjectDetailToDb\(project\)/.test(pipelineControllerSource) &&
+    /router\.post\("\/recover-flow-video"[\s\S]*for \(const \[variantIndex, mediaId\] of persistedMediaIds\.entries\(\)\)[\s\S]*getPersistedProjectVideoVariantUrl[\s\S]*persistRecoveredFlowScene\(project, scene, persistedMediaIds, fallbackUrls\)/.test(
+      pipelineControllerSource,
+    ),
+  "successful x2 Flow recovery or its checkpoint was not persisted atomically before the response",
 );
 assert(/regenerateVideoClips \? regenerationTexts\.clips : regenerationTexts\.images/.test(previewSource), "cinematic preview still labels clip regeneration as images");
 assert(/hasGlobalNarration[\s\S]*audioPath = hasGlobalNarration \? undefined/.test(ffmpegRenderSource), "global narration does not suppress per-scene audio sources");

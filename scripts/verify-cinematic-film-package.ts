@@ -54,12 +54,18 @@ assert.match(prompt, /establish who the protagonist is, what they want, why the 
 assert.match(prompt, /show the consequence and a real ending/i);
 assert.match(prompt, /one separate intro clip/i);
 assert.match(prompt, /premium television-style opening/i);
+assert.match(prompt, /premium television-style character introduction/i);
+assert.match(prompt, /at least 4 clearly distinct, motivated camera setups/i);
+assert.match(prompt, /reveal the protagonist with their exact name and identity anchors/i);
+assert.match(prompt, /introduce each other principal character in a separate readable visual beat/i);
+assert.match(prompt, /do not create a random trailer montage/i);
 assert.doesNotMatch(prompt, /escalating sequence arc|attack-counter tactics|exact defence|lateral tracking|dance-like fighting/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return the complete valid JSON again/i);
 
 const videoDirectorPrompt = getCinematicVideoPlanningPrompt("[]", "[]", "", "", "", 10);
 assert.match(videoDirectorPrompt, /restate each visible recurring character's exact supplied name/i);
+assert.match(videoDirectorPrompt, /coherent multi-shot character introduction with at least 4 motivated camera setups/i);
 assert.match(videoDirectorPrompt, /omit absent and off-screen characters/i);
 assert.match(videoDirectorPrompt, /separate starting position, action, weapon or prop, and reaction/i);
 assert.match(videoDirectorPrompt, /never merge, swap, replace or duplicate identities/i);

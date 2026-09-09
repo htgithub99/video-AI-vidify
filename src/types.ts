@@ -561,6 +561,8 @@ export interface StoryboardScene {
   acceptance?: AssetAcceptance;
   assetError?: string;
   remoteVideoMediaId?: string;
+  remoteVideoMediaIds?: string[];
+  remoteVideoExpectedCount?: number;
   remoteVideoDownloadPending?: boolean;
   dependencyHash?: string;
   assetRevisionId?: string;
@@ -1229,7 +1231,7 @@ export enum GeminiChatTextOption {
 export enum ImageModelLabel {
   Veo3 = "VEO 3.0 FLUID",
   Imagen = "IMAGEN 3 BATCH",
-  LabsSandbox = "LABS SANDBOX",
+  LabsSandbox = "GEMINI IMAGES · NANO BANANA 2",
 }
 
 export enum BatchDelayOption {

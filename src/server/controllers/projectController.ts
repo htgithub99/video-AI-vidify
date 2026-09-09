@@ -185,9 +185,9 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
       }
     }
 
-    const needsSync = _.isEmpty(assetUrls) || !_.eq(_.size(assetUrls), 1) || !_.includes(assetUrls, assetUrl);
+    const needsSync = _.isEmpty(assetUrls) || !_.includes(assetUrls, assetUrl);
     if (isNotBase64 && needsSync) {
-      assetUrls = [assetUrl];
+      assetUrls = _.uniq([assetUrl, ...assetUrls]);
       sceneUpdated = true;
     }
   } else if (!_.isEmpty(assetUrls)) {
@@ -396,6 +396,8 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
         assetStatus: SceneAssetStatus.Failed,
         assetError: FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ERROR,
         remoteVideoMediaId: undefined,
+        remoteVideoMediaIds: undefined,
+        remoteVideoExpectedCount: undefined,
         remoteVideoDownloadPending: false,
         cinematicTakeDecision: undefined,
         cinematicTakeDecisionReason: undefined,

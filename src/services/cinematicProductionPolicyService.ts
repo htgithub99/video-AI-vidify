@@ -137,6 +137,9 @@ export const getCinematicGeneratedTakeIssues = (scenes: StoryboardScene[], _expe
     ),
   ]);
 
+export const isCinematicVideoTakeRenderable = (scene: StoryboardScene): boolean =>
+  hasSceneAsset(scene) && _.isEqual(scene.assetType, GenerateType.Video);
+
 export const getCinematicDialogueTakeIssues = (scenes: StoryboardScene[]): string[] =>
   _.flatMap(
     _.filter(

@@ -29,7 +29,9 @@ export interface ProjectImageResult {
   assetType?: GenerateType.Image | GenerateType.Video;
   newProjectId?: string;
   remoteMediaId?: string;
+  remoteMediaIds?: string[];
   remoteMediaCreated?: boolean;
+  fallbackUrls?: string[];
 }
 type ImagePayloadFactory = (item: ProjectImageItem) => object;
 interface ProjectImageGenerationConfig {
@@ -50,7 +52,9 @@ export interface ProjectImageGenerationSummary {
 export interface FlowVideoRecoveryRequest {
   projectId: string;
   sceneId: string;
-  mediaId: string;
+  mediaId?: string;
+  mediaIds?: string[];
+  expectedOutputCount?: number;
 }
 export interface SceneAssetSummary {
   total: number;
@@ -155,21 +159,32 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
     assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image,
     newProjectId: _.get(response.data, "newProjectId"),
     remoteMediaId: _.get(response.data, "remoteMediaId"),
+    remoteMediaIds: _.castArray(_.get(response.data, "remoteMediaIds") || []).filter(Boolean),
     remoteMediaCreated: Boolean(_.get(response.data, "remoteMediaCreated")),
+    fallbackUrls: _.castArray(_.get(response.data, "fallbackUrls") || []).filter(Boolean),
   };
 };
 
 export const recoverProjectFlowVideo = async (request: FlowVideoRecoveryRequest, signal?: AbortSignal): Promise<ProjectImageResult> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_RECOVER_FLOW_VIDEO, request, signal);
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
-  const success = Boolean(response.success && _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) && isPersistedProjectVideoUrl(fallbackUrl));
+  const fallbackUrls = _.castArray(_.get(response.data, "fallbackUrls") || []).filter(isPersistedProjectVideoUrl);
+  const success = Boolean(
+    response.success &&
+      _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) &&
+      isPersistedProjectVideoUrl(fallbackUrl) &&
+      _.size(fallbackUrls) >= _.defaultTo(request.expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT),
+  );
+  const remoteMediaIds = _.castArray(request.mediaIds || request.mediaId || []).filter(Boolean);
   return {
     sceneId: request.sceneId,
     success,
     fallbackUrl,
+    fallbackUrls,
     warning: _.toString(_.find([response.success ? undefined : response.error, _.get(response.data, "warning")], (message) => !_.isEmpty(message))),
     assetType: GenerateType.Video,
-    remoteMediaId: request.mediaId,
+    remoteMediaId: _.head(remoteMediaIds),
+    remoteMediaIds,
     remoteMediaCreated: true,
   };
 };
