@@ -1,22 +1,21 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
-import {
-  getBlockingCinematicPromptPreflightIssues,
-  getCinematicPromptPreflightIssues,
-  resolveAuthoritativeCinematicPrompt,
-} from "../src/services/cinematicPromptPreflightService";
+import { getBlockingCinematicPromptPreflightIssues, getCinematicPromptPreflightIssues, resolveAuthoritativeCinematicPrompt } from "../src/services/cinematicPromptPreflightService";
 import { AspectRatio, GenerateType, ImageGeneratorEngine, StoryboardScene } from "../src/types";
 import { getCinematicSceneContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { isNonRetryableFlowVideoError } from "../src/services/projectImageGenerationService";
 import { FLOW_DIRECT_VIDEO_CONFIG } from "../src/constants/config";
 import {
   createFlowDurationOptionPattern,
+  assignFlowVideoBatchMediaIds,
   createFlowMediaRedirectUrl,
   createFlowVideoConfigState,
+  extractFlowMediaIdFromUrl,
   isFlowProjectPageUrl,
   isFlowProjectUnavailableState,
   isFlowPromptValueApplied,
+  isReliableFlowVideoResponseUrl,
   isFlowVideoConfigSummaryMatching,
   normalizeFlowPromptValue,
   normalizeFlowMediaId,
@@ -67,9 +66,54 @@ const scene = {
   propState: "rifle remains secured across Kade's back",
   soundDesignCues: ["wind", "ship engine idle"],
   cinematicBeats: [
-    { sourceSceneId: "sc_preflight", shotId: "master", shotRole: "master", shotSize: "wide shot", cameraAngle: "eye level", visibleAction: "Kade approaches the waiting pilot and establishes the damaged ship", reaction: "The pilot turns toward him", transition: "hard_cut", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 0, endSecond: 3.2 },
-    { sourceSceneId: "sc_preflight", shotId: "speaker", shotRole: "coverage", shotSize: "medium close up", cameraAngle: "eye level", visibleAction: "Kade stops and gives the departure order", reaction: "The pilot listens", transition: "match_cut", dialogueMode: "on_screen_dialogue", spokenDialogue: "We leave before sunrise.", speakerCharacterId: "char_1", lipSyncRequired: true, startSecond: 3.2, endSecond: 6.7 },
-    { sourceSceneId: "sc_preflight", shotId: "payoff", shotRole: "payoff", shotSize: "wide shot", cameraAngle: "low angle", visibleAction: "Kade boards while the engines rise to flight power", reaction: "The pilot follows and closes the ramp", transition: "hard_cut", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 6.7, endSecond: 10 },
+    {
+      sourceSceneId: "sc_preflight",
+      shotId: "master",
+      shotRole: "master",
+      shotSize: "wide shot",
+      cameraAngle: "eye level",
+      visibleAction: "Kade approaches the waiting pilot and establishes the damaged ship",
+      reaction: "The pilot turns toward him",
+      transition: "hard_cut",
+      dialogueMode: "silent_action",
+      spokenDialogue: "",
+      speakerCharacterId: "",
+      lipSyncRequired: false,
+      startSecond: 0,
+      endSecond: 3.2,
+    },
+    {
+      sourceSceneId: "sc_preflight",
+      shotId: "speaker",
+      shotRole: "coverage",
+      shotSize: "medium close up",
+      cameraAngle: "eye level",
+      visibleAction: "Kade stops and gives the departure order",
+      reaction: "The pilot listens",
+      transition: "match_cut",
+      dialogueMode: "on_screen_dialogue",
+      spokenDialogue: "We leave before sunrise.",
+      speakerCharacterId: "char_1",
+      lipSyncRequired: true,
+      startSecond: 3.2,
+      endSecond: 6.7,
+    },
+    {
+      sourceSceneId: "sc_preflight",
+      shotId: "payoff",
+      shotRole: "payoff",
+      shotSize: "wide shot",
+      cameraAngle: "low angle",
+      visibleAction: "Kade boards while the engines rise to flight power",
+      reaction: "The pilot follows and closes the ramp",
+      transition: "hard_cut",
+      dialogueMode: "silent_action",
+      spokenDialogue: "",
+      speakerCharacterId: "",
+      lipSyncRequired: false,
+      startSecond: 6.7,
+      endSecond: 10,
+    },
   ],
 } as StoryboardScene;
 
@@ -112,6 +156,14 @@ const flowMediaId = "84a69b3c-7dda-487c-a735-227c6b76b6b9";
 const duplicatedFlowMediaUrl = `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`;
 assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
 assert.equal(createFlowMediaRedirectUrl(duplicatedFlowMediaUrl), `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`);
+assert.equal(
+  extractFlowMediaIdFromUrl(
+    "https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=projects%2F0d414a19-5a6b-4e19-9287-acf5e88aebc2%2Fmedia%2F27793cf7-734b-4827-b145-5e571c99b871",
+  ),
+  "27793cf7-734b-4827-b145-5e571c99b871",
+);
+assert.equal(isReliableFlowVideoResponseUrl("https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=27793cf7-734b-4827-b145-5e571c99b871"), true);
+assert.equal(isReliableFlowVideoResponseUrl("https://example.com/assets/0d414a19-5a6b-4e19-9287-acf5e88aebc2/image.png"), false);
 assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
 assert.equal(isFlowProjectPageUrl("https://labs.google/fx/vi/tools/flow/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/404?reason=project", ""), true);
@@ -124,7 +176,7 @@ assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2")
 assert.equal(isFlowPromptValueApplied("Shot 1\n\nShot 2", "Shot 1 Shot 2"), true);
 assert.equal(isFlowPromptValueApplied("Shot 1", "Shot 1 Shot 2"), false);
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · x2", {
+  isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · 1x", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     videoResolution: "360p",
@@ -133,7 +185,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · x2", {
+  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · 1x", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     aspectRatio: AspectRatio.SixteenNine,
@@ -143,7 +195,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · x2", {
+  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · 1x", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3,
     aspectRatio: AspectRatio.SixteenNine,
@@ -153,7 +205,7 @@ assert.equal(
   false,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", {
+  isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · 1x", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
     videoResolution: "360p",
@@ -162,7 +214,7 @@ assert.equal(
   true,
 );
 assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · x2", {
+  isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · 1x", {
     generateType: GenerateType.Video,
     imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
     videoResolution: "360p",
@@ -170,8 +222,77 @@ assert.equal(
   }),
   false,
 );
-assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x1", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
-assert.equal(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT, 2);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT, 1);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, 2);
+assert.deepEqual(
+  assignFlowVideoBatchMediaIds(
+    [
+      { sceneId: "scene_001", prompt: "Kade closes the damaged ship ramp before sunrise." },
+      { sceneId: "scene_002", prompt: "Mira raises a red signal flare above the flooded street." },
+    ],
+    [
+      { editId: "11111111-1111-4111-8111-111111111111", promptText: "Mira raises a red signal flare above the flooded street." },
+      { editId: "22222222-2222-4222-8222-222222222222", promptText: "Kade closes the damaged ship ramp before sunrise." },
+    ],
+  ),
+  [
+    { sceneId: "scene_001", mediaId: "22222222-2222-4222-8222-222222222222" },
+    { sceneId: "scene_002", mediaId: "11111111-1111-4111-8111-111111111111" },
+  ],
+);
+assert.deepEqual(
+  assignFlowVideoBatchMediaIds(
+    [
+      { sceneId: "scene_a", prompt: "alpha glacier raven" },
+      { sceneId: "scene_b", prompt: "beta harbor eagle" },
+    ],
+    [
+      { editId: "33333333-3333-4333-8333-333333333333", promptText: "alpha glacier beta harbor", evidence: "dom", discoveryOrder: 0 },
+      { editId: "44444444-4444-4444-8444-444444444444", promptText: "alpha glacier", evidence: "dom", discoveryOrder: 1 },
+    ],
+  ),
+  [
+    { sceneId: "scene_a", mediaId: "44444444-4444-4444-8444-444444444444" },
+    { sceneId: "scene_b", mediaId: "33333333-3333-4333-8333-333333333333" },
+  ],
+);
+assert.deepEqual(
+  assignFlowVideoBatchMediaIds(
+    [
+      { sceneId: "scene_a", prompt: "first scene prompt" },
+      { sceneId: "scene_b", prompt: "second scene prompt" },
+    ],
+    [
+      { editId: "55555555-5555-4555-8555-555555555555", evidence: "dom", discoveryOrder: 0 },
+      { editId: "66666666-6666-4666-8666-666666666666", evidence: "dom", discoveryOrder: 1 },
+    ],
+  ),
+  [
+    { sceneId: "scene_a", mediaId: undefined },
+    { sceneId: "scene_b", mediaId: undefined },
+  ],
+);
+assert.deepEqual(
+  assignFlowVideoBatchMediaIds([{ sceneId: "scene_a", prompt: "first scene prompt" }], [{ editId: "55555555-5555-4555-8555-555555555555", evidence: "dom", discoveryOrder: 0 }]),
+  [{ sceneId: "scene_a", mediaId: "55555555-5555-4555-8555-555555555555" }],
+);
+assert.deepEqual(
+  assignFlowVideoBatchMediaIds(
+    [
+      { sceneId: "scene_a", prompt: "first scene prompt" },
+      { sceneId: "scene_b", prompt: "second scene prompt" },
+    ],
+    [
+      { editId: "77777777-7777-4777-8777-777777777777", evidence: "network", discoveryOrder: 0 },
+      { editId: "88888888-8888-4888-8888-888888888888", evidence: "network", discoveryOrder: 1 },
+    ],
+  ),
+  [
+    { sceneId: "scene_a", mediaId: undefined },
+    { sceneId: "scene_b", mediaId: undefined },
+  ],
+);
 assert.equal(isNonRetryableFlowVideoError("Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn."), true);
 assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow xác nhận tải lên."), true);
 assert.equal(isNonRetryableFlowVideoError("Kết nối mạng tạm thời bị gián đoạn."), false);
@@ -200,12 +321,18 @@ assert.match(cinematicPipelineSource, /await generateFilmThumbnails\(\);[\s\S]*a
 assert.doesNotMatch(cinematicPipelineSource, /Promise\.all\(\[runSceneGeneration\(remainingTargetScenes, false\), generateFilmThumbnails\(\)\]\)/);
 assert.match(flowAutomationSource, /remoteVideoMediaId/);
 assert.match(flowAutomationSource, /waitForFlowGeneratedMediaBatch/);
+assert.match(flowAutomationSource, /generateFlowVideoPromptBatchWithPlaywright/);
+assert.match(flowAutomationSource, /PROMPTS_PER_BATCH/);
 assert.match(flowAutomationSource, /FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COUNT/);
 assert.match(flowAutomationSource, /remoteMediaIds: remoteVideoMediaIds/);
 assert.match(flowAutomationSource, /else if \(!isFlowVideoGeneration\)[\s\S]*activePage\.reload/);
 assert.match(flowAutomationSource, /sandboxConfig\.knownVideoMediaIds/);
 assert.match(flowAutomationSource, /collectFlowVideoUrls\(page, editId\)/);
 assert.match(flowAutomationSource, /collectNewFlowGeneratedMedia/);
+assert.match(flowAutomationSource, /isReliableFlowVideoResponseUrl/);
+assert.match(flowAutomationSource, /confirmedDomMedia/);
+assert.match(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]*ATTACHMENT_PREVIEW/);
+assert.doesNotMatch(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]{0,900}promptCharacterCount/);
 assert.match(flowAutomationSource, /for \(const targetMediaId of remoteVideoMediaIds\)/);
 assert.doesNotMatch(flowAutomationSource, /collectFlowVideoUrls\(page\)/);
 const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
@@ -226,5 +353,8 @@ assert.match(projectControllerSource, /sceneIdByContentHash/);
 assert.match(projectControllerSource, /remoteVideoMediaId: undefined/);
 assert.match(projectControllerSource, /assetUrls = _\.uniq\(\[assetUrl, \.\.\.assetUrls\]\)/);
 assert.match(cinematicPipelineSource, /const recoverPendingFlowDownloads = async/);
+assert.match(cinematicPipelineSource, /submitProjectFlowVideoBatch/);
+assert.match(cinematicPipelineSource, /_\.chunk\(scenesToProcess, FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH\)/);
+assert.match(cinematicPipelineSource, /cùng 1 Room; mỗi prompt tạo 1 video/);
 assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
-process.stdout.write(JSON.stringify({ passed: true, promptSubmissionLimit: 1, videosPerSubmission: 2, creativeQaBlockers: 0 }));
+process.stdout.write(JSON.stringify({ passed: true, promptsPerBatch: 2, roomsPerBatch: 1, videosPerPrompt: 1, creativeQaBlockers: 0 }));

@@ -5,13 +5,27 @@ import { toast } from "sonner";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
 import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
-import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, TextInImageMode, SubtitleMode } from "../types";
+import {
+  AiPlanningChatModel,
+  AiPlanningExecutionMode,
+  AiPlanningFallbackProvider,
+  VideoProject,
+  ProjectInputType,
+  ProjectKind,
+  ProjectLanguage,
+  ImageGenerationMode,
+  ImageGeneratorEngine,
+  GenerateType,
+  BackgroundMode,
+  TextInImageMode,
+  SubtitleMode,
+} from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
 import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
-import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG } from "../constants/config";
-import { CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_POLICY_CONFIG } from "../constants/cinematicConstants";
+import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG, FLOW_DIRECT_VIDEO_CONFIG } from "../constants/config";
+import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../constants/cinematicConstants";
 import { deleteProjectRegenerationAssets, applyProjectRegenerationReset } from "../services/projectRegenerationService";
 import { Lang } from "../lib/lang";
 import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords, buildPresetPayload, applyPresetConfigToState } from "./auto-video/autoVideoGeneratorUtils";
@@ -68,9 +82,7 @@ export default function AutoVideoGenerator({
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang, stateScope);
   const selectedProjectStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_SELECTED_CINEMATIC_PROJECT : REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT;
   const currentLogsStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_CURRENT_LOGS : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS;
-  const projectLogsStoragePrefix = cinematicMode
-    ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_PROJECT_LOGS_PREFIX
-    : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX;
+  const projectLogsStoragePrefix = cinematicMode ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_PROJECT_LOGS_PREFIX : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX;
 
   const {
     inputType,
@@ -184,11 +196,13 @@ export default function AutoVideoGenerator({
   const [planningChromeHeadless, setPlanningChromeHeadless] = useState<boolean>(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
   const [cinematicSubtitleMode, setCinematicSubtitleMode] = useState<SubtitleMode>(SubtitleMode.None);
   const cinematicEstimate = useMemo(() => {
-    const minutes = Math.max(1, Number.parseInt(duration, 10) || 1);
-    const clipSeconds = Math.max(1, Number.parseInt(videoDuration, 10) || 10);
+    const estimateDuration = canContinueProject ? _.defaultTo(presentationProject?.config?.duration, duration) : duration;
+    const estimateClipDuration = canContinueProject ? _.defaultTo(presentationProject?.visualConfig?.videoDuration, videoDuration) : videoDuration;
+    const minutes = Math.max(1, Number.parseInt(estimateDuration, 10) || 1);
+    const clipSeconds = Math.max(1, Number.parseInt(estimateClipDuration, 10) || 10);
     const clips = Math.ceil((minutes * 60) / clipSeconds);
-    return { clips, batches: Math.ceil(clips / CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE) };
-  }, [duration, videoDuration]);
+    return { clips, batches: Math.ceil(clips / FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) };
+  }, [canContinueProject, duration, presentationProject, videoDuration]);
 
   useEffect(() => {
     syncSelectedProject(selectedProjectId);
@@ -287,10 +301,16 @@ export default function AutoVideoGenerator({
   ]);
 
   useEffect(() => {
-    if (!cinematicMode && _.includes([GenerateType.Video, GenerateType.Mixed], generateType) && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
+    if (cinematicMode) {
+      if (!_.isEqual(generationMode, ImageGenerationMode.LabsFlow)) setGenerationMode(ImageGenerationMode.LabsFlow);
+      if (!_.isEqual(generateType, GenerateType.Video)) setGenerateType(GenerateType.Video);
+      if (_.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine)) setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+      return;
+    }
+    if (_.includes([GenerateType.Video, GenerateType.Mixed], generateType) && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
       setGenerationMode(ImageGenerationMode.GeminiChat);
     }
-  }, [cinematicMode, generateType, generationMode, setGenerationMode]);
+  }, [cinematicMode, generateType, generationMode, imageGeneratorEngine, setGenerateType, setGenerationMode, setImageGeneratorEngine]);
 
   useEffect(() => {
     if (!selectedProjectId || !isConfigLoaded || isProcessing) return;
@@ -460,8 +480,7 @@ export default function AutoVideoGenerator({
   const recoveredPipelineProjectIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!isConfigLoaded || isProcessing || !activeCreatedProject) return;
-    const activeProjectIsCinematic =
-      _.isEqual(activeCreatedProject.projectKind, ProjectKind.Cinematic) || _.endsWith(_.toString(activeCreatedProject.name), " - Phim AI");
+    const activeProjectIsCinematic = _.isEqual(activeCreatedProject.projectKind, ProjectKind.Cinematic) || _.endsWith(_.toString(activeCreatedProject.name), " - Phim AI");
     if (!_.isEqual(cinematicMode, activeProjectIsCinematic)) return;
     if (!_.isEqual(activeCreatedProject.status, REFACTOR_CONSTANTS.STATUS_GENERATING)) return;
     if (_.isEmpty(activeCreatedProject.activeRunId)) return;
@@ -718,13 +737,7 @@ export default function AutoVideoGenerator({
               />
             )}
 
-            <LogPanelSection
-              logs={logs}
-              theme={theme}
-              T={T}
-              language={currentLang}
-              context={cinematicMode ? ProgressLogContext.Cinematic : ProgressLogContext.Automatic}
-            />
+            <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} context={cinematicMode ? ProgressLogContext.Cinematic : ProgressLogContext.Automatic} />
 
             <PreviewPanelSection
               renderedVideoUrl={renderedVideoUrl}

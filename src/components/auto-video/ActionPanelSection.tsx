@@ -1,12 +1,13 @@
 import { cn } from "../../lib/utils";
 import React from "react";
 import _ from "lodash";
-import { Zap, X, Activity, Play } from "lucide-react";
+import { Zap, X, Activity, Play, RotateCcw } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { Lang } from "../../lib/lang";
 import { AppLanguage } from "../../constants/enums";
+import { FLOW_DIRECT_VIDEO_CONFIG } from "../../constants/config";
 
 interface ActionPanelSectionProps {
   scriptContent: string;
@@ -43,16 +44,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
 }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
   const isVi = _.isEqual(currentLang, AppLanguage.VI) || _.isEqual(currentLang, "vi") || _.startsWith(_.toLower(_.toString(currentLang)), "vi");
-  const cinematicPhaseIndex =
-    currentStepIndex > 0
-      ? Math.min(Math.max(currentStepIndex, 1), 4)
-      : stepProgress <= 25
-        ? 1
-        : stepProgress <= 50
-          ? 2
-          : stepProgress <= 75
-            ? 3
-            : 4;
+  const cinematicPhaseIndex = currentStepIndex > 0 ? Math.min(Math.max(currentStepIndex, 1), 4) : stepProgress <= 25 ? 1 : stepProgress <= 50 ? 2 : stepProgress <= 75 ? 3 : 4;
   const cinematicPhaseLabels = isVi
     ? ["Kịch bản & nhân vật", "Phân cảnh & câu lệnh", "Tham chiếu & ảnh bìa", "Tạo clip & dựng phim"]
     : ["Script & characters", "Storyboard & prompts", "References & thumbnail", "Generate clips & finish"];
@@ -63,31 +55,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
         "action-panel glass-card bg-slate-900/90 border border-slate-800/80 p-4 space-y-4 text-center relative overflow-hidden shrink-0 backdrop-blur-xl rounded-3xl shadow-xl",
       )}>
       <div className={cn("flex items-center gap-3 w-full relative z-10")}>
-        <Button
-          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-          variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-          size={REFACTOR_CONSTANTS.SIZE_MD}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            void handleStartAutoGenerate();
-          }}
-          disabled={isProcessing || !isReady}
-          isLoading={isProcessing && !isCancelling}
-          className={cn(
-            "flex-1 h-10 min-h-[40px] px-4 text-xs font-extrabold text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 border",
-            isProcessing
-              ? "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 border-rose-400/60 shadow-xl shadow-rose-600/30 ring-1 ring-white/20 active:scale-100"
-              : !isReady
-                ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
-                : "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 border border-rose-400/40 shadow-lg shadow-rose-600/25 active:scale-[0.98] text-white",
-          )}
-          title={T.startBtnTooltip}>
-          <Zap className={`w-4 h-4 shrink-0 ${isReady ? "text-white fill-white" : "text-slate-500"}`} />
-          <span className={cn("truncate font-extrabold text-white tracking-wide drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
-        </Button>
-
-        {!isProcessing && canContinue && (
+        {!isProcessing && canContinue ? (
           <Button
             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
             variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
@@ -97,12 +65,57 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
               event.stopPropagation();
               void handleContinueAutoGenerate();
             }}
+            disabled={!isReady}
             className={cn(
-              "flex-1 h-10 min-h-[40px] px-4 text-xs font-bold rounded-xl border border-slate-700 bg-slate-850 hover:bg-slate-800 text-slate-100 flex items-center justify-center gap-2",
+              "flex-[1.35] h-10 min-h-[40px] px-4 text-xs font-extrabold rounded-xl border border-emerald-400/40 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20",
             )}
             title={T.continueBtnTooltip}>
             <Play className={cn("w-4 h-4 shrink-0")} />
-            <span className={cn("truncate")}>{T.continueBtn}</span>
+            <span className={cn("truncate")}>{isVi ? "Tiếp tục" : "Continue"}</span>
+          </Button>
+        ) : (
+          <Button
+            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+            variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+            size={REFACTOR_CONSTANTS.SIZE_MD}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void handleStartAutoGenerate();
+            }}
+            disabled={isProcessing || !isReady}
+            isLoading={isProcessing && !isCancelling}
+            className={cn(
+              "flex-1 h-10 min-h-[40px] px-4 text-xs font-extrabold text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 border",
+              isProcessing
+                ? "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 border-rose-400/60 shadow-xl shadow-rose-600/30 ring-1 ring-white/20 active:scale-100"
+                : !isReady
+                  ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
+                  : "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 border border-rose-400/40 shadow-lg shadow-rose-600/25 active:scale-[0.98] text-white",
+            )}
+            title={T.startBtnTooltip}>
+            <Zap className={`w-4 h-4 shrink-0 ${isReady ? "text-white fill-white" : "text-slate-500"}`} />
+            <span className={cn("truncate font-extrabold text-white tracking-wide drop-shadow-sm")}>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+          </Button>
+        )}
+
+        {!isProcessing && canContinue && (
+          <Button
+            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+            variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+            size={REFACTOR_CONSTANTS.SIZE_MD}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void handleStartAutoGenerate();
+            }}
+            disabled={!isReady}
+            className={cn(
+              "flex-1 h-10 min-h-[40px] px-3 text-[11px] font-bold rounded-xl border border-slate-700 bg-slate-850 hover:bg-slate-800 text-slate-300 flex items-center justify-center gap-2",
+            )}
+            title={isVi ? "Xóa kết quả dở dang và tạo lại toàn bộ dự án" : "Clear incomplete results and rebuild the entire project"}>
+            <RotateCcw className={cn("w-3.5 h-3.5 shrink-0")} />
+            <span className={cn("truncate")}>{isVi ? "Làm lại" : "Start over"}</span>
           </Button>
         )}
 
@@ -150,8 +163,8 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
         <div className={cn("relative z-10 rounded-2xl border border-slate-800/90 bg-slate-955/70 px-3.5 py-3 text-left text-[11px] text-slate-300")}>
           <span className={cn("font-bold text-amber-400")}>{isVi ? "Dự toán:" : "Estimate:"}</span>{" "}
           {isVi
-            ? `${estimatedClipCount} clip · ${estimatedBatchCount} đợt câu lệnh · tối đa 2 Room song song`
-            : `${estimatedClipCount} clips · ${estimatedBatchCount} prompt batches · up to 2 parallel Rooms`}
+            ? `${estimatedClipCount} clip · ${estimatedBatchCount} lượt gửi · 1 Room · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompt/lượt`
+            : `${estimatedClipCount} clips · ${estimatedBatchCount} submission waves · 1 Room · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompts/wave`}
         </div>
       )}
     </div>

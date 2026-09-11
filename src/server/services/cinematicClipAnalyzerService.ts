@@ -17,7 +17,7 @@ export interface CinematicLibraryClipInput {
   dialogueLanguage?: string;
 }
 
-export interface CinematicLibrarySegment {
+interface CinematicLibrarySegment {
   segmentId: string;
   inSeconds: number;
   outSeconds: number;
@@ -76,10 +76,7 @@ type EditorialDecisionInput = {
   segments?: Array<{ segmentId?: unknown; inSeconds?: unknown; outSeconds?: unknown }>;
 };
 
-export const validateCinematicEditorialDecisions = (
-  expected: CinematicLibraryDecision[],
-  editorialDecisions: EditorialDecisionInput[],
-): CinematicEditorialValidationResult => {
+export const validateCinematicEditorialDecisions = (expected: CinematicLibraryDecision[], editorialDecisions: EditorialDecisionInput[]): CinematicEditorialValidationResult => {
   const expectedByScene = _.keyBy(expected, "sceneId");
   const expectedIds = _.map(expected, "sceneId");
   const returnedIds = _.map(editorialDecisions, (decision) => _.trim(_.toString(decision?.sceneId)));

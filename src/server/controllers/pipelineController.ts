@@ -12,6 +12,7 @@ import { closeCurrentRoomExecution, generateContentWithRetry, isAiProviderAvaila
 import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
+import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
@@ -47,6 +48,7 @@ import {
   CINEMATIC_GENERATION_RECOVERY_CONFIG,
   VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG,
   SCRIPT_SPEECH_RATE_CONFIG,
+  FLOW_DIRECT_VIDEO_CONFIG,
   FLOW_VIDEO_MEDIA_CONFIG,
   FLOW_CHARACTER_CONFIG,
   GEMINI_MEDIA_ERRORS,
@@ -55,7 +57,6 @@ import {
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
 import {
-  createSourceGroundedThumbnailIdeas,
   getThumbnailPlanningIssues,
   getThumbnailTechnicalPlanningIssues,
   normalizeThumbnailIdeas,
@@ -120,16 +121,11 @@ import {
   SceneDensity,
   CAPCUT_CONFIG,
   WHITESPACE_REGEX,
-  ALPHANUMERIC_ONLY_REGEX,
   SINGLE_QUOTE_REGEX,
   HTTP_HEADERS,
   CONTENT_TYPES,
   TRANSFER_ENCODINGS,
   UltraStreamLogType,
-  DEFAULT_SCENE_CAMERA_MOTION,
-  DEFAULT_SCENE_EFFECTS,
-  DEFAULT_SCENE_LIGHTING_EFFECT,
-  DEFAULT_SCENE_TRANSITION,
   stylePresetsKeywords,
   BASE64_DATA_URL_REGEX,
   CONTENT_TYPE_HEADER,
@@ -138,9 +134,6 @@ import {
   TEMPLATE_CONFIG,
   TTS_POLLING_CONFIG,
   HTTP_STATUS,
-  CAMERA_ANGLES,
-  BORDERLESS_KEYWORD,
-  getDuplicateScenePromptDirective,
   VISUAL_BIBLE_REFERENCE_PROMPT,
   getSeoOptimizationPrompt,
   THUMBNAIL_IMAGE_REFERENCE_PROMPT,
@@ -204,6 +197,7 @@ import {
   getOrLaunchGlobalBrowser,
   recoverExistingFlowVideo,
   ensureFlowCharacters,
+  generateFlowVideoPromptBatchWithPlaywright,
 } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
@@ -221,7 +215,6 @@ import {
   AssetAcceptance,
   ContentSafetyReport,
   GenerateType,
-  HookVersion,
   ProjectLanguage,
   SceneAssetStatus,
   StoryboardScene,
@@ -234,20 +227,14 @@ import {
 } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
-import {
-  applyDeterministicStoryboardCoverage,
-  getUnderfilledCinematicSceneIds,
-  normalizeStoryboardQuality,
-} from "../../services/storyboardQualityService.js";
+import { applyDeterministicStoryboardCoverage, getUnderfilledCinematicSceneIds, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import {
   detectVietnameseNarrationStyleWarnings,
   isSatiricalVideoGenre,
   normalizeScriptQualityReport,
   parseTargetDurationSeconds,
-  rankHookVersions,
 } from "../../services/scriptQualityService.js";
-import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes, removeRepeatedNarrationOpening } from "../../services/scriptContinuityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
@@ -264,7 +251,6 @@ import {
 import {
   createCinematicPlanningBatches,
   CINEMATIC_PRODUCTION_POLICY,
-  getBlockingCinematicPlanningIssues,
   getBlockingCinematicStoryboardContractIssues,
   getCinematicScriptReadinessIssues,
   getCinematicStoryboardContractIssues,
@@ -283,8 +269,6 @@ import {
 } from "../../constants/cinematicConstants.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
-import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
-import { createSourceGroundedSeo } from "../../services/seoFallbackService.js";
 import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
 
 import ffmpeg from "fluent-ffmpeg";
@@ -292,8 +276,6 @@ import { createHash, randomUUID } from "crypto";
 import os from "os";
 import { exec, spawn } from "child_process";
 import { StepLogger } from "../../lib/stepLogger.js";
-import { smartSplitSentences } from "../../lib/textProcessor.js";
-import { assignStoryboardChapterIds } from "../../utils/storyboardChapterUtils.js";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 
@@ -302,10 +284,63 @@ if (fs.existsSync(ffmpegBinary)) {
   ffmpeg.setFfmpegPath(ffmpegBinary);
 }
 
-const isVietnameseRequest = (req: Request): boolean =>
-  !_.isEqual(_.toString(req.body?.language || req.query?.lang || ProjectLanguage.VI), ProjectLanguage.EN);
+const isVietnameseRequest = (req: Request): boolean => !_.isEqual(_.toString(req.body?.language || req.query?.lang || ProjectLanguage.VI), ProjectLanguage.EN);
+
+const parseAiJsonArtifact = <T>(text: string, schema: Parameters<typeof assertResponseSchema>[1], errorMessage: string): T => {
+  const value = safeParseJSON(text, undefined);
+  assertResponseSchema(value, schema, errorMessage);
+  return value as T;
+};
 
 type CinematicScriptArtifactKey = "filmPackage";
+
+const QUICK_VISUAL_PLANNING_ENGLISH_FIELDS = [
+  "prompt",
+  "visualIntent",
+  "visibleAction",
+  "reaction",
+  "storyEvidence",
+  "visualHook",
+  "shotPurpose",
+  "shotSize",
+  "cameraAngle",
+  "composition",
+  "continuityNotes",
+  "lighting",
+] as const;
+const QUICK_VISUAL_PLANNING_REQUIRED_FIELDS = [
+  "id",
+  ...QUICK_VISUAL_PLANNING_ENGLISH_FIELDS,
+  "characterIds",
+  "locationId",
+  "propIds",
+  "expectedSubjectCount",
+  "allowBackgroundPeople",
+  "layout",
+  "textAllowed",
+  "textOverlay",
+  "assetStrategy",
+  "archivalSearchQuery",
+  "archivalRationale",
+] as const;
+const QUICK_VISUAL_SHOT_PURPOSES = [
+  "setup",
+  "action",
+  "reaction",
+  "punchline",
+  "reveal",
+  "callback",
+  "montage",
+  "emotional_hold",
+  "obstacle",
+  "decision",
+  "escalation",
+  "reversal",
+  "climax",
+  "payoff",
+  "transition",
+] as const;
+const QUICK_VISUAL_LAYOUTS = ["single_frame", "split_screen", "collage"] as const;
 
 const saveCinematicScriptArtifactCheckpoint = async (
   projectId: unknown,
@@ -355,16 +390,6 @@ const ensureHookLanguage = async (content: unknown, isVietnamese: boolean): Prom
     return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
   }
 };
-
-const repairHookVersionsLanguage = async (versions: HookVersion[], isVietnamese: boolean): Promise<HookVersion[]> =>
-  _.compact(
-    await Promise.all(
-      _.map(versions, async (version) => {
-        const content = await ensureHookLanguage(version.content, isVietnamese);
-        return _.isEmpty(content) ? null : { ...version, content };
-      }),
-    ),
-  );
 
 import { LicenseService } from "../services/licenseService.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
@@ -468,7 +493,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
   }
 
   if (!(await isAiProviderAvailable())) {
-    return res.json({ storyboard });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi), retryable: true });
   }
 
   try {
@@ -510,13 +535,18 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-          }
+        const expectedIds = _.map(chunkItem, "id");
+        const returnedIds = _.map(_.castArray(parsed), "id");
+        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(chunkItem)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+          throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        }
+        for (const item of parsed) {
+          if (!item.id || _.isEmpty(_.trim(_.toString(item.prompt)))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+          rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
         }
       } catch (err) {
         logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
+        throw err;
       }
 
       if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
@@ -560,10 +590,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const characters = _.defaultTo(resolvedVisualConfig.characters, []);
     const visualStyle = resolvedVisualConfig.style;
     const isCinematicPlanning = isCinematicEpisodeGenre(_.toString(req.body?.genre || req.body?.config?.genre));
-    const promptCharacters = isCinematicPlanning
-      ? _.map(characters, (character) => _.omit(character, ["images", "extracted"]))
-      : createPromptCharacterCards(characters);
-    const charactersJson = !_.isEmpty(promptCharacters) ? jsonUtils.safeStringify(promptCharacters) : undefined;
+    const promptCharacters = isCinematicPlanning ? _.map(characters, (character) => _.omit(character, ["images", "extracted"])) : createPromptCharacterCards(characters);
     const requestedPlanningProvider = _.toString(req.body?.planningFallbackProvider);
     const planningFallbackProvider = _.includes(Object.values(AiPlanningFallbackProvider), requestedPlanningProvider as AiPlanningFallbackProvider)
       ? (requestedPlanningProvider as AiPlanningFallbackProvider)
@@ -626,9 +653,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       : hasSceneRef
         ? `Strict character match: accurately preserve character identity from the reference image in the "${visualStyle}" style.`
         : resolvedVisualBible.visualStyle || visualStyle || "Dynamically craft the visual art style and medium to match the story's emotional tone and genre.";
-    let plannedScenes: StoryboardScene[] = isCinematicPlanning
-      ? _.cloneDeep(sourceScenes)
-      : resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
+    let plannedScenes: StoryboardScene[] = isCinematicPlanning ? _.cloneDeep(sourceScenes) : resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
     const chunks = isCinematicPlanning ? createCinematicPlanningBatches(planningPayload) : _.chunk(planningPayload, chunkSize);
     const videoPromptsRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS);
@@ -654,9 +679,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const continuityContextJson = jsonUtils.safeStringify(continuityContext);
       const quickGenerateType = resolvedVisualConfig.generateType || GenerateType.Image;
       const quickVideoPromptRequired = _.includes([GenerateType.Video, GenerateType.Mixed], quickGenerateType);
-      const createPlanningPrompt = (correctionIssuesJson: string = "", forChatUi = false) => {
-        const scopedCharactersJson = isCinematicPlanning || forChatUi ? chunkCharactersJson : charactersJson;
-        const scopedVisualBibleJson = isCinematicPlanning || forChatUi ? chunkVisualBibleJson : jsonUtils.safeStringify(resolvedVisualBible);
+      const createPlanningPrompt = (correctionIssuesJson: string = "") => {
+        const scopedCharactersJson = chunkCharactersJson;
+        const scopedVisualBibleJson = chunkVisualBibleJson;
         if (isCinematicPlanning) {
           return getCinematicVideoPlanningPrompt(
             jsonUtils.safeStringify(chunkItem),
@@ -694,7 +719,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         );
       };
       const createRepairPrompt = (items: any[], issues: string[], repairSceneIds: string[] = sceneIds) => {
-        if (!isCinematicPlanning) return createPlanningPrompt(jsonUtils.safeStringify(issues), true);
+        if (!isCinematicPlanning) return createPlanningPrompt(jsonUtils.safeStringify(issues));
         const repairSourceScenes = _.filter(chunkItem, (item) => _.includes(repairSceneIds, _.toString(_.get(item, "id"))));
         const previousRepairItems = _.filter(items, (item) => _.includes(repairSceneIds, _.toString(_.get(item, "id"))));
         return getCinematicVideoPlanningRepairPrompt(
@@ -709,39 +734,53 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         );
       };
       const planningString = { type: "string" } as const;
-      const createCinematicPlanningProperties = (expectedSceneIds: string[]) => ({
-        id: { type: "string", enum: expectedSceneIds },
-        generationPrompt: planningString,
-      }) as const;
-      const createPlanningItemsSchema = (expectedSceneIds: string[] = sceneIds) => ({
-        type: "array",
-        minItems: expectedSceneIds.length,
-        maxItems: expectedSceneIds.length,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: isCinematicPlanning
-            ? [...CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS]
-            : [
-              "id",
-              "prompt",
-              ...(quickVideoPromptRequired ? ["generationPrompt"] : []),
-              "characterIds",
-              "textAllowed",
-              "textOverlay",
-            ],
-          properties: isCinematicPlanning
-            ? createCinematicPlanningProperties(expectedSceneIds)
-            : {
-            id: { type: "string", enum: expectedSceneIds },
-            prompt: planningString,
-            generationPrompt: planningString,
-            characterIds: { type: "array", items: planningString },
-            textAllowed: { type: "boolean" },
-            textOverlay: planningString,
+      const createCinematicPlanningProperties = (expectedSceneIds: string[]) =>
+        ({
+          id: { type: "string", enum: expectedSceneIds },
+          generationPrompt: planningString,
+        }) as const;
+      const createPlanningItemsSchema = (expectedSceneIds: string[] = sceneIds) =>
+        ({
+          type: "array",
+          minItems: expectedSceneIds.length,
+          maxItems: expectedSceneIds.length,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: isCinematicPlanning
+              ? [...CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS]
+              : [...QUICK_VISUAL_PLANNING_REQUIRED_FIELDS, ...(quickVideoPromptRequired ? ["generationPrompt"] : [])],
+            properties: isCinematicPlanning
+              ? createCinematicPlanningProperties(expectedSceneIds)
+              : {
+                  id: { type: "string", enum: expectedSceneIds },
+                  prompt: planningString,
+                  generationPrompt: planningString,
+                  visualIntent: planningString,
+                  visibleAction: planningString,
+                  reaction: planningString,
+                  storyEvidence: planningString,
+                  visualHook: planningString,
+                  shotPurpose: { type: "string", enum: [...QUICK_VISUAL_SHOT_PURPOSES] },
+                  shotSize: planningString,
+                  cameraAngle: planningString,
+                  composition: planningString,
+                  continuityNotes: planningString,
+                  lighting: planningString,
+                  characterIds: { type: "array", items: planningString },
+                  locationId: planningString,
+                  propIds: { type: "array", items: planningString },
+                  expectedSubjectCount: { type: "integer", minimum: 0 },
+                  allowBackgroundPeople: { type: "boolean" },
+                  layout: { type: "string", enum: [...QUICK_VISUAL_LAYOUTS] },
+                  textAllowed: { type: "boolean" },
+                  textOverlay: planningString,
+                  assetStrategy: { type: "string", enum: ["ai_generated"] },
+                  archivalSearchQuery: planningString,
+                  archivalRationale: planningString,
+                },
           },
-        },
-      }) as const;
+        }) as const;
       const createPlanningSchema = (expectedSceneIds: string[] = sceneIds) =>
         isCinematicPlanning
           ? ({
@@ -783,9 +822,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             const returnedCompletionMarker = _.trim(_.toString(_.get(parsed, "completionMarker")));
             const artifactMatches =
               !isCinematicPlanning ||
-              ((_.isEmpty(returnedArtifactType) || _.isEqual(returnedArtifactType, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS)) &&
-                (_.isEmpty(returnedRequestId) || _.isEqual(returnedRequestId, normalizedVideoPromptsRequestId)) &&
-                (_.isEmpty(returnedCompletionMarker) || _.isEqual(returnedCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)));
+              (_.isEqual(returnedArtifactType, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS) &&
+                _.isEqual(returnedRequestId, normalizedVideoPromptsRequestId) &&
+                _.isEqual(returnedCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER));
             if (artifactMatches && _.isArray(parsedScenes)) return parsedScenes;
             lastError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
           } catch (error) {
@@ -847,20 +886,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           return _.uniq(issues);
         }
 
-        const englishRequiredFields = [
-            "prompt",
-            "visualIntent",
-            "visibleAction",
-            "reaction",
-            "storyEvidence",
-            "visualHook",
-            "shotPurpose",
-            "shotSize",
-            "cameraAngle",
-            "composition",
-            "continuityNotes",
-            "lighting",
-          ];
         _.forEach(items, (item) => {
           const sceneId = _.toString(_.get(item, "id"));
           const baseScene = _.find(plannedScenes, { id: sceneId });
@@ -879,7 +904,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           if (!VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SENTENCE_END_PATTERN.test(optimizedPrompt) || VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.DANGLING_END_PATTERN.test(optimizedPrompt))
             issues.push(`${sceneId}:prompt:incomplete_sentence`);
           if (VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.COMPILER_FALLBACK_PATTERN.test(optimizedPrompt)) issues.push(`${sceneId}:prompt:compiler_fallback_forbidden`);
-          _.forEach(englishRequiredFields, (field) => {
+          _.forEach(QUICK_VISUAL_PLANNING_ENGLISH_FIELDS, (field) => {
             const value = _.trim(_.toString(_.get(item, field)));
             if (_.isEmpty(value)) issues.push(`${sceneId}:${field}:missing`);
           });
@@ -904,30 +929,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             issues.push(`${sceneId}:expectedSubjectCount:invalid`);
           }
           if (!_.isBoolean(_.get(item, "allowBackgroundPeople"))) issues.push(`${sceneId}:allowBackgroundPeople:must_be_boolean`);
-          if (!_.includes(["single_frame", "split_screen", "collage"], _.get(item, "layout"))) issues.push(`${sceneId}:layout:invalid`);
-          if (
-            !_.includes(
-              [
-                "setup",
-                "action",
-                "reaction",
-                "punchline",
-                "reveal",
-                "callback",
-                "montage",
-                "emotional_hold",
-                "obstacle",
-                "decision",
-                "escalation",
-                "reversal",
-                "climax",
-                "payoff",
-                "transition",
-              ],
-              _.get(item, "shotPurpose"),
-            )
-          )
-            issues.push(`${sceneId}:shotPurpose:invalid`);
+          if (!_.includes(QUICK_VISUAL_LAYOUTS, _.get(item, "layout") as (typeof QUICK_VISUAL_LAYOUTS)[number])) issues.push(`${sceneId}:layout:invalid`);
+          if (!_.includes(QUICK_VISUAL_SHOT_PURPOSES, _.get(item, "shotPurpose") as (typeof QUICK_VISUAL_SHOT_PURPOSES)[number])) issues.push(`${sceneId}:shotPurpose:invalid`);
           if (!_.isBoolean(_.get(item, "textAllowed"))) issues.push(`${sceneId}:textAllowed:must_be_boolean`);
           if (!_.includes(["archival", "ai_generated"], _.get(item, "assetStrategy"))) issues.push(`${sceneId}:assetStrategy:invalid`);
           if (_.isEqual(_.get(item, "assetStrategy"), "archival") && _.isEmpty(_.trim(_.toString(_.get(item, "archivalSearchQuery"))))) {
@@ -987,56 +990,16 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       };
 
       const initialApiPrompt = createPlanningPrompt();
-      const initialChatUiPrompt = usesChatPlanning ? createPlanningPrompt("", true) : initialApiPrompt;
+      const initialChatUiPrompt = usesChatPlanning ? createPlanningPrompt() : initialApiPrompt;
       let parsedItems = await requestVisualPlan(initialApiPrompt, initialChatUiPrompt);
       let planningIssues = collectPlanningIssues(parsedItems);
-      const getQuickPlanningBlockers = (issues: string[]): string[] =>
-        _.filter(issues, (issue) =>
-          /(?:^result:|:id:(?:duplicate|unexpected)$|:result:missing_scene$|:generationPrompt:missing$)/.test(issue),
-        );
-      const getCorrectablePlanningIssues = (issues: string[]): string[] =>
-        isCinematicPlanning ? getBlockingCinematicPlanningIssues(issues) : getQuickPlanningBlockers(issues);
-      for (
-        let correctionAttempt = 0;
-        !isCinematicPlanning &&
-        correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS &&
-        !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
-        correctionAttempt++
-      ) {
+      const getCorrectablePlanningIssues = (issues: string[]): string[] => issues;
+      for (let correctionAttempt = 0; correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues)); correctionAttempt++) {
         const correctionIssues = getCorrectablePlanningIssues(planningIssues);
         const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
-        const repairSceneIds = _.uniq(
-          _.compact(
-            _.map(correctionIssues, (issue) => {
-              const sceneId = _.head(_.split(issue, ":"));
-              return _.includes(sceneIds, sceneId) ? sceneId : undefined;
-            }),
-          ),
-        );
-        const targetRepairSceneIds = isCinematicPlanning && !_.isEmpty(repairSceneIds) ? repairSceneIds : sceneIds;
-        const correctionPrompt = isCinematicPlanning
-          ? createRepairPrompt(parsedItems, correctionIssues, targetRepairSceneIds)
-          : createPlanningPrompt(correctionIssuesJson, true);
-        const candidateItems = await requestVisualPlan(correctionPrompt, correctionPrompt, isCinematicPlanning, targetRepairSceneIds);
-        const currentById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-        const candidateById = _.keyBy(candidateItems, (item) => _.toString(item.id));
-        const mergedCandidateItems = _.compact(_.map(sceneIds, (sceneId) => candidateById[sceneId] || currentById[sceneId]));
-        const candidatePlanningIssues = collectPlanningIssues(mergedCandidateItems);
-        parsedItems = _.compact(
-          _.map(sceneIds, (sceneId) => {
-            const currentItem = currentById[sceneId];
-            const candidateItem = candidateById[sceneId];
-            if (!candidateItem) return currentItem;
-            if (!currentItem) return candidateItem;
-            const belongsToScene = (issue: string) => _.startsWith(issue, `${sceneId}:`) || _.startsWith(issue, "chunk:") || _.startsWith(issue, "result:");
-            const currentSceneIssues = _.filter(planningIssues, belongsToScene);
-            const candidateSceneIssues = _.filter(candidatePlanningIssues, belongsToScene);
-            const currentBlockingCount = getCorrectablePlanningIssues(currentSceneIssues).length;
-            const candidateBlockingCount = getCorrectablePlanningIssues(candidateSceneIssues).length;
-            if (!_.isEqual(candidateBlockingCount, currentBlockingCount)) return _.lt(candidateBlockingCount, currentBlockingCount) ? candidateItem : currentItem;
-            return _.lte(candidateSceneIssues.length, currentSceneIssues.length) ? candidateItem : currentItem;
-          }),
-        );
+        const correctionPrompt = isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues, sceneIds) : createPlanningPrompt(correctionIssuesJson);
+        const candidateItems = await requestVisualPlan(correctionPrompt, correctionPrompt, isCinematicPlanning, sceneIds);
+        parsedItems = candidateItems;
         planningIssues = collectPlanningIssues(parsedItems);
       }
       if (!_.isEmpty(planningIssues)) {
@@ -1044,7 +1007,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: continuing_after_final_correction: ${_.join(planningIssues, ", ")}`);
       }
       const returnedById = _.keyBy(parsedItems, (item) => _.toString(item.id));
-      const blockingPlanningIssues = isCinematicPlanning ? getBlockingCinematicPlanningIssues(planningIssues) : getQuickPlanningBlockers(planningIssues);
+      const blockingPlanningIssues = planningIssues;
       const explicitlyBlockedSceneIds = _.uniq(
         _.compact(
           _.map(blockingPlanningIssues, (issue) => {
@@ -1077,10 +1040,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         if (_.gte(plannedSceneIndex, 0)) plannedScenes[plannedSceneIndex] = normalizedScene;
       });
       planningPartialStoryboard = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
-      if (
-        !_.isEmpty(blockingPlanningIssues) &&
-        (!isCinematicPlanning || !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly))
-      ) {
+      if (!_.isEmpty(blockingPlanningIssues)) {
         planningFailureIssues = blockingPlanningIssues;
         throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
       }
@@ -1146,7 +1106,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
   }
 
   if (!(await isAiProviderAvailable())) {
-    return res.json({ thumbnails });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi), retryable: true });
   }
 
   try {
@@ -1179,13 +1139,18 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-          }
+        const expectedIds = _.map(thumbsToRewrite, "id");
+        const returnedIds = _.map(_.castArray(parsed), "id");
+        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+          throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        }
+        for (const item of parsed) {
+          if (!item.id || _.isEmpty(_.trim(_.toString(item.prompt)))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+          rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
         }
       } catch (err) {
         logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_THUMBNAILS, err);
+        throw err;
       }
 
       for (let i = 0; i < updatedThumbnails.length; i++) {
@@ -1215,7 +1180,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
   }
 
   if (!(await isAiProviderAvailable())) {
-    return res.json({ thumbnails });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi), retryable: true });
   }
 
   try {
@@ -1246,13 +1211,18 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item && item.id && item.prompt) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-          }
+        const expectedIds = _.map(thumbsToRewrite, "id");
+        const returnedIds = _.map(_.castArray(parsed), "id");
+        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+          throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        }
+        for (const item of parsed) {
+          if (!item?.id || _.isEmpty(_.trim(_.toString(item.prompt)))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+          rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
         }
       } catch (err: any) {
         logger.error(`Error rewriting batch character thumbnails: ${err.message}`);
+        throw err;
       }
 
       for (const rawThumb of updatedThumbnails) {
@@ -1286,11 +1256,9 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     const prompt = requiresCompleteArtifact
       ? getCinematicCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext))
       : getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext));
-    let result:
-      | { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] }
-      | undefined;
+    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] } | undefined;
     let artifactIssues: string[] = [];
-    for (let attempt = 0; attempt < SecurityConstants.DEFAULT_AMOUNT; attempt++) {
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
       const response = await generateContentWithRetry({
         contents: prompt,
         config: {
@@ -1303,11 +1271,6 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
 
       const parsed = safeParseJSON(response.text, requiresCompleteArtifact ? {} : []);
       const characters = extractCharacterListFromParsedJSON(parsed, REFACTOR_CONSTANTS.HOOK_COUNT);
-      if (!requiresCompleteArtifact) {
-        result = { characters };
-        break;
-      }
-
       const characterAnalysis = _.trim(_.toString(_.get(parsed, "characterAnalysis")));
       const characterSpecs = _.trim(_.toString(_.get(parsed, "characterSpecs")));
       const ids = _.map(characters, (character) => _.trim(_.toString(character?.id)));
@@ -1320,7 +1283,8 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
           ..._.flatMap(characters, (character, index) => [
             _.isEmpty(_.trim(_.toString(character?.id))) && `characters:${index}:id:missing`,
             _.isEmpty(_.trim(_.toString(character?.name))) && `characters:${index}:name:missing`,
-            _.isEmpty(_.trim(_.toString(character?.prompt))) && _.isEmpty(_.trim(_.toString(character?.referenceGenerationPrompt))) &&
+            _.isEmpty(_.trim(_.toString(character?.prompt))) &&
+              _.isEmpty(_.trim(_.toString(character?.referenceGenerationPrompt))) &&
               `characters:${index}:identity_prompt:missing`,
           ]),
         ]),
@@ -1328,10 +1292,14 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
       if (_.isEmpty(artifactIssues)) {
         result = {
           characters,
-          characterAnalysis,
-          characterSpecs,
-          identityContinuityRisks: _.castArray(_.get(parsed, "identityContinuityRisks") || []),
-          artifactWarnings: [],
+          ...(requiresCompleteArtifact
+            ? {
+                characterAnalysis,
+                characterSpecs,
+                identityContinuityRisks: _.castArray(_.get(parsed, "identityContinuityRisks") || []),
+                artifactWarnings: [],
+              }
+            : {}),
         };
         break;
       }
@@ -1531,12 +1499,8 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
       config: { responseMimeType: "application/json" },
     });
 
-    const combinedResult = safeParseJSON(combinedResponse.text, {
-      audience: "",
-      triggers: [],
-      angles: [],
-      versions: [],
-    });
+    const combinedResult = parseAiJsonArtifact<any>(combinedResponse.text, HOOK_RESPONSE_SCHEMA, "invalid_hook_response");
+    assertResponseContract(combinedResult, ResponseContractName.Hook);
 
     logStep(`${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`);
     if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
@@ -1545,21 +1509,9 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     logStep(`${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`);
 
     logStep(getPipelineLog("HOOK_STEP3", isVi));
-    let versions = combinedResult.versions || [];
-    if (_.isArray(versions)) {
-      versions = rankHookVersions(
-        _.map(versions, (v: any, idx: number): HookVersion => ({
-          id: v.id || `hk_${idx + 1}`,
-          content: v.content || "",
-          type: v.type || hookType || "StyleName",
-          selected: idx === 0,
-          score: v.score,
-        })),
-      );
-    }
+    const versions = combinedResult.versions || [];
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
-    versions = await repairHookVersionsLanguage(versions, isVi);
     const usableVersions = resolveUsableHooks(versions, hookType, count, originalInput, isVi);
     if (_.isEmpty(usableVersions)) throw createAppError(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
     const output = { versions: usableVersions, rotationLogs: multiStepLogs };
@@ -1592,9 +1544,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   if (!(await isAiProviderAvailable())) {
     const isVi = config.language === ProjectLanguage.VI;
     if (_.isEqual(requestContext.getStore()?.aiExecutionMode, AiPlanningExecutionMode.RoomOnly)) {
-      return res
-        .status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE)
-        .json({ error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, undefined, isVi), retryable: true });
+      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, undefined, isVi), retryable: true });
     }
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
   }
@@ -1643,7 +1593,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           },
           task: { capability: AiTaskCapability.FactualReview },
         });
-        contentSafety = normalizeContentSafety(safeParseJSON(safetyResponse.text, {}));
+        contentSafety = normalizeContentSafety(parseAiJsonArtifact(safetyResponse.text, CONTENT_SAFETY_RESPONSE_SCHEMA, "invalid_content_safety_response"));
         if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
       } catch (safetyError) {
         appWarn(CONTENT_SAFETY_CONFIG.REVIEW_FAILED_LOG, safetyError);
@@ -1668,18 +1618,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           config: { responseMimeType: "application/json", responseJsonSchema: HOOK_RESPONSE_SCHEMA },
           task: { capability: AiTaskCapability.TextPlanning },
         });
-        const hookResult = safeParseJSON(hookResponse.text, { versions: [] });
+        const hookResult = parseAiJsonArtifact<any>(hookResponse.text, HOOK_RESPONSE_SCHEMA, "invalid_hook_response");
         assertResponseContract(hookResult, ResponseContractName.Hook);
         if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          const rawGeneratedHookVersions = _.map(_.take(hookResult.versions, hookCount), (version: any, index: number): HookVersion => ({
-            id: version.id || `hk_${index + 1}`,
-            content: version.content || "",
-            type: version.type || hookType,
-            selected: false,
-            score: version.score,
-          }));
-          generatedHookVersions = resolveUsableHooks(await repairHookVersionsLanguage(rawGeneratedHookVersions, isVi), hookType, hookCount, originalInput, isVi);
+          generatedHookVersions = resolveUsableHooks(hookResult.versions, hookType, hookCount, originalInput, isVi);
           const selectedHook = _.find(generatedHookVersions, "selected");
           if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
           activeHookText = selectedHook.content;
@@ -1688,8 +1631,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       } catch (hookError: any) {
         logger.error(LogEvent.ERROR_GENERATING_HOOKS, hookError);
         appWarn(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
-        generatedHookVersions = resolveUsableHooks([], config.hookConfig.type, config.hookConfig.count, originalInput, isVi);
-        activeHookText = _.toString(_.get(_.find(generatedHookVersions, "selected"), "content"));
+        throw hookError;
       }
     }
 
@@ -1762,21 +1704,15 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       cinematicCheckpointProject = _.isEmpty(checkpointProjectId) ? null : await getProjectDetailFromDb(checkpointProjectId).catch(() => null);
       canReuseCinematicCheckpoint =
         !bypassCache &&
-        _.includes(
-          [cinematicSourceSignature, ...compatibleCinematicSourceSignatures],
-          _.toString(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature),
-        );
-      const getFilmPackageIssues = (value: Record<string, any> | undefined, requireRequestIdentity: boolean = true): string[] => {
+        _.includes([cinematicSourceSignature, ...compatibleCinematicSourceSignatures], _.toString(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature));
+      const getFilmPackageIssues = (value: Record<string, any> | undefined): string[] => {
         const scenes = _.castArray(value?.scenes || []);
         const intro = value?.intro;
         const sceneIds = _.map(scenes, (scene) => _.trim(_.toString(scene?.id)));
         return _.compact([
           _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
-          !_.isEmpty(_.trim(_.toString(value?.artifactType))) && !_.isEqual(value?.artifactType, CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE) && "artifact:type_mismatch",
-          requireRequestIdentity &&
-            !_.isEmpty(_.trim(_.toString(value?.requestId))) &&
-            !_.isEqual(value?.requestId, filmPackageRequestId) &&
-            "artifact:request_mismatch",
+          !_.isEqual(value?.artifactType, CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE) && "artifact:type_mismatch",
+          !_.isEqual(value?.requestId, filmPackageRequestId) && "artifact:request_mismatch",
           _.isEmpty(_.castArray(value?.chapters || [])) && "chapters:missing",
           _.isEmpty(scenes) && "scenes:missing",
           _.isEmpty(intro) && "intro:missing",
@@ -1792,47 +1728,28 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           _.some(sceneIds, _.isEmpty) && "scenes:id_missing",
           _.uniq(sceneIds).length !== sceneIds.length && "scenes:id_duplicate",
           _.some(scenes, (scene) => _.isEmpty(_.trim(_.toString(scene?.script)))) && "scenes:script_missing",
-          !_.isEmpty(_.trim(_.toString(value?.completionMarker))) &&
-            !_.isEqual(value?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) &&
-            CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_INCOMPLETE_ERROR,
+          !_.isEqual(value?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) && CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_INCOMPLETE_ERROR,
         ]);
       };
       const savedFilmPackage = canReuseCinematicCheckpoint ? cinematicCheckpointProject?.cinematicScriptArtifacts?.filmPackage : undefined;
-      if (_.isEmpty(getFilmPackageIssues(savedFilmPackage, false))) {
-        cinematicFilmPackage = {
-          artifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,
-          requestId: filmPackageRequestId,
-          completionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
-          ...savedFilmPackage,
-        };
+      if (_.isEmpty(getFilmPackageIssues(savedFilmPackage))) {
+        cinematicFilmPackage = savedFilmPackage;
         await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, "filmPackage", cinematicFilmPackage, cinematicSourceSignature);
         multiStepLogs.push("[cinematic_film_package] reused_valid_checkpoint");
       } else {
-        const filmPackagePrompt = getCinematicFilmPackagePrompt(
-          originalInput,
-          config.genre,
-          isVi,
-          targetWordCount,
-          targetClipCount,
-          clipDurationSeconds,
-          filmPackageRequestId,
-          {
-            inputType,
-            audience: config.audience,
-            writingStyle: config.writingStyle,
-            rewriteLevel: config.rewriteLevel,
-            creativityLevel: config.creativityLevel,
-            similarityReduction: config.similarityReduction,
-            groundedResearch: _.toString(groundedResearchResponse?.text),
-          },
-        );
+        const filmPackagePrompt = getCinematicFilmPackagePrompt(originalInput, config.genre, isVi, targetWordCount, targetClipCount, clipDurationSeconds, filmPackageRequestId, {
+          inputType,
+          audience: config.audience,
+          writingStyle: config.writingStyle,
+          rewriteLevel: config.rewriteLevel,
+          creativityLevel: config.creativityLevel,
+          similarityReduction: config.similarityReduction,
+          groundedResearch: _.toString(groundedResearchResponse?.text),
+        });
         let latestIssues: string[] = ["film_package:missing"];
         for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
           const filmPackageResponse = await generateContentWithRetry({
-            contents:
-              attempt === 0
-                ? filmPackagePrompt
-                : getCinematicFilmPackageRepairPrompt(filmPackagePrompt, latestIssues),
+            contents: attempt === 0 ? filmPackagePrompt : getCinematicFilmPackageRepairPrompt(filmPackagePrompt, latestIssues),
             config: {
               responseMimeType: CONTENT_TYPES.JSON,
               responseJsonSchema: createCinematicFilmPackageResponseSchema(targetClipCount),
@@ -1846,13 +1763,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           });
           if (filmPackageResponse.aiMetadata) aiMetrics.push(filmPackageResponse.aiMetadata);
           if (filmPackageResponse.rotationLogs) multiStepLogs.push(...filmPackageResponse.rotationLogs);
-          const parsedCandidate = safeParseJSON(filmPackageResponse.text, {}) as Record<string, any>;
-          const candidate = {
-            artifactType: CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE,
-            requestId: filmPackageRequestId,
-            completionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER,
-            ...parsedCandidate,
-          };
+          const candidate = parseAiJsonArtifact<Record<string, any>>(
+            filmPackageResponse.text,
+            createCinematicFilmPackageResponseSchema(targetClipCount),
+            "invalid_cinematic_film_package_response",
+          );
           latestIssues = getFilmPackageIssues(candidate);
           if (_.isEmpty(latestIssues)) {
             cinematicFilmPackage = candidate;
@@ -1887,7 +1802,6 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         },
         targetChapterCount,
         generateContentWithRetry,
-        originalInput,
       );
       aiMetrics.push(...scriptPlanResponse.aiMetadata);
       multiStepLogs.push(...scriptPlanResponse.rotationLogs);
@@ -1996,16 +1910,14 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
                 task: { capability: AiTaskCapability.ScriptWriting },
               });
               const restoredSegment = extractCleanChapterSegment(restoreResponse.text);
-              if (!_.isEmpty(restoredSegment)) {
+              if (validateChapterLanguage(restoredSegment, true).valid) {
                 return restoredSegment;
               }
             } catch (restoreErr) {
-              appWarn("Không thể tự động khôi phục dấu tiếng Việt, sử dụng bản segment hiện tại.", restoreErr);
+              appWarn("Không thể tự động khôi phục dấu tiếng Việt; từ chối artifact chưa đạt.", restoreErr);
             }
           }
         }
-        multiStepLogs.push(...languageFailureLogs);
-        return latestUsableSegment;
       }
 
       const languageError: any = createAppError(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
@@ -2040,7 +1952,6 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       let cleanedSegment = await requestValidChapterSegment(
         `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`,
       );
-      if (!isCinematicScript) cleanedSegment = removeRepeatedNarrationOpening(cleanedSegment, fullScript);
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       for (
@@ -2048,21 +1959,19 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         expansionIndex < REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT && _.size(_.words(cleanedSegment)) < chapterMinimumWords;
         expansionIndex++
       ) {
-        const currentWordCount = _.size(_.words(cleanedSegment));
-        const continuation = await requestValidChapterSegment(
-          getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi),
+        const replacement = await requestValidChapterSegment(
+          getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords, chapterMaximumWords, isVi),
         );
-        if (_.isEmpty(continuation)) break;
-        const deduplicatedContinuation = isCinematicScript ? continuation : removeRepeatedNarrationOpening(continuation, `${fullScript} ${cleanedSegment}`);
-        cleanedSegment = _.trim(`${cleanedSegment} ${deduplicatedContinuation}`);
+        if (_.isEmpty(replacement)) break;
+        cleanedSegment = replacement;
       }
 
       const hasCompleteChapterEnding = (value: string): boolean => /[.!?…][\s"')\]]*$/.test(_.trim(value));
       if (!hasCompleteChapterEnding(cleanedSegment)) {
         const endingRepair = await requestValidChapterSegment(
-          `${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, Math.max(12, chapterMinimumWords - _.size(_.words(cleanedSegment))), Math.max(30, chapterMaximumWords - _.size(_.words(cleanedSegment))), isVi)}\n\nThe previous text ended mid-sentence. Continue from its exact final words, finish the current event, and end with complete punctuation. Do not restart or summarize the chapter.`,
+          `${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords, chapterMaximumWords, isVi)}\n\nThe rejected artifact ended mid-sentence. Return the entire corrected chapter from the beginning and end it with complete punctuation.`,
         );
-        if (!_.isEmpty(endingRepair)) cleanedSegment = _.trim(`${cleanedSegment} ${endingRepair}`);
+        if (!_.isEmpty(endingRepair)) cleanedSegment = endingRepair;
       }
       if (_.lt(_.size(_.words(cleanedSegment)), chapterMinimumWords) || !hasCompleteChapterEnding(cleanedSegment)) {
         const incompleteChapterError: any = createAppError(`chapter_incomplete:${chapter.id || i + 1}`);
@@ -2083,7 +1992,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    let finalCleanScript = isCinematicScript ? fullScript.trim() : removeAdjacentRepeatedNarrationSentences(fullScript.trim());
+    let finalCleanScript = fullScript.trim();
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     let editorialQa: Record<string, unknown> = {};
     try {
@@ -2096,16 +2005,15 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         },
         task: { capability: AiTaskCapability.ScriptWriting },
       });
-      const editorialResult = safeParseJSON(editorialResponse.text, {});
+      const editorialResult = parseAiJsonArtifact<any>(editorialResponse.text, FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA, "invalid_final_script_edit_response");
       const polishedScript = _.trim(_.toString(editorialResult.scriptSegment));
       const polishedWordRatio = _.size(_.words(polishedScript)) / (_.max([1, targetWordCount]) || 1);
       const languageValidation = validateChapterLanguage(polishedScript, isVi);
-      const editorialScoresPass = _.every(
-        ["continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore"],
-        (field) => _.gte(_.toNumber(editorialResult[field]), 75),
+      const editorialScoresPass = _.every(["continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore"], (field) =>
+        _.gte(_.toNumber(editorialResult[field]), 75),
       );
       if (!_.isEmpty(polishedScript) && _.inRange(polishedWordRatio, 0.9, 1.100001) && languageValidation.valid && (!isCinematicScript || editorialScoresPass)) {
-        finalCleanScript = isCinematicScript ? polishedScript : removeAdjacentRepeatedNarrationSentences(polishedScript);
+        finalCleanScript = polishedScript;
         editorialQa = editorialResult;
       } else {
         multiStepLogs.push("final_script_editor_output_rejected");
@@ -2139,7 +2047,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       ),
       passed: scriptQaBase.passed && _.isEmpty(deterministicStyleWarnings),
     };
-    const finalChapters = isCinematicScript ? completedChapters : syncChaptersWithScript(finalCleanScript, completedChapters);
+    const finalChapters = completedChapters;
     const parsedData = {
       rewrittenScript: finalCleanScript,
       factCheckNotes: scriptResult.factCheckNotes,
@@ -2201,93 +2109,6 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   }
 });
 
-function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[] {
-  if (!chapters || _.isEmpty(chapters)) return [];
-
-  const syncedChapters = _.map(chapters, (c: any) => ({ ...c }));
-
-  let lastIndex = 0;
-  const segmentsFound: { index: number; length: number }[] = [];
-
-  for (let i = 0; i < syncedChapters.length; i++) {
-    const seg = syncedChapters[i].scriptSegment || "";
-    if (!seg.trim()) {
-      segmentsFound.push({ index: -1, length: 0 });
-      continue;
-    }
-    const idx = rewrittenScript.indexOf(seg, lastIndex);
-    if (idx !== -1) {
-      segmentsFound.push({ index: idx, length: seg.length });
-      lastIndex = idx + seg.length;
-    } else {
-      segmentsFound.push({ index: -1, length: 0 });
-    }
-  }
-
-  const allFound = _.every(segmentsFound, (s) => s.index !== -1);
-  if (allFound) {
-    for (let i = 0; i < syncedChapters.length; i++) {
-      const start = i === 0 ? 0 : segmentsFound[i].index;
-      const end = i === syncedChapters.length - 1 ? rewrittenScript.length : segmentsFound[i + 1].index;
-      syncedChapters[i].scriptSegment = rewrittenScript.substring(start, end).trim();
-    }
-    return syncedChapters;
-  }
-
-  const sentences = smartSplitSentences(rewrittenScript);
-  const totalSentences = sentences.length;
-  if (totalSentences === 0) return syncedChapters;
-
-  const originalLengths = _.map(chapters, (c: any) => (c.scriptSegment || "").length);
-  const totalOriginalLength = _.reduce(originalLengths, (a: number, b: number) => a + b, 0) || 1;
-
-  let sentenceCursor = 0;
-  for (let i = 0; i < syncedChapters.length; i++) {
-    const ratio = originalLengths[i] / totalOriginalLength;
-    let targetCount = Math.round(ratio * totalSentences);
-    if (i === syncedChapters.length - 1) targetCount = totalSentences - sentenceCursor;
-    targetCount = Math.max(1, targetCount);
-
-    const slice = sentences.slice(sentenceCursor, sentenceCursor + targetCount);
-    syncedChapters[i].scriptSegment = slice.join(" ");
-    sentenceCursor += targetCount;
-  }
-
-  return syncedChapters;
-}
-
-function diversifyDuplicatePrompts(scenes: any[]): any[] {
-  if (!scenes || scenes.length <= 1) return scenes;
-
-  const cameraAngles = CAMERA_ANGLES;
-  const promptOccurrences = new Map<string, number>();
-
-  for (let i = 0; i < scenes.length; i++) {
-    const currentPrompt = scenes[i].prompt?.trim();
-    if (currentPrompt) {
-      const normCurrent = currentPrompt.toLowerCase().replace(ALPHANUMERIC_ONLY_REGEX, "");
-      const occurrenceCount = promptOccurrences.get(normCurrent) || 0;
-      promptOccurrences.set(normCurrent, occurrenceCount + 1);
-      if (occurrenceCount > 0) {
-        const selectedAngle = cameraAngles[i % cameraAngles.length];
-        const duplicateDirective = getDuplicateScenePromptDirective(scenes[i].script || scenes[i].subtitle || "", selectedAngle);
-        const borderlessKeyword = BORDERLESS_KEYWORD;
-        const lowerPrompt = currentPrompt.toLowerCase();
-
-        if (_.includes(lowerPrompt, borderlessKeyword)) {
-          const index = lowerPrompt.lastIndexOf(borderlessKeyword);
-          const basePart = currentPrompt.substring(0, index).trim().replace(/,+$/, "");
-          const endPart = currentPrompt.substring(index);
-          scenes[i].prompt = `${basePart}, ${duplicateDirective}, ${endPart}`;
-        } else {
-          scenes[i].prompt = `${currentPrompt}, ${duplicateDirective}`;
-        }
-      }
-    }
-  }
-  return scenes;
-}
-
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
   const { sceneScript, setting, time, character, costume, camera, style, aspectRatio, characterPrompt, referencePrompt, currentPrompt } = req.body;
   if (!sceneScript) {
@@ -2313,7 +2134,8 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
       contents: prompt,
     });
 
-    const detailedPrompt = response.text?.trim() || sceneScript;
+    const detailedPrompt = response.text?.trim();
+    if (!detailedPrompt) throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
     logger.error(LogEvent.DETAILED_PROMPT_ERROR, error);
@@ -2451,7 +2273,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
       config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA },
       task: { capability: AiTaskCapability.VisualQa },
     });
-    const quality = safeParseJSON(response.text, {});
+    const quality = parseAiJsonArtifact(response.text, VISUAL_QA_RESPONSE_SCHEMA, "invalid_visual_qa_response");
     const result = { success: true, quality, rotationLogs: response.rotationLogs };
     setCache(API_ROUTES.PIPELINE_VALIDATE_SCENE_IMAGE, req.body, result);
     return res.json(result);
@@ -2478,13 +2300,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     cinematicClipCount: requestedCinematicClipCount,
   } = req.body;
   const normalizedRequestedClipCount = _.toInteger(requestedCinematicClipCount);
-  const isCinematicStoryboard =
-    _.gt(normalizedRequestedClipCount, 0) || isCinematicEpisodeGenre(config?.genre) || _.includes(["single", "series"], _.toString(config?.filmFormat));
+  const isCinematicStoryboard = _.gt(normalizedRequestedClipCount, 0) || isCinematicEpisodeGenre(config?.genre) || _.includes(["single", "series"], _.toString(config?.filmFormat));
   const rawRewrittenScript = _.toString(req.body.rewrittenScript);
-  const rewrittenScript = isCinematicStoryboard ? rawRewrittenScript : removeAdjacentRepeatedNarrationSentences(rawRewrittenScript);
+  const rewrittenScript = rawRewrittenScript;
 
   let syncedChapters = chapters;
-  if (!isCinematicStoryboard && chapters && chapters.length > 0 && rewrittenScript) syncedChapters = syncChaptersWithScript(rewrittenScript, chapters);
 
   let characterRef: string | undefined = undefined;
   const rawRefChars = referenceCharacters || referenceCharacter;
@@ -2594,7 +2414,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           contents: bibleParts,
           config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
         });
-        const parsedVisualBible = safeParseJSON(bibleResponse.text, {}) as VisualBible;
+        const parsedVisualBible = parseAiJsonArtifact<VisualBible>(bibleResponse.text, VISUAL_BIBLE_RESPONSE_SCHEMA, "invalid_visual_bible_response");
         const hasRequiredVisualBibleFields = _.isPlainObject(parsedVisualBible) && !_.isEmpty(parsedVisualBible);
         if (hasRequiredVisualBibleFields) visualBible = parsedVisualBible;
         else if (isCinematicStoryboard) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
@@ -2669,26 +2489,17 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       let splitScenes = splitData.scenes || [];
       splitStoryboardQa = isCinematicStoryboard ? splitData.storyboardQa : undefined;
       if (splitResponse.rotationLogs) storyboardLogs.push(...splitResponse.rotationLogs);
+      const validChapterIds = new Set(_.map(_.castArray(syncedChapters), (chapter: any) => _.toString(chapter?.id)));
 
       if (
         !_.isArray(splitScenes) ||
         _.isEmpty(splitScenes) ||
-        !_.every(splitScenes, (s: any) =>
-          _.every([s.id, s.chapterId, s.script], (value) => !_.isEmpty(_.trim(_.toString(value)))),
-        ) ||
+        !_.every(splitScenes, (s: any) => _.every([s.id, s.chapterId, s.script], (value) => !_.isEmpty(_.trim(_.toString(value))))) ||
+        !_.every(splitScenes, (scene: any) => validChapterIds.has(_.toString(scene.chapterId))) ||
         _.uniq(_.map(splitScenes, (scene: any) => _.trim(_.toString(scene.id)))).length !== splitScenes.length ||
         (isCinematicStoryboard && !_.isEqual(splitScenes.length, cinematicClipCount))
       ) {
         throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
-      } else {
-        splitScenes = isCinematicStoryboard
-          ? splitScenes
-          : _.map(splitScenes, (scene: any, idx: number) => ({
-              ...scene,
-              id: _.join([STORYBOARD_FALLBACK_CONFIG.SCENE_ID_PREFIX, _.add(idx, SecurityConstants.DEFAULT_AMOUNT)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-              script: scene.script || scene.subtitle || "",
-              subtitle: scene.subtitle || scene.script || "",
-            }));
       }
 
       if (isCinematicStoryboard) {
@@ -2718,21 +2529,21 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           const hasSceneReference = hasValidImages(referenceImages) || hasValidImages(config?.referenceImages) || hasValidImages(config?.sceneReferenceImages);
 
           const batchPrompt = getSceneDetailBatchPrompt(
-          minimalScenesJson,
-          visualStyle,
-          activeStyle,
-          characterRef,
-          visualBible.characterSpecs,
-          visualBible.landscapeSpecs,
-          isVi,
-          genre,
-          genreVisualGuideline,
-          config?.aspectRatio || AspectRatio.SixteenNine,
-          config?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[config.styleBackgroundMode] : undefined,
-          config?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[config.styleTextInImageMode] : undefined,
-          config?.imageFocusMode ? resolveImageFocusDirective(config.imageFocusMode, config.styleBackgroundMode) : undefined,
-          hasStyleReference,
-          hasSceneReference,
+            minimalScenesJson,
+            visualStyle,
+            activeStyle,
+            characterRef,
+            visualBible.characterSpecs,
+            visualBible.landscapeSpecs,
+            isVi,
+            genre,
+            genreVisualGuideline,
+            config?.aspectRatio || AspectRatio.SixteenNine,
+            config?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[config.styleBackgroundMode] : undefined,
+            config?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[config.styleTextInImageMode] : undefined,
+            config?.imageFocusMode ? resolveImageFocusDirective(config.imageFocusMode, config.styleBackgroundMode) : undefined,
+            hasStyleReference,
+            hasSceneReference,
           );
 
           try {
@@ -2747,32 +2558,47 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             const batchScenes = batchData.scenes || [];
             if (batchResponse.rotationLogs) storyboardLogs.push(...batchResponse.rotationLogs);
 
+            const expectedIds = _.map(chunkScenes, (scene) => _.toString(scene.id));
+            const returnedIds = _.map(batchScenes, (scene) => _.toString(scene.id));
+            const responseIsComplete =
+              _.isArray(batchScenes) &&
+              _.isEqual(_.size(batchScenes), _.size(chunkScenes)) &&
+              _.isEmpty(_.difference(expectedIds, returnedIds)) &&
+              _.isEmpty(_.difference(returnedIds, expectedIds)) &&
+              _.every(batchScenes, (scene) =>
+                _.every(["prompt", "cameraMotion", "effects", "lightingEffect", "transition"], (field) => !_.isEmpty(_.trim(_.toString(_.get(scene, field))))),
+              );
+            if (!responseIsComplete) throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
+
             for (const bs of batchScenes) {
-              if (bs.id) detailedScenesMap.set(bs.id, bs);
+              detailedScenesMap.set(bs.id, bs);
             }
           } catch (batchErr: any) {
             logger.error("STORYBOARD_BATCH_GEN_ERROR", i + 1, batchErr.message);
             if (batchErr.rotationLogs) storyboardLogs.push(...batchErr.rotationLogs);
+            throw batchErr;
           }
 
           if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
         }
 
         allScenes = _.map(splitScenes, (scene: any) => {
-          const details = detailedScenesMap.get(scene.id) || {};
+          const details = detailedScenesMap.get(scene.id);
+          if (!details) throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
           return {
             ...scene,
             prompt: _.trim(_.toString(details.prompt)),
-            cameraMotion: details.cameraMotion || DEFAULT_SCENE_CAMERA_MOTION,
-            effects: details.effects || DEFAULT_SCENE_EFFECTS,
-            lightingEffect: details.lightingEffect || DEFAULT_SCENE_LIGHTING_EFFECT,
-            transition: details.transition || DEFAULT_SCENE_TRANSITION,
+            cameraMotion: details.cameraMotion,
+            effects: details.effects,
+            lightingEffect: details.lightingEffect,
+            transition: details.transition,
           };
         });
       }
     } catch (e: any) {
       logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_CHUNKING, e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
+      throw e;
     }
 
     logStoryboardStep(getPipelineLog("STORY_STEP3", isVi));
@@ -2786,46 +2612,12 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
     if (_.isEmpty(allScenes)) {
-      if (cinematicClipCount) {
-        throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
-      } else {
-        allScenes = createScriptGroundedStoryboard({
-          rewrittenScript,
-          chapters: syncedChapters,
-          splitStrategy,
-          aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
-          targetStyle: activeStyle || visualStyle,
-          visualBible,
-        });
-      }
-      storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.FALLBACK_WARNING);
-    } else if (!isCinematicStoryboard) {
-      allScenes = ensureScriptGroundedSceneDetails(allScenes, {
-        aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
-        targetStyle: activeStyle || visualStyle,
-        visualBible,
-      });
+      throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
     }
     let data: any = { scenes: allScenes, visualBible, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || _.isEmpty(data.scenes)) {
       throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
-    }
-
-    if (data?.scenes?.length) {
-      if (!isCinematicStoryboard) {
-        const diversifiedScenes = diversifyDuplicatePrompts(data.scenes);
-        data.scenes = ensureStoryboardScriptCoverage(diversifiedScenes, {
-            rewrittenScript,
-            chapters: syncedChapters,
-            splitStrategy,
-            aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
-            targetStyle: activeStyle || visualStyle,
-            visualBible,
-          });
-        data.scenes = removeAdjacentRepeatedStoryboardScenes(data.scenes);
-      }
-      if (!isCinematicStoryboard) data.scenes = assignStoryboardChapterIds(data.scenes, syncedChapters);
     }
 
     if (!isCinematicStoryboard && chosenDuration && data.scenes && data.scenes.length > 0) {
@@ -2853,9 +2645,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       }
     }
 
-    const storyboardQaScenes = isCinematicStoryboard
-      ? _.map(data.scenes, (scene) => ({ ...scene, duration: storyboardClipDurationSeconds }))
-      : data.scenes;
+    const storyboardQaScenes = isCinematicStoryboard ? _.map(data.scenes, (scene) => ({ ...scene, duration: storyboardClipDurationSeconds })) : data.scenes;
     const storyboardQaBase = applyDeterministicStoryboardCoverage(
       normalizeStoryboardQuality(splitStoryboardQa || {}),
       rewrittenScript,
@@ -2863,7 +2653,16 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
     );
     if (isCinematicStoryboard) {
-      const normalizedStoryboardScript = _.replace(_.trim(_.join(_.map(data.scenes, (scene) => _.toString(scene.script)), " ")), /\s+/g, " ");
+      const normalizedStoryboardScript = _.replace(
+        _.trim(
+          _.join(
+            _.map(data.scenes, (scene) => _.toString(scene.script)),
+            " ",
+          ),
+        ),
+        /\s+/g,
+        " ",
+      );
       const normalizedSourceScript = _.replace(_.trim(rewrittenScript), /\s+/g, " ");
       const chapterIds = new Set(_.map(_.castArray(syncedChapters), (chapter: any) => _.toString(chapter?.id)));
       const sceneIds = _.map(data.scenes, (scene) => _.trim(_.toString(scene.id)));
@@ -2934,15 +2733,9 @@ router.post("/seo", async (req: Request, res: Response) => {
   const isCinematicSeo = isCinematicEpisodeGenre(config.genre || req.body?.genre || req.body?.project?.config?.genre);
 
   if (!(await isAiProviderAvailable())) {
-    if (isCinematicSeo) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
-        retryable: true,
-      });
-    }
-    return res.json({
-      ...createSourceGroundedSeo(rewrittenScript, { numTitles, numDescriptions, numHashtags, numTags }),
-      rotationLogs: [SEO_FALLBACK_CONFIG.WARNING],
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
+      retryable: true,
     });
   }
 
@@ -2984,10 +2777,9 @@ router.post("/seo", async (req: Request, res: Response) => {
     const returnedSeoCompletionMarker = _.trim(_.toString(seoResult.completionMarker));
     if (
       isCinematicSeo &&
-      ((!_.isEmpty(returnedSeoArtifactType) && !_.isEqual(returnedSeoArtifactType, CINEMATIC_ARTIFACT_TYPE.SEO)) ||
-        (!_.isEmpty(returnedSeoRequestId) && !_.isEqual(returnedSeoRequestId, seoRequestId)) ||
-        (!_.isEmpty(returnedSeoCompletionMarker) &&
-          !_.isEqual(returnedSeoCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)))
+      (!_.isEqual(returnedSeoArtifactType, CINEMATIC_ARTIFACT_TYPE.SEO) ||
+        !_.isEqual(returnedSeoRequestId, seoRequestId) ||
+        !_.isEqual(returnedSeoCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER))
     ) {
       throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
     }
@@ -3022,16 +2814,10 @@ router.post("/seo", async (req: Request, res: Response) => {
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_SEO, error);
-    if (isCinematicSeo) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
-        retryable: true,
-        rotationLogs: _.castArray(error.rotationLogs),
-      });
-    }
-    res.json({
-      ...createSourceGroundedSeo(rewrittenScript, { numTitles, numDescriptions, numHashtags, numTags }),
-      rotationLogs: _.uniq(_.compact([..._.castArray(error.rotationLogs), SEO_FALLBACK_CONFIG.WARNING])),
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
+      retryable: true,
+      rotationLogs: _.castArray(error.rotationLogs),
     });
   }
 });
@@ -3057,15 +2843,9 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       : visualConfig.thumbnailReferencePrompt || "Dynamically craft the visual art style and medium to match the story's emotional tone and genre.";
 
   if (!(await isAiProviderAvailable())) {
-    if (isCinematicThumbnail) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
-        retryable: true,
-      });
-    }
-    return res.json({
-      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, refImageStr, thumbnailTextMode),
-      rotationLogs: [THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING],
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
+      retryable: true,
     });
   }
 
@@ -3166,10 +2946,9 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const returnedThumbnailCompletionMarker = _.trim(_.toString(parsedResult.completionMarker));
     if (
       isCinematicThumbnail &&
-      ((!_.isEmpty(returnedThumbnailArtifactType) && !_.isEqual(returnedThumbnailArtifactType, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS)) ||
-        (!_.isEmpty(returnedThumbnailRequestId) && !_.isEqual(returnedThumbnailRequestId, thumbnailRequestId)) ||
-        (!_.isEmpty(returnedThumbnailCompletionMarker) &&
-          !_.isEqual(returnedThumbnailCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER)))
+      (!_.isEqual(returnedThumbnailArtifactType, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS) ||
+        !_.isEqual(returnedThumbnailRequestId, thumbnailRequestId) ||
+        !_.isEqual(returnedThumbnailCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER))
     ) {
       throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
     }
@@ -3200,14 +2979,14 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       const repairedIssues = isCinematicThumbnail
         ? getThumbnailTechnicalPlanningIssues(repairedThumbnails, thumbnailCount, thumbnailTextMode)
         : getThumbnailPlanningIssues(repairedThumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
-      if (!_.isEmpty(repairedThumbnails) && _.size(repairedIssues) < _.size(planningIssues)) {
+      if (!_.isEmpty(repairedThumbnails) && _.isEmpty(repairedIssues)) {
         thumbsResult = { concepts: _.castArray(repairedResult.concepts || []), thumbnails: repairedThumbnails };
         planningIssues = repairedIssues;
       }
       if (repairResponse.rotationLogs) thumbLogs.push(...repairResponse.rotationLogs);
     }
 
-    if (isCinematicThumbnail && !_.isEmpty(planningIssues)) {
+    if (!_.isEmpty(planningIssues)) {
       return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
         error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
         retryable: true,
@@ -3223,28 +3002,17 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
 
-    let normalizedThumbnails = normalizeThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount, thumbnailTextMode);
-    if (!isCinematicThumbnail && _.lt(_.size(normalizedThumbnails), thumbnailCount)) {
-      const sourceFallbacks = createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode);
-      normalizedThumbnails = normalizeThumbnailIdeas(_.concat(normalizedThumbnails, _.drop(sourceFallbacks, _.size(normalizedThumbnails))), thumbnailCount, thumbnailTextMode);
-      thumbLogs.push(THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING);
-    }
+    const normalizedThumbnails = normalizeThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount, thumbnailTextMode);
     const parsedData = { thumbnails: normalizedThumbnails, rotationLogs: thumbLogs };
 
     setCache(API_ROUTES.PIPELINE_THUMBNAILS, thumbnailCachePayload, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
-    if (isCinematicThumbnail) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
-        retryable: true,
-        rotationLogs: _.castArray(error.rotationLogs),
-      });
-    }
-    res.json({
-      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode),
-      rotationLogs: _.uniq(_.compact([..._.castArray(error.rotationLogs), THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING])),
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
+      retryable: true,
+      rotationLogs: _.castArray(error.rotationLogs),
     });
   }
 });
@@ -3256,8 +3024,6 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const { finalVoiceId } = resolveVoiceRouting({ provider, voiceId: requestedVoiceId });
 
     if (!text || !text.trim()) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: PIPELINE_SERVER_ERRORS.VOICE_TEXT_REQUIRED });
-    text = removeAdjacentRepeatedNarrationSentences(text);
-
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, "ai33Key", "");
 
@@ -3434,7 +3200,10 @@ const persistRecoveredFlowScene = async (project: any, scene: StoryboardScene, m
     _.filter(project.storyboard, (candidate) => !_.isEmpty(candidate.assetUrl) || _.some(candidate.assetUrls, (assetUrl) => !_.isEmpty(assetUrl))),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
   );
-  const pendingSceneIds = _.map(_.reject(project.storyboard, (candidate) => _.includes(completedSceneIds, candidate.id)), REFACTOR_CONSTANTS.AVG_ID_KEY);
+  const pendingSceneIds = _.map(
+    _.reject(project.storyboard, (candidate) => _.includes(completedSceneIds, candidate.id)),
+    REFACTOR_CONSTANTS.AVG_ID_KEY,
+  );
   const failedSceneIds = _.map(
     _.filter(project.storyboard, (candidate) => _.includes(pendingSceneIds, candidate.id) && _.isEqual(candidate.assetStatus, SceneAssetStatus.Failed)),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
@@ -3458,12 +3227,7 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
     const flowProjectId = _.trim(_.toString(project?.visualConfig?.flowProjectId));
     const scene = _.find(project?.storyboard, { id: sceneId });
     const persistedMediaIds = _.uniq(
-      _.compact(
-        _.map(
-          !_.isEmpty(scene?.remoteVideoMediaIds) ? scene?.remoteVideoMediaIds : [scene?.remoteVideoMediaId],
-          (mediaId) => _.trim(_.toString(mediaId)),
-        ),
-      ),
+      _.compact(_.map(!_.isEmpty(scene?.remoteVideoMediaIds) ? scene?.remoteVideoMediaIds : [scene?.remoteVideoMediaId], (mediaId) => _.trim(_.toString(mediaId)))),
     );
     const requestedMediaIds = _.uniq(
       _.compact(_.map(!_.isEmpty(req.body?.mediaIds) ? _.castArray(req.body.mediaIds) : [req.body?.mediaId], (mediaId) => _.trim(_.toString(mediaId)))),
@@ -3484,9 +3248,7 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
         ? getPersistedProjectVideoVariantUrl(localProjectId, sceneId, variantIndex)
         : (() => {
             const existingVideoUrl = _.toString(scene.assetUrl);
-            return FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(existingVideoUrl) && resolveLocalProjectAssetPath(existingVideoUrl)
-              ? existingVideoUrl
-              : undefined;
+            return FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(existingVideoUrl) && resolveLocalProjectAssetPath(existingVideoUrl) ? existingVideoUrl : undefined;
           })();
       if (existingVariantUrl) {
         fallbackUrls.push(existingVariantUrl);
@@ -3503,22 +3265,17 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
         recoveryWarning = _.defaultTo(result.warning, recoveryWarning);
         break;
       }
-      fallbackUrls.push(
-        await persistProjectVideo(
-          localProjectId,
-          sceneId,
-          result.base64!,
-          _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined,
-        ),
-      );
+      fallbackUrls.push(await persistProjectVideo(localProjectId, sceneId, result.base64!, _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined));
     }
     if (_.lt(_.size(fallbackUrls), expectedOutputCount)) {
       const recoveryWasRejected = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(recoveryWarning);
-      scene.remoteVideoDownloadPending = !recoveryWasRejected;
+      const recoveryMediaIsStale = FLOW_VIDEO_MEDIA_CONFIG.STALE_MEDIA_PATTERN.test(recoveryWarning);
+      const shouldRegenerate = recoveryWasRejected || recoveryMediaIsStale;
+      scene.remoteVideoDownloadPending = !shouldRegenerate;
       scene.remoteVideoExpectedCount = expectedOutputCount;
       scene.assetStatus = SceneAssetStatus.Failed;
       scene.assetError = recoveryWarning;
-      if (recoveryWasRejected) {
+      if (shouldRegenerate) {
         scene.remoteVideoMediaId = undefined;
         scene.remoteVideoMediaIds = undefined;
       }
@@ -3529,9 +3286,9 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
         fallbackUrl: SecurityConstants.EMPTY_STRING,
         fallbackUrls: [],
         warning: recoveryWarning,
-        remoteMediaId: recoveryWasRejected ? undefined : _.head(persistedMediaIds),
-        remoteMediaIds: recoveryWasRejected ? [] : persistedMediaIds,
-        remoteMediaCreated: !recoveryWasRejected,
+        remoteMediaId: shouldRegenerate ? undefined : _.head(persistedMediaIds),
+        remoteMediaIds: shouldRegenerate ? [] : persistedMediaIds,
+        remoteMediaCreated: !shouldRegenerate,
       });
     }
     await persistRecoveredFlowScene(project, scene, persistedMediaIds, fallbackUrls);
@@ -3559,6 +3316,93 @@ const activeVideoSubmissionKeys = new Set<string>();
 const activeVideoProjectKeys = new Set<string>();
 const completedVideoSubmissionResults = new Map<string, unknown>();
 
+router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req: Request, res: Response) => {
+  let activeVideoProjectKey = "";
+  try {
+    const requestedItems = _.take(
+      _.map(_.castArray(req.body?.items || []), (item) => ({
+        sceneId: path.basename(_.toString(item?.sceneId)),
+        prompt: _.toString(item?.prompt),
+        referenceImages: _.compact(_.castArray(item?.referenceImages || [])),
+        referenceImageNames: _.compact(_.castArray(item?.referenceImageNames || [])),
+        referenceCharacterNames: _.compact(_.castArray(item?.referenceCharacterNames || [])),
+      })),
+      FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH,
+    );
+    if (_.isEmpty(requestedItems) || _.some(requestedItems, (item) => _.isEmpty(item.sceneId) || _.isEmpty(_.trim(item.prompt)))) {
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
+    }
+
+    const localProjectId = path.basename(_.toString(req.body?.sandboxConfig?.localProjectId));
+    const localProject = await getProjectDetailFromDb(localProjectId);
+    if (!localProject) return res.status(404).json({ success: false, results: [], warning: PROJECT_ASSET_INVALID_REQUEST });
+    activeVideoProjectKey = localProjectId;
+    if (activeVideoProjectKeys.has(activeVideoProjectKey)) {
+      return res.json({ success: false, results: [], warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR });
+    }
+    activeVideoProjectKeys.add(activeVideoProjectKey);
+
+    const requestedSceneIds = new Set(_.map(requestedItems, "sceneId"));
+    const requestedScenes = _.filter(localProject.storyboard || [], (scene) => requestedSceneIds.has(_.toString(scene.id)));
+    if (!_.isEqual(requestedScenes.length, requestedItems.length)) {
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: PROJECT_ASSET_INVALID_REQUEST });
+    }
+
+    const knownVideoMediaIds = _.uniq(
+      _.compact(
+        _.flatMap(localProject.storyboard || [], (scene) =>
+          _.map(!_.isEmpty(scene.remoteVideoMediaIds) ? scene.remoteVideoMediaIds : [scene.remoteVideoMediaId], (mediaId) => _.trim(_.toString(mediaId))),
+        ),
+      ),
+    );
+    const persistedFlowProjectId = _.toString(localProject.visualConfig?.flowProjectId || req.body?.sandboxConfig?.flowProjectId);
+    const results = await generateFlowVideoPromptBatchWithPlaywright({
+      items: requestedItems,
+      visualConfig: { ...req.body?.visualConfig, generateType: GenerateType.Video },
+      sandboxConfig: {
+        ...req.body?.sandboxConfig,
+        localProjectId,
+        flowProjectId: persistedFlowProjectId || undefined,
+        knownVideoMediaIds,
+      },
+      retainBrowserSession: true,
+    });
+    const resolvedFlowProjectId = _.toString(_.find(results, (result) => !_.isEmpty(result.newProjectId))?.newProjectId || persistedFlowProjectId);
+    const assignedMediaIds = new Set<string>();
+    for (const result of results) {
+      const scene = _.find(localProject.storyboard, { id: result.sceneId });
+      const mediaIds = _.uniq(_.compact(_.map(result.remoteMediaIds || [result.remoteMediaId], (mediaId) => _.trim(_.toString(mediaId)))));
+      if (!scene || _.some(mediaIds, (mediaId) => assignedMediaIds.has(mediaId) || _.includes(knownVideoMediaIds, mediaId))) {
+        result.success = false;
+        result.warning = FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ID_ERROR;
+        continue;
+      }
+      _.forEach(mediaIds, (mediaId) => assignedMediaIds.add(mediaId));
+      if (result.success && !_.isEmpty(mediaIds)) {
+        scene.remoteVideoMediaId = _.head(mediaIds);
+        scene.remoteVideoMediaIds = mediaIds;
+        scene.remoteVideoExpectedCount = FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT;
+        scene.remoteVideoDownloadPending = true;
+        scene.assetStatus = SceneAssetStatus.Generating;
+        scene.assetError = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
+      } else {
+        scene.assetStatus = SceneAssetStatus.Failed;
+        scene.assetError = _.defaultTo(result.warning, FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);
+      }
+    }
+    localProject.visualConfig = { ...localProject.visualConfig, flowProjectId: resolvedFlowProjectId || localProject.visualConfig?.flowProjectId };
+    await saveProjectDetailToDb(localProject);
+    const successfulCount = _.size(_.filter(results, "success"));
+    if (_.gt(successfulCount, SecurityConstants.ZERO)) await incrementFeatureUsage(req, FeatureType.VIDEO, successfulCount);
+    return res.json({ success: _.gt(successfulCount, SecurityConstants.ZERO), results, newProjectId: resolvedFlowProjectId });
+  } catch (error) {
+    logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
+    return res.json({ success: false, results: [], warning: error instanceof Error ? error.message : FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR });
+  } finally {
+    if (!_.isEmpty(activeVideoProjectKey)) activeVideoProjectKeys.delete(activeVideoProjectKey);
+  }
+});
+
 router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
   try {
     const localProjectId = path.basename(_.toString(req.body?.projectId));
@@ -3571,10 +3415,7 @@ router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAG
       return {
         id: _.trim(_.toString(character?.id)),
         name: _.trim(_.toString(character?.name)),
-        prompt:
-          _.isEmpty(flowPrompt) || FLOW_CHARACTER_CONFIG.LEGACY_REFERENCE_PROMPT_PATTERN.test(flowPrompt)
-            ? identityPrompt || flowPrompt
-            : flowPrompt,
+        prompt: _.isEmpty(flowPrompt) || FLOW_CHARACTER_CONFIG.LEGACY_REFERENCE_PROMPT_PATTERN.test(flowPrompt) ? identityPrompt || flowPrompt : flowPrompt,
         info: _.trim(_.toString(character?.description || character?.prompt)),
       };
     });
@@ -3651,19 +3492,14 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
     const persistedScene = _.find(localProject?.storyboard, { id: sceneId });
     const persistedRemoteMediaIds = _.uniq(
       _.compact(
-        _.map(
-          !_.isEmpty(persistedScene?.remoteVideoMediaIds) ? persistedScene.remoteVideoMediaIds : [persistedScene?.remoteVideoMediaId],
-          (mediaId) => _.trim(_.toString(mediaId)),
+        _.map(!_.isEmpty(persistedScene?.remoteVideoMediaIds) ? persistedScene.remoteVideoMediaIds : [persistedScene?.remoteVideoMediaId], (mediaId) =>
+          _.trim(_.toString(mediaId)),
         ),
       ),
     );
     const anotherPendingVideoScene = _.find(
       localProject?.storyboard,
-      (scene) =>
-        !_.isEqual(scene.id, sceneId) &&
-        scene.remoteVideoDownloadPending &&
-        _.isEmpty(scene.assetUrl) &&
-        _.isEmpty(scene.assetUrls),
+      (scene) => !_.isEqual(scene.id, sceneId) && scene.remoteVideoDownloadPending && _.isEmpty(scene.assetUrl) && _.isEmpty(scene.assetUrls),
     );
     if (isVideoRequest && anotherPendingVideoScene) {
       return res.json({
@@ -3708,12 +3544,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
           break;
         }
         fallbackUrls.push(
-          await persistProjectVideo(
-            localProjectId,
-            sceneId,
-            recoveredResult.base64!,
-            _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined,
-          ),
+          await persistProjectVideo(localProjectId, sceneId, recoveredResult.base64!, _.gt(expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT) ? variantIndex : undefined),
         );
       }
       if (_.lt(_.size(fallbackUrls), expectedOutputCount)) {
@@ -3756,11 +3587,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       _.compact(
         _.flatMap(
           _.filter(localProject?.storyboard || [], (scene) => !_.isEqual(scene.id, sceneId)),
-          (scene) =>
-            _.map(
-              !_.isEmpty(scene.remoteVideoMediaIds) ? scene.remoteVideoMediaIds : [scene.remoteVideoMediaId],
-              (mediaId) => _.trim(_.toString(mediaId)),
-            ),
+          (scene) => _.map(!_.isEmpty(scene.remoteVideoMediaIds) ? scene.remoteVideoMediaIds : [scene.remoteVideoMediaId], (mediaId) => _.trim(_.toString(mediaId))),
         ),
       ),
     );
@@ -3786,16 +3613,10 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
 
     const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     const generatedRemoteMediaIds = _.uniq(
-      _.compact(
-        _.map(!_.isEmpty(result?.remoteMediaIds) ? result.remoteMediaIds : [result?.remoteMediaId], (mediaId) => _.trim(_.toString(mediaId))),
-      ),
+      _.compact(_.map(!_.isEmpty(result?.remoteMediaIds) ? result.remoteMediaIds : [result?.remoteMediaId], (mediaId) => _.trim(_.toString(mediaId)))),
     );
     const generatedRemoteMediaId = _.head(generatedRemoteMediaIds);
-    if (
-      localProject &&
-      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
-      _.some(generatedRemoteMediaIds, (mediaId) => _.includes(knownVideoMediaIds, mediaId))
-    ) {
+    if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && _.some(generatedRemoteMediaIds, (mediaId) => _.includes(knownVideoMediaIds, mediaId))) {
       throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ID_ERROR);
     }
     if (localProject && _.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(generatedRemoteMediaIds)) {
@@ -3877,11 +3698,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
       }
     }
 
-    if (
-      result?.success &&
-      _.isEqual(visualConfig?.generateType, GenerateType.Video) &&
-      _.gte(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)
-    ) {
+    if (result?.success && _.isEqual(visualConfig?.generateType, GenerateType.Video) && _.gte(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
       const fallbackUrls = await persistProjectVideoVariants(localProjectId, sceneId, result.base64s!);
       const fallbackUrl = _.head(fallbackUrls)!;
       result = {
@@ -4168,7 +3985,8 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
       config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: FINAL_VIDEO_QA_RESPONSE_SCHEMA, maxOutputTokens: FINAL_MULTIMODAL_QA_CONFIG.MAX_OUTPUT_TOKENS },
       task: { capability: AiTaskCapability.VisualQa },
     });
-    const result = { success: true, quality: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata, rotationLogs: response.rotationLogs };
+    const quality = parseAiJsonArtifact(response.text, FINAL_VIDEO_QA_RESPONSE_SCHEMA, "invalid_final_video_qa_response");
+    const result = { success: true, quality, aiMetadata: response.aiMetadata, rotationLogs: response.rotationLogs };
     setCache(API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO, req.body, result);
     return res.json(result);
   } catch (error: any) {
@@ -4186,9 +4004,7 @@ router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response
   if (_.isEmpty(_.trim(prompt))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Video prompt is required." });
   try {
     const response = await generateContentWithRetry({
-      contents: _.isEmpty(qaIssues)
-        ? getCinematicVideoPromptPolicyRepairPrompt(prompt)
-        : getCinematicVideoPromptRepairPrompt(prompt, qaIssues, sceneContext),
+      contents: _.isEmpty(qaIssues) ? getCinematicVideoPromptPolicyRepairPrompt(prompt) : getCinematicVideoPromptRepairPrompt(prompt, qaIssues, sceneContext),
       config: {
         responseMimeType: CONTENT_TYPES.JSON,
         responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
@@ -4196,7 +4012,8 @@ router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response
       },
       task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
     });
-    return res.json({ success: true, review: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata });
+    const review = parseAiJsonArtifact(response.text, VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, "invalid_video_prompt_repair_response");
+    return res.json({ success: true, review, aiMetadata: response.aiMetadata });
   } catch (error: any) {
     logger.warn(LogEvent.VISUAL_QA_ERROR, error);
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false, error: error.message });
@@ -4215,9 +4032,9 @@ router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Respons
     const repairPrompt = _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.THUMBNAIL_PROVIDER_REJECTION_PURPOSE)
       ? getCinematicThumbnailProviderRepairPrompt(prompt, visualContext)
       : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.SCENE_IMAGE_PROVIDER_REJECTION_PURPOSE)
-          ? getCinematicSceneImageProviderRepairPrompt(prompt, visualContext)
-          : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_PROVIDER_REJECTION_PURPOSE)
-            ? getCinematicCharacterProviderRepairPrompt(prompt, visualContext)
+        ? getCinematicSceneImageProviderRepairPrompt(prompt, visualContext)
+        : _.isEqual(purpose, CINEMATIC_GENERATION_RECOVERY_CONFIG.CHARACTER_PROVIDER_REJECTION_PURPOSE)
+          ? getCinematicCharacterProviderRepairPrompt(prompt, visualContext)
           : getVisualPromptQaRepairPrompt(prompt, qaIssues, visualContext, purpose);
     const response = await generateContentWithRetry({
       contents: repairPrompt,
@@ -4228,7 +4045,8 @@ router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Respons
       },
       task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
     });
-    return res.json({ success: true, review: safeParseJSON(response.text, {}), aiMetadata: response.aiMetadata });
+    const review = parseAiJsonArtifact(response.text, VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, "invalid_visual_prompt_repair_response");
+    return res.json({ success: true, review, aiMetadata: response.aiMetadata });
   } catch (error: any) {
     logger.warn(LogEvent.VISUAL_QA_ERROR, error);
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false, error: error.message });
@@ -4247,8 +4065,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), "?")) || "", "/\\");
     const candidate = path.resolve(dataRoot, relativePath);
     const isSafe = _.startsWith(_.toLower(candidate), _.toLower(`${projectRoot}${path.sep}`)) && fs.existsSync(candidate);
-    if (!isSafe)
-      return { sceneId: scene.id, sourcePath: "", warnings: ["clip_missing"], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: "omit", reason: "clip_missing" };
+    if (!isSafe) return { sceneId: scene.id, sourcePath: "", warnings: ["clip_missing"], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: "omit", reason: "clip_missing" };
     const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean }>((resolve) =>
       ffmpeg.ffprobe(candidate, (error, metadata) => {
         const videoStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, "video"));
@@ -4418,9 +4235,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     if (!libraryAnalysisAvailable || !(await isAiProviderAvailable())) {
       return res.json({
         success: true,
-        decisions: _.map(analyzedDecisions, (decision) =>
-          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
-        ),
+        decisions: _.map(analyzedDecisions, (decision) => _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"])),
         libraryAnalysisAvailable,
         editorialReviewAvailable: false,
         timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
@@ -4433,7 +4248,10 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       ),
     );
     const reviewMediaDecisions: any[] = [];
-    for (const batch of _.chunk(_.filter(scenes, (scene) => aiReviewSceneIds.has(_.toString(scene.id))), CINEMATIC_EDIT_ANALYSIS_CONFIG.MEDIA_WORKERS)) {
+    for (const batch of _.chunk(
+      _.filter(scenes, (scene) => aiReviewSceneIds.has(_.toString(scene.id))),
+      CINEMATIC_EDIT_ANALYSIS_CONFIG.MEDIA_WORKERS,
+    )) {
       reviewMediaDecisions.push(...(await Promise.all(_.map(batch, (scene) => analyzeScene(scene, true)))));
     }
     const reviewMediaByScene = _.keyBy(reviewMediaDecisions, "sceneId");
@@ -4447,16 +4265,11 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
           }
         : decision;
     });
-    const reviewableDecisions = _.filter(
-      analyzedDecisions,
-      (decision) => !_.isEmpty(decision.contactSheetData) && aiReviewSceneIds.has(_.toString(decision.sceneId)),
-    );
+    const reviewableDecisions = _.filter(analyzedDecisions, (decision) => !_.isEmpty(decision.contactSheetData) && aiReviewSceneIds.has(_.toString(decision.sceneId)));
     if (_.isEmpty(reviewableDecisions)) {
       return res.json({
         success: true,
-        decisions: _.map(analyzedDecisions, (decision) =>
-          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
-        ),
+        decisions: _.map(analyzedDecisions, (decision) => _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"])),
         libraryAnalysisAvailable,
         editorialReviewAvailable: false,
         timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
@@ -4539,7 +4352,8 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         },
         task: { capability: AiTaskCapability.VisualQa },
       });
-      const candidateDecisions = _.castArray(safeParseJSON(globalEditResponse.text, {})?.decisions);
+      const editArtifact = parseAiJsonArtifact<any>(globalEditResponse.text, CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA, "invalid_cinematic_edit_response");
+      const candidateDecisions = _.castArray(editArtifact.decisions);
       const validation = validateCinematicEditorialDecisions(reviewableDecisions, candidateDecisions);
       if (validation.valid) {
         editorialDecisions = candidateDecisions;
@@ -4551,9 +4365,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     if (_.isEmpty(editorialDecisions)) {
       return res.json({
         success: true,
-        decisions: _.map(analyzedDecisions, (decision) =>
-          _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
-        ),
+        decisions: _.map(analyzedDecisions, (decision) => _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"])),
         libraryAnalysisAvailable,
         editorialReviewAvailable: false,
         editorialReviewError: editorialValidationError,
@@ -4569,35 +4381,36 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       const librarySegments = _.castArray(technical.candidateSegments || technical.segments);
       const editorialSegments = _.uniqBy(
         _.compact(
-        _.map(_.castArray(editorial.segments), (segment, segmentIndex) => {
-          const selectedLibrarySegment = _.find(librarySegments, { segmentId: _.toString(segment.segmentId) });
-          if (!selectedLibrarySegment) return undefined;
-          const inSeconds = _.clamp(_.toNumber(selectedLibrarySegment.inSeconds), technicalUsableStart, technicalUsableEnd);
-          const outSeconds = _.clamp(_.toNumber(selectedLibrarySegment.outSeconds), inSeconds, technicalUsableEnd);
-          if (_.lt(outSeconds - inSeconds, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS)) return undefined;
-          return {
-            segmentId: _.trim(_.toString(selectedLibrarySegment.segmentId)) || `${technical.sceneId}_segment_${segmentIndex + 1}`,
-            inSeconds,
-            outSeconds,
-            shotRole: segment.shotRole,
-            storyContribution: _.trim(_.toString(segment.storyContribution)),
-            transition: segment.transition,
-            audioBridgeMode: selectedLibrarySegment.audioBridgeMode,
-            containsDialogue: Boolean(selectedLibrarySegment.containsDialogue),
-          };
-        }),
+          _.map(_.castArray(editorial.segments), (segment, segmentIndex) => {
+            const selectedLibrarySegment = _.find(librarySegments, { segmentId: _.toString(segment.segmentId) });
+            if (!selectedLibrarySegment) return undefined;
+            const inSeconds = _.clamp(_.toNumber(selectedLibrarySegment.inSeconds), technicalUsableStart, technicalUsableEnd);
+            const outSeconds = _.clamp(_.toNumber(selectedLibrarySegment.outSeconds), inSeconds, technicalUsableEnd);
+            if (_.lt(outSeconds - inSeconds, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS)) return undefined;
+            return {
+              segmentId: _.trim(_.toString(selectedLibrarySegment.segmentId)) || `${technical.sceneId}_segment_${segmentIndex + 1}`,
+              inSeconds,
+              outSeconds,
+              shotRole: segment.shotRole,
+              storyContribution: _.trim(_.toString(segment.storyContribution)),
+              transition: segment.transition,
+              audioBridgeMode: selectedLibrarySegment.audioBridgeMode,
+              containsDialogue: Boolean(selectedLibrarySegment.containsDialogue),
+            };
+          }),
         ),
         "segmentId",
       );
       const segments = _.isEqual(editorial.takeDecision, "omit") ? [] : editorialSegments;
       const selectedStart = _.minBy(segments, "inSeconds")?.inSeconds;
       const selectedEnd = _.maxBy(segments, "outSeconds")?.outSeconds;
-      const validSelection = Number.isFinite(selectedStart) && Number.isFinite(selectedEnd) &&
-        selectedStart >= technicalUsableStart && selectedEnd <= technicalUsableEnd &&
+      const validSelection =
+        Number.isFinite(selectedStart) &&
+        Number.isFinite(selectedEnd) &&
+        selectedStart >= technicalUsableStart &&
+        selectedEnd <= technicalUsableEnd &&
         selectedEnd - selectedStart >= CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS;
-      const editorialTakeDecision = _.includes(["use", "trim", "omit"], editorial.takeDecision)
-        ? editorial.takeDecision
-        : technical.takeDecision;
+      const editorialTakeDecision = _.includes(["use", "trim", "omit"], editorial.takeDecision) ? editorial.takeDecision : technical.takeDecision;
       const takeDecision = _.isEqual(technical.takeDecision, "omit") ? technical.takeDecision : editorialTakeDecision;
       return {
         ..._.omit(technical, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
@@ -4623,9 +4436,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     });
     return res.json({
       success: true,
-      decisions: _.map(decisions, (decision) =>
-        _.omit(decision, ["sourcePath", "contactSheetPath", "contactSheetData", "candidateSegments", "shotBoundaries"]),
-      ),
+      decisions: _.map(decisions, (decision) => _.omit(decision, ["sourcePath", "contactSheetPath", "contactSheetData", "candidateSegments", "shotBoundaries"])),
       libraryAnalysisAvailable,
       editorialReviewAvailable: true,
       aiReviewedSceneCount: reviewableDecisions.length,
@@ -4636,9 +4447,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     logger.warn(LogEvent.VISUAL_QA_ERROR, error);
     return res.json({
       success: true,
-      decisions: _.map(analyzedDecisions, (decision) =>
-        _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"]),
-      ),
+      decisions: _.map(analyzedDecisions, (decision) => _.omit(decision, ["sourcePath", "contactSheetData", "contactSheetPath", "candidateSegments", "shotBoundaries"])),
       libraryAnalysisAvailable,
       editorialReviewAvailable: false,
       timelineProvenance: libraryAnalysisAvailable ? "library" : "ffmpeg",
@@ -5660,13 +5469,7 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
       if (!project || !targetScene) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
 
       const videoDirectory = path.resolve(projectRoot, PROJECT_ASSET_GROUP.VIDEOS);
-      const assetUrls = _.uniq(
-        _.compact([
-          targetScene.assetUrl,
-          ..._.defaultTo(targetScene.assetUrls, []),
-          ..._.map(_.defaultTo(targetScene.assetRevisions, []), "assetUrl"),
-        ]),
-      );
+      const assetUrls = _.uniq(_.compact([targetScene.assetUrl, ..._.defaultTo(targetScene.assetUrls, []), ..._.map(_.defaultTo(targetScene.assetRevisions, []), "assetUrl")]));
       _.forEach(assetUrls, (assetUrl) => {
         const assetPath = resolveLocalProjectAssetPath(assetUrl);
         if (!assetPath || !_.startsWith(_.toLower(assetPath), _.toLower(`${videoDirectory}${path.sep}`))) return;

@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { AspectRatio, ImageGeneratorEngine } from "../src/types";
-import {
-  getVideoModelCapabilities,
-  normalizeVideoModelSettings,
-} from "../src/services/videoModelCapabilityService";
+import { getVideoModelCapabilities, normalizeVideoModelSettings } from "../src/services/videoModelCapabilityService";
 
 const omni = getVideoModelCapabilities(ImageGeneratorEngine.Veo3);
 assert.deepEqual(omni.durations, ["4s", "6s", "8s", "10s"]);
 assert.deepEqual(omni.resolutions, ["360p", "720p"]);
+assert.equal(omni.defaultDuration, "10s");
+assert.equal(omni.defaultResolution, "360p");
 
 const fast = normalizeVideoModelSettings(ImageGeneratorEngine.Veo3Fast, {
   duration: "10s",

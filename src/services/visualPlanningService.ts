@@ -54,7 +54,22 @@ export interface VisualPlanningOptions {
 }
 
 const extractCharacterVisualDetails = (character: Partial<CharacterConfig>): string[] =>
-  _.compact([character.genderPresentation, character.ageRange, character.ethnicitySkinTone, character.bodyBuild, character.faceShape, character.hair, character.eyes]);
+  _.uniq(
+    _.compact([
+      character.genderPresentation,
+      character.ageRange,
+      character.ethnicitySkinTone,
+      character.bodyBuild,
+      character.faceShape,
+      character.eyes,
+      character.nose,
+      character.hair,
+      character.silhouette,
+      character.signatureClothing,
+      character.colorPalette,
+      character.accessories,
+    ]),
+  );
 
 export const createVisualCharacterCards = (characters: Array<Partial<CharacterConfig>>): Record<string, unknown>[] =>
   _.map(characters, (character) => {

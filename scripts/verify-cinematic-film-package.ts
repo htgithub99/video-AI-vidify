@@ -13,17 +13,8 @@ import {
   getCinematicThumbnailTechnicalRepairPrompt,
   getCinematicVideoPlanningPrompt,
 } from "../src/constants/cinematicPrompts";
-import {
-  CINEMATIC_PLANNING_MESSAGES,
-  CINEMATIC_POLICY_CONFIG,
-  CINEMATIC_PROGRESS_MESSAGES,
-  CINEMATIC_ROOM_STAGE,
-} from "../src/constants/cinematicConstants";
-import {
-  getThumbnailTechnicalPlanningIssues,
-  normalizeThumbnailIdeas,
-  resolveThumbnailGenerationPrompt,
-} from "../src/services/thumbnailPromptService";
+import { CINEMATIC_PLANNING_MESSAGES, CINEMATIC_POLICY_CONFIG, CINEMATIC_PROGRESS_MESSAGES, CINEMATIC_ROOM_STAGE } from "../src/constants/cinematicConstants";
+import { getThumbnailTechnicalPlanningIssues, normalizeThumbnailIdeas, resolveThumbnailGenerationPrompt } from "../src/services/thumbnailPromptService";
 import { ThumbnailLayoutId, ThumbnailTypographyId } from "../src/constants/thumbnail";
 import type { ThumbnailItem } from "../src/types";
 
@@ -121,10 +112,10 @@ assert.match(vietnameseThumbnailPrompt, /all surrounding visual direction inside
 const thumbnailRepairPrompt = getCinematicThumbnailTechnicalRepairPrompt(vietnameseThumbnailPrompt, "{}", ["thumbnail_generation_prompt_missing"]);
 assert.match(thumbnailRepairPrompt, /generationPrompt and all visual\/directorial metadata are English/i);
 assert.match(thumbnailRepairPrompt, /only the exact visible headline may use the selected screenplay language/i);
-const providerRepairPrompt = getCinematicThumbnailProviderRepairPrompt(
-  'Mythological hero with exact headline "ĐẠI CHIẾN"',
-  { layoutId: "interaction_arrow_headline", textText: "ĐẠI CHIẾN" },
-);
+const providerRepairPrompt = getCinematicThumbnailProviderRepairPrompt('Mythological hero with exact headline "ĐẠI CHIẾN"', {
+  layoutId: "interaction_arrow_headline",
+  textText: "ĐẠI CHIẾN",
+});
 assert.match(providerRepairPrompt, /without mistaking the subject for third-party entertainment content/i);
 assert.match(providerRepairPrompt, /original public-domain interpretation/i);
 assert.match(providerRepairPrompt, /Preserve the same story event, character identity, composition, approved layout and exact visible headline/i);
@@ -139,7 +130,7 @@ const cinematicSeoPrompt = getCinematicSeoPrompt("Screenplay", false, 3, 2, 5, 6
 assert.match(cinematicSeoPrompt, /accurate film publishing metadata/i);
 assert.doesNotMatch(cinematicSeoPrompt, /Quick Video|YouTube|TikTok|growth template|viewer retention/i);
 
-assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, 16);
+assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, 2);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS, 24000);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_WORKER_COUNT, 1);
 assert.deepEqual(Object.values(CINEMATIC_ROOM_STAGE), ["film-planning-room", "film-planning-room", "film-planning-room", "video-room"]);
@@ -161,10 +152,11 @@ const aiThumbnail = {
 assert.equal(resolveThumbnailGenerationPrompt(aiThumbnail, true, "ignored", "16:9"), aiThumbnail.generationPrompt);
 assert.equal(normalizeThumbnailIdeas([aiThumbnail], 1)[0].generationPrompt, aiThumbnail.generationPrompt);
 assert.deepEqual(getThumbnailTechnicalPlanningIssues([aiThumbnail], 1), []);
-assert.deepEqual(
-  getThumbnailTechnicalPlanningIssues([{ id: "th_ai_1", generationPrompt: "" }], 1),
-  ["thumbnail_generation_prompt_missing", "thumbnail_layout_not_in_catalog", "thumbnail_headline_missing"],
-);
+assert.deepEqual(getThumbnailTechnicalPlanningIssues([{ id: "th_ai_1", generationPrompt: "" }], 1), [
+  "thumbnail_generation_prompt_missing",
+  "thumbnail_layout_not_in_catalog",
+  "thumbnail_headline_missing",
+]);
 
 const controllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
@@ -214,6 +206,7 @@ assert.match(
 );
 assert.equal(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS, true, "cinematic planning and video Chrome must default to background mode");
 assert.match(generatorSource, /useState<SubtitleMode>\(SubtitleMode\.None\)/);
+assert.match(generatorSource, /Math\.ceil\(clips \/ FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH\)/);
 assert.match(episodeServiceSource, /GenerateType\.Video\) \? _\.toString\(scene\.generationPrompt\) : basePrompt/);
 assert.match(imageGeneratorSource, /itemVisualConfig\.preserveAiPromptText[\s\S]*item\.prompt \|\| ""/);
 assert.match(imageGeneratorSource, /PROVIDER_REJECTION_PATTERN/);

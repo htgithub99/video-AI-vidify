@@ -4,7 +4,7 @@ import { API_ROUTES, HTTP_METHODS, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS
 import { REGENERATION_TARGET, PROJECT_ASSET_GROUP, AUTO_GENERATOR_CONSTANTS, PROJECT_ASSET_QUERY } from "../constants/config";
 import { storageUtils } from "../lib/storage";
 
-const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScene => ({
+export const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
   assetType: undefined,
   assetUrl: undefined,
@@ -100,10 +100,10 @@ export const deleteProjectRegenerationAssets = async (projectId: string, target:
   const groups = !_.isEmpty(sceneId)
     ? [PROJECT_ASSET_GROUP.VIDEOS]
     : _.isEqual(target, REGENERATION_TARGET.VOICE)
-    ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
-    : _.isEqual(target, REGENERATION_TARGET.IMAGES)
-      ? [PROJECT_ASSET_GROUP.VISUALS]
-      : [PROJECT_ASSET_GROUP.VIDEOS];
+      ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
+      : _.isEqual(target, REGENERATION_TARGET.IMAGES)
+        ? [PROJECT_ASSET_GROUP.VISUALS]
+        : [PROJECT_ASSET_GROUP.VIDEOS];
 
   for (const group of groups) {
     const sceneQuery = !_.isEmpty(sceneId) ? `?${new URLSearchParams({ [PROJECT_ASSET_QUERY.SCENE_ID]: sceneId! }).toString()}` : REFACTOR_CONSTANTS.VD_EMPTY_STRING;

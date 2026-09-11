@@ -9,14 +9,7 @@ import { createBatchContinuityContext, createPromptCharacterCards } from "../src
 import { hasSourceGenderConflict } from "../src/services/visualContinuityService.ts";
 
 assert.equal(Object.keys(GLOBAL_IMAGE_PROMPT_MASTER_RULE).length, 8);
-assert.deepEqual(IMAGE_PROMPT_FINAL_SECTION_ORDER, [
-  "STORY INTENT",
-  "VISIBLE ACTION",
-  "IDENTITY ANCHORS",
-  "SETTING",
-  "VISUAL STYLE",
-  "USEFUL CONSTRAINTS",
-]);
+assert.deepEqual(IMAGE_PROMPT_FINAL_SECTION_ORDER, ["STORY INTENT", "VISIBLE ACTION", "IDENTITY ANCHORS", "SETTING", "VISUAL STYLE", "USEFUL CONSTRAINTS"]);
 
 const globalRules = createGlobalImagePromptPlanningRules();
 assert.match(globalRules, /few strong style-compatible anchors/i);
@@ -30,8 +23,13 @@ const plannerPrompt = getQuickVideoPlanningPrompt(
   JSON.stringify([{ id: "char_1", name: "Player" }]),
 );
 assert.match(plannerPrompt, /QUICK VIDEO production/i);
-assert.match(plannerPrompt, /one complete English image prompt/i);
+assert.match(plannerPrompt, /one coherent, descriptive English paragraph/i);
 assert.match(plannerPrompt, /Set generationPrompt to an empty string/i);
+assert.match(plannerPrompt, /script and subtitle are the exact voice\/narration content assigned to that scene/i);
+assert.match(plannerPrompt, /Visual Bible:/i);
+assert.match(plannerPrompt, /Adjacent-scene continuity:/i);
+assert.match(plannerPrompt, /same compact immutable identity anchors/i);
+assert.match(plannerPrompt, /Describe the scene instead of listing disconnected keywords/i);
 assert.doesNotMatch(plannerPrompt, /3-5 chronological shots|cinematicBeats must agree/i);
 
 const correctionPrompt = getQuickVideoPlanningPrompt(
@@ -82,24 +80,37 @@ const quickVideoPrompt = getQuickVideoPlanningPrompt(
 );
 assert.match(quickVideoPrompt, /one complete English video generationPrompt/i);
 assert.match(quickVideoPrompt, /sent unchanged/i);
-assert.match(quickVideoPrompt, /preserving the event, character identity and user settings/i);
+assert.match(quickVideoPrompt, /animate the same visual beat as the planned image and assigned voice segment/i);
 assert.doesNotMatch(quickVideoPrompt, /cinematicBeats must agree|3-5 explicitly numbered timed shots/i);
 
 const aiAuthoredVideoPrompt = "One continuous clip: the courier slams the steel door, the latch catches, and the pursuer collides with it.";
-assert.equal(
-  prepareProjectMediaPrompt({ sceneId: "sc_video", prompt: aiAuthoredVideoPrompt, generateType: GenerateType.Video }),
-  aiAuthoredVideoPrompt,
-);
+assert.equal(prepareProjectMediaPrompt({ sceneId: "sc_video", prompt: aiAuthoredVideoPrompt, generateType: GenerateType.Video }), aiAuthoredVideoPrompt);
 const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
 const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
 assert.match(controllerSource, /if \(isCinematicPlanning\)[\s\S]*getCinematicVideoPlanningPrompt[\s\S]*getQuickVideoPlanningPrompt/);
 assert.match(controllerSource, /quickVideoPromptRequired \? \["generationPrompt"\] : \[\]/);
 assert.match(pipelineSource, /prompt: prepareProjectMediaPrompt\(\{ sceneId: scene\.id, prompt: _\.toString\(scene\.generationPrompt\), generateType: GenerateType\.Video \}\)/);
 
-const compactCards = createPromptCharacterCards([{ id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "unused", images: ["unused"] }]);
+const compactCards = createPromptCharacterCards([
+  {
+    id: "char_1",
+    name: "Player",
+    prompt: "blue bean torso",
+    ethnicitySkinTone: "warm brown skin",
+    faceShape: "oval face",
+    eyes: "wide dark eyes",
+    nose: "small straight nose",
+    hair: "short black hair",
+    silhouette: "compact silhouette",
+    signatureClothing: "blue jacket",
+    colorPalette: "blue and charcoal",
+    accessories: "silver wristwatch",
+    images: ["unused"],
+  },
+]);
 assert.equal(compactCards[0].id, "char_1");
 assert.equal(compactCards[0].name, "Player");
-assert.equal(compactCards[0].identityLock, "unused");
+assert.match(String(compactCards[0].identityLock), /warm brown skin.*oval face.*wide dark eyes.*small straight nose.*short black hair.*blue jacket.*silver wristwatch/i);
 assert.equal(compactCards[0].usesSharedStyleCore, true);
 assert.deepEqual(createBatchContinuityContext([{ id: "a" }, { id: "b" }, { id: "c" }], 1, 1), { previousScene: { id: "a" }, nextScene: { id: "c" } });
 assert.equal(hasSourceGenderConflict("Tại sao thật tệ khi là Gái Ngành?", [{ genderPresentation: "male" }] as any), true);

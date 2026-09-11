@@ -16,15 +16,23 @@ const isFiniteNumber = (value: unknown): value is number => _.isNumber(value) &&
 
 const getValueType = (value: unknown): string => (_.isArray(value) ? "array" : _.isNull(value) ? "null" : typeof value);
 
-export const getResponseSchemaIssues = (value: unknown, schema: ResponseSchema, pathValue: string = "$root"): string[] => {
+const getResponseSchemaIssues = (value: unknown, schema: ResponseSchema, pathValue: string = "$root"): string[] => {
   if (schema.enum && !_.includes(schema.enum, value)) return [`${pathValue}:enum_invalid`];
   if (_.isEqual(schema.type, "object")) {
     if (!_.isPlainObject(value)) return [`${pathValue}:expected_object_received_${getValueType(value)}`];
     const source = value as Record<string, unknown>;
     const properties = schema.properties || {};
-    const missingIssues = _.map(_.filter(schema.required || [], (key) => !_.has(source, key)), (key) => `${pathValue}.${key}:missing`);
+    const missingIssues = _.map(
+      _.filter(schema.required || [], (key) => !_.has(source, key)),
+      (key) => `${pathValue}.${key}:missing`,
+    );
     const additionalIssues =
-      schema.additionalProperties === false ? _.map(_.filter(_.keys(source), (key) => !_.has(properties, key)), (key) => `${pathValue}.${key}:unexpected`) : [];
+      schema.additionalProperties === false
+        ? _.map(
+            _.filter(_.keys(source), (key) => !_.has(properties, key)),
+            (key) => `${pathValue}.${key}:unexpected`,
+          )
+        : [];
     const propertyIssues = _.flatMap(properties, (propertySchema, key) =>
       _.has(source, key) ? getResponseSchemaIssues(_.get(source, key), propertySchema, `${pathValue}.${key}`) : [],
     );

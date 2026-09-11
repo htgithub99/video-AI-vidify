@@ -1,6 +1,5 @@
 import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../constants";
-import { smartSplitSentences } from "../lib/textProcessor";
 import { HookVersion } from "../types";
 import { rankHookVersions } from "./scriptQualityService";
 import { validateChapterLanguage } from "./chapterLanguageValidationService";
@@ -57,30 +56,20 @@ export const isHookTopicallyGrounded = (content: string, sourceText: string): bo
   return _.some(sourceTokens, (token) => hookTokens.has(token));
 };
 
-const createSourceHook = (sourceText: string, hookType: string, isVietnamese: boolean): HookVersion[] => {
-  const content = _.truncate(_.first(smartSplitSentences(_.trim(sourceText))) || _.trim(sourceText), { length: REFACTOR_CONSTANTS.HOOK_MAX_CONTENT_LENGTH });
-  return _.isEmpty(content) || !validateChapterLanguage(content, isVietnamese).valid
-    ? []
-    : [
-        {
-          id: REFACTOR_CONSTANTS.HOOK_FALLBACK_ID,
-          content,
-          type: hookType,
-          selected: true,
-        },
-      ];
-};
-
-export const resolveUsableHooks = (versions: unknown, hookType: string, count: number, sourceText: string = "", isVietnamese: boolean = false): HookVersion[] => {
+export const resolveUsableHooks = (versions: unknown, _hookType: string, count: number, sourceText: string = "", isVietnamese: boolean = false): HookVersion[] => {
+  const sourceVersions = _.castArray(versions);
+  if (!_.isEqual(_.size(sourceVersions), count)) return [];
   const normalized = _.compact(
-    _.map(_.take(_.castArray(versions), count), (version, index): HookVersion | null => {
+    _.map(sourceVersions, (version): HookVersion | null => {
       const source = _.isPlainObject(version) ? (version as Record<string, unknown>) : {};
-      const content = normalizeContent(source.content ?? source.text);
-      if (!isUsableContent(content) || !isHookTopicallyGrounded(content, sourceText) || !validateChapterLanguage(content, isVietnamese).valid) return null;
+      const id = normalizeContent(source.id);
+      const content = normalizeContent(source.content);
+      const type = normalizeContent(source.type);
+      if (_.isEmpty(id) || _.isEmpty(type) || !isUsableContent(content) || !isHookTopicallyGrounded(content, sourceText) || !validateChapterLanguage(content, isVietnamese).valid) return null;
       return {
-        id: normalizeContent(source.id) || `hk_${_.add(index, 1)}`,
+        id,
         content,
-        type: normalizeContent(source.type) || hookType,
+        type,
         selected: false,
         score: source.score as HookVersion["score"],
       };
@@ -89,5 +78,5 @@ export const resolveUsableHooks = (versions: unknown, hookType: string, count: n
   const ranked = rankHookVersions(normalized);
   if (_.some(ranked, "selected")) return ranked;
   if (!_.isEmpty(ranked)) return _.map(ranked, (version, index) => ({ ...version, selected: _.isEqual(index, 0) }));
-  return createSourceHook(sourceText, hookType, isVietnamese);
+  return [];
 };

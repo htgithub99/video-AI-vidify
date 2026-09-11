@@ -1413,8 +1413,7 @@ export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
 } as const;
 
 export const ROOM_ONLY_SCRIPT_ERROR_CONFIG = {
-  CREATIVE_ARTIFACT_ISSUE_PATTERN:
-    /cinematic_film_package.*_invalid|completion_marker|response:incomplete|\$root\./i,
+  CREATIVE_ARTIFACT_ISSUE_PATTERN: /cinematic_film_package.*_invalid|completion_marker|response:incomplete|\$root\./i,
 } as const;
 
 export const VOICE_DIRECTION_CONFIG = {
@@ -1635,12 +1634,14 @@ export const FLOW_AGENT_UI_CONFIG = {
   SAVE_SETTLE_MS: 500,
 } as const;
 
-export const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRatio.NineSixteen] as const;
+const FLOW_AGENT_VIDEO_ASPECT_RATIOS = [AspectRatio.SixteenNine, AspectRatio.NineSixteen] as const;
 const VEO_31_DURATIONS = ["4s", "6s", "8s"] as const;
 const VEO_31_RESOLUTIONS = ["720p"] as const;
 const VEO_31_REFERENCE_DURATIONS = ["8s"] as const;
 const VEO_31_DEFAULT_DURATION = "8s";
 const VEO_31_DEFAULT_RESOLUTION = "720p";
+const OMNI_DEFAULT_DURATION = "10s";
+const OMNI_DEFAULT_RESOLUTION = "360p";
 
 export const VIDEO_MODEL_CAPABILITY_CONFIG = {
   MODELS: {
@@ -1648,8 +1649,8 @@ export const VIDEO_MODEL_CAPABILITY_CONFIG = {
       durations: REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS,
       resolutions: REFACTOR_CONSTANTS.FLOW_VIDEO_RESOLUTIONS,
       aspectRatios: FLOW_AGENT_VIDEO_ASPECT_RATIOS,
-      defaultDuration: VEO_31_DEFAULT_DURATION,
-      defaultResolution: VEO_31_DEFAULT_RESOLUTION,
+      defaultDuration: OMNI_DEFAULT_DURATION,
+      defaultResolution: OMNI_DEFAULT_RESOLUTION,
       supportsReferences: true,
       referenceDurations: REFACTOR_CONSTANTS.FLOW_VIDEO_DURATIONS,
     },
@@ -1703,25 +1704,29 @@ export const FLOW_DIRECT_VIDEO_CONFIG = {
   DURATIONS: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].durations,
   DEFAULT_RESOLUTION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultResolution,
   DEFAULT_DURATION: VIDEO_MODEL_CAPABILITY_CONFIG.MODELS[ImageGeneratorEngine.Veo3].defaultDuration,
-  VIDEO_OUTPUT_COUNT: 2,
-  VIDEO_OUTPUT_LABEL: "x2",
-  VIDEO_OUTPUT_PATTERN: /^(?:x2|2x)$/i,
+  PROMPTS_PER_BATCH: 2,
+  VIDEO_OUTPUT_COUNT: 1,
+  VIDEO_OUTPUT_LABEL: "1x",
+  VIDEO_OUTPUT_PATTERN: /^(?:1x|x1)$/i,
   PROJECT_URL_PATTERN: /^https:\/\/(?:flow\.google\.com|labs\.google)\//i,
   PROJECT_ERROR_URL_PATTERN: /\/404(?:[/?#]|$)/i,
   PROJECT_BODY_SELECTOR: "body",
   PAGE_READY_LOAD_STATE: "domcontentloaded" as const,
   CONFIG_VERIFY_TIMEOUT_MS: 5000,
-  CONFIG_APPLY_ATTEMPTS: 2,
+  CONFIG_APPLY_ATTEMPTS: 4,
   PROMPT_APPLY_TIMEOUT_MS: 2_000,
   PROMPT_ACTION_TIMEOUT_MS: 5_000,
+  NEXT_PROMPT_READY_TIMEOUT_MS: 30_000,
   CONFIG_MISMATCH_ERROR: "Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn.",
   PROMPT_NOT_READY_ERROR: "Google Flow chưa nhận đủ prompt nên chưa thể gửi tạo video.",
+  SHARED_CHROME_LOGIN_REQUIRED_ERROR: "Chrome dùng chung chưa đăng nhập Google Flow. Hãy đăng nhập Google trong cửa sổ Chrome dành cho Flow rồi bấm Tiếp tục tạo video.",
   GENERATION_FAILURE_PATTERN:
     /(?:Không thành công|Không thể tạo|Unsuccessful|Generation failed|Couldn['’]?t generate|Try a different prompt|vi phạm (?:chính sách|quy tắc cộng đồng)|violat(?:e|es|ed|ing).*policy|community guidelines|celebrity)/i,
   GENERATION_REJECTED_ERROR: "Google Flow đã từ chối cảnh hiện tại; hệ thống sẽ thử lại riêng cảnh này.",
   NON_RETRYABLE_SETUP_ERRORS: [
     /Google Flow chưa áp dụng đúng cấu hình video/i,
     /Google Flow chưa nhận đủ prompt/i,
+    /Chrome dùng chung chưa đăng nhập Google Flow/i,
     /Không tìm thấy ô nhập mô tả hình ảnh|Prompt input field not found/i,
     /Không thể đọc đủ ảnh nhân vật.*Flow/i,
     /Không tìm thấy thao tác tải ảnh nhân vật.*Flow/i,
@@ -1739,6 +1744,7 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   GENERATION_TIMEOUT_MS: 8 * 60_000,
   RECOVERY_READY_TIMEOUT_MS: 30_000,
   RECOVERY_REDIRECT_TIMEOUT_MS: 15_000,
+  RECOVERY_EDIT_TIMEOUT_MS: 15_000,
   DOWNLOAD_TIMEOUT_MS: 2 * 60_000,
   READY_POLL_INTERVAL_MS: 1_500,
   MIN_FILE_BYTES: 100_000,
@@ -1779,8 +1785,10 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   EN_RECOVERY_SUCCESS: "✓ Downloaded and saved the existing clip for {0}.",
   SUBMISSION_IN_PROGRESS_ERROR: "Video này đang được tạo; hệ thống sẽ không gửi thêm yêu cầu trùng lặp.",
   INVALID_MEDIA_ERROR: "Flow chưa trả về tệp video hoàn chỉnh.",
-  INCOMPLETE_OUTPUT_BATCH_ERROR: "Flow chưa tạo đủ 2 video cho cảnh hiện tại; hệ thống giữ kết quả đã có và không gửi lại prompt.",
-  OUTPUT_BATCH_READY_LOG: "[Google Flow] Đã tạo xong 2 video; bắt đầu lưu và tải cả hai.",
+  STALE_MEDIA_ERROR: "Video cũ trên Flow không còn khả dụng; hệ thống sẽ gửi lại prompt của cảnh này.",
+  STALE_MEDIA_PATTERN: /Video cũ trên Flow không còn khả dụng/i,
+  INCOMPLETE_OUTPUT_BATCH_ERROR: "Flow chưa tạo đủ video cho cảnh hiện tại; hệ thống giữ kết quả đã có.",
+  OUTPUT_BATCH_READY_LOG: "[Google Flow] Đã tạo xong video; bắt đầu lưu và tải về.",
   PERSISTENCE_ERROR: "Clip video chưa được lưu thành tệp cục bộ.",
 } as const;
 
@@ -1998,7 +2006,7 @@ export const CINEMATIC_CONFIG = {
     ENGINE: ImageGeneratorEngine.Veo3,
     CHROME_HEADLESS: true,
     CLIP_DURATION: "10s",
-    RESOLUTION: "720p",
+    RESOLUTION: "360p",
     ASPECT_RATIO: AspectRatio.SixteenNine,
   },
   PIPELINE_PROFILE: {

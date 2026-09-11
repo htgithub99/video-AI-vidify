@@ -1,7 +1,22 @@
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
 import { StoryboardQualityReport, StoryboardScene } from "../types.js";
-import { calculateStoryboardScriptCoverage } from "./storyboardFallbackService.js";
+
+const normalizeCoverageText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value))), /[\p{L}\p{N}]+/gu), " ");
+
+export const calculateStoryboardScriptCoverage = (script: string, scenes: Array<Partial<Pick<StoryboardScene, "script" | "subtitle">>>): number => {
+  const scriptTokens = _.words(normalizeCoverageText(script), /[^\s]+/g);
+  if (_.isEmpty(scriptTokens)) return 1;
+  const sceneText = normalizeCoverageText(
+    _.join(
+      _.map(scenes, (scene) => scene.script || scene.subtitle),
+      " ",
+    ),
+  );
+  const sceneTokenCounts = _.countBy(_.words(sceneText, /[^\s]+/g));
+  const matchedTokens = _.sumBy(_.toPairs(_.countBy(scriptTokens)), ([token, count]) => _.min([count, _.get(sceneTokenCounts, token, 0)]) || 0);
+  return _.divide(matchedTokens, _.size(scriptTokens));
+};
 
 const normalizeScore = (input: unknown): number => _.clamp(_.toNumber(input), 0, 100);
 

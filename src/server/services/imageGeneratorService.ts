@@ -94,6 +94,7 @@ interface BrowserSession {
   page: Page;
   account: GoogleAccount;
   ownsContext?: boolean;
+  preserveExternalPages?: boolean;
 }
 
 type GeminiVisualConfig = Partial<VisualConfig>;
@@ -205,8 +206,7 @@ const attachFlowReferenceFiles = async (page: Page, files: ProviderReferenceFile
   return { attached: true, uploadedCount: missingFiles.length };
 };
 
-const createFlowCharacterSignature = (characterNames: string[]): string =>
-  crypto.createHash("sha256").update(_.join(characterNames, "\u0000")).digest("hex");
+const createFlowCharacterSignature = (characterNames: string[]): string => crypto.createHash("sha256").update(_.join(characterNames, "\u0000")).digest("hex");
 
 const locateFlowCharacterCard = (page: Page, characterName: string): Locator => {
   const exactName = new RegExp(`^${_.escapeRegExp(characterName)}$`, "i");
@@ -228,23 +228,16 @@ const openFlowCharacterLibrary = async (page: Page): Promise<boolean> => {
 };
 
 const countAttachedFlowCharacters = async (page: Page, characterNames: string[]): Promise<number> => {
-  const promptInput = await locateFlowPromptInput(page, FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
-  const promptText = promptInput ? normalizeFlowPromptValue(await readFlowPromptInput(promptInput)) : "";
-  const promptCharacterCount = _.filter(characterNames, (characterName) =>
-    _.includes(_.toLower(promptText), _.toLower(normalizeFlowPromptValue(characterName))),
-  ).length;
+  if (_.isEmpty(characterNames)) return SecurityConstants.ZERO;
   const attachmentCount = await page
     .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_PREVIEW)
     .count()
     .catch(() => SecurityConstants.ZERO);
-  return _.max([promptCharacterCount, attachmentCount]) || SecurityConstants.ZERO;
+  return attachmentCount;
 };
 
 const attachFlowCharactersByName = async (page: Page, characterNames: string[]): Promise<void> => {
-  const selectedNames = _.take(
-    _.uniq(_.compact(_.map(characterNames, (name) => _.trim(name)))),
-    GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES,
-  );
+  const selectedNames = _.take(_.uniq(_.compact(_.map(characterNames, (name) => _.trim(name)))), GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES);
   const nextSignature = createFlowCharacterSignature(selectedNames);
   const currentAttachedCount = await countAttachedFlowCharacters(page, selectedNames);
   if (_.isEqual(flowReferenceSignatureMap.get(page), nextSignature) && _.gte(currentAttachedCount, selectedNames.length)) return;
@@ -268,16 +261,27 @@ const attachFlowCharactersByName = async (page: Page, characterNames: string[]):
       throw createAppError(FLOW_CHARACTER_CONFIG.VI_ATTACH_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, characterName));
     }
     await characterCard.click({ force: true });
-    const addToPrompt = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.ADD_TO_PROMPT_BUTTON }).last();
-    if (await addToPrompt.isVisible().catch(() => false)) await addToPrompt.click();
+    let characterAttached = false;
+    for (let attempt = 0; attempt < 5 && !characterAttached; attempt += 1) {
+      const addToPrompt = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.ADD_TO_PROMPT_BUTTON }).last();
+      characterAttached = await addToPrompt
+        .waitFor({ state: "visible", timeout: FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS * 4 })
+        .then(() => addToPrompt.click({ force: true, timeout: FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS * 4 }))
+        .then(() => true)
+        .catch(() => false);
+      if (!characterAttached) await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
+    }
+    if (!characterAttached) {
+      appLog(`${FLOW_CHARACTER_CONFIG.VI_ATTACH_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, characterName)} Tiếp tục bằng identity anchors đầy đủ trong prompt.`);
+      await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY).catch(() => undefined);
+      continue;
+    }
     await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
     await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY).catch(() => undefined);
   }
 
   const attachedCount = await countAttachedFlowCharacters(page, selectedNames);
-  if (_.lt(attachedCount, selectedNames.length)) {
-    throw createAppError(FLOW_CHARACTER_CONFIG.VI_ATTACH_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, _.join(selectedNames, ", ")));
-  }
+  if (_.lt(attachedCount, selectedNames.length)) appLog("Flow chưa gắn đủ Character; tiếp tục bằng mô tả nhận dạng cố định trong prompt video.");
   flowReferenceSignatureMap.set(page, nextSignature);
 };
 
@@ -343,7 +347,14 @@ const countAttachedProviderReferences = async (page: Page, provider: "flow" | "g
       .locator(PROVIDER_REFERENCE_UPLOAD_CONFIG.ATTACHMENT_REMOVE_BUTTON)
       .count()
       .catch(() => SecurityConstants.ZERO);
-    const visiblePromptInput = page.locator(_.join(_.map(FLOW_PROMPT_SELECTORS, (selector) => `${selector}:visible`), ", ")).last();
+    const visiblePromptInput = page
+      .locator(
+        _.join(
+          _.map(FLOW_PROMPT_SELECTORS, (selector) => `${selector}:visible`),
+          ", ",
+        ),
+      )
+      .last();
     const composerThumbnailCount = await visiblePromptInput
       .evaluate((input) => {
         let current: HTMLElement | null = input as HTMLElement;
@@ -381,16 +392,9 @@ const countAttachedProviderReferences = async (page: Page, provider: "flow" | "g
   return _.max([namedImageCount, attachmentPreviewCount]) || SecurityConstants.ZERO;
 };
 
-const uploadProviderCharacterReferences = async (
-  page: Page,
-  referenceImages: string[] | undefined,
-  provider: "flow" | "grok",
-  referenceImageNames?: string[],
-): Promise<void> => {
+const uploadProviderCharacterReferences = async (page: Page, referenceImages: string[] | undefined, provider: "flow" | "grok", referenceImageNames?: string[]): Promise<void> => {
   const selectedReferences = _.chain(_.castArray(referenceImages || []))
-    .map((image, index) =>
-      _.isString(image) ? { image, name: _.toString(_.get(referenceImageNames, index, REFACTOR_CONSTANTS.VD_EMPTY_STRING)) } : undefined,
-    )
+    .map((image, index) => (_.isString(image) ? { image, name: _.toString(_.get(referenceImageNames, index, REFACTOR_CONSTANTS.VD_EMPTY_STRING)) } : undefined))
     .compact()
     .uniqBy("image")
     .take(GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES)
@@ -493,7 +497,7 @@ export const isFlowVideoConfigSummaryMatching = (summary: string, visualConfig?:
     resolutionMatches &&
     aspectRatioMatches &&
     createFlowDurationOptionPattern(normalizedSettings.duration).test(visibleDuration) &&
-    new RegExp(`(?:^|\\s|·)${_.escapeRegExp(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_LABEL)}(?:$|\\s|·)`, "i").test(normalizedSummary)
+    /(?:^|\s|·)(?:1x|x1)(?:$|\s|·)/i.test(normalizedSummary)
   );
 };
 
@@ -504,9 +508,7 @@ const selectFlowChoice = async (root: Locator, pattern: RegExp): Promise<Locator
   const choice = findFlowChoice(root, pattern);
   if (!(await choice.isVisible().catch(() => false))) return null;
   const alreadySelected = await choice
-    .evaluate((element) =>
-      [element.getAttribute("aria-checked"), element.getAttribute("aria-selected"), element.getAttribute("aria-pressed")].some((value) => value === "true"),
-    )
+    .evaluate((element) => [element.getAttribute("aria-checked"), element.getAttribute("aria-selected"), element.getAttribute("aria-pressed")].some((value) => value === "true"))
     .catch(() => false);
   if (!alreadySelected) await choice.click({ force: true });
   return choice;
@@ -602,6 +604,28 @@ const replaceFlowPromptInput = async (page: Page, input: Locator, prompt: string
 export const isFlowProjectUnavailableState = (url: string, pageText: string): boolean =>
   FLOW_DIRECT_VIDEO_CONFIG.PROJECT_ERROR_URL_PATTERN.test(_.trim(url)) || FLOW_DIRECT_VIDEO_CONFIG.PROJECT_ERROR_HEADING.test(pageText);
 
+export const isSharedChromeFlowLoginRequiredState = (url: string, expectedProjectId?: string): boolean => {
+  const normalizedUrl = _.trim(url);
+  if (_.isEmpty(expectedProjectId) || isFlowProjectPageUrl(normalizedUrl, expectedProjectId)) return false;
+  return (
+    _.startsWith(normalizedUrl, EXTERNAL_URLS.GOOGLE_ACCOUNTS) ||
+    _.startsWith(normalizedUrl, EXTERNAL_URLS.GOOGLE_LABS) ||
+    /^https:\/\/flow\.google\.com\/(?:about)?(?:[?#]|$)/i.test(normalizedUrl)
+  );
+};
+
+const throwIfSharedChromeFlowLoginRequired = async (browserSession: BrowserSession, expectedProjectId?: string): Promise<void> => {
+  if (!browserSession.preserveExternalPages) return;
+  const loginButtonVisible = await browserSession.page
+    .getByRole("button", { name: /Đăng nhập|Log in|Sign in/i })
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (loginButtonVisible || isSharedChromeFlowLoginRequiredState(browserSession.page.url(), expectedProjectId)) {
+    throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.SHARED_CHROME_LOGIN_REQUIRED_ERROR);
+  }
+};
+
 const isFlowProjectUnavailable = async (page: Page): Promise<boolean> => {
   await page.waitForLoadState(FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, { timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => undefined);
   const currentUrl = page.url();
@@ -612,7 +636,10 @@ const isFlowProjectUnavailable = async (page: Page): Promise<boolean> => {
     .isVisible()
     .catch(() => false);
   if (errorHeadingVisible) return true;
-  const pageText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText({ timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => "");
+  const pageText = await page
+    .locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR)
+    .innerText({ timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS })
+    .catch(() => "");
   return isFlowProjectUnavailableState(currentUrl, pageText);
 };
 
@@ -635,12 +662,31 @@ export const createFlowMediaRedirectUrl = (mediaId: string): string =>
     EXTERNAL_URLS.GOOGLE_LABS,
   ).href;
 
-const extractFlowMediaIdFromUrl = (mediaUrl: string): string => {
+export const extractFlowMediaIdFromUrl = (mediaUrl: string): string => {
   try {
     const parsedUrl = new URL(mediaUrl, EXTERNAL_URLS.GOOGLE_LABS);
-    return _.defaultTo(_.toString(parsedUrl.searchParams.get("name") || mediaUrl).match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], "");
+    const namedMediaIds = _.toString(parsedUrl.searchParams.get("name")).match(new RegExp(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source, "gi"));
+    const namedMediaId = _.last(namedMediaIds);
+    if (namedMediaId) return namedMediaId;
+    const editMediaId = parsedUrl.pathname.match(/\/edit\/([0-9a-f-]{36})(?:\/|$)/i)?.[1];
+    if (editMediaId) return editMediaId;
+    const mediaIds = mediaUrl.match(new RegExp(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source, "gi"));
+    return _.defaultTo(_.last(mediaIds), "");
   } catch {
-    return _.defaultTo(mediaUrl.match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], "");
+    const mediaIds = mediaUrl.match(new RegExp(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source, "gi"));
+    return _.defaultTo(_.last(mediaIds), "");
+  }
+};
+
+export const isReliableFlowVideoResponseUrl = (responseUrl: string): boolean => {
+  try {
+    const parsedUrl = new URL(responseUrl, EXTERNAL_URLS.GOOGLE_LABS);
+    const hasNamedMediaId = FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.test(_.toString(parsedUrl.searchParams.get("name")));
+    const isEditMediaUrl = /\/edit\/[0-9a-f-]{36}(?:\/|$)/i.test(parsedUrl.pathname);
+    const isDirectVideoUrl = /\.(?:mp4|webm|mov)(?:$|[?#])/i.test(responseUrl) || /flow-content\.google\/video\//i.test(responseUrl);
+    return hasNamedMediaId || isEditMediaUrl || isDirectVideoUrl;
+  } catch {
+    return false;
   }
 };
 
@@ -666,46 +712,45 @@ const throwIfFlowMediaCardRejected = async (page: Page, mediaId: string): Promis
   }
 };
 
-const waitForFlowMediaCardReady = async (
-  page: Page,
-  mediaId: string,
-  timeoutMs = FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS,
-): Promise<Locator> => {
+const waitForFlowMediaCardReady = async (page: Page, mediaId: string, timeoutMs = FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS): Promise<Locator> => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     await throwIfFlowMediaCardRejected(page, mediaId);
     const resultContainer = await findFlowMediaCard(page, mediaId);
     if (resultContainer && (await resultContainer.isVisible().catch(() => false))) {
       const state = await resultContainer
-        .evaluate((element, mediaConfig) => {
-          const video = element.querySelector(mediaConfig.videoSelector) as HTMLVideoElement | null;
-          const videoSource =
-            video?.currentSrc ||
-            video?.getAttribute(mediaConfig.sourceAttribute) ||
-            video?.querySelector(mediaConfig.nestedSourceSelector)?.getAttribute(mediaConfig.sourceAttribute) ||
-            "";
-          const videoReady = Boolean(
-            video &&
+        .evaluate(
+          (element, mediaConfig) => {
+            const video = element.querySelector(mediaConfig.videoSelector) as HTMLVideoElement | null;
+            const videoSource =
+              video?.currentSrc ||
+              video?.getAttribute(mediaConfig.sourceAttribute) ||
+              video?.querySelector(mediaConfig.nestedSourceSelector)?.getAttribute(mediaConfig.sourceAttribute) ||
+              "";
+            const videoReady = Boolean(
+              video &&
               videoSource &&
               video.readyState >= mediaConfig.readyStateMinimum &&
               Number.isFinite(video.duration) &&
               video.duration &&
               video.videoWidth &&
               video.videoHeight,
-          );
-          return {
-          busy: element.getAttribute("aria-busy") === "true" || element.getAttribute("data-state") === "loading",
-          hasProgress: Boolean(element.querySelector('[role="progressbar"], progress, [aria-valuenow]')),
-          text: element.textContent || "",
-          videoReady,
-          thumbnailReady: Array.from(element.querySelectorAll("img")).some((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
-          };
-        }, {
-          nestedSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_NESTED_SOURCE_SELECTOR,
-          readyStateMinimum: FLOW_VIDEO_MEDIA_CONFIG.VIDEO_READY_STATE_MINIMUM,
-          sourceAttribute: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE,
-          videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR,
-        })
+            );
+            return {
+              busy: element.getAttribute("aria-busy") === "true" || element.getAttribute("data-state") === "loading",
+              hasProgress: Boolean(element.querySelector('[role="progressbar"], progress, [aria-valuenow]')),
+              text: element.textContent || "",
+              videoReady,
+              thumbnailReady: Array.from(element.querySelectorAll("img")).some((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+            };
+          },
+          {
+            nestedSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_NESTED_SOURCE_SELECTOR,
+            readyStateMinimum: FLOW_VIDEO_MEDIA_CONFIG.VIDEO_READY_STATE_MINIMUM,
+            sourceAttribute: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE,
+            videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR,
+          },
+        )
         .catch(() => null);
       if (state?.videoReady) return resultContainer;
       const hasProgressText = FLOW_VIDEO_MEDIA_CONFIG.PROGRESS_TEXT_PATTERN.test(_.defaultTo(state?.text, ""));
@@ -718,7 +763,13 @@ const waitForFlowMediaCardReady = async (
   throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
 };
 
-const downloadFlowVideoFromCard = async (page: Page, mediaCard: Locator, previousVideoSources: string[], expectedDurationSeconds: number, mediaId: string): Promise<FlowDownloadedVideo | null> => {
+const downloadFlowVideoFromCard = async (
+  page: Page,
+  mediaCard: Locator,
+  previousVideoSources: string[],
+  expectedDurationSeconds: number,
+  mediaId: string,
+): Promise<FlowDownloadedVideo | null> => {
   await mediaCard.scrollIntoViewIfNeeded();
   const readyVideoUrls = await collectFlowVideoUrls(page, mediaId);
   const directlyDownloadedVideo = await downloadValidatedVideo(
@@ -740,21 +791,20 @@ const downloadFlowVideoFromCard = async (page: Page, mediaCard: Locator, previou
 };
 
 const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
-  page.evaluate(() =>
-    Array.from(document.querySelectorAll('a[href*="/edit/"]'))
-      .filter((link) => {
-        const container = link.closest("button") || link.parentElement;
-        const text = container?.textContent || "";
-        return /play_circle|360p|720p/i.test(text) || Boolean(link.querySelector('img[alt*="video" i], img[alt*="Hình thu nhỏ video" i]'));
-      })
-      .map((link) => link.getAttribute("href")?.split("/edit/").pop() || "")
-      .filter(Boolean),
-  );
+  page.evaluate((mediaIdPatternSource) => {
+    const projectId = location.pathname.match(/\/project\/([^/]+)/)?.[1] || "";
+    return Array.from(document.querySelectorAll('a[href*="/edit/"]'))
+      .map((link) => link.getAttribute("href")?.match(new RegExp(`/edit/(${mediaIdPatternSource})(?:/|$)`, "i"))?.[1] || "")
+      .filter((mediaId) => Boolean(mediaId) && mediaId !== projectId);
+  }, FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source);
 
 interface FlowGeneratedMediaCandidate {
   editId?: string | null;
   videoSrc?: string | null;
   thumbnailSrc?: string | null;
+  promptText?: string | null;
+  evidence?: "dom" | "network";
+  discoveryOrder?: number;
 }
 
 interface FlowGeneratedMediaBatch {
@@ -770,6 +820,7 @@ const collectNewFlowGeneratedMedia = async (
   oldVideoThumbnailSources: string[],
   responseUrls: string[],
 ): Promise<FlowGeneratedMediaCandidate[]> => {
+  await page.evaluate("globalThis.__name = globalThis.__name || ((target) => target)").catch(() => undefined);
   const domCandidates = await page.evaluate(
     ({
       completionTextPatternSource,
@@ -783,34 +834,70 @@ const collectNewFlowGeneratedMedia = async (
       videoSelector,
     }) => {
       const candidates = new Map<string, FlowGeneratedMediaCandidate>();
+      const projectId = location.pathname.match(/\/project\/([^/]+)/)?.[1] || "";
       const extractMediaId = (value: string): string => value.match(new RegExp(mediaIdPatternSource, "i"))?.[0] || "";
+      const readPromptEvidence = (mediaCard: Element | null): string => {
+        if (!mediaCard) return "";
+        const labelledElements = Array.from(mediaCard.querySelectorAll("[aria-label], [title], [data-prompt]"));
+        return [
+          mediaCard.textContent || "",
+          mediaCard.getAttribute("aria-label") || "",
+          mediaCard.getAttribute("title") || "",
+          mediaCard.getAttribute("data-prompt") || "",
+          ...labelledElements.flatMap((element) => [element.getAttribute("aria-label") || "", element.getAttribute("title") || "", element.getAttribute("data-prompt") || ""]),
+        ].join(" ");
+      };
+      const isCompletedMediaCard = (mediaCard: Element | null): boolean => {
+        if (!mediaCard) return false;
+        const text = mediaCard.textContent || "";
+        const busy = mediaCard.getAttribute("aria-busy") === "true" || mediaCard.getAttribute("data-state") === "loading";
+        const hasProgress = Boolean(mediaCard.querySelector('[role="progressbar"], progress, [aria-valuenow]')) || /(?:^|\s)\d{1,3}\s*%(?:\s|$)/.test(text);
+        const video = mediaCard.querySelector("video") as HTMLVideoElement | null;
+        const hasVideoSource = Boolean(video?.currentSrc || video?.getAttribute("src") || video?.querySelector("source")?.getAttribute("src"));
+        const hasReadyThumbnail = Array.from(mediaCard.querySelectorAll(thumbnailSelector)).some(
+          (image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0,
+        );
+        return !busy && !hasProgress && (hasVideoSource || (hasReadyThumbnail && new RegExp(completionTextPatternSource, "i").test(text)));
+      };
       const addCandidate = (candidate: FlowGeneratedMediaCandidate): void => {
         const mediaId = candidate.editId || extractMediaId(candidate.videoSrc || "") || extractMediaId(candidate.thumbnailSrc || "");
         const key = mediaId || candidate.videoSrc || candidate.thumbnailSrc || "";
-        if (!key || previousEditIds.includes(mediaId)) return;
-        candidates.set(key, { ...candidates.get(key), ...candidate, editId: mediaId || candidate.editId });
+        if (!key || mediaId === projectId || previousEditIds.includes(mediaId)) return;
+        candidates.set(key, { ...candidates.get(key), ...candidate, editId: mediaId || candidate.editId, evidence: "dom", discoveryOrder: candidates.size });
       };
 
       Array.from(document.querySelectorAll(editLinkSelector)).forEach((link) => {
         const href = link.getAttribute("href") || "";
         const editId = href.split(editPathMarker).pop() || "";
-        const container = link.closest("button") || link.parentElement;
+        const mediaCard = link.closest("flow-grid-tile-container") || link.closest("button") || link.parentElement;
+        const container = link.closest("button") || mediaCard;
         const completionPattern = new RegExp(completionTextPatternSource, "i");
-        if (editId && !previousEditIds.includes(editId) && (completionPattern.test(container?.textContent || "") || Boolean(link.querySelector(thumbnailSelector)))) {
-          addCandidate({ editId });
+        if (
+          editId &&
+          !previousEditIds.includes(editId) &&
+          isCompletedMediaCard(mediaCard) &&
+          (completionPattern.test(container?.textContent || "") || Boolean(mediaCard?.querySelector(thumbnailSelector)))
+        ) {
+          addCandidate({ editId, promptText: readPromptEvidence(mediaCard) });
         }
       });
 
       Array.from(document.querySelectorAll(videoSelector)).forEach((element) => {
         const video = element as HTMLVideoElement;
         const videoSrc = video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src") || "";
-        if (videoSrc && !previousVideoSources.includes(videoSrc)) addCandidate({ videoSrc });
+        const mediaCard = video.closest("flow-grid-tile-container") || video.closest("button") || video.parentElement;
+        if (videoSrc && !previousVideoSources.includes(videoSrc) && isCompletedMediaCard(mediaCard)) {
+          addCandidate({ videoSrc, promptText: readPromptEvidence(mediaCard) });
+        }
       });
 
       Array.from(document.querySelectorAll(thumbnailSelector)).forEach((element) => {
         const image = element as HTMLImageElement;
         const thumbnailSrc = image.currentSrc || image.getAttribute("src") || "";
-        if (thumbnailSrc && !previousThumbnailSources.includes(thumbnailSrc)) addCandidate({ thumbnailSrc });
+        const mediaCard = image.closest("flow-grid-tile-container") || image.closest("button") || image.parentElement;
+        if (thumbnailSrc && !previousThumbnailSources.includes(thumbnailSrc) && isCompletedMediaCard(mediaCard)) {
+          addCandidate({ thumbnailSrc, promptText: readPromptEvidence(mediaCard) });
+        }
       });
       return Array.from(candidates.values());
     },
@@ -827,19 +914,27 @@ const collectNewFlowGeneratedMedia = async (
     },
   );
   const candidatesByMediaId = new Map<string, FlowGeneratedMediaCandidate>();
-  _.forEach(domCandidates, (candidate) => {
+  const currentProjectId = normalizeFlowProjectId(page.url().match(/\/project\/([^/?#]+)/)?.[1]);
+  _.forEach(domCandidates, (candidate, discoveryOrder) => {
     const mediaId = normalizeFlowMediaId(
       _.toString(candidate.editId || extractFlowMediaIdFromUrl(candidate.videoSrc || "") || extractFlowMediaIdFromUrl(candidate.thumbnailSrc || "")),
     );
-    if (_.isEmpty(mediaId) || _.includes(oldEditIds, mediaId)) return;
-    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), ...candidate, editId: mediaId });
+    if (_.isEmpty(mediaId) || _.isEqual(mediaId, currentProjectId) || _.includes(oldEditIds, mediaId)) return;
+    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), ...candidate, editId: mediaId, evidence: "dom", discoveryOrder });
   });
   _.forEach(responseUrls, (responseUrl) => {
+    if (!isReliableFlowVideoResponseUrl(responseUrl)) return;
     const mediaId = normalizeFlowMediaId(extractFlowMediaIdFromUrl(responseUrl));
-    if (_.isEmpty(mediaId) || _.includes(oldEditIds, mediaId)) return;
-    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), editId: mediaId });
+    if (_.isEmpty(mediaId) || _.isEqual(mediaId, currentProjectId) || _.includes(oldEditIds, mediaId)) return;
+    const existingCandidate = candidatesByMediaId.get(mediaId);
+    candidatesByMediaId.set(mediaId, {
+      ...existingCandidate,
+      editId: mediaId,
+      evidence: existingCandidate?.evidence || "network",
+      discoveryOrder: _.defaultTo(existingCandidate?.discoveryOrder, candidatesByMediaId.size),
+    });
   });
-  return Array.from(candidatesByMediaId.values());
+  return _.orderBy(Array.from(candidatesByMediaId.values()), [(candidate) => !_.isEqual(candidate.evidence, "dom"), "discoveryOrder"], ["asc", "asc"]);
 };
 
 const waitForFlowGeneratedMediaBatch = async (
@@ -849,20 +944,24 @@ const waitForFlowGeneratedMediaBatch = async (
   oldVideoThumbnailSources: string[],
   oldGenerationFailureCount: number,
   responseUrls: string[],
+  expectedOutputCount: number = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT,
 ): Promise<FlowGeneratedMediaBatch> => {
   const deadline = _.add(Date.now(), FLOW_VIDEO_MEDIA_CONFIG.GENERATION_TIMEOUT_MS);
   let media: FlowGeneratedMediaCandidate[] = [];
   while (_.lt(Date.now(), deadline)) {
     media = await collectNewFlowGeneratedMedia(page, oldEditIds, oldVideoSources, oldVideoThumbnailSources, responseUrls);
-    if (_.gte(_.size(media), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
-      return { media: _.take(media, FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT), rejected: false, timedOut: false };
+    const confirmedDomMedia = _.filter(media, (candidate) => _.isEqual(candidate.evidence, "dom"));
+    if (_.gte(_.size(confirmedDomMedia), expectedOutputCount)) {
+      return { media: _.take(confirmedDomMedia, expectedOutputCount), rejected: false, timedOut: false };
     }
     const failureCount = await page.evaluate(
-      (generationFailurePatternSource) =>
-        (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
+      (generationFailurePatternSource) => (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
       FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source,
     );
-    if (_.gt(failureCount, oldGenerationFailureCount)) return { media, rejected: true, timedOut: false };
+    const newFailureCount = _.max([SecurityConstants.ZERO, _.subtract(failureCount, oldGenerationFailureCount)])!;
+    if (_.gte(_.add(_.size(confirmedDomMedia), newFailureCount), expectedOutputCount)) {
+      return { media: confirmedDomMedia, rejected: _.gt(newFailureCount, SecurityConstants.ZERO), timedOut: false };
+    }
     await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
   }
   return { media, rejected: false, timedOut: true };
@@ -871,14 +970,14 @@ const waitForFlowGeneratedMediaBatch = async (
 const downloadFlowVideoFromEdit = async (page: Page, flowProjectId: string, editId: string, expectedDurationSeconds: number): Promise<FlowDownloadedVideo | null> => {
   await page.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}/edit/${editId}`, {
     waitUntil: "domcontentloaded",
-    timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
+    timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_EDIT_TIMEOUT_MS,
   });
   await dismissFlowOnboarding(page);
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll("video")).some((video) => Boolean(video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src"))),
     undefined,
-    { timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS },
+    { timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_EDIT_TIMEOUT_MS },
   );
   const videoUrls = await collectFlowVideoUrls(page, editId);
   return downloadValidatedVideo(page.context(), videoUrls, expectedDurationSeconds).catch(() => null);
@@ -902,31 +1001,31 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
   const release = await imageGenMutex.acquire();
   let browserInstance: BrowserSession | null = null;
   try {
-    browserInstance = await getOrLaunchGlobalBrowser(options.chromeHeadless);
+    browserInstance = await getOrLaunchGlobalBrowser(options.chromeHeadless, true);
     const page = browserInstance.page;
     const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}`;
     if (!isFlowProjectPageUrl(page.url(), flowProjectId) || _.includes(page.url(), "/edit/")) {
       await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
     }
+    await throwIfSharedChromeFlowLoginRequired(browserInstance, flowProjectId);
     await dismissFlowOnboarding(page);
     if (await isFlowProjectUnavailable(page)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
     await throwIfFlowMediaCardRejected(page, mediaId);
 
     const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
-    const mediaCard = await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
-    let downloadedVideo = mediaCard ? await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId) : null;
+    const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
+    let downloadedVideo = await downloadValidatedVideo(
+      browserInstance.context,
+      [directMediaUrl],
+      expectedDurationSeconds,
+      FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
+    ).catch(() => null);
+    const mediaCard = downloadedVideo ? null : await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
+    if (!downloadedVideo && mediaCard) downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
     const projectMediaUrls = await collectFlowVideoUrls(page, mediaId);
     if (!downloadedVideo) downloadedVideo = await downloadValidatedVideo(browserInstance.context, projectMediaUrls, expectedDurationSeconds).catch(() => null);
-    const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
-    if (!downloadedVideo)
-      downloadedVideo = await downloadValidatedVideo(
-        browserInstance.context,
-        [directMediaUrl],
-        expectedDurationSeconds,
-        FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
-      ).catch(() => null);
     if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
-    if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+    if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.STALE_MEDIA_ERROR);
     return {
       success: true,
       base64: downloadedVideo.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64),
@@ -978,9 +1077,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
         .filter(Boolean);
       const resourceUrls = performance.getEntriesByType("resource").map((entry) => normalizeMediaUrl(entry.name));
       const downloadableUrlPattern = new RegExp(downloadableUrlPatternSource, "i");
-      return [...elementUrls, ...resourceUrls].filter(
-        (url) => downloadableUrlPattern.test(url) && (!targetMediaId || url.includes(targetMediaId)),
-      );
+      return [...elementUrls, ...resourceUrls].filter((url) => downloadableUrlPattern.test(url) && (!targetMediaId || url.includes(targetMediaId)));
     },
     {
       downloadableUrlPatternSource: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOADABLE_URL_PATTERN.source,
@@ -1203,6 +1300,8 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
           : FLOW_AGENT_UI_CONFIG.OMNI_MODEL;
   const configButton = page.locator(FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON_SELECTOR).last();
   if (!(await configButton.isVisible().catch(() => false))) return false;
+  const currentSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => ""), ""), /\s+/g, " ");
+  if (isFlowVideoConfigSummaryMatching(currentSummary, visualConfig)) return true;
 
   for (let attempt = 0; attempt < FLOW_DIRECT_VIDEO_CONFIG.CONFIG_APPLY_ATTEMPTS; attempt += 1) {
     await configButton.click();
@@ -1226,26 +1325,32 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
     if (!_.isEmpty(visualConfig?.referenceImages) || !_.isEmpty(visualConfig?.referenceCharacterNames)) {
       await selectFlowChoice(menu, FLOW_DIRECT_VIDEO_CONFIG.COMPONENTS_TAB);
     }
-    for (const pattern of [targetRatioPattern, targetDurationPattern, FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_PATTERN]) {
+    for (const pattern of [targetRatioPattern, targetResolutionPattern, targetDurationPattern, FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_PATTERN]) {
       if (!(await selectFlowChoice(menu, pattern))) return false;
       await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
     }
-    const resolutionChoice = findFlowChoice(menu, targetResolutionPattern);
-    if (await resolutionChoice.isVisible().catch(() => false)) await selectFlowChoice(menu, targetResolutionPattern);
 
     const selectedModel = targetEngine.test(
       _.defaultTo(
-        await menu.getByRole("button", { name: FLOW_DIRECT_VIDEO_CONFIG.MODEL_BUTTON_LABEL }).last().textContent().catch(() => ""),
+        await menu
+          .getByRole("button", { name: FLOW_DIRECT_VIDEO_CONFIG.MODEL_BUTTON_LABEL })
+          .last()
+          .textContent()
+          .catch(() => ""),
         "",
       ),
     );
-    if (!selectedModel) return false;
+    if (!selectedModel) {
+      await page.keyboard.press("Escape").catch(() => undefined);
+      continue;
+    }
     await page.keyboard.press("Escape");
     await page.waitForTimeout(FLOW_AGENT_UI_CONFIG.CONFIG_SETTLE_MS);
     const appliedSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => ""), ""), /\s+/g, " ");
     if (isFlowVideoConfigSummaryMatching(appliedSummary, visualConfig)) return true;
   }
-  return false;
+  const finalSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => ""), ""), /\s+/g, " ");
+  return isFlowVideoConfigSummaryMatching(finalSummary, visualConfig);
 };
 
 const captureGeminiDomState = (page: Page, state: string): Promise<void> =>
@@ -1467,6 +1572,25 @@ export interface ImageGeneratorResult {
   remoteMediaCreated?: boolean;
 }
 
+export interface FlowVideoPromptBatchItem {
+  sceneId: string;
+  prompt: string;
+  referenceImages?: string[];
+  referenceImageNames?: string[];
+  referenceCharacterNames?: string[];
+}
+
+export interface FlowVideoPromptBatchOptions {
+  items: FlowVideoPromptBatchItem[];
+  visualConfig?: ImageGeneratorOptions["visualConfig"];
+  sandboxConfig?: ImageGeneratorOptions["sandboxConfig"];
+  retainBrowserSession?: boolean;
+}
+
+export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
+  sceneId: string;
+}
+
 export const extractKeywords = (text: string): string => {
   if (!text) return "aesthetic,cinematic";
   const clean = text.replace(NON_ALPHANUMERIC_SPACE_REGEX, " ");
@@ -1480,17 +1604,51 @@ export const extractKeywords = (text: string): string => {
 
 let lastUsedEmail: string | undefined = undefined;
 
-export async function launchBrowserForAccount(chromeHeadless?: boolean): Promise<BrowserSession> {
+const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
+  try {
+    const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
+    const context = _.first(browser.contexts());
+    if (!context) return null;
+    const existingPages = context.pages();
+    const page =
+      _.find(existingPages, (candidate) => FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(candidate.url())) ||
+      _.find(existingPages, (candidate) => _.some([EXTERNAL_URLS.GOOGLE_LABS, EXTERNAL_URLS.GOOGLE_ACCOUNTS], (url) => _.startsWith(candidate.url(), url))) ||
+      _.first(existingPages) ||
+      (await context.newPage());
+    appLog("[Google Flow] Không có tài khoản xoay vòng; tái sử dụng Chrome đang đăng nhập qua cổng 9222.");
+    return {
+      context,
+      page,
+      account: { email: "shared-chrome-session" },
+      ownsContext: false,
+      preserveExternalPages: true,
+    };
+  } catch (error) {
+    appError("[Google Flow] Không thể kết nối Chrome đang đăng nhập qua cổng 9222.", error);
+    return null;
+  }
+};
+
+export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = false): Promise<BrowserSession> {
   let attempts = 0;
   const maxAttempts = 3;
   let account: GoogleAccount | null = null;
   let context: BrowserContext | null = null;
   let page: Page | null = null;
 
+  if (preferSharedChrome) {
+    const sharedBrowser = await connectToSharedChromeBrowser();
+    if (sharedBrowser) return sharedBrowser;
+  }
+
   while (attempts < maxAttempts) {
     attempts++;
     account = await getNextAccount(lastUsedEmail);
-    if (!account) throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
+    if (!account) {
+      const sharedBrowser = await connectToSharedChromeBrowser();
+      if (sharedBrowser) return sharedBrowser;
+      throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
+    }
     lastUsedEmail = account.email;
 
     const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
@@ -1552,6 +1710,8 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean): Promise
     }
   }
 
+  const sharedBrowser = await connectToSharedChromeBrowser();
+  if (sharedBrowser) return sharedBrowser;
   throw new Error(REFACTOR_CONSTANTS.MSG_ALL_ACC_FAILED);
 }
 
@@ -1576,7 +1736,9 @@ export async function closeActiveBrowser() {
   if (activeBrowserInstance) {
     appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
     try {
-      if (activeBrowserInstance.ownsContext === false) {
+      if (activeBrowserInstance.preserveExternalPages) {
+        appLog("[Google Flow] Giữ nguyên các tab của Chrome dùng chung khi giải phóng phiên tự động.");
+      } else if (activeBrowserInstance.ownsContext === false) {
         const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), "grok.com"));
         await Promise.allSettled(_.map(geminiPages, (page) => page.close()));
         if (!activeBrowserInstance.page.isClosed() && !_.includes(activeBrowserInstance.page.url(), "grok.com")) await activeBrowserInstance.page.close();
@@ -1601,7 +1763,7 @@ export function scheduleGlobalBrowserCleanup() {
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 
-export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promise<BrowserSession> {
+export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = false): Promise<BrowserSession> {
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -1615,7 +1777,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
   }
 
   if (activeBrowserInstance) {
-    if (activeBrowserHeadless !== requestedHeadless) {
+    if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
       await closeActiveBrowser();
     } else {
@@ -1632,7 +1794,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 
   appLog(ImageGenMessages.LAUNCHING_GLOBAL_CHROME);
   activeBrowserLaunchPromise = (async () => {
-    const launchedBrowser = await launchBrowserForAccount(chromeHeadless);
+    const launchedBrowser = await launchBrowserForAccount(chromeHeadless, preferSharedChrome);
     activeBrowserInstance = launchedBrowser;
     activeBrowserHeadless = requestedHeadless;
     try {
@@ -1683,8 +1845,7 @@ export interface EnsureFlowCharactersResult {
   warning?: string;
 }
 
-const getFlowCharacterPageUrl = (projectId: string): string =>
-  `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${projectId}/${FLOW_CHARACTER_CONFIG.PAGE_PATH}`;
+const getFlowCharacterPageUrl = (projectId: string): string => `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${projectId}/${FLOW_CHARACTER_CONFIG.PAGE_PATH}`;
 
 const getFlowProjectUrl = (projectId: string): string => `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${projectId}`;
 
@@ -1711,13 +1872,20 @@ const isFlowCharacterAvailable = async (page: Page, projectId: string, character
   if (await projectCharacterNavigation.isVisible().catch(() => false)) {
     await projectCharacterNavigation.click({ force: true }).catch(() => undefined);
     await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
-    if (await locateFlowCharacterCard(page, characterName).isVisible().catch(() => false)) return true;
+    if (
+      await locateFlowCharacterCard(page, characterName)
+        .isVisible()
+        .catch(() => false)
+    )
+      return true;
   }
   if (!(await locateFlowPromptInput(page, FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS))) return false;
   if (!(await openFlowCharacterLibrary(page))) return false;
   const searchInput = page.getByPlaceholder(FLOW_CHARACTER_CONFIG.SEARCH_PLACEHOLDER).last();
   if (await searchInput.isVisible().catch(() => false)) await searchInput.fill(characterName);
-  const available = await locateFlowCharacterCard(page, characterName).isVisible().catch(() => false);
+  const available = await locateFlowCharacterCard(page, characterName)
+    .isVisible()
+    .catch(() => false);
   await page.keyboard.press(FLOW_CHARACTER_CONFIG.ESCAPE_KEY).catch(() => undefined);
   return available;
 };
@@ -1749,8 +1917,16 @@ const finalizeFlowCharacterName = async (page: Page, characterName: string): Pro
 
 const hasFlowCharacterImage = async (page: Page): Promise<boolean> =>
   Boolean(
-    (await page.locator(FLOW_CHARACTER_CONFIG.GENERATED_CHARACTER_IMAGE_SELECTOR).last().isVisible().catch(() => false)) ||
-      (await page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.CHARACTER_IMAGE_READY_BUTTON }).last().isVisible().catch(() => false)),
+    (await page
+      .locator(FLOW_CHARACTER_CONFIG.GENERATED_CHARACTER_IMAGE_SELECTOR)
+      .last()
+      .isVisible()
+      .catch(() => false)) ||
+    (await page
+      .getByRole("button", { name: FLOW_CHARACTER_CONFIG.CHARACTER_IMAGE_READY_BUTTON })
+      .last()
+      .isVisible()
+      .catch(() => false)),
   );
 
 const generateFlowCharacterPortrait = async (page: Page, characterPrompt: string): Promise<boolean> => {
@@ -1774,7 +1950,10 @@ const generateFlowCharacterPortrait = async (page: Page, characterPrompt: string
   const deadline = Date.now() + FLOW_CHARACTER_CONFIG.CREATION_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (await hasFlowCharacterImage(page)) return true;
-    const bodyText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText().catch(() => "");
+    const bodyText = await page
+      .locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR)
+      .innerText()
+      .catch(() => "");
     if (FLOW_CHARACTER_CONFIG.GENERATION_ERROR_PATTERN.test(bodyText)) return false;
     await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
   }
@@ -1809,7 +1988,10 @@ const captureFlowCharacterReference = async (page: Page, projectId: string | und
       imageLocator = cardImage;
     } else {
       const href = _.trim(_.toString(await characterCard.getAttribute("href").catch(() => "")));
-      if (!_.isEmpty(href)) await page.goto(new URL(href, page.url()).toString(), { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS }).catch(() => undefined);
+      if (!_.isEmpty(href))
+        await page
+          .goto(new URL(href, page.url()).toString(), { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS })
+          .catch(() => undefined);
       else await characterCard.click({ force: true }).catch(() => undefined);
       await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
       imageLocator = page.locator(FLOW_CHARACTER_CONFIG.GENERATED_CHARACTER_IMAGE_SELECTOR).last();
@@ -1880,7 +2062,10 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
             .isVisible()
             .catch(() => false);
           if (nameReady && (imageReady || portraitCanBeStarted)) break;
-          const bodyText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText().catch(() => "");
+          const bodyText = await page
+            .locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR)
+            .innerText()
+            .catch(() => "");
           if (FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_PATTERN.test(bodyText)) throw createAppError(FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_ERROR);
           const nextButton = page.getByRole("button", { name: FLOW_CHARACTER_CONFIG.NEXT_BUTTON }).last();
           if (!nameReady && (await nextButton.isEnabled().catch(() => false))) {
@@ -1895,7 +2080,10 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
         throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       }
       if (!(await ensureFlowCharacterImage(page, character))) {
-        const bodyText = await page.locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR).innerText().catch(() => "");
+        const bodyText = await page
+          .locator(FLOW_DIRECT_VIDEO_CONFIG.PROJECT_BODY_SELECTOR)
+          .innerText()
+          .catch(() => "");
         throw createAppError(
           FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_PATTERN.test(bodyText)
             ? FLOW_CHARACTER_CONFIG.PROVIDER_REJECTION_ERROR
@@ -1926,9 +2114,7 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
       }
     }
   }
-  throw lastError instanceof Error
-    ? lastError
-    : createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
+  throw lastError instanceof Error ? lastError : createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
 };
 
 export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
@@ -1944,7 +2130,7 @@ export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions)
   let currentProjectId = normalizeFlowProjectId(options.flowProjectId);
   const results: FlowCharacterCreationResult[] = [];
   try {
-    browserInstance = await getOrLaunchGlobalBrowser(options.chromeHeadless);
+    browserInstance = await getOrLaunchGlobalBrowser(options.chromeHeadless, true);
     const page = browserInstance.page;
     if (_.isEmpty(currentProjectId)) currentProjectId = await createFlowProject(page);
     else {
@@ -1957,17 +2143,13 @@ export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions)
     if (await isFlowProjectUnavailable(page)) currentProjectId = await replaceUnavailableFlowProject(page);
 
     for (const character of selectedCharacters) {
-      const startMessage = _.isEqual(options.language, ProjectLanguage.EN)
-        ? FLOW_CHARACTER_CONFIG.EN_CREATE_START
-        : FLOW_CHARACTER_CONFIG.VI_CREATE_START;
+      const startMessage = _.isEqual(options.language, ProjectLanguage.EN) ? FLOW_CHARACTER_CONFIG.EN_CREATE_START : FLOW_CHARACTER_CONFIG.VI_CREATE_START;
       appLog(startMessage.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       try {
         const imageUrl = await createFlowCharacter(page, currentProjectId, options.projectId, character);
         if (_.isEmpty(imageUrl)) throw createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
         results.push({ id: character.id, name: character.name, success: true, imageUrl });
-        const successMessage = _.isEqual(options.language, ProjectLanguage.EN)
-          ? FLOW_CHARACTER_CONFIG.EN_CREATE_SUCCESS
-          : FLOW_CHARACTER_CONFIG.VI_CREATE_SUCCESS;
+        const successMessage = _.isEqual(options.language, ProjectLanguage.EN) ? FLOW_CHARACTER_CONFIG.EN_CREATE_SUCCESS : FLOW_CHARACTER_CONFIG.VI_CREATE_SUCCESS;
         appLog(successMessage.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
       } catch (error) {
         results.push({ id: character.id, name: character.name, success: false, warning: getErrorMessage(error) });
@@ -2036,9 +2218,7 @@ const waitForVisibleGrokVerificationBeforeAutomation = async (): Promise<void> =
   for (let attempt = 0; attempt < REFACTOR_CONSTANTS.GROK_CDP_VERIFICATION_ATTEMPTS; attempt++) {
     const grokTarget = _.find(
       await getGrokCdpTargets(),
-      (target) =>
-        _.isEqual(target.type, REFACTOR_CONSTANTS.GROK_CDP_PAGE_TYPE) &&
-        _.includes(_.toLower(_.toString(target.url)), grokHostname),
+      (target) => _.isEqual(target.type, REFACTOR_CONSTANTS.GROK_CDP_PAGE_TYPE) && _.includes(_.toLower(_.toString(target.url)), grokHostname),
     );
     const readyTitle = REFACTOR_CONSTANTS.GROK_CDP_READY_TITLE_PATTERN.test(_.trim(_.toString(grokTarget?.title)));
     if (readyTitle) {
@@ -2073,10 +2253,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
   await waitForGrokChrome();
   if (chromeHeadless === false) await waitForVisibleGrokVerificationBeforeAutomation();
-  else
-    await delayAsync(
-      REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER,
-    );
+  else await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER);
   grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
   const context = _.first(grokBrowser.contexts());
   if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
@@ -2097,9 +2274,7 @@ export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<
   grokPage = null;
   try {
     const existingTargets = await getGrokCdpTargets();
-    const hasExistingGrokTarget = _.some(existingTargets, (target) =>
-      _.includes(_.toLower(_.toString(target.url)), new URL(EXTERNAL_URLS.GROK_CHAT).hostname),
-    );
+    const hasExistingGrokTarget = _.some(existingTargets, (target) => _.includes(_.toLower(_.toString(target.url)), new URL(EXTERNAL_URLS.GROK_CHAT).hostname));
     if (chromeHeadless === false && hasExistingGrokTarget) await waitForVisibleGrokVerificationBeforeAutomation();
     grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
     const existingContext = _.first(grokBrowser.contexts());
@@ -2314,7 +2489,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       let flowResponseListener: ((response: any) => void) | undefined;
       try {
         if (!browserInstance) {
-          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
+          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, isFlowVideoGeneration);
           activePage = browserInstance.page;
 
           try {
@@ -2401,9 +2576,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const currentConfigState = createFlowVideoConfigState(visualConfig);
           const isDirectVideo = _.isEqual(visualConfig?.generateType, GenerateType.Video);
           const currentConfigButton = activePage.locator(FLOW_DIRECT_VIDEO_CONFIG.CONFIG_BUTTON_SELECTOR).last();
-          const currentConfigSummary = isDirectVideo
-            ? _.defaultTo(await currentConfigButton.textContent().catch(() => ""), "")
-            : "";
+          const currentConfigSummary = isDirectVideo ? _.defaultTo(await currentConfigButton.textContent().catch(() => ""), "") : "";
           const currentVideoConfigMatches = !isDirectVideo || isFlowVideoConfigSummaryMatching(currentConfigSummary, visualConfig);
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1 || !currentVideoConfigMatches) {
@@ -2591,8 +2764,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           : [];
         const oldVideoGenerationFailureCount = _.isEqual(visualConfig?.generateType, GenerateType.Video)
           ? await activePage.evaluate(
-              (generationFailurePatternSource) =>
-                (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
+              (generationFailurePatternSource) => (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
               FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source,
             )
           : SecurityConstants.ZERO;
@@ -2712,11 +2884,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           );
           finalBase64 = await base64Data.jsonValue();
         }
-        appLog(
-          _.isEqual(visualConfig?.generateType, GenerateType.Video)
-            ? FLOW_VIDEO_MEDIA_CONFIG.OUTPUT_BATCH_READY_LOG
-            : BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS,
-        );
+        appLog(_.isEqual(visualConfig?.generateType, GenerateType.Video) ? FLOW_VIDEO_MEDIA_CONFIG.OUTPUT_BATCH_READY_LOG : BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
 
         responseText = jsonUtils.safeStringify({ directBase64: finalBase64, directBase64s: finalBase64s });
         success = true;
@@ -2758,9 +2926,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     const parsed = jsonUtils.safeParse<{ directBase64?: string; directBase64s?: string[] }>(responseText, {});
     if (parsed.directBase64) {
       const encodedOutputs = _.isEmpty(parsed.directBase64s) ? [parsed.directBase64] : parsed.directBase64s!;
-      const cleanBase64s = _.map(encodedOutputs, (encodedOutput) =>
-        _.includes(encodedOutput, ",") ? _.toString(_.last(_.split(encodedOutput, ","))) : encodedOutput,
-      );
+      const cleanBase64s = _.map(encodedOutputs, (encodedOutput) => (_.includes(encodedOutput, ",") ? _.toString(_.last(_.split(encodedOutput, ","))) : encodedOutput));
       const cleanBase64 = _.head(cleanBase64s)!;
 
       return {
@@ -2848,8 +3014,261 @@ const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number):
 const roomReferenceSignatureMap = new WeakMap<Page, string>();
 const geminiAspectControlUnavailablePages = new WeakSet<Page>();
 
-const getGeminiWorkspaceUrl = (generateType?: GenerateType): string =>
-  _.isEqual(generateType, GenerateType.Video) ? EXTERNAL_URLS.GEMINI_CHAT : EXTERNAL_URLS.GEMINI_IMAGES;
+const getFlowBatchCandidateMediaId = (candidate: FlowGeneratedMediaCandidate): string =>
+  normalizeFlowMediaId(
+    _.toString(
+      candidate.editId ||
+        extractFlowMediaIdFromUrl(candidate.thumbnailSrc || SecurityConstants.EMPTY_STRING) ||
+        extractFlowMediaIdFromUrl(candidate.videoSrc || SecurityConstants.EMPTY_STRING),
+    ),
+  );
+
+const getFlowPromptMatchScore = (prompt: string, candidateText: string | null | undefined, batchPrompts: string[]): number => {
+  const normalizedPrompt = _.toLower(normalizeFlowPromptValue(prompt));
+  const normalizedCandidateText = _.toLower(normalizeFlowPromptValue(candidateText || SecurityConstants.EMPTY_STRING));
+  if (_.isEmpty(normalizedPrompt) || _.isEmpty(normalizedCandidateText)) return SecurityConstants.ZERO;
+  if (_.includes(normalizedCandidateText, normalizedPrompt)) return 10_000;
+  const orderedPromptWords = _.filter(_.words(normalizedPrompt), (word) => _.gte(word.length, 4));
+  const promptWords = _.uniq(orderedPromptWords);
+  const candidateWords = new Set(_.filter(_.words(normalizedCandidateText), (word) => _.gte(word.length, 4)));
+  const batchWordFrequency = _.countBy(
+    _.flatMap(batchPrompts, (batchPrompt) => _.uniq(_.filter(_.words(_.toLower(normalizeFlowPromptValue(batchPrompt))), (word) => _.gte(word.length, 4)))),
+  );
+  const distinctiveWordScore = _.sumBy(promptWords, (word) =>
+    candidateWords.has(word) && _.isEqual(batchWordFrequency[word], SecurityConstants.DEFAULT_AMOUNT) ? 3 : SecurityConstants.ZERO,
+  );
+  const promptBigrams = _.filter(
+    _.map(_.range(_.subtract(orderedPromptWords.length, 1)), (index) => `${orderedPromptWords[index]} ${orderedPromptWords[index + 1]}`),
+    (bigram) => _.includes(normalizedCandidateText, bigram),
+  );
+  return _.add(distinctiveWordScore, _.multiply(promptBigrams.length, 5));
+};
+
+export const assignFlowVideoBatchMediaIds = (items: FlowVideoPromptBatchItem[], candidates: FlowGeneratedMediaCandidate[]): Array<{ sceneId: string; mediaId?: string }> => {
+  const uniqueCandidates = _.uniqBy(
+    _.filter(candidates, (candidate) => !_.isEmpty(getFlowBatchCandidateMediaId(candidate))),
+    getFlowBatchCandidateMediaId,
+  );
+  const batchPrompts = _.map(items, "prompt");
+  let bestAssignments = new Map<string, string>();
+  let bestMatchedCount = SecurityConstants.ZERO;
+  let bestTotalScore = SecurityConstants.ZERO;
+
+  const findBestAssignment = (itemIndex: number, availableCandidateIndexes: number[], assignments: Map<string, string>, totalScore: number): void => {
+    if (_.gte(itemIndex, items.length)) {
+      if (_.gt(assignments.size, bestMatchedCount) || (_.isEqual(assignments.size, bestMatchedCount) && _.gt(totalScore, bestTotalScore))) {
+        bestAssignments = new Map(assignments);
+        bestMatchedCount = assignments.size;
+        bestTotalScore = totalScore;
+      }
+      return;
+    }
+    findBestAssignment(_.add(itemIndex, 1), availableCandidateIndexes, assignments, totalScore);
+    const item = items[itemIndex];
+    _.forEach(availableCandidateIndexes, (candidateIndex) => {
+      const candidate = uniqueCandidates[candidateIndex];
+      const score = getFlowPromptMatchScore(item.prompt, candidate.promptText, batchPrompts);
+      if (_.lt(score, 3)) return;
+      const nextAssignments = new Map(assignments);
+      nextAssignments.set(item.sceneId, getFlowBatchCandidateMediaId(candidate));
+      findBestAssignment(_.add(itemIndex, 1), _.without(availableCandidateIndexes, candidateIndex), nextAssignments, _.add(totalScore, score));
+    });
+  };
+  findBestAssignment(SecurityConstants.ZERO, _.range(uniqueCandidates.length), new Map(), SecurityConstants.ZERO);
+
+  const assignedMediaIds = new Set(bestAssignments.values());
+  const unmatchedItems = _.filter(items, (item) => !bestAssignments.has(item.sceneId));
+  const unmatchedCandidates = _.filter(uniqueCandidates, (candidate) => !assignedMediaIds.has(getFlowBatchCandidateMediaId(candidate)));
+  const deterministicCandidates = _.isEqual(items.length, SecurityConstants.DEFAULT_AMOUNT)
+    ? _.orderBy(
+        _.filter(unmatchedCandidates, (candidate) => _.isEqual(candidate.evidence, "dom")),
+        "discoveryOrder",
+        "asc",
+      )
+    : [];
+  _.forEach(unmatchedItems, (item, index) => {
+    const candidate = _.get(deterministicCandidates, index);
+    const mediaId = candidate ? getFlowBatchCandidateMediaId(candidate) : SecurityConstants.EMPTY_STRING;
+    if (!_.isEmpty(mediaId)) bestAssignments.set(item.sceneId, mediaId);
+  });
+  return _.map(items, (item) => ({ sceneId: item.sceneId, mediaId: bestAssignments.get(item.sceneId) }));
+};
+
+export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
+  const items = _.take(
+    _.filter(options.items, (item) => !_.isEmpty(_.trim(item.sceneId)) && !_.isEmpty(_.trim(item.prompt))),
+    FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH,
+  );
+  if (_.isEmpty(items)) return [];
+
+  const requestedVisualConfig = { ...options.visualConfig, generateType: GenerateType.Video, generateCount: FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT };
+  const requestedEngine = _.defaultTo(requestedVisualConfig.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
+  const normalizedModelSettings = normalizeVideoModelSettings(
+    requestedEngine,
+    {
+      duration: requestedVisualConfig.videoDuration,
+      resolution: requestedVisualConfig.videoResolution,
+      aspectRatio: requestedVisualConfig.aspectRatio as AspectRatio,
+    },
+    _.some(items, (item) => !_.isEmpty(item.referenceImages) || !_.isEmpty(item.referenceCharacterNames)),
+  );
+  if (!normalizedModelSettings.supportsReferences) {
+    return _.map(items, (item) => ({
+      sceneId: item.sceneId,
+      success: false,
+      base64: null,
+      fallbackUrl: SecurityConstants.EMPTY_STRING,
+      warning: VIDEO_MODEL_CAPABILITY_CONFIG.REFERENCE_UNSUPPORTED_ERROR,
+    }));
+  }
+
+  const visualConfig = {
+    ...requestedVisualConfig,
+    videoDuration: normalizedModelSettings.duration,
+    videoResolution: normalizedModelSettings.resolution,
+    aspectRatio: normalizedModelSettings.aspectRatio,
+  };
+  const cleanProjectId = normalizeFlowProjectId(options.sandboxConfig?.flowProjectId || options.sandboxConfig?.projectId);
+  let currentProjectId = cleanProjectId;
+  let browserInstance: BrowserSession | null = null;
+  let activePage: Page | null = null;
+  const flowResponseUrls: string[] = [];
+  let flowResponseListener: ((response: any) => void) | undefined;
+  const release = await imageGenMutex.acquire();
+  activeFlowVideoGenerationCount = _.add(activeFlowVideoGenerationCount, items.length);
+
+  try {
+    browserInstance = await getOrLaunchGlobalBrowser(visualConfig.chromeHeadless, true);
+    activePage = browserInstance.page;
+    if (!isFlowProjectPageUrl(activePage.url(), currentProjectId)) {
+      if (_.isEmpty(currentProjectId)) currentProjectId = await createFlowProject(activePage);
+      else {
+        await activePage.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`, {
+          waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
+          timeout: 60_000,
+        });
+      }
+    }
+    await throwIfSharedChromeFlowLoginRequired(browserInstance, currentProjectId);
+    if (currentProjectId && (await isFlowProjectUnavailable(activePage))) currentProjectId = await replaceUnavailableFlowProject(activePage);
+    await dismissFlowOnboarding(activePage);
+
+    const configured = await configureFlowDirectVideoSettings(activePage, visualConfig);
+    if (!configured) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.CONFIG_MISMATCH_ERROR);
+    lastPlaywrightConfigState = createFlowVideoConfigState(visualConfig);
+
+    const oldVideoSources = await activePage.evaluate(() =>
+      Array.from(document.querySelectorAll("video"))
+        .map((video) => video.currentSrc || video.src)
+        .filter(Boolean),
+    );
+    const oldVideoThumbnailSources = await activePage.evaluate(() =>
+      Array.from(document.querySelectorAll('img[alt*="video" i]'))
+        .map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src)
+        .filter(Boolean),
+    );
+    const oldVideoEditIds = _.uniq([
+      ...(await getFlowVideoEditIds(activePage)),
+      ..._.compact(_.map([...oldVideoSources, ...oldVideoThumbnailSources], extractFlowMediaIdFromUrl)),
+      ..._.map(options.sandboxConfig?.knownVideoMediaIds || [], normalizeFlowMediaId),
+    ]);
+    const oldVideoGenerationFailureCount = await activePage.evaluate(
+      (generationFailurePatternSource) => (document.body?.innerText || "").match(new RegExp(generationFailurePatternSource, "gi"))?.length || 0,
+      FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source,
+    );
+    flowResponseListener = (response: any) => {
+      const responseUrl = _.toString(response.url());
+      if (/video|media|download|googleusercontent|storage/i.test(responseUrl)) flowResponseUrls.push(responseUrl);
+    };
+    activePage.on("response", flowResponseListener);
+
+    for (const [itemIndex, item] of items.entries()) {
+      let input = await locateFlowPromptInput(activePage, 15_000);
+      if (!input) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
+      if (!(await replaceFlowPromptInput(activePage, input, item.prompt))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+      if (!_.isEmpty(item.referenceCharacterNames)) await attachFlowCharactersByName(activePage, item.referenceCharacterNames!);
+      else await uploadProviderCharacterReferences(activePage, item.referenceImages, "flow", item.referenceImageNames);
+      input = await locateFlowPromptInput(activePage, FLOW_CHARACTER_CONFIG.ATTACHMENT_VERIFY_TIMEOUT_MS);
+      if (!input || !isFlowPromptValueApplied(await readFlowPromptInput(input), item.prompt)) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+
+      const namedSubmitButton = activePage.getByRole("button", { name: PLAYWRIGHT_SUBMIT_TEXT_REGEX }).last();
+      const iconSubmitButton = activePage
+        .locator("button")
+        .filter({ has: activePage.locator("i, mat-icon").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }) })
+        .last();
+      const submitButton = (await namedSubmitButton.isVisible().catch(() => false)) ? namedSubmitButton : iconSubmitButton;
+      const submitReadyDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS);
+      while (_.lt(Date.now(), submitReadyDeadline) && !(await submitButton.isEnabled().catch(() => false))) await activePage.waitForTimeout(500);
+      if (!(await submitButton.isEnabled().catch(() => false))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+      await submitButton.scrollIntoViewIfNeeded();
+      await smoothMouseMove(activePage, submitButton);
+      await randomDelay(400, 800);
+      await submitButton.click();
+      await approveFlowVideoCreditPrompt(activePage, submitButton);
+      appLog(`[Google Flow] Đã gửi prompt ${_.add(itemIndex, SecurityConstants.DEFAULT_AMOUNT)}/${items.length} trong cùng một Room (${item.sceneId}).`);
+
+      if (_.lt(itemIndex, _.subtract(items.length, SecurityConstants.DEFAULT_AMOUNT))) {
+        const composerDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.NEXT_PROMPT_READY_TIMEOUT_MS);
+        let composerReady = false;
+        while (_.lt(Date.now(), composerDeadline)) {
+          const nextInput = await locateFlowPromptInput(activePage, FLOW_DIRECT_VIDEO_CONFIG.PROMPT_ACTION_TIMEOUT_MS);
+          if (nextInput && !isFlowPromptValueApplied(await readFlowPromptInput(nextInput), item.prompt)) {
+            composerReady = true;
+            break;
+          }
+          await activePage.waitForTimeout(500);
+        }
+        if (!composerReady) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+      }
+    }
+
+    const generatedBatch = await waitForFlowGeneratedMediaBatch(
+      activePage,
+      oldVideoEditIds,
+      oldVideoSources,
+      oldVideoThumbnailSources,
+      oldVideoGenerationFailureCount,
+      flowResponseUrls,
+      items.length,
+    );
+    const assignments = assignFlowVideoBatchMediaIds(items, generatedBatch.media);
+    return _.map(assignments, ({ sceneId, mediaId }) => ({
+      sceneId,
+      success: !_.isEmpty(mediaId),
+      base64: null,
+      fallbackUrl: SecurityConstants.EMPTY_STRING,
+      warning: _.isEmpty(mediaId)
+        ? generatedBatch.timedOut
+          ? FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR
+          : FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR
+        : FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
+      newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
+      remoteMediaId: mediaId,
+      remoteMediaIds: _.compact([mediaId]),
+      remoteMediaCreated: !_.isEmpty(mediaId),
+    }));
+  } catch (error) {
+    const warning = getErrorMessage(error);
+    return _.map(items, (item) => ({
+      sceneId: item.sceneId,
+      success: false,
+      base64: null,
+      fallbackUrl: SecurityConstants.EMPTY_STRING,
+      warning,
+      newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
+    }));
+  } finally {
+    if (activePage && flowResponseListener) activePage.off("response", flowResponseListener);
+    activeFlowVideoGenerationCount = _.max([SecurityConstants.ZERO, _.subtract(activeFlowVideoGenerationCount, items.length)])!;
+    if (browserInstance) {
+      if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
+      else await closeActiveBrowser();
+    }
+    release();
+  }
+}
+
+const getGeminiWorkspaceUrl = (generateType?: GenerateType): string => (_.isEqual(generateType, GenerateType.Video) ? EXTERNAL_URLS.GEMINI_CHAT : EXTERNAL_URLS.GEMINI_IMAGES);
 
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
@@ -3011,9 +3430,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         } catch (error: unknown) {
           consecutiveGeminiErrors++;
           const errorMessage = getErrorMessage(error);
-          appError(
-            BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace("{0}", reloadAttempts.toString()).replace("{1}", roomAttempts.toString()).replace("{2}", errorMessage),
-          );
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace("{0}", reloadAttempts.toString()).replace("{1}", roomAttempts.toString()).replace("{2}", errorMessage));
           if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(errorMessage)) {
             terminalWarning = errorMessage;
             throw error;
@@ -3132,7 +3549,8 @@ export async function cancelAllActiveMediaGeneration(): Promise<void> {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
   }
-  const pages = _.uniq(_.compact([...globalBatchPages, activeBrowserInstance?.page, grokPage]));
+  const sharedChromePage = activeBrowserInstance?.preserveExternalPages ? activeBrowserInstance.page : undefined;
+  const pages = _.reject(_.uniq(_.compact([...globalBatchPages, activeBrowserInstance?.page, grokPage])), (page) => page === sharedChromePage);
   await Promise.allSettled(
     _.map(pages, async (page) => {
       if (!page.isClosed()) await page.close();
@@ -3202,7 +3620,10 @@ export async function generateBatchImagesWithGeminiChat(
   const generationRevision = mediaGenerationRevision;
   if (!items || items.length === 0) return [];
 
-  const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Fast;
+  const requestedSpeed = _.toString(visualConfig?.geminiChatSpeed);
+  const speed = _.isEqual(requestedSpeed, "1")
+    ? GeminiChatSpeed.Slow
+    : ((_.includes(Object.values(GeminiChatSpeed), requestedSpeed as GeminiChatSpeed) ? requestedSpeed : GeminiChatSpeed.Slow) as GeminiChatSpeed);
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || 5;
   const maxTabs = resolveBatchTabCount(items.length, concurrency, visualConfig?.batchTabCount);
 
@@ -3258,9 +3679,7 @@ export async function generateBatchImagesWithGeminiChat(
     await Promise.allSettled(_.map(surplusPages, (page) => page.close()));
     while (_.lt(_.size(candidates), maxTabs)) candidates.push(await createGeminiBatchPage(context));
 
-    const initialBatchGenerateType = _.every(items, (item) => _.isEqual(resolveBatchAssetType(item), GenerateType.Video))
-      ? GenerateType.Video
-      : GenerateType.Image;
+    const initialBatchGenerateType = _.every(items, (item) => _.isEqual(resolveBatchAssetType(item), GenerateType.Video)) ? GenerateType.Video : GenerateType.Image;
 
     const prepareExistingTab = async (page: Page, index: number): Promise<Page | null> => {
       for (let attempt = SecurityConstants.ZERO; attempt < GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM; attempt++) {
@@ -3284,9 +3703,7 @@ export async function generateBatchImagesWithGeminiChat(
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
       const hasRefs = !_.isEmpty(itemVisualConfig.referenceImages) || !_.isEmpty(itemVisualConfig.sceneReferenceImages) || !_.isEmpty(itemVisualConfig.styleReferenceImages);
-      const finalPrompt = itemVisualConfig.preserveAiPromptText
-        ? item.prompt || ""
-        : removeConflictingStyleTerms(item.prompt || "", hasRefs);
+      const finalPrompt = itemVisualConfig.preserveAiPromptText ? item.prompt || "" : removeConflictingStyleTerms(item.prompt || "", hasRefs);
 
       let success = false;
       let base64Result: string | null = null;
@@ -3874,10 +4291,7 @@ export const createGeminiReferenceFiles = (referenceImages: unknown, referenceIm
           .replace(GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_NAME_D_PATTERN, GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_NAME_D_REPLACEMENT),
       );
       const filePrefix = characterName
-        ? _.join(
-            [GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_FILE_PREFIX, characterName, GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_FILE_SEPARATOR],
-            REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-          )
+        ? _.join([GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_FILE_PREFIX, characterName, GEMINI_CHAT_VIDEO_INPUT_CONFIG.CHARACTER_FILE_SEPARATOR], REFACTOR_CONSTANTS.VD_EMPTY_STRING)
         : GEMINI_CHAT_VIDEO_INPUT_CONFIG.FILE_PREFIX;
       return {
         name: _.join([filePrefix, contentHash, GEMINI_CHAT_VIDEO_INPUT_CONFIG.EXTENSION_SEPARATOR, extension], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
@@ -3983,10 +4397,7 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     .locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS)
     .count()
     .catch(() => 0);
-  if (
-    _.isEqual(roomReferenceSignatureMap.get(page), nextSignature) &&
-    (_.isEmpty(allReferenceFiles) || _.gte(currentChipCount, allReferenceFiles.length))
-  ) {
+  if (_.isEqual(roomReferenceSignatureMap.get(page), nextSignature) && (_.isEmpty(allReferenceFiles) || _.gte(currentChipCount, allReferenceFiles.length))) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
     return;
   }

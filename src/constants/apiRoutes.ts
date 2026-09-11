@@ -22,6 +22,7 @@ export const API_ROUTES = {
   PIPELINE_SEO: "/api/pipeline/seo",
   PIPELINE_THUMBNAILS: "/api/pipeline/thumbnails",
   PIPELINE_GENERATE_IMAGE: "/api/pipeline/generate-image",
+  PIPELINE_GENERATE_FLOW_VIDEO_BATCH: "/api/pipeline/generate-flow-video-batch",
   PIPELINE_ENSURE_FLOW_CHARACTERS: "/api/pipeline/ensure-flow-characters",
   PIPELINE_RECOVER_FLOW_VIDEO: "/api/pipeline/recover-flow-video",
   PIPELINE_SEARCH_ARCHIVAL_IMAGE: "/api/pipeline/search-archival-image",

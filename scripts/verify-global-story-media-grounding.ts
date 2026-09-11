@@ -3,7 +3,6 @@ import fs from "node:fs";
 import { getDurationText } from "../src/constants/data.ts";
 import { ensureMediaSourcePlan } from "../src/services/mediaSourcePlanningService.ts";
 import { pruneUnsupportedSceneCharacterIds } from "../src/services/sceneReferenceService.ts";
-import { compileImagePrompt } from "../src/services/imagePromptCompilerService.ts";
 import { isArchivalSearchCandidateRelevant } from "../src/server/services/archivalImageSearchService.ts";
 
 const historicalScenes = Array.from({ length: 10 }, (_, index) => ({
@@ -42,11 +41,6 @@ const pruned = pruneUnsupportedSceneCharacterIds(historicalScenes as any, charac
 assert.deepEqual(pruned[0].characterIds, ["tran_thu_do"]);
 assert.deepEqual(pruned[1].characterIds, []);
 
-const fallbackPrompt = compileImagePrompt({
-  id: "sc_vi", script: "Chiến thắng Bạch Đằng với bãi cọc gỗ trên sông", textAllowed: false,
-} as any, { targetStyle: "historical painterly reconstruction", aspectRatio: "16:9" });
-assert.match(fallbackPrompt, /literal narrated event to depict: Chiến thắng Bạch Đằng/i);
-
 assert.equal(getDurationText(true, "2m").targetWordCount, 500);
 assert.equal(getDurationText(false, "2m").targetWordCount, 300);
 
@@ -77,4 +71,5 @@ assert.equal(isArchivalSearchCandidateRelevant({
   title: "Hiệu thuốc trên đường Trần Hưng Đạo",
 }, "Trần Quốc Tuấn triển khai mai phục trên sông Bạch Đằng"), false);
 assert.match(pipeline, /Authentic candidates failed semantic QA; explicit AI reconstruction required/);
+assert.doesNotMatch(pipeline, /compileImagePrompt|createScriptGroundedStoryboard|ensureStoryboardScriptCoverage/);
 console.log("Global story/media grounding assertions passed.");

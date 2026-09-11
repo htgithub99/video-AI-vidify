@@ -44,7 +44,7 @@ const SERVER_CONFIG = {
     "x-groq-api-key",
     "x-ai33-api-key",
     SecurityConstants.HEADER_LICENSE_KEY,
-    SecurityConstants.HEADER_INTERNAL_TOKEN
+    SecurityConstants.HEADER_INTERNAL_TOKEN,
   ],
   LIMIT_500MB: "500mb",
   HEADER_GEMINI_KEY: "x-gemini-api-key",
@@ -126,11 +126,22 @@ app.use((req, _res, next) => {
   const executionSource = _.get(req.body, "aiExecution", {});
   const configSource = _.get(req.body, "config", {});
   const visualSource = _.get(req.body, "visualConfig", {});
-  const aiExecutionMode = _.get(executionSource, "mode") || _.get(req.body, "planningExecutionMode") || _.get(configSource, "planningExecutionMode") || _.get(visualSource, "planningExecutionMode");
-  const aiRoomProvider = _.get(executionSource, "provider") || _.get(req.body, "planningFallbackProvider") || _.get(configSource, "planningFallbackProvider") || _.get(visualSource, "planningFallbackProvider");
-  const aiRoomModel = _.get(executionSource, "model") || _.get(req.body, "planningChatModel") || _.get(configSource, "planningChatModel") || _.get(visualSource, "planningChatModel");
+  const aiExecutionMode =
+    _.get(executionSource, "mode") || _.get(req.body, "planningExecutionMode") || _.get(configSource, "planningExecutionMode") || _.get(visualSource, "planningExecutionMode");
+  const aiRoomProvider =
+    _.get(executionSource, "provider") ||
+    _.get(req.body, "planningFallbackProvider") ||
+    _.get(configSource, "planningFallbackProvider") ||
+    _.get(visualSource, "planningFallbackProvider");
+  const aiRoomModel =
+    _.get(executionSource, "model") || _.get(req.body, "planningChatModel") || _.get(configSource, "planningChatModel") || _.get(visualSource, "planningChatModel");
   const aiRoomProjectId = _.toString(_.get(executionSource, "projectId") || _.get(req.body, "projectId") || _.get(req.body, "localProjectId") || "pipeline-room");
-  const aiRoomChromeHeadless = Boolean(_.get(executionSource, "chromeHeadless") ?? _.get(req.body, "planningChromeHeadless") ?? _.get(configSource, "planningChromeHeadless") ?? _.get(visualSource, "planningChromeHeadless"));
+  const aiRoomChromeHeadless = Boolean(
+    _.get(executionSource, "chromeHeadless") ??
+    _.get(req.body, "planningChromeHeadless") ??
+    _.get(configSource, "planningChromeHeadless") ??
+    _.get(visualSource, "planningChromeHeadless"),
+  );
   requestContext.run(
     {
       geminiKey,
@@ -194,9 +205,13 @@ const shutdownGracefully = async () => {
     await Promise.allSettled([closeHttpServer, viteDevServer?.close(), closePlaywright(), closeActiveBrowser()]);
   } catch (e) {}
 
-  const killCmd = _.isEqual(process.platform, SERVER_CONFIG.WIN32)
-    ? SERVER_CONFIG.KILL_CHROME_WIN
-    : SERVER_CONFIG.KILL_CHROME_UNIX;
+  if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
+    clearTimeout(forcedExitTimer);
+    process.exit(0);
+    return;
+  }
+
+  const killCmd = _.isEqual(process.platform, SERVER_CONFIG.WIN32) ? SERVER_CONFIG.KILL_CHROME_WIN : SERVER_CONFIG.KILL_CHROME_UNIX;
 
   exec(killCmd, () => {
     clearTimeout(forcedExitTimer);

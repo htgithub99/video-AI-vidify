@@ -3,7 +3,7 @@ import React from "react";
 import _ from "lodash";
 import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react";
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
-import { AUTO_VIDEO_DEFAULTS, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
+import { AUTO_VIDEO_DEFAULTS, FLOW_DIRECT_VIDEO_CONFIG, MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
@@ -67,12 +67,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   const selectingLabel = _.get(mediaMixTexts, "selecting", uiTexts.selectingScenes);
 
   const allEngineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
-  const isGrokProvider = forceVideoOnly && _.isEqual(imageGeneratorEngine, ImageGeneratorEngine.GrokImagine);
-  const engineOptions = forceVideoOnly
-    ? _.filter(allEngineOptions, (option) =>
-        isGrokProvider ? _.isEqual(option.value, ImageGeneratorEngine.GrokImagine) : !_.isEqual(option.value, ImageGeneratorEngine.GrokImagine),
-      )
-    : allEngineOptions;
+  const engineOptions = forceVideoOnly ? _.reject(allEngineOptions, (option) => _.isEqual(option.value, ImageGeneratorEngine.GrokImagine)) : allEngineOptions;
   const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
   const videoModelCapabilities = getVideoModelCapabilities(imageGeneratorEngine);
   const aspectRatioOptions = forceVideoOnly ? videoModelCapabilities.aspectRatios : _.values(AspectRatio);
@@ -141,25 +136,16 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           {forceVideoOnly && (
             <div className={cn("space-y-1")}>
-              <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
-              <div className={cn(FIELD_BASE_CLASSNAME)}>
+              <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
+                {currentLang === "vi" ? "Luồng tạo clip" : "Clip workflow"}
+              </span>
+              <div className={cn(FIELD_BASE_CLASSNAME, "cursor-default")}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                <select
-                  value={isGrokProvider ? ImageGeneratorEngine.GrokImagine : ImageGenerationMode.LabsFlow}
-                  onChange={(event) => {
-                    setGenerationMode(ImageGenerationMode.LabsFlow);
-                    const nextEngine = _.isEqual(event.target.value, ImageGeneratorEngine.GrokImagine) ? ImageGeneratorEngine.GrokImagine : ImageGeneratorEngine.Veo3;
-                    applyVideoModel(nextEngine);
-                  }}
-                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
-                  <option value={ImageGenerationMode.LabsFlow} className={cn("bg-slate-955 text-slate-300")}>
-                    {REFACTOR_CONSTANTS.PROVIDER_GOOGLE_FLOW}
-                  </option>
-                  <option value={ImageGeneratorEngine.GrokImagine} className={cn("bg-slate-955 text-slate-300")}>
-                    {REFACTOR_CONSTANTS.PROVIDER_GROK_IMAGINE}
-                  </option>
-                </select>
-                <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
+                <span className={cn("truncate text-xs font-semibold text-slate-200")}>
+                  {currentLang === "vi"
+                    ? `Google Flow · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompt/lượt · 1 clip/cảnh`
+                    : `Google Flow · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompts/wave · 1 clip/scene`}
+                </span>
               </div>
             </div>
           )}
@@ -187,9 +173,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
                 {forceVideoOnly ? (currentLang === "vi" ? "Chrome tạo video" : "Video generation Chrome") : T.lblChromeHeadless}
               </span>
-              <div
-                className={cn(FIELD_BASE_CLASSNAME)}
-                title={T.lblChromeHeadlessTooltip}>
+              <div className={cn(FIELD_BASE_CLASSNAME)} title={T.lblChromeHeadlessTooltip}>
                 <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <select
                   value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue}

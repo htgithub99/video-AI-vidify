@@ -97,13 +97,11 @@ import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from
 import { acceptGeneratedThumbnail } from "../../services/thumbnailQualityPipelineService";
 import { createCharacterIdentityDescription, createSceneGenerationContext } from "../../services/sceneReferenceService";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
-import { compileImagePrompt } from "../../services/imagePromptCompilerService";
 import { resolveStylePreset } from "../../constants/stylePresets";
 import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary } from "../../services/visualContinuityService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../../services/imageGenerationContinuityService";
 import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
 import { createThumbnailStyleDirective } from "../../services/styleReferenceService";
-import { removeAdjacentRepeatedStoryboardScenes } from "../../services/scriptContinuityService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -1457,12 +1455,8 @@ export function usePipelineWizard(props: any) {
           throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
         }
         plannedScene = _.first(optimizeResult.data.storyboard) as StoryboardScene;
-        customPrompt = compileImagePrompt(plannedScene, {
-          aspectRatio: project.visualConfig.aspectRatio,
-          targetStyle: cleanStyle,
-          characters: generationCharacters,
-          visualBible: cleanVisualBible,
-        });
+        customPrompt = _.trim(_.toString(plannedScene.prompt));
+        if (_.isEmpty(customPrompt)) throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
       }
 
       const generationContext = plannedScene
@@ -3322,7 +3316,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       const vConfig = voiceConfigOverride || project.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG;
-      const updatedScenes = removeAdjacentRepeatedStoryboardScenes(scenes);
+      const updatedScenes = scenes;
 
       let fullScript = project.scriptRewritten || "";
       if (!fullScript) fullScript = updatedScenes.map((s) => cleanScriptText(s.script || s.subtitle || "")).join(" ");

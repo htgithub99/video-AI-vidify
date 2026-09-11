@@ -410,7 +410,7 @@ export const VOICE_AGE_OPTIONS = [
 ] as const;
 
 export const GEMINI_CHAT_SPEED_OPTIONS = [
-  { value: "1", labelKey: "GeminiSpeed_1", fallbackLabel: "1" },
+  { value: "2", labelKey: "GeminiSpeed_2", fallbackLabel: "2" },
   { value: "3", labelKey: "GeminiSpeed_3", fallbackLabel: "3" },
   { value: "5", labelKey: "GeminiSpeed_5", fallbackLabel: "5" },
   { value: "7", labelKey: "GeminiSpeed_7", fallbackLabel: "7" },
@@ -519,5 +519,3 @@ export const AUDIO_PLAYBACK_FAILED_ERR = "AUDIO_PLAYBACK_FAILED";
 export const APP_LOCALES = { VI: "vi-VN", EN: "en-US", VI_SHORT: "vi", EN_SHORT: "en" } as const;
 
 export const DEFAULT_PROVIDER = "";
-
-

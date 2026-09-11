@@ -81,9 +81,42 @@ const MOCK_ENVIRONMENT_ONLY_SCENE = {
   soundDesignCues: ["rain and collapsing metal"],
   characterIds: [],
   cinematicBeats: [
-    { sourceSceneId: "sc_environment", shotId: "a", shotRole: "master", visibleAction: "Rain strikes the gate.", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 0, endSecond: 3 },
-    { sourceSceneId: "sc_environment", shotId: "b", shotRole: "coverage", visibleAction: "The hinges bend outward.", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 3, endSecond: 7 },
-    { sourceSceneId: "sc_environment", shotId: "c", shotRole: "payoff", visibleAction: "The gate collapses into mud.", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 7, endSecond: 10 },
+    {
+      sourceSceneId: "sc_environment",
+      shotId: "a",
+      shotRole: "master",
+      visibleAction: "Rain strikes the gate.",
+      dialogueMode: "silent_action",
+      spokenDialogue: "",
+      speakerCharacterId: "",
+      lipSyncRequired: false,
+      startSecond: 0,
+      endSecond: 3,
+    },
+    {
+      sourceSceneId: "sc_environment",
+      shotId: "b",
+      shotRole: "coverage",
+      visibleAction: "The hinges bend outward.",
+      dialogueMode: "silent_action",
+      spokenDialogue: "",
+      speakerCharacterId: "",
+      lipSyncRequired: false,
+      startSecond: 3,
+      endSecond: 7,
+    },
+    {
+      sourceSceneId: "sc_environment",
+      shotId: "c",
+      shotRole: "payoff",
+      visibleAction: "The gate collapses into mud.",
+      dialogueMode: "silent_action",
+      spokenDialogue: "",
+      speakerCharacterId: "",
+      lipSyncRequired: false,
+      startSecond: 7,
+      endSecond: 10,
+    },
   ],
 } as unknown as StoryboardScene;
 
@@ -164,7 +197,10 @@ const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
 
 const verifyDialogueContractExemption = () => {
   const contractIssues = getCinematicStoryboardContractIssues([MOCK_ENVIRONMENT_ONLY_SCENE], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
-  assert.equal(_.some(contractIssues, (issue) => _.includes(issue, "dialogue_coverage")), false);
+  assert.equal(
+    _.some(contractIssues, (issue) => _.includes(issue, "dialogue_coverage")),
+    false,
+  );
 };
 
 const verifyEnvironmentalActionRecognition = () => {
@@ -179,7 +215,10 @@ const verifyEnvironmentalActionRecognition = () => {
     },
     { id: "sc_environment", script: "The canyon is covered in demonic mist." } as StoryboardScene,
   );
-  assert.equal(_.some(issues, (issue) => _.includes(issue, "no_observable_physical_verb")), false);
+  assert.equal(
+    _.some(issues, (issue) => _.includes(issue, "no_observable_physical_verb")),
+    false,
+  );
 };
 
 const verifyBlockingContractClassification = () => {
@@ -205,7 +244,10 @@ const verifyBlockingContractClassification = () => {
   assert.equal(continuityBlockers.includes("sc_2:screenDirection:continuity_break"), false);
 
   const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), generationPrompt: "Focused Veo prompt.", soundDesignCues: [] } as StoryboardScene;
-  assert.equal(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"), false);
+  assert.equal(
+    getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"),
+    false,
+  );
 
   assert.deepEqual(
     getBlockingCinematicPlanningIssues([
@@ -265,11 +307,11 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
-  assert.match(controllerSource, /isCinematicPlanning \|\| forChatUi \? chunkCharactersJson : charactersJson/);
+  assert.match(controllerSource, /const scopedCharactersJson = chunkCharactersJson/);
   assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
   assert.match(controllerSource, /relevantChunkCharacters/);
   assert.match(controllerSource, /_\.pick\(character, \["id", "name", "prompt"\]\)/);
-  assert.match(controllerSource, /isCinematicPlanning \|\| forChatUi \? chunkVisualBibleJson : jsonUtils\.safeStringify\(resolvedVisualBible\)/);
+  assert.match(controllerSource, /const scopedVisualBibleJson = chunkVisualBibleJson/);
   assert.match(controllerSource, /createCinematicPlanningProperties/);
   assert.match(controllerSource, /generationPrompt: planningString/);
   assert.match(controllerSource, /if \(isCinematicPlanning\) \{[\s\S]*generationPrompt:missing[\s\S]*return _\.uniq\(issues\)/);
@@ -319,7 +361,8 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoom\(request\)[\s\S]*release\(\)/);
   assert.match(planningServiceSource, /MODEL_PICKER_TIMEOUT_MS/);
   assert.doesNotMatch(planningServiceSource, /throw new Error\(`\$\{CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\}: completion_marker_missing/);
-  assert.match(planningServiceSource, /sendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
+  assert.match(planningServiceSource, /configuredSendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
+  assert.match(planningServiceSource, /semanticSendButton[\s\S]*getByRole/);
   assert.match(controllerSource, /closeRoomOnComplete: false/);
   assert.match(controllerSource, /res\.once\("finish"[\s\S]*closePlanningRoom/);
   assert.match(planningServiceSource, /selectGeminiChatModel/);
@@ -364,10 +407,7 @@ const verifyPlanningRunIsolation = () => {
 };
 
 const verifyCurrentGeminiModelPicker = () => {
-  assert.deepEqual(
-    _.map(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GeminiChat], "label"),
-    ["Flash-Lite", "Flash", "Pro", "Pro · Tư duy mở rộng", "Pro · Deep Think"],
-  );
+  assert.deepEqual(_.map(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GeminiChat], "label"), ["Flash-Lite", "Flash", "Pro", "Pro · Tư duy mở rộng", "Pro · Deep Think"]);
   assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite].test("Gemini 3.5 Flash-Lite"));
   assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash].test("Gemini 3.8 Flash"));
   assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro].test("Gemini 3.1 Pro"));

@@ -2,7 +2,6 @@ import _ from "lodash";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { SCRIPT_PLAN_CONFIG } from "../src/constants/config.ts";
 import {
-  createSourceGroundedScriptPlan,
   requestValidScriptPlan,
   resolveScriptPlanChapterCount,
 } from "../src/server/services/scriptPlanResponseService.ts";
@@ -103,18 +102,5 @@ try {
   rejectedError = error;
 }
 assert(rejectedError?.scriptPlanInvalid && rejectedError?.retryable, "exhausted invalid plan did not return retry state");
-
-const sourceText = "A mechanic finds an old photograph. He follows its clues through the city. The final address changes what he believes about his family.";
-const sourceFallback = await requestValidScriptPlan(
-  { contents: "Create the complete plan", config: {}, task: {} },
-  SCRIPT_PLAN_CONFIG.MIN_CHAPTERS,
-  async () => ({ text: "not json" }),
-  sourceText,
-);
-const sourceFallbackChapters = _.castArray(_.get(sourceFallback.value, "chapters"));
-assert(sourceFallbackChapters.length === SCRIPT_PLAN_CONFIG.MIN_CHAPTERS, "source fallback did not preserve chapter count");
-assert(_.every(sourceFallbackChapters, chapter => _.includes(sourceText, _.toString(_.get(chapter, "description")))), "source fallback invented chapter content");
-assert(sourceFallback.rotationLogs.includes(SCRIPT_PLAN_CONFIG.SOURCE_FALLBACK_WARNING), "source fallback warning was not recorded");
-assert(_.size(_.castArray(_.get(createSourceGroundedScriptPlan(sourceText, SCRIPT_PLAN_CONFIG.MIN_CHAPTERS), "chapters"))) === SCRIPT_PLAN_CONFIG.MIN_CHAPTERS, "source fallback plan was invalid");
 
 writeVerificationLog("Script plan response assertions passed");

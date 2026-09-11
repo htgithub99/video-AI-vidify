@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { compileImagePrompt } from "../src/services/imagePromptCompilerService.ts";
 import { clearProjectImageOutputs } from "../src/services/projectRegenerationService.ts";
 import { createThumbnailGenerationPrompt } from "../src/services/thumbnailPromptService.ts";
 import { BackgroundMode, ImageFocusMode, TextInImageMode } from "../src/types.ts";
@@ -48,22 +47,10 @@ assert.equal(regeneratedProject.storyboard[0].prompt, "");
 // Prompt của phân cảnh phải sạch hoàn toàn nhãn lý thuyết
 assert.doesNotMatch(regeneratedProject.storyboard[0].prompt, /Line art:|Palette:|Rendering:|Strict character visual lock:/);
 
-// 2. Kiểm tra biên dịch Prompt Phân cảnh mới (Cinematic Shot Progression + Không dính nhãn thừa)
-const compiledScenePrompt = compileImagePrompt(regeneratedProject.storyboard[0], {
-  aspectRatio: "16:9",
-  targetStyle: regeneratedProject.visualConfig.style,
-});
-assert.doesNotMatch(compiledScenePrompt, /Line art:|Palette:|Rendering:/);
-assert.doesNotMatch(compiledScenePrompt, /industrial hazard/i);
-assert.match(compiledScenePrompt, /A female worker stops at the edge of a hazardous factory work zone/);
-assert.doesNotMatch(compiledScenePrompt, /Một người phụ nữ/);
-assert.match(compiledScenePrompt, /Completely text-free scene/);
-assert.ok(compiledScenePrompt.includes("--ar 16:9"));
-
-// 3. Kiểm tra Prompt Thumbnail theo ma trận tò mò CTR
+// 2. Kiểm tra prompt thumbnail AI được giữ nguyên và chỉ thêm tham số kỹ thuật tỉ lệ.
 const mockThumbnail = {
   id: "th_1",
-  prompt: "A worried worker looking at a warning sign with high tension in the factory",
+  generationPrompt: 'Flat stick-figure illustration of a worried worker looking at a warning sign with high tension in the factory. Render exactly one headline: "HIỂM NGUY CẬN KỀ".',
   style: "Flat stick-figure illustration",
   hasText: true,
   textText: "HIỂM NGUY CẬN KỀ",

@@ -1,13 +1,5 @@
 import _ from "lodash";
-import {
-  API_ROUTES,
-  FLOW_DIRECT_VIDEO_CONFIG,
-  FLOW_VIDEO_MEDIA_CONFIG,
-  GEMINI_MEDIA_ERRORS,
-  REFACTOR_CONSTANTS,
-  SecurityConstants,
-  SYSTEM_FETCH_CONFIG,
-} from "../constants";
+import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_MEDIA_CONFIG, GEMINI_MEDIA_ERRORS, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -47,6 +39,13 @@ export interface ProjectImageGenerationSummary {
   completedSceneIds: string[];
   failedSceneIds: string[];
   cancelled: boolean;
+}
+
+export interface ProjectFlowVideoBatchResponse {
+  success: boolean;
+  results: ProjectImageResult[];
+  newProjectId?: string;
+  warning?: string;
 }
 
 export interface FlowVideoRecoveryRequest {
@@ -118,6 +117,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
 export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value);
 export const isPersistedProjectVideoUrl = (value?: string): boolean => FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(_.toString(value));
 export const isProviderGenerationRejection = (value?: string): boolean => GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(_.toString(value));
+export const isStaleFlowVideoRecoveryError = (value?: string): boolean => FLOW_VIDEO_MEDIA_CONFIG.STALE_MEDIA_PATTERN.test(_.toString(value));
 
 export const isNonRetryableFlowVideoError = (message?: string): boolean => {
   const normalizedMessage = _.trim(_.toString(message));
@@ -135,11 +135,7 @@ const cleanBatchSession = async (): Promise<void> => {
 export const generateProjectImageOnce = async (item: ProjectImageItem, createPayload: ImagePayloadFactory, signal?: AbortSignal): Promise<ProjectImageResult> => {
   const emptyResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
   if (signal?.aborted) return emptyResult;
-  const response = await safeSystemFetch(
-    API_ROUTES.PIPELINE_GENERATE_IMAGE,
-    { ...createPayload(item), sceneId: item.sceneId, idempotencyKey: item.idempotencyKey },
-    signal,
-  );
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, { ...createPayload(item), sceneId: item.sceneId, idempotencyKey: item.idempotencyKey }, signal);
   const base64 = _.defaultTo(_.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY), _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY));
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY, response.success);
@@ -165,15 +161,38 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
   };
 };
 
+export const submitProjectFlowVideoBatch = async (
+  items: ProjectImageItem[],
+  visualConfig: object,
+  sandboxConfig: object,
+  signal?: AbortSignal,
+): Promise<ProjectFlowVideoBatchResponse> => {
+  const response = await safeSystemFetch(
+    API_ROUTES.PIPELINE_GENERATE_FLOW_VIDEO_BATCH,
+    {
+      items: _.map(items, (item) => ({ ...item, generateType: GenerateType.Video })),
+      visualConfig: { ...visualConfig, generateType: GenerateType.Video },
+      sandboxConfig,
+    },
+    signal,
+  );
+  return {
+    success: Boolean(response.success && _.get(response.data, "success")),
+    results: _.castArray(_.get(response.data, "results") || []),
+    newProjectId: _.toString(_.get(response.data, "newProjectId")) || undefined,
+    warning: _.toString(_.find([response.success ? undefined : response.error, _.get(response.data, "warning")], (message) => !_.isEmpty(message))),
+  };
+};
+
 export const recoverProjectFlowVideo = async (request: FlowVideoRecoveryRequest, signal?: AbortSignal): Promise<ProjectImageResult> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_RECOVER_FLOW_VIDEO, request, signal);
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const fallbackUrls = _.castArray(_.get(response.data, "fallbackUrls") || []).filter(isPersistedProjectVideoUrl);
   const success = Boolean(
     response.success &&
-      _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) &&
-      isPersistedProjectVideoUrl(fallbackUrl) &&
-      _.size(fallbackUrls) >= _.defaultTo(request.expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT),
+    _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) &&
+    isPersistedProjectVideoUrl(fallbackUrl) &&
+    _.size(fallbackUrls) >= _.defaultTo(request.expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT),
   );
   const remoteMediaIds = _.castArray(request.mediaIds || request.mediaId || []).filter(Boolean);
   return {

@@ -4,9 +4,7 @@ import { USER_LOG_CONFIG, USER_LOG_MESSAGES } from "../constants/userLog";
 export type UserLogLanguage = keyof typeof USER_LOG_MESSAGES;
 
 const normalizeLanguage = (language?: string): UserLogLanguage =>
-  _.startsWith(_.toLower(_.toString(language)), USER_LOG_CONFIG.LANGUAGE_PREFIX_EN)
-    ? USER_LOG_CONFIG.LANGUAGE_PREFIX_EN
-    : USER_LOG_CONFIG.LANGUAGE_PREFIX_VI;
+  _.startsWith(_.toLower(_.toString(language)), USER_LOG_CONFIG.LANGUAGE_PREFIX_EN) ? USER_LOG_CONFIG.LANGUAGE_PREFIX_EN : USER_LOG_CONFIG.LANGUAGE_PREFIX_VI;
 
 export const formatSceneNumber = (sceneIdOrScene: unknown): string => {
   if (!sceneIdOrScene) return USER_LOG_CONFIG.EMPTY_STRING;
@@ -49,23 +47,17 @@ const naturalizeSceneLists = (text: string, isEn: boolean): string =>
   });
 
 const naturalizeIndividualScenes = (text: string, isEn: boolean): string =>
-  text.replace(
-    USER_LOG_CONFIG.SCENE_CODE_PATTERN,
-    (_m, num) => `${isEn ? USER_LOG_CONFIG.SCENE_PREFIX_EN : USER_LOG_CONFIG.SCENE_PREFIX_VI}${Number(num)}`,
-  );
+  text.replace(USER_LOG_CONFIG.SCENE_CODE_PATTERN, (_m, num) => `${isEn ? USER_LOG_CONFIG.SCENE_PREFIX_EN : USER_LOG_CONFIG.SCENE_PREFIX_VI}${Number(num)}`);
 
 const naturalizeAttemptFractions = (text: string, isEn: boolean): string =>
-  text.replace(
-    USER_LOG_CONFIG.ATTEMPT_FRACTION_PATTERN,
-    (_m, num) => replaceToken(isEn ? USER_LOG_CONFIG.ATTEMPT_LABEL_EN : USER_LOG_CONFIG.ATTEMPT_LABEL_VI, USER_LOG_CONFIG.TOKEN_INDEX, num),
+  text.replace(USER_LOG_CONFIG.ATTEMPT_FRACTION_PATTERN, (_m, num) =>
+    replaceToken(isEn ? USER_LOG_CONFIG.ATTEMPT_LABEL_EN : USER_LOG_CONFIG.ATTEMPT_LABEL_VI, USER_LOG_CONFIG.TOKEN_INDEX, num),
   );
 
 const stripInternalStagePrefixes = (text: string): string =>
-  text
-    .replace(USER_LOG_CONFIG.INTERNAL_STAGE_PREFIX_PATTERN, USER_LOG_CONFIG.EMPTY_STRING)
-    .replace(USER_LOG_CONFIG.INTERNAL_WORKER_TAG_PATTERN, USER_LOG_CONFIG.EMPTY_STRING);
+  text.replace(USER_LOG_CONFIG.INTERNAL_STAGE_PREFIX_PATTERN, USER_LOG_CONFIG.EMPTY_STRING).replace(USER_LOG_CONFIG.INTERNAL_WORKER_TAG_PATTERN, USER_LOG_CONFIG.EMPTY_STRING);
 
-export const naturalizeSceneReferences = (text: string, language?: string): string => {
+const naturalizeSceneReferences = (text: string, language?: string): string => {
   const isEn = _.isEqual(normalizeLanguage(language), USER_LOG_CONFIG.LANGUAGE_PREFIX_EN);
   const withNaturalLists = naturalizeSceneLists(text, isEn);
   const withNaturalScenes = naturalizeIndividualScenes(withNaturalLists, isEn);

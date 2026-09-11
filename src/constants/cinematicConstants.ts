@@ -5,7 +5,7 @@ export const CINEMATIC_POLICY_CONFIG = {
   MIN_CLIP_DURATION_SECONDS: 3,
   MAX_CLIP_DURATION_SECONDS: 15,
   MIN_SHOTS_PER_VIDEO: 4,
-  PLANNING_CHUNK_SIZE: 16,
+  PLANNING_CHUNK_SIZE: 2,
   PLANNING_CHUNK_MAX_INPUT_CHARACTERS: 24000,
   PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS: 2,
   PLANNING_CHUNK_JSON_SEPARATOR_CHARACTERS: 1,
@@ -36,10 +36,9 @@ export const CINEMATIC_ARTIFACT_TYPE = {
   SEO: "seo",
 } as const;
 
-export const CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN = /\s+/g;
+const CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN = /\s+/g;
 
-export const normalizeCinematicArtifactIdentity = (value: unknown): string =>
-  String(value ?? "").replace(CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN, "");
+export const normalizeCinematicArtifactIdentity = (value: unknown): string => String(value ?? "").replace(CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN, "");
 
 export const CINEMATIC_PROGRESS_STAGE = {
   SCRIPT: 1,
@@ -63,8 +62,7 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_READY: "Bước 4/4 · Video đã hoàn tất.",
     VIDEO_QA_ADVISORY: "[QA video] {0} clip có cảnh báo chất lượng nhưng vẫn được chuyển cho thư viện dựng để chọn đoạn dùng được.",
     PLANNING_STOPPED: "Bước {0}/4 · Tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
-    PLANNING_FORMAT_STOPPED:
-      "Bước 1/4 · AI đã trả lời nhưng định dạng dữ liệu chưa đọc được. Hệ thống đã giữ dữ liệu cũ; chọn Tiếp tục để nhận lại kịch bản.",
+    PLANNING_FORMAT_STOPPED: "Bước 1/4 · AI đã trả lời nhưng định dạng dữ liệu chưa đọc được. Hệ thống đã giữ dữ liệu cũ; chọn Tiếp tục để nhận lại kịch bản.",
     PROMPT_STOPPED: "Bước 2/4 · Đã giữ {0}/{1} prompt; còn thiếu {2}. Hãy chọn Tiếp tục để hoàn thành riêng các cảnh này.",
     VIDEO_STOPPED: "Bước 4/4 · Đã giữ {0}/{1} clip. Còn thiếu {2}; hãy chọn Tiếp tục để chỉ tải lại hoặc hoàn thành các clip này.",
     VIDEO_RENDER_STOPPED: "Bước 4/4 · Các clip đã hoàn tất nhưng chưa ghép xong phim. Hãy chọn Tiếp tục để tiếp tục render.",
@@ -83,8 +81,7 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_READY: "Step 4/4 · The video is complete.",
     VIDEO_QA_ADVISORY: "[Video QA] {0} clips have quality warnings but will still go to the edit libraries for usable-segment selection.",
     PLANNING_STOPPED: "Step {0}/4 · Paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
-    PLANNING_FORMAT_STOPPED:
-      "Step 1/4 · AI responded, but its data format could not be read. Existing data was kept; continue to request the screenplay again.",
+    PLANNING_FORMAT_STOPPED: "Step 1/4 · AI responded, but its data format could not be read. Existing data was kept; continue to request the screenplay again.",
     PROMPT_STOPPED: "Step 2/4 · Kept {0}/{1} prompts; still missing {2}. Continue to complete only these scenes.",
     VIDEO_STOPPED: "Step 4/4 · Kept {0}/{1} clips. Still missing {2}; continue to download or complete only these clips.",
     VIDEO_RENDER_STOPPED: "Step 4/4 · All clips are complete, but the film has not finished rendering. Continue to resume rendering.",
@@ -101,9 +98,9 @@ export const CINEMATIC_CHECKPOINT_CONFIG = {
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 1,
-  RESPONSE_TIMEOUT_MS: 120000,
+  RESPONSE_TIMEOUT_MS: 300000,
   RESPONSE_MAX_TIMEOUT_MS: 600000,
-  RESPONSE_ACTIVITY_GRACE_MS: 120000,
+  RESPONSE_ACTIVITY_GRACE_MS: 180000,
   RESPONSE_POLL_MS: 250,
   RESPONSE_STABLE_POLLS: 2,
   MIN_RESPONSE_CHARACTERS: 20,
@@ -119,6 +116,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   PROMPT_SUBMIT_SETTLE_MS: 150,
   ATTACHMENT_READY_TIMEOUT_MS: 120000,
   SUBMISSION_VERIFY_TIMEOUT_MS: 10000,
+  SUBMISSION_ACTION_ATTEMPTS: 2,
   SUBMISSION_POLL_MS: 250,
   COMPOSER_EMPTY_MAX_CHARACTERS: 0,
   ATTACHMENT_SUBMIT_BLOCKED_ERROR: "chat_planning_attachments_not_ready",
@@ -127,11 +125,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   RESPONSE_BUSY_WAIT_LOG: "[AI Chat Planning] AI vẫn đang tạo nội dung; tiếp tục chờ room hiện tại thay vì gửi lại yêu cầu.",
   RESPONSE_RESUME_LOG: "[AI Chat Planning] Tiếp tục lấy phản hồi đang tạo trong room; không gửi lại yêu cầu.",
   RESPONSE_TIMEOUT_CODE: "chat_planning_response_timeout",
-  RESPONSE_TIMEOUT_MESSAGE:
-    "AI Chat vẫn chưa hoàn tất phản hồi. Room được giữ nguyên; hãy chọn Tiếp tục để lấy kết quả đang tạo mà không gửi lại yêu cầu.",
+  RESPONSE_TIMEOUT_MESSAGE: "AI Chat vẫn chưa hoàn tất phản hồi. Room được giữ nguyên; hãy chọn Tiếp tục để lấy kết quả đang tạo mà không gửi lại yêu cầu.",
   NAVIGATION_TIMEOUT_MS: 60000,
-  GEMINI_RESPONSE_SELECTOR:
-    'model-response, [data-test-id="model-response"], [data-testid="model-response"], [data-message-author-role="assistant"], .model-response-text',
+  GEMINI_RESPONSE_SELECTOR: 'model-response, [data-test-id="model-response"], [data-testid="model-response"], [data-message-author-role="assistant"], .model-response-text',
   GEMINI_INPUT_SELECTOR: 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
   GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, .model-response-label-announcer[aria-busy="true"]',
@@ -147,8 +143,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_POST_CHALLENGE_READY_STABLE_POLLS: 5,
   GROK_CHALLENGE_TEXT_PATTERN: /performing security verification|verify you are human|verifying you are human|just a moment|xác minh bạn là người|đang thực hiện xác minh bảo mật/i,
   CHATGPT_INPUT_SELECTOR: '#prompt-textarea, textarea[data-id="root"], div[contenteditable="true"][data-virtualkeyboard]',
-  CHATGPT_RESPONSE_SELECTOR:
-    '[data-message-author-role="assistant"], article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"])',
+  CHATGPT_RESPONSE_SELECTOR: '[data-message-author-role="assistant"], article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"])',
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
   RESPONSE_IDENTITY_SELECTOR: "[data-message-id], [data-testid^='conversation-turn-'], [data-test-id]",
@@ -202,16 +197,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
 export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string =>
   `${String(runId ?? "").trim() || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE}:${artifactType}`;
 
-export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = [
-  "id",
-  "generationPrompt",
-] as const;
+export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = ["id", "generationPrompt"] as const;
 
-export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [
-  /:result:missing_scene$/,
-  /:id:(?:duplicate|unexpected)$/,
-  /:generationPrompt:missing$/,
-] as const;
+export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [/:result:missing_scene$/, /:id:(?:duplicate|unexpected)$/, /:generationPrompt:missing$/] as const;
 
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
   [AiPlanningFallbackProvider.GeminiChat]: [

@@ -186,24 +186,43 @@ export const getQuickVideoPlanningPrompt = (
   generateType: GenerateType = GenerateType.Image,
 ): string => {
   const requiresVideoPrompt = _.includes([GenerateType.Video, GenerateType.Mixed], generateType);
-  return `Create the final visual prompt for every source scene in this QUICK VIDEO production request. Make the creative and directorial choices yourself.
+  return `Create the final visual plan for every source scene in this QUICK VIDEO production request. This remains an image-led quick-video workflow, not an AI Film workflow. Make the scene-level creative and directorial choices yourself without rewriting the story.
 
 ${UNTRUSTED_INPUT_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
 
-Follow the scene and these user settings: mode=${generateType}; style=${referenceStyle || visualStyle || "choose freely"}; canvas=${aspectRatio}; background=${backgroundMode}; text=${textMode}; framing=${focusMode}.
-Keep only the basic recurring-character identity from these cards: ${charactersJson || "none"}.
-Use context only when useful: ${editorialContext || visualBibleJson || continuityContext || locationLibraryJson || propLibraryJson || "none"}.
-Reference image: ${referenceContext}
+[USER SETTINGS]
+mode=${generateType}; style=${referenceStyle || visualStyle || "choose freely"}; canvas=${aspectRatio}; background=${backgroundMode}; text=${textMode}; framing=${focusMode}; editorial context=${editorialContext || "none"}.
+
+[AUTHORITATIVE PRODUCTION CONTEXT]
+Recurring character cards: ${charactersJson || "none"}
+Visual Bible: ${visualBibleJson || "none"}
+Adjacent-scene continuity: ${continuityContext || "none"}
+Location library: ${locationLibraryJson || "none"}
+Prop library: ${propLibraryJson || "none"}
+Reference image status: ${referenceContext}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
-Write one complete English image prompt for each scene. Keep the event clear and the character recognizable. Do not add unrelated people, text or objects.
+[NON-NEGOTIABLE SCENE, IMAGE, AND VOICE ALIGNMENT]
+- The source array order is the final edit order. Return every exact source id once, in that same order. Never merge, split, reorder, omit, duplicate, or replace a scene.
+- The current scene's script and subtitle are the exact voice/narration content assigned to that scene. Depict only the concrete event, action, evidence, reaction, setting, and state expressed by that current scene.
+- previousNarration, nextNarration, and adjacent-scene continuity exist only to preserve entrances, wardrobe, props, geography, eyelines, and screen direction. Never borrow their event or move their content into the current scene.
+- Preserve names, relationships, chronology, cause and consequence. Never invent dialogue, narration, readable text, people, props, locations, or story events that the current scene does not require.
+
+[CHARACTER CONSISTENCY]
+- characterIds must contain exactly the recurring characters physically visible in the current scene. Omit absent, off-screen, or merely mentioned characters.
+- For every visible recurring character, use the exact supplied name and preserve the same compact immutable identity anchors: gender and age presentation, skin tone, body build and proportions, face geometry, eyes, nose, hair silhouette, stable costume colors, and permanent accessories.
+- Never merge, swap, redesign, duplicate, or transfer traits between characters. Change only pose, expression, physical action, spatial position, and a wardrobe or condition explicitly required by this scene.
+- When a reference image is attached, treat it as the identity source and describe the same subject in the new scene, not a similar replacement.
+
+[IMAGE PROMPT]
+Write one coherent, descriptive English paragraph of 45-140 words for each scene. Describe the scene instead of listing disconnected keywords. Lead with the exact subject and observable action, then the necessary setting and story evidence, stable identity anchors, style, lighting, camera angle, lens/composition, and useful constraints. The image must be a single chronological instant that matches the voice segment precisely.
 ${
   requiresVideoPrompt
-    ? `Also write one complete English video generationPrompt that can be sent unchanged. Let the AI direct the scene freely while preserving the event, character identity and user settings. Keep motion physically readable and avoid content likely to be refused by the video provider.`
+    ? `Also write one complete English video generationPrompt that can be sent unchanged. It must animate the same visual beat as the planned image and assigned voice segment, preserve the exact characters, wardrobe, props, setting, screen direction, and starting composition, and end on the visible consequence of the current action. Keep motion physically readable. Do not create an intro, a film package, multiple scenes, or unrelated cutaways.`
     : `Set generationPrompt to an empty string.`
 }
-Return final prompts, not drafts or instructions for code to join.
+Return final scene data, not drafts or instructions for code to join.
 
 ${
   correctionIssuesJson
@@ -214,8 +233,8 @@ Return every source scene again as a complete object. Fix omissions without expa
 }
 
 [OUTPUT CONTRACT]
-Output only a raw JSON array using this compact shape:
-[{"id":"scene_id","prompt":"final English image prompt","generationPrompt":"final English video prompt or empty","characterIds":[],"textAllowed":false,"textOverlay":""}]
+Output only a raw JSON array using this shape:
+[{"id":"scene_id","prompt":"final English image prompt","generationPrompt":"final English video prompt or empty","visualIntent":"literal purpose of this image","visibleAction":"observable physical action","reaction":"visible reaction or neutral state","storyEvidence":"concrete evidence from this voice segment","visualHook":"strongest truthful visible detail","shotPurpose":"setup|action|reaction|punchline|reveal|callback|montage|emotional_hold|obstacle|decision|escalation|reversal|climax|payoff|transition","shotSize":"English shot size","cameraAngle":"English camera angle","composition":"English composition","continuityNotes":"what must match adjacent scenes without borrowing their events","lighting":"physically motivated lighting","characterIds":[],"locationId":"existing location id or empty","propIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"","assetStrategy":"ai_generated","archivalSearchQuery":"","archivalRationale":""}]
 Return the exact source IDs once each. No Markdown or commentary.
 
 Source scenes:
@@ -315,10 +334,10 @@ export const getChapterExpansionPrompt = (
   originalInput: string,
   chapterTitle: string,
   currentSegment: string,
-  minimumAdditionalWords: number,
-  maximumAdditionalWords: number,
+  minimumWords: number,
+  maximumWords: number,
   isVi: boolean,
-): string => `You are extending one narration chapter that is shorter than its required duration. Write ${minimumAdditionalWords}-${maximumAdditionalWords} NEW words that continue the existing chapter naturally. Stay strictly on the original topic and chapter title, add concrete consequences/examples, avoid repeating existing sentences, and do not introduce unsupported precise facts. Return ONLY a JSON object with scriptSegment containing the continuation text, not the existing text and not a placeholder. Language: ${isVi ? "Vietnamese" : "English"}.
+): string => `Regenerate this narration chapter as one complete replacement artifact because the previous response was incomplete or outside the required length. Write the ENTIRE chapter again from the beginning in ${minimumWords}-${maximumWords} words. Preserve the supported events and intent, stay strictly on the original topic and chapter title, add concrete consequences/examples, avoid repetition, and do not introduce unsupported precise facts. Do not return a patch, continuation, excerpt, or notes. Return ONLY one raw JSON object whose scriptSegment contains the complete replacement chapter. Language: ${isVi ? "Vietnamese" : "English"}.
 
 [Original topic]
 ${originalInput}
@@ -326,7 +345,7 @@ ${originalInput}
 [Chapter]
 ${chapterTitle}
 
-[Existing segment]
+[Rejected previous artifact — context only, do not continue it]
 ${currentSegment}`;
 
 export const getFinalScriptEditorialPrompt = (
@@ -411,12 +430,7 @@ Use integer scores from 0 to 100. Detect unwanted readable text, multi-panel/col
 export const SCENE_QA_REFERENCE_DIRECTIVE =
   "The next image is the canonical character/style reference. Penalize identity, clothing, age, skin-tone, line-style, and palette drift in the candidate image.";
 
-export const getScriptSplitPrompt = (
-  script: string,
-  chaptersStr: string,
-  splitStrategy: string,
-  isVi: boolean,
-): string => {
+export const getScriptSplitPrompt = (script: string, chaptersStr: string, splitStrategy: string, isVi: boolean): string => {
   const strategyConfig = SPLIT_STRATEGY_CONFIGS[splitStrategy];
   const splitInstruction =
     strategyConfig?.instruction ||
@@ -856,13 +870,13 @@ ${sourceContext || "No separate premise supplied; use only explicit script evide
 Target visual style:
 ${visualStyle || "Use concise style-compatible identity anchors."}
 
-Keep only stable identity details that help recognition. Exclude narrators, crowds, one-off mentions, current emotion, location and temporary action. Design unspecified appearance freely.
+Keep only stable identity details that help recognition. Lock the exact name, gender and age presentation, skin tone, body build and proportions, face shape, eyes, nose, hair silhouette, signature clothing colors, and permanent accessories. Exclude narrators, crowds, one-off mentions, current emotion, location, pose, lighting and temporary action. Design unspecified appearance freely and keep every named character clearly distinguishable from the others.
 
 Write each referenceGenerationPrompt in English, include the exact character name, and use this direction:
 ${FLOW_CHARACTER_DIRECTION}
 
-Return only a raw JSON array:
-[{"name":"","genderPresentation":"","ageRange":"","ethnicitySkinTone":"","bodyBuild":"","faceShape":"","hair":"","signatureClothing":"","accessories":"","colorPalette":"","description":"concise basic identity","prompt":"concise reusable English identity","referenceGenerationPrompt":"complete English Google Flow character prompt"}]
+Return only a raw JSON array. Every object must contain its own stable unique id and every listed field:
+[{"id":"char_1","name":"","genderPresentation":"","ageRange":"","ethnicitySkinTone":"","bodyBuild":"","faceShape":"","eyes":"","nose":"","hair":"","silhouette":"","signatureClothing":"","accessories":"","colorPalette":"","description":"concise basic identity","prompt":"concise reusable English identity","referenceGenerationPrompt":"complete English Google Flow character prompt"}]
 
 Script:
 ${script}`;

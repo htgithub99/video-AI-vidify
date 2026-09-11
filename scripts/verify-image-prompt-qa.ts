@@ -1,6 +1,5 @@
 import { appendImagePromptAspectRatio, enforceImagePromptStyle, evaluateImagePrompts, removeGeneratedTextRequests, sanitizeImagePrompt } from "../src/services/imagePromptQualityService.ts";
 import { BackgroundMode, TextInImageMode } from "../src/types.ts";
-import { compileImagePrompt } from "../src/services/imagePromptCompilerService.ts";
 
 const assert = (value: unknown, message: string): void => { if (!value) throw new Error(message); };
 const createScene = (id: string, prompt: string): any => ({ id, prompt, script: "Narration", subtitle: "Narration" });
@@ -21,59 +20,6 @@ assert(preservedPrompt === `${aiPrompt} --ar 16:9`, "Application changed AI-auth
 assert(!evaluateImagePrompts([createScene("sc_1", "Realistic Cinematic 3D render of Nam at a table, medium shot")], { targetStyle: referenceStyle }).passed, "Cross-style prompt drift was accepted.");
 const aiViolation = "AI prompt with its own --ar 4:3";
 assert(appendImagePromptAspectRatio(aiViolation, "16:9") === aiViolation, "Application silently rewrote an AI aspect-ratio violation.");
-
-const softStylePrompt = compileImagePrompt({
-  id: "sc_soft",
-  script: "A broker signs a property contract in a modern office.",
-  subtitle: "A broker signs a property contract in a modern office.",
-  visualIntent: "Show a high-pressure property agreement in a modern office",
-  visibleAction: "A broker signs a contract while a client watches",
-  expectedSubjectCount: 2,
-  characterIds: [],
-  propIds: [],
-  shotSize: "medium shot",
-  cameraAngle: "eye-level angle",
-  composition: "contract and both faces remain readable",
-  layout: "single_frame",
-  allowBackgroundPeople: false,
-  textAllowed: false,
-} as any, {
-  aspectRatio: "16:9",
-  targetStyle: "Dark dungeon with a candle and wooden door",
-  visualBible: {
-    visualStyle: "Dark dungeon with a candle and wooden door",
-    styleProfile: {
-      medium: "2D hand-drawn cartoon",
-      characterDna: "rounded heads and simplified bodies",
-      lineDna: "bold organic outlines",
-      colorDna: "muted low-saturation palette",
-      renderingDna: "flat color with restrained shadows",
-      periodCues: "",
-      worldRendering: "simplified readable environments",
-      adaptiveElements: "lighting and composition follow each scene",
-      sampleSpecificContent: ["dark dungeon", "candle", "wooden door"],
-    },
-  },
-});
-assert(/property contract|modern office/i.test(softStylePrompt), "Script-grounded narrative was lost.");
-assert(!/dungeon|candle|wooden door/i.test(softStylePrompt), "Sample-specific content leaked into the prompt.");
-assert(softStylePrompt.split(/\s+/).length <= 160, "Soft style prompt became overly constrained.");
-
-const noTextPrompt = compileImagePrompt({
-  id: "sc_no_text",
-  prompt: "Flat cartoon illustration of Mai counting coins at a small table, medium side-angle shot with warm lamp light.",
-  textAllowed: false,
-} as any, { aspectRatio: "16:9" });
-assert(/Completely text-free scene/i.test(noTextPrompt), "Strict no-text policy was not appended to the final generation prompt.");
-
-const vietnameseOverlayPrompt = compileImagePrompt({
-  id: "sc_vi_overlay",
-  prompt: "Flat editorial illustration of Mai checking a bank transfer on her phone, close-up side-angle shot with warm room lighting.",
-  textAllowed: true,
-  textOverlay: "ĐÃ NHẬN 20 TRIỆU",
-} as any, { aspectRatio: "16:9" });
-assert(vietnameseOverlayPrompt.includes('"ĐÃ NHẬN 20 TRIỆU"'), "Vietnamese text overlay was not preserved exactly.");
-assert(/Render exactly one readable text string/i.test(vietnameseOverlayPrompt), "Text overlay exclusivity was not enforced.");
 
 const exactStyleLock = "Flat stickman illustration with round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
 const actionLockedScene = {

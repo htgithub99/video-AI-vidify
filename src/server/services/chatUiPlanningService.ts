@@ -416,43 +416,7 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   }
 };
 
-const extractBalancedJsonValues = (text: string): string[] => {
-  const results: string[] = [];
-  for (let start = 0; start < text.length; start++) {
-    const opening = text[start];
-    if (opening !== "[" && opening !== "{") continue;
-    const closing = opening === "[" ? "]" : "}";
-    let depth = 0;
-    let inString = false;
-    let escaped = false;
-    for (let index = start; index < text.length; index++) {
-      const character = text[index];
-      if (inString) {
-        if (escaped) escaped = false;
-        else if (character === "\\") escaped = true;
-        else if (character === '"') inString = false;
-        continue;
-      }
-      if (character === '"') inString = true;
-      else if (character === opening) depth++;
-      else if (character === closing) {
-        depth--;
-        if (depth === 0) {
-          results.push(text.slice(start, index + 1));
-          start = index;
-          break;
-        }
-      }
-    }
-  }
-  return results;
-};
-
-const getLastVisibleLocator = async (
-  page: Page,
-  selector: string,
-  timeoutMs: number = CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS,
-): Promise<Locator> => {
+const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: number = CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS): Promise<Locator> => {
   const candidates = page.locator(selector);
   const visibleCandidate = candidates.filter({ visible: true }).last();
   const becameVisible = await visibleCandidate
@@ -465,16 +429,6 @@ const getLastVisibleLocator = async (
     if (await candidate.isVisible().catch(() => false)) return candidate;
   }
   throw new Error("Không tìm thấy vùng nhập đang hiển thị trong phòng AI.");
-};
-
-const extractPlanningJsonFromBody = (text: string, expectedSceneIds: string[]): string =>
-  _.findLast(extractBalancedJsonValues(text), (candidate) =>
-    _.every([..._.map(expectedSceneIds, (sceneId) => new RegExp(`"id"\\s*:\\s*"${_.escapeRegExp(sceneId)}"`).test(candidate))]),
-  ) || "";
-
-const extractCompleteJsonValue = (text: string): string => {
-  const candidate = _.reduce(extractBalancedJsonValues(text), (longest, current) => (current.length > longest.length ? current : longest), "");
-  return candidate.length > 1 ? candidate : "";
 };
 
 const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
@@ -552,10 +506,7 @@ const waitForStableResponse = async (
       "text",
     );
     const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
-    const sceneContractCandidates = _.compact(_.map(responseCandidates, (value) => extractPlanningJsonFromBody(value, expectedSceneIds)));
-    const completeJsonCandidates = _.compact(_.map(responseCandidates, extractCompleteJsonValue));
-    const selectedResponse =
-      _.maxBy(sceneContractCandidates, "length") || _.maxBy(completeJsonCandidates, "length") || _.maxBy(responseCandidates, "length") || "";
+    const selectedResponse = _.maxBy(responseCandidates, "length") || "";
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
@@ -578,11 +529,10 @@ const waitForStableResponse = async (
     const returnedArtifactType = _.trim(_.toString(_.get(parsedLatest, "artifactType")));
     const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedLatest, "requestId"));
     const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
-    const hasRequiredCompletionMarker =
-      _.isEmpty(completionMarker) || _.isEmpty(returnedCompletionMarker) || _.isEqual(returnedCompletionMarker, completionMarker);
+    const hasRequiredCompletionMarker = _.isEmpty(completionMarker) || _.isEqual(returnedCompletionMarker, completionMarker);
     const hasRequiredArtifactIdentity =
-      (_.isEmpty(artifactType) || _.isEmpty(returnedArtifactType) || _.isEqual(returnedArtifactType, artifactType)) &&
-      (_.isEmpty(normalizedExpectedRequestId) || _.isEmpty(returnedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
+      (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) &&
+      (_.isEmpty(normalizedExpectedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
     const belongsToCurrentRequest =
       (_.isEmpty(expectedSceneIds) || isPlanningResponseForScenes(latestText, expectedSceneIds)) && hasRequiredCompletionMarker && hasRequiredArtifactIdentity;
     lastResponseCount = count;
@@ -602,10 +552,9 @@ const waitForStableResponse = async (
         if (belongsToCurrentRequest || mayUseUnmarkedJsonFallback) {
           if (!belongsToCurrentRequest) {
             appWarn(
-              `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${_.join(
-                expectedSceneIds,
-                ",",
-              ) || "not-required"}, completionMarker=${completionMarker || "not-required"}).`,
+              `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${
+                _.join(expectedSceneIds, ",") || "not-required"
+              }, completionMarker=${completionMarker || "not-required"}).`,
             );
           }
           appLog(`[AI Chat Planning] Đã lấy response hoàn chỉnh từ room (${latestText.length} ký tự).`);
@@ -646,8 +595,7 @@ const isPendingResponseForRequest = (
   _.isEqual(pendingResponse.artifactType || "", artifactType || "") &&
   _.isEqual(normalizeCinematicArtifactIdentity(pendingResponse.requestId), normalizeCinematicArtifactIdentity(requestId));
 
-const isResponseTimeoutError = (error: unknown): boolean =>
-  _.isEqual(_.toString(_.get(error, "code")), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE);
+const isResponseTimeoutError = (error: unknown): boolean => _.isEqual(_.toString(_.get(error, "code")), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE);
 
 const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): Promise<void> => {
   const removableAttachments = page.locator(
@@ -719,9 +667,18 @@ const waitForSubmissionConfirmation = async (
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS) {
     throwIfPlanningCancelled(signal);
     const composerIsEmpty = (await getComposerText(input)).length <= CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS;
-    const responseStarted = (await page.locator(responseSelector).count().catch(() => 0)) > initialResponseCount;
-    const roomIsBusy = (await page.locator(busySelector).filter({ visible: true }).count().catch(() => 0)) > 0;
-    if (composerIsEmpty || responseStarted || roomIsBusy) return true;
+    const responseStarted =
+      (await page
+        .locator(responseSelector)
+        .count()
+        .catch(() => 0)) > initialResponseCount;
+    const roomIsBusy =
+      (await page
+        .locator(busySelector)
+        .filter({ visible: true })
+        .count()
+        .catch(() => 0)) > 0;
+    if (composerIsEmpty && (responseStarted || roomIsBusy)) return true;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
   return false;
@@ -744,7 +701,11 @@ const submitPrompt = async (
 ): Promise<string> => {
   throwIfPlanningCancelled(signal);
   const pendingResponse = pendingRoomResponses.get(roomKey);
-  if (pendingResponse && isPendingResponseForRequest(pendingResponse, page, expectedSceneIds, completionMarker, artifactType, requestId)) {
+  const pendingComposer = page.locator(inputSelector).filter({ visible: true }).last();
+  const pendingComposerHasDraft =
+    (await pendingComposer.count().catch(() => 0)) > 0 &&
+    (await getComposerText(pendingComposer).catch(() => "")).length > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS;
+  if (pendingResponse && !pendingComposerHasDraft && isPendingResponseForRequest(pendingResponse, page, expectedSceneIds, completionMarker, artifactType, requestId)) {
     appLog(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_RESUME_LOG);
     try {
       const resumedResponse = await waitForStableResponse(
@@ -788,12 +749,24 @@ const submitPrompt = async (
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
   await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-  const sendButton = page.locator(sendSelector).filter({ visible: true }).last();
-  const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
-  if (sendButtonReady) await sendButton.click();
-  else if (_.isEmpty(attachments)) await input.press("Enter");
-  else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-  const submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+  let submissionConfirmed = false;
+  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_ACTION_ATTEMPTS && !submissionConfirmed; attempt += 1) {
+    if ((await getComposerText(input)).length <= CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS) {
+      await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+      await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+    }
+    const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
+    const semanticSendButton = page
+      .getByRole("button", { name: /Gửi tin nhắn|Send message/i })
+      .filter({ visible: true })
+      .last();
+    const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
+    const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
+    if (sendButtonReady) await sendButton.click();
+    else if (_.isEmpty(attachments)) await input.press("Enter");
+    else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+    submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+  }
   if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);
   appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace("{0}", _.toString(normalizedPrompt.length)));
   pendingRoomResponses.set(roomKey, {
@@ -867,11 +840,9 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
   if (!baseModelLabel) return;
-  let modelButton = await getLastVisibleLocator(
-    page,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS,
-  ).catch(() => undefined);
+  let modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS).catch(
+    () => undefined,
+  );
   if (!modelButton) {
     appWarn("[AI Chat Planning] Không tìm thấy bộ chọn model Gemini; tiếp tục ngay bằng model hiện tại của room.");
     return;
@@ -888,11 +859,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
     return;
   }
   await page.keyboard.press("Escape").catch(() => undefined);
-  modelButton = await getLastVisibleLocator(
-    page,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS,
-  );
+  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
   const fallbackCurrentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
   if (!baseModelLabel.test(fallbackCurrentModelLabel)) {
     await modelButton.click();
@@ -902,11 +869,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
       return;
     }
   }
-  modelButton = await getLastVisibleLocator(
-    page,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS,
-  );
+  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
   await modelButton.click();
   const thinkingLevelTrigger = page
     .getByRole("menuitem", { name: /Thinking level|Mức tư duy|Cấp độ tư duy/i })
@@ -946,11 +909,7 @@ const isGrokChatReady = async (page: Page): Promise<boolean> => {
   }
   if (!(currentUrl.hostname === "grok.com" || currentUrl.hostname.endsWith(".grok.com"))) return false;
   const input = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_INPUT_SELECTOR).filter({ visible: true }).last();
-  const [visible, enabled, editable] = await Promise.all([
-    input.isVisible().catch(() => false),
-    input.isEnabled().catch(() => false),
-    input.isEditable().catch(() => false),
-  ]);
+  const [visible, enabled, editable] = await Promise.all([input.isVisible().catch(() => false), input.isEnabled().catch(() => false), input.isEditable().catch(() => false)]);
   return visible && enabled && editable;
 };
 
@@ -1164,12 +1123,9 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
         throwIfPlanningCancelled(request.signal);
         const errorMessage = _.toString(_.get(error, "message", error));
         const canRecoverClosedRoom =
-          CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) &&
-          recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
+          CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) && recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
         if (!canRecoverClosedRoom) throw error;
-        appWarn(
-          _.replace(CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_LOG, SecurityConstants.PLACEHOLDER_0, providerNames[request.provider]),
-        );
+        appWarn(_.replace(CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_LOG, SecurityConstants.PLACEHOLDER_0, providerNames[request.provider]));
         await closeChatPlanningRoom(request);
       }
     }

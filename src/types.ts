@@ -42,11 +42,11 @@ export enum AudioType {
 export enum Gender {
   Male = "male",
   Female = "female",
-  }
+}
 
 export enum AgeGroup {
   Adult = "adult",
-  }
+}
 
 export enum AssetsMode {
   Mixed = "mixed",
@@ -1179,7 +1179,7 @@ export enum ImageFocusMode {
 }
 
 export enum GeminiChatSpeed {
-  Slow = "1",
+  Slow = "2",
   Normal = "3",
   Fast = "5",
   SuperFast = "7",
@@ -1187,8 +1187,8 @@ export enum GeminiChatSpeed {
 }
 
 export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
-  [GeminiChatSpeed.Slow]: 1,
-  [GeminiChatSpeed.Normal]: 4,
+  [GeminiChatSpeed.Slow]: 2,
+  [GeminiChatSpeed.Normal]: 3,
   [GeminiChatSpeed.Fast]: 5,
   [GeminiChatSpeed.SuperFast]: 7,
   [GeminiChatSpeed.HyperFast]: 10,
@@ -1226,7 +1226,7 @@ export const GEMINI_CHAT_MEDIA_SELECTORS = {
 export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",
   CreateImageVi = "Tạo hình ảnh",
-  }
+}
 
 export enum ImageModelLabel {
   Veo3 = "VEO 3.0 FLUID",

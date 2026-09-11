@@ -883,7 +883,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       <div className={cn("flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner")}>
                         {GEMINI_CHAT_SPEED_OPTIONS.map((opt) => {
                           const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
-                          const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
+                          const selectedSpeed = _.isEqual(_.toString(project.visualConfig.geminiChatSpeed), "1")
+                            ? GeminiChatSpeed.Slow
+                            : project.visualConfig.geminiChatSpeed || GeminiChatSpeed.Slow;
+                          const isActive = _.isEqual(selectedSpeed, opt.value);
                           return (
                             <Button
                               variant="unstyled"
@@ -1108,7 +1111,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             const progressPercent = ((idx + 1) / _.size(PipelineConstants.FLOW_STEPS)) * 100;
             return (
               <div
-                className={cn("h-full bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(245,158,11,0.5)] relative")}
+                className={cn(
+                  "h-full bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(245,158,11,0.5)] relative",
+                )}
                 style={{ width: `${progressPercent}%` }}>
                 <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)] translate-x-1/2")} />
               </div>
@@ -1168,7 +1173,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className={cn("text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur font-bold")}>
               {t.FPS_24_COMPLIANT}
             </span>
-            <span className={cn("text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold border border-amber-400/40 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm")}>
+            <span
+              className={cn(
+                "text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold border border-amber-400/40 px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm",
+              )}>
               {t.stepShortLabels?.[currentStep]}
             </span>
           </div>
