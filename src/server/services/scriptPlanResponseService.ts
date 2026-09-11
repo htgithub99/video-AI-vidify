@@ -78,33 +78,29 @@ export const requestValidScriptPlan = async (
   throw error;
 };
 
-export const normalizeScriptPlan = (parsedScriptPlan: Record<string, unknown>, originalInput: string, requireCompleteAiArtifact: boolean = false): Record<string, unknown> => {
-  const parsedChapters = _.filter(_.castArray(_.get(parsedScriptPlan, "chapters")), (chapter) => !_.isEmpty(_.trim(_.toString(_.get(chapter, "title")))));
-  if (_.lt(_.size(parsedChapters), RESPONSE_CONTRACT_CONFIG.MIN_SCRIPT_PLAN_CHAPTERS)) {
+export const normalizeScriptPlan = (parsedScriptPlan: Record<string, unknown>, _originalInput: string, requireCompleteAiArtifact: boolean = false): Record<string, unknown> => {
+  const parsedChapters = _.get(parsedScriptPlan, "chapters");
+  if (_.lt(_.size(parsedChapters as unknown[]), RESPONSE_CONTRACT_CONFIG.MIN_SCRIPT_PLAN_CHAPTERS)) {
     throw new Error(RESPONSE_CONTRACT_CONFIG.INSUFFICIENT_CHAPTERS_ERROR);
   }
-  if (requireCompleteAiArtifact) {
-    const artifactIssues = _.compact([
-      _.isEmpty(_.trim(_.toString(_.get(parsedScriptPlan, "theme")))) && "script_plan:theme_missing",
-      _.isEmpty(_.trim(_.toString(_.get(parsedScriptPlan, "characterSpecs")))) && "script_plan:character_specs_missing",
-      !_.isPlainObject(_.get(parsedScriptPlan, "creativeBrief")) || _.isEmpty(_.get(parsedScriptPlan, "creativeBrief"))
-        ? "script_plan:creative_brief_missing"
-        : "",
-      !_.isPlainObject(_.get(parsedScriptPlan, "narrativePlan")) || _.isEmpty(_.get(parsedScriptPlan, "narrativePlan"))
-        ? "script_plan:narrative_plan_missing"
-        : "",
-      !_.isPlainObject(_.get(parsedScriptPlan, "factPack")) ? "script_plan:fact_pack_missing" : "",
-    ]);
-    if (!_.isEmpty(artifactIssues)) throw new Error(`cinematic_script_plan_invalid:${_.join(artifactIssues, ",")}`);
+  const artifactIssues = _.compact([
+    _.isEmpty(_.trim(_.toString(_.get(parsedScriptPlan, "theme")))) && "script_plan:theme_missing",
+    _.isEmpty(_.trim(_.toString(_.get(parsedScriptPlan, "characterSpecs")))) && "script_plan:character_specs_missing",
+    !_.isArray(_.get(parsedScriptPlan, "preferredTerms")) && "script_plan:preferred_terms_invalid",
+    !_.isString(_.get(parsedScriptPlan, "factCheckNotes")) && "script_plan:fact_check_notes_invalid",
+    !_.isPlainObject(_.get(parsedScriptPlan, "creativeBrief")) || _.isEmpty(_.get(parsedScriptPlan, "creativeBrief")) ? "script_plan:creative_brief_missing" : "",
+    !_.isPlainObject(_.get(parsedScriptPlan, "narrativePlan")) || _.isEmpty(_.get(parsedScriptPlan, "narrativePlan")) ? "script_plan:narrative_plan_missing" : "",
+    !_.isPlainObject(_.get(parsedScriptPlan, "factPack")) ? "script_plan:fact_pack_missing" : "",
+    !_.isArray(parsedChapters) && "script_plan:chapters_invalid",
+    ..._.flatMap(_.castArray(parsedChapters), (chapter, index) =>
+      _.map(
+        _.filter(SCRIPT_PLAN_CONFIG.REQUIRED_CHAPTER_CONTENT_FIELDS, (field) => _.isEmpty(_.trim(_.toString(_.get(chapter, field))))),
+        (field) => `script_plan:chapter_${index}:${field}_missing`,
+      ),
+    ),
+  ]);
+  if (!_.isEmpty(artifactIssues)) {
+    throw new Error(`${requireCompleteAiArtifact ? "cinematic_" : ""}script_plan_invalid:${_.join(artifactIssues, ",")}`);
   }
-  return {
-    ...parsedScriptPlan,
-    theme: requireCompleteAiArtifact ? _.trim(_.toString(_.get(parsedScriptPlan, "theme"))) : _.trim(_.toString(_.get(parsedScriptPlan, "theme"))) || originalInput,
-    characterSpecs: _.trim(_.toString(_.get(parsedScriptPlan, "characterSpecs"))),
-    preferredTerms: _.compact(_.map(_.castArray(_.get(parsedScriptPlan, "preferredTerms")), _.toString)),
-    factCheckNotes: _.trim(_.toString(_.get(parsedScriptPlan, "factCheckNotes"))),
-    creativeBrief: _.isPlainObject(_.get(parsedScriptPlan, "creativeBrief")) ? _.get(parsedScriptPlan, "creativeBrief") : requireCompleteAiArtifact ? undefined : {},
-    factPack: _.isPlainObject(_.get(parsedScriptPlan, "factPack")) ? _.get(parsedScriptPlan, "factPack") : requireCompleteAiArtifact ? undefined : { claims: [] },
-    chapters: parsedChapters,
-  };
+  return parsedScriptPlan;
 };

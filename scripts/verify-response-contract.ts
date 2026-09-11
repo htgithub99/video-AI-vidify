@@ -5,5 +5,12 @@ const assert=(value:unknown,message:string):void=>{if(!value)throw new Error(mes
 assertResponseContract({audience:"general",versions:[{id:"1"}]},ResponseContractName.Hook);
 let rejected=false;try{assertResponseContract({chapters:[]},ResponseContractName.ScriptPlan)}catch{rejected=true}
 assert(rejected,"invalid script plan accepted");
-assert(extractCleanChapterSegment('{"scriptSegment":"**Nội dung sạch** 😊"}').trim() === "Nội dung sạch", "chapter response cleanup failed");
+let rejectedFormatting = false;
+try {
+  extractCleanChapterSegment('{"scriptSegment":"**Nội dung sạch** 😊"}');
+} catch {
+  rejectedFormatting = true;
+}
+assert(rejectedFormatting, "invalid chapter formatting was cleaned in code instead of rejected for complete regeneration");
+assert(extractCleanChapterSegment('{"scriptSegment":"Nội dung sạch."}') === "Nội dung sạch.", "valid chapter artifact was changed");
 writeVerificationLog("Response contract assertions passed");

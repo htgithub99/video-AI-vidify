@@ -417,7 +417,6 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   SINGLE_SUBJECT_COUNT: 1,
   EMPTY_STRING: "",
   CHARACTER_VISUAL_PREFIX: "",
-  OBSERVABLE_ACTION_FALLBACK: "The named subject turns, steps forward, and visibly completes the story action",
   SCENE_DEPICTING_PREFIX: "Scene depicting: ",
   CHARACTER_STYLING_PREFIX: "Character styling: ",
   SHOT_TYPE_PREFIX: "Shot type: ",
@@ -452,24 +451,6 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
 export const PROJECT_IMAGE_FALLBACK_CONFIG = { TAB_CONCURRENCY: 3 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {
-  PROTAGONIST_SECOND_PERSON_NAMES: ["bạn", "you", "viewer protagonist"],
-  PROTAGONIST_DEFAULT_NAME: "You",
-  PROTAGONIST_ROLE: "second_person_protagonist",
-  DEFAULT_CHARACTER_ID: "char_1",
-  DEFAULT_CHARACTER_NAME: "Main Character",
-  DEFAULT_CHARACTER_ROLE: "protagonist",
-  LOCATION_ID_PREFIX: "loc_",
-  PROP_ID_PREFIX: "prop_",
-  CHARACTER_ID_PREFIX: "char_",
-  EMPTY_STAGE_ID: "base",
-  GENERIC_CHARACTER_NAME_PATTERN: /^(?:you|main character|protagonist|character|woman|man|female(?: character)?|male(?: character)?|former prisoner|hiring manager)$/i,
-  FALLBACK_NAMES: {
-    FEMALE: "Linh",
-    MALE: "Minh",
-    DEFAULT: "An",
-  },
-  GENDER_FEMALE_KEYWORD: "female",
-  GENDER_MALE_KEYWORD: "male",
   CONTEXT_PICK_PREVIOUS_KEYS: [
     "id",
     "characterIds",
@@ -529,15 +510,6 @@ export const VISUAL_CONTINUITY_CONFIG = {
     UNKNOWN_LOCATION: "unknown_location:",
     UNKNOWN_PROP: "unknown_prop:",
   },
-  REQUIRED_REFERENCE_VIEWS: ["front", "side", "three_quarter", "expression"],
-  TIMELINE_STAGES: [
-    { id: "hopeful", label: "hopeful", expressionRange: "open and hopeful", posture: "upright", visibleCondition: "composed" },
-    { id: "pressured", label: "pressured", expressionRange: "tense focus", posture: "slightly guarded", visibleCondition: "under pressure" },
-    { id: "compromised", label: "compromised", expressionRange: "uneasy resolve", posture: "closed shoulders", visibleCondition: "morally conflicted" },
-    { id: "exhausted", label: "exhausted", expressionRange: "heavy eyes", posture: "slumped", visibleCondition: "visibly tired" },
-    { id: "collapsed", label: "collapsed", expressionRange: "shock and grief", posture: "physically diminished", visibleCondition: "at the lowest point" },
-    { id: "resolved", label: "resolved", expressionRange: "quiet conviction", posture: "grounded upright stance", visibleCondition: "changed but steady" },
-  ],
 } as const;
 
 export const IMAGE_GENERATION_CONTINUITY_CONFIG = {
@@ -1400,8 +1372,12 @@ export const SCRIPT_PLAN_CONFIG = {
 } as const;
 
 export const CINEMATIC_SCRIPT_ARTIFACT_CONFIG = {
-  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v4-story-arc-intro-artifact",
-  LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS: ["cinematic-film-package-v3-correlated-final-artifact", "cinematic-film-package-v2-english-visual-prompts"],
+  FILM_PACKAGE_SCHEMA_VERSION: "cinematic-film-package-v5-intro-character-membership",
+  LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS: [
+    "cinematic-film-package-v4-story-arc-intro-artifact",
+    "cinematic-film-package-v3-correlated-final-artifact",
+    "cinematic-film-package-v2-english-visual-prompts",
+  ],
   COMPLETION_MARKER: "VIDIFY_ARTIFACT_COMPLETE",
   MAX_OUTPUT_TOKENS: 24_576,
   MAX_RESPONSE_ATTEMPTS: 2,

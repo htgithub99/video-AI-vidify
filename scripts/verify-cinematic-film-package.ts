@@ -22,7 +22,7 @@ assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.required, ["artifactType
 assert("completionMarker" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties);
 assert(!("continuityScore" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties));
 assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.scenes.items.required, ["id", "chapterId", "script", "subtitle", "characterIds"]);
-assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.intro.required, ["id", "script", "introTitle", "generationPrompt"]);
+assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.intro.required, ["id", "script", "subtitle", "introTitle", "generationPrompt", "characterIds"]);
 const exactSceneSchema = createCinematicFilmPackageResponseSchema(12);
 assert.equal(exactSceneSchema.properties.scenes.minItems, 12);
 assert.equal(exactSceneSchema.properties.scenes.maxItems, 12);
@@ -148,15 +148,22 @@ const aiThumbnail = {
   textText: "FINAL CROSSING",
   layoutId: ThumbnailLayoutId.SoloLeftArrowRight,
   typographyId: ThumbnailTypographyId.CondensedImpact,
+  style: "cinematic key art",
+  layout: "subject left, headline right",
+  layoutRationale: "The subject and headline form one readable conflict",
+  typography: "condensed impact uppercase",
+  accentWords: ["FINAL"],
+  colorSuggestion: "deep blue and amber",
+  subjectFocus: "the protagonist at the final crossing",
 } as ThumbnailItem;
-assert.equal(resolveThumbnailGenerationPrompt(aiThumbnail, true, "ignored", "16:9"), aiThumbnail.generationPrompt);
+assert.equal(resolveThumbnailGenerationPrompt(aiThumbnail, true, "ignored", "16:9"), `${aiThumbnail.generationPrompt} --ar 16:9`);
 assert.equal(normalizeThumbnailIdeas([aiThumbnail], 1)[0].generationPrompt, aiThumbnail.generationPrompt);
 assert.deepEqual(getThumbnailTechnicalPlanningIssues([aiThumbnail], 1), []);
-assert.deepEqual(getThumbnailTechnicalPlanningIssues([{ id: "th_ai_1", generationPrompt: "" }], 1), [
-  "thumbnail_generation_prompt_missing",
-  "thumbnail_layout_not_in_catalog",
-  "thumbnail_headline_missing",
-]);
+const incompleteThumbnailIssues = getThumbnailTechnicalPlanningIssues([{ id: "th_ai_1", generationPrompt: "" }], 1);
+assert(incompleteThumbnailIssues.includes("thumbnail_generation_prompt_missing"));
+assert(incompleteThumbnailIssues.includes("thumbnail_layout_not_in_catalog"));
+assert(incompleteThumbnailIssues.includes("thumbnail_headline_missing"));
+assert(incompleteThumbnailIssues.includes("thumbnail_style_missing"));
 
 const controllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
@@ -190,9 +197,9 @@ assert.match(pipelineSource, /VI_THUMBNAIL_REQUIRED/);
 assert.match(pipelineSource, /const thumbnailPlanningAttempted = Boolean\(thumbnailPlanRequest\)/);
 assert.match(pipelineSource, /else if \(!thumbnailPlanningAttempted\)/);
 assert.match(pipelineSource, /existingCinematicThumbnailContractIssues/);
-assert.match(controllerSource, /let normalizedThumbnails = normalizeThumbnailIdeas/);
+assert.match(controllerSource, /const normalizedThumbnails = normalizeThumbnailIdeas/);
 assert.match(controllerSource, /getThumbnailTechnicalPlanningIssues\(thumbsResult\.thumbnails, thumbnailCount, thumbnailTextMode\)/);
-assert.match(controllerSource, /if \(!isCinematicThumbnail && _\.lt\(_\.size\(normalizedThumbnails\), thumbnailCount\)\)/);
+assert.doesNotMatch(controllerSource, /_\.lt\(_\.size\(normalizedThumbnails\), thumbnailCount\)/);
 assert.match(filmSetupSource, /allowHybrid=\{false\}/);
 assert.match(filmSetupSource, /AiPlanningExecutionMode\.ApiOnly/);
 assert.doesNotMatch(filmSetupSource, /roomOnly/);

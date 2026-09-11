@@ -308,7 +308,8 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestChatUiPlan\(chatUiContents, expectedSceneIds\)[\s\S]*return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /const scopedCharactersJson = chunkCharactersJson/);
-  assert.match(controllerSource, /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)/);
+  assert.match(controllerSource, /let plannedScenes: StoryboardScene\[\] = _\.cloneDeep\(sourceScenes\)/);
+  assert.doesNotMatch(controllerSource, /resolveStoryboardCharacterIds/);
   assert.match(controllerSource, /relevantChunkCharacters/);
   assert.match(controllerSource, /_\.pick\(character, \["id", "name", "prompt"\]\)/);
   assert.match(controllerSource, /const scopedVisualBibleJson = chunkVisualBibleJson/);
@@ -318,16 +319,14 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /getCorrectablePlanningIssues[\s\S]*CINEMATIC_CHAT_PLANNING_CONFIG\.MAX_CORRECTION_ATTEMPTS/);
   assert.match(controllerSource, /CINEMATIC_CHAT_PLANNING_CONFIG\.ROOM_RESPONSE_ATTEMPTS/);
   assert.match(controllerSource, /getBlockingCinematicStoryboardContractIssues/);
-  assert.match(controllerSource, /getBlockingCinematicPlanningIssues\(planningIssues\)/);
-  assert.match(controllerSource, /candidateBlockingCount[\s\S]*currentBlockingCount/);
   assert.match(controllerSource, /chunkSize = isCinematicPlanning \? CINEMATIC_PRODUCTION_POLICY\.PLANNING_CHUNK_SIZE/);
   assert.match(controllerSource, /isCinematicPlanning \? createCinematicPlanningBatches\(planningPayload\)/);
-  assert.match(controllerSource, /targetRepairSceneIds[\s\S]*createRepairPrompt\(parsedItems, correctionIssues, targetRepairSceneIds\)/);
+  assert.match(controllerSource, /createRepairPrompt\(parsedItems, correctionIssues, sceneIds\)/);
   assert.match(controllerSource, /getCinematicVideoPlanningRepairPrompt/);
   assert.match(controllerSource, /planningMasterStoryboard/);
   assert.doesNotMatch(controllerSource, /continuityContext\.masterSequence/);
   assert.match(controllerSource, /const parsedScenes = isCinematicPlanning \? _\.get\(parsed, "scenes"\) : parsed/);
-  assert.match(controllerSource, /mergedCandidateItems[\s\S]*candidatePlanningIssues = collectPlanningIssues\(mergedCandidateItems\)/);
+  assert.match(controllerSource, /parsedItems = candidateItems/);
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
   assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
 };
@@ -360,7 +359,9 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /const createRoom[\s\S]*rooms\.set\(projectId, page\)[\s\S]*catch \(error\)[\s\S]*rooms\.delete\(projectId\)[\s\S]*page\.close\(\)/);
   assert.match(planningServiceSource, /finally[\s\S]*await closeChatPlanningRoom\(request\)[\s\S]*release\(\)/);
   assert.match(planningServiceSource, /MODEL_PICKER_TIMEOUT_MS/);
-  assert.doesNotMatch(planningServiceSource, /throw new Error\(`\$\{CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\}: completion_marker_missing/);
+  assert.match(planningServiceSource, /hasRequiredCompletionMarker/);
+  assert.match(planningServiceSource, /hasRequiredArtifactIdentity/);
+  assert.match(planningServiceSource, /if \(!_.isEmpty\(responseCandidates\)\) throw new Error\(CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\)/);
   assert.match(planningServiceSource, /configuredSendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
   assert.match(planningServiceSource, /semanticSendButton[\s\S]*getByRole/);
   assert.match(controllerSource, /closeRoomOnComplete: false/);
@@ -440,16 +441,14 @@ const verifyProviderRoomCleanup = () => {
 };
 
 const verifyProviderJsonVariants = () => {
-  const samples = [
-    '{"requestId":"room-json-test :video_prompts "}',
+  const parsed = safeParseJSON('{"requestId":"room-json-test :video_prompts "}', {});
+  assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
+  const invalidSamples = [
     '```json\n{"requestId":"room-json-test:video_prompts"}\n```',
     'Here is the result: {"requestId":"room-json-test:video_prompts"}',
     '{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}',
   ];
-  _.forEach(samples, (sample) => {
-    const parsed = safeParseJSON(sample, {});
-    assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
-  });
+  _.forEach(invalidSamples, (sample) => assert.throws(() => safeParseJSON(sample, {}), /invalid_ai_json_response/));
 };
 
 const verifyCinematicPlanningCheckpointing = () => {

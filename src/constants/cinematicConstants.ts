@@ -97,7 +97,7 @@ export const CINEMATIC_CHECKPOINT_CONFIG = {
 } as const;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
-  ROOM_RESPONSE_ATTEMPTS: 1,
+  ROOM_RESPONSE_ATTEMPTS: 2,
   RESPONSE_TIMEOUT_MS: 300000,
   RESPONSE_MAX_TIMEOUT_MS: 600000,
   RESPONSE_ACTIVITY_GRACE_MS: 180000,
@@ -127,7 +127,8 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   RESPONSE_TIMEOUT_CODE: "chat_planning_response_timeout",
   RESPONSE_TIMEOUT_MESSAGE: "AI Chat vẫn chưa hoàn tất phản hồi. Room được giữ nguyên; hãy chọn Tiếp tục để lấy kết quả đang tạo mà không gửi lại yêu cầu.",
   NAVIGATION_TIMEOUT_MS: 60000,
-  GEMINI_RESPONSE_SELECTOR: 'model-response, [data-test-id="model-response"], [data-testid="model-response"], [data-message-author-role="assistant"], .model-response-text',
+  GEMINI_RESPONSE_SELECTOR:
+    'model-response .presented-response-container [id^="model-response-message-content"]:not(:has([id^="model-response-message-content"]))',
   GEMINI_INPUT_SELECTOR: 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
   GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, .model-response-label-announcer[aria-busy="true"]',
@@ -299,13 +300,6 @@ export const CINEMATIC_CHARACTER_PACK_CONFIG = {
   MAX_CHARACTERS: 8,
   MAX_REFERENCES_PER_SCENE: 3,
   FLOW_CHARACTER_PROFILE_VERSION: "flow-character-v1-single-subject",
-} as const;
-
-export const CINEMATIC_SCENE_CHARACTER_MATCH_CONFIG = {
-  MIN_NAME_TOKEN_MATCHES: 2,
-  MIN_NAME_MATCH_RATIO: 0.4,
-  EXCLUSION_PREFIXES: ["no", "without", "exclude", "khong co", "khong thay"],
-  EXCLUSION_SUFFIXES: ["is not visible", "not visible", "does not appear", "khong xuat hien"],
 } as const;
 
 export const resolveCinematicClipDuration = (value?: string | number): number => {

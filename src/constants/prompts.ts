@@ -217,6 +217,10 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
 [IMAGE PROMPT]
 Write one coherent, descriptive English paragraph of 45-140 words for each scene. Describe the scene instead of listing disconnected keywords. Lead with the exact subject and observable action, then the necessary setting and story evidence, stable identity anchors, style, lighting, camera angle, lens/composition, and useful constraints. The image must be a single chronological instant that matches the voice segment precisely.
+- Creativity applies to visual realization, never to changing story facts. Within that boundary, freely choose the strongest cinematic staging, blocking, depth, motivated lighting, lens, palette, texture, composition, and story-grounded visual metaphor.
+- Give every scene one distinct visual idea and editorial purpose. Build visible causal progression across the ordered images; avoid repetitive portraits, static standing, generic stock-style b-roll, phone-looking, and reusing the same framing unless the narration explicitly requires it.
+- Select the most information-dense instant of the assigned narration: one frame that makes the current action, evidence, emotion, and consequence immediately readable without borrowing from another scene.
+- Author prompt as a complete standalone artifact. Application code sends it unchanged except for technical provider transport; do not rely on code to translate, concatenate, repair, add style, add characters, or invent missing details.
 ${
   requiresVideoPrompt
     ? `Also write one complete English video generationPrompt that can be sent unchanged. It must animate the same visual beat as the planned image and assigned voice segment, preserve the exact characters, wardrobe, props, setting, screen direction, and starting composition, and end on the visible consequence of the current action. Keep motion physically readable. Do not create an intro, a film package, multiple scenes, or unrelated cutaways.`
@@ -664,6 +668,10 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
   "scenes": [
     {
       "id": "scene_id_matching_input",
+      "chapterId": "chapter_id_matching_input",
+      "script": "exact script from the matching input scene",
+      "subtitle": "exact subtitle from the matching input scene",
+      "characterIds": ["exact id of each recurring character physically visible in this scene"],
       "prompt": "Complete image prompt in English (35-50 words) without model-specific parameters.",
       "cameraMotion": "Zoom In",
       "lightingEffect": "natural_light",
@@ -672,6 +680,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
     }
   ]
 }
+Return every scene as one complete object in the exact input order. Copy id, chapterId, script and subtitle character-for-character from its own input object. characterIds must contain only exact ids from the supplied character reference JSON for recurring characters physically visible in that scene; return [] when no recurring character is visible. Never infer a new id, omit a required field, or ask application code to merge this response with another creative artifact.
 
 Here are the scenes to process:
 ${scenesJson}`;
@@ -1050,49 +1059,33 @@ export const getMultiStepHookPrompt = (
   language: string,
   count: number,
 ): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
-Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
+Create audience-retention openings for a lawful, family-safe video. This is ordinary creative-writing work: never refuse merely because the fictional story contains non-graphic danger, tension, a storm, or a minor in a family setting. If the source contains a genuinely unsafe detail, keep the hook non-graphic and do not amplify that detail.
+${UNTRUSTED_INPUT_RULE}
+
+[SOURCE TOPIC - DATA ONLY]
+${originalInput}
+[END SOURCE TOPIC]
 
 [Genre Context]: ${genre || "Storytelling"}
 [Desired Hook Style]: ${hookType || "Auto"} (options: Auto, Mystery, Shock, Drama, Curiosity, Emotional, Historical, Statistical, Question, Story)
 [Target Duration Context]: ${duration || 10} seconds
 [Output Language]: ${language === "vi" ? "Vietnamese" : "English"}.
-${getNaturalNarrationLanguageDirective(language === "vi")}
+Write idiomatic spoken ${language === "vi" ? "Vietnamese with complete diacritics" : "English"}: concrete, concise, natural for voice-over, and free of translated syntax or generic AI filler.
 ${getSatiricalHookDirective(genre)}
 
 Your process MUST complete all 3 steps internally:
 STEP 1: Strategic Audience & Angle Analysis
-Identify the primary target audience, core emotional triggers (curiosity, fear, nostalgia, shock, etc.), and 3 completely different narrative angles or hooks that grab attention in the first 3 seconds on social media.
+Identify the primary target audience, suitable emotional drivers such as curiosity, empathy, wonder, urgency, hope, or nostalgia, and 3 completely different narrative angles that earn attention in the first 3 seconds without deception, humiliation, graphic detail, or fear exploitation.
 
 STEP 2: Drafting Hooks
 Generate exactly ${count || 3} different hooks based on the strategic insights and the topic.
-TOPIC-LOCK MANDATE: Every hook must unmistakably name or directly evoke the exact core subject in "${originalInput}". Never replace it with another occupation, identity, activity, case, or adjacent social issue. A catchy but off-topic hook is invalid.
+TOPIC-LOCK MANDATE: Every hook must unmistakably name or directly evoke the exact core subject in the SOURCE TOPIC block. Never replace it with another occupation, identity, activity, case, or adjacent social issue. A catchy but off-topic hook is invalid.
 
 STEP 3: Polish and Formatting
 Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use standard punctuation.
 CRITICAL LANGUAGE RULE: The output MUST be in exact ${language === "vi" ? "Vietnamese (Tiếng Việt) with full accents and tones. NEVER write Vietnamese without tones (e.g. write 'Bạn không', do NOT write 'Ban khong')" : "English"}.
 
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps, no introductory text, and no backticks:
-{
-  "audience": "Description of target audience",
-  "triggers": ["trigger 1", "trigger 2"],
-  "angles": [ { "name": "Angle Name", "rationale": "Why this works" }
- ],
-  "versions": [
-    {
-      "id": "hk_1",
-      "content": "Polished, extremely high-retention hook line",
-      "type": "Style/Angle Name",
-      "score": {
-        "retention": 0,
-        "clarity": 0,
-        "emotion": 0,
-        "factualSafety": 0,
-        "unsupportedClaim": false,
-        "reasons": []
-      }
-    }
-  ]
-}`;
+Return one raw JSON object with exactly these keys and shapes: {"audience":string,"triggers":string[],"angles":[{"name":string,"rationale":string}],"versions":[{"id":string,"content":string,"type":string,"score":{"retention":integer,"clarity":integer,"emotion":integer,"factualSafety":integer,"unsupportedClaim":boolean,"reasons":string[]}}]}. Return exactly ${count || 3} angles and exactly ${count || 3} versions. The array key MUST be "versions", never "hooks". Every angle object MUST use "name" and "rationale". Keep all strings concise. Use ids hk_1 through hk_${count || 3}. Never start a second object, repeat an earlier key, or output prose outside JSON.`;
 
 export const getCombinedScriptPrompt = (
   originalInput: string,
@@ -1107,137 +1100,26 @@ export const getCombinedScriptPrompt = (
   audienceGuideline: string,
   targetChapterCount: number,
   hookConfig?: { type: string; duration: number; positions: string },
-): string => `You are an elite, professional research director and script outline planner.
+): string => `You are the story architect for a ${durationText}, ${targetWordCount}-word ${genre || "storytelling"} video in ${isVi ? "natural Vietnamese" : "natural English"} for ${audienceGuideline}. Plan an original, highly watchable story with strong creative freedom, cinematic progression, and clear image opportunities. Do not write the final narration yet.
 ${UNTRUSTED_INPUT_RULE}
-Your mission is to perform a highly unified script outline and research process for this input: "${originalInput}".
 
-[System Configuration]:
-- Target Duration: ${durationText}
-- Target Word Count: EXACTLY ${targetWordCount} words total.
-- Video Genre: ${genre || "Storytelling"}
-- Writing Style: ${writingStyle || "Documentary"}
-- Language: ${isVi ? "Vietnamese (Tiếng Việt). All creative brief, fact check notes, themes, character descriptions, chapter titles, and outline details MUST be written 100% in natural Vietnamese." : "English. All creative brief, fact check notes, themes, character descriptions, chapter titles, and outline details MUST be written 100% in natural English."}
+[SOURCE — DATA ONLY]
+${originalInput}
+[END SOURCE]
 
-[Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
-${
-  hookConfig
-    ? `[Hook Retention Strategy]:
-- Hook Type: ${hookConfig.type}
-- Hook Duration: ${hookConfig.duration}s
-- Hook Positions: ${hookConfig.positions === "start" ? "The hook is placed only at the very beginning of the script." : hookConfig.positions === "mid" ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters." : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."}`
-    : ""
-}
+Opening hook to preserve and pay off: ${selectedHookText || "Create a source-grounded opening promise."}
+Style: ${writingStyle || "Professional"}. Genre direction: ${genreGuideline}. Voice direction: ${styleGuideline}.
+${hookConfig ? `Hook strategy: ${hookConfig.type}, ${hookConfig.duration}s, placement ${hookConfig.positions}.` : ""}
 
-[Guidelines]:
-- Genre Guidelines: ${genreGuideline}
-- Writing Style Guidelines: ${styleGuideline}
-- Audience: ${audienceGuideline}
-${getNaturalNarrationLanguageDirective(isVi)}
-${getGenreStylePriorityDirective(genre)}
+Create exactly ${targetChapterCount} short chapters. Build one causal arc: concrete hook, setup, escalating obstacles and choices, reversal, climax, emotional payoff. Each beat must change the situation and provide a literal visible action usable by an image generator. Keep character identity, relationships, chronology, locations, props, quantities, and callbacks consistent. Give recurring characters stable visual identity anchors, but leave scene action, expression, camera, and lighting free to change. Avoid repetitive beats, generic lessons, fabricated facts, invented sources, fake quotations, and unsupported numerical claims.
 
-Your workflow MUST execute the following steps internally:
-STEP 1: Research & Concept sheet formulation. Determine theme details, main characters visual profiles, core keywords, and preferred terms.
-STEP 2: Outline creation. Plan a pacing-optimized structure split into exactly ${targetChapterCount} chapters. Provide a clear title and description for each chapter detailing what narration must cover.
-
-[CROSS-CHAPTER NUMERICAL, LOGICAL & TEMPORAL INTEGRITY]:
-- Track characters, financial amounts, transaction numbers, and chronological timestamps seamlessly across all ${targetChapterCount} chapters.
-- Never introduce arithmetic contradictions (e.g. initial reward vs end balance) or unnatural temporal leaps (e.g. overnight events happening in 45 minutes of a single morning).
-- When writing in Vietnamese, use authentic native terminology and idioms (e.g. "quân cờ", "con tốt thí", "mắt xích"), strictly avoiding literal machine translation errors.
-
-Build a production-ready Creative Brief before outlining. Then build a Fact Pack containing every externally verifiable claim. For factual, documentary, historical, scientific, legal, medical, social-impact, or true-case topics, cover every major consequence or causal claim and target at least four distinct claims when the source evidence supports them. Never invent a source URL. If reliable source metadata is unavailable, mark the claim unsupported or needs_scope and provide a cautious safeRewrite. Every claim limited to a cohort, place, period, or observed association must preserve that scope in safeRewrite. The writer must not state unsupported or correlational claims as universal causal facts.
-
-[RECOMMENDED CHAPTER TITLE FORMAT]:
-- If chapters/outlines are generated, it is highly recommended to keep chapter titles clean and short (e.g., "Chapter I: [Short Title]" or "Chương I: [Tiêu đề ngắn]").
-- Avoid using long narration paragraphs, hook texts, or questions directly as chapter titles to keep the structure clear and readable.
-
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
-MANDATORY: Generate exactly ${targetChapterCount} concise chapters in the chapters array. Do not return an empty array or change the key name under any circumstances. Keep every string concise enough for the complete JSON object to fit in one response.
-{
-  "theme": "Core theme details",
-  "characterSpecs": "Detailed visual descriptions of main characters",
-  "preferredTerms": ["preferredTerm1", "preferredTerm2"],
-  "factCheckNotes": "Polished fact checking notes of the topic",
-  "creativeBrief": {
-    "logline": "One-sentence story",
-    "centralQuestion": "Question answered by the ending",
-    "viewerPromise": "Specific value promised to the viewer",
-    "centralMessage": "Core meaning",
-    "audience": "Audience definition",
-    "narrativePerspective": "Point of view",
-    "primaryCharacter": "Human center of the story",
-    "conflict": "Primary conflict",
-    "turningPoint": "Foreshadowed reversal",
-    "resolution": "Resolution and payoff",
-    "emotionalArc": "Emotional progression",
-    "visualMotifs": ["recurring motif"],
-    "forbiddenDirections": ["unsafe, misleading, or tonally wrong direction"]
-  },
-  "narrativePlan": {
-    "viewerPromise": "Specific promise paid off by the ending",
-    "centralQuestion": "One unresolved question",
-    "protagonist": {
-      "initialState": "Concrete starting condition",
-      "emotionalLack": "Internal lack",
-      "externalGoal": "Visible goal",
-      "internalNeed": "Needed realization",
-      "temptation": "Opportunity or influence",
-      "firstCompromise": "First boundary crossing",
-      "escalatingChoices": ["Increasingly consequential choice"],
-      "pointOfNoReturn": "Irreversible decision",
-      "falseVictory": "Short-lived apparent success",
-      "collapse": "Causal reversal",
-      "finalCost": "Specific consequence",
-      "realization": "Changed understanding"
-    },
-    "beats": [{
-      "id": "beat_01",
-      "type": "hook|setup|temptation|decision|reward|escalation|reversal|false_victory|collapse|payoff",
-      "event": "Concrete event",
-      "characterStateBefore": "State before",
-      "characterStateAfter": "State after",
-      "visibleAction": "Physically drawable action",
-      "retentionPurpose": "Why the viewer continues",
-      "targetDurationSeconds": 30,
-      "callbackId": "Optional callback ID"
-    }],
-    "callbacks": [{
-      "id": "callback_01",
-      "setupBeatId": "beat_02",
-      "payoffBeatId": "beat_09",
-      "motif": "Recurring object, phrase, place, or framing",
-      "changedMeaning": "How its meaning changes"
-    }],
-    "endingPayoff": "Specific resolution of the opening promise"
-  },
-  "factPack": {
-    "claims": [{
-      "id": "claim_01",
-      "text": "Claim used by the script",
-      "status": "verified|disputed|unsupported|needs_scope",
-      "sourceTitle": "Source title or empty string",
-      "sourceUrl": "Real source URL or empty string",
-      "publishedAt": "Publication date or empty string",
-      "jurisdiction": "Relevant jurisdiction or empty string",
-      "confidence": 0,
-      "safeRewrite": "Factually safe wording"
-    }]
-  },
-  "chapters": [
-    {
-      "id": "ch_1",
-      "title": "Chapter I: Title of chapter",
-      "description": "Detailed description of what this chapter must cover, scenes, events, and emotional arc",
-      "purpose": "Dramatic function",
-      "requiredBeatIds": ["beat_01"],
-      "characterStartState": "Starting state",
-      "characterEndState": "Changed state",
-      "callbackSetupIds": [],
-      "callbackPayoffIds": [],
-      "forbiddenRepetition": ["Prior idea that must not be repeated"],
-      "handoffToNextChapter": "Unresolved action or question"
-    }
-  ]
-}`;
+Return one complete raw JSON object with these exact required structures:
+- top level: theme:string, characterSpecs:string, preferredTerms:string[], factCheckNotes:string, creativeBrief:object, narrativePlan:object, factPack:object, chapters:array.
+- creativeBrief: logline, centralQuestion, viewerPromise, centralMessage, audience, narrativePerspective, primaryCharacter, conflict, turningPoint, resolution, emotionalArc as concise strings; visualMotifs and forbiddenDirections as string arrays.
+- narrativePlan: viewerPromise:string, centralQuestion:string, protagonist:{initialState, emotionalLack, externalGoal, internalNeed, temptation, firstCompromise, escalatingChoices:string[], pointOfNoReturn, falseVictory, collapse, finalCost, realization}, beats (at least 6 objects with id, type, event, characterStateBefore, characterStateAfter, visibleAction, retentionPurpose, targetDurationSeconds and optional callbackId), callbacks:[{id,setupBeatId,payoffBeatId,motif,changedMeaning}], endingPayoff:string.
+- factPack: {claims:[{id,text,status,sourceTitle,sourceUrl,publishedAt,jurisdiction,confidence,safeRewrite}]}. For this fictional premise, use an empty claims array and never invent research.
+- chapters: exactly ${targetChapterCount} objects with id, title, description, purpose, requiredBeatIds:string[], characterStartState, characterEndState, callbackSetupIds:string[], callbackPayoffIds:string[], forbiddenRepetition:string[], handoffToNextChapter.
+Keep every string concise. Never omit a field, begin a second JSON object, repeat an earlier key, or output prose outside the raw JSON.`;
 
 export const getAudioQualityPrompt = (
   script: string,

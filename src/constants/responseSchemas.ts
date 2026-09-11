@@ -4,6 +4,20 @@ import { CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG } from "./cine
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
 const stringArraySchema = { type: "array", items: stringSchema } as const;
+export const AUDIO_QUALITY_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["pronunciationScore", "pauseScore", "loudnessScore", "naturalnessScore", "emotionTransitionScore", "blockingErrors", "warnings"],
+  properties: {
+    pronunciationScore: numberScoreSchema,
+    pauseScore: numberScoreSchema,
+    loudnessScore: numberScoreSchema,
+    naturalnessScore: numberScoreSchema,
+    emotionTransitionScore: numberScoreSchema,
+    blockingErrors: stringArraySchema,
+    warnings: stringArraySchema,
+  },
+} as const;
 const characterTimelineStageSchema = {
   type: "object",
   additionalProperties: false,
@@ -94,13 +108,14 @@ const cinematicFilmPackageSceneSchema = {
 const cinematicFilmPackageIntroSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "script", "introTitle", "generationPrompt"],
+  required: ["id", "script", "subtitle", "introTitle", "generationPrompt", "characterIds"],
   properties: {
     id: stringSchema,
     script: stringSchema,
     subtitle: stringSchema,
     introTitle: stringSchema,
     generationPrompt: stringSchema,
+    characterIds: stringArraySchema,
   },
 } as const;
 

@@ -1036,8 +1036,8 @@ export const LOG_DICTIONARY = {
   },
 
   JSON_PARSE_WARNING: {
-    en: "Data structure parse failed. Activating automated recovery fallback: {0}",
-    vi: "Không thể phân tích cấu hình dữ liệu nhận được. Hệ thống đang tự động khôi phục: {0}",
+    en: "The AI response is not valid raw JSON and was rejected for complete regeneration: {0}",
+    vi: "Phản hồi AI không phải JSON thô hợp lệ nên đã bị từ chối để tạo lại toàn bộ: {0}",
   },
 
   ERROR_LOADING_SANDBOX: {

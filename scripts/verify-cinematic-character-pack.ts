@@ -48,7 +48,7 @@ const inferredReferences = resolveCinematicSceneCharacterReferences(
 assert.deepEqual(inferredReferences.characterIds, ["char_kade"]);
 assert.deepEqual(inferredReferences.referenceCharacterNames, ["Kade Voss"]);
 
-const exclusionAwareReferences = resolveCinematicSceneCharacterReferences(
+const aiMembershipRemainsAuthoritative = resolveCinematicSceneCharacterReferences(
   {
     ...scene,
     characterIds: ["char_kade", "char_varg"],
@@ -56,8 +56,8 @@ const exclusionAwareReferences = resolveCinematicSceneCharacterReferences(
   },
   characters,
 );
-assert.deepEqual(exclusionAwareReferences.characterIds, ["char_kade"]);
-assert.deepEqual(exclusionAwareReferences.referenceCharacterNames, ["Kade Voss"]);
+assert.deepEqual(aiMembershipRemainsAuthoritative.characterIds, ["char_kade", "char_varg"]);
+assert.deepEqual(aiMembershipRemainsAuthoritative.referenceCharacterNames, ["Kade Voss", "Varg"]);
 
 const explicitCharactersRemainAuthoritative = resolveCinematicSceneCharacterReferences(
   {

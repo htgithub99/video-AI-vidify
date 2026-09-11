@@ -22,6 +22,7 @@ import {
   UI_MESSAGE_DURATION,
   PIPELINE_CLIENT_ERRORS,
   PRODUCTION_AUDIO_CONFIG,
+  CINEMATIC_CHARACTER_PACK_CONFIG,
   normalizeGenreValue,
 } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
@@ -98,7 +99,7 @@ import { acceptGeneratedThumbnail } from "../../services/thumbnailQualityPipelin
 import { createCharacterIdentityDescription, createSceneGenerationContext } from "../../services/sceneReferenceService";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
 import { resolveStylePreset } from "../../constants/stylePresets";
-import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary } from "../../services/visualContinuityService";
+import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary } from "../../services/visualContinuityService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../../services/imageGenerationContinuityService";
 import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
 import { createThumbnailStyleDirective } from "../../services/styleReferenceService";
@@ -1409,15 +1410,7 @@ export function usePipelineWizard(props: any) {
           if (!characterResult.success || !_.isArray(characterResult.data?.characters) || _.isEmpty(characterResult.data.characters)) {
             throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
           }
-          generationCharacters = normalizeCharacterLibrary(
-            _.map(characterResult.data.characters, (character: any, index: number) => ({
-              ...character,
-              id: character.id || `char_${_.add(index, 1)}`,
-              prompt: character.prompt || character.description,
-              images: [],
-              extracted: false,
-            })),
-          );
+          generationCharacters = _.map(characterResult.data.characters, (character: any) => ({ ...character, images: [], extracted: false }));
         }
 
         const cleanVisualBible = {
@@ -1843,17 +1836,10 @@ export function usePipelineWizard(props: any) {
           sourceContext: characterSourceContext,
           bypassCache: true,
         });
-        if (characterResult.success && _.isArray(characterResult.data?.characters) && !_.isEmpty(characterResult.data.characters)) {
-          optimizedCharacters = normalizeCharacterLibrary(
-            _.map(characterResult.data.characters, (character: any, index: number) => ({
-              ...character,
-              id: character.id || `char_${_.add(index, 1)}`,
-              prompt: character.prompt || character.description,
-              images: [],
-              extracted: false,
-            })),
-          );
+        if (!characterResult.success || !_.isArray(characterResult.data?.characters) || _.isEmpty(characterResult.data.characters)) {
+          throw new Error(characterResult.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
         }
+        optimizedCharacters = _.map(characterResult.data.characters, (character: any) => ({ ...character, images: [], extracted: false }));
       }
       const payload = {
         storyboard: project.storyboard,
@@ -1917,19 +1903,19 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script });
       if (!success || data?.error) throw new Error(error || data?.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
 
-      const rawCharacters = (data.characters || []).slice(0, 3);
+      const rawCharacters = data.characters;
+      if (!_.isArray(rawCharacters) || _.isEmpty(rawCharacters) || _.gt(rawCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS)) {
+        throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+      }
       setProject((prev) => {
         const existingByName = _.keyBy(_.defaultTo(prev.visualConfig.characters, []), (character) => _.toLower(_.trim(character.name)));
-        const chars = rawCharacters.map((character: any, index: number) => {
-          const existingCharacter = existingByName[_.toLower(_.trim(character.name))];
+        const existingById = _.keyBy(_.defaultTo(prev.visualConfig.characters, []), "id");
+        const chars = rawCharacters.map((character: any) => {
+          const existingCharacter = existingById[character.id] || existingByName[_.toLower(_.trim(character.name))];
           const images = _.defaultTo(existingCharacter?.images, []);
           return {
-            ...existingCharacter,
-            id: existingCharacter?.id || `char_${index + 1}_${Date.now()}`,
-            name: character.name,
-            description: character.description,
+            ...character,
             images,
-            prompt: character.prompt || existingCharacter?.prompt || "",
             extracted: Boolean(existingCharacter?.extracted || !_.isEmpty(images)),
           };
         });
@@ -2097,14 +2083,7 @@ export function usePipelineWizard(props: any) {
         setInfoMsg(successMsg);
         logger.info("STORYBOARD_CHAR_SUCCESS");
       } else {
-        setProject((prev) => ({
-          ...prev,
-          storyboard: (prev.storyboard || []).map((scene) => ({
-            ...scene,
-            prompt: scene.prompt || "",
-          })),
-        }));
-        setInfoMsg(t.charApplyFallback);
+        throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
       }
     } catch (e: any) {
       setErrorMsg(`${t.charApplyFailed} ${e.message}`);
@@ -2154,20 +2133,7 @@ export function usePipelineWizard(props: any) {
         setInfoMsg(successMsg);
         logger.info("THUMBNAIL_CHAR_SUCCESS");
       } else {
-        setProject((prev) => {
-          const updatedProject = {
-            ...prev,
-            thumbnails: (prev.thumbnails || []).map((thumb) => ({
-              ...thumb,
-              prompt: thumb.prompt || "",
-            })),
-          };
-          setTimeout(() => {
-            onSaveProject(updatedProject, true);
-          }, 0);
-          return updatedProject;
-        });
-        setInfoMsg(t.charApplyFallback);
+        throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
       }
     } catch (e: any) {
       setErrorMsg(`${t.charApplyFailed} ${e.message}`);

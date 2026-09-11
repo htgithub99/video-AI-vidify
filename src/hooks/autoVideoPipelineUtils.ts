@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
+import { ProjectKind, VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
 import { CINEMATIC_CHECKPOINT_CONFIG, CINEMATIC_PROGRESS_STAGE } from "../constants/cinematicConstants";
@@ -121,24 +121,35 @@ export const resolveTargetProject = (
   cinematicMode = false,
 ): ResolvedTargetProject => {
   const selectedProject = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
+  const targetProjectKind = cinematicMode ? ProjectKind.Cinematic : ProjectKind.Auto;
   const targetChildSuffix = cinematicMode ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
+  const isTargetProject = (project: VideoProject | null | undefined): boolean =>
+    Boolean(project && (_.isEqual(project.projectKind, targetProjectKind) || _.endsWith(project.name, targetChildSuffix)));
   const selectedAutoProject = selectedProject
     ? selectedProject.parentId
-      ? selectedProject
+      ? isTargetProject(selectedProject)
+        ? selectedProject
+        : _.defaultTo(
+            _.find(projects, (project) => _.isEqual(project.parentId, selectedProject.parentId) && isTargetProject(project)),
+            null,
+          )
       : _.defaultTo(
-          _.find(projects, (project) => _.isEqual(project.parentId, _.defaultTo(selectedProject.parentId, selectedProject.id)) && _.endsWith(project.name, targetChildSuffix)),
-          selectedProject,
+          _.find(projects, (project) => _.isEqual(project.parentId, selectedProject.id) && isTargetProject(project)),
+          isTargetProject(selectedProject) ? selectedProject : null,
         )
     : null;
   const existingTargetProject = _.defaultTo(
     selectedAutoProject,
     _.defaultTo(
-      selectedProjectId ? null : activeProject,
+      selectedProjectId || !isTargetProject(activeProject) ? null : activeProject,
       _.defaultTo(
-        _.find(projects, (project) => !_.isEmpty(projectName) && _.isEqual(_.trim(project.name), _.trim(projectName))),
+        _.find(projects, (project) => isTargetProject(project) && !_.isEmpty(projectName) && _.isEqual(_.trim(project.name), _.trim(projectName))),
         _.defaultTo(
-          _.find(projects, (project) => !_.isEmpty(scriptContent) && _.isEqual(_.trim(_.get(project, "input.content", "")), _.trim(scriptContent))),
-          _.defaultTo(_.first(projects), null),
+          _.find(
+            projects,
+            (project) => isTargetProject(project) && !_.isEmpty(scriptContent) && _.isEqual(_.trim(_.get(project, "input.content", "")), _.trim(scriptContent)),
+          ),
+          null,
         ),
       ),
     ),

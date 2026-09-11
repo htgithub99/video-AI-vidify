@@ -9,7 +9,7 @@ export const extractCleanChapterSegment = (responseText: unknown): string => {
   const chapterData = _.isPlainObject(parsedResponse) ? parsedResponse : {};
   assertResponseContract(chapterData, ResponseContractName.Chapter);
   const scriptSegment = _.trim(_.toString(_.get(chapterData, "scriptSegment")));
-  if (new RegExp(MARKDOWN_REGEX.source).test(scriptSegment) || new RegExp(EMOJI_REGEX.source).test(scriptSegment)) {
+  if (new RegExp(MARKDOWN_REGEX.source, MARKDOWN_REGEX.flags).test(scriptSegment) || new RegExp(EMOJI_REGEX.source, EMOJI_REGEX.flags).test(scriptSegment)) {
     throw new Error("invalid_chapter_response_forbidden_formatting");
   }
   return scriptSegment;

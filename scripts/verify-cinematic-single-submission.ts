@@ -275,7 +275,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   assignFlowVideoBatchMediaIds([{ sceneId: "scene_a", prompt: "first scene prompt" }], [{ editId: "55555555-5555-4555-8555-555555555555", evidence: "dom", discoveryOrder: 0 }]),
-  [{ sceneId: "scene_a", mediaId: "55555555-5555-4555-8555-555555555555" }],
+  [{ sceneId: "scene_a", mediaId: undefined }],
 );
 assert.deepEqual(
   assignFlowVideoBatchMediaIds(

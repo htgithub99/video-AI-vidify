@@ -27,10 +27,10 @@ assert.doesNotMatch(controllerSource, /repairCinematicStoryboardContract\(planne
 assert.doesNotMatch(pipelineSource, /realScenes\s*=\s*repairCinematicStoryboardContract/);
 assert.match(pipelineSource, /scene\.generationPrompt = retryPrompt/);
 assert.match(pipelineSource, /requestAiRewrittenVideoPrompt/);
-assert.match(
+assert.doesNotMatch(
   controllerSource,
-  /isCinematicPlanning\s*\? _\.cloneDeep\(sourceScenes\)\s*:\s*resolveStoryboardCharacterIds/,
-  "cinematic scene-character membership is still inferred in application code",
+  /resolveStoryboardCharacterIds/,
+  "scene-character membership must come from the AI artifact rather than application inference",
 );
 assert.match(
   controllerSource,

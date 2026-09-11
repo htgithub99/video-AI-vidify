@@ -23,18 +23,3 @@ export const normalizeContentSafety = (value: Partial<ContentSafetyReport>): Con
   report.allowed = _.isEmpty(report.blockingErrors) && !report.sexualExploitationRisk;
   return report;
 };
-
-export const createUnavailableContentSafetyReport = (): ContentSafetyReport => ({
-  sensitiveTopic: false,
-  trueCase: false,
-  minorsInvolved: false,
-  sexualExploitationRisk: false,
-  victimExploitationRisk: false,
-  privacyRisk: false,
-  likenessRisk: false,
-  copyrightRisk: false,
-  requiredDisclosures: [],
-  blockingErrors: [],
-  warnings: [CONTENT_SAFETY_CONFIG.UNAVAILABLE_WARNING],
-  allowed: true,
-});

@@ -9,8 +9,6 @@ export const SAFE_FOLDER_CHARS_REGEX = /[^a-zA-Z0-9\s-_]/g;
 export const SAFE_PROJECT_ID_REGEX = /[^a-zA-Z0-9_-]/g;
 export const MULTIPLE_SPACES_REGEX = /\s+/g;
 
-export const NON_ALPHANUMERIC_SPACE_REGEX = /[^a-zA-Z0-9\s]/g;
-
 export const PLAYWRIGHT_SUBMIT_ICON_REGEX = /^(arrow_forward|add_2|send)$/i;
 export const PLAYWRIGHT_SUBMIT_TEXT_REGEX = /(Tạo|Create|Generate)/i;
 

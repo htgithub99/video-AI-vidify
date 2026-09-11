@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createCharacterIdentityBlocks, createSceneGenerationContext, pruneUnsupportedSceneCharacterIds, resolveSceneCharacterIds, resolveStoryboardCharacterIds } from "../src/services/sceneReferenceService.ts";
+import { createCharacterIdentityBlocks, createSceneGenerationContext } from "../src/services/sceneReferenceService.ts";
 import { CharacterConfig, StoryboardScene } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { normalizeExtractedStyle } from "../src/services/styleReferenceService.ts";
@@ -43,7 +43,6 @@ const scene = {
   textAllowed: false,
 } as StoryboardScene;
 
-assert.deepEqual(resolveSceneCharacterIds(scene, characters), ["char_2"]);
 const context = createSceneGenerationContext(scene, {
   characters,
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
@@ -100,14 +99,18 @@ const objectOnlyContext = createSceneGenerationContext({
 assert.doesNotMatch(objectOnlyContext.prompt, /CHARACTER 1 —/i);
 assert.equal(objectOnlyContext.prompt, "A ceramic bowl covers four gaming pieces, overhead shot --ar 16:9");
 
-const inferredScene = {
+const unassignedScene = {
   ...scene,
   characterIds: undefined,
   prompt: "Asian male gambler with messy black hair in a grey shirt checks his silver wristwatch, medium shot composition",
   script: "The player considers one final bet.",
   subtitle: "The player considers one final bet.",
 };
-assert.deepEqual(resolveSceneCharacterIds(inferredScene, characters), ["char_1"]);
+assert.deepEqual(
+  createSceneGenerationContext(unassignedScene as StoryboardScene, { characters }).characterIds,
+  [],
+  "application code must not infer creative character membership from prompt text",
+);
 
 const explicitEmptyScene = {
   ...scene,
@@ -116,24 +119,7 @@ const explicitEmptyScene = {
   script: "This practical solution helps the community.",
   subtitle: "This practical solution helps the community.",
 };
-assert.deepEqual(resolveSceneCharacterIds(explicitEmptyScene, characters), []);
-const vietnameseCharacter = [{
-  id: "char_vu",
-  name: "Vũ",
-  narrativeRole: "Primary",
-  hair: "short black hair",
-  signatureClothing: "red jacket",
-}] as CharacterConfig[];
-const continuedScenes = resolveStoryboardCharacterIds([
-  { ...scene, id: "sc_vu_1", script: "Vũ ký hợp đồng.", subtitle: "Vũ ký hợp đồng.", prompt: "", characterIds: [] },
-  { ...scene, id: "sc_vu_2", script: "Anh nhanh chóng đeo đồng hồ.", subtitle: "Anh nhanh chóng đeo đồng hồ.", prompt: "", characterIds: [] },
-], vietnameseCharacter);
-assert.deepEqual(continuedScenes.map(item => item.characterIds), [["char_vu"], ["char_vu"]]);
-const localizedExplicitScene = pruneUnsupportedSceneCharacterIds(
-  [{ ...scene, id: "sc_wukong", prompt: "", subtitle: "", visibleAction: "", reaction: "", script: "Tôn Ngộ Không siết chặt Gậy Như Ý.", characterIds: ["char_1"] }],
-  characters,
-);
-assert.deepEqual(localizedExplicitScene[0].characterIds, ["char_1"], "validated character ID was erased because the localized script used a different name");
+assert.deepEqual(createSceneGenerationContext(explicitEmptyScene, { characters }).characterIds, []);
 const unnamedPeopleContext = createSceneGenerationContext(explicitEmptyScene, {
   characters,
   styleReferenceImages: [],

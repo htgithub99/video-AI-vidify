@@ -12,7 +12,7 @@ import {
 import { AssetAcceptance, GenerateType, QaStatus, SceneAssetStatus } from "../src/types";
 import { getPipelineInvalidationState, getReferenceChangeState } from "../src/hooks/autoVideoPipelineUtils";
 import { clearProjectSceneOutput } from "../src/services/projectRegenerationService";
-import { getVisualShotPlanIssues, normalizeVisualShotPlan } from "../src/services/visualPlanningService";
+import { getVisualShotPlanIssues } from "../src/services/visualPlanningService";
 import { getCinematicStoryboardRecoveryPrompt } from "../src/constants/cinematicPrompts";
 import { getUnderfilledCinematicSceneIds } from "../src/services/storyboardQualityService";
 
@@ -217,14 +217,10 @@ const repairableScene = {
   prompt: "A cinematic celestial hall under motivated light.",
   characterIds: ["char_1"],
 } as any;
-const repairedVisualPlan = normalizeVisualShotPlan(
-  { ...repairableScene, visibleAction: "A defiant and proud moment" },
-  repairableScene,
-  { characters: [{ id: "char_1", name: "Tôn Ngộ Không" }] as any },
-);
 const repairedVisualIssues = getVisualShotPlanIssues(
   {
-    ...repairedVisualPlan,
+    ...repairableScene,
+    visibleAction: "A defiant and proud moment",
     visualIntent: "Reveal the character's challenge",
     reaction: "The celestial guards recoil",
     storyEvidence: "The challenge in the celestial hall",
@@ -233,8 +229,7 @@ const repairedVisualIssues = getVisualShotPlanIssues(
   },
   repairableScene,
 );
-assert(!repairedVisualIssues.some((issue) => issue.includes("visibleAction:no_observable_physical_verb")));
-assert(repairedVisualPlan.prompt.includes("Tôn Ngộ Không"));
+assert(repairedVisualIssues.some((issue) => issue.includes("visibleAction:no_observable_physical_verb")));
 assert.deepEqual(
   getBlockingCinematicPlanningIssues([
     "sc_10:cinematicBeats:0:source_scene_mismatch",
@@ -327,6 +322,6 @@ assert.match(controllerSource, /productionScenes: _\.castArray\(cinematicFilmPac
 assert.match(controllerSource, /characters: _\.castArray\(cinematicFilmPackage\?\.characters/, "AI-authored cast is not returned with the film package");
 assert.match(controllerSource, /passed: _\.isEmpty\(blockingErrors\)/, "cinematic storyboard still bypasses deterministic blocking errors");
 assert.match(pipelineSource, /const shouldAnalyzeCharacters\s*=\s*!isCinematicPipeline/, "cinematic pipeline still performs a separate character-analysis request");
-assert.match(pipelineSource, /if \(!isCinematicPipeline && _\.isEmpty\(rawAnalyzedCharacters\)\)/, "legacy character fallback is not isolated from cinematic production");
+assert.doesNotMatch(pipelineSource, /createFallbackCharacterProfile|rawAnalyzedCharacters\s*=\s*\[/, "application code still creates a fallback character artifact");
 assert.doesNotMatch(pipelineSource, /recoverCinematicChaptersFromStoryboard/, "pipeline still synthesizes cinematic chapters in application code");
 process.stdout.write(JSON.stringify({ passed: true, incompleteScriptIssues, advisoryCinematicScoreIssues, hardLowCinematicScoreIssues, takeIssues, unclearFightIssues }));

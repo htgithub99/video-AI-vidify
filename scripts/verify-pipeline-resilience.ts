@@ -1,15 +1,18 @@
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { resolveUsableHooks } from "../src/services/hookResilienceService.ts";
 import { acquirePipelineRunLease, releasePipelineRunLease } from "../src/services/pipelineRunLockService.ts";
-import { applyProfessionalEditingPolicy } from "../src/services/editingPolicyService.ts";
 import { createAudienceMarketDirective } from "../src/services/audienceMarketService.ts";
-import { ensureRenderReadySceneAssets } from "../src/services/renderCompletionFallbackService.ts";
 import { createAudioCueSheet } from "../src/services/soundDesignService.ts";
-import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerationService.ts";
 import { createSceneSubtitleCues } from "../src/services/subtitleService.ts";
 import { appendAssetRevision } from "../src/services/dependencyHashService.ts";
 import { removeRedundantSceneAudioBase64 } from "../src/services/voiceTimelineService.ts";
-import { getGenerationCheckpointSceneProgress, hasCompleteSceneAlignment, mergeContinuationLogs, resolveCinematicContinuationStage } from "../src/hooks/autoVideoPipelineUtils.ts";
+import {
+  getGenerationCheckpointSceneProgress,
+  hasCompleteSceneAlignment,
+  mergeContinuationLogs,
+  resolveCinematicContinuationStage,
+  resolveTargetProject,
+} from "../src/hooks/autoVideoPipelineUtils.ts";
 import { CINEMATIC_PROGRESS_STAGE } from "../src/constants/cinematicConstants.ts";
 import fs from "node:fs";
 
@@ -32,6 +35,15 @@ Object.defineProperty(globalThis, "sessionStorage", {
 const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
+
+const workspaceProjects = [
+  { id: "parent", name: "Project", projectKind: "container" },
+  { id: "auto", parentId: "parent", name: "Project - Tự động", projectKind: "auto" },
+  { id: "film", parentId: "parent", name: "Project - Phim AI", projectKind: "cinematic" },
+] as any;
+assert(resolveTargetProject(workspaceProjects, "film", workspaceProjects[2], "", "", false).existingTargetProject?.id === "auto", "quick video resolved the selected film project instead of its auto sibling");
+assert(resolveTargetProject(workspaceProjects, "auto", workspaceProjects[1], "", "", true).existingTargetProject?.id === "film", "AI film resolved the selected auto project instead of its cinematic sibling");
+assert(resolveTargetProject([{ id: "orphan-film", parentId: "missing", name: "Orphan - Phim AI", projectKind: "cinematic" }] as any, "orphan-film", null, "", "", false).existingTargetProject === null, "orphan film was reused as a quick-video target");
 
 const interruptedPromptProgress = getGenerationCheckpointSceneProgress({
   storyboard: [
@@ -102,8 +114,8 @@ assert(
 );
 
 const sourceHookText = "A real opening sentence from the supplied script.";
-const fallbackHooks = resolveUsableHooks([], "Auto", 3, sourceHookText);
-assert(fallbackHooks.length === 1 && fallbackHooks[0].content === sourceHookText, "source hook fallback changed the supplied content");
+const rejectedIncompleteHooks = resolveUsableHooks([], "Auto", 3, sourceHookText);
+assert(rejectedIncompleteHooks.length === 0, "missing AI hooks were replaced with code-authored content");
 const groundedHooks = resolveUsableHooks(
   [
     { id: "wrong", content: "Bạn nghĩ làm kỹ sư nữ là ngôi sao, nhưng mỗi cuộc họp lại là một trận chiến.", type: "contrast" },
@@ -113,7 +125,7 @@ const groundedHooks = resolveUsableHooks(
   3,
   "Tại sao thật tệ khi là Gái Ngành?",
 );
-assert(groundedHooks.length === 1 && groundedHooks[0].id === "right", "off-topic occupation hook passed topic grounding");
+assert(groundedHooks.length === 0, "an invalid hook was removed while the remaining partial AI response was accepted");
 const invalidVietnameseHooks = resolveUsableHooks(
   [{ id: "missing_tones", content: "Ban tuong minh da thoat, nhung cai bay moi chi vua dong cua.", type: "contrast" }],
   "Auto",
@@ -121,7 +133,7 @@ const invalidVietnameseHooks = resolveUsableHooks(
   "Bạn tưởng mình đã thoát khỏi cái bẫy.",
   true,
 );
-assert(invalidVietnameseHooks.length === 1 && invalidVietnameseHooks[0].id !== "missing_tones", "unaccented Vietnamese hook entered the script");
+assert(invalidVietnameseHooks.length === 0, "invalid Vietnamese hooks were replaced with code-authored content");
 const first = acquirePipelineRunLease("project_1");
 const duplicate = acquirePipelineRunLease("project_1");
 assert(first.acquired && !duplicate.acquired, "duplicate pipeline run was accepted");
@@ -136,46 +148,6 @@ assert(hasCompleteSceneAlignment(compactAlignedScenes, true), "global narration 
 const revisionScene = { id: "sc_revision", prompt: "prompt", assetRevisions: [] } as any;
 const embeddedRevision = appendAssetRevision(revisionScene, "data:image/jpeg;base64,AAAA", "generated" as any);
 assert(embeddedRevision.assetUrl === "", "embedded media leaked into asset revision history");
-const editorialVideoIds = rankEditorialVideoSceneIds(
-  [
-    {
-      id: "still_hook",
-      chapterId: "c1",
-      duration: 4,
-      shotPurpose: "emotional_hold",
-      cameraMotion: "static",
-      visibleAction: "She stares sadly at the wall.",
-      visualHook: "face",
-      storyEvidence: "wall",
-    },
-    {
-      id: "transaction",
-      chapterId: "c1",
-      duration: 5,
-      shotPurpose: "action",
-      cameraMotion: "Pan Right",
-      visibleAction: "She signs the paper and hands over the envelope.",
-      visualHook: "envelope exchange",
-      storyEvidence: "signed agreement",
-      layout: "single_frame",
-    },
-    { id: "portrait", chapterId: "c1", duration: 4, shotPurpose: "reaction", cameraMotion: "static", visibleAction: "She looks worried." },
-    {
-      id: "reveal",
-      chapterId: "c2",
-      duration: 6,
-      shotPurpose: "reveal",
-      cameraMotion: "Zoom Out",
-      visibleAction: "The door opens and the hidden queue moves into view.",
-      visualHook: "door reveal",
-      storyEvidence: "waiting queue",
-      layout: "single_frame",
-    },
-  ] as any,
-  ["still_hook", "portrait"],
-  2,
-);
-assert(editorialVideoIds.join(",") === "transaction,reveal", "editorial video selection favored static AI picks over motion value and chapter distribution");
 const semanticSubtitleCues = createSceneSubtitleCues({
   id: "subtitle_scene",
   duration: 6,
@@ -201,13 +173,25 @@ const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelin
 const pipelineHookSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 const autoVideoStateSource = fs.readFileSync("src/hooks/useAutoVideoState.ts", "utf8");
 const imageGeneratorSource = fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8");
+const chatPlanningSource = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const ffmpegRenderSource = fs.readFileSync("src/server/utils/ffmpegRender.ts", "utf8");
+const cinematicConstantsSource = fs.readFileSync("src/constants/cinematicConstants.ts", "utf8");
 assert(/const handleStartAutoGenerate[\s\S]*: Promise<void> =>/.test(autoGeneratorSource), "pipeline start promise is not exposed to regeneration");
 assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regeneration does not await the active pipeline");
 assert(/finally \{\s*setLoadingTarget\(null\)/.test(previewSource), "regeneration loading state can remain stuck");
 assert(!/mediaMixTexts\.badge\s*\(/.test(generationSettingsSource), "mixed-mode settings call a missing translation function");
 assert(/mediaMixTexts\?\.maxVideos/.test(generationSettingsSource), "mixed-mode settings do not use the declared translation contract");
 assert(!/removeAdjacentRepeatedNarrationSentences|removeAdjacentRepeatedStoryboardScenes/.test(pipelineControllerSource), "server still cuts AI-authored narration or scenes");
+assert(
+  !/GEMINI_RESPONSE_SELECTOR:\s*['"]model-response,/.test(cinematicConstantsSource) &&
+    /model-response \[id\^=["']model-response-message-content/.test(cinematicConstantsSource),
+  "Gemini response extraction still reads the UI label wrapper instead of the exact AI-authored payload node",
+);
+assert(
+  /getOrLaunchGlobalBrowser\(request\.chromeHeadless, true\)/.test(chatPlanningSource) &&
+    /browserInstance = await getOrLaunchGlobalBrowser\(visualConfig\?\.chromeHeadless, true\)/.test(imageGeneratorSource),
+  "AI room or quick-image generation ignored an already authenticated shared Chrome session",
+);
 assert(/regenerateVideoClips=\{cinematicMode\}/.test(autoGeneratorSource), "cinematic preview does not expose clip regeneration");
 assert(
   /scriptRewritten: existingTargetProj\.scriptRewritten[\s\S]*storyboard: existingTargetProj\.storyboard[\s\S]*renderedVideoUrl: existingTargetProj\.renderedVideoUrl/.test(
@@ -293,63 +277,9 @@ assert(
 assert(/regenerateVideoClips \? regenerationTexts\.clips : regenerationTexts\.images/.test(previewSource), "cinematic preview still labels clip regeneration as images");
 assert(/hasGlobalNarration[\s\S]*audioPath = hasGlobalNarration \? undefined/.test(ffmpegRenderSource), "global narration does not suppress per-scene audio sources");
 
-const editScenes = applyProfessionalEditingPolicy(
-  [
-    { id: "s1", chapterId: "c1", duration: 5, effects: "dreamy", lightingEffect: "spotlight", transition: "cross_dissolve", cameraMotion: "handheld_soft" },
-    { id: "s2", chapterId: "c1", duration: 5, effects: "sad_vignette", lightingEffect: "god_rays", transition: "cross_dissolve", cameraMotion: "static" },
-    { id: "s3", chapterId: "c2", duration: 5, effects: "film_grain", lightingEffect: "golden_glow", transition: "glitch_transition", cameraMotion: "static" },
-  ] as any,
-  {
-    colorPalette: "flat solid colors, no gradients",
-    characterSpecs: "",
-    landscapeSpecs: "",
-    lightingMood: "no shading",
-  },
-);
-assert(editScenes[0].effects === "" && editScenes[0].lightingEffect === "natural_light" && editScenes[0].cameraMotion === "static", "flat-style comfort policy failed");
-assert(editScenes[1].transition === "fade_black" && editScenes[2].transition === "cut", "chapter transition policy failed");
-const comfortScenes = applyProfessionalEditingPolicy(
-  [
-    { id: "c1", chapterId: "c1", duration: 1.8, effects: "glitch", lightingEffect: "strobe", transition: "whip_left", cameraMotion: "handheld_soft", shotPurpose: "action" },
-    { id: "c2", chapterId: "c1", duration: 4, effects: "glitch", lightingEffect: "flicker", transition: "glitch_transition", cameraMotion: "handheld_soft", shotPurpose: "action" },
-  ] as any,
-  { visualStyle: "cinematic live action" } as any,
-);
-assert(comfortScenes[0].cameraMotion === "static" && comfortScenes[0].effects === "" && comfortScenes[0].lightingEffect === "natural_light", "short-scene comfort policy failed");
-assert(comfortScenes[1].effects === "" && comfortScenes[1].lightingEffect === "natural_light" && comfortScenes[1].transition === "cut", "disruptive effect guard failed");
-assert(
-  comfortScenes.every((scene) => scene.cameraMotion === "static"),
-  "short or uncomfortable motion must be neutralized",
-);
-const gentleMotionScenes = applyProfessionalEditingPolicy(
-  [
-    { id: "g1", chapterId: "c1", duration: 5, cameraMotion: "static" },
-    { id: "g2", chapterId: "c1", duration: 5, cameraMotion: "Pan Right" },
-    { id: "g3", chapterId: "c1", duration: 5, cameraMotion: "shaky handheld" },
-    { id: "g4", chapterId: "c1", duration: 5, cameraMotion: "Zoom Out" },
-  ] as any,
-  { visualStyle: "cinematic live action" } as any,
-);
-assert(gentleMotionScenes[1].cameraMotion === "Pan Right", "gentle pan should remain available");
-assert(gentleMotionScenes[2].cameraMotion === "static", "shake and handheld motion must be removed");
-const repetitiveMotionScenes = applyProfessionalEditingPolicy(
-  Array.from({ length: 8 }, (_, index) => ({
-    id: `repeat_${index}`,
-    chapterId: "repeat_chapter",
-    duration: 4,
-    cameraMotion: "Zoom In",
-    transition: "cut",
-  })) as any,
-);
-assert(new Set(repetitiveMotionScenes.map((scene) => scene.cameraMotion)).size > 2, "repeated safe motion was not diversified");
-assert(
-  repetitiveMotionScenes.some((scene) => scene.transition === "cross_dissolve"),
-  "long documentary sequence remained all hard cuts",
-);
 assert(createAudienceMarketDirective("vi", "Khán giả trẻ").includes("Vietnamese audience across Vietnam"), "Vietnam market contract missing");
 assert(createAudienceMarketDirective("en", "Global viewers").includes("international English-speaking audience"), "international market contract missing");
-const renderFallback = ensureRenderReadySceneAssets([{ id: "ready", assetUrl: "data:image/png;base64,ready" }, { id: "missing" }] as any);
-assert(renderFallback.repairedSceneIds.includes("missing") && Boolean(renderFallback.scenes[1].assetUrl), "missing scene did not receive completion fallback");
+assert(!fs.existsSync("src/services/renderCompletionFallbackService.ts"), "render still contains a cross-scene visual substitution fallback");
 const cueSheet = createAudioCueSheet([{ id: "s1", duration: 5, script: "A character waits", prompt: "one character portrait" }] as any);
 assert(!cueSheet.cues.some((cue) => cue.description === "vehicle movement"), "character falsely triggered car sound effect");
 

@@ -17,7 +17,7 @@ import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
-import { safeParseJSON, formatTime, extractCharacterListFromParsedJSON } from "../utils/helpers.js";
+import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 import {
@@ -41,8 +41,8 @@ import {
   FINAL_MULTIMODAL_QA_CONFIG,
   FACT_RESEARCH_CONFIG,
   SCRIPT_PLAN_CONFIG,
+  TECHNICAL_RESPONSE_RETRY_CONFIG,
   CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
-  SEO_FALLBACK_CONFIG,
   ADVISORY_QA_CONFIG,
   STORYBOARD_QUALITY_CONFIG,
   CINEMATIC_GENERATION_RECOVERY_CONFIG,
@@ -54,7 +54,7 @@ import {
   GEMINI_MEDIA_ERRORS,
   PIPELINE_COMPLETION_CONFIG,
 } from "../../constants/config.js";
-import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
+import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
 import {
   getThumbnailPlanningIssues,
@@ -156,6 +156,7 @@ import {
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
   CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
   VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
+  AUDIO_QUALITY_RESPONSE_SCHEMA,
   CINEMATIC_EDIT_ANALYSIS_CONFIG,
   SCRIPT_PROMPT_CONFIG,
   VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
@@ -228,7 +229,7 @@ import {
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, getUnderfilledCinematicSceneIds, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
-import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
+import { normalizeContentSafety } from "../../services/contentSafetyService.js";
 import {
   detectVietnameseNarrationStyleWarnings,
   isSatiricalVideoGenre,
@@ -246,7 +247,6 @@ import {
   createScopedVisualBibleContext,
   createVisualPlanningPayload,
   getVisualShotPlanIssues,
-  normalizeVisualShotPlan,
 } from "../services/imagePromptPlanningService.js";
 import {
   createCinematicPlanningBatches,
@@ -259,6 +259,7 @@ import {
 import {
   CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS,
   CINEMATIC_ARTIFACT_TYPE,
+  CINEMATIC_CHARACTER_PACK_CONFIG,
   normalizeCinematicArtifactIdentity,
   CINEMATIC_CHAT_PLANNING_CONFIG,
   CINEMATIC_ROOM_STAGE,
@@ -323,6 +324,36 @@ const QUICK_VISUAL_PLANNING_REQUIRED_FIELDS = [
   "archivalSearchQuery",
   "archivalRationale",
 ] as const;
+const QUICK_CHARACTER_FIELDS = [
+  "id",
+  "name",
+  "genderPresentation",
+  "ageRange",
+  "ethnicitySkinTone",
+  "bodyBuild",
+  "faceShape",
+  "eyes",
+  "nose",
+  "hair",
+  "silhouette",
+  "signatureClothing",
+  "accessories",
+  "colorPalette",
+  "description",
+  "prompt",
+  "referenceGenerationPrompt",
+] as const;
+const QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
+  type: "array",
+  minItems: 1,
+  maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS,
+  items: {
+    type: "object",
+    additionalProperties: false,
+    required: QUICK_CHARACTER_FIELDS,
+    properties: _.fromPairs(_.map(QUICK_CHARACTER_FIELDS, (field) => [field, { type: "string" }])),
+  },
+} as const;
 const QUICK_VISUAL_SHOT_PURPOSES = [
   "setup",
   "action",
@@ -553,11 +584,10 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
     }
 
     const updatedStoryboard = _.map(storyboard, (scene: any) => {
+      if (_.isEmpty(_.trim(_.toString(scene.prompt)))) return scene;
       const rewritten = rewrittenMap.get(scene.id);
-      if (rewritten) {
-        return { ...scene, prompt: rewritten };
-      }
-      return { ...scene, prompt: scene.prompt || "" };
+      if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+      return { ...scene, prompt: rewritten };
     });
 
     res.json({ success: true, storyboard: updatedStoryboard });
@@ -653,7 +683,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       : hasSceneRef
         ? `Strict character match: accurately preserve character identity from the reference image in the "${visualStyle}" style.`
         : resolvedVisualBible.visualStyle || visualStyle || "Dynamically craft the visual art style and medium to match the story's emotional tone and genre.";
-    let plannedScenes: StoryboardScene[] = isCinematicPlanning ? _.cloneDeep(sourceScenes) : resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
+    let plannedScenes: StoryboardScene[] = _.cloneDeep(sourceScenes);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
     const chunks = isCinematicPlanning ? createCinematicPlanningBatches(planningPayload) : _.chunk(planningPayload, chunkSize);
     const videoPromptsRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS);
@@ -1030,11 +1060,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               id: sceneId,
               generationPromptProfileVersion: CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
             } as StoryboardScene)
-          : normalizeVisualShotPlan(returnedItem, baseScene, {
-              characters,
-              visualBible: resolvedVisualBible,
-              textMode: resolvedVisualConfig.styleTextInImageMode,
-            });
+          : ({ ...baseScene, ...returnedItem } as StoryboardScene);
         optimizedMap.set(sceneId, normalizedScene);
         const plannedSceneIndex = _.findIndex(plannedScenes, { id: sceneId });
         if (_.gte(plannedSceneIndex, 0)) plannedScenes[plannedSceneIndex] = normalizedScene;
@@ -1046,7 +1072,11 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       }
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
-    plannedScenes = _.map(plannedScenes, (scene) => optimizedMap.get(scene.id) || scene);
+    plannedScenes = _.map(plannedScenes, (scene) => {
+      const optimizedScene = optimizedMap.get(scene.id);
+      if (!optimizedScene) throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
+      return optimizedScene;
+    });
     if (isCinematicPlanning) {
       const projectLanguage = isVi ? ProjectLanguage.VI : ProjectLanguage.EN;
       const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
@@ -1077,7 +1107,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           prompt: appendImagePromptAspectRatio(scene.prompt, aspectRatio || AspectRatio.SixteenNine),
         }));
     const scenesById = _.keyBy(finalizedScenes, "id");
-    const updatedStoryboard = _.map(storyboard as StoryboardScene[], (scene) => scenesById[scene.id] || scene);
+    const updatedStoryboard = _.map(storyboard as StoryboardScene[], (scene) => {
+      if (_.isEmpty(scene.script || scene.subtitle)) return scene;
+      const finalizedScene = scenesById[scene.id];
+      if (!finalizedScene) throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
+      return finalizedScene;
+    });
     const result = { success: true, storyboard: updatedStoryboard, promptQa, planningWarnings: _.uniq(planningWarnings) };
     setCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, result);
     if (promptQa && !promptQa.passed) appWarn(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
@@ -1155,9 +1190,10 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
 
       for (let i = 0; i < updatedThumbnails.length; i++) {
         const thumb = updatedThumbnails[i];
-        if (rewrittenMap.has(thumb.id)) {
-          thumb.prompt = rewrittenMap.get(thumb.id);
-        }
+        if (_.isEmpty(_.trim(_.toString(thumb.prompt)))) continue;
+        const rewritten = rewrittenMap.get(thumb.id);
+        if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        thumb.prompt = rewritten;
       }
     }
 
@@ -1226,9 +1262,10 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
       }
 
       for (const rawThumb of updatedThumbnails) {
-        if (rewrittenMap.has(rawThumb.id)) {
-          rawThumb.prompt = rewrittenMap.get(rawThumb.id);
-        }
+        if (_.isEmpty(_.trim(_.toString(rawThumb.prompt)))) continue;
+        const rewritten = rewrittenMap.get(rawThumb.id);
+        if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        rawThumb.prompt = rewritten;
       }
     }
 
@@ -1259,49 +1296,58 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] } | undefined;
     let artifactIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const response = await generateContentWithRetry({
-        contents: prompt,
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          ...(requiresCompleteArtifact ? { responseJsonSchema: CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA } : {}),
-          includeRoomSchemaContract: false,
-        },
-        task: { capability: AiTaskCapability.TextPlanning },
-      });
+      try {
+        const correctionDirective = _.isEmpty(artifactIssues)
+          ? ""
+          : `\n\nThe previous response failed these checks: ${jsonUtils.safeStringify(artifactIssues)}. Return the complete character artifact again from the beginning; do not return a patch.`;
+        const response = await generateContentWithRetry({
+          contents: `${prompt}${correctionDirective}`,
+          config: {
+            responseMimeType: CONTENT_TYPES.JSON,
+            responseJsonSchema: requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
+            includeRoomSchemaContract: false,
+          },
+          task: { capability: AiTaskCapability.TextPlanning },
+        });
 
-      const parsed = safeParseJSON(response.text, requiresCompleteArtifact ? {} : []);
-      const characters = extractCharacterListFromParsedJSON(parsed, REFACTOR_CONSTANTS.HOOK_COUNT);
-      const characterAnalysis = _.trim(_.toString(_.get(parsed, "characterAnalysis")));
-      const characterSpecs = _.trim(_.toString(_.get(parsed, "characterSpecs")));
-      const ids = _.map(characters, (character) => _.trim(_.toString(character?.id)));
-      artifactIssues = _.uniq(
-        _.compact([
-          !_.isPlainObject(parsed) && !_.isArray(parsed) && "character_artifact:object_or_array_required",
-          _.isEmpty(characters) && "characters:missing",
-          characters.length > REFACTOR_CONSTANTS.HOOK_COUNT && "characters:too_many",
-          _.uniq(ids).length !== ids.length && "characters:duplicate_id",
-          ..._.flatMap(characters, (character, index) => [
-            _.isEmpty(_.trim(_.toString(character?.id))) && `characters:${index}:id:missing`,
-            _.isEmpty(_.trim(_.toString(character?.name))) && `characters:${index}:name:missing`,
-            _.isEmpty(_.trim(_.toString(character?.prompt))) &&
-              _.isEmpty(_.trim(_.toString(character?.referenceGenerationPrompt))) &&
-              `characters:${index}:identity_prompt:missing`,
+        const parsed = parseAiJsonArtifact<any>(
+          response.text,
+          requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
+          "invalid_character_analysis_response",
+        );
+        const characters = requiresCompleteArtifact ? parsed.characters : parsed;
+        const characterAnalysis = _.trim(_.toString(_.get(parsed, "characterAnalysis")));
+        const characterSpecs = _.trim(_.toString(_.get(parsed, "characterSpecs")));
+        const ids = _.map(characters, (character) => _.trim(_.toString(character?.id)));
+        artifactIssues = _.uniq(
+          _.compact([
+            _.isEmpty(characters) && "characters:missing",
+            characters.length > CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS && "characters:too_many",
+            _.uniq(ids).length !== ids.length && "characters:duplicate_id",
+            ..._.flatMap(characters, (character, index) =>
+              _.map(
+                requiresCompleteArtifact ? ["id", "name", "description", "referenceGenerationPrompt"] : QUICK_CHARACTER_FIELDS,
+                (field) => _.isEmpty(_.trim(_.toString(character?.[field]))) && `characters:${index}:${field}:missing`,
+              ),
+            ),
           ]),
-        ]),
-      );
-      if (_.isEmpty(artifactIssues)) {
-        result = {
-          characters,
-          ...(requiresCompleteArtifact
-            ? {
-                characterAnalysis,
-                characterSpecs,
-                identityContinuityRisks: _.castArray(_.get(parsed, "identityContinuityRisks") || []),
-                artifactWarnings: [],
-              }
-            : {}),
-        };
-        break;
+        );
+        if (_.isEmpty(artifactIssues)) {
+          result = {
+            characters,
+            ...(requiresCompleteArtifact
+              ? {
+                  characterAnalysis,
+                  characterSpecs,
+                  identityContinuityRisks: parsed.identityContinuityRisks,
+                  artifactWarnings: [],
+                }
+              : {}),
+          };
+          break;
+        }
+      } catch (error) {
+        artifactIssues = [error instanceof Error ? error.message : "invalid_character_analysis_response"];
       }
     }
 
@@ -1425,42 +1471,32 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
         focusDirective,
       );
 
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-          }
-        }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
+      const response = await generateContentWithRetry({
+        contents: prompt,
+        config: { responseMimeType: "application/json" },
+      });
+      const parsed = safeParseJSON(response.text, []);
+      const expectedIds = _.map(chunkItem, "id");
+      const returnedIds = _.map(_.castArray(parsed), "id");
+      if (
+        !_.isArray(parsed) ||
+        !_.isEqual(_.size(parsed), _.size(chunkItem)) ||
+        !_.isEmpty(_.difference(expectedIds, returnedIds)) ||
+        !_.isEmpty(_.difference(returnedIds, expectedIds)) ||
+        _.some(parsed, (item) => _.isEmpty(_.trim(_.toString(item?.prompt))))
+      ) {
+        throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
       }
+      for (const item of parsed) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
 
       if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
     }
 
     const updatedStoryboard = _.map(storyboard, (scene: any) => {
+      if (_.isEmpty(_.trim(_.toString(scene.prompt)))) return scene;
       const rewritten = rewrittenMap.get(scene.id);
-      if (rewritten) {
-        return { ...scene, prompt: rewritten };
-      }
-      if (scene.prompt) {
-        const combinedPrompt = _.join(
-          _.filter(
-            _.map(finalCharacters, (c: any) => c.prompt),
-            Boolean,
-          ),
-          ", ",
-        );
-        if (combinedPrompt) {
-          return { ...scene, prompt: scene.prompt };
-        }
-      }
-      return scene;
+      if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+      return { ...scene, prompt: rewritten };
     });
 
     res.json({ success: true, storyboard: updatedStoryboard });
@@ -1579,16 +1615,20 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
     const multiStepLogs: string[] = [];
     const aiMetrics: any[] = [];
-    let contentSafety: ContentSafetyReport;
-    if (isCinematicScript) {
-      contentSafety = { ...createUnavailableContentSafetyReport(), warnings: [] };
-    } else {
+    let contentSafety: ContentSafetyReport | undefined;
+    let lastSafetyError: unknown;
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS && !contentSafety; attempt++) {
       try {
         const safetyResponse = await generateContentWithRetry({
-          contents: getContentSafetyPrompt(originalInput),
+          contents: `${getContentSafetyPrompt(originalInput)}${
+            attempt > 0
+              ? "\n\nThe previous response was not one complete parseable JSON value. Generate the entire safety JSON object again from the beginning; do not continue, patch, quote, or repeat any part of the previous response."
+              : ""
+          }`,
           config: {
             responseMimeType: CONTENT_TYPES.JSON,
             responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
+            includeRoomSchemaContract: false,
             maxOutputTokens: CONTENT_SAFETY_CONFIG.MAX_OUTPUT_TOKENS,
           },
           task: { capability: AiTaskCapability.FactualReview },
@@ -1596,10 +1636,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         contentSafety = normalizeContentSafety(parseAiJsonArtifact(safetyResponse.text, CONTENT_SAFETY_RESPONSE_SCHEMA, "invalid_content_safety_response"));
         if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
       } catch (safetyError) {
+        lastSafetyError = safetyError;
         appWarn(CONTENT_SAFETY_CONFIG.REVIEW_FAILED_LOG, safetyError);
-        contentSafety = createUnavailableContentSafetyReport();
       }
     }
+    if (!contentSafety) throw lastSafetyError instanceof Error ? lastSafetyError : new Error("invalid_content_safety_response");
     if (!contentSafety.allowed) throw new Error(_.join(contentSafety.blockingErrors, ", ") || PIPELINE_SERVER_ERRORS.CONTENT_SAFETY_REJECTED);
     const logStep = (msg: string) => {
       appLogStep(msg, multiStepLogs);
@@ -1613,21 +1654,34 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         const hookDuration = config.hookConfig.duration || 10;
         const hookCount = _.clamp(_.toInteger(config.hookConfig.count) || REFACTOR_CONSTANTS.HOOK_COUNT, 1, 5);
         const hookPrompt = getMultiStepHookPrompt(originalInput, config.genre || "Storytelling", hookType, hookDuration, isVi ? "vi" : "en", hookCount);
-        const hookResponse = await generateContentWithRetry({
-          contents: hookPrompt,
-          config: { responseMimeType: "application/json", responseJsonSchema: HOOK_RESPONSE_SCHEMA },
-          task: { capability: AiTaskCapability.TextPlanning },
-        });
-        const hookResult = parseAiJsonArtifact<any>(hookResponse.text, HOOK_RESPONSE_SCHEMA, "invalid_hook_response");
-        assertResponseContract(hookResult, ResponseContractName.Hook);
-        if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
-        if (hookResult.versions && hookResult.versions.length > 0) {
-          generatedHookVersions = resolveUsableHooks(hookResult.versions, hookType, hookCount, originalInput, isVi);
-          const selectedHook = _.find(generatedHookVersions, "selected");
-          if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
-          activeHookText = selectedHook.content;
-          logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
+        let validHookResult: any;
+        let lastHookError: unknown;
+        for (let attempt = 0; attempt < TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS && !validHookResult; attempt++) {
+          try {
+            const hookResponse = await generateContentWithRetry({
+              contents: `${hookPrompt}${
+                attempt > 0
+                  ? "\n\nThe previous response was not one complete parseable JSON value. Generate the entire hook JSON object again from the beginning; do not continue, patch, quote, or repeat any part of the previous response."
+                  : ""
+              }`,
+              config: { responseMimeType: "application/json", responseJsonSchema: HOOK_RESPONSE_SCHEMA, includeRoomSchemaContract: false },
+              task: { capability: AiTaskCapability.TextPlanning },
+            });
+            const hookResult = parseAiJsonArtifact<any>(hookResponse.text, HOOK_RESPONSE_SCHEMA, "invalid_hook_response");
+            assertResponseContract(hookResult, ResponseContractName.Hook);
+            const usableVersions = resolveUsableHooks(hookResult.versions, hookType, hookCount, originalInput, isVi);
+            if (_.isEmpty(usableVersions) || !_.some(usableVersions, "selected")) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
+            validHookResult = { ...hookResult, versions: usableVersions };
+            if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
+          } catch (hookError) {
+            lastHookError = hookError;
+          }
         }
+        if (!validHookResult) throw lastHookError instanceof Error ? lastHookError : new Error("invalid_hook_response");
+        generatedHookVersions = validHookResult.versions;
+        const selectedHook = _.find(generatedHookVersions, "selected");
+        activeHookText = selectedHook.content;
+        logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
       } catch (hookError: any) {
         logger.error(LogEvent.ERROR_GENERATING_HOOKS, hookError);
         appWarn(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
@@ -1649,7 +1703,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       : `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${retentionDirective}\n\n${contentControlDirective}`;
 
     let groundedResearchResponse: any = null;
-    if (config.factCheck) {
+    if (config.factCheck && contentSafety.trueCase) {
       try {
         groundedResearchResponse = await generateContentWithRetry({
           contents: _.replace(FACT_RESEARCH_CONFIG.PROMPT_TEMPLATE, FACT_RESEARCH_CONFIG.TOPIC_TOKEN, originalInput),
@@ -1661,8 +1715,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         });
       } catch (researchError) {
         appWarn(FACT_RESEARCH_CONFIG.FAILED_LOG, researchError);
-        if (isCinematicScript) throw researchError;
-        groundedResearchResponse = null;
+        throw researchError;
       }
     }
     if (groundedResearchResponse?.aiMetadata) aiMetrics.push(groundedResearchResponse.aiMetadata);
@@ -1709,6 +1762,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         const scenes = _.castArray(value?.scenes || []);
         const intro = value?.intro;
         const sceneIds = _.map(scenes, (scene) => _.trim(_.toString(scene?.id)));
+        const characters = _.castArray(value?.characters || []);
+        const characterIds = _.map(characters, (character) => _.trim(_.toString(character?.id)));
+        const knownCharacterIds = new Set(characterIds);
         return _.compact([
           _.isEmpty(_.trim(_.toString(value?.scriptSegment))) && "script:missing",
           !_.isEqual(value?.artifactType, CINEMATIC_ARTIFACT_TYPE.FILM_PACKAGE) && "artifact:type_mismatch",
@@ -1719,6 +1775,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.script))) && "intro:script_missing",
           !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.introTitle))) && "intro:title_missing",
           !_.isEmpty(intro) && _.isEmpty(_.trim(_.toString(intro?.generationPrompt))) && "intro:generationPrompt_missing",
+          !_.isEmpty(intro) && !_.isArray(intro?.characterIds) && "intro:characterIds_missing",
+          !_.isEmpty(intro) && _.some(intro?.characterIds, (id) => !knownCharacterIds.has(_.trim(_.toString(id)))) && "intro:characterIds_unknown",
           !_.isEqual(_.size(scenes), targetClipCount) &&
             _.replace(
               _.replace(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.ACTUAL_COUNT_TOKEN, _.toString(_.size(scenes))),
@@ -1727,7 +1785,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
             ),
           _.some(sceneIds, _.isEmpty) && "scenes:id_missing",
           _.uniq(sceneIds).length !== sceneIds.length && "scenes:id_duplicate",
+          _.some(characterIds, _.isEmpty) && "characters:id_missing",
+          _.uniq(characterIds).length !== characterIds.length && "characters:id_duplicate",
           _.some(scenes, (scene) => _.isEmpty(_.trim(_.toString(scene?.script)))) && "scenes:script_missing",
+          _.some(scenes, (scene) => !_.isArray(scene?.characterIds)) && "scenes:characterIds_missing",
+          _.some(scenes, (scene) => _.some(scene?.characterIds, (id) => !knownCharacterIds.has(_.trim(_.toString(id))))) && "scenes:characterIds_unknown",
           !_.isEqual(value?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) && CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_INCOMPLETE_ERROR,
         ]);
       };
@@ -1796,6 +1858,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           config: {
             responseMimeType: "application/json",
             responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
+            includeRoomSchemaContract: false,
             maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
           },
           task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
@@ -1980,7 +2043,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       }
 
       completedChapters.push({
-        id: chapter.id || `ch_${i + 1}`,
+        id: chapter.id,
         title: chapter.title,
         scriptSegment: cleanedSegment,
       });
@@ -1992,12 +2055,17 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    let finalCleanScript = fullScript.trim();
+    const assembledChapterDraft = fullScript.trim();
+    let finalCleanScript = "";
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     let editorialQa: Record<string, unknown> = {};
-    try {
+    let editorialIssues: string[] = [];
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
+      const correctionDirective = _.isEmpty(editorialIssues)
+        ? ""
+        : `\n\nThe previous response failed these checks: ${jsonUtils.safeStringify(editorialIssues)}. Return the entire corrected JSON artifact again from the beginning; do not return a patch or partial script.`;
       const editorialResponse = await generateContentWithRetry({
-        contents: `${getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount)}\n\n${retentionDirective}`,
+        contents: `${getFinalScriptEditorialPrompt(assembledChapterDraft, config.genre, isVi, targetWordCount)}\n\n${retentionDirective}${correctionDirective}`,
         config: {
           responseMimeType: CONTENT_TYPES.JSON,
           responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
@@ -2012,19 +2080,27 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const editorialScoresPass = _.every(["continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore"], (field) =>
         _.gte(_.toNumber(editorialResult[field]), 75),
       );
-      if (!_.isEmpty(polishedScript) && _.inRange(polishedWordRatio, 0.9, 1.100001) && languageValidation.valid && (!isCinematicScript || editorialScoresPass)) {
+      editorialIssues = _.compact([
+        _.isEmpty(polishedScript) && "scriptSegment:missing",
+        !_.inRange(polishedWordRatio, 0.9, 1.100001) && `scriptSegment:word_ratio:${polishedWordRatio.toFixed(2)}`,
+        !languageValidation.valid && `scriptSegment:language:${_.join(languageValidation.issues, ",")}`,
+        !editorialScoresPass && "quality_scores:below_75",
+      ]);
+      if (_.isEmpty(editorialIssues)) {
         finalCleanScript = polishedScript;
         editorialQa = editorialResult;
-      } else {
-        multiStepLogs.push("final_script_editor_output_rejected");
-        if (isCinematicScript) throw createAppError("cinematic_final_screenplay_editor_rejected");
+        if (editorialResponse.aiMetadata) aiMetrics.push(editorialResponse.aiMetadata);
+        if (editorialResponse.rotationLogs) multiStepLogs.push(...editorialResponse.rotationLogs);
+        break;
       }
+      multiStepLogs.push(`final_script_editor_output_rejected:${_.join(editorialIssues, ",")}`);
       if (editorialResponse.aiMetadata) aiMetrics.push(editorialResponse.aiMetadata);
       if (editorialResponse.rotationLogs) multiStepLogs.push(...editorialResponse.rotationLogs);
-    } catch (editorialError) {
-      if (isCinematicScript) throw editorialError;
-      appWarn("Final script editorial review unavailable; using validated chapter output.", editorialError);
-      multiStepLogs.push(ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING);
+    }
+    if (_.isEmpty(finalCleanScript)) {
+      const editorialError: any = createAppError(`final_script_editor_rejected:${_.join(editorialIssues, ",")}`);
+      editorialError.retryable = true;
+      throw editorialError;
     }
     const finalLanguageValidation = validateChapterLanguage(finalCleanScript, isVi);
     if (!finalLanguageValidation.valid) throw new Error(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
@@ -2153,17 +2229,31 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
   }
 
   try {
-    const response = await generateContentWithRetry({
-      contents: getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos),
-      config: { responseMimeType: CONTENT_TYPES.JSON },
-    });
-    const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
     const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
-    const videoSceneIds = _.take(_.uniq(_.filter(_.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, []), (sceneId) => _.includes(validSceneIds, sceneId))), maxVideos);
-    return res.json({ videoSceneIds });
+    let lastIssues: string[] = [];
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
+      const correction = _.isEmpty(lastIssues)
+        ? ""
+        : `\n\nThe previous response was invalid: ${jsonUtils.safeStringify(lastIssues)}. Return the complete JSON object again; do not return a patch.`;
+      const response = await generateContentWithRetry({
+        contents: `${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}${correction}`,
+        config: { responseMimeType: CONTENT_TYPES.JSON },
+      });
+      const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
+      const videoSceneIds = _.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY);
+      lastIssues = _.compact([
+        !_.isPlainObject(parsed) && "response:object_required",
+        !_.isArray(videoSceneIds) && "videoSceneIds:array_required",
+        _.isArray(videoSceneIds) && _.gt(videoSceneIds.length, maxVideos) && `videoSceneIds:too_many:${videoSceneIds.length}/${maxVideos}`,
+        _.isArray(videoSceneIds) && _.uniq(videoSceneIds).length !== videoSceneIds.length && "videoSceneIds:duplicate",
+        ..._.map(_.reject(_.castArray(videoSceneIds), (sceneId) => _.includes(validSceneIds, sceneId)), (sceneId) => `videoSceneIds:unknown:${sceneId}`),
+      ]);
+      if (_.isEmpty(lastIssues)) return res.json({ videoSceneIds });
+    }
+    throw createAppError(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}:${_.join(lastIssues, ",")}`);
   } catch (error: any) {
     logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
-    return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: error.message, retryable: true, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -2314,6 +2404,10 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       characterRef = jsonUtils.safeStringify(rawRefChars);
     }
   }
+  const parsedReferenceCharacters = _.attempt(JSON.parse, characterRef || "[]");
+  const referenceCharacterIds = new Set(
+    _.map(_.isArray(parsedReferenceCharacters) ? parsedReferenceCharacters : [], (character) => _.trim(_.toString(character?.id))),
+  );
   const isVi = config?.language === ProjectLanguage.VI;
   const splitStrategy = config?.splitStrategy || SplitStrategy.LONG_SENTENCE;
 
@@ -2408,25 +2502,34 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       locations: [],
       props: [],
     };
-    if (aiProviderAvailable && !isCinematicStoryboard) {
-      try {
-        const bibleResponse = await generateContentWithRetry({
-          contents: bibleParts,
-          config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
-        });
-        const parsedVisualBible = parseAiJsonArtifact<VisualBible>(bibleResponse.text, VISUAL_BIBLE_RESPONSE_SCHEMA, "invalid_visual_bible_response");
-        const hasRequiredVisualBibleFields = _.isPlainObject(parsedVisualBible) && !_.isEmpty(parsedVisualBible);
-        if (hasRequiredVisualBibleFields) visualBible = parsedVisualBible;
-        else if (isCinematicStoryboard) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
-        else storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
-        if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
-      } catch (visualBibleError) {
-        if (isCinematicStoryboard) throw visualBibleError;
-        appWarn(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID, visualBibleError);
-        storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
-      }
-    } else if (!isCinematicStoryboard) {
-      storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
+    if (!isCinematicStoryboard) {
+      if (!aiProviderAvailable) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
+      const bibleResponse = await generateContentWithRetry({
+        contents: bibleParts,
+        config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
+      });
+      const parsedVisualBible = parseAiJsonArtifact<VisualBible>(bibleResponse.text, VISUAL_BIBLE_RESPONSE_SCHEMA, "invalid_visual_bible_response");
+      const requiredVisualBibleTextFields: Array<keyof VisualBible> = [
+        "colorPalette",
+        "characterSpecs",
+        "landscapeSpecs",
+        "lightingMood",
+        "visualStyle",
+        "background",
+        "lineStyle",
+        "colorMode",
+        "shading",
+        "textPolicy",
+      ];
+      const visualBibleIsComplete =
+        _.isPlainObject(parsedVisualBible) &&
+        _.every(requiredVisualBibleTextFields, (field) => !_.isEmpty(_.trim(_.toString(parsedVisualBible[field])))) &&
+        _.isArray(parsedVisualBible.locations) &&
+        !_.isEmpty(parsedVisualBible.locations) &&
+        _.isArray(parsedVisualBible.props);
+      if (!visualBibleIsComplete) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
+      visualBible = parsedVisualBible;
+      if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
     }
     if (!_.isEmpty(visualBible)) {
       logStoryboardStep(
@@ -2518,6 +2621,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           const minimalScenesJson = jsonUtils.safeStringify(
             _.map(chunkScenes, (s: any) => ({
               id: s.id,
+              chapterId: s.chapterId,
               script: s.script,
               subtitle: s.subtitle,
             })),
@@ -2565,9 +2669,19 @@ router.post("/storyboard", async (req: Request, res: Response) => {
               _.isEqual(_.size(batchScenes), _.size(chunkScenes)) &&
               _.isEmpty(_.difference(expectedIds, returnedIds)) &&
               _.isEmpty(_.difference(returnedIds, expectedIds)) &&
-              _.every(batchScenes, (scene) =>
-                _.every(["prompt", "cameraMotion", "effects", "lightingEffect", "transition"], (field) => !_.isEmpty(_.trim(_.toString(_.get(scene, field))))),
-              );
+              _.every(batchScenes, (scene) => {
+                const sourceScene = _.find(chunkScenes, { id: scene.id });
+                return (
+                  Boolean(sourceScene) &&
+                  _.isEqual(scene.chapterId, sourceScene.chapterId) &&
+                  _.isEqual(scene.script, sourceScene.script) &&
+                  _.isEqual(scene.subtitle, sourceScene.subtitle) &&
+                  _.isArray(scene.characterIds) &&
+                  _.uniq(_.map(scene.characterIds, _.toString)).length === scene.characterIds.length &&
+                  _.every(scene.characterIds, (id) => referenceCharacterIds.has(_.trim(_.toString(id)))) &&
+                  _.every(["prompt", "cameraMotion", "effects", "lightingEffect", "transition"], (field) => !_.isEmpty(_.trim(_.toString(_.get(scene, field)))))
+                );
+              });
             if (!responseIsComplete) throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
 
             for (const bs of batchScenes) {
@@ -2585,14 +2699,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         allScenes = _.map(splitScenes, (scene: any) => {
           const details = detailedScenesMap.get(scene.id);
           if (!details) throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_STRUCTURE_INVALID);
-          return {
-            ...scene,
-            prompt: _.trim(_.toString(details.prompt)),
-            cameraMotion: details.cameraMotion,
-            effects: details.effects,
-            lightingEffect: details.lightingEffect,
-            transition: details.transition,
-          };
+          return details;
         });
       }
     } catch (e: any) {
@@ -2754,38 +2861,50 @@ router.post("/seo", async (req: Request, res: Response) => {
       ? getCinematicSeoPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre, config.audience, seoRequestId)
       : `${getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}`;
 
-    const combinedResponse = await generateContentWithRetry({
-      contents: combinedSeoPrompt,
-      config: {
-        responseMimeType: "application/json",
-        roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
-        roomArtifactType: isCinematicSeo ? CINEMATIC_ARTIFACT_TYPE.SEO : undefined,
-        roomRequestId: isCinematicSeo ? seoRequestId : undefined,
-      },
-      task: { capability: AiTaskCapability.TextPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
-    });
-
-    const seoResult = safeParseJSON(combinedResponse.text, {
-      keywords: [],
-      titles: [],
-      descriptions: [],
-      hashtags: [],
-      tags: [],
-    });
-    const returnedSeoArtifactType = _.trim(_.toString(seoResult.artifactType));
-    const returnedSeoRequestId = _.trim(_.toString(seoResult.requestId));
-    const returnedSeoCompletionMarker = _.trim(_.toString(seoResult.completionMarker));
-    if (
-      isCinematicSeo &&
-      (!_.isEqual(returnedSeoArtifactType, CINEMATIC_ARTIFACT_TYPE.SEO) ||
-        !_.isEqual(returnedSeoRequestId, seoRequestId) ||
-        !_.isEqual(returnedSeoCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER))
-    ) {
-      throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+    let seoResult: any;
+    let seoIssues: string[] = [];
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
+      const correctionDirective = _.isEmpty(seoIssues)
+        ? ""
+        : `\n\nThe previous response failed these checks: ${jsonUtils.safeStringify(seoIssues)}. Return the complete metadata JSON again from the beginning; do not return a patch.`;
+      const combinedResponse = await generateContentWithRetry({
+        contents: `${combinedSeoPrompt}${correctionDirective}`,
+        config: {
+          responseMimeType: "application/json",
+          roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
+          roomArtifactType: isCinematicSeo ? CINEMATIC_ARTIFACT_TYPE.SEO : undefined,
+          roomRequestId: isCinematicSeo ? seoRequestId : undefined,
+        },
+        task: { capability: AiTaskCapability.TextPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
+      });
+      const candidate = safeParseJSON(combinedResponse.text, undefined);
+      const expectedKeys = isCinematicSeo
+        ? ["artifactType", "requestId", "titles", "descriptions", "hashtags", "tags", "completionMarker"]
+        : ["keywords", "titles", "descriptions", "hashtags", "tags"];
+      seoIssues = _.compact([
+        !_.isPlainObject(candidate) && "response:object_required",
+        !_.isEqual(_.sortBy(_.keys(candidate)), _.sortBy(expectedKeys)) && "response:exact_keys_required",
+        !_.isEqual(_.size(candidate?.titles), numTitles) && `titles:wrong_count:${_.size(candidate?.titles)}/${numTitles}`,
+        !_.isEqual(_.size(candidate?.descriptions), numDescriptions) && `descriptions:wrong_count:${_.size(candidate?.descriptions)}/${numDescriptions}`,
+        !_.isEqual(_.size(candidate?.hashtags), numHashtags) && `hashtags:wrong_count:${_.size(candidate?.hashtags)}/${numHashtags}`,
+        !_.isEqual(_.size(candidate?.tags), numTags) && `tags:wrong_count:${_.size(candidate?.tags)}/${numTags}`,
+        _.some(_.castArray(candidate?.titles), (item) => !_.isPlainObject(item) || _.isEmpty(_.trim(_.toString(item?.text)))) && "titles:invalid_item",
+        _.some(_.castArray(candidate?.descriptions), (item) => !_.isPlainObject(item) || _.isEmpty(_.trim(_.toString(item?.text)))) && "descriptions:invalid_item",
+        _.some(_.castArray(candidate?.hashtags), (item) => !_.isString(item) || _.isEmpty(_.trim(item))) && "hashtags:invalid_item",
+        _.some(_.castArray(candidate?.tags), (item) => !_.isString(item) || _.isEmpty(_.trim(item))) && "tags:invalid_item",
+        isCinematicSeo && !_.isEqual(candidate?.artifactType, CINEMATIC_ARTIFACT_TYPE.SEO) && "artifact:type_mismatch",
+        isCinematicSeo && !_.isEqual(candidate?.requestId, seoRequestId) && "artifact:request_mismatch",
+        isCinematicSeo && !_.isEqual(candidate?.completionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER) && "artifact:completion_marker_mismatch",
+      ]);
+      if (combinedResponse.rotationLogs) seoLogs.push(...combinedResponse.rotationLogs);
+      if (_.isEmpty(seoIssues)) {
+        seoResult = candidate;
+        break;
+      }
     }
+    if (!seoResult) throw createAppError(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}:${_.join(seoIssues, ",")}`);
 
     logSeoStep(`${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`);
-    if (combinedResponse.rotationLogs) seoLogs.push(...combinedResponse.rotationLogs);
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP2);
     logSeoStep(PIPELINE_LOGS.SEO_STEP2_DONE);
@@ -2793,20 +2912,10 @@ router.post("/seo", async (req: Request, res: Response) => {
     logSeoStep(PIPELINE_LOGS.SEO_STEP3);
     logSeoStep(PIPELINE_LOGS.SEO_DONE_ALL);
 
-    const normalizeSeoMetadata = (item: any) => ({
-      ...item,
-      searchScore: _.isFinite(item?.searchScore) ? _.toNumber(item.searchScore) : SEO_FALLBACK_CONFIG.UNKNOWN_SCORE,
-      ctrScore: _.isFinite(item?.ctrScore) ? _.toNumber(item.ctrScore) : SEO_FALLBACK_CONFIG.UNKNOWN_SCORE,
-      compScore: _.isFinite(item?.compScore) ? _.toNumber(item.compScore) : SEO_FALLBACK_CONFIG.UNKNOWN_SCORE,
-      seoScore: _.isFinite(item?.seoScore) ? _.toNumber(item.seoScore) : SEO_FALLBACK_CONFIG.UNKNOWN_SCORE,
-    });
     const parsedData = isCinematicSeo
       ? { ...seoResult, rotationLogs: seoLogs }
       : {
-          titles: _.map(seoResult.titles || [], normalizeSeoMetadata),
-          descriptions: _.map(seoResult.descriptions || [], normalizeSeoMetadata),
-          hashtags: _.map(seoResult.hashtags || [], (tag: string) => tag.replace(/^#+/, "")),
-          tags: seoResult.tags || [],
+          ...seoResult,
           rotationLogs: seoLogs,
         };
 
@@ -4463,20 +4572,37 @@ router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => 
   const audioBase64 = _.toString(req.body?.audioBase64);
   if (_.isEmpty(audioBase64)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Audio is required for quality validation." });
   try {
-    const response = await generateContentWithRetry({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds)) },
-            { inlineData: { mimeType: _.startsWith(audioBase64, "UklGR") ? "audio/wav" : "audio/mpeg", data: audioBase64 } },
+    let quality: Record<string, unknown> | undefined;
+    const rotationLogs: string[] = [];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
+      try {
+        const response = await generateContentWithRetry({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}${
+                    attempt > 0 ? "\nThe prior response was invalid. Return the entire raw JSON object again with every required field; no patch or commentary." : ""
+                  }`,
+                },
+                { inlineData: { mimeType: _.startsWith(audioBase64, "UklGR") ? "audio/wav" : "audio/mpeg", data: audioBase64 } },
+              ],
+            },
           ],
-        },
-      ],
-      config: { responseMimeType: CONTENT_TYPES.JSON },
-      task: { capability: AiTaskCapability.AudioQa },
-    });
-    const result = { success: true, quality: safeParseJSON(response.text, {}), rotationLogs: response.rotationLogs };
+          config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: AUDIO_QUALITY_RESPONSE_SCHEMA },
+          task: { capability: AiTaskCapability.AudioQa },
+        });
+        quality = parseAiJsonArtifact<Record<string, unknown>>(response.text, AUDIO_QUALITY_RESPONSE_SCHEMA, "invalid_audio_quality_response");
+        if (response.rotationLogs) rotationLogs.push(...response.rotationLogs);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (!quality) throw lastError instanceof Error ? lastError : createAppError("invalid_audio_quality_response");
+    const result = { success: true, quality, rotationLogs };
     setCache(API_ROUTES.PIPELINE_VALIDATE_AUDIO, req.body, result);
     return res.json(result);
   } catch (error: any) {

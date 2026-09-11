@@ -379,7 +379,7 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
-    const browser = await getOrLaunchGlobalBrowser(true);
+    const browser = await getOrLaunchGlobalBrowser(true, true);
     cleanupPage = _.find(pages, (page) => !page.isClosed()) || (await browser.context.newPage());
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
     return { closedRoomCount: pages.length, deletedConversationCount };
@@ -441,7 +441,8 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
           const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || "";
           const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || "";
           const identity = messageId || (testId ? `${testId}:${index}` : identityElement.id);
-          return { identity, text: (element.textContent || "").trim() };
+          const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || "";
+          return { identity, text: visibleText.trim() };
         }),
       {
         selector: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_IDENTITY_SELECTOR,
@@ -1005,7 +1006,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
   await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
   await selectGeminiChatModel(room, request.model);
@@ -1061,7 +1062,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request));
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(

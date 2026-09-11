@@ -1,5 +1,5 @@
 import { resolveQualityProfile } from "../src/services/qualityProfileService.ts";
-import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../src/services/contentSafetyService.ts";
+import { normalizeContentSafety } from "../src/services/contentSafetyService.ts";
 import { rollbackSceneAssetRevision } from "../src/services/dependencyHashService.ts";
 import { resolveRolloutConfig } from "../src/services/rolloutService.ts";
 import { QualityMode, SceneAssetStatus } from "../src/types.ts";
@@ -11,7 +11,6 @@ const assert = (value: unknown, message: string): void => {
 
 assert(!normalizeContentSafety({ sexualExploitationRisk: true }).allowed, "sexual exploitation safety gate failed");
 assert(normalizeContentSafety({}).allowed, "incomplete safety review incorrectly blocked the pipeline");
-assert(createUnavailableContentSafetyReport().allowed, "unavailable safety review incorrectly blocked the pipeline");
 const scene: any = {
   id: "sc_1",
   prompt: "p",

@@ -6,6 +6,8 @@ interface ResponseSchema {
   properties?: Record<string, ResponseSchema>;
   items?: ResponseSchema;
   minItems?: number;
+  maxItems?: number;
+  minLength?: number;
   minimum?: number;
   maximum?: number;
   enum?: readonly unknown[];
@@ -41,10 +43,14 @@ const getResponseSchemaIssues = (value: unknown, schema: ResponseSchema, pathVal
   if (_.isEqual(schema.type, "array")) {
     if (!_.isArray(value)) return [`${pathValue}:expected_array_received_${getValueType(value)}`];
     const lengthIssues = _.lt(_.size(value), _.defaultTo(schema.minItems, 0)) ? [`${pathValue}:min_items_${_.defaultTo(schema.minItems, 0)}_received_${_.size(value)}`] : [];
+    const maximumLengthIssues = !_.isUndefined(schema.maxItems) && _.gt(_.size(value), schema.maxItems) ? [`${pathValue}:max_items_${schema.maxItems}_received_${_.size(value)}`] : [];
     const itemIssues = schema.items ? _.flatMap(value, (item, index) => getResponseSchemaIssues(item, schema.items!, `${pathValue}[${index}]`)) : [];
-    return _.concat(lengthIssues, itemIssues);
+    return _.concat(lengthIssues, maximumLengthIssues, itemIssues);
   }
-  if (_.isEqual(schema.type, "string") && !_.isString(value)) return [`${pathValue}:expected_string_received_${getValueType(value)}`];
+  if (_.isEqual(schema.type, "string")) {
+    if (!_.isString(value)) return [`${pathValue}:expected_string_received_${getValueType(value)}`];
+    if (!_.isUndefined(schema.minLength) && _.lt(value.length, schema.minLength)) return [`${pathValue}:min_length_${schema.minLength}_received_${value.length}`];
+  }
   if (_.isEqual(schema.type, "boolean") && !_.isBoolean(value)) return [`${pathValue}:expected_boolean_received_${getValueType(value)}`];
   if (_.includes(["number", "integer"], schema.type)) {
     if (!isFiniteNumber(value)) return [`${pathValue}:expected_${schema.type}_received_${getValueType(value)}`];
@@ -65,13 +71,16 @@ const matchesObjectSchema = (value: unknown, schema: ResponseSchema): boolean =>
 };
 
 const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean =>
-  _.isArray(value) && _.size(value) >= _.defaultTo(schema.minItems, 0) && (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
+  _.isArray(value) &&
+  _.size(value) >= _.defaultTo(schema.minItems, 0) &&
+  (_.isUndefined(schema.maxItems) || _.size(value) <= schema.maxItems) &&
+  (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
 
 const matchesResponseSchema = (value: unknown, schema: ResponseSchema): boolean => {
   if (schema.enum && !_.includes(schema.enum, value)) return false;
   if (_.isEqual(schema.type, "object")) return matchesObjectSchema(value, schema);
   if (_.isEqual(schema.type, "array")) return matchesArraySchema(value, schema);
-  if (_.isEqual(schema.type, "string")) return _.isString(value);
+  if (_.isEqual(schema.type, "string")) return _.isString(value) && (_.isUndefined(schema.minLength) || value.length >= schema.minLength);
   if (_.isEqual(schema.type, "boolean")) return _.isBoolean(value);
   if (_.includes(["number", "integer"], schema.type)) {
     if (!isFiniteNumber(value) || (_.isEqual(schema.type, "integer") && !Number.isInteger(value))) return false;

@@ -118,26 +118,26 @@ const getRestoredPipelineProgress = (project: VideoProject): { step: number; pro
 const createCinematicIntroScene = (intro: any, duration: number): StoryboardScene | undefined => {
   if (_.isEmpty(intro) || _.isEmpty(_.trim(_.toString(intro.script)))) return undefined;
   return {
-    id: _.toString(intro.id || CINEMATIC_POLICY_CONFIG.INTRO_SCENE_ID),
+    id: _.toString(intro.id),
     chapterId: CINEMATIC_POLICY_CONFIG.INTRO_CHAPTER_ID,
     startTime: CINEMATIC_POLICY_CONFIG.INTRO_TIMECODE,
     endTime: CINEMATIC_POLICY_CONFIG.INTRO_TIMECODE,
     duration,
     script: _.toString(intro.script),
-    subtitle: _.toString(intro.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-    prompt: _.toString(intro.generationPrompt || intro.script),
-    generationPrompt: _.toString(intro.generationPrompt || REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+    subtitle: _.toString(intro.subtitle),
+    prompt: _.toString(intro.generationPrompt),
+    generationPrompt: _.toString(intro.generationPrompt),
     generationPromptProfileVersion: CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
     cameraMotion: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-    characterIds: [],
+    characterIds: _.castArray(intro.characterIds || []),
     narrativeRole: CINEMATIC_POLICY_CONFIG.INTRO_NARRATIVE_ROLE,
     storyQuestion: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
     storyChange: _.toString(intro.script),
     isFilmIntro: true,
-    introTitle: _.toString(intro.introTitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+    introTitle: _.toString(intro.introTitle),
     shotPurpose: ShotPurpose.Transition,
     textAllowed: !_.isEmpty(_.trim(_.toString(intro.introTitle))),
-    textOverlay: _.toString(intro.introTitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+    textOverlay: _.toString(intro.introTitle),
     assetStrategy: CINEMATIC_POLICY_CONFIG.INTRO_ASSET_STRATEGY,
   };
 };
@@ -171,20 +171,16 @@ const mergeCharacterReferenceState = (existingCharacters: CharacterConfig[] | un
 const preserveExistingList = <T>(nextValues: T[] | undefined, existingValues: T[] | undefined): T[] =>
   _.isEmpty(nextValues) && !_.isEmpty(existingValues) ? _.defaultTo(existingValues, []) : _.defaultTo(nextValues, []);
 import { evaluateImagePrompts } from "../services/imagePromptQualityService";
-import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
-import { ensureMediaSourcePlan } from "../services/mediaSourcePlanningService";
 import { parseTargetDurationSeconds } from "../services/scriptQualityService";
 import {
   createCharacterIdentityDescription,
   createSceneGenerationContext,
-  pruneUnsupportedSceneCharacterIds,
   resolveCinematicSceneCharacterReferences,
-  resolveSceneCharacterIds,
   SCENE_REFERENCE_CONFIG,
 } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
 import { createThumbnailStyleDirective } from "../services/styleReferenceService";
-import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
+import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline, removeRedundantSceneAudioBase64 } from "../services/voiceTimelineService";
 import { assessVoiceAdvisory } from "../services/voiceQualityRepairService";
@@ -322,28 +318,6 @@ export interface PipelineActions {
   setLogs: React.Dispatch<React.SetStateAction<string[]>>;
   setRenderedVideoUrl: React.Dispatch<React.SetStateAction<string>>;
 }
-
-const createFallbackCharacterProfile = (_stylePresetName?: string): Record<string, any> => {
-  return {
-    name: "An",
-    description: "",
-    prompt: "",
-    narrativeRole: "protagonist",
-    genderPresentation: "neutral",
-    ageRange: "20s",
-    ethnicitySkinTone: "fair",
-    bodyBuild: "standard",
-    faceShape: "standard",
-    eyes: "expressive",
-    nose: "",
-    hair: "",
-    signatureClothing: "casual",
-    accessories: "",
-    colorPalette: "harmonious",
-    silhouette: "recognizable",
-    timelineStages: [],
-  };
-};
 
 const getCinematicCharacterArtifactIssues = (artifact: any): string[] => {
   const characters = _.castArray(artifact?.characters || []);
@@ -862,7 +836,7 @@ export function useAutoVideoPipeline(
         setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {
-        const selectedProj = _.defaultTo(selectedAutoProj, activeCreatedProject);
+        const selectedProj = _.defaultTo(selectedAutoProj, config.selectedProjectId ? null : existingTargetProj);
         const isChildProject = selectedProj && selectedProj.parentId;
 
         newProjectId = selectedProj ? selectedProj.id : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, generateRandomString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -879,7 +853,7 @@ export function useAutoVideoPipeline(
           allowReferenceCleanup: true,
           resetDerivedData: true,
           parentId: isChildProject ? selectedProj.parentId : undefined,
-          projectKind: selectedProj?.projectKind,
+          projectKind: selectedProj?.projectKind || (isCinematicPipeline ? ProjectKind.Cinematic : ProjectKind.Auto),
           name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
           createdAt: _.defaultTo(selectedProj?.createdAt, new Date().toISOString()),
@@ -1187,23 +1161,8 @@ export function useAutoVideoPipeline(
           Object.assign(scriptError, { diagnostic: _.get(scriptRes, "data.diagnostic") });
           throw scriptError;
         }
-        scriptData =
-          scriptData ||
-          ({
-            rewrittenScript: config.scriptContent,
-            chapters: [],
-            factCheckNotes: "",
-            hookVersions: [],
-            scriptQa: undefined,
-            aiMetrics: [],
-            contentSafety: undefined,
-          } as any);
-        if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? "AI viết kịch bản chưa khả dụng; tiếp tục bằng nội dung người dùng để bảo đảm video vẫn được tạo."
-              : "AI script writing is unavailable; continuing with the user's content so the video still completes.",
-          );
+        if (!scriptRes.success || !scriptData || scriptRes.data?.error) {
+          throw new Error(scriptRes.error || scriptRes.data?.error || PIPELINE_FETCH_FAILURE_KEY.SCRIPT);
         }
         if (_.isEqual(scriptData.scriptQa?.passed, false)) {
           const hasBlockingScriptIssue = !_.isEmpty(scriptData.scriptQa?.blockingErrors);
@@ -1216,7 +1175,8 @@ export function useAutoVideoPipeline(
           );
         }
 
-        realScript = scriptData.rewrittenScript || config.scriptContent;
+        realScript = _.trim(_.toString(scriptData.rewrittenScript));
+        if (_.isEmpty(realScript)) throw new Error(PIPELINE_FETCH_FAILURE_KEY.SCRIPT);
         chapters = (scriptData.chapters || []) as Chapter[];
         factCheckNotes = scriptData.factCheckNotes || "";
         const filmPackageScenes = isCinematicPipeline
@@ -1229,15 +1189,19 @@ export function useAutoVideoPipeline(
           );
           isStoryboardCached = true;
         }
-        const hookVersions = _.map(_.take(_.defaultTo(scriptData.hookVersions, []) as HookVersion[], newProj.hookConfig.count), (hook, index) => ({
-          id: _.toString(_.defaultTo(hook.id, _.join(["hook", _.add(index, 1)], "_"))),
+        const aiHookVersions = _.defaultTo(scriptData.hookVersions, []) as HookVersion[];
+        if (_.gt(newProj.hookConfig.count, SecurityConstants.ZERO) && !_.isEqual(aiHookVersions.length, newProj.hookConfig.count)) {
+          throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
+        }
+        const hookVersions = _.map(aiHookVersions, (hook, index) => ({
+          id: _.toString(hook.id),
           content: _.toString(hook.content),
-          type: _.toString(_.defaultTo(hook.type, newProj.hookConfig.type)),
+          type: _.toString(hook.type),
           selected: _.isEqual(index, SecurityConstants.ZERO),
           score: hook.score,
         }));
-        if (_.every([!isCinematicPipeline, _.gt(newProj.hookConfig.count, SecurityConstants.ZERO), _.isEmpty(hookVersions)], Boolean)) {
-          appendLog(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
+        if (_.some(hookVersions, (hook) => _.some([hook.id, hook.content, hook.type], (value) => _.isEmpty(_.trim(value))))) {
+          throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
         }
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
         appendLog(T.logScriptResultDetail(_.size(_.words(realScript)), _.size(chapters)));
@@ -1360,10 +1324,10 @@ export function useAutoVideoPipeline(
           requestSignal,
         );
         throwIfCancelled();
-        let rawAnalyzedCharacters: any[] =
-          analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)
-            ? _.take(analyzeCharacterRes.data.characters, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS)
-            : [];
+        const rawAnalyzedCharacters: any[] = analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters) ? analyzeCharacterRes.data.characters : [];
+        if (_.gt(rawAnalyzedCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS)) {
+          throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+        }
         const cinematicCharacterIssues = isCinematicPipeline && analyzeCharacterRes.success ? getCinematicCharacterArtifactIssues(analyzeCharacterRes.data) : [];
         if (isCinematicPipeline && (!analyzeCharacterRes.success || !_.isEmpty(cinematicCharacterIssues))) {
           throw new Error(
@@ -1382,40 +1346,11 @@ export function useAutoVideoPipeline(
               : `[Characters] Usable identities received; optional metadata is incomplete: ${_.join(analyzeCharacterRes.data.artifactWarnings, ", ")}. Continuing.`,
           );
         }
-        if (!isCinematicPipeline && _.isEmpty(rawAnalyzedCharacters)) {
-          appendLog(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
-          rawAnalyzedCharacters = [createFallbackCharacterProfile(config.stylePreset || newProj.visualConfig.style)];
+        if (!isCinematicPipeline && (_.isEmpty(rawAnalyzedCharacters) || !analyzeCharacterRes.success)) {
+          throw new Error(analyzeCharacterRes.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
         }
         if (!_.isEmpty(rawAnalyzedCharacters)) {
-          const nextCharacterLibrary = isCinematicPipeline
-            ? _.map(rawAnalyzedCharacters, (character: any): CharacterConfig => ({ ...character, images: [], extracted: false }))
-            : normalizeCharacterLibrary(
-                _.map(rawAnalyzedCharacters, (character: any, index: number): CharacterConfig => ({
-                  id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, _.add(index, 1)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-                  name: character.name,
-                  description: character.description,
-                  prompt: character.prompt || character.description,
-                  ..._.pick(character, [
-                    "referenceGenerationPrompt",
-                    "narrativeRole",
-                    "genderPresentation",
-                    "ageRange",
-                    "ethnicitySkinTone",
-                    "bodyBuild",
-                    "faceShape",
-                    "eyes",
-                    "nose",
-                    "hair",
-                    "signatureClothing",
-                    "accessories",
-                    "colorPalette",
-                    "silhouette",
-                    "timelineStages",
-                  ]),
-                  images: [],
-                  extracted: false,
-                })),
-              );
+          const nextCharacterLibrary = _.map(rawAnalyzedCharacters, (character: any): CharacterConfig => ({ ...character, images: [], extracted: false }));
           analyzedCharacters = mergeCharacterReferenceState(newProj.visualConfig.characters, nextCharacterLibrary);
           didAnalyzeCharacters = true;
           newProj = {
@@ -1489,10 +1424,7 @@ export function useAutoVideoPipeline(
           referenceCharacters: jsonUtils.safeStringify(
             isCinematicPipeline
               ? _.map(analyzedCharacters, (character) => _.omit(character, ["images", "extracted"]))
-              : _.map(analyzedCharacters, (character) => ({
-                  name: character.name,
-                  description: character.prompt || character.description,
-                })),
+              : _.map(analyzedCharacters, (character) => _.omit(character, ["images", "extracted"])),
           ),
           visualDensity: 5,
           bypassCache: true,
@@ -1569,12 +1501,6 @@ export function useAutoVideoPipeline(
         };
       }
 
-      if (!isCinematicPipeline) {
-        realScenes = _.map(realScenes, (scene) => ({
-          ...scene,
-          characterIds: resolveSceneCharacterIds(scene, analyzedCharacters),
-        }));
-      }
       const referenceContinuityReport = validateVisualContinuity(realScenes, analyzedCharacters, newProj.visualBible);
       if (!isCinematicPipeline && !referenceContinuityReport.passed) appendLog(_.join(referenceContinuityReport.blockingErrors, REFACTOR_CONSTANTS.VD_BLANK));
 
@@ -1584,7 +1510,7 @@ export function useAutoVideoPipeline(
       let isVoiceCached = nativeFilmAudio;
       const genreVoiceArc = nativeFilmAudio ? undefined : resolveGenreVoiceArc(config.genre);
 
-      if (!nativeFilmAudio && config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !invalidationState.regenerateVoice && !didRepairRepeatedNarration) {
+      if (!nativeFilmAudio && config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !invalidationState.regenerateVoice) {
         const cachedVoiceAudio = await fetchCachedVoiceAudio(newProj.voiceConfig);
         if (cachedVoiceAudio.isCached) {
           globalAudioBase64 = cachedVoiceAudio.audioBase64;
@@ -1658,7 +1584,6 @@ export function useAutoVideoPipeline(
         config.resumeMode &&
         isScriptCached &&
         !config.forceRegenerateVoice &&
-        !didRepairRepeatedNarration &&
         hasCompleteSceneAlignment(realScenes as StoryboardScene[], hasGlobalNarration);
       let alignmentCompleted = hasCachedAlignment;
       const alignmentRequest =
@@ -2009,15 +1934,6 @@ export function useAutoVideoPipeline(
 
       if (isCinematicPipeline) await closeCompletedPlanningWorkers([CINEMATIC_ROOM_STAGE.PROMPT]);
 
-      if (!isCinematicEpisodeGenre(config.genre)) {
-        realScenes = ensureMediaSourcePlan(realScenes as StoryboardScene[], config.genre);
-      }
-      if (!isCinematicEpisodeGenre(config.genre)) {
-        realScenes = pruneUnsupportedSceneCharacterIds(realScenes as StoryboardScene[], voiceUpdatedProj.visualConfig.characters || []);
-      }
-      if (!isCinematicEpisodeGenre(config.genre)) {
-        realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
-      }
       if (isCinematicEpisodeGenre(config.genre)) {
         const clipDurationSeconds = resolveCinematicClipDuration(config.videoDuration);
         realScenes = _.map(realScenes as StoryboardScene[], (scene) => ({ ...scene, duration: clipDurationSeconds }));
@@ -3147,7 +3063,10 @@ export function useAutoVideoPipeline(
           await generateFilmThumbnails();
 
           if (!_.isEqual(runIntent, "render_only")) {
-            const existingCharacters = _.take(_.defaultTo(voiceUpdatedProj.visualConfig.characters, []), CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS);
+            const existingCharacters = _.defaultTo(voiceUpdatedProj.visualConfig.characters, []);
+            if (_.gt(existingCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS)) {
+              throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+            }
             const charactersMissingReferences = _.filter(
               existingCharacters,
               (character) =>

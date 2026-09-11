@@ -11,7 +11,7 @@ import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 const cleanTextValue = (val: unknown): string => {
   const str = _.trim(_.toString(val));
   if (_.isEmpty(str)) return "";
-  return str.replace(/^["'«“]+|["'»”]+$/g, "").normalize("NFC");
+  return str.normalize("NFC");
 };
 
 export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextValue(value).replace(/\s+/g, " ").trim().normalize("NFC");
@@ -19,28 +19,29 @@ export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextV
 const normalizeThumbnail = (source: Partial<ThumbnailItem>, textMode: string): ThumbnailItem => {
   const hasText = Boolean(source.hasText);
   if (hasText !== !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE)) throw new Error("thumbnail_text_mode_mismatch");
-  const generationPrompt = _.trim(_.toString(source.generationPrompt || source.prompt));
+  const generationPrompt = source.generationPrompt as string;
 
   return {
-    id: _.toString(source.id),
+    id: source.id as string,
     prompt: generationPrompt,
     generationPrompt,
-    style: _.trim(_.toString(source.style)),
+    style: source.style as string,
     hasText,
-    textText: _.trim(_.toString(source.textText)).normalize("NFC"),
+    textText: source.textText as string,
     layoutId: source.layoutId,
-    layout: _.trim(_.toString(source.layout)),
-    layoutRationale: _.trim(_.toString(source.layoutRationale)),
-    typography: _.trim(_.toString(source.typography)),
+    layout: source.layout as string,
+    layoutRationale: source.layoutRationale as string,
+    typography: source.typography as string,
     typographyId: source.typographyId,
-    accentWords: _.uniq(_.compact(_.castArray(source.accentWords))),
-    colorSuggestion: _.trim(_.toString(source.colorSuggestion)),
-    subjectFocus: _.trim(_.toString(source.subjectFocus)),
+    accentWords: source.accentWords as string[],
+    colorSuggestion: source.colorSuggestion as string,
+    subjectFocus: source.subjectFocus as string,
   };
 };
 
 export const normalizeThumbnailIdeas = (generatedItems: Partial<ThumbnailItem>[], requestedCount: number, textMode: string = ThumbnailTextMode.Headline): ThumbnailItem[] => {
-  if (!_.isEqual(_.size(generatedItems), requestedCount)) throw new Error("thumbnail_count_mismatch");
+  const issues = getThumbnailTechnicalPlanningIssues(generatedItems, requestedCount, textMode);
+  if (!_.isEmpty(issues)) throw new Error(`invalid_ai_thumbnail_artifact:${_.join(issues, ",")}`);
   return _.map(generatedItems, (item) => normalizeThumbnail(item, textMode));
 };
 
@@ -65,7 +66,7 @@ export const getThumbnailTechnicalPlanningIssues = (
       _.compact(
         _.concat(
           [
-            _.lt(_.size(generatedItems), requestedCount) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT,
+            !_.isEqual(_.size(generatedItems), requestedCount) && "thumbnail_count_mismatch",
             _.some(ids, _.isEmpty) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_ID,
             _.uniq(ids).length !== ids.length && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.DUPLICATE_ID,
           ],
@@ -123,7 +124,7 @@ export const getThumbnailPlanningIssues = (
 ): string[] =>
   _.uniq(
     _.concat(
-      _.lt(_.size(generatedItems), requestedCount) ? [THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT] : [],
+      !_.isEqual(_.size(generatedItems), requestedCount) ? ["thumbnail_count_mismatch"] : [],
       _.flatMap(generatedItems, (item) => {
         const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
         const generationPrompt = cleanTextValue(item.generationPrompt || item.prompt);

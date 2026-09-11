@@ -152,19 +152,38 @@ export const generateContentWithRetry = async (
     const schemaContract = params.config?.responseJsonSchema && params.config?.includeRoomSchemaContract !== false
       ? `\n\n[REQUIRED RESPONSE CONTRACT]\nReturn only valid JSON matching this JSON Schema exactly:\n${JSON.stringify(params.config.responseJsonSchema)}`
       : "";
-    const roomResponse = await generatePlanningWithChatUi({
-      provider: roomExecution.aiRoomProvider!,
-      model: roomExecution.aiRoomModel,
-      prompt: `${roomPayload.prompt}${schemaContract}`,
-      projectId: roomExecution.aiRoomProjectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE,
-      chromeHeadless: roomExecution.aiRoomChromeHeadless,
-      attachments: roomPayload.attachments,
-      workerId: resolveRoomWorkerId(params.task?.capability, params.task?.roomWorkerId),
-      completionMarker: params.config?.roomCompletionMarker,
-      artifactType: params.config?.roomArtifactType,
-      requestId: params.config?.roomRequestId,
-      closeRoomOnComplete: false,
-    });
+    let roomResponse: Awaited<ReturnType<typeof generatePlanningWithChatUi>> | undefined;
+    let lastRoomError: unknown;
+    for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_RESPONSE_ATTEMPTS && !roomResponse; attempt++) {
+      try {
+        const fullRegenerationDirective =
+          attempt > 0
+            ? "\n\nThe previous response was not one complete valid artifact. Generate the entire requested JSON value again from the beginning. Do not continue, patch, quote, concatenate, or repeat any part of the previous response."
+            : "";
+        roomResponse = await generatePlanningWithChatUi({
+          provider: roomExecution.aiRoomProvider!,
+          model: roomExecution.aiRoomModel,
+          prompt: `${roomPayload.prompt}${schemaContract}${fullRegenerationDirective}`,
+          projectId: roomExecution.aiRoomProjectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE,
+          chromeHeadless: roomExecution.aiRoomChromeHeadless,
+          attachments: roomPayload.attachments,
+          workerId: resolveRoomWorkerId(params.task?.capability, params.task?.roomWorkerId),
+          completionMarker: params.config?.roomCompletionMarker,
+          artifactType: params.config?.roomArtifactType,
+          requestId: params.config?.roomRequestId,
+          closeRoomOnComplete: false,
+        });
+      } catch (error) {
+        lastRoomError = error;
+        const message = _.toString(_.get(error, "message", error));
+        const responseWasInvalid = _.includes(
+          [CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR],
+          message,
+        );
+        if (!responseWasInvalid) throw error;
+      }
+    }
+    if (!roomResponse) throw lastRoomError instanceof Error ? lastRoomError : createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
     return {
       text: roomResponse.text,
       rotationLogs: [`[AI Room] ${roomResponse.provider}: completed without API fallback.`],

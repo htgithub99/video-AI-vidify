@@ -75,6 +75,7 @@ export const resolveUsableHooks = (versions: unknown, _hookType: string, count: 
       };
     }),
   );
+  if (!_.isEqual(normalized.length, count)) return [];
   const ranked = rankHookVersions(normalized);
   if (_.some(ranked, "selected")) return ranked;
   if (!_.isEmpty(ranked)) return _.map(ranked, (version, index) => ({ ...version, selected: _.isEqual(index, 0) }));

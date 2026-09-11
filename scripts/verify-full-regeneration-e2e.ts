@@ -50,6 +50,7 @@ assert.doesNotMatch(regeneratedProject.storyboard[0].prompt, /Line art:|Palette:
 // 2. Kiểm tra prompt thumbnail AI được giữ nguyên và chỉ thêm tham số kỹ thuật tỉ lệ.
 const mockThumbnail = {
   id: "th_1",
+  prompt: 'Flat stick-figure illustration of a worried worker looking at a warning sign with high tension in the factory. Render exactly one headline: "HIỂM NGUY CẬN KỀ".',
   generationPrompt: 'Flat stick-figure illustration of a worried worker looking at a warning sign with high tension in the factory. Render exactly one headline: "HIỂM NGUY CẬN KỀ".',
   style: "Flat stick-figure illustration",
   hasText: true,

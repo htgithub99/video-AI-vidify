@@ -22,7 +22,7 @@ import {
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
-import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, COMMON_STRINGS, REFACTOR_CONSTANTS } from "../constants";
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG, FLOW_DIRECT_VIDEO_CONFIG } from "../constants/config";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../constants/cinematicConstants";
@@ -78,7 +78,18 @@ export default function AutoVideoGenerator({
   const splitLabelMap = useMemo(() => getSplitLabels(T), [T]);
 
   const stateScope = cinematicMode ? CINEMATIC_CONFIG.STATE_SCOPE : "auto";
-  const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang, stateScope);
+  const selectedWorkspaceProject = useMemo(() => _.find(projects, { id: selectedProjectId }), [projects, selectedProjectId]);
+  const selectedProjectIsCinematic = Boolean(
+    _.isEqual(selectedWorkspaceProject?.projectKind, ProjectKind.Cinematic) ||
+      _.endsWith(_.toString(selectedWorkspaceProject?.name), COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX),
+  );
+  const selectedProjectIsAuto = Boolean(
+    _.isEqual(selectedWorkspaceProject?.projectKind, ProjectKind.Auto) ||
+      _.endsWith(_.toString(selectedWorkspaceProject?.name), COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+  );
+  const scopedSelectedProjectId =
+    selectedWorkspaceProject && (cinematicMode ? selectedProjectIsCinematic : selectedProjectIsAuto) ? selectedWorkspaceProject.id : null;
+  const { state, actions } = useAutoVideoState(scopedSelectedProjectId, projects, currentLang, stateScope);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang, stateScope);
   const selectedProjectStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_SELECTED_CINEMATIC_PROJECT : REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT;
   const currentLogsStorageKey = cinematicMode ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_CURRENT_LOGS : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS;
@@ -205,16 +216,16 @@ export default function AutoVideoGenerator({
   }, [canContinueProject, duration, presentationProject, videoDuration]);
 
   useEffect(() => {
-    syncSelectedProject(selectedProjectId);
-  }, [selectedProjectId, projects, syncSelectedProject]);
+    syncSelectedProject(scopedSelectedProjectId);
+  }, [scopedSelectedProjectId, projects, syncSelectedProject]);
 
   useEffect(() => {
-    if (!selectedProjectId) return;
-    const savedProvider = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningFallbackProvider;
-    const savedModel = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningChatModel;
-    const savedMode = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningExecutionMode;
-    const savedHeadless = _.find(projects, { id: selectedProjectId })?.visualConfig?.planningChromeHeadless;
-    const savedSubtitleMode = _.find(projects, { id: selectedProjectId })?.config?.subtitleMode;
+    if (!scopedSelectedProjectId) return;
+    const savedProvider = _.find(projects, { id: scopedSelectedProjectId })?.visualConfig?.planningFallbackProvider;
+    const savedModel = _.find(projects, { id: scopedSelectedProjectId })?.visualConfig?.planningChatModel;
+    const savedMode = _.find(projects, { id: scopedSelectedProjectId })?.visualConfig?.planningExecutionMode;
+    const savedHeadless = _.find(projects, { id: scopedSelectedProjectId })?.visualConfig?.planningChromeHeadless;
+    const savedSubtitleMode = _.find(projects, { id: scopedSelectedProjectId })?.config?.subtitleMode;
     if (savedProvider && !_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) && _.includes(Object.values(AiPlanningFallbackProvider), savedProvider)) {
       setPlanningFallbackProvider(savedProvider);
     } else {
@@ -225,7 +236,7 @@ export default function AutoVideoGenerator({
     else setPlanningExecutionMode(_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly);
     setPlanningChromeHeadless(_.isBoolean(savedHeadless) ? savedHeadless : CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
     setCinematicSubtitleMode(savedSubtitleMode || SubtitleMode.None);
-  }, [cinematicMode, projects, selectedProjectId]);
+  }, [cinematicMode, projects, scopedSelectedProjectId]);
 
   useEffect(() => {
     const availableModels = CINEMATIC_CHAT_MODEL_OPTIONS[planningFallbackProvider];
@@ -313,18 +324,18 @@ export default function AutoVideoGenerator({
   }, [cinematicMode, generateType, generationMode, imageGeneratorEngine, setGenerateType, setGenerationMode, setImageGeneratorEngine]);
 
   useEffect(() => {
-    if (!selectedProjectId || !isConfigLoaded || isProcessing) return;
-    const foundProj = _.find(projects, { id: selectedProjectId });
+    if (!scopedSelectedProjectId || !isConfigLoaded || isProcessing) return;
+    const foundProj = _.find(projects, { id: scopedSelectedProjectId });
     if (foundProj) {
       setActiveCreatedProject(foundProj);
-      storageUtils.setAsync(selectedProjectStorageKey, selectedProjectId);
+      storageUtils.setAsync(selectedProjectStorageKey, scopedSelectedProjectId);
       setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       const cachedLogsStr = storageUtils.get(`${projectLogsStoragePrefix}${foundProj.id}`);
       const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
       const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
       setLogs(projectLogs || []);
     }
-  }, [selectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, setRenderedVideoUrl, setLogs]);
+  }, [scopedSelectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, setRenderedVideoUrl, setLogs]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
@@ -462,7 +473,7 @@ export default function AutoVideoGenerator({
       resumeMode: overrides.resumeMode ?? resumeMode,
       runIntent: overrides.runIntent,
       ffmpegQuality,
-      selectedProjectId,
+      selectedProjectId: scopedSelectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
       targetSceneIds: overrides.targetSceneIds,
@@ -485,12 +496,12 @@ export default function AutoVideoGenerator({
     if (!_.isEqual(activeCreatedProject.status, REFACTOR_CONSTANTS.STATUS_GENERATING)) return;
     if (_.isEmpty(activeCreatedProject.activeRunId)) return;
     if (recoveredPipelineProjectIdsRef.current.has(activeCreatedProject.id)) return;
-    if (!_.isEqual(selectedProjectId, activeCreatedProject.id)) return;
+    if (!_.isEqual(scopedSelectedProjectId, activeCreatedProject.id)) return;
     if (_.isEmpty(_.trim(scriptContent))) return;
 
     recoveredPipelineProjectIdsRef.current.add(activeCreatedProject.id);
     void handleStartAutoGenerate({ resumeMode: true });
-  }, [activeCreatedProject, cinematicMode, isConfigLoaded, isProcessing, scriptContent, selectedProjectId]);
+  }, [activeCreatedProject, cinematicMode, isConfigLoaded, isProcessing, scriptContent, scopedSelectedProjectId]);
 
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);

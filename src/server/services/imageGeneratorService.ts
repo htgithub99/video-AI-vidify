@@ -12,8 +12,6 @@ chromium.use(stealthPlugin());
 import {
   EXTERNAL_URLS,
   BACKEND_MESSAGES,
-  PROMPT_FILLER_WORDS,
-  NON_ALPHANUMERIC_SPACE_REGEX,
   PLAYWRIGHT_SUBMIT_ICON_REGEX,
   PLAYWRIGHT_SUBMIT_TEXT_REGEX,
   IMAGE_GEN_IMAGEN_EXACT_REGEX,
@@ -1591,17 +1589,6 @@ export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
   sceneId: string;
 }
 
-export const extractKeywords = (text: string): string => {
-  if (!text) return "aesthetic,cinematic";
-  const clean = text.replace(NON_ALPHANUMERIC_SPACE_REGEX, " ");
-  const words = _.chain(clean.split(/\s+/))
-    .map((w) => w.trim().toLowerCase())
-    .filter((w) => w.length > 3)
-    .value();
-  const filtered = _.filter(words, (word) => !_.some(PROMPT_FILLER_WORDS, (fillerWord) => _.isEqual(fillerWord, word)));
-  return filtered.slice(0, 3).join(",");
-};
-
 let lastUsedEmail: string | undefined = undefined;
 
 const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
@@ -2118,13 +2105,16 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
 };
 
 export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
-  const selectedCharacters = _.take(
-    _.uniqBy(
-      _.filter(options.characters, (character) => !_.isEmpty(_.trim(character.id)) && !_.isEmpty(_.trim(character.name)) && !_.isEmpty(_.trim(character.prompt))),
-      "id",
-    ),
-    CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS,
-  );
+  const selectedCharacters = options.characters;
+  if (
+    _.gt(selectedCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS) ||
+    _.uniq(_.map(selectedCharacters, "id")).length !== selectedCharacters.length ||
+    _.some(selectedCharacters, (character) =>
+      _.some([character.id, character.name, character.prompt], (value) => _.isEmpty(_.trim(value))),
+    )
+  ) {
+    throw createAppError("invalid_ai_character_artifact");
+  }
   const release = await imageGenMutex.acquire();
   let browserInstance: BrowserSession | null = null;
   let currentProjectId = normalizeFlowProjectId(options.flowProjectId);
@@ -3076,30 +3066,19 @@ export const assignFlowVideoBatchMediaIds = (items: FlowVideoPromptBatchItem[], 
   };
   findBestAssignment(SecurityConstants.ZERO, _.range(uniqueCandidates.length), new Map(), SecurityConstants.ZERO);
 
-  const assignedMediaIds = new Set(bestAssignments.values());
-  const unmatchedItems = _.filter(items, (item) => !bestAssignments.has(item.sceneId));
-  const unmatchedCandidates = _.filter(uniqueCandidates, (candidate) => !assignedMediaIds.has(getFlowBatchCandidateMediaId(candidate)));
-  const deterministicCandidates = _.isEqual(items.length, SecurityConstants.DEFAULT_AMOUNT)
-    ? _.orderBy(
-        _.filter(unmatchedCandidates, (candidate) => _.isEqual(candidate.evidence, "dom")),
-        "discoveryOrder",
-        "asc",
-      )
-    : [];
-  _.forEach(unmatchedItems, (item, index) => {
-    const candidate = _.get(deterministicCandidates, index);
-    const mediaId = candidate ? getFlowBatchCandidateMediaId(candidate) : SecurityConstants.EMPTY_STRING;
-    if (!_.isEmpty(mediaId)) bestAssignments.set(item.sceneId, mediaId);
-  });
   return _.map(items, (item) => ({ sceneId: item.sceneId, mediaId: bestAssignments.get(item.sceneId) }));
 };
 
 export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
-  const items = _.take(
-    _.filter(options.items, (item) => !_.isEmpty(_.trim(item.sceneId)) && !_.isEmpty(_.trim(item.prompt))),
-    FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH,
-  );
+  const items = options.items;
   if (_.isEmpty(items)) return [];
+  if (
+    _.gt(items.length, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) ||
+    _.some(items, (item) => _.isEmpty(_.trim(item.sceneId)) || _.isEmpty(_.trim(item.prompt))) ||
+    _.uniq(_.map(items, "sceneId")).length !== items.length
+  ) {
+    throw createAppError("invalid_flow_video_prompt_batch");
+  }
 
   const requestedVisualConfig = { ...options.visualConfig, generateType: GenerateType.Video, generateCount: FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT };
   const requestedEngine = _.defaultTo(requestedVisualConfig.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
@@ -3310,7 +3289,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       let needNewRoom = _.gt(roomAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
       try {
         if (!browserInstance) {
-          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
+          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
           activePage = browserInstance.page;
           if (_.includes(activePage.url(), "grok.com")) {
             activePage = await browserInstance.context.newPage();
@@ -3661,7 +3640,7 @@ export async function generateBatchImagesWithGeminiChat(
 
   try {
     if (isMediaGenerationCancelled(generationRevision)) return results;
-    browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
+    browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
     const context = browserInstance.context;
 
     const reusablePages = _.uniq(

@@ -350,37 +350,6 @@ export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not 
 export const GEMINI_ZERO_QUOTA_PATTERNS = ["limit: 0", "limit=0", "free_tier_requests, limit: 0", "free_tier_input_token_count, limit: 0"] as const;
 export const GEMINI_DAILY_QUOTA_PATTERNS = ["perday", "per day", "requestsperday", "tokensperday"] as const;
 
-export const PROMPT_FILLER_WORDS = [
-  "beautiful",
-  "detailed",
-  "artistic",
-  "image",
-  "generation",
-  "prompt",
-  "describing",
-  "characters",
-  "clothes",
-  "historical",
-  "accuracy",
-  "weather",
-  "camera",
-  "angle",
-  "lighting",
-  "based",
-  "style",
-  "with",
-  "what",
-  "where",
-  "photo",
-  "shot",
-  "highly",
-  "ultra",
-  "dramatic",
-  "gorgeous",
-  "scene",
-  "rendering",
-] as const;
-
 export const VOICE_PROVIDER_OPTIONS = [
   { value: "edge", labelKey: "Edge_Microsoft" },
   { value: "elevenlabs", labelKey: "ElevenLabs" },

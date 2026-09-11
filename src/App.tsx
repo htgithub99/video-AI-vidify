@@ -306,7 +306,7 @@ export default function App() {
           const studioChild = findWorkspaceChild(projects, activeProj.parentId, ProjectKind.Studio);
           if (studioChild) setSelectedProjectId(studioChild.id);
           else {
-            setSelectedProjectId(activeProj.parentId);
+            setSelectedProjectId(_.some(projects, { id: activeProj.parentId }) ? activeProj.parentId : null);
           }
         }
       }
@@ -380,7 +380,7 @@ export default function App() {
           const autoChild = findWorkspaceChild(projects, activeProj.parentId, isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto);
           if (autoChild) setSelectedProjectId(autoChild.id);
           else {
-            setSelectedProjectId(activeProj.parentId);
+            setSelectedProjectId(_.some(projects, { id: activeProj.parentId }) ? activeProj.parentId : null);
           }
         }
       }
