@@ -189,6 +189,13 @@ export default function AutoVideoGenerator({
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
 
   const presentationProject = activeCreatedProject;
+  const canRegenerate = Boolean(
+    scopedSelectedProjectId &&
+      presentationProject?.id &&
+      _.some(projects, (project) => _.isEqual(project.id, presentationProject.id)) &&
+      _.isEqual(scopedSelectedProjectId, presentationProject.id) &&
+      ((presentationProject?.storyboard?.length || 0) > 0 || !_.isEmpty(renderedVideoUrl)),
+  );
   const canContinueProject = useMemo(
     () =>
       Boolean(
@@ -762,6 +769,7 @@ export default function AutoVideoGenerator({
               regenerationTexts={regenerationTexts}
               showVoiceRegeneration={!cinematicMode}
               regenerateVideoClips={cinematicMode}
+              canRegenerate={canRegenerate}
             />
 
             <ThumbnailsPreviewSection activeCreatedProject={presentationProject} currentLang={currentLang} />

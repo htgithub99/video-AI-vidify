@@ -30,21 +30,21 @@ export const BUTTON_VARIANT_CLASS_NAME: Record<ButtonVariant, string> = {
     "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:from-amber-600 active:to-orange-600 text-white border border-amber-400/30 shadow-md shadow-amber-500/20",
   danger:
     "bg-gradient-to-r from-rose-600 via-rose-600 to-red-600 hover:from-rose-500 hover:via-rose-500 hover:to-red-500 active:from-rose-700 active:to-red-700 text-white border border-rose-500/40 shadow-md shadow-rose-600/25",
-  ghost: "bg-transparent hover:bg-slate-850/60 active:bg-slate-800/60 text-slate-200 hover:text-slate-100 border border-transparent shadow-none",
-  outline: "bg-slate-900/80 hover:bg-slate-850 text-slate-200 border border-slate-800 shadow-sm backdrop-blur-sm",
+  ghost: "bg-transparent hover:bg-slate-200/80 dark:hover:bg-slate-800/60 active:bg-slate-300/80 dark:active:bg-slate-700/60 text-slate-800 hover:text-slate-950 dark:text-slate-200 dark:hover:text-slate-100 border border-transparent shadow-none",
+  outline: "bg-white dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-800 shadow-sm backdrop-blur-sm",
   unstyled: "",
 };
 
 export const MODAL_CLASS_NAME = {
-  OVERLAY: "fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-955/75 backdrop-blur-lg animate-in fade-in duration-200",
-  CONTENT: "glass-panel bg-slate-900/95 border border-slate-700/60 rounded-3xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 text-left",
-  TOP_DECORATION: "absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.05] rounded-full blur-3xl pointer-events-none z-0",
+  OVERLAY: "fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200",
+  CONTENT: "modal-content-card bg-[#fffdf9] dark:bg-[#15101d] border border-amber-900/15 dark:border-purple-500/20 rounded-3xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 text-left text-slate-900 dark:text-slate-100",
+  TOP_DECORATION: "absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.04] rounded-full blur-3xl pointer-events-none z-0",
   BOTTOM_DECORATION: "absolute bottom-0 left-0 w-64 h-64 bg-amber-500/[0.03] rounded-full blur-3xl pointer-events-none z-0",
-  HEADER: "flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-slate-800/80 relative z-10 bg-slate-100/40 dark:bg-slate-900/40 backdrop-blur-sm",
-  TITLE: "text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 truncate",
-  CLOSE_BUTTON: "p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800/80 transition-colors shadow-none ml-auto shrink-0",
-  CLOSE_ICON: "w-4 h-4",
-  BODY: "flex-1 overflow-y-auto bg-transparent relative z-10 p-6",
+  HEADER: "modal-header-bar flex items-center justify-between px-6 py-4 border-b border-amber-900/10 dark:border-slate-800/80 relative z-10 bg-[#f7f2e7] dark:bg-[#1a1424] backdrop-blur-sm",
+  TITLE: "modal-title-text text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 truncate",
+  CLOSE_BUTTON: "modal-close-button-custom w-8 h-8 rounded-xl flex items-center justify-center bg-slate-200/90 hover:bg-rose-100/90 text-slate-800 hover:text-rose-600 border border-slate-300/80 hover:border-rose-300/60 shadow-xs dark:bg-slate-800/90 dark:hover:bg-rose-950/80 dark:text-slate-200 dark:hover:text-rose-400 dark:border-slate-700/90 dark:hover:border-rose-500/40 transition-all ml-auto shrink-0 cursor-pointer",
+  CLOSE_ICON: "w-4 h-4 stroke-[2.5]",
+  BODY: "modal-body-area flex-1 overflow-y-auto bg-transparent relative z-10 p-6 text-slate-900 dark:text-slate-100",
   DEFAULT_WIDTH: "max-w-2xl",
   WIDTH_PREFIX: "max-w-",
 } as const;

@@ -39,14 +39,20 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
         <div className={cn(MODAL_CLASS_NAME.BOTTOM_DECORATION)} />
 
         <div className={cn(MODAL_CLASS_NAME.HEADER)}>
-          {title && <h2 className={cn(MODAL_CLASS_NAME.TITLE)}>{title}</h2>}
-          <Button
-            variant="ghost"
-            size="xs"
+          {title && (
+            <h2
+              className={cn(MODAL_CLASS_NAME.TITLE, "uppercase tracking-wider font-extrabold select-none [&_*]:uppercase")}
+              style={{ textTransform: "uppercase" }}>
+              {typeof title === "string" ? title.toUpperCase() : title}
+            </h2>
+          )}
+          <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className={cn(MODAL_CLASS_NAME.CLOSE_BUTTON)}>
             <X className={cn(MODAL_CLASS_NAME.CLOSE_ICON)} />
-          </Button>
+          </button>
         </div>
 
         <div className={cn(MODAL_CLASS_NAME.BODY)}>{children}</div>

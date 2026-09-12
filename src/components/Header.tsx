@@ -352,9 +352,9 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
         }}
         maxWidth="max-w-md"
         title={
-          <div className={cn("flex items-center gap-2")}>
+          <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span>{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
+            <span className="uppercase font-extrabold tracking-wider">{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
           </div>
         }>
         <div className={cn("space-y-4 pt-1")}>

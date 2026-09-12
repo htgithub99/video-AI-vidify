@@ -277,18 +277,18 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
       maxWidth="6xl"
       title={
         <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
-          <div className={cn("flex items-center gap-3 cursor-help")}>
+          <div className={cn("flex items-center gap-3 cursor-help uppercase tracking-wider font-extrabold")}>
             <Mic className={cn("w-5 h-5 text-rose-500")} />
-            <span>{dialogTexts.TITLE}</span>
+            <span className="uppercase font-extrabold tracking-wider">{String(dialogTexts.TITLE).toUpperCase()}</span>
           </div>
         </Tooltip>
       }>
-      <div className={cn("flex flex-col h-full min-h-[520px] bg-slate-955 text-left")}>
-        <div className={cn("w-full bg-slate-900/90 border-b border-slate-800/80 p-5 shrink-0 z-10 rounded-t-2xl")}>
+      <div className={cn("flex flex-col h-full min-h-[520px] bg-[#fbf7ee] dark:bg-slate-955 text-left")}>
+        <div className={cn("w-full bg-[#f4ece0] dark:bg-slate-900/90 border-b border-amber-900/10 dark:border-slate-800/80 p-5 shrink-0 z-10 rounded-t-2xl")}>
           <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5")}>
             <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Search className={cn("w-3.5 h-3.5 text-rose-400")} />
+              <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Search className={cn("w-3.5 h-3.5 text-rose-500")} />
                 {dialogTexts.searchLabel}
               </label>
               <div className={cn("relative")}>
@@ -298,25 +298,25 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   onChange={handleSearchChange}
                   placeholder={dialogTexts.searchPlaceholder}
                   className={cn(
-                    "w-full h-10 bg-slate-955 border border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-100 focus:border-rose-500 outline-none transition-all shadow-inner font-sans",
+                    "w-full h-10 bg-white dark:bg-slate-955 border border-amber-900/15 dark:border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-rose-500 outline-none transition-all shadow-inner font-sans",
                   )}
                 />
-                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500")} />
+                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400")} />
               </div>
             </div>
 
             <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Globe2 className={cn("w-3.5 h-3.5 text-sky-400")} />
+              <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Globe2 className={cn("w-3.5 h-3.5 text-sky-500")} />
                 {dialogTexts.providerLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+              <div className={cn("relative flex items-center bg-white dark:bg-slate-955 border border-amber-900/15 dark:border-slate-800 rounded-xl px-3 h-10")}>
                 <select
                   value={provider}
                   onChange={(e) => setProvider(_.get(e, "target.value"))}
-                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+                  className={cn("w-full bg-transparent text-xs text-slate-900 dark:text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200")}>
                       {_.get(opt, "value")}
                     </option>
                   ))}
@@ -326,17 +326,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
             </div>
 
             <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Globe2 className={cn("w-3.5 h-3.5 text-emerald-400")} />
+              <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Globe2 className={cn("w-3.5 h-3.5 text-emerald-500")} />
                 {dialogTexts.languageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+              <div className={cn("relative flex items-center bg-white dark:bg-slate-955 border border-amber-900/15 dark:border-slate-800 rounded-xl px-3 h-10")}>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+                  className={cn("w-full bg-transparent text-xs text-slate-900 dark:text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200")}>
                       {VOICE_DIALOG_LANGUAGE_LABELS[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
@@ -346,11 +346,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
             </div>
 
             <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <User className={cn("w-3.5 h-3.5 text-amber-400")} />
+              <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <User className={cn("w-3.5 h-3.5 text-amber-500")} />
                 {dialogTexts.genderLabel}
               </label>
-              <div className={cn("flex gap-1 bg-slate-955 rounded-xl p-1 border border-slate-800 h-10 items-center")}>
+              <div className={cn("flex gap-1 bg-white dark:bg-slate-955 rounded-xl p-1 border border-amber-900/15 dark:border-slate-800 h-10 items-center")}>
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
@@ -371,17 +371,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
             </div>
 
             <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Activity className={cn("w-3.5 h-3.5 text-purple-400")} />
+              <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
+                <Activity className={cn("w-3.5 h-3.5 text-purple-500")} />
                 {dialogTexts.ageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10")}>
+              <div className={cn("relative flex items-center bg-white dark:bg-slate-955 border border-amber-900/15 dark:border-slate-800 rounded-xl px-3 h-10 shadow-sm")}>
                 <select
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  className={cn("w-full bg-transparent text-xs text-slate-200 outline-none appearance-none pr-6 cursor-pointer")}>
+                  className={cn("w-full bg-transparent text-xs text-slate-900 dark:text-slate-200 outline-none appearance-none pr-6 cursor-pointer font-medium")}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-slate-900 text-slate-200")}>
+                    <option key={_.get(opt, "value")} value={_.get(opt, "value")} className={cn("bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-200")}>
                       {VOICE_DIALOG_AGE_LABELS[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
@@ -420,9 +420,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   return (
                     <div
                       key={_.get(voice, "voice_id")}
-                      className={cn("relative flex items-center gap-3.5 p-3.5 rounded-2xl border-none transition-all cursor-pointer select-none group", {
-                        "bg-rose-500/15 shadow-md ring-2 ring-rose-500/60": isSelected,
-                        "bg-slate-900/80 hover:bg-slate-850 hover:shadow-md hover:-translate-y-0.5": !isSelected,
+                      className={cn("relative flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all cursor-pointer select-none group", {
+                        "bg-rose-500/15 border-rose-500 shadow-md ring-1 ring-rose-500/60": isSelected,
+                        "bg-white/90 dark:bg-slate-900/80 border-amber-900/10 dark:border-slate-800 hover:bg-amber-50/60 dark:hover:bg-slate-850 hover:border-rose-400/40 hover:shadow-md hover:-translate-y-0.5": !isSelected,
                       })}
                       onClick={() => onSelectVoice({ ...voice, provider })}>
                       <button
@@ -433,17 +433,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                         }}
                         className={cn("shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center shadow-md transition-all cursor-pointer border-none", {
                           "bg-rose-600 text-white animate-pulse": isPlaying,
-                          "bg-slate-950/80 text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying,
+                          "bg-rose-100 dark:bg-slate-950/80 text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying,
                         })}>
                         {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4 h-4 fill-current ml-0.5")} />}
                       </button>
 
                       <div className={cn("flex-1 min-w-0")}>
                         <div className={cn("flex items-center justify-between gap-2 mb-1.5")}>
-                          <h3 className={cn("font-extrabold text-sm text-slate-100 truncate")}>{_.get(voice, "name")}</h3>
+                          <h3 className={cn("font-extrabold text-sm text-[#111827] dark:text-white truncate voice-item-name")}>{_.get(voice, "name")}</h3>
                           <div className={cn("flex items-center gap-1.5 shrink-0")}>
                             {isSelected && (
-                              <span className={cn("shrink-0 flex items-center gap-1 text-[10px] font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full")}>
+                              <span className={cn("shrink-0 flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full")}>
                                 <Check className={cn("w-3 h-3 stroke-[3]")} />
                                 {dialogTexts.selectedLabel}
                               </span>

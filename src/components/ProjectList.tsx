@@ -519,18 +519,18 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
         }}
         maxWidth="max-w-md"
         title={
-          <div className={cn("flex items-center gap-2")}>
+          <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span>{t.Confirm_Deletion}</span>
+            <span className="uppercase font-extrabold tracking-wider">{t.Confirm_Deletion}</span>
           </div>
         }>
         <div className={cn("space-y-4")}>
-          <p className={cn("text-slate-300 text-xs leading-relaxed")}>
+          <p className={cn("text-slate-700 dark:text-slate-300 text-xs leading-relaxed")}>
             {t.Are_you_sure_you_want_to_}
-            <span className={cn("font-bold text-slate-100 px-1")}>"{projectToDelete?.name}"</span>?
+            <span className={cn("font-bold text-slate-900 dark:text-slate-100 px-1")}>"{projectToDelete?.name}"</span>?
           </p>
-          <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed")}>{t.This_action_cannot_be_und}</div>
-          <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800")}>
+          <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-bold leading-relaxed")}>{t.This_action_cannot_be_und}</div>
+          <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800")}>
             <Button
               variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
               disabled={isLoadingAction}
@@ -550,14 +550,14 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
         onClose={() => setShowModal(false)}
         maxWidth="max-w-lg"
         title={
-          <div className={cn("flex items-center gap-2")}>
+          <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Video className={cn("w-4 h-4 text-rose-500")} />
-            <span>{editingId ? t.Edit_Project : t.newProject}</span>
+            <span className="uppercase font-extrabold tracking-wider">{editingId ? t.Edit_Project : t.newProject}</span>
           </div>
         }>
         <form onSubmit={handleSubmit} className={cn("space-y-4")}>
           <div className={cn("space-y-1.5")}>
-            <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectName} *</label>
+            <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectName} *</label>
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
               required
@@ -565,32 +565,32 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={cn(
-                "w-full h-10 bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl px-3 text-xs focus:outline-none transition-all font-sans",
+                "w-full h-10 bg-white dark:bg-slate-955 border border-slate-300 dark:border-slate-800 focus:border-rose-500 text-slate-900 dark:text-slate-100 rounded-xl px-3 text-xs focus:outline-none transition-all font-sans shadow-xs",
               )}
             />
           </div>
 
           <div className={cn("space-y-1.5")}>
-            <label className={cn("text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectDesc}</label>
+            <label className={cn("text-[10px] font-extrabold text-slate-700 dark:text-slate-300 font-mono uppercase block tracking-wider")}>{t.projectDesc}</label>
             <textarea
               placeholder={t.Write_custom_script_idea_}
               value={desc}
               rows={3}
               onChange={(e) => setDesc(e.target.value)}
               className={cn(
-                "w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans",
+                "w-full bg-white dark:bg-slate-955 border border-slate-300 dark:border-slate-800 focus:border-rose-500 text-slate-900 dark:text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans shadow-xs",
               )}
             />
           </div>
 
-          <div className={cn("bg-slate-950/80 border border-slate-800 p-4 rounded-2xl flex items-start gap-3 text-xs text-slate-300")}>
-            <Lightbulb className={cn("w-4 h-4 text-amber-400 shrink-0 mt-0.5")} />
+          <div className={cn("bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 text-xs text-slate-700 dark:text-slate-300")}>
+            <Lightbulb className={cn("w-4 h-4 text-amber-500 shrink-0 mt-0.5")} />
             <div className={cn("leading-relaxed text-[11px]")}>
-              <span className={cn("font-extrabold uppercase tracking-wider text-amber-400 text-[10px] block mb-0.5")}>{t.Niche_ideas}</span> {t.You_can_choice_History_Do}
+              <span className={cn("font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 text-[10px] block mb-0.5")}>{t.Niche_ideas}</span> {t.You_can_choice_History_Do}
             </div>
           </div>
 
-          <div className={cn("flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800")}>
+          <div className={cn("flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
             <Button
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               variant={REFACTOR_CONSTANTS.VARIANT_GHOST}

@@ -21,6 +21,7 @@ interface PreviewPanelSectionProps {
   regenerationTexts: (typeof REGENERATION_TEXTS)[keyof typeof REGENERATION_TEXTS];
   showVoiceRegeneration?: boolean;
   regenerateVideoClips?: boolean;
+  canRegenerate?: boolean;
 }
 
 export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
@@ -34,6 +35,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   regenerationTexts,
   showVoiceRegeneration = true,
   regenerateVideoClips = false,
+  canRegenerate = true,
 }) => {
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const [isSceneDialogOpen, setIsSceneDialogOpen] = useState(false);
@@ -112,13 +114,13 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
         </div>
       )}
 
-      {activeCreatedProject && (
+      {activeCreatedProject && canRegenerate && (
         <div className={cn("grid gap-2 pt-1", showVoiceRegeneration ? "grid-cols-3" : "grid-cols-2")}>
           {showVoiceRegeneration && (
             <Button
               size={REFACTOR_CONSTANTS.SIZE_MD}
               variant="info"
-              disabled={isAnyDisabled}
+              disabled={isAnyDisabled || !canRegenerate}
               onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
               title={regenerationTexts.voice}
               className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
@@ -129,7 +131,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
             variant="purple"
-            disabled={isAnyDisabled}
+            disabled={isAnyDisabled || !canRegenerate}
             onClick={() => (regenerateVideoClips ? setIsSceneDialogOpen(true) : onRegenerate(REGENERATION_TARGET.IMAGES))}
             title={sceneMediaRegenerationText}
             className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>
@@ -145,7 +147,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           <Button
             size={REFACTOR_CONSTANTS.SIZE_MD}
             variant="success"
-            disabled={isAnyDisabled}
+            disabled={isAnyDisabled || !canRegenerate}
             onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)}
             title={regenerationTexts.render}
             className={cn("h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5")}>

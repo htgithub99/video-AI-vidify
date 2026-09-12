@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
@@ -1329,7 +1330,9 @@ select optgroup {
   --color-rose-100: #ffffff;
 }
 
-:root.light {
+:root.light,
+html.light,
+.light {
   --color-slate-955: #f9f5ec;
   --color-slate-950: #f4eee2;
   --color-slate-900: #ebe2d3;
@@ -1347,6 +1350,10 @@ select optgroup {
   --color-slate-355: #0f0b07;
   --color-slate-350: #0a0704;
   --color-slate-300: #000000;
+  --color-slate-250: #0f0b07;
+  --color-slate-205: #15100a;
+  --color-slate-200: #18121f;
+  --color-slate-100: #09060c;
 }
 
 /* ==========================================================================
@@ -1431,3 +1438,166 @@ select optgroup {
   border-color: rgba(244, 63, 94, 0.3) !important;
   transform: scale(1.1) !important;
 }
+
+/* ==========================================================================
+   MODAL & DIALOG UI SYSTEM - LIGHT & DARK CONTRAST SPECIFICATION
+   ========================================================================== */
+.modal-content-card {
+  background: #14101d !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75) !important;
+}
+
+:root.light .modal-content-card,
+html.light .modal-content-card,
+.light .modal-content-card {
+  background: #fffdf9 !important;
+  color: #1e1b26 !important;
+  border: 1px solid rgba(180, 140, 80, 0.18) !important;
+  box-shadow: 0 20px 50px -12px rgba(120, 80, 20, 0.22) !important;
+}
+
+.modal-header-bar {
+  background: #1a1424 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+:root.light .modal-header-bar,
+html.light .modal-header-bar,
+.light .modal-header-bar {
+  background: #f8f4eb !important;
+  border-bottom: 1px solid rgba(180, 140, 80, 0.18) !important;
+}
+
+/* TIÊU ĐỀ MODAL LUÔN VIẾT HOA (CAPSLOCK) VÀ TƯƠNG PHẢN RỰC NÉT */
+.modal-title-text,
+.modal-title-text *,
+.modal-title-text span,
+.modal-header-bar h2,
+.modal-header-bar h2 * {
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+}
+
+:root.light .modal-title-text,
+:root.light .modal-title-text *,
+:root.light .modal-title-text span,
+:root.light .modal-header-bar h2,
+:root.light .modal-header-bar h2 *,
+html.light .modal-title-text,
+html.light .modal-title-text *,
+html.light .modal-title-text span,
+html.light .modal-header-bar h2,
+html.light .modal-header-bar h2 *,
+.light .modal-title-text,
+.light .modal-title-text *,
+.light .modal-title-text span,
+.light .modal-header-bar h2,
+.light .modal-header-bar h2 * {
+  color: #111827 !important;
+}
+
+.modal-body-area {
+  color: #e2e8f0 !important;
+}
+
+:root.light .modal-body-area,
+html.light .modal-body-area,
+.light .modal-body-area {
+  color: #1e1b26 !important;
+}
+
+:root.light .modal-body-area p,
+html.light .modal-body-area p,
+.light .modal-body-area p {
+  color: #2e2838 !important;
+}
+
+:root.light .modal-body-area label,
+html.light .modal-body-area label,
+.light .modal-body-area label {
+  color: #4a3e56 !important;
+  font-weight: 700 !important;
+}
+
+/* MODAL TITLE CAPSLOCK ENFORCEMENT */
+.modal-title-text,
+.modal-title-text *,
+.modal-title-text span,
+.modal-title-text div,
+.modal-header-bar h2,
+.modal-header-bar h2 *,
+.modal-header-bar h2 span,
+.modal-header-bar h2 div {
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 800 !important;
+}
+
+/* BẢO VỆ ĐỘ TƯƠNG PHẢN TÊN GIỌNG ĐỌC VÀ TIÊU ĐỀ TRONG MODAL */
+.voice-item-name,
+:root.light .voice-item-name,
+html.light .voice-item-name,
+.light .voice-item-name,
+:root.light .modal-body-area h3,
+html.light .modal-body-area h3,
+.light .modal-body-area h3 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+:root.dark .voice-item-name,
+html.dark .voice-item-name,
+.dark .voice-item-name,
+:root.dark .modal-body-area h3,
+html.dark .modal-body-area h3,
+.dark .modal-body-area h3 {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+/* NÚT CLOSE MODAL TƯƠNG PHẢN CAO TRÊN CẢ 2 GIAO DIỆN */
+.modal-close-button-custom,
+:root.light .modal-close-button-custom,
+html.light .modal-close-button-custom,
+.light .modal-close-button-custom {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+:root.light .modal-close-button-custom:hover,
+html.light .modal-close-button-custom:hover,
+.light .modal-close-button-custom:hover {
+  background-color: #fee2e2 !important;
+  color: #e11d48 !important;
+  border-color: #fca5a5 !important;
+}
+
+:root.dark .modal-close-button-custom,
+html.dark .modal-close-button-custom,
+.dark .modal-close-button-custom {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #334155 !important;
+  opacity: 1 !important;
+}
+
+:root.dark .modal-close-button-custom:hover,
+html.dark .modal-close-button-custom:hover,
+.dark .modal-close-button-custom:hover {
+  background-color: #4c0519 !important;
+  color: #fb7185 !important;
+  border-color: #be123c !important;
+}
+
+.modal-close-button-custom svg {
+  stroke-width: 2.5px !important;
+}
+
+
+
