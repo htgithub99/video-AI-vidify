@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { TECHNICAL_RESPONSE_RETRY_CONFIG } from "../constants/config";
+import { VIETNAMESE_DIACRITIC_REGEX } from "../constants/regexes";
 
 export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = {
   MINIMUM_ANALYSIS_CHARACTERS: 30,
@@ -12,7 +13,6 @@ export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = {
 
 const LETTER_REGEX = /\p{L}/gu;
 const WORD_REGEX = /\p{L}+/gu;
-const VIETNAMESE_DIACRITIC_REGEX = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu;
 const JOINED_PUNCTUATION_REGEX = /[,.!?;:](?=\p{L})/gu;
 
 const COMMON_UNACCENTED_VIETNAMESE_PATTERN =

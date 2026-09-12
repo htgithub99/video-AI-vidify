@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG } from "../constants/config.js";
 import { VideoGenre } from "../constants/enums.js";
+import { SCRIPT_CLICHE_PATTERNS, TIME_PARSING_REGEXES } from "../constants/regexes.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
 const SCRIPT_QUALITY_THRESHOLDS = {
@@ -23,9 +24,26 @@ const SCRIPT_QUALITY_THRESHOLDS = {
   HOOK_WEIGHT_CLARITY: 0.2,
   HOOK_WEIGHT_EMOTION: 0.25,
   HOOK_WEIGHT_FACTUAL_SAFETY: 0.2,
+  TARGET_SECONDS_DEFAULT: 0,
+  MIN_WORD_COUNT: 0,
+  ZERO_SECONDS: 0,
+  POSITIVE_FLOOR: 0,
+  DEFAULT_SCORE: 0,
+  TOTAL_CATEGORIES: 5,
 } as const;
 
-const SCRIPT_QUALITY_MESSAGES = {
+export const SCRIPT_QUALITY_MESSAGES = {
+  EMPTY_SCRIPT: "empty_or_corrupt_script_payload",
+  HARMFUL_CONTENT: "harmful_or_blocked_script_content",
+  FACTUAL_INCONSISTENCY: "historical_or_factual_inconsistency",
+  REPETITIVE_NARRATIVE: "repetitive_narrative_beats",
+  WEAK_EMOTIONAL_ARC: "weak_emotional_arc_progression",
+  EXPOSITIONS_HEAVY: "exposition_heavy_dialogue",
+  HOOK_DISCONNECTED: "hook_unfulfilled_in_script_body",
+  DURATION_MISMATCH: "script_duration_outside_tolerance",
+  AI_PROSE_EMPTY_TRANSITION: "script_empty_transitional_cliche",
+  TRAILER_METAPHOR_OVERUSED: "script_trailer_metaphor_overused",
+  SUSPENSE_TEMPLATE_OVERUSED: "script_suspense_template_overused",
   MISSING_OR_EMPTY: "script_missing_or_empty",
   DURATION_OUT_OF_TARGET: "script_duration_out_of_target",
   CONTINUITY_BELOW_TARGET: "script_continuity_below_target",
@@ -35,27 +53,21 @@ const SCRIPT_QUALITY_MESSAGES = {
   CONVERSATIONAL_BELOW_TARGET: "script_conversational_style_below_target",
   HOOK_PAYOFF_BELOW_TARGET: "script_hook_payoff_below_target",
   EDITORIAL_ADVISORY_PREFIX: "editorial_advisory: ",
-  AI_PROSE_EMPTY_TRANSITION: "script_ai_prose_empty_transition",
-  TRAILER_METAPHOR_OVERUSED: "script_trailer_metaphor_overused",
-  SUSPENSE_TEMPLATE_OVERUSED: "script_suspense_template_overused",
 } as const;
 
 const HARD_SCRIPT_BLOCKER_PATTERN =
   /(?:empty|missing(?:_|\s)+(?:the(?:_|\s)+)?script|no(?:_|\s)+script|unintelligible|corrupt|malformed|child(?:_|\s)+sexual|sexual(?:_|\s)+exploitation|csam|doxx|privacy(?:_|\s)+violation|incitement|illegal(?:_|\s)+instructions?)/i;
 
 const VI_AI_PROSE_PATTERNS: ReadonlyArray<[string, RegExp]> = [
-  [
-    SCRIPT_QUALITY_MESSAGES.AI_PROSE_EMPTY_TRANSITION,
-    /(?:mọi chuyện chưa dừng lại ở đó|không ai có thể ngờ rằng|đằng sau vẻ hào nhoáng|bức tranh đa chiều|hồi chuông cảnh tỉnh|bài học đắt giá)/giu,
-  ],
-  [SCRIPT_QUALITY_MESSAGES.TRAILER_METAPHOR_OVERUSED, /(?:sợi dây vô hình|con tốt(?: thí)?|lật ngược ván cờ|sự thật phơi bày|cái giá phải trả|nhát dao|lõi của hệ thống)/giu],
-  [SCRIPT_QUALITY_MESSAGES.SUSPENSE_TEMPLATE_OVERUSED, /bạn tưởng[^.!?…]{0,120}(?:nhưng|hóa ra)/giu],
+  [SCRIPT_QUALITY_MESSAGES.AI_PROSE_EMPTY_TRANSITION, SCRIPT_CLICHE_PATTERNS.STORY_CLICHE],
+  [SCRIPT_QUALITY_MESSAGES.TRAILER_METAPHOR_OVERUSED, SCRIPT_CLICHE_PATTERNS.TRAILER_METAPHOR],
+  [SCRIPT_QUALITY_MESSAGES.SUSPENSE_TEMPLATE_OVERUSED, SCRIPT_CLICHE_PATTERNS.SUSPENSE_TEMPLATE],
 ];
 
 const DURATION_REGEX = {
-  HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i,
-  MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i,
-  SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i,
+  HOURS: TIME_PARSING_REGEXES.HOURS,
+  MINUTES: TIME_PARSING_REGEXES.MINUTES,
+  SECONDS: TIME_PARSING_REGEXES.SECONDS,
   NUMERIC: /\d+(?:\.\d+)?/,
 } as const;
 

@@ -2,9 +2,9 @@ import _ from "lodash";
 import { PRODUCTION_QA_THRESHOLDS } from "./productionQualityService";
 import { StoryboardScene, SubtitleCue } from "../types";
 import { smartSplitSentences } from "../lib/textProcessor";
+import { SEMANTIC_BREAK_PATTERN } from "../constants/regexes";
 
 const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE;
-const SEMANTIC_BREAK_PATTERN = /[,;:—]\s+|\s+(?:nhưng|vì|khi|rồi|còn|tuy nhiên|sau đó|đồng thời|while|but|because|when|then|however|meanwhile)\s+/gi;
 
 const splitLongWord = (word: string): string[] =>
   _.map(_.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE), (start) =>

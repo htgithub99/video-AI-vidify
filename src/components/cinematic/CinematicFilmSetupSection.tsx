@@ -94,8 +94,8 @@ export default function CinematicFilmSetupSection({
               value={language}
               onChange={(event) => setLanguage(event.target.value as ProjectLanguage)}
               className={cn(SELECT_BASE_CLASSNAME)}>
-              <option value={ProjectLanguage.VI} className={cn("bg-slate-955 text-slate-200")}>Tiếng Việt</option>
-              <option value={ProjectLanguage.EN} className={cn("bg-slate-955 text-slate-200")}>English</option>
+              <option value={ProjectLanguage.VI} className={cn("bg-slate-955 text-slate-200")}>{texts.VIETNAMESE_LANG}</option>
+              <option value={ProjectLanguage.EN} className={cn("bg-slate-955 text-slate-200")}>{texts.ENGLISH_LANG}</option>
             </select>
             <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
@@ -114,10 +114,10 @@ export default function CinematicFilmSetupSection({
               <option value="1 minute" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.ONE_MIN}</option>
               <option value="2 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TWO_MIN}</option>
               <option value="3 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.THREE_MIN}</option>
-              <option value="5 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "5 phút" : "5 minutes"}</option>
-              <option value="8 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "8 phút" : "8 minutes"}</option>
-              <option value="10 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "10 phút" : "10 minutes"}</option>
-              <option value="15 minutes" className={cn("bg-slate-955 text-slate-200")}>{currentLang === "vi" ? "15 phút" : "15 minutes"}</option>
+              <option value="5 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.FIVE_MIN}</option>
+              <option value="8 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.EIGHT_MIN}</option>
+              <option value="10 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.TEN_MIN}</option>
+              <option value="15 minutes" className={cn("bg-slate-955 text-slate-200")}>{texts.DURATIONS.FIFTEEN_MIN}</option>
             </select>
             <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
@@ -135,7 +135,7 @@ export default function CinematicFilmSetupSection({
         onChromeHeadlessChange={setPlanningChromeHeadless}
         currentLang={currentLang}
         allowHybrid={false}
-        title={currentLang === "vi" ? "AI viết và đạo diễn" : "AI writer and director"}
+        title={texts.AI_DIRECTOR_TITLE}
         note={
           _.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly)
             ? texts.PLANNING_API_NOTE

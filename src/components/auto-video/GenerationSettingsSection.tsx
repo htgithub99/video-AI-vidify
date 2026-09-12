@@ -137,14 +137,12 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {forceVideoOnly && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
-                {currentLang === "vi" ? "Luồng tạo clip" : "Clip workflow"}
+                {T.clipWorkflowLabel}
               </span>
               <div className={cn(FIELD_BASE_CLASSNAME, "cursor-default")}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
                 <span className={cn("truncate text-xs font-semibold text-slate-200")}>
-                  {currentLang === "vi"
-                    ? `Google Flow · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompt/lượt · 1 clip/cảnh`
-                    : `Google Flow · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompts/wave · 1 clip/scene`}
+                  {T.clipWorkflowGoogleFlow(FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH)}
                 </span>
               </div>
             </div>
@@ -171,7 +169,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           {forceVideoOnly && setChromeHeadless && (
             <div className={cn("space-y-1")}>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
-                {forceVideoOnly ? (currentLang === "vi" ? "Chrome tạo video" : "Video generation Chrome") : T.lblChromeHeadless}
+                {forceVideoOnly ? T.lblChromeVideoGen : T.lblChromeHeadless}
               </span>
               <div className={cn(FIELD_BASE_CLASSNAME)} title={T.lblChromeHeadlessTooltip}>
                 <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />

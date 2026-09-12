@@ -171,3 +171,140 @@ export const PROGRESS_LOG_CONFIG = {
 
 export const isProgressLogVisible = (log: unknown, context: ProgressLogContext): boolean =>
   !PROGRESS_LOG_CONFIG.EXCLUDED_PATTERNS[context].some((pattern) => pattern.test(String(log)));
+
+export const PIPELINE_RUNNER_LOGS = {
+  aiExecutionPath: (isVi: boolean, mode: string, provider: string, model: string) =>
+    isVi ? `[AI] Chế độ: ${mode} · Dịch vụ: ${provider} · Mô hình: ${model}.` : `[AI] Mode: ${mode} · Service: ${provider} · Model: ${model}.`,
+  scriptCachedNotReady: (isVi: boolean, issues: string) =>
+    isVi ? `[Kịch bản] Kịch bản cũ chưa hoàn thiện. Đang tạo lại bước kịch bản...` : `[Script] Previous script incomplete. Re-running script step...`,
+  storyboardCachedNotReady: (isVi: boolean, issues: string) =>
+    isVi ? `[Phân cảnh] Cập nhật phân cảnh và tái sử dụng hình ảnh phù hợp.` : `[Storyboard] Updating scenes and reusing suitable visuals.`,
+  scriptAttemptRetry: (isVi: boolean, mode: string, provider: string, model: string, attempt: number, issues: string) =>
+    isVi ? `[Kịch bản] Đang tạo lại kịch bản (lần ${attempt})...` : `[Script] Retrying script generation (attempt ${attempt})...`,
+  scriptFailedMandatory: (isVi: boolean, issues: string) =>
+    isVi ? `Kịch bản chưa đạt yêu cầu: ${issues}` : `Script did not meet requirements: ${issues}`,
+  characterArtifactIncomplete: (isVi: boolean, issues: string) =>
+    isVi ? `Chưa nhận đủ hồ sơ nhân vật: ${issues}` : `Incomplete character profile: ${issues}`,
+  characterUsableIdentity: (isVi: boolean, warnings: string) =>
+    isVi ? `[Nhân vật] Đã thiết lập thông tin nhân vật thành công. Tiếp tục quy trình.` : `[Character] Character setup completed. Continuing production.`,
+  storyboardAttemptRetry: (isVi: boolean, attempt: number, issues: string) =>
+    isVi ? `[Phân cảnh] Đang tạo lại phân cảnh (lần ${attempt})...` : `[Storyboard] Retrying storyboard (attempt ${attempt})...`,
+  storyboardFailedMandatory: (isVi: boolean, issues: string) =>
+    isVi ? `Phân cảnh chưa đạt yêu cầu: ${issues}` : `Storyboard did not meet requirements: ${issues}`,
+  directorPromptVeo: (isVi: boolean) =>
+    isVi ? "🎬 AI đang dàn dựng và chỉ đạo từng khung cảnh phim." : "🎬 AI is directing each cinematic scene.",
+  editorPromptImage: (isVi: boolean) =>
+    isVi ? "🖼️ AI đang thiết kế hình ảnh theo nội dung và phong cách từng cảnh." : "🖼️ AI is designing visuals for each scene.",
+  directorPlanningScenesInRoom: (isVi: boolean, count: number) =>
+    isVi ? `[Đạo diễn] Đang lên kế hoạch chi tiết cho ${count} cảnh quay.` : `[Director] Planning details for ${count} scenes.`,
+  editorRewriteFullPlan: (isVi: boolean) =>
+    isVi ? "[Biên tập] Kế hoạch chưa đầy đủ, đang yêu cầu AI hoàn thiện lại." : "[Editor] Incomplete plan, requesting AI to finalize.",
+  promptsCompletedVeo: (isVi: boolean, count: number) =>
+    isVi ? `✅ Đã hoàn thành kịch bản quay cho ${count} cảnh phim.` : `✅ Completed shot plans for ${count} scenes.`,
+  promptsCompletedImages: (isVi: boolean, count: number) =>
+    isVi ? `✅ Đã hoàn thành mô tả hình ảnh cho ${count} phân cảnh.` : `✅ Completed image descriptions for ${count} scenes.`,
+  promptPlanIssues: (isVi: boolean, issues: string) =>
+    isVi ? `Kế hoạch hình ảnh chưa hoàn tất: ${issues}` : `Visual plan incomplete: ${issues}`,
+  cinematicContractIssues: (isVi: boolean, issues: string) =>
+    isVi ? `[Phim AI] Kế hoạch quay cần điều chỉnh: ${issues}.` : `[AI Film] Shot plan needs adjustment: ${issues}.`,
+  cinematicAllVideoMode: (isVi: boolean, count: number) =>
+    isVi ? `[Phim AI] Đang chuyển toàn bộ ${count} cảnh sang tạo video chuyển động.` : `[AI Film] Generating motion video for all ${count} scenes.`,
+  prepVisualGen: (isVi: boolean, generateType: unknown, modeName: string, aspectRatio: string) => {
+    const isVideo = generateType === "video";
+    const isMixed = generateType === "mixed";
+    const mediaTypeLabel = isVideo ? (isVi ? "video" : "videos") : isMixed ? (isVi ? "ảnh và video" : "images and videos") : (isVi ? "hình ảnh" : "images");
+    return isVi ? `🎨 Đang chuẩn bị tạo ${mediaTypeLabel} (tỷ lệ ${aspectRatio}).` : `🎨 Preparing ${mediaTypeLabel} (${aspectRatio}).`;
+  },
+  missingMediaContinue: (isVi: boolean) =>
+    isVi ? "Một số cảnh chưa có hình ảnh/video. Hãy bấm Tiếp tục để hoàn thiện." : "Some scenes are missing media. Click Continue to complete.",
+  promptSceneRewriteNoResponse: (sceneId: string) =>
+    `[Cảnh ${sceneId}] Giữ nguyên mô tả hình ảnh hiện tại.`,
+  promptSceneRewriteWarning: (sceneId: string, issues: string) =>
+    `[Cảnh ${sceneId}] Tiếp tục với mô tả hình ảnh đã tối ưu.`,
+  promptPurposeNoReplacement: (purpose: string) =>
+    `[Thiết kế] Giữ nguyên mô tả hình ảnh hiện tại.`,
+  archivalDownloaded: (sceneId: string, provider: string) =>
+    `Đã tải ảnh tư liệu cho cảnh ${sceneId}.`,
+  archivalNotFoundFallback: (sceneId: string) =>
+    `Không có ảnh tư liệu cho cảnh ${sceneId}; chuyển sang tạo bằng AI.`,
+  generatingMediaForScene: (isVi: boolean, isVideo: boolean, sceneId: string, current: number, total: number) => {
+    const mediaTypeLabel = isVideo ? (isVi ? "video" : "video") : (isVi ? "hình ảnh" : "image");
+    return isVi ? `🎨 Đang tạo ${mediaTypeLabel} cảnh ${sceneId} (${current}/${total}).` : `🎨 Generating ${mediaTypeLabel} for scene ${sceneId} (${current}/${total}).`;
+  },
+  downloadedAndSavedMedia: (isVi: boolean, isVideo: boolean, sceneId: string) => {
+    const mediaTypeLabel = isVideo ? (isVi ? "video" : "video") : (isVi ? "hình ảnh" : "image");
+    return isVi ? `✓ Đã lưu ${mediaTypeLabel} cảnh ${sceneId}.` : `✓ Saved ${mediaTypeLabel} for scene ${sceneId}.`;
+  },
+  flowStopRemainingSetupError: (isVi: boolean, reason: string) =>
+    isVi ? `Tạm dừng các cảnh còn lại: ${reason}` : `Paused remaining scenes: ${reason}`,
+  flowBatchSendNotice: (isVi: boolean, batchNum: number, totalBatches: number, itemCount: number) =>
+    isVi ? `Đang tạo ${itemCount} video (đợt ${batchNum}/${totalBatches})...` : `Generating ${itemCount} videos (batch ${batchNum}/${totalBatches})...`,
+  coverParallelGemini: (isVi: boolean) =>
+    isVi ? "🎨 Đang thiết kế ảnh bìa cho phim..." : "🎨 Designing film thumbnails...",
+  archivalUnresolvedFallback: (count: number) =>
+    `[Tư liệu] Chuyển ${count} cảnh sang tạo bằng AI.`,
+  mediaRetryAttempts: (attempt: number, maxAttempts: number, sceneIds: string) =>
+    isVi ? `Thử lại cảnh chưa xong (${attempt}/${maxAttempts}): ${sceneIds}` : `Retrying pending scenes (${attempt}/${maxAttempts}): ${sceneIds}`,
+  qaPhotoUnchecked: (sceneId: string) =>
+    `[Kiểm tra] Cảnh ${sceneId}: tiếp tục với ảnh hiện có.`,
+  qaPhotoPassed: (sceneId: string) =>
+    `[Kiểm tra] Cảnh ${sceneId}: hình ảnh đạt tiêu chuẩn.`,
+  qaPhotoWarnAfterRetry: (sceneId: string) =>
+    `[Kiểm tra] Cảnh ${sceneId}: tiếp tục hoàn thành video.`,
+  qaPhotoRegenAttempt: (sceneId: string, reasons: string, attempt: number, maxAttempts: number) =>
+    `[Kiểm tra] Cảnh ${sceneId}: đang tạo lại để đạt chất lượng tốt hơn (lần ${attempt}/${maxAttempts}).`,
+  qaArchivalMismatchFallback: (sceneId: string) =>
+    `[Kiểm tra] Cảnh ${sceneId}: chuyển sang tạo hình ảnh bằng AI.`,
+  qaVideoNoResponseKeep: (sceneId: string) =>
+    `[Kiểm tra] Cảnh ${sceneId}: giữ video hiện tại.`,
+  qaVideoMismatchRegen: (sceneId: string, reasons: string, attempt: number, maxAttempts: number) =>
+    `[Kiểm tra] Cảnh ${sceneId}: đang tạo lại video để đạt chất lượng tốt hơn (${attempt}/${maxAttempts}).`,
+  qaTargetedTakeIssues: (issues: string) =>
+    `Video chưa đạt tiêu chuẩn chất lượng: ${issues}`,
+  qaTargetedScenesPassedNotice: (sceneIds: string) =>
+    `Đã tạo và duyệt các cảnh ${sceneIds}. Bấm Ghép video khi sẵn sàng.`,
+  qaInsufficientTakes: (issues: string) =>
+    `Chưa đủ cảnh đạt tiêu chuẩn để xuất video: ${issues}`,
+  qaNoRealTakesError: (isVi: boolean) =>
+    isVi ? "Chưa có đoạn video nào sẵn sàng để ghép. Vui lòng kiểm tra lại rồi tiếp tục." : "No video segments ready to assemble. Please check and resume.",
+  completedMediaSummary: (complete: boolean, completed: number, total: number) =>
+    isVi ? `${complete ? "✅" : "⚠️"} Đã hoàn thành ${completed}/${total} cảnh.` : `${complete ? "✅" : "⚠️"} Completed ${completed}/${total} scenes.`,
+  coverSyncedWithProject: (isVi: boolean) =>
+    isVi ? "✅ Đã lưu ảnh bìa vào dự án phim." : "✅ Film thumbnails saved to project.",
+  cinematicKeepAudioAmbience: (isVi: boolean) =>
+    isVi ? "[Âm thanh] Giữ nguyên giọng thoại và âm thanh hiện trường của từng cảnh phim." : "[Audio] Preserving original dialogue and ambient sound in each scene.",
+  stitchingTimeline: (isVi: boolean, nativeFilmAudio: boolean) =>
+    nativeFilmAudio
+      ? (isVi ? "🎞️ Đang ghép nối các cảnh, cân bằng âm thanh và xuất phim..." : "🎞️ Joining scenes, balancing audio, and rendering film...")
+      : (isVi ? "🎞️ Đang căn thời lượng, ghép phụ đề, nhạc và xuất video..." : "🎞️ Aligning timing, joining subtitles, music, and rendering video..."),
+  editingReviewDecision: (isVi: boolean) =>
+    isVi ? "[Dựng phim] Đang rà soát và hoàn thiện các cảnh quay..." : "[Editing] Reviewing and refining scenes...",
+  editingSummaryAI: (realCount: number, keptCount: number, omittedCount: number, srcDur: number, selDur: number, protectedDialogue: number, repeatedOmitted: number, wrongDialogue: number) =>
+    `[Dựng phim] Đã chọn lọc ${keptCount}/${realCount} cảnh tối ưu, thời lượng ${selDur}s (đã lọc các đoạn lặp và lỗi thoại).`,
+  editingSummaryLibraryFallback: (isVi: boolean, keptCount: number, omittedCount: number, srcDur: number, selDur: number, wrongDialogue: number) =>
+    isVi
+      ? `[Dựng phim] Tự động chọn ${keptCount} cảnh tốt nhất, thời lượng ${selDur}s.`
+      : `[Editing] Automatically selected ${keptCount} best scenes, duration ${selDur}s.`,
+  editingSummaryTechnicalFallback: (isVi: boolean, realCount: number) =>
+    isVi
+      ? `[Dựng phim] Đã kiểm tra và chọn các cảnh đạt chuẩn để xuất video.`
+      : `[Editing] Selected verified scenes to assemble the film.`,
+  closeRoomBeforeFlow: (isVi: boolean) =>
+    isVi ? "[Quy trình] Hoàn thành kịch bản; chuyển sang giai đoạn tạo video." : "[Workflow] Script complete; proceeding to video generation.",
+  dialogueWarningKeepTakes: (sceneIds: string) =>
+    `Giữ nguyên các cảnh ${sceneIds} để tiếp tục dựng phim.`,
+  editingOmittedCountNotice: (count: number) =>
+    `[Dựng phim] Đã lọc bớt ${count} cảnh dư thừa hoặc lặp lại.`,
+  editingTimelineBuiltNotice: (shotsCount: number, acceptedCount: number, dur: number, note: string) =>
+    `[Dựng phim] Hoàn tất bản dựng gồm ${shotsCount} đoạn từ ${acceptedCount} cảnh, thời lượng ${dur}s.`,
+  editorialReleaseStatus: (isVi: boolean, status: string, warningsCount: number, blockingCount: number) => {
+    if (status === "editorially_publishable") {
+      return isVi ? "[Xuất bản] Video hoàn tất và đạt chuẩn chất lượng cao." : "[Release] Video completed and meets high quality standards.";
+    }
+    if (status === "completed_with_warnings") {
+      return isVi ? `[Xuất bản] Video đã xuất xong, có ${warningsCount} lưu ý cần xem lại.` : `[Release] Video rendered; ${warningsCount} advisories for review.`;
+    }
+    return isVi ? `[Xuất bản] Đã tạo tệp video nhưng còn ${blockingCount} điểm cần hoàn thiện.` : `[Release] Video file created but has ${blockingCount} issues to resolve.`;
+  },
+} as const;
+

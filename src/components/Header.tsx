@@ -1,7 +1,7 @@
 import { FC, ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
-import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown, Zap, Bot } from "lucide-react";
+import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown, Zap, Bot, AlertTriangle } from "lucide-react";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
 import { UIConstants, SecurityConstants } from "../constants/security";
@@ -362,7 +362,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             {planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
           </p>
           <div className={cn("p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold leading-relaxed flex items-start gap-2 shadow-sm")}>
-            <span className={cn("inline-block mt-0.5 shrink-0")}>⚠️</span>
+            <AlertTriangle className={cn("w-4 h-4 shrink-0 text-amber-500 mt-0.5")} />
             <span>
               {planningTexts.CLEAR_ROOM_RESOURCE_NOTICE}
             </span>

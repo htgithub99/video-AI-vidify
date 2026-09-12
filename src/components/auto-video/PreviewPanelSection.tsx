@@ -78,7 +78,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           </h3>
         </div>
         {!_.isEmpty(renderedVideoUrl) && (
-          <span className={cn("px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono shadow-sm")}>🟢 Sẵn sàng</span>
+          <span className={cn("px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono shadow-sm")}>{T.readyBadge}</span>
         )}
       </div>
 

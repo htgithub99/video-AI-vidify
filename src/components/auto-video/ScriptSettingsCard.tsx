@@ -4,7 +4,9 @@ import { Clock, Globe, Layers, Settings2, Sliders, ChevronDown } from "lucide-re
 import { cn } from "../../lib/utils";
 import { ProjectLanguage } from "../../types";
 import { DURATION_OPTIONS, GENRE_OPTION_GROUPS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, genreLabels } from "../../constants";
+import { SCRIPT_DURATION_LABELS, GENRE_GROUP_LABELS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { Lang } from "../../lib/lang";
 
 interface ScriptSettingsCardProps {
   genre: string;
@@ -18,6 +20,7 @@ interface ScriptSettingsCardProps {
   splitLabelMap: Record<string, string>;
   T: ReturnType<typeof getAutoVideoTexts>;
   lockedGenreLabel?: string;
+  currentLang?: Lang;
 }
 
 export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
@@ -32,14 +35,29 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
   splitLabelMap,
   T,
   lockedGenreLabel,
+  currentLang = "vi",
 }) => {
+  const safeLang = (currentLang as "vi" | "en") || "vi";
+  const durationLabels = SCRIPT_DURATION_LABELS[safeLang] || SCRIPT_DURATION_LABELS.vi;
+  const genreGroupLabels = GENRE_GROUP_LABELS[safeLang] || GENRE_GROUP_LABELS.vi;
+
   const selectFields = [
     {
       label: T.lblGenre,
       icon: <Layers className={cn("w-3.5 h-3.5 text-amber-400 mr-2 shrink-0")} />,
       value: genre,
       onChange: setGenre,
-      optionGroups: GENRE_OPTION_GROUPS,
+      optionGroups: _.map(GENRE_OPTION_GROUPS, (group, idx) => ({
+        label:
+          idx === 0
+            ? genreGroupLabels.SATIRICAL
+            : idx === 1
+              ? genreGroupLabels.STORY_EXPLAINER
+              : idx === 2
+                ? genreGroupLabels.DOCUMENTARY_KNOWLEDGE
+                : genreGroupLabels.YOUTUBE_TRENDING,
+        options: group.options,
+      })),
     },
     {
       label: T.lblLanguage,
@@ -56,7 +74,10 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
       icon: <Clock className={cn("w-3.5 h-3.5 text-amber-400 mr-2 shrink-0")} />,
       value: duration,
       onChange: setDuration,
-      options: _.map(DURATION_OPTIONS, (d) => ({ value: d.val, label: d.label })),
+      options: _.map(DURATION_OPTIONS, (d) => ({
+        value: d.val,
+        label: _.get(durationLabels, d.val, d.label),
+      })),
     },
     {
       label: T.lblSplitStrategy,
@@ -76,7 +97,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
         <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20 shrink-0")}>
           <Settings2 className={cn("w-3.5 h-3.5 text-amber-400")} />
         </span>
-        <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")}>Cài đặt kịch bản</h3>
+        <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")}>{T.scriptSettingsTitle}</h3>
       </div>
 
       <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-10")}>

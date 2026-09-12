@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { BrowserContext, Page, chromium } from "playwright";
+import { VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX } from "../../constants/regexes.js";
 
 export interface ArchivalImageResult {
   success: boolean;
@@ -77,8 +78,8 @@ const resolveVerifiedWebLicense = (sourceUrl: string): string => {
 const normalizeSearchText = (value: string): string =>
   _.toLower(value)
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d");
+    .replace(VIETNAMESE_ACCENT_MARKS_REGEX, "")
+    .replace(VIETNAMESE_D_LETTER_REGEX, "d");
 
 const relevanceTokens = (value: string): string[] => _.filter(normalizeSearchText(value).match(/[a-z0-9]+/g) || [], (token) => token.length >= 3 && !SEARCH_STOP_WORDS.has(token));
 

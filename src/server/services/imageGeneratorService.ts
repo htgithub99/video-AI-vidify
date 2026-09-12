@@ -57,6 +57,7 @@ import {
   REFERENCE_ASSET_GROUP,
 } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
+import { FLOW_AUTOMATION_MESSAGES, GROK_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import {
@@ -270,7 +271,7 @@ const attachFlowCharactersByName = async (page: Page, characterNames: string[]):
       if (!characterAttached) await page.waitForTimeout(FLOW_CHARACTER_CONFIG.ACTION_DELAY_MS);
     }
     if (!characterAttached) {
-      appLog(`${FLOW_CHARACTER_CONFIG.VI_ATTACH_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, characterName)} Tiếp tục bằng identity anchors đầy đủ trong prompt.`);
+      appLog(`${FLOW_CHARACTER_CONFIG.VI_ATTACH_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, characterName)} ${FLOW_AUTOMATION_MESSAGES.ATTACH_CONTINUE_IDENTITY}`);
       await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY).catch(() => undefined);
       continue;
     }
@@ -279,7 +280,7 @@ const attachFlowCharactersByName = async (page: Page, characterNames: string[]):
   }
 
   const attachedCount = await countAttachedFlowCharacters(page, selectedNames);
-  if (_.lt(attachedCount, selectedNames.length)) appLog("Flow chưa gắn đủ Character; tiếp tục bằng mô tả nhận dạng cố định trong prompt video.");
+  if (_.lt(attachedCount, selectedNames.length)) appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NOT_ENOUGH_CHARACTERS);
   flowReferenceSignatureMap.set(page, nextSignature);
 };
 
@@ -1116,7 +1117,7 @@ const approveFlowVideoCreditPrompt = async (page: Page, submitButton: Locator, t
     const approveWithoutAsking = page.getByText(approveWithoutAskingPattern, { exact: true }).last();
     if (await approveWithoutAsking.isVisible().catch(() => false)) {
       await approveWithoutAsking.click({ force: true });
-      appLog("[Google Flow] Đã phê duyệt chi phí tạo video và tắt hỏi lại.");
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_APPROVED_COST_PERSIST);
       await page.waitForTimeout(500);
       return true;
     }
@@ -1124,7 +1125,7 @@ const approveFlowVideoCreditPrompt = async (page: Page, submitButton: Locator, t
     const approveOnce = page.getByText(approveOncePattern, { exact: true }).last();
     if (await approveOnce.isVisible().catch(() => false)) {
       await approveOnce.click({ force: true });
-      appLog("[Google Flow] Đã phê duyệt chi phí tạo video.");
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_APPROVED_COST);
       await page.waitForTimeout(500);
       return true;
     }
@@ -1599,7 +1600,7 @@ const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> =>
       _.find(existingPages, (candidate) => _.some([EXTERNAL_URLS.GOOGLE_LABS, EXTERNAL_URLS.GOOGLE_ACCOUNTS], (url) => _.startsWith(candidate.url(), url))) ||
       _.first(existingPages) ||
       (await context.newPage());
-    appLog("[Google Flow] Không có tài khoản xoay vòng; tái sử dụng Chrome đang đăng nhập qua cổng 9222.");
+    appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
     return {
       context,
       page,
@@ -1608,7 +1609,7 @@ const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> =>
       preserveExternalPages: true,
     };
   } catch (error) {
-    appError("[Google Flow] Không thể kết nối Chrome đang đăng nhập qua cổng 9222.", error);
+    appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, error);
     return null;
   }
 };
@@ -1721,7 +1722,7 @@ export async function closeActiveBrowser() {
     appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
     try {
       if (activeBrowserInstance.preserveExternalPages) {
-        appLog("[Google Flow] Giữ nguyên các tab của Chrome dùng chung khi giải phóng phiên tự động.");
+        appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
       } else if (activeBrowserInstance.ownsContext === false) {
         const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), "grok.com"));
         await Promise.allSettled(_.map(geminiPages, (page) => page.close()));
@@ -1766,7 +1767,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
 
   if (activeBrowserInstance) {
     if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages) {
-      appLog("[Google Flow] Chuyển từ phiên tạo ảnh nội bộ sang Chrome dùng chung tại cổng 9222.");
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
     } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
@@ -2203,7 +2204,7 @@ const waitForGrokChrome = async (): Promise<void> => {
     } catch {}
     await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS);
   }
-  throw new Error("Không thể kết nối với cửa sổ Chrome dành cho Grok. Hãy đóng cửa sổ Grok cũ rồi thử lại.");
+  throw new Error(GROK_AUTOMATION_MESSAGES.CONNECT_FAILED);
 };
 
 const waitForVisibleGrokVerificationBeforeAutomation = async (): Promise<void> => {
@@ -2251,11 +2252,11 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   else await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER);
   grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
   const context = _.first(grokBrowser.contexts());
-  if (!context) throw new Error("Chrome Grok chưa tạo được phiên làm việc. Hãy thử lại.");
+  if (!context) throw new Error(GROK_AUTOMATION_MESSAGES.NO_SESSION_CREATED);
   grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), "grok.com")) || (await context.newPage());
   activeBrowserInstance = { context, page: grokPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
-  appLog(`[Grok Imagine] Sử dụng Chrome của tài khoản ${account.email}.`);
+  appLog(GROK_AUTOMATION_MESSAGES.USING_ACCOUNT(account.email));
   return { context, page: grokPage };
 };
 
@@ -2304,12 +2305,12 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
         await page.bringToFront().catch(() => {});
         await loginButton.click().catch(() => {});
       }
-      throw new Error("Tài khoản Chrome hiện tại chưa đăng nhập Grok. Hãy bật Chrome Hiển thị và đăng nhập Grok một lần trong cửa sổ của tài khoản này.");
+      throw new Error(GROK_AUTOMATION_MESSAGES.NOT_LOGGED_IN);
     }
 
     const ageGate = page.getByText(/xác nhận tuổi|confirm your age|verify your age/i).first();
     if (await ageGate.isVisible().catch(() => false)) {
-      throw new Error("Grok Imagine đang chờ xác nhận tuổi trong hồ sơ Chrome của tài khoản hiện tại.");
+      throw new Error(GROK_AUTOMATION_MESSAGES.AGE_GATE_PENDING);
     }
 
     const localProjectId = _.toString(options.sandboxConfig?.localProjectId || options.sandboxConfig?.projectId);
@@ -2318,7 +2319,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       if (await createNew.isVisible().catch(() => false)) await createNew.click().catch(() => {});
       activeGrokLocalProjectId = localProjectId;
       await page.waitForTimeout(400);
-      appLog(`[Grok Imagine] Đã gắn một room duy nhất cho dự án ${localProjectId}.`);
+      appLog(GROK_AUTOMATION_MESSAGES.ATTACHED_ROOM(localProjectId));
     }
 
     const isVideo = options.visualConfig?.generateType === GenerateType.Video;
@@ -2350,13 +2351,13 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
         .evaluateAll((nodes) => nodes.map((node) => (node.textContent || "").trim()).filter(Boolean))
         .catch(() => [] as string[]);
       if (!selectedDuration.some((label) => label.includes(requestedDuration))) {
-        appLog(`[Grok Imagine] Thời lượng ${requestedDuration} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
+        appLog(GROK_AUTOMATION_MESSAGES.DURATION_NOT_SUPPORTED(requestedDuration));
       }
       if (!selectedDuration.some((label) => label.includes(requestedResolution))) {
-        appLog(`[Grok Imagine] Độ phân giải ${requestedResolution} không được tài khoản áp dụng; Grok sẽ dùng cấu hình khả dụng hiện tại.`);
+        appLog(GROK_AUTOMATION_MESSAGES.RESOLUTION_NOT_SUPPORTED(requestedResolution));
       }
       appLog(
-        `[Grok Imagine] Cấu hình yêu cầu: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}, Chrome ${options.visualConfig?.chromeHeadless === false ? "hiển thị" : "chạy ngầm"}.`,
+        GROK_AUTOMATION_MESSAGES.CONFIG_DETAIL(targetRatio, requestedDuration, requestedResolution, options.visualConfig?.chromeHeadless === false),
       );
     }
 
@@ -2391,7 +2392,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
     if (submittedPromptStillVisible && (await sendButton.isEnabled().catch(() => false))) {
       await sendButton.click();
     }
-    appLog(`[Grok Imagine] Đã gửi prompt tạo ${isVideo ? "video" : "ảnh"}.`);
+    appLog(GROK_AUTOMATION_MESSAGES.SENT_PROMPT(isVideo));
 
     const mediaUrl = await page
       .waitForFunction(
@@ -2408,15 +2409,15 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       )
       .then((handle) => handle.jsonValue() as Promise<string | null>);
 
-    if (!mediaUrl) throw new Error("Grok Imagine không trả về URL media mới.");
+    if (!mediaUrl) throw new Error(GROK_AUTOMATION_MESSAGES.NO_MEDIA_URL);
     const response = await context.request.get(mediaUrl, { timeout: 120000 });
-    if (!response.ok()) throw new Error(`Không tải được media Grok (${response.status()}).`);
+    if (!response.ok()) throw new Error(GROK_AUTOMATION_MESSAGES.DOWNLOAD_FAILED(response.status()));
     const buffer = await response.body();
     if (isVideo) await inspectGeneratedVideoBuffer(buffer, parseConfiguredVideoDuration(options.visualConfig?.videoDuration));
-    else if (buffer.length < 10000) throw new Error("Media Grok tải về không hợp lệ.");
+    else if (buffer.length < 10000) throw new Error(GROK_AUTOMATION_MESSAGES.INVALID_MEDIA_BUFFER);
     const contentType = response.headers()["content-type"] || (isVideo ? "video/mp4" : "image/jpeg");
     const dataUrl = `data:${contentType};base64,${buffer.toString("base64")}`;
-    appLog(`[Grok Imagine] Đã tải trực tiếp ${isVideo ? "video" : "ảnh"} từ URL media (${buffer.length} bytes).`);
+    appLog(GROK_AUTOMATION_MESSAGES.DOWNLOAD_DIRECT_SUCCESS(isVideo, buffer.length));
     return { success: true, base64: buffer.toString("base64"), fallbackUrl: dataUrl };
   } catch (error) {
     appError("[Grok Imagine] Generation failed", error);
@@ -2708,8 +2709,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const promptApplied = await replaceFlowPromptInput(activePage, inputLoc, targetPrompt);
           if (!promptApplied) {
             const observedPrompt = await readFlowPromptInput(inputLoc);
+            // expected=${normalizeFlowPromptValue(targetPrompt).length}, observed=${normalizeFlowPromptValue(observedPrompt).length}
             appLog(
-              `[Google Flow] Ô prompt chưa xác nhận nội dung sau hai phương thức nhập (expected=${normalizeFlowPromptValue(targetPrompt).length}, observed=${normalizeFlowPromptValue(observedPrompt).length}).`,
+              FLOW_AUTOMATION_MESSAGES.FLOW_PROMPT_MISMATCH(normalizeFlowPromptValue(targetPrompt).length, normalizeFlowPromptValue(observedPrompt).length),
             );
             await captureGeminiDomState(activePage, "flow-prompt-not-applied").catch(() => undefined);
             throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
@@ -3188,7 +3190,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       await smoothMouseMove(activePage, submitButton);
       await submitButton.click();
       await approveFlowVideoCreditPrompt(activePage, submitButton);
-      appLog(`[Google Flow] Đã gửi prompt ${_.add(itemIndex, SecurityConstants.DEFAULT_AMOUNT)}/${items.length} trong cùng một Room (${item.sceneId}).`);
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SENT_PROMPT_ROOM(_.add(itemIndex, SecurityConstants.DEFAULT_AMOUNT), items.length, item.sceneId));
 
       if (_.lt(itemIndex, _.subtract(items.length, SecurityConstants.DEFAULT_AMOUNT))) {
         const composerDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.NEXT_PROMPT_READY_TIMEOUT_MS);
@@ -4222,7 +4224,7 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_GEN_TYPE.replace("{0}", targetText));
   const pageLoading = page.locator(GEMINI_MODEL_SELECTION_CONFIG.PAGE_LOADING_SELECTOR).filter({ visible: true }).first();
   if (await pageLoading.isVisible().catch(() => false)) {
-    appLog("[Gemini Chat] Đang chờ giao diện tải xong trước khi mở menu tạo nội dung.");
+    appLog(FLOW_AUTOMATION_MESSAGES.GEMINI_WAITING_FOR_UI);
     await pageLoading.waitFor({ state: "hidden", timeout: GEMINI_MODEL_SELECTION_CONFIG.PAGE_LOADING_TIMEOUT_MS }).catch(() => undefined);
   }
   for (let attempt = 0; attempt < GEMINI_MODEL_SELECTION_CONFIG.MAX_ATTEMPTS; attempt++) {

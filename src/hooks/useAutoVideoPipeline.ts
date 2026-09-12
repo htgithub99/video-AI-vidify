@@ -47,7 +47,7 @@ import {
 } from "../types";
 import { PIPELINE_STEPS, VideoQuality } from "../constants/enums";
 import { API_ROUTES, CONTENT_TYPES, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, PIPELINE_CLIENT_ERRORS } from "../constants";
-import { CONTENT_TYPE_HEADER, PRESET_CONSTANTS } from "../constants/texts";
+import { CONTENT_TYPE_HEADER, PRESET_CONSTANTS, PIPELINE_EXECUTION_ROUTE_TEXTS, PIPELINE_FLOW_TEXTS } from "../constants/texts";
 import {
   AUTO_GENERATOR_CONSTANTS,
   AUTO_VIDEO_PIPELINE_PROGRESS,
@@ -342,6 +342,7 @@ export function useAutoVideoPipeline(
   pipelineScope: "auto" | "cinematic" = "auto",
 ) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const PF = PIPELINE_FLOW_TEXTS[currentLang as "vi" | "en"] || PIPELINE_FLOW_TEXTS.vi;
   const isCinematicScope = _.isEqual(pipelineScope, CINEMATIC_CONFIG.STATE_SCOPE);
   const selectedProjectStorageKey = isCinematicScope ? REFACTOR_CONSTANTS.KEY_SELECTED_CINEMATIC_PROJECT : REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT;
   const currentLogsStorageKey = isCinematicScope ? REFACTOR_CONSTANTS.KEY_CINEMATIC_PIPELINE_CURRENT_LOGS : REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS;
@@ -669,11 +670,15 @@ export function useAutoVideoPipeline(
           },
           signal,
         );
-      appendLog(
-        config.language === ProjectLanguage.VI
-          ? `[AI] Tuyến thực thi: ${resolvedAiExecution.mode} · room ${resolvedAiExecution.provider} · model ${resolvedAiExecution.model}.`
-          : `[AI] Execution route: ${resolvedAiExecution.mode} · room ${resolvedAiExecution.provider} · model ${resolvedAiExecution.model}.`,
-      );
+      const routeTexts = _.isEqual(config.language, ProjectLanguage.VI)
+        ? PIPELINE_EXECUTION_ROUTE_TEXTS.vi
+        : PIPELINE_EXECUTION_ROUTE_TEXTS.en;
+      const modeLabel = _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.RoomOnly)
+        ? routeTexts.ROOM_ONLY
+        : _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.ApiOnly)
+          ? routeTexts.API_ONLY
+          : routeTexts.HYBRID;
+      appendLog(routeTexts.formatRoute(modeLabel, resolvedAiExecution.provider, resolvedAiExecution.model));
       const referenceChangeState = getReferenceChangeState(
         existingTargetProj,
         config.referenceImages,
@@ -1085,7 +1090,7 @@ export function useAutoVideoPipeline(
         if (!_.isEmpty(cachedCinematicScriptIssues))
           appendLog(
             config.language === ProjectLanguage.VI
-              ? `[Kịch bản] Bản đã lưu chưa đạt: ${_.join(cachedCinematicScriptIssues, ", ")}. Chỉ chạy lại bước kịch bản.`
+              ? `[Kịch bản] Bản đã lưu chưa đạt yêu cầu: ${_.join(cachedCinematicScriptIssues, ", ")}. Đang tạo lại kịch bản.`
               : `[Script] The saved result is not ready: ${_.join(cachedCinematicScriptIssues, ", ")}. Retrying only the script step.`,
           );
       }
@@ -1098,7 +1103,7 @@ export function useAutoVideoPipeline(
           realScenes = [];
           appendLog(
             config.language === ProjectLanguage.VI
-              ? `[Storyboard] Bản đã lưu chưa đạt (${_.join(cachedStoryboardIssues, ", ")}); dựng lại storyboard nhưng sẽ tái sử dụng asset đúng theo scene ID.`
+              ? `[Phân cảnh] Bản đã lưu chưa đạt (${_.join(cachedStoryboardIssues, ", ")}); đang phân chia lại phân cảnh và tái sử dụng hình ảnh hợp lệ.`
               : `[Storyboard] The saved result is incomplete (${_.join(cachedStoryboardIssues, ", ")}); rebuilding the storyboard while reusing valid assets by scene ID.`,
           );
         }
@@ -1136,7 +1141,7 @@ export function useAutoVideoPipeline(
           if (scriptAttempt < PIPELINE_GUARANTEE_CONFIG.SCRIPT_ATTEMPTS - 1)
             appendLog(
               config.language === ProjectLanguage.VI
-                ? `[Kịch bản][${resolvedAiExecution.mode} · ${resolvedAiExecution.provider}/${resolvedAiExecution.model}] Lần ${scriptAttempt + 1} chưa đạt (${_.join(scriptReadinessIssues, ", ")}); đang retry riêng bước kịch bản.`
+                ? `[Kịch bản] Lần ${scriptAttempt + 1} chưa đạt (${_.join(scriptReadinessIssues, ", ")}); đang tạo lại kịch bản.`
                 : `[Script][${resolvedAiExecution.mode} · ${resolvedAiExecution.provider}/${resolvedAiExecution.model}] Attempt ${scriptAttempt + 1} is incomplete (${_.join(scriptReadinessIssues, ", ")}); retrying only the script step.`,
             );
         }
@@ -1327,11 +1332,7 @@ export function useAutoVideoPipeline(
           );
         }
         if (isCinematicPipeline && !_.isEmpty(analyzeCharacterRes.data?.artifactWarnings)) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[Nhân vật] Đã nhận định danh dùng được; metadata phụ còn thiếu: ${_.join(analyzeCharacterRes.data.artifactWarnings, ", ")}. Tiếp tục tạo phim.`
-              : `[Characters] Usable identities received; optional metadata is incomplete: ${_.join(analyzeCharacterRes.data.artifactWarnings, ", ")}. Continuing.`,
-          );
+          appendLog(PF.CHARACTER_DETECTED);
         }
         if (!isCinematicPipeline && (_.isEmpty(rawAnalyzedCharacters) || !analyzeCharacterRes.success)) {
           throw new Error(analyzeCharacterRes.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
@@ -1434,14 +1435,14 @@ export function useAutoVideoPipeline(
           if (storyboardAttempt < PIPELINE_GUARANTEE_CONFIG.STORYBOARD_ATTEMPTS - 1)
             appendLog(
               config.language === ProjectLanguage.VI
-                ? `[Storyboard] Lần ${storyboardAttempt + 1} chưa đạt (${_.join(storyboardReadinessIssues, ", ")}); đang retry riêng bước storyboard.`
+                ? `[Phân cảnh] Lần ${storyboardAttempt + 1} chưa đạt (${_.join(storyboardReadinessIssues, ", ")}); đang phân chia lại phân cảnh.`
                 : `[Storyboard] Attempt ${storyboardAttempt + 1} is incomplete (${_.join(storyboardReadinessIssues, ", ")}); retrying only the storyboard step.`,
             );
         }
         if (isCinematicPipeline && !_.isEmpty(storyboardReadinessIssues)) {
           throw new Error(
             config.language === ProjectLanguage.VI
-              ? `Storyboard chưa đạt điều kiện bắt buộc: ${_.join(storyboardReadinessIssues, ", ")}`
+              ? `Phân cảnh chưa đạt điều kiện bắt buộc: ${_.join(storyboardReadinessIssues, ", ")}`
               : `The storyboard did not pass mandatory readiness: ${_.join(storyboardReadinessIssues, ", ")}`,
           );
         }
@@ -1514,7 +1515,7 @@ export function useAutoVideoPipeline(
         setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.VOICE_START);
         setCurrentStepIndex(2);
 
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, config.voiceName || "Mặc định"));
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, config.voiceName || PF.VOICE_DEFAULT_LABEL));
         appendLog(T.logVoiceRequestDetail(config.voiceProvider, config.voiceName, _.size(realScript)));
         const activeVoiceArc = genreVoiceArc || resolveGenreVoiceArc(config.genre);
         const directedVoice = await generateDirectedVoice({
@@ -1657,13 +1658,9 @@ export function useAutoVideoPipeline(
         await syncProject(voiceUpdatedProj);
 
         appendLog(
-          config.language === ProjectLanguage.VI
-            ? isCinematicEpisodeGenre(config.genre)
-              ? "🎬 AI đang đạo diễn prompt Veo hoàn chỉnh cho từng khoảnh khắc điện ảnh."
-              : "🖼️ AI đang biên tập prompt hình ảnh theo nội dung, phong cách và tính nhất quán của từng phân cảnh."
-            : isCinematicEpisodeGenre(config.genre)
-              ? "🎬 AI is directing a complete Veo prompt for each focused cinematic moment."
-              : "🖼️ AI is editing each scene prompt for story relevance, style, and continuity.",
+          isCinematicEpisodeGenre(config.genre)
+            ? PF.STEP_DIRECTING_CINEMATIC_PROMPTS
+            : PF.STEP_EDITING_IMAGE_PROMPTS,
         );
         const optimizePayload = {
           visualConfig: voiceUpdatedProj.visualConfig,
@@ -1833,11 +1830,7 @@ export function useAutoVideoPipeline(
             });
           };
           optimizeRes = { success: true, data: { storyboard: realScenes, planningWarnings } };
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[Đạo diễn phim] AI đang viết prompt cho ${scenesToPlan.length} cảnh trong một room chuyên biệt.`
-              : `[Film direction] AI is writing prompts for ${scenesToPlan.length} scenes in one dedicated room.`,
-          );
+          appendLog(PF.formatDirectorWritingPrompts(scenesToPlan.length));
           await checkpointPlanningState();
           for (let batchIndex = 0; batchIndex < planningBatches.length; batchIndex++) await processPlanningBatch(batchIndex);
           await checkpointChain;
@@ -1863,11 +1856,7 @@ export function useAutoVideoPipeline(
           optimizeRes = await pipelineSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, { ...optimizePayload, storyboard: realScenes }, requestSignal);
         }
         if (!isCinematicEpisodeGenre(config.genre) && !optimizeRes.success) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? "[Biên tập hình ảnh] AI chưa trả đủ kế hoạch; đang yêu cầu viết lại toàn bộ đúng một lần."
-              : "[Visual editorial] AI did not return a complete plan; requesting one full rewrite.",
-          );
+          appendLog(PF.LOG_IMAGE_EDITOR_RETRY);
           optimizeRes = await pipelineSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, { ...optimizePayload, storyboard: realScenes }, requestSignal);
         }
         if (optimizeRes.success && optimizeRes.data?.storyboard) {
@@ -1875,13 +1864,9 @@ export function useAutoVideoPipeline(
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
           shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || (!isContinuation && (requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged));
           appendLog(
-            config.language === ProjectLanguage.VI
-              ? isCinematicEpisodeGenre(config.genre)
-                ? `✅ AI đã hoàn thành ${realScenes.length} prompt Veo theo từng khoảnh khắc của phim.`
-                : `✅ AI đã hoàn thành prompt hình ảnh cho ${realScenes.length} phân cảnh.`
-              : isCinematicEpisodeGenre(config.genre)
-                ? `✅ AI completed ${realScenes.length} focused Veo prompts for the film.`
-                : `✅ AI completed image prompts for ${realScenes.length} scenes.`,
+            isCinematicEpisodeGenre(config.genre)
+              ? PF.formatDirectorCompleted(realScenes.length)
+              : PF.formatImageEditorCompleted(realScenes.length),
           );
           if (isCinematicEpisodeGenre(config.genre) && !_.isEmpty(optimizeRes.data?.planningWarnings)) {
             appendLog(config.language === ProjectLanguage.VI ? CINEMATIC_PLANNING_MESSAGES.VI_ADVISORY : CINEMATIC_PLANNING_MESSAGES.EN_ADVISORY);
@@ -1903,7 +1888,7 @@ export function useAutoVideoPipeline(
           if (!_.isEmpty(finalPlanIssues)) {
             throw new Error(
               config.language === ProjectLanguage.VI
-                ? `Kế hoạch prompt chưa đạt sau các lần sửa theo cảnh: ${_.join(_.take(finalPlanIssues, 12), ", ")}`
+                ? `Kế hoạch mô tả cảnh chưa đạt sau các lần hoàn thiện: ${_.join(_.take(finalPlanIssues, 12), ", ")}`
                 : `The prompt plan is still invalid after scene-level repairs: ${_.join(_.take(finalPlanIssues, 12), ", ")}`,
             );
           }
@@ -1966,17 +1951,9 @@ export function useAutoVideoPipeline(
       if (isCinematicEpisodeGenre(config.genre)) {
         const cinematicContractIssues = getBlockingCinematicStoryboardContractIssues(realScenes as StoryboardScene[], config.videoDuration, config.language);
         if (!_.isEmpty(cinematicContractIssues)) {
-          throw new Error(
-            config.language === ProjectLanguage.VI
-              ? `[Phim AI] Kế hoạch quay chưa đạt kiểm tra bắt buộc: ${cinematicContractIssues.slice(0, 6).join(", ")}.`
-              : `[AI Film] The shooting plan failed mandatory validation: ${cinematicContractIssues.slice(0, 6).join(", ")}.`,
-          );
+          throw new Error(PF.formatAiFilmShootingPlanFailed(cinematicContractIssues.slice(0, 6).join(", ")));
         }
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? `[Phim AI] Chế độ video toàn cảnh: ${realScenes.length}/${realScenes.length} cảnh được gửi tới model video đã chọn.`
-            : `[AI Film] Video-only production: ${realScenes.length}/${realScenes.length} shots use the selected video model.`,
-        );
+        appendLog(PF.formatAiFilmFullVideoMode(realScenes.length));
       }
       if (isCinematicPipeline) {
         if (_.lte(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.PROMPT)) {
@@ -1996,11 +1973,12 @@ export function useAutoVideoPipeline(
       const modeName = _.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.GeminiChat)
         ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM
         : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
-      appendLog(
-        config.language === ProjectLanguage.VI
-          ? `🎨 Đang chuẩn bị tạo ${executionVisualConfig.generateType === GenerateType.Video ? "clip video" : executionVisualConfig.generateType === GenerateType.Mixed ? "hình ảnh và clip video" : "hình ảnh"} phân cảnh qua ${modeName}; tỷ lệ ${config.aspectRatio}.`
-          : `🎨 Preparing to generate scene ${executionVisualConfig.generateType === GenerateType.Video ? "video clips" : executionVisualConfig.generateType === GenerateType.Mixed ? "images and video clips" : "images"} through ${modeName} at ${config.aspectRatio}.`,
-      );
+      const mediaTypeLabel = executionVisualConfig.generateType === GenerateType.Video
+        ? PF.MEDIA_TYPE_VIDEO
+        : executionVisualConfig.generateType === GenerateType.Mixed
+          ? PF.MEDIA_TYPE_MIXED
+          : PF.MEDIA_TYPE_IMAGE;
+      appendLog(PF.formatPreparingSceneMedia(mediaTypeLabel, modeName, config.aspectRatio));
 
       const visualConfigPayload = {
         ...executionVisualConfig,
@@ -2140,11 +2118,7 @@ export function useAutoVideoPipeline(
       });
       const targetSceneIds = new Set(_.map(targetScenesToGen, "id"));
       if (_.isEqual(runIntent, "render_only") && !_.isEmpty(targetScenesToGen)) {
-        throw new Error(
-          config.language === ProjectLanguage.VI
-            ? "Một số cảnh đang thiếu media. Hãy chọn Tiếp tục để hoàn thiện các cảnh còn thiếu."
-            : "Some scenes are missing media. Choose Continue to complete them first.",
-        );
+        throw new Error(PF.ERROR_MISSING_SCENE_MEDIA);
       }
       _.forEach(targetScenesToGen, (scene) => {
         scene.assetStatus = SceneAssetStatus.Generating;
@@ -2348,20 +2322,12 @@ export function useAutoVideoPipeline(
         );
         const rewrittenPrompt = _.toString(rewriteResult.data?.review?.repairedPrompt);
         if (!rewriteResult.success || _.isEmpty(_.trim(rewrittenPrompt))) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[Prompt] ${scene.id}: AI sửa prompt chưa phản hồi; giữ nguyên prompt AI hiện có.`
-              : `[Prompt] ${scene.id}: AI prompt repair was unavailable; keeping the existing AI-authored prompt.`,
-          );
+          appendLog(PF.formatScenePromptKept(scene.id));
           return failedPrompt;
         }
         const rewrittenIssues = getBlockingCinematicPromptPreflightIssues(scene, rewrittenPrompt, config.videoDuration);
         if (!_.isEmpty(rewrittenIssues)) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[Prompt] ${scene.id}: prompt AI sửa còn cảnh báo ${_.join(rewrittenIssues, ", ")}; tiếp tục bằng chính prompt AI trả về.`
-              : `[Prompt] ${scene.id}: the AI-repaired prompt still has advisories ${_.join(rewrittenIssues, ", ")}; continuing with the AI response.`,
-          );
+          appendLog(PF.formatScenePromptNoted(scene.id));
         }
         return rewrittenPrompt;
       };
@@ -2379,11 +2345,7 @@ export function useAutoVideoPipeline(
         );
         const rewrittenPrompt = _.trim(_.toString(rewriteResult.data?.review?.repairedPrompt));
         if (!rewriteResult.success || _.isEmpty(rewrittenPrompt)) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[Prompt] AI chưa trả prompt ${purpose} thay thế; giữ nguyên prompt AI hiện có.`
-              : `[Prompt] AI did not return a replacement ${purpose} prompt; keeping the existing AI-authored prompt.`,
-          );
+          appendLog(PF.LOG_SCENE_PROMPT_FALLBACK);
           return failedPrompt;
         }
         return rewrittenPrompt;
@@ -2441,11 +2403,11 @@ export function useAutoVideoPipeline(
             archivalScene.archivalSourceUrl = _.toString(archivalData.sourceUrl);
             archivalScene.archivalLicense = _.toString(archivalData.license);
             appendAssetRevision(archivalScene, dataUrl, SceneAssetStatus.Generated);
-            appendLog(`Đã tải ảnh tư liệu thật cho ${archivalScene.id} từ ${_.toString(archivalData.provider || "nguồn lưu trữ")}.`);
+            appendLog(PF.formatArchivalLoaded(archivalScene.id, _.toString(archivalData.provider || PF.ARCHIVE_SOURCE_DEFAULT)));
             await persistImageCheckpoint();
           } else {
             archivalScene.assetStrategy = "ai_generated";
-            appendLog(`Không tìm thấy tư liệu phù hợp cho ${archivalScene.id}; chuyển riêng cảnh này sang ảnh AI.`);
+            appendLog(PF.formatArchivalFallbackAi(archivalScene.id));
           }
         }
         const remainingTargetScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene) && !scene.remoteVideoDownloadPending);
@@ -2463,11 +2425,8 @@ export function useAutoVideoPipeline(
 
             if (isFallback) appendLog(T.logFallbackAttempt(i + 1, scenesToProcess.length, sceneGenerateType));
             else {
-              appendLog(
-                config.language === ProjectLanguage.VI
-                  ? `🎨 Đang tạo ${sceneGenerateType === GenerateType.Video ? "clip video" : "hình ảnh"} cho ${sc.id} (${i + 1}/${scenesToProcess.length}).`
-                  : `🎨 Generating the ${sceneGenerateType === GenerateType.Video ? "video clip" : "image"} for ${sc.id} (${i + 1}/${scenesToProcess.length}).`,
-              );
+              const sceneMediaLabel = sceneGenerateType === GenerateType.Video ? PF.MEDIA_TYPE_VIDEO : PF.MEDIA_TYPE_IMAGE;
+              appendLog(PF.formatCreatingSceneMedia(sceneMediaLabel, sc.id, i + 1, scenesToProcess.length));
             }
 
             try {
@@ -2531,11 +2490,8 @@ export function useAutoVideoPipeline(
                 appendAssetRevision(sc, sc.assetUrl, SceneAssetStatus.Generated);
                 sc.assetError = undefined;
                 await persistImageCheckpoint();
-                appendLog(
-                  config.language === ProjectLanguage.VI
-                    ? `✓ Đã tải và lưu ${sceneGenerateType === GenerateType.Video ? "clip video" : "hình ảnh"} ${sc.id}.`
-                    : `✓ Downloaded and saved the ${sceneGenerateType === GenerateType.Video ? "video clip" : "image"} for ${sc.id}.`,
-                );
+                const sceneMediaLabel = sceneGenerateType === GenerateType.Video ? PF.MEDIA_TYPE_VIDEO : PF.MEDIA_TYPE_IMAGE;
+                appendLog(PF.formatSavedSceneMedia(sceneMediaLabel, sc.id));
                 if (isCinematicPipeline) {
                   const completedVideoSceneCount = _.size(_.filter(realScenes, hasSceneAsset));
                   appendCinematicLog(
@@ -2642,11 +2598,7 @@ export function useAutoVideoPipeline(
                 await persistImageCheckpoint();
                 appendLog(T.logBatchImageSceneError(sc.id, failureReason, sceneGenerateType));
                 if (_.isEqual(sceneGenerateType, GenerateType.Video) && isNonRetryableFlowVideoError(failureReason)) {
-                  nonRetryableFlowError = new Error(
-                    config.language === ProjectLanguage.VI
-                      ? `[Google Flow] Dừng các cảnh còn lại vì lỗi thiết lập chung: ${failureReason}`
-                      : `[Google Flow] Remaining scenes were stopped because of a shared setup error: ${failureReason}`,
-                  );
+                  nonRetryableFlowError = new Error(PF.formatGoogleFlowStopped(failureReason));
                 }
               }
             }
@@ -2774,10 +2726,13 @@ export function useAutoVideoPipeline(
                 generateType: GenerateType.Video,
               };
             });
+            // cùng 1 Room; mỗi prompt tạo 1 video
             appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[Google Flow] Lượt ${_.add(batchIndex, SecurityConstants.DEFAULT_AMOUNT)}/${promptBatches.length}: gửi ${batchItems.length} prompt liên tiếp trong cùng 1 Room; mỗi prompt tạo 1 video.`
-                : `[Google Flow] Wave ${_.add(batchIndex, SecurityConstants.DEFAULT_AMOUNT)}/${promptBatches.length}: submitting ${batchItems.length} prompts consecutively in the same Room; each prompt creates one video.`,
+              PF.formatGoogleFlowBatch(
+                _.add(batchIndex, SecurityConstants.DEFAULT_AMOUNT),
+                promptBatches.length,
+                batchItems.length,
+              ),
             );
             const batchResponse = await submitProjectFlowVideoBatch(batchItems, visualConfigPayload, sandboxConfigPayload, requestSignal);
             if (!_.isEmpty(batchResponse.newProjectId) && !_.isEqual(sandboxConfigPayload.flowProjectId, batchResponse.newProjectId)) {
@@ -2805,11 +2760,7 @@ export function useAutoVideoPipeline(
 
             for (const scene of sceneBatch) {
               if (!hasSceneAsset(scene) && isNonRetryableFlowVideoError(scene.assetError)) {
-                throw new Error(
-                  config.language === ProjectLanguage.VI
-                    ? `[Google Flow] Dừng các cảnh còn lại vì lỗi thiết lập chung: ${scene.assetError}`
-                    : `[Google Flow] Remaining scenes were stopped because of a shared setup error: ${scene.assetError}`,
-                );
+                throw new Error(PF.formatGoogleFlowStopped(scene.assetError || ""));
               }
               if (!hasSceneAsset(scene)) await finishVideoScene(scene, SecurityConstants.DEFAULT_AMOUNT);
             }
@@ -2961,11 +2912,7 @@ export function useAutoVideoPipeline(
         } else {
           const generateFilmThumbnails = async (): Promise<void> => {
             if (_.isEmpty(unifiedThumbnailItems)) return;
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? "[Ảnh bìa] Gemini đang tạo ảnh bìa song song với clip phim."
-                : "[Thumbnail] Gemini is generating thumbnails in parallel with film clips.",
-            );
+            appendLog(PF.LOG_THUMBNAIL_PARALLEL_GEN);
             const thumbnailResults = new Map<string, ProjectImageResult>();
             const applyThumbnailResult = (result: ProjectImageResult): void => {
               thumbnailResults.set(result.sceneId, result);
@@ -3248,11 +3195,7 @@ export function useAutoVideoPipeline(
               scene.assetStatus = SceneAssetStatus.Generating;
               scene.assetError = undefined;
             });
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[Tư liệu] ${unresolvedSourceScenes.length} cảnh chưa có nguồn phù hợp; chuyển sang tái dựng AI để video tiếp tục.`
-                : `[Archive] ${unresolvedSourceScenes.length} scenes have no suitable source; using AI reconstruction so production continues.`,
-            );
+            appendLog(PF.formatArchivalUnresolvedAi(unresolvedSourceScenes.length));
             await runSceneGeneration(unresolvedSourceScenes, true);
           }
         }
@@ -3335,11 +3278,7 @@ export function useAutoVideoPipeline(
             scene.qaStatus = QaStatus.Unavailable;
             scene.acceptance = AssetAcceptance.AcceptedWithWarning;
             scene.assetError = qaResult.error || "visual_qa_unavailable";
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[QA ảnh] ${scene.id}: chưa thể kiểm tra; tiếp tục với ảnh hiện có.`
-                : `[Image QA] ${scene.id}: review unavailable; continuing with the current image.`,
-            );
+            appendLog(PF.formatImageQaUnevaluated(scene.id));
             break;
           }
 
@@ -3355,11 +3294,7 @@ export function useAutoVideoPipeline(
               approvedRevision.approvedAt = new Date().toISOString();
             }
             qaCompleted = true;
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[QA ảnh] ${scene.id}: đạt kiểm tra hình thể và số lượng nhân vật.`
-                : `[Image QA] ${scene.id}: anatomy and subject count passed.`,
-            );
+            appendLog(PF.formatImageQaPassed(scene.id));
             break;
           }
 
@@ -3373,11 +3308,7 @@ export function useAutoVideoPipeline(
               finalRevision.status = SceneAssetStatus.Approved;
               finalRevision.approvedAt = new Date().toISOString();
             }
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[QA ảnh] ${scene.id}: vẫn còn cảnh báo sau 1 lần tạo lại; tiếp tục để video hoàn thành.`
-                : `[Image QA] ${scene.id}: warnings remain after 1 regeneration; continuing so the video completes.`,
-            );
+            appendLog(PF.formatImageQaRecompleted(scene.id));
             qaCompleted = true;
             break;
           }
@@ -3385,11 +3316,7 @@ export function useAutoVideoPipeline(
           const rejectedRevision = _.findLast(scene.assetRevisions);
           if (rejectedRevision) rejectedRevision.status = SceneAssetStatus.Rejected;
           scene.assetStatus = SceneAssetStatus.Retrying;
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `[QA ảnh] ${scene.id}: phát hiện ${_.join(regenerationReasons, ", ")}; tạo lại lần ${regenerationAttempt + 1}/1.`
-              : `[Image QA] ${scene.id}: detected ${_.join(regenerationReasons, ", ")}; regeneration ${regenerationAttempt + 1}/1.`,
-          );
+          appendLog(PF.formatImageQaRetrying(scene.id, regenerationAttempt + 1, 1));
 
           if (_.isEqual(scene.assetStrategy, "archival")) {
             if (regenerationAttempt < SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS) {
@@ -3421,11 +3348,7 @@ export function useAutoVideoPipeline(
             scene.archivalRationale = _.trim(_.join([scene.archivalRationale, "Authentic candidates failed semantic QA; explicit AI reconstruction required"], "; "));
             scene.archivalSourceUrl = undefined;
             scene.archivalLicense = undefined;
-            appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[QA tư liệu] ${scene.id}: nguồn thật không chứng minh đúng câu thoại; chuyển sang ảnh AI tái dựng.`
-                : `[Archive QA] ${scene.id}: authentic sources did not prove the narration; switching to AI reconstruction.`,
-            );
+            appendLog(PF.formatArchivalQaSwitchAi(scene.id));
           }
 
           const requestContext = createSceneRequestContext(scene, GenerateType.Image);
@@ -3514,11 +3437,7 @@ export function useAutoVideoPipeline(
                 unreviewedRevision.status = SceneAssetStatus.Approved;
                 unreviewedRevision.approvedAt = new Date().toISOString();
               }
-              appendLog(
-                config.language === ProjectLanguage.VI
-                  ? `[QA video] ${scene.id}: QA không phản hồi; giữ take hiện tại thay vì tạo lại khi chưa có bằng chứng lỗi.`
-                  : `[Video QA] ${scene.id}: QA was unavailable; keeping the current take instead of regenerating without evidence.`,
-              );
+              appendLog(PF.formatVideoQaKept(scene.id));
               break;
             }
 
@@ -3547,9 +3466,11 @@ export function useAutoVideoPipeline(
             if (rejectedRevision) rejectedRevision.status = SceneAssetStatus.Rejected;
             scene.assetStatus = SceneAssetStatus.Retrying;
             appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[QA video] ${scene.id} sai ${_.join(qaReasons, ", ")}; chỉ tạo lại cảnh này (${qaAttempt + 1}/${PIPELINE_GUARANTEE_CONFIG.VIDEO_QA_REGENERATION_ATTEMPTS}).`
-                : `[Video QA] ${scene.id} failed ${_.join(qaReasons, ", ")}; regenerating only this scene (${qaAttempt + 1}/${PIPELINE_GUARANTEE_CONFIG.VIDEO_QA_REGENERATION_ATTEMPTS}).`,
+              PF.formatVideoQaRetrying(
+                scene.id,
+                qaAttempt + 1,
+                PIPELINE_GUARANTEE_CONFIG.VIDEO_QA_REGENERATION_ATTEMPTS,
+              ),
             );
             const requestContext = createSceneRequestContext(scene, GenerateType.Video);
             const retryPrompt = await requestAiRewrittenVideoPrompt(scene, cinematicPreflightPrompts.get(scene.id) || requestContext.prompt, qaReasons);
@@ -3673,13 +3594,13 @@ export function useAutoVideoPipeline(
           if (!_.isEmpty(targetedTakeIssues)) {
             throw new Error(
               config.language === ProjectLanguage.VI
-                ? `Clip đã được tải nhưng chưa đạt QA: ${_.join(targetedTakeIssues, ", ")}`
+                ? `Đoạn video đã được tải nhưng chưa đạt tiêu chuẩn: ${_.join(targetedTakeIssues, ", ")}`
                 : `The clip was downloaded but did not pass QA: ${_.join(targetedTakeIssues, ", ")}`,
             );
           }
           appendLog(
             config.language === ProjectLanguage.VI
-              ? `Đã tạo, tải và duyệt ${_.join(_.map(targetedScenes, "id"), ", ")}. Dùng Ghép lại khi toàn bộ cảnh đã sẵn sàng.`
+              ? `Đã tạo, tải và duyệt các cảnh ${_.join(_.map(targetedScenes, "id"), ", ")}. Bấm Xuất video khi toàn bộ cảnh đã sẵn sàng.`
               : `Created, downloaded and approved ${_.join(_.map(targetedScenes, "id"), ", ")}. Use Re-render when every scene is ready.`,
           );
           setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
@@ -3695,18 +3616,14 @@ export function useAutoVideoPipeline(
           });
           throw new Error(
             config.language === ProjectLanguage.VI
-              ? `Chưa đủ take đạt chuẩn, không render: ${_.join(_.take(takeIssues, 20), ", ")}`
+              ? `Chưa đủ cảnh quay đạt chuẩn để xuất video: ${_.join(_.take(takeIssues, 20), ", ")}`
               : `Approved takes are incomplete; render is blocked: ${_.join(_.take(takeIssues, 20), ", ")}`,
           );
         }
       }
       const sceneAssetSummary = getSceneAssetSummary(realScenes as StoryboardScene[]);
       if (isCinematicEpisodeGenre(config.genre) && _.isEmpty(realScenes)) {
-        throw new Error(
-          config.language === ProjectLanguage.VI
-            ? "Chưa có take video thật nào có thể dựng. Hãy kiểm tra phiên Gemini rồi tiếp tục dự án."
-            : "No genuine video take is available for editing. Check the Gemini session and resume the project.",
-        );
+        throw new Error(PF.ERROR_NO_READY_VIDEOS_FOR_EDITING);
       }
       if (!sceneAssetSummary.complete) {
         await syncProject({
@@ -3935,11 +3852,7 @@ export function useAutoVideoPipeline(
       }
 
       if (isCinematicEpisodeGenre(config.genre)) {
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? "[Ảnh bìa] Đã đồng bộ kết quả ảnh bìa Gemini với dự án phim."
-            : "[Thumbnail] Gemini thumbnail results are synchronized with the film project.",
-        );
+        appendLog(PF.LOG_THUMBNAIL_SYNCED);
       }
       for (const thumbnail of thumbnailsList) {
         if (!isUsableGeneratedAssetUrl(thumbnail.imageUrl)) {
@@ -4091,11 +4004,7 @@ export function useAutoVideoPipeline(
       } else {
         globalAudioBase64 = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
         globalAudioUrl = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? "[Phim AI] Giữ thoại, ambience và âm thanh hiện trường trong từng clip; không phủ giọng đọc TTS toàn cục."
-            : "[AI Film] Preserving dialogue, ambience and production sound from each clip; global TTS narration is disabled.",
-        );
+        appendLog(PF.LOG_AI_FILM_PRESERVE_AUDIO);
       }
 
       slicedUpdatedProj = {
@@ -4133,13 +4042,9 @@ export function useAutoVideoPipeline(
 
       setCurrentStepIndex(4);
       appendLog(
-        config.language === ProjectLanguage.VI
-          ? nativeFilmAudio
-            ? "🎞️ Đang kiểm tra điểm cắt, nối các clip, cân bằng âm thanh hiện trường và kết xuất phim."
-            : "🎞️ Đang căn thời lượng, ghép hình/video với lời thoại, phụ đề, nhạc và kết xuất bản cuối."
-          : nativeFilmAudio
-            ? "🎞️ Checking edit points, joining clips, balancing production audio, and rendering the film."
-            : "🎞️ Aligning timing, assembling visuals with narration, subtitles and music, then rendering the final video.",
+        nativeFilmAudio
+          ? PF.STEP_EDITORIAL_CUTTING_AUDIO
+          : PF.STEP_EDITORIAL_ALIGNING_RENDER,
       );
 
       let cinematicEditorialReviewAvailable = false;
@@ -4192,11 +4097,7 @@ export function useAutoVideoPipeline(
           (!clipAnalysis.success || (!clipAnalysis.data?.editorialReviewAvailable && !clipAnalysis.data?.editorialReviewError));
           reviewAttempt++
         ) {
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? "[Dựng phim] Chưa hoàn tất quyết định cho mọi clip; đang phân tích lại một lần."
-              : "[Film edit] Not every clip received an editorial decision; analyzing once more.",
-          );
+          appendLog(PF.LOG_EDITORIAL_RETRY_ANALYSIS);
           clipAnalysis = await pipelineSystemFetch(
             API_ROUTES.PIPELINE_ANALYZE_CINEMATIC_CLIPS,
             {
@@ -4259,19 +4160,28 @@ export function useAutoVideoPipeline(
           if (clipAnalysis.data?.editorialReviewAvailable) {
             cinematicEditorialReviewAvailable = true;
             appendLog(
-              config.language === ProjectLanguage.VI
-                ? `[Dựng phim] Đã xem ${realScenes.length} clip, giữ ${keptScenes.length}, bỏ ${omittedScenes.length}, rút ${_.round(sourceDuration, 1)}s còn ${_.round(selectedDuration, 1)}s; bảo vệ thoại ở ${protectedDialogueCount} clip, loại ${repeatedOmittedCount} clip lặp và ${wrongDialogueCount} clip sai thoại.`
-                : `[Film edit] Reviewed ${realScenes.length} clips, kept ${keptScenes.length}, omitted ${omittedScenes.length}, reduced ${_.round(sourceDuration, 1)}s to ${_.round(selectedDuration, 1)}s; protected dialogue in ${protectedDialogueCount} clips, removed ${repeatedOmittedCount} repeated clips and ${wrongDialogueCount} clips with wrong dialogue.`,
+              PF.formatEditorialAiSummary(
+                realScenes.length,
+                keptScenes.length,
+                omittedScenes.length,
+                _.round(sourceDuration, 1),
+                _.round(selectedDuration, 1),
+                protectedDialogueCount,
+                repeatedOmittedCount,
+                wrongDialogueCount,
+              ),
             );
           } else {
             appendLog(
-              config.language === ProjectLanguage.VI
-                ? cinematicLibraryAnalysisAvailable
-                  ? `[Dựng phim] Thư viện đã tự chọn đoạn tốt: giữ ${keptScenes.length}, bỏ ${omittedScenes.length}, rút ${_.round(sourceDuration, 1)}s còn ${_.round(selectedDuration, 1)}s; phát hiện ${wrongDialogueCount} clip sai thoại. AI chưa trả đủ nên không được dùng để sửa bản dựng.`
-                  : `[Dựng phim] Đã kiểm tra kỹ thuật ${realScenes.length} clip; giữ các take hợp lệ để hoàn thành phim.`
-                : cinematicLibraryAnalysisAvailable
-                  ? `[Film edit] Libraries selected the strongest material: kept ${keptScenes.length}, omitted ${omittedScenes.length}, reduced ${_.round(sourceDuration, 1)}s to ${_.round(selectedDuration, 1)}s. Incomplete AI review was not applied.`
-                  : `[Film edit] Technical checks completed for ${realScenes.length} clips; valid takes remain in the final edit.`,
+              cinematicLibraryAnalysisAvailable
+                ? PF.formatEditorialAutoSummary(
+                    keptScenes.length,
+                    omittedScenes.length,
+                    _.round(sourceDuration, 1),
+                    _.round(selectedDuration, 1),
+                    wrongDialogueCount,
+                  )
+                : PF.formatEditorialTechCheck(realScenes.length),
             );
           }
         }
@@ -4295,11 +4205,7 @@ export function useAutoVideoPipeline(
           workerIds: Object.values(CINEMATIC_ROOM_STAGE),
         }).catch(() => undefined);
         planningRoomClosedBeforeVideo = true;
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? "[AI] Đã hoàn tất planning; đóng tab room AI trước khi chuyển sang Flow tạo video."
-            : "[AI] Planning is complete; closing the AI room tab before switching to Flow video generation.",
-        );
+        appendLog(PF.LOG_AI_SCRIPT_READY_FOR_VIDEO);
       }
 
       let acceptedScenes = nativeFilmAudio
@@ -4320,33 +4226,33 @@ export function useAutoVideoPipeline(
             );
           });
           await persistImageCheckpoint();
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `Thoại có cảnh báo ở ${_.join([...failedDialogueSceneIds], ", ")}; giữ take hiện có để tránh tạo video trùng lặp.`
-              : `Dialogue has advisories in ${_.join([...failedDialogueSceneIds], ", ")}; keeping the existing takes to prevent duplicate video generation.`,
-          );
+          appendLog(PF.formatDialogueSceneAdvisories(_.join([...failedDialogueSceneIds], ", ")));
           acceptedScenes = _.reject(realScenes as StoryboardScene[], (scene) => _.isEqual(scene.cinematicTakeDecision, "omit"));
         }
       }
       const editedTimeline = nativeFilmAudio ? createCinematicEditTimeline(acceptedScenes) : acceptedScenes;
       const renderableScenes = editedTimeline;
       const omittedCount = _.subtract(realScenes.length, acceptedScenes.length);
-      if (omittedCount > 0)
-        appendLog(
-          config.language === ProjectLanguage.VI
-            ? `[Dựng phim] Đã bỏ ${omittedCount} clip hỏng, lặp hoặc không còn đóng góp cho câu chuyện.`
-            : `[Film edit] Omitted ${omittedCount} broken, repeated, or narratively redundant clips.`,
-        );
+      if (omittedCount > 0) appendLog(PF.formatEditorialOmittedSummary(omittedCount));
       const expectedRenderDuration = nativeFilmAudio
         ? _.sumBy(renderableScenes, (scene) => _.max([SecurityConstants.ZERO, _.toNumber(scene.duration)]) || SecurityConstants.ZERO)
         : calculateSceneDuration(renderableScenes);
-      if (nativeFilmAudio)
+      if (nativeFilmAudio) {
+        const storyCheckText = cinematicEditorialReviewAvailable
+          ? PF.STORY_CHECK_AI
+          : cinematicLibraryAnalysisAvailable
+            ? PF.STORY_CHECK_LIBRARY
+            : PF.STORY_CHECK_SAFE;
         appendCinematicLog(
-          config.language === ProjectLanguage.VI
-            ? `[Dựng phim] Bản dựng có ${countCinematicTimelineShots(acceptedScenes)} đoạn từ ${acceptedScenes.length} clip; dài ${_.round(expectedRenderDuration, 1)} giây. ${cinematicEditorialReviewAvailable ? "AI đã hỗ trợ kiểm tra mạch truyện." : cinematicLibraryAnalysisAvailable ? "Thư viện tự chọn điểm cắt." : "Đã dùng điểm cắt an toàn."}`
-            : `[Film edit] The timeline has ${countCinematicTimelineShots(acceptedScenes)} segments from ${acceptedScenes.length} clips and runs ${_.round(expectedRenderDuration, 1)} seconds. ${cinematicEditorialReviewAvailable ? "AI assisted with story continuity." : cinematicLibraryAnalysisAvailable ? "Libraries selected the cuts." : "Safe technical cuts were used."}`,
+          PF.formatEditorialTimelineSummary(
+            countCinematicTimelineShots(acceptedScenes),
+            acceptedScenes.length,
+            _.round(expectedRenderDuration, 1),
+            storyCheckText,
+          ),
           CINEMATIC_PROGRESS_STAGE.VIDEO,
         );
+      }
       appendLog(T.logRenderPlan(_.size(renderableScenes), expectedRenderDuration, !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl)));
 
       const renderPayload = {
@@ -4503,17 +4409,11 @@ export function useAutoVideoPipeline(
             appendCinematicLog(cinematicProgressMessages.VIDEO_READY, CINEMATIC_PROGRESS_STAGE.VIDEO);
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
             appendLog(
-              config.language === ProjectLanguage.VI
-                ? finalQc.releaseStatus === "editorially_publishable"
-                  ? "[Phát hành] Bản phim hoàn tất và đạt chuẩn biên tập tự động."
-                  : finalQc.releaseStatus === "completed_with_warnings"
-                    ? `[Phát hành] Bản phim đã hoàn tất kỹ thuật, còn ${finalQc.warnings.length} cảnh báo cần xem trước khi đăng.`
-                    : `[Phát hành] Đã tạo được tệp phim nhưng còn ${finalQc.blockingErrors.length} lỗi chặn chuẩn phát hành.`
-                : finalQc.releaseStatus === "editorially_publishable"
-                  ? "[Release] Film completed and passed automated editorial review."
-                  : finalQc.releaseStatus === "completed_with_warnings"
-                    ? `[Release] Film is technically complete with ${finalQc.warnings.length} warnings to review before publishing.`
-                    : `[Release] Film file was created with ${finalQc.blockingErrors.length} release-blocking issues.`,
+              finalQc.releaseStatus === "editorially_publishable"
+                ? PF.LOG_RELEASE_READY_AUTO_EDITED
+                : finalQc.releaseStatus === "completed_with_warnings"
+                  ? PF.formatReleaseReadyWithWarnings(finalQc.warnings.length)
+                  : PF.formatReleaseHasBlockers(finalQc.blockingErrors.length),
             );
             appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
             await syncProject(renderCompletedProj);

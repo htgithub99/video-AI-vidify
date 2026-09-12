@@ -76,6 +76,7 @@ import {
   getBackendMsg,
   getPipelineLog,
   PIPELINE_LOGS,
+  PIPELINE_CONTROLLER_MESSAGES,
   VOICE_ALIGN_LOGS,
   VI_GENRE_GUIDELINES,
   VI_STYLE_GUIDELINES,
@@ -879,14 +880,14 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           try {
             return await requestChatUiPlan(chatUiContents, expectedSceneIds);
           } catch {
-            appWarn("AI Chat dự phòng chưa trả được kế hoạch; hệ thống quay lại tuyến API.");
+            appWarn(PIPELINE_CONTROLLER_MESSAGES.AI_FALLBACK_CHAT_FAILED);
             return requestApiPlan(apiContents, expectedSceneIds);
           }
         }
         try {
           return await requestApiPlan(apiContents, expectedSceneIds);
         } catch (apiError) {
-          appWarn("API lập kế hoạch chưa khả dụng; chuyển sang AI Chat trong Chrome.");
+          appWarn(PIPELINE_CONTROLLER_MESSAGES.API_PLANNING_UNAVAILABLE);
           return requestChatUiPlan(chatUiContents, expectedSceneIds);
         }
       };
@@ -1986,7 +1987,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
                 return restoredSegment;
               }
             } catch (restoreErr) {
-              appWarn("Không thể tự động khôi phục dấu tiếng Việt; từ chối artifact chưa đạt.", restoreErr);
+              appWarn(PIPELINE_CONTROLLER_MESSAGES.VIETNAMESE_ACCENT_RESTORE_FAILED, restoreErr);
             }
           }
         }
@@ -2178,11 +2179,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           : PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_EN
         : missingFreeAiKeys
           ? isVi
-            ? "Chưa có khóa Groq hoặc Cerebras miễn phí và Gemini dự phòng không phản hồi. Vui lòng thêm ít nhất một khóa miễn phí trong phần cài đặt rồi tiếp tục dự án."
+            ? PIPELINE_CONTROLLER_MESSAGES.FREE_AI_PROVIDER_UNAVAILABLE
             : "No free Groq or Cerebras key is configured, and the Gemini fallback also failed. Add at least one free key in Settings, then resume the project."
           : attemptedFreeAi
             ? isVi
-              ? "Các dịch vụ AI miễn phí đang tạm hết hạn mức hoặc không phản hồi. Hệ thống đã thử toàn bộ mô hình trước Gemini, vui lòng tiếp tục lại dự án sau ít phút."
+              ? PIPELINE_CONTROLLER_MESSAGES.FREE_AI_PROVIDER_QUOTA_EXHAUSTED
               : "The free AI providers are temporarily rate-limited or unavailable. All free models were tried before Gemini; resume the project in a few minutes."
             : getGeminiUserMessage(error, isVi);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
@@ -5436,11 +5437,9 @@ router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT })
     logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
     let errorMsg = getBackendMsg("TEMPLATE_SAVE_FAILED", isVi);
     if (error.message === "EXCEED_MAX_TEMPLATES")
-      errorMsg = isVi ? "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới." : "Maximum 2 templates allowed. Please delete one to add a new template.";
+      errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_LIMIT_REACHED[isVi ? "vi" : "en"];
     else if (error.message === "INVALID_CAPCUT_TEMPLATE")
-      errorMsg = isVi
-        ? "Thư mục bạn chọn không phải là dự án Capcut hợp lệ (Thiếu file draft_content.json)."
-        : "The selected folder is not a valid Capcut project (Missing draft_content.json).";
+      errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_INVALID_FOLDER[isVi ? "vi" : "en"];
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: errorMsg });
   }
 });

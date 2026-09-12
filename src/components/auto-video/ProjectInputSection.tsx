@@ -48,11 +48,11 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
         </div>
         <div className={cn("header-badge flex items-center gap-2 text-[11px] font-mono font-bold text-slate-300 bg-slate-955/80 px-3 py-1 rounded-full shadow-inner")}>
           <span>
-            {wordCount} {_.get(T, "lblWords", "từ")}
+            {wordCount} {T.lblWords}
           </span>
           <span className={cn("text-slate-600")}>•</span>
           <span>
-            {charCount} {_.get(T, "lblChars", "ký tự")}
+            {charCount} {T.lblChars}
           </span>
         </div>
       </div>

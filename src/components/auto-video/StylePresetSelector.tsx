@@ -184,14 +184,14 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
               onClick={() => setIsDetailOpen(!isDetailOpen)}
               className={cn("text-[11px] font-mono font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0")}>
               <Sparkles className={cn("w-3 h-3 text-amber-400")} />
-              <span>{isDetailOpen ? "Ẩn quy tắc prompt" : "Xem chi tiết quy tắc prompt"}</span>
+              <span>{isDetailOpen ? uiTexts.hideRulesTooltip : uiTexts.toggleRulesTooltip}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsOpen(false)}
               className={cn("text-[11px] font-mono font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0")}>
-              <span>Thu gọn</span>
+              <span>{uiTexts.collapseLabel}</span>
               <ChevronUp className={cn("w-3 h-3 text-slate-400")} />
             </button>
           </div>

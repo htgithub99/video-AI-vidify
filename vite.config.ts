@@ -25,9 +25,8 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+      // In middleware mode server.ts owns the HMR socket configuration so the
+      // browser uses the same port as Express instead of a stale fallback port.
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: {
         ignored: [

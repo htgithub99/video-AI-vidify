@@ -43,11 +43,8 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
   estimatedBatchCount = 0,
 }) => {
   const isReady = !_.isEmpty(_.trim(scriptContent));
-  const isVi = _.isEqual(currentLang, AppLanguage.VI) || _.isEqual(currentLang, "vi") || _.startsWith(_.toLower(_.toString(currentLang)), "vi");
   const cinematicPhaseIndex = currentStepIndex > 0 ? Math.min(Math.max(currentStepIndex, 1), 4) : stepProgress <= 25 ? 1 : stepProgress <= 50 ? 2 : stepProgress <= 75 ? 3 : 4;
-  const cinematicPhaseLabels = isVi
-    ? ["Kịch bản & nhân vật", "Phân cảnh & câu lệnh", "Tham chiếu & ảnh bìa", "Tạo clip & dựng phim"]
-    : ["Script & characters", "Storyboard & prompts", "References & thumbnail", "Generate clips & finish"];
+  const cinematicPhaseLabels = T.cinematicPhaseLabels;
 
   return (
     <div
@@ -71,7 +68,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
             )}
             title={T.continueBtnTooltip}>
             <Play className={cn("w-4 h-4 shrink-0")} />
-            <span className={cn("truncate")}>{isVi ? "Tiếp tục" : "Continue"}</span>
+            <span className={cn("truncate")}>{T.continueBtn}</span>
           </Button>
         ) : (
           <Button
@@ -113,9 +110,9 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
             className={cn(
               "flex-1 h-10 min-h-[40px] px-3 text-[11px] font-bold rounded-xl border border-slate-700 bg-slate-850 hover:bg-slate-800 text-slate-300 flex items-center justify-center gap-2",
             )}
-            title={isVi ? "Xóa kết quả dở dang và tạo lại toàn bộ dự án" : "Clear incomplete results and rebuild the entire project"}>
+            title={T.startOverBtnTooltip}>
             <RotateCcw className={cn("w-3.5 h-3.5 shrink-0")} />
-            <span className={cn("truncate")}>{isVi ? "Làm lại" : "Start over"}</span>
+            <span className={cn("truncate")}>{T.startOverBtn}</span>
           </Button>
         )}
 
@@ -161,10 +158,8 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
 
       {cinematicMode && !isProcessing && (
         <div className={cn("relative z-10 rounded-2xl border border-slate-800/90 bg-slate-955/70 px-3.5 py-3 text-left text-[11px] text-slate-300")}>
-          <span className={cn("font-bold text-amber-400")}>{isVi ? "Dự toán:" : "Estimate:"}</span>{" "}
-          {isVi
-            ? `${estimatedClipCount} clip · ${estimatedBatchCount} lượt gửi · 1 Room · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompt/lượt`
-            : `${estimatedClipCount} clips · ${estimatedBatchCount} submission waves · 1 Room · ${FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH} prompts/wave`}
+          <span className={cn("font-bold text-amber-400")}>{T.estimatePrefix}</span>{" "}
+          {T.estimateSummary(estimatedClipCount, estimatedBatchCount, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH)}
         </div>
       )}
     </div>

@@ -57,6 +57,7 @@ const SERVER_CONFIG = {
   LISTEN_RETRY_ATTEMPTS: 15,
   LISTEN_RETRY_DELAY_MS: 1000,
   ADDRESS_IN_USE_ERROR: "EADDRINUSE",
+  HMR_HOST: "localhost",
 } as const;
 
 const app = express();
@@ -67,7 +68,7 @@ let isShuttingDown = false;
 const waitForListenRetry = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, SERVER_CONFIG.LISTEN_RETRY_DELAY_MS));
 
 const listenForRequests = async (): Promise<void> => {
-  httpServer = createServer(app);
+  if (!httpServer) httpServer = createServer(app);
   for (let attempt = 0; attempt < SERVER_CONFIG.LISTEN_RETRY_ATTEMPTS; attempt++) {
     try {
       await new Promise<void>((resolve, reject) => {
@@ -168,10 +169,25 @@ app.use(API_ROUTES.PIPELINE, requireLicense(), pipelineRouter);
 const startServer = async () => {
   await initPlaywright();
 
+  httpServer = createServer(app);
+
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
     const { createServer: createViteServer } = await import("vite");
     viteDevServer = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        host: SERVER_CONFIG.HMR_HOST,
+        hmr:
+          process.env.DISABLE_HMR === "true"
+            ? false
+            : {
+                server: httpServer,
+                host: SERVER_CONFIG.HMR_HOST,
+                port: SERVER_CONFIG.PORT,
+                clientPort: SERVER_CONFIG.PORT,
+                protocol: "ws",
+              },
+      },
       appType: SERVER_CONFIG.SPA_TYPE,
     });
     app.use(viteDevServer.middlewares);

@@ -80,7 +80,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
             {subtitleMode ? 3 : PIPELINE_STEPS.STEP_4}
           </span>
           <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} title={T.sec4TitleTooltip}>
-            <ImageIcon className={cn("w-3.5 h-3.5 text-purple-400")} /> {subtitleMode ? (language === AppLanguage.VI ? "Hậu kỳ & xuất bản" : "Post-production & publishing") : T.sec4Title}
+            <ImageIcon className={cn("w-3.5 h-3.5 text-purple-400")} /> {subtitleMode ? T.subtitleSectionTitle : T.sec4Title}
           </h3>
         </div>
 
@@ -109,17 +109,17 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         {!_.isUndefined(subtitleMode) && setSubtitleMode && (
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>
-              {language === AppLanguage.VI ? "Phụ đề phim" : "Film subtitles"}
+              {T.subtitleFieldLabel}
             </span>
             <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
               <select
                 value={subtitleMode}
                 onChange={(event) => setSubtitleMode(event.target.value as SubtitleMode)}
                 className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
-                <option value={SubtitleMode.None}>{language === AppLanguage.VI ? "Không phụ đề" : "No subtitles"}</option>
-                <option value={SubtitleMode.BurnIn}>{language === AppLanguage.VI ? "Phụ đề cháy" : "Burned-in subtitles"}</option>
-                <option value={SubtitleMode.Track}>{language === AppLanguage.VI ? "Phụ đề mềm" : "Subtitle track"}</option>
-                <option value={SubtitleMode.Both}>{language === AppLanguage.VI ? "Cả hai" : "Both"}</option>
+                <option value={SubtitleMode.None}>{T.subtitleNone}</option>
+                <option value={SubtitleMode.BurnIn}>{T.subtitleBurnIn}</option>
+                <option value={SubtitleMode.Track}>{T.subtitleTrack}</option>
+                <option value={SubtitleMode.Both}>{T.subtitleBoth}</option>
               </select>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>

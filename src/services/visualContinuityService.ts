@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { VISUAL_CONTINUITY_CONFIG } from "../constants/config.js";
+import { EXPLICIT_FEMALE_SOURCE_PATTERN, EXPLICIT_MALE_SOURCE_PATTERN } from "../constants/regexes.js";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
 
 export interface VisualContinuityReport {
@@ -16,9 +17,6 @@ export const hasStyleContaminatedCharacterLibrary = (characters?: CharacterConfi
       _.join(_.compact([character.description, character.prompt, character.faceShape, character.eyes, character.nose, character.hair, character.silhouette]), " "),
     ),
   );
-
-const EXPLICIT_FEMALE_SOURCE_PATTERN = /\b(?:female|woman|women|girl|girls|mother|wife|daughter|girlfriend)\b|(?:nữ|phụ nữ|cô gái|các cô gái|con gái|người mẹ|người vợ|gái ngành)/i;
-const EXPLICIT_MALE_SOURCE_PATTERN = /\b(?:male|man|men|boy|boys|father|husband|son|boyfriend)\b|(?:nam giới|đàn ông|chàng trai|con trai|người cha|người chồng)/i;
 
 export const hasSourceGenderConflict = (source: string, characters?: CharacterConfig[]): boolean => {
   const hasFemaleSource = EXPLICIT_FEMALE_SOURCE_PATTERN.test(source);

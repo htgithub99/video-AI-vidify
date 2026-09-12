@@ -1287,3 +1287,98 @@ export const VOICE_ALIGN_LOGS = {
   PYTHON_STDOUT: "Python script stdout: ",
   PYTHON_STDERR: "Python script stderr: ",
 };
+
+export const PIPELINE_CONTROLLER_MESSAGES = {
+  TEMPLATE_LIMIT_REACHED: {
+    vi: "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới.",
+    en: "Maximum 2 templates allowed. Please delete one to add a new template.",
+  },
+  TEMPLATE_INVALID_FOLDER: {
+    vi: "Thư mục đã chọn không phải dự án CapCut hợp lệ (thiếu tệp nội dung kịch bản).",
+    en: "The selected folder is not a valid CapCut project (missing draft content file).",
+  },
+  AI_FALLBACK_CHAT_FAILED: "Dịch vụ AI dự phòng chưa phản hồi, hệ thống chuyển sang xử lý qua API.",
+  API_PLANNING_UNAVAILABLE: "Kết nối API chưa khả dụng, chuyển sang xử lý qua trình duyệt.",
+  VIETNAMESE_ACCENT_RESTORE_FAILED: "Nội dung tiếng Việt chưa đạt chuẩn, đang yêu cầu AI tạo lại.",
+  FREE_AI_PROVIDER_UNAVAILABLE:
+    "Dịch vụ AI tạm thời không phản hồi. Vui lòng kiểm tra khóa API trong phần Cài đặt rồi tiếp tục.",
+  FREE_AI_PROVIDER_QUOTA_EXHAUSTED:
+    "Dịch vụ AI đang tạm hết hạn mức hoặc chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
+} as const;
+
+export const ROOM_ONLY_MESSAGES = {
+  ARTIFACT_STRUCTURE_ERROR: (roomName: string, roomIssue: string) =>
+    `${roomName} đã trả dữ liệu nhưng kịch bản chưa hoàn chỉnh (${roomIssue}). Hệ thống đã lưu checkpoint các bước trước; vui lòng bấm Tiếp tục để AI hoàn thiện lại.`,
+  ARTIFACT_INCOMPLETE_ERROR: (roomName: string, roomIssue: string) =>
+    `${roomName} chưa hoàn tất kịch bản (${roomIssue}). Vui lòng kiểm tra tài khoản hoặc kết nối rồi thử lại.`,
+} as const;
+
+export const FLOW_AUTOMATION_MESSAGES = {
+  ATTACH_CONTINUE_IDENTITY: "Duy trì nhận diện nhân vật trong kịch bản video.",
+  FLOW_NOT_ENOUGH_CHARACTERS: "Tiếp tục tạo video với đặc điểm nhân vật cố định.",
+  FLOW_APPROVED_COST_PERSIST: "[Google Flow] Đã xác nhận chi phí tạo video.",
+  FLOW_APPROVED_COST: "[Google Flow] Đã xác nhận chi phí tạo video.",
+  FLOW_NO_ROTATING_ACCOUNT_FALLBACK: "[Google Flow] Sử dụng trình duyệt đang đăng nhập sẵn.",
+  FLOW_CONNECT_PORT_FAILED: "[Google Flow] Không thể kết nối với trình duyệt đang mở.",
+  FLOW_KEEP_SHARED_TABS: "[Google Flow] Giữ nguyên các tab trình duyệt đang mở.",
+  FLOW_SWITCH_TO_SHARED_CHROME: "[Google Flow] Chuyển sang trình duyệt đang đăng nhập.",
+  FLOW_PROMPT_MISMATCH: (expectedLen: number, observedLen: number) =>
+    `[Google Flow] Ô nhập chưa nhận đủ nội dung (expected=${expectedLen}, observed=${observedLen}).`,
+  FLOW_SENT_PROMPT_ROOM: (current: number, total: number, sceneId: string) =>
+    `[Google Flow] Đã gửi yêu cầu ${current}/${total} (cảnh ${sceneId}).`,
+  GEMINI_WAITING_FOR_UI: "[Gemini] Đang tải giao diện trước khi tạo nội dung.",
+} as const;
+
+export const GROK_AUTOMATION_MESSAGES = {
+  CONNECT_FAILED: "Không thể kết nối với cửa sổ Grok. Vui lòng đóng cửa sổ cũ rồi thử lại.",
+  NO_SESSION_CREATED: "Chưa thể khởi tạo phiên làm việc với Grok. Vui lòng thử lại.",
+  USING_ACCOUNT: (email: string) => `[Grok] Sử dụng tài khoản ${email}.`,
+  NOT_LOGGED_IN: "Tài khoản Chrome chưa đăng nhập Grok. Vui lòng mở Chrome và đăng nhập một lần để tiếp tục.",
+  AGE_GATE_PENDING: "Grok đang chờ xác nhận độ tuổi trong hồ sơ tài khoản.",
+  ATTACHED_ROOM: (projectId: string) => `[Grok] Đã kết nối phiên làm việc cho dự án.`,
+  DURATION_NOT_SUPPORTED: (duration: string) => `[Grok] Thời lượng ${duration} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
+  RESOLUTION_NOT_SUPPORTED: (res: string) => `[Grok] Độ phân giải ${res} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
+  CONFIG_DETAIL: (targetRatio: string, requestedDuration: string, requestedResolution: string, isHeadless: boolean) =>
+    `[Grok] Thiết lập: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}.`,
+  SENT_PROMPT: (isVideo: boolean) => `[Grok] Đã gửi yêu cầu tạo ${isVideo ? "video" : "hình ảnh"}.`,
+  NO_MEDIA_URL: "Grok chưa trả về tệp hình ảnh/video mới.",
+  DOWNLOAD_FAILED: (status: number) => `Không thể tải tệp từ Grok (mã lỗi ${status}).`,
+  INVALID_MEDIA_BUFFER: "Tệp tải về từ Grok không hợp lệ.",
+  DOWNLOAD_DIRECT_SUCCESS: (isVideo: boolean, length: number) =>
+    `[Grok] Đã tải thành công ${isVideo ? "video" : "hình ảnh"} (${Math.round(length / 1024)} KB).`,
+} as const;
+
+export const CHAT_UI_AUTOMATION_MESSAGES = {
+  CLEANUP_DELETING_ATTEMPT: (provider: string, attempt: number) => `[Dọn dẹp AI] ${provider}: đang xóa cuộc trò chuyện (lần ${attempt}).`,
+  CLEANUP_OPTION_BUTTON_NOT_FOUND: (provider: string) => `[Dọn dẹp AI] ${provider}: không tìm thấy nút tùy chọn.`,
+  CLEANUP_OPTION_BUTTON_STAT: (provider: string, count: number, visible: boolean, clicked: boolean) =>
+    `[Dọn dẹp AI] ${provider}: nút tùy chọn (${count} mục).`,
+  CLEANUP_DELETE_COMMAND_NOT_FOUND: (provider: string, menuText: string) => `[Dọn dẹp AI] ${provider}: chưa tìm thấy lệnh xóa.`,
+  CLEANUP_DIALOG_VISIBILITY: (provider: string, visible: boolean) => `[Dọn dẹp AI] ${provider}: hộp thoại xác nhận.`,
+  CLEANUP_CONFIRM_STAT: (provider: string, count: number, clicked: boolean) =>
+    `[Dọn dẹp AI] ${provider}: xác nhận xóa.`,
+  CLEANUP_ALL_ACTIVITY_DELETED: (provider: string) => `[Dọn dẹp AI] ${provider}: đã xóa sạch lịch sử trò chuyện.`,
+  CLEANUP_NO_CONVERSATIONS: (provider: string) => `[Dọn dẹp AI] ${provider}: không còn cuộc trò chuyện nào.`,
+  CLEANUP_CONVERSATIONS_FOUND: (provider: string, count: number) => `[Dọn dẹp AI] ${provider}: tìm thấy ${count} cuộc trò chuyện.`,
+  INPUT_AREA_NOT_FOUND: "Không tìm thấy ô nhập nội dung trên giao diện AI.",
+  PLANNING_JSON_EARLY_RECEIVED: (length: number, elapsedMs: number) =>
+    `Đã nhận kịch bản hoàn chỉnh từ AI (${length} ký tự).`,
+  PLANNING_RESPONSE_COMPLETE: (length: number) => `Đã nhận toàn bộ nội dung từ AI (${length} ký tự).`,
+  PLANNING_WAITING_INPUT: "Đang chờ ô nhập nội dung sẵn sàng...",
+  PLANNING_INPUT_READY: (elapsedMs: number) => "Ô nhập nội dung đã sẵn sàng.",
+  MODEL_PICKER_NOT_FOUND: "Sử dụng mô hình mặc định hiện có.",
+  SELECTED_MODEL_UNAVAILABLE: "Mô hình đã chọn chưa khả dụng; chuyển sang mô hình mặc định.",
+  GEMINI_MODEL_PICKER_NOT_FOUND: "Tiếp tục bằng mô hình Gemini mặc định.",
+  GEMINI_MODEL_UNAVAILABLE: "Mô hình Gemini chưa khả dụng; tiếp tục bằng mô hình mặc định.",
+  GEMINI_BASE_MODEL_UNAVAILABLE: "Mô hình Gemini đã chọn chưa khả dụng; tiếp tục bằng mô hình mặc định.",
+  GEMINI_THINKING_UNAVAILABLE: "Mức tư duy đã chọn chưa khả dụng; tiếp tục bằng mức mặc định.",
+  CLOUDFLARE_CHALLENGE_NOTICE: "Cloudflare yêu cầu xác minh. Vui lòng hoàn tất xác nhận trong Chrome để tiếp tục.",
+  CLOUDFLARE_VERIFIED: "Xác minh hoàn tất; tự động tiếp tục công việc.",
+  CLOUDFLARE_ROOM_READY: "Phiên làm việc mới đã sẵn sàng.",
+  CHAT_UI_READY: "Giao diện trò chuyện đã sẵn sàng.",
+  FALLBACK_DISABLED: "Chế độ AI dự phòng đang tắt.",
+  FALLBACK_UNSUPPORTED: "Chế độ AI dự phòng chưa được hỗ trợ.",
+  PLANNING_QUEUE_ACQUIRED: (workerId: string, providerName: string, projectId: string, elapsedMs: number) =>
+    `[AI Chat Planning][${workerId}] Đang sử dụng ${providerName} cho project ${projectId} (chờ hàng đợi ${elapsedMs} ms).`,
+} as const;
+

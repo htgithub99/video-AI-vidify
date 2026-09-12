@@ -1,5 +1,6 @@
 import { SplitStrategy, VideoGenre } from "./enums";
 import { SCRIPT_SPEECH_RATE_CONFIG } from "./config";
+import { SCRIPT_DURATION_LABELS, GENRE_GROUP_LABELS } from "./texts";
 import _ from "lodash";
 
 export const genreLabels = {
@@ -29,7 +30,7 @@ export const genreLabels = {
 
 export const GENRE_OPTION_GROUPS = [
   {
-    label: "Kể chuyện châm biếm",
+    label: GENRE_GROUP_LABELS.vi.SATIRICAL,
     options: [
       VideoGenre.SATIRICAL_LIFE_AUTO,
       VideoGenre.TRANSFORMATION_TIMELINE,
@@ -39,15 +40,15 @@ export const GENRE_OPTION_GROUPS = [
     ],
   },
   {
-    label: "Kể chuyện – giải thích",
+    label: GENRE_GROUP_LABELS.vi.STORY_EXPLAINER,
     options: [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER, VideoGenre.CHARACTER_PSYCHOLOGY, VideoGenre.LORE_WORLD_BUILDING],
   },
   {
-    label: "Tài liệu – kiến thức",
+    label: GENRE_GROUP_LABELS.vi.DOCUMENTARY_KNOWLEDGE,
     options: ["History", "Science", "Psychology"],
   },
   {
-    label: "YouTube phổ biến",
+    label: GENRE_GROUP_LABELS.vi.YOUTUBE_TRENDING,
     options: ["Review", "News", "Top List", "True Crime"],
   },
 ] as const;
@@ -177,15 +178,15 @@ export const HOOK_POSITION_OPTIONS = [
 ] as const;
 
 export const DURATION_OPTIONS = [
-  { val: "2m", label: "300 từ (~2 phút)" },
-  { val: "5m", label: "750 từ (~5 phút)" },
-  { val: "10m", label: "1500 từ (~10 phút)" },
-  { val: "15m", label: "2250 từ (~15 phút)" },
-  { val: "30m", label: "4500 từ (~30 phút)" },
-  { val: "40m", label: "6000 từ (~40 phút)" },
-  { val: "60m", label: "9000 từ (~60 phút)" },
-  { val: "1h30m", label: "13500 từ (~1h30 phút)" },
-  { val: "2h", label: "18000 từ (~2 giờ)" },
+  { val: "2m", label: SCRIPT_DURATION_LABELS.vi["2m"] },
+  { val: "5m", label: SCRIPT_DURATION_LABELS.vi["5m"] },
+  { val: "10m", label: SCRIPT_DURATION_LABELS.vi["10m"] },
+  { val: "15m", label: SCRIPT_DURATION_LABELS.vi["15m"] },
+  { val: "30m", label: SCRIPT_DURATION_LABELS.vi["30m"] },
+  { val: "40m", label: SCRIPT_DURATION_LABELS.vi["40m"] },
+  { val: "60m", label: SCRIPT_DURATION_LABELS.vi["60m"] },
+  { val: "1h30m", label: SCRIPT_DURATION_LABELS.vi["1h30m"] },
+  { val: "2h", label: SCRIPT_DURATION_LABELS.vi["2h"] },
 ] as const;
 
 export const ABBREVIATIONS = [

@@ -2,6 +2,7 @@ import { cn } from "../lib/utils";
 import { useState, useEffect, FC } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { API_ROUTES, STORAGE_KEYS, SETTINGS_VIEW_TEXTS, REFACTOR_CONSTANTS } from "../constants";
+import { SETTINGS_EXTENDED_TEXTS } from "../constants/texts";
 import { Key, Users, Save, Plus, X, LogOut, KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
@@ -198,6 +199,8 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
   const systemTooltip = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_VI;
   const systemShort = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_VI;
 
+  const settingsExt = _.get(SETTINGS_EXTENDED_TEXTS, currentLang, SETTINGS_EXTENDED_TEXTS.vi);
+
   return (
     <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 space-y-6 text-left")}>
       <div className={cn("glass-card p-6 sm:p-7 rounded-3xl shadow-lg flex items-center justify-between gap-4 relative overflow-hidden")}>
@@ -214,12 +217,12 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
                   "px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black tracking-normal flex items-center gap-1 shrink-0",
                 )}>
                 <ShieldCheck className={cn("w-3 h-3")} />
-                Active
+                {settingsExt.ACTIVE_BADGE}
               </span>
             </h2>
-            <p className={cn("text-xs text-slate-400 mt-1 leading-relaxed font-mono truncate")} title={`${planDisplayText} • Key: ${keyPreview}`}>
+            <p className={cn("text-xs text-slate-400 mt-1 leading-relaxed font-mono truncate")} title={`${planDisplayText} • ${settingsExt.KEY_LABEL_PREFIX} ${keyPreview}`}>
               <span className={cn("truncate")}>
-                {planDisplayText} • Key: <span className={cn("text-slate-200 font-bold")}>{keyPreview}</span>
+                {planDisplayText} • {settingsExt.KEY_LABEL_PREFIX} <span className={cn("text-slate-200 font-bold")}>{keyPreview}</span>
               </span>
             </p>
           </div>
@@ -249,10 +252,10 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
           </div>
 
           <div className={cn("space-y-4 flex-1")}>
-            <ApiKeyField label="GEMINI_API_KEY" value={geminiKey} placeholder={texts.GEMINI_PLACEHOLDER} onChange={setGeminiKey} />
-            <ApiKeyField label="CEREBRAS_API_KEY" value={cerebrasKey} placeholder={texts.CEREBRAS_PLACEHOLDER} onChange={setCerebrasKey} />
-            <ApiKeyField label="GROQ_API_KEY" value={groqKey} placeholder={texts.GROQ_PLACEHOLDER} onChange={setGroqKey} />
-            <ApiKeyField label="AI33_API_KEY" value={ai33Key} placeholder={texts.AI33_PLACEHOLDER} onChange={setAi33Key} />
+            <ApiKeyField label={settingsExt.GEMINI_KEY_LABEL} value={geminiKey} placeholder={texts.GEMINI_PLACEHOLDER} onChange={setGeminiKey} />
+            <ApiKeyField label={settingsExt.CEREBRAS_KEY_LABEL} value={cerebrasKey} placeholder={texts.CEREBRAS_PLACEHOLDER} onChange={setCerebrasKey} />
+            <ApiKeyField label={settingsExt.GROQ_KEY_LABEL} value={groqKey} placeholder={texts.GROQ_PLACEHOLDER} onChange={setGroqKey} />
+            <ApiKeyField label={settingsExt.AI33_KEY_LABEL} value={ai33Key} placeholder={texts.AI33_PLACEHOLDER} onChange={setAi33Key} />
           </div>
 
           <div className={cn("pt-4 mt-4 border-t border-slate-800/80 flex justify-end")}>

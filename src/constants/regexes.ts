@@ -60,3 +60,31 @@ export const FANTASY_STORY_REGEX =
   /\b(?:fantasy|magic(?:al)?|wizard|witch|spell|immortal|cultivat(?:or|ion)|celestial|spiritual|talisman|temple|ancient kingdom|tu tien|tien hiep|phep thuat|than tien|tu tien|linh luc|tien nhan)\b/i;
 export const GEMINI_ACTIVE_VIDEO_MODE_REGEX = /^\s*(?:video|tạo video|create video|generate video)\s*$/i;
 export const GEMINI_ACTIVE_IMAGE_MODE_REGEX = /^\s*(?:hình ảnh|image|images|bỏ chọn hình ảnh|deselect image)\s*$/i;
+
+export const VIETNAMESE_DIACRITIC_REGEX = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu;
+
+export const EXPLICIT_FEMALE_SOURCE_PATTERN =
+  /\b(?:female|woman|women|girl|girls|mother|wife|daughter|girlfriend)\b|(?:nữ|phụ nữ|cô gái|các cô gái|con gái|người mẹ|người vợ|gái ngành)/i;
+export const EXPLICIT_MALE_SOURCE_PATTERN =
+  /\b(?:male|man|men|boy|boys|father|husband|son|boyfriend)\b|(?:nam giới|đàn ông|chàng trai|con trai|người cha|người chồng)/i;
+
+export const SEMANTIC_BREAK_PATTERN =
+  /[,;:—]\s+|\s+(?:nhưng|vì|khi|rồi|còn|tuy nhiên|sau đó|đồng thời|while|but|because|when|then|however|meanwhile)\s+/gi;
+
+export const SCRIPT_CLICHE_PATTERNS = {
+  STORY_CLICHE:
+    /(?:mọi chuyện chưa dừng lại ở đó|không ai có thể ngờ rằng|đằng sau vẻ hào nhoáng|bức tranh đa chiều|hồi chuông cảnh tỉnh|bài học đắt giá)/giu,
+  TRAILER_METAPHOR:
+    /(?:sợi dây vô hình|con tốt(?: thí)?|lật ngược ván cờ|sự thật phơi bày|cái giá phải trả|nhát dao|lõi của hệ thống)/giu,
+  SUSPENSE_TEMPLATE: /bạn tưởng[^.!?…]{0,120}(?:nhưng|hóa ra)/giu,
+} as const;
+
+export const TIME_PARSING_REGEXES = {
+  HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i,
+  MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i,
+  SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i,
+} as const;
+
+export const API_PROVIDER_ADVICE_PATTERN = /api\s*key|groq|cerebras|kh[oó]a/i;
+
+

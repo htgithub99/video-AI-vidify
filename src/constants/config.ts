@@ -1,6 +1,7 @@
 import { AspectRatio, ImageGenerationMode, ImageGeneratorEngine, SubtitleMode } from "../types";
 import { CINEMATIC_ROOM_STAGE } from "./cinematicConstants";
 import { REFACTOR_CONSTANTS } from "./refactor";
+import { THUMBNAILS_PREVIEW_TEXTS, REGENERATION_TARGET_TEXTS } from "./texts";
 
 export const APP_CONFIG = { TOAST_DURATION: 3000 };
 
@@ -650,30 +651,30 @@ export const REGENERATION_TARGET = { VOICE: "voice", IMAGES: "images", RENDER: "
 
 export const REGENERATION_TEXTS = {
   vi: {
-    voice: "Tạo lại voice",
-    images: "Tạo lại ảnh",
-    clips: "Tạo lại clip",
-    render: "Ghép lại",
+    voice: REGENERATION_TARGET_TEXTS.vi.VOICE,
+    images: REGENERATION_TARGET_TEXTS.vi.IMAGES,
+    clips: REGENERATION_TARGET_TEXTS.vi.CLIPS,
+    render: REGENERATION_TARGET_TEXTS.vi.RENDER,
     failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại.",
-    sceneDialogTitle: "Chọn clip",
+    sceneDialogTitle: "Chọn cảnh cần tạo lại",
     sceneLabel: "Cảnh",
-    sceneEmpty: "Chưa có clip để tạo lại.",
+    sceneEmpty: "Chưa có cảnh quay nào để tạo lại.",
     sceneCancel: "Hủy",
-    sceneConfirm: "Tạo clip",
-    sceneRequired: "Hãy chọn đúng một cảnh cần tạo lại.",
+    sceneConfirm: "Tạo lại cảnh",
+    sceneRequired: "Vui lòng chọn một cảnh cần tạo lại.",
   },
   en: {
-    voice: "Redo voice",
-    images: "Redo images",
-    clips: "Redo clips",
-    render: "Render again",
+    voice: REGENERATION_TARGET_TEXTS.en.VOICE,
+    images: REGENERATION_TARGET_TEXTS.en.IMAGES,
+    clips: REGENERATION_TARGET_TEXTS.en.CLIPS,
+    render: REGENERATION_TARGET_TEXTS.en.RENDER,
     failed: "Could not remove old assets. Please try again.",
-    sceneDialogTitle: "Choose clip",
+    sceneDialogTitle: "Select Scene to Regenerate",
     sceneLabel: "Scene",
-    sceneEmpty: "No clip is available to regenerate.",
+    sceneEmpty: "No scenes available to regenerate.",
     sceneCancel: "Cancel",
-    sceneConfirm: "Redo clip",
-    sceneRequired: "Choose exactly one scene to regenerate.",
+    sceneConfirm: "Regenerate Scene",
+    sceneRequired: "Please select a scene to regenerate.",
   },
 } as const;
 
@@ -1146,13 +1147,13 @@ export const AUTO_GENERATOR_CONSTANTS = {
   UI_SEO_COPY_TITLE_TOOLTIP: "Sao chép tiêu đề",
   UI_SEO_COPY_DESC_TOOLTIP: "Sao chép mô tả",
   UI_SEO_COPY_TAGS_TOOLTIP: "Sao chép thẻ",
-  UI_THUMBNAILS_TITLE: "Ảnh bìa",
-  UI_THUMBNAILS_TITLE_TOOLTIP: "Thư viện Ảnh bìa (Thumbnails) do AI thiết kế",
-  UI_THUMBNAILS_UNRENDERED: "Chưa vẽ",
-  UI_THUMBNAILS_DOWNLOAD: "Tải ảnh",
-  UI_THUMBNAILS_DOWNLOAD_TOOLTIP: "Tải ảnh bìa này về máy tính",
-  UI_THUMBNAILS_SAMPLE_UNIT: "mẫu",
-  UI_THUMBNAILS_ZOOM_TOOLTIP: "Bấm để xem ảnh phóng to",
+  UI_THUMBNAILS_TITLE: THUMBNAILS_PREVIEW_TEXTS.vi.TITLE,
+  UI_THUMBNAILS_TITLE_TOOLTIP: THUMBNAILS_PREVIEW_TEXTS.vi.TITLE_TOOLTIP,
+  UI_THUMBNAILS_UNRENDERED: THUMBNAILS_PREVIEW_TEXTS.vi.UNRENDERED,
+  UI_THUMBNAILS_DOWNLOAD: THUMBNAILS_PREVIEW_TEXTS.vi.DOWNLOAD,
+  UI_THUMBNAILS_DOWNLOAD_TOOLTIP: THUMBNAILS_PREVIEW_TEXTS.vi.DOWNLOAD_TOOLTIP,
+  UI_THUMBNAILS_SAMPLE_UNIT: THUMBNAILS_PREVIEW_TEXTS.vi.SAMPLE_UNIT,
+  UI_THUMBNAILS_ZOOM_TOOLTIP: THUMBNAILS_PREVIEW_TEXTS.vi.ZOOM_TOOLTIP,
   UI_SEO_HASHTAGS: "Hashtags",
   UI_SEO_TAGS: "Từ khóa",
   UI_THUMBNAILS_FILE_PREFIX: "thumbnail-",

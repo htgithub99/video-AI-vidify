@@ -745,6 +745,7 @@ export default function AutoVideoGenerator({
                 splitLabelMap={splitLabelMap}
                 T={T}
                 lockedGenreLabel={lockedGenreLabel}
+                currentLang={currentLang}
               />
             )}
 
@@ -763,7 +764,7 @@ export default function AutoVideoGenerator({
               regenerateVideoClips={cinematicMode}
             />
 
-            <ThumbnailsPreviewSection activeCreatedProject={presentationProject} />
+            <ThumbnailsPreviewSection activeCreatedProject={presentationProject} currentLang={currentLang} />
 
             <SeoPanelSection activeCreatedProject={presentationProject} />
           </div>
