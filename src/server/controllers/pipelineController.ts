@@ -8,7 +8,7 @@ import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/prof
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
-import { closeCurrentRoomExecution, generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
+import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
@@ -2181,7 +2181,6 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       retryable: Boolean(error?.retryable) || scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
     });
   } finally {
-    if (!isCinematicScript) await closeCurrentRoomExecution(CINEMATIC_ROOM_STAGE.SCRIPT);
   }
 });
 
@@ -2263,7 +2262,7 @@ router.post(ROUTER_PATHS.SEARCH_ARCHIVAL_IMAGE, async (req: Request, res: Respon
   const excludeSourceUrls = _.take(_.filter(_.castArray(req.body?.excludeSourceUrls), _.isString), 10);
   try {
     if (_.isEmpty(query)) return res.status(400).json({ success: false, warning: "archival_search_query_missing" });
-    const browserSession = await getOrLaunchGlobalBrowser(req.body?.chromeHeadless);
+    const browserSession = await getOrLaunchGlobalBrowser(req.body?.chromeHeadless, true);
     const result = await searchArchivalImageWithChrome(query, headless, browserSession.context, excludeSourceUrls);
     return res.status(result.success ? 200 : 404).json(result);
   } catch (sharedBrowserError) {
@@ -3488,12 +3487,22 @@ router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req:
       }
       _.forEach(mediaIds, (mediaId) => assignedMediaIds.add(mediaId));
       if (result.success && !_.isEmpty(mediaIds)) {
+        if (!_.isEmpty(result.base64)) {
+          const assetUrl = await persistProjectVideo(localProjectId, result.sceneId, result.base64!);
+          scene.assetUrl = assetUrl;
+          scene.assetUrls = [assetUrl];
+          scene.assetType = GenerateType.Video;
+          scene.assetStatus = SceneAssetStatus.Generated;
+          scene.assetError = undefined;
+          scene.remoteVideoDownloadPending = false;
+        } else {
+          scene.remoteVideoDownloadPending = true;
+          scene.assetStatus = SceneAssetStatus.Generating;
+          scene.assetError = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
+        }
         scene.remoteVideoMediaId = _.head(mediaIds);
         scene.remoteVideoMediaIds = mediaIds;
         scene.remoteVideoExpectedCount = FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT;
-        scene.remoteVideoDownloadPending = true;
-        scene.assetStatus = SceneAssetStatus.Generating;
-        scene.assetError = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
       } else {
         scene.assetStatus = SceneAssetStatus.Failed;
         scene.assetError = _.defaultTo(result.warning, FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR);

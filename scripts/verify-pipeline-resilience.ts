@@ -184,12 +184,13 @@ assert(/mediaMixTexts\?\.maxVideos/.test(generationSettingsSource), "mixed-mode 
 assert(!/removeAdjacentRepeatedNarrationSentences|removeAdjacentRepeatedStoryboardScenes/.test(pipelineControllerSource), "server still cuts AI-authored narration or scenes");
 assert(
   !/GEMINI_RESPONSE_SELECTOR:\s*['"]model-response,/.test(cinematicConstantsSource) &&
-    /model-response \[id\^=["']model-response-message-content/.test(cinematicConstantsSource),
+    /model-response[^'"\r\n]*\[id\^=["']model-response-message-content/.test(cinematicConstantsSource),
   "Gemini response extraction still reads the UI label wrapper instead of the exact AI-authored payload node",
 );
 assert(
   /getOrLaunchGlobalBrowser\(request\.chromeHeadless, true\)/.test(chatPlanningSource) &&
-    /browserInstance = await getOrLaunchGlobalBrowser\(visualConfig\?\.chromeHeadless, true\)/.test(imageGeneratorSource),
+    /browserInstance = await getOrLaunchGlobalBrowser\(visualConfig\?\.chromeHeadless, true\)/.test(imageGeneratorSource) &&
+    /preferSharedChrome && !activeBrowserInstance\.preserveExternalPages/.test(imageGeneratorSource),
   "AI room or quick-image generation ignored an already authenticated shared Chrome session",
 );
 assert(/regenerateVideoClips=\{cinematicMode\}/.test(autoGeneratorSource), "cinematic preview does not expose clip regeneration");

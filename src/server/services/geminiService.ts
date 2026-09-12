@@ -8,7 +8,7 @@ import { resolveApiKeys } from "./apiKeyResolver.js";
 import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
 import { classifyGeminiError } from "./geminiErrorClassifier.js";
 import { generateWithFreeProviders } from "./freeAiProviderService.js";
-import { closeChatPlanningRoom, generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 
@@ -28,16 +28,6 @@ const resolveRoomWorkerId = (capability?: AiTaskCapability, explicitWorkerId?: s
   if (_.includes([AiTaskCapability.VisualPlanning, AiTaskCapability.StyleExtraction], capability)) return CINEMATIC_ROOM_STAGE.PROMPT;
   if (_.includes([AiTaskCapability.VisualQa, AiTaskCapability.AudioQa], capability)) return CINEMATIC_ROOM_STAGE.VIDEO;
   return CINEMATIC_ROOM_STAGE.SCRIPT;
-};
-
-export const closeCurrentRoomExecution = async (workerId?: string): Promise<void> => {
-  const roomExecution = getRoomExecution();
-  if (!roomExecution) return;
-  await closeChatPlanningRoom({
-    provider: roomExecution.aiRoomProvider!,
-    projectId: roomExecution.aiRoomProjectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE,
-    workerId,
-  });
 };
 
 export const isAiProviderAvailable = async (): Promise<boolean> => {
@@ -158,7 +148,7 @@ export const generateContentWithRetry = async (
       try {
         const fullRegenerationDirective =
           attempt > 0
-            ? "\n\nThe previous response was not one complete valid artifact. Generate the entire requested JSON value again from the beginning. Do not continue, patch, quote, concatenate, or repeat any part of the previous response."
+            ? "\n\nYour previous response failed strict JSON.parse. Generate the entire requested JSON value again from the beginning as compact raw JSON. Validate every comma, brace, array, escape and string before submitting. Do not continue, patch, quote, concatenate, or repeat any part of the previous response."
             : "";
         roomResponse = await generatePlanningWithChatUi({
           provider: roomExecution.aiRoomProvider!,

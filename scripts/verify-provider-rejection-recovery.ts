@@ -43,7 +43,7 @@ assert.match(imageGeneratorSource, /terminalWarning = errorMessage/);
 assert.match(imageGeneratorSource, /warning: terminalWarning/);
 assert.match(imageGeneratorSource, /const connectToSharedChromeBrowser = async/);
 assert.match(imageGeneratorSource, /chromium\.connectOverCDP\(EXTERNAL_URLS\.PLAYWRIGHT_CDP\)/);
-assert.match(imageGeneratorSource, /launchBrowserForAccount\(chromeHeadless\?: boolean, preferSharedChrome: boolean = false\)/);
+assert.match(imageGeneratorSource, /launchBrowserForAccount\(chromeHeadless\?: boolean, preferSharedChrome: boolean = true\)/);
 assert.match(imageGeneratorSource, /getOrLaunchGlobalBrowser\(options\.chromeHeadless, true\)/);
 assert.match(
   imageGeneratorSource,
@@ -99,7 +99,7 @@ assert.match(imageGeneratorSource, /const projectMediaUrls = await collectFlowVi
 assert.match(imageGeneratorSource, /DOWNLOADABLE_URL_PATTERN\.source/);
 assert.match(
   imageGeneratorSource,
-  /const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)[\s\S]*const mediaCard = downloadedVideo[\s\S]*waitForFlowMediaCardReady\(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_READY_TIMEOUT_MS\)/,
+  /const mediaCard = await waitForFlowMediaCardReady\(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_READY_TIMEOUT_MS\)[\s\S]*const projectMediaUrls = await collectFlowVideoUrls\(page, mediaId\)[\s\S]*const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)/,
 );
 assert.match(imageGeneratorSource, /FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_REDIRECT_TIMEOUT_MS/);
 assert.match(imageGeneratorSource, /getOrLaunchGlobalBrowser\(options\.chromeHeadless, true\)/);

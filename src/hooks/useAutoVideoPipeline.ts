@@ -621,6 +621,8 @@ export function useAutoVideoPipeline(
     let latestCheckpointStoryboard: StoryboardScene[] = [];
     let roomCleanupProvider = AiPlanningFallbackProvider.Disabled;
     let retainPlanningRoomsForResume = false;
+    let pipelineCompleted = false;
+    let planningRoomClosedBeforeVideo = false;
     if (isCinematicPipeline) {
       if (_.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.SCRIPT)) {
         appendCinematicLog(cinematicProgressMessages.SCRIPT_START, CINEMATIC_PROGRESS_STAGE.SCRIPT);
@@ -667,20 +669,6 @@ export function useAutoVideoPipeline(
           },
           signal,
         );
-      const closeCompletedPlanningWorkers = async (workerIds: string[]): Promise<void> => {
-        if (
-          !_.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.RoomOnly) ||
-          _.isEqual(resolvedAiExecution.provider, AiPlanningFallbackProvider.Disabled) ||
-          _.isEmpty(newProjectId) ||
-          _.isEmpty(workerIds)
-        )
-          return;
-        await safeSystemFetch(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS, {
-          provider: resolvedAiExecution.provider,
-          projectId: newProjectId,
-          workerIds,
-        }).catch(() => undefined);
-      };
       appendLog(
         config.language === ProjectLanguage.VI
           ? `[AI] Tuyến thực thi: ${resolvedAiExecution.mode} · room ${resolvedAiExecution.provider} · model ${resolvedAiExecution.model}.`
@@ -1244,7 +1232,6 @@ export function useAutoVideoPipeline(
         };
         await syncProject(scriptUpdatedProj);
         newProj = scriptUpdatedProj;
-        if (isCinematicPipeline) await closeCompletedPlanningWorkers([CINEMATIC_ROOM_STAGE.SCRIPT]);
       }
 
       const curatedPreset = resolveStylePreset(config.stylePreset || newProj.visualConfig.style || newProj.visualConfig.referencePrompt);
@@ -1932,7 +1919,6 @@ export function useAutoVideoPipeline(
           config.thumbnailStylePreset;
       }
 
-      if (isCinematicPipeline) await closeCompletedPlanningWorkers([CINEMATIC_ROOM_STAGE.PROMPT]);
 
       if (isCinematicEpisodeGenre(config.genre)) {
         const clipDurationSeconds = resolveCinematicClipDuration(config.videoDuration);
@@ -2045,6 +2031,20 @@ export function useAutoVideoPipeline(
       const resolvedThumbnailReferenceImages = resolveThumbnailReferenceImages(voiceUpdatedProj.visualConfig);
 
       const sandboxConfigPayload = { localProjectId: voiceUpdatedProj.id, flowProjectId: voiceUpdatedProj.visualConfig?.flowProjectId };
+      const authoritativeCinematicStoryMaterial = isCinematicPipeline
+        ? jsonUtils.safeStringify({
+            creativeBrief: voiceUpdatedProj.creativeBrief,
+            filmPackage: voiceUpdatedProj.cinematicScriptArtifacts?.filmPackage,
+            scenes: _.map(voiceUpdatedProj.storyboard, (scene) => ({
+              id: scene.id,
+              narrativeRole: scene.narrativeRole,
+              storyChange: scene.storyChange,
+              script: scene.script,
+              subtitle: scene.subtitle,
+              characterIds: scene.characterIds,
+            })),
+          })
+        : realScript;
       const isVideoStageContinuation = isCinematicPipeline && isContinuation && _.isEqual(cinematicResumeStage, CINEMATIC_PROGRESS_STAGE.VIDEO);
       const cachedSeoData = isContinuation && newProj.seo ? newProj.seo : null;
       const seoRequest =
@@ -2060,7 +2060,7 @@ export function useAutoVideoPipeline(
                     originalInput: config.scriptContent,
                     config: voiceUpdatedProj.config,
                     seoConfig: voiceUpdatedProj.seoConfig,
-                    rewrittenScript: realScript,
+                    rewrittenScript: authoritativeCinematicStoryMaterial,
                     bypassCache: true,
                     roomWorkerId: CINEMATIC_ROOM_STAGE.THUMBNAIL,
                     projectId: newProjectId,
@@ -2089,7 +2089,7 @@ export function useAutoVideoPipeline(
             return pipelineSystemFetch(
               API_ROUTES.PIPELINE_THUMBNAILS,
               {
-                rewrittenScript: realScript,
+                rewrittenScript: authoritativeCinematicStoryMaterial,
                 config: voiceUpdatedProj.config,
                 visualConfig: { ...voiceUpdatedProj.visualConfig, thumbnailReferencePrompt: currentThumbnailStyle },
                 bypassCache: true,
@@ -2218,7 +2218,6 @@ export function useAutoVideoPipeline(
         thumbnails: unifiedBatchThumbnails || voiceUpdatedProj.thumbnails,
       };
       voiceUpdatedProj = await syncProject(voiceUpdatedProj);
-      await closeCompletedPlanningWorkers([CINEMATIC_ROOM_STAGE.THUMBNAIL]);
 
       if (config.resumeMode && !shouldRegenerateSceneAssets) {
         (realScenes as VideoProject["storyboard"])!.forEach((sc, idx) => {
@@ -3051,7 +3050,6 @@ export function useAutoVideoPipeline(
                 applyThumbnailResult(retryResult);
               }
             }
-            await closeCompletedPlanningWorkers([CINEMATIC_ROOM_STAGE.THUMBNAIL]);
             await imageCheckpointQueue;
             const unresolvedThumbnails = _.filter(unifiedThumbnailItems, (item) => !thumbnailResults.get(item.sceneId)?.success);
             if (!_.isEmpty(unresolvedThumbnails)) {
@@ -4287,8 +4285,22 @@ export function useAutoVideoPipeline(
         });
       }
 
-      await closeCompletedPlanningWorkers(Object.values(CINEMATIC_ROOM_STAGE));
       await safeSystemFetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {}).catch(() => undefined);
+
+      if (
+        !planningRoomClosedBeforeVideo &&
+        _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.RoomOnly) &&
+        !_.isEqual(resolvedAiExecution.provider, AiPlanningFallbackProvider.Disabled) &&
+        !_.isEmpty(newProjectId)
+      ) {
+        await safeSystemFetch(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS, {
+          provider: resolvedAiExecution.provider,
+          projectId: newProjectId,
+          workerIds: Object.values(CINEMATIC_ROOM_STAGE),
+        }).catch(() => undefined);
+        planningRoomClosedBeforeVideo = true;
+        appendLog(config.language === ProjectLanguage.VI ? "[AI] Đã hoàn tất planning; đóng tab room AI trước khi chuyển sang Flow tạo video." : "[AI] Planning is complete; closing the AI room tab before switching to Flow video generation.");
+      }
 
       let acceptedScenes = nativeFilmAudio
         ? _.reject(realScenes as StoryboardScene[], (scene) => _.isEqual(scene.cinematicTakeDecision, "omit"))
@@ -4525,6 +4537,7 @@ export function useAutoVideoPipeline(
       }
 
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.COMPLETE);
+      pipelineCompleted = true;
     } catch (error: unknown) {
       if (cancellationRef.current || (error instanceof DOMException && _.isEqual(error.name, "AbortError"))) {
         if (isCinematicPipeline) appendCinematicLog(cinematicProgressMessages.CANCELLED, cinematicProgressStage);
@@ -4583,7 +4596,9 @@ export function useAutoVideoPipeline(
           : cinematicProgressMessages.PLANNING_STOPPED;
         const planningResponseFormatFailed = /chat_planning_invalid_(?:json_)?response/i.test(errorMessage);
         const stoppedMessage = planningResponseFormatFailed
-          ? cinematicProgressMessages.PLANNING_FORMAT_STOPPED
+          ? !_.isEmpty(checkpointSourceProject?.cinematicScriptArtifacts?.filmPackage) || !_.isEmpty(checkpointSourceProject?.storyboard)
+            ? cinematicProgressMessages.PLANNING_FORMAT_STOPPED
+            : cinematicProgressMessages.PLANNING_FORMAT_EMPTY
           : _.isEqual(cinematicProgressStage, CINEMATIC_PROGRESS_STAGE.VIDEO)
             ? checkpointProgress && !_.isEmpty(checkpointProgress.pendingSceneIds)
               ? cinematicProgressMessages.VIDEO_STOPPED.replace(SecurityConstants.PLACEHOLDER_0, _.toString(checkpointProgress.completedSceneIds.length))
@@ -4621,6 +4636,7 @@ export function useAutoVideoPipeline(
     } finally {
       const roomCleanupProjectId = _.toString(activeProjectSnapshotRef.current?.id || currentProject?.id || currentLogProjectId);
       if (
+        pipelineCompleted &&
         !retainPlanningRoomsForResume &&
         _.isEqual(config.planningExecutionMode, AiPlanningExecutionMode.RoomOnly) &&
         !_.isEqual(roomCleanupProvider, AiPlanningFallbackProvider.Disabled) &&

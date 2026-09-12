@@ -1106,19 +1106,6 @@ export interface VideoProject {
   renderedVideoUrl?: string;
 }
 
-export interface PipelineWizardProps {
-  theme?: string;
-  currentLang?: string;
-  project: VideoProject;
-  setProject: (p: VideoProject) => void;
-  onSaveProject: (p: VideoProject) => Promise<void> | void;
-  onBackToDashboard: () => void;
-  costTracker?: unknown;
-  setCostTracker?: unknown;
-  credits?: unknown;
-  setCredits?: unknown;
-}
-
 export interface IBaseModalProps {
   isOpen: boolean;
   onClose: () => void;

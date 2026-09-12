@@ -1720,7 +1720,6 @@ export const FLOW_VIDEO_MEDIA_CONFIG = {
   GENERATION_TIMEOUT_MS: 8 * 60_000,
   RECOVERY_READY_TIMEOUT_MS: 30_000,
   RECOVERY_REDIRECT_TIMEOUT_MS: 15_000,
-  RECOVERY_EDIT_TIMEOUT_MS: 15_000,
   DOWNLOAD_TIMEOUT_MS: 2 * 60_000,
   READY_POLL_INTERVAL_MS: 1_500,
   MIN_FILE_BYTES: 100_000,
@@ -1948,7 +1947,7 @@ export const FACT_RESEARCH_CONFIG = {
 export const PIPELINE_SERVER_LOGS = {
   INVALID_CHAPTER_RESPONSE_DISCARDED: "[Script] Discarded an invalid chapter response.",
   INVALID_CHAPTER_LANGUAGE_DISCARDED: "[Script] Discarded a chapter response with invalid language formatting.",
-  INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED: "[Script] Discarded invalid script plan response {0}/{1}.",
+  INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED: "[Script] Discarded invalid script plan response {0}/{1}: {2}",
 } as const;
 
 export const GEMINI_MEDIA_ERRORS = {

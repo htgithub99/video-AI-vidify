@@ -70,7 +70,12 @@ export const requestValidScriptPlan = async (
       return { value, aiMetadata, rotationLogs };
     } catch (error) {
       lastError = error;
-      appWarn(PIPELINE_SERVER_LOGS.INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED, _.add(attemptIndex, 1), SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS);
+      appWarn(
+        PIPELINE_SERVER_LOGS.INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED,
+        _.add(attemptIndex, 1),
+        SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS,
+        error instanceof Error ? error.message : _.toString(error),
+      );
     }
   }
   const error = lastError instanceof Error ? lastError : new Error(SCRIPT_PLAN_CONFIG.INVALID_RESPONSE_ERROR);

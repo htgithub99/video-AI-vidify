@@ -37,6 +37,7 @@ const TEST_CONSTANTS = {
   IMAGE_GENERATOR_SERVICE_PATH: "../src/server/services/imageGeneratorService.ts",
   APP_HEADER_PATH: "../src/components/Header.tsx",
   AUTO_VIDEO_PIPELINE_PATH: "../src/hooks/useAutoVideoPipeline.ts",
+  CINEMATIC_CONSTANTS_PATH: "../src/constants/cinematicConstants.ts",
   SUCCESS_MESSAGE: "Cinematic room planning assertions passed.\n",
 } as const;
 
@@ -333,6 +334,7 @@ const verifyPipelineControllerSourceInvariants = () => {
 
 const verifyPlanningRunIsolation = () => {
   const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
+  const cinematicConstantsSource = readFileSync(new URL(TEST_CONSTANTS.CINEMATIC_CONSTANTS_PATH, import.meta.url), "utf8");
   const imageGeneratorSource = readFileSync(new URL(TEST_CONSTANTS.IMAGE_GENERATOR_SERVICE_PATH, import.meta.url), "utf8");
   const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
   assert.match(planningServiceSource, /activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>/);
@@ -352,6 +354,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /RESPONSE_RESUME_LOG/);
   assert.match(planningServiceSource, /if \(responseProgressed \|\| isBusy\)/);
   assert.match(planningServiceSource, /responseCompleted && \(request\.closeRoomOnComplete/);
+  assert.match(cinematicConstantsSource, /CLOSE_ROOM_ON_COMPLETE:\s*false/);
   assert.match(planningServiceSource, /if \(!isResponseTimeoutError\(error\)\) pendingRoomResponses\.delete\(roomKey\)/);
   assert.match(planningServiceSource, /CLOSED_ROOM_ERROR_PATTERN\.test\(errorMessage\)/);
   assert.match(planningServiceSource, /canRecoverClosedRoom[\s\S]*await closeChatPlanningRoom\(request\)/);
@@ -384,7 +387,7 @@ const verifyPlanningRunIsolation = () => {
   assert.doesNotMatch(grokReadinessSource, /page\.(?:goto|reload)\(/);
   assert.match(planningServiceSource, /input\.isEditable\(\)/);
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS, 250);
-  assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 2);
+  assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 20);
   assert(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS > CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS);
   assert.match(CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, /parseable directly with JSON\.parse/i);
   assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
@@ -483,9 +486,8 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, /pipelineRunId: pipelineArtifactRunId/);
   assert.match(pipelineSource, /retainPlanningRoomsForResume =/);
   assert.match(pipelineSource, /!retainPlanningRoomsForResume &&/);
-  assert.match(pipelineSource, /const closeCompletedPlanningWorkers = async/);
-  assert.match(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.SCRIPT\]\)/);
-  assert.match(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.PROMPT\]\)/);
+  assert.doesNotMatch(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.(?:SCRIPT|PROMPT|THUMBNAIL)\]\)/);
+  assert.match(pipelineSource, /pipelineCompleted &&[\s\S]*PIPELINE_CLOSE_CHAT_PLANNING_ROOMS/);
 };
 
 const verifyLongFilmPlanningBatches = () => {

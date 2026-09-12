@@ -65,7 +65,7 @@ const PLATFORMS = {
 };
 
 const COMMANDS = {
-  CHROME_WIN: 'start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile"',
+  CHROME_WIN: 'start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"',
   CHROME_MAC: 'open -a "Google Chrome" --args --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="/tmp/chrome_debug_profile"',
 };
 

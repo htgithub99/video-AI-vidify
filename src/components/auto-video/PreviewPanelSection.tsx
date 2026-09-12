@@ -1,7 +1,7 @@
 import { cn } from "../../lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import _ from "lodash";
-import { Download, Eye, ImageIcon, Mic, RefreshCw, Sliders, Video } from "lucide-react";
+import { Download, Eye, ImageIcon, Mic, RefreshCw, Video } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { REGENERATION_TARGET, REGENERATION_TEXTS } from "../../constants/config";
@@ -16,7 +16,6 @@ interface PreviewPanelSectionProps {
   activeCreatedProject: VideoProject | null | undefined;
   isProcessing: boolean;
   regeneratingTarget?: string | null;
-  onSelectProject: (id: string) => void;
   handleRegenerate: (target: string, sceneId?: string) => Promise<void>;
   T: ReturnType<typeof getAutoVideoTexts>;
   regenerationTexts: (typeof REGENERATION_TEXTS)[keyof typeof REGENERATION_TEXTS];
@@ -30,7 +29,6 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   activeCreatedProject,
   isProcessing,
   regeneratingTarget = null,
-  onSelectProject,
   handleRegenerate,
   T,
   regenerationTexts,
@@ -111,16 +109,6 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
             <Download className={cn("w-4 h-4")} /> {T.downloadVideoBtn}
           </Button>
 
-          {activeCreatedProject && (
-            <Button
-              variant="primary"
-              size={REFACTOR_CONSTANTS.SIZE_MD}
-              onClick={() => onSelectProject(activeCreatedProject.id)}
-              className={cn("h-10 min-h-[40px] px-3 text-xs font-bold rounded-xl flex items-center justify-center gap-2")}
-              title={T.openStudioTooltip}>
-              <Sliders className={cn("w-4 h-4")} /> {T.openStudioBtn}
-            </Button>
-          )}
         </div>
       )}
 

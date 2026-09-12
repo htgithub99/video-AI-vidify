@@ -757,7 +757,6 @@ export default function AutoVideoGenerator({
               isProcessing={isProcessing}
               regeneratingTarget={regeneratingTarget}
               handleRegenerate={handleRegenerate}
-              onSelectProject={onSelectProject}
               T={T}
               regenerationTexts={regenerationTexts}
               showVoiceRegeneration={!cinematicMode}

@@ -218,6 +218,8 @@ ${CINEMATIC_PROMPT_SECURITY_RULE}
 - Composition direction: ${options.focusDirective || "Choose the strongest readable key-art composition"}
 
 [KEY-ART DIRECTION]
+- The FILM MATERIAL above is the only authoritative story. Ignore memories, earlier room topics and unrelated plots. Every headline, character, prop, location and conflict must be directly supported by that material; never invent a different premise.
+- Before returning JSON, verify each concept against the film title, logline and scene events. If a concept cannot cite a visible event or consequence from the supplied story, replace it.
 - Find one decisive image from the actual story: one dominant character, relationship, confrontation, object or consequence. Do not summarize the whole plot or create a collage unless the story truly needs an ensemble.
 - Preserve recurring identity anchors exactly. Show a purposeful pose or action and one visible piece of story evidence. Use depth, lighting, negative space and scale to create a professional theatrical image.
 - For mythology, folklore and historical material, create an original public-domain interpretation. Never imitate a modern film, television series, game, animation, actor likeness, franchise costume, logo or branded visual identity. Make this explicit inside generationPrompt when a provider could mistake the subject for third-party entertainment content.

@@ -289,7 +289,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PLAYWRIGHT_TOKEN_TIMEOUT: "⏳ Login timeout.",
     PLAYWRIGHT_CONNECT_ERR: "❌ Error connecting to Chrome:",
     PLAYWRIGHT_CHROME_MANDATE: "⚠️  YOU NEED TO OPEN CHROME FIRST USING THIS COMMAND BEFORE RUNNING SERVER:",
-    PLAYWRIGHT_CHROME_COMMAND: '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
+    PLAYWRIGHT_CHROME_COMMAND: '👉 start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"',
     MISSING_SCENE_SCRIPT: "Missing scene script",
     TTS_TASK_ERROR: "TTS Task Error: ",
     NO_AUDIO_CHUNKS: "No audio chunks provided",
@@ -926,8 +926,8 @@ export const LOG_DICTIONARY = {
     vi: "⚠️ VUI LÒNG ĐẢM BẢO KHỞI ĐỘNG TRÌNH DUYỆT TRƯỚC KHI VẬN HÀNH HỆ THỐNG:",
   },
   PLAYWRIGHT_CHROME_COMMAND: {
-    en: '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
-    vi: '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
+    en: '👉 start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"',
+    vi: '👉 start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"',
   },
   PLAYWRIGHT_CONNECTING: {
     en: "🔗 Connecting to browser visual generator...",

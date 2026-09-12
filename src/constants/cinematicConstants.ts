@@ -62,7 +62,8 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_READY: "Bước 4/4 · Video đã hoàn tất.",
     VIDEO_QA_ADVISORY: "[QA video] {0} clip có cảnh báo chất lượng nhưng vẫn được chuyển cho thư viện dựng để chọn đoạn dùng được.",
     PLANNING_STOPPED: "Bước {0}/4 · Tạm dừng vì chưa nhận được kết quả hoàn chỉnh từ AI. Kết quả đã xong được giữ lại; hãy kiểm tra room rồi chọn Tiếp tục dự án.",
-    PLANNING_FORMAT_STOPPED: "Bước 1/4 · AI đã trả lời nhưng định dạng dữ liệu chưa đọc được. Hệ thống đã giữ dữ liệu cũ; chọn Tiếp tục để nhận lại kịch bản.",
+    PLANNING_FORMAT_STOPPED: "Bước 1/4 · AI đã trả lời sai định dạng JSON. Dữ liệu hợp lệ trước đó đã được giữ; chọn Tiếp tục để AI trả lại toàn bộ kịch bản.",
+    PLANNING_FORMAT_EMPTY: "Bước 1/4 · AI đã trả lời sai định dạng JSON nên chưa có kịch bản hợp lệ được lưu. Chọn Tiếp tục để AI trả lại toàn bộ kịch bản.",
     PROMPT_STOPPED: "Bước 2/4 · Đã giữ {0}/{1} prompt; còn thiếu {2}. Hãy chọn Tiếp tục để hoàn thành riêng các cảnh này.",
     VIDEO_STOPPED: "Bước 4/4 · Đã giữ {0}/{1} clip. Còn thiếu {2}; hãy chọn Tiếp tục để chỉ tải lại hoặc hoàn thành các clip này.",
     VIDEO_RENDER_STOPPED: "Bước 4/4 · Các clip đã hoàn tất nhưng chưa ghép xong phim. Hãy chọn Tiếp tục để tiếp tục render.",
@@ -81,7 +82,8 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     VIDEO_READY: "Step 4/4 · The video is complete.",
     VIDEO_QA_ADVISORY: "[Video QA] {0} clips have quality warnings but will still go to the edit libraries for usable-segment selection.",
     PLANNING_STOPPED: "Step {0}/4 · Paused because a complete AI result was not received. Completed work is kept; check the room and continue the project.",
-    PLANNING_FORMAT_STOPPED: "Step 1/4 · AI responded, but its data format could not be read. Existing data was kept; continue to request the screenplay again.",
+    PLANNING_FORMAT_STOPPED: "Step 1/4 · AI returned invalid JSON. Previously valid data was kept; continue so AI can return the complete screenplay again.",
+    PLANNING_FORMAT_EMPTY: "Step 1/4 · AI returned invalid JSON, so no valid screenplay was saved. Continue so AI can return the complete screenplay again.",
     PROMPT_STOPPED: "Step 2/4 · Kept {0}/{1} prompts; still missing {2}. Continue to complete only these scenes.",
     VIDEO_STOPPED: "Step 4/4 · Kept {0}/{1} clips. Still missing {2}; continue to download or complete only these clips.",
     VIDEO_RENDER_STOPPED: "Step 4/4 · All clips are complete, but the film has not finished rendering. Continue to resume rendering.",
@@ -97,12 +99,12 @@ export const CINEMATIC_CHECKPOINT_CONFIG = {
 } as const;
 
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
-  ROOM_RESPONSE_ATTEMPTS: 2,
+  ROOM_RESPONSE_ATTEMPTS: 3,
   RESPONSE_TIMEOUT_MS: 300000,
   RESPONSE_MAX_TIMEOUT_MS: 600000,
   RESPONSE_ACTIVITY_GRACE_MS: 180000,
   RESPONSE_POLL_MS: 250,
-  RESPONSE_STABLE_POLLS: 2,
+  RESPONSE_STABLE_POLLS: 20,
   MIN_RESPONSE_CHARACTERS: 20,
   INVALID_JSON_RESPONSE_ERROR: "chat_planning_invalid_json_response",
   MAX_CORRECTION_ATTEMPTS: 1,
@@ -160,11 +162,11 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_MODEL_BUTTON_SELECTOR:
     'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
-    'Return only the complete raw JSON value required by the request, parseable directly with JSON.parse. Escape every double quote that occurs inside a JSON string value as \\". Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.',
+    'Return only the complete raw JSON value required by the request, parseable directly with JSON.parse. Escape every double quote that occurs inside a JSON string value as \\"; preferably avoid quotation marks inside string values. Before submitting, verify the entire response with strict JSON.parse semantics. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.',
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
   EXCESS_BLANK_LINES_PATTERN: /\n[ \t]*\n(?:[ \t]*\n)+/g,
   CANCELLED_ERROR: "chat_planning_cancelled",
-  CLOSE_ROOM_ON_COMPLETE: true,
+  CLOSE_ROOM_ON_COMPLETE: false,
   INVALID_RESPONSE_ERROR: "chat_planning_invalid_response",
   DEFAULT_PROJECT_SCOPE: "cinematic-planning",
   DEFAULT_WORKER_ID: CINEMATIC_ROOM_STAGE.SCRIPT,

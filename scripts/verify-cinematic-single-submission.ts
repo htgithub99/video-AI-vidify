@@ -166,6 +166,13 @@ assert.equal(isReliableFlowVideoResponseUrl("https://labs.google/fx/api/trpc/med
 assert.equal(isReliableFlowVideoResponseUrl("https://example.com/assets/0d414a19-5a6b-4e19-9287-acf5e88aebc2/image.png"), false);
 assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
 assert.equal(isFlowProjectPageUrl("https://labs.google/fx/vi/tools/flow/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
+assert.equal(
+  isFlowProjectPageUrl(
+    "https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d/edit/d2dc38a3-c731-4540-bed8-761bb207d39b",
+    "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d",
+  ),
+  false,
+);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/404?reason=project", ""), true);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/missing", "Không tìm thấy dự án."), true);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/active", "Create a video"), false);
@@ -327,7 +334,9 @@ assert.match(flowAutomationSource, /FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COU
 assert.match(flowAutomationSource, /remoteMediaIds: remoteVideoMediaIds/);
 assert.match(flowAutomationSource, /else if \(!isFlowVideoGeneration\)[\s\S]*activePage\.reload/);
 assert.match(flowAutomationSource, /sandboxConfig\.knownVideoMediaIds/);
-assert.match(flowAutomationSource, /collectFlowVideoUrls\(page, editId\)/);
+assert.match(flowAutomationSource, /const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)/);
+assert.doesNotMatch(flowAutomationSource, /page\.goto\(`\$\{EXTERNAL_URLS\.GOOGLE_LABS_FLOW\}\/\$\{flowProjectId\}\/edit\/\$\{editId\}`/);
+assert.doesNotMatch(flowAutomationSource, /mediaCard\.click\(\{ force: true \}\)/);
 assert.match(flowAutomationSource, /collectNewFlowGeneratedMedia/);
 assert.match(flowAutomationSource, /isReliableFlowVideoResponseUrl/);
 assert.match(flowAutomationSource, /confirmedDomMedia/);

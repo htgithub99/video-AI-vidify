@@ -456,8 +456,16 @@ const normalizeFlowProjectId = (projectId?: string): string => {
   return /^proj_/i.test(normalized) ? "" : normalized;
 };
 
-export const isFlowProjectPageUrl = (value: string, projectId: string): boolean =>
-  FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(_.trim(value)) && !_.isEmpty(projectId) && _.includes(value, `/project/${projectId}`);
+export const isFlowProjectPageUrl = (value: string, projectId: string): boolean => {
+  const normalizedValue = _.trim(value);
+  if (!FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(normalizedValue) || _.isEmpty(projectId)) return false;
+  try {
+    const pathname = new URL(normalizedValue).pathname.replace(/\/+$/, "");
+    return new RegExp(`/project/${_.escapeRegExp(projectId)}$`, "i").test(pathname);
+  } catch {
+    return false;
+  }
+};
 
 export const createFlowVideoConfigState = (visualConfig?: ImageGeneratorOptions["visualConfig"]): string =>
   jsonUtils.safeStringify({
@@ -769,23 +777,22 @@ const downloadFlowVideoFromCard = async (
   mediaId: string,
 ): Promise<FlowDownloadedVideo | null> => {
   await mediaCard.scrollIntoViewIfNeeded();
+  await mediaCard.hover().catch(() => undefined);
+  const cardVideo = mediaCard.locator("video").first();
+  const sourceDeadline = _.add(Date.now(), FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS);
+  while (_.lt(Date.now(), sourceDeadline)) {
+    const sourceReady = await cardVideo
+      .evaluate((video: HTMLVideoElement) => Boolean(video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src")))
+      .catch(() => false);
+    if (sourceReady) break;
+    await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
+  }
   const readyVideoUrls = await collectFlowVideoUrls(page, mediaId);
-  const directlyDownloadedVideo = await downloadValidatedVideo(
+  return downloadValidatedVideo(
     page.context(),
     _.filter(readyVideoUrls, (url) => !_.includes(previousVideoSources, url)),
     expectedDurationSeconds,
   ).catch(() => null);
-  if (directlyDownloadedVideo) return directlyDownloadedVideo;
-  await mediaCard.click({ force: true });
-  await page.waitForTimeout(FLOW_VIDEO_MEDIA_CONFIG.READY_POLL_INTERVAL_MS);
-  const videoUrls = await collectFlowVideoUrls(page, mediaId);
-  const downloadedVideo = await downloadValidatedVideo(
-    page.context(),
-    _.filter(videoUrls, (url) => !_.includes(previousVideoSources, url)),
-    expectedDurationSeconds,
-  ).catch(() => null);
-  await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY).catch(() => undefined);
-  return downloadedVideo;
 };
 
 const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
@@ -928,6 +935,7 @@ const collectNewFlowGeneratedMedia = async (
     candidatesByMediaId.set(mediaId, {
       ...existingCandidate,
       editId: mediaId,
+      videoSrc: /flow-content\.google\/video\//i.test(responseUrl) ? responseUrl : existingCandidate?.videoSrc,
       evidence: existingCandidate?.evidence || "network",
       discoveryOrder: _.defaultTo(existingCandidate?.discoveryOrder, candidatesByMediaId.size),
     });
@@ -965,22 +973,6 @@ const waitForFlowGeneratedMediaBatch = async (
   return { media, rejected: false, timedOut: true };
 };
 
-const downloadFlowVideoFromEdit = async (page: Page, flowProjectId: string, editId: string, expectedDurationSeconds: number): Promise<FlowDownloadedVideo | null> => {
-  await page.goto(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}/edit/${editId}`, {
-    waitUntil: "domcontentloaded",
-    timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_EDIT_TIMEOUT_MS,
-  });
-  await dismissFlowOnboarding(page);
-  await page.waitForFunction(
-    () =>
-      Array.from(document.querySelectorAll("video")).some((video) => Boolean(video.currentSrc || video.getAttribute("src") || video.querySelector("source")?.getAttribute("src"))),
-    undefined,
-    { timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_EDIT_TIMEOUT_MS },
-  );
-  const videoUrls = await collectFlowVideoUrls(page, editId);
-  return downloadValidatedVideo(page.context(), videoUrls, expectedDurationSeconds).catch(() => null);
-};
-
 export interface FlowVideoRecoveryOptions {
   flowProjectId: string;
   mediaId: string;
@@ -1011,18 +1003,20 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
     await throwIfFlowMediaCardRejected(page, mediaId);
 
     const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
-    const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
-    let downloadedVideo = await downloadValidatedVideo(
-      browserInstance.context,
-      [directMediaUrl],
-      expectedDurationSeconds,
-      FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
-    ).catch(() => null);
-    const mediaCard = downloadedVideo ? null : await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
-    if (!downloadedVideo && mediaCard) downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
+    let downloadedVideo: FlowDownloadedVideo | null = null;
+    const mediaCard = await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
+    if (mediaCard) downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
     const projectMediaUrls = await collectFlowVideoUrls(page, mediaId);
     if (!downloadedVideo) downloadedVideo = await downloadValidatedVideo(browserInstance.context, projectMediaUrls, expectedDurationSeconds).catch(() => null);
-    if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEdit(page, flowProjectId, mediaId, expectedDurationSeconds).catch(() => null);
+    if (!downloadedVideo) {
+      const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
+      downloadedVideo = await downloadValidatedVideo(
+        browserInstance.context,
+        [directMediaUrl],
+        expectedDurationSeconds,
+        FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
+      ).catch(() => null);
+    }
     if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.STALE_MEDIA_ERROR);
     return {
       success: true,
@@ -1100,7 +1094,7 @@ const downloadValidatedVideo = async (
   expectedDurationSeconds: number,
   timeoutMs = FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS,
 ): Promise<FlowDownloadedVideo> => {
-  for (const mediaUrl of _.reverse(_.clone(urls))) {
+  for (const mediaUrl of urls) {
     try {
       const response = await context.request.get(mediaUrl, { timeout: timeoutMs });
       if (!response.ok()) continue;
@@ -1148,6 +1142,9 @@ const approveFlowVideoCreditPrompt = async (page: Page, submitButton: Locator, t
 
 const createFlowProject = async (page: Page): Promise<string> => {
   await page.goto(EXTERNAL_URLS.GOOGLE_LABS_FLOW_HOME, { waitUntil: "domcontentloaded", timeout: 60000 });
+  if (_.startsWith(page.url(), EXTERNAL_URLS.GOOGLE_ACCOUNTS)) {
+    throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.SHARED_CHROME_LOGIN_REQUIRED_ERROR);
+  }
   await dismissFlowOnboarding(page);
   let newProjectBtn = page.getByRole("button", { name: /Dự án mới|New project/i }).first();
   if (!(await newProjectBtn.isVisible().catch(() => false))) {
@@ -1616,7 +1613,7 @@ const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> =>
   }
 };
 
-export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = false): Promise<BrowserSession> {
+export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
   let attempts = 0;
   const maxAttempts = 3;
   let account: GoogleAccount | null = null;
@@ -1750,7 +1747,7 @@ export function scheduleGlobalBrowserCleanup() {
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 
-export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = false): Promise<BrowserSession> {
+export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -1760,11 +1757,18 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
 
   if (activeBrowserLaunchPromise) {
     const launchedBrowser = await activeBrowserLaunchPromise;
-    if (activeBrowserHeadless === requestedHeadless) return launchedBrowser;
+    if (preferSharedChrome && !launchedBrowser.preserveExternalPages) {
+      await closeActiveBrowser();
+    } else if (activeBrowserHeadless === requestedHeadless) {
+      return launchedBrowser;
+    }
   }
 
   if (activeBrowserInstance) {
-    if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {
+    if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages) {
+      appLog("[Google Flow] Chuyển từ phiên tạo ảnh nội bộ sang Chrome dùng chung tại cổng 9222.");
+      await closeActiveBrowser();
+    } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
       await closeActiveBrowser();
     } else {
@@ -2128,6 +2132,7 @@ export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions)
         waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
         timeout: FLOW_CHARACTER_CONFIG.PAGE_TIMEOUT_MS,
       });
+      await throwIfSharedChromeFlowLoginRequired(browserInstance, currentProjectId);
       await dismissFlowOnboarding(page);
     }
     if (await isFlowProjectUnavailable(page)) currentProjectId = await replaceUnavailableFlowProject(page);
@@ -3181,7 +3186,6 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       if (!(await submitButton.isEnabled().catch(() => false))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
       await submitButton.scrollIntoViewIfNeeded();
       await smoothMouseMove(activePage, submitButton);
-      await randomDelay(400, 800);
       await submitButton.click();
       await approveFlowVideoCreditPrompt(activePage, submitButton);
       appLog(`[Google Flow] Đã gửi prompt ${_.add(itemIndex, SecurityConstants.DEFAULT_AMOUNT)}/${items.length} trong cùng một Room (${item.sceneId}).`);
@@ -3211,21 +3215,44 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       items.length,
     );
     const assignments = assignFlowVideoBatchMediaIds(items, generatedBatch.media);
-    return _.map(assignments, ({ sceneId, mediaId }) => ({
-      sceneId,
-      success: !_.isEmpty(mediaId),
-      base64: null,
-      fallbackUrl: SecurityConstants.EMPTY_STRING,
-      warning: _.isEmpty(mediaId)
-        ? generatedBatch.timedOut
-          ? FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR
-          : FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR
-        : FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
-      newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
-      remoteMediaId: mediaId,
-      remoteMediaIds: _.compact([mediaId]),
-      remoteMediaCreated: !_.isEmpty(mediaId),
-    }));
+    const results: FlowVideoPromptBatchResult[] = [];
+    for (const { sceneId, mediaId } of assignments) {
+      const candidate = _.find(generatedBatch.media, (item) => _.isEqual(getFlowBatchCandidateMediaId(item), mediaId));
+      const htmlVideoUrl = _.trim(_.toString(candidate?.videoSrc));
+      let downloadedVideo = htmlVideoUrl
+        ? await downloadValidatedVideo(browserInstance.context, [htmlVideoUrl], parseConfiguredVideoDuration(normalizedModelSettings.duration)).catch(() => null)
+        : null;
+      if (!downloadedVideo && mediaId) {
+        const mediaCard = await waitForFlowMediaCardReady(activePage, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
+        if (mediaCard) {
+          downloadedVideo = await downloadFlowVideoFromCard(
+            activePage,
+            mediaCard,
+            oldVideoSources,
+            parseConfiguredVideoDuration(normalizedModelSettings.duration),
+            mediaId,
+          );
+        }
+      }
+      results.push({
+        sceneId,
+        success: !_.isEmpty(mediaId),
+        base64: downloadedVideo?.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64) || null,
+        fallbackUrl: SecurityConstants.EMPTY_STRING,
+        warning: _.isEmpty(mediaId)
+          ? generatedBatch.timedOut
+            ? FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR
+            : FLOW_DIRECT_VIDEO_CONFIG.GENERATION_REJECTED_ERROR
+          : downloadedVideo
+            ? undefined
+            : FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR,
+        newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
+        remoteMediaId: mediaId,
+        remoteMediaIds: _.compact([mediaId]),
+        remoteMediaCreated: !_.isEmpty(mediaId),
+      });
+    }
+    return results;
   } catch (error) {
     const warning = getErrorMessage(error);
     return _.map(items, (item) => ({

@@ -180,7 +180,7 @@ assert.match(controllerSource, /getCinematicThumbnailPrompt/);
 assert.match(controllerSource, /getCinematicFinalVideoQualityPrompt/);
 assert.match(controllerSource, /isCinematicSeo[\s\S]*getCinematicSeoPrompt/);
 assert.match(controllerSource, /roomCompletionMarker: CINEMATIC_SCRIPT_ARTIFACT_CONFIG\.COMPLETION_MARKER/);
-assert.match(controllerSource, /finally \{\s*if \(!isCinematicScript\) await closeCurrentRoomExecution\(CINEMATIC_ROOM_STAGE\.SCRIPT\)/);
+assert.doesNotMatch(controllerSource, /closeCurrentRoomExecution/);
 assert.match(controllerSource, /productionScenes: _\.castArray\(cinematicFilmPackage\?\.scenes/);
 assert.doesNotMatch(controllerSource, /getCinematicScreenplayEditorialPrompt/);
 assert.doesNotMatch(controllerSource, /getCinematicNarrativePlanPrompt/);
@@ -223,7 +223,7 @@ assert.match(imageGeneratorSource, /ensureFlowCharacters/);
 assert.match(imageGeneratorSource, /if \(grokBrowser\?\.isConnected\(\)\) await grokBrowser\.close/);
 assert.match(
   pipelineSource,
-  /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*closeCompletedPlanningWorkers\(Object\.values\(CINEMATIC_ROOM_STAGE\)\)[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/,
+  /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/,
 );
 assert.match(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, /scenes:count_mismatch/);
 assert.match(controllerSource, /SCENE_COUNT_MISMATCH_TEMPLATE/);

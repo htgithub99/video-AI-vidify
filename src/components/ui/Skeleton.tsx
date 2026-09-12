@@ -30,8 +30,6 @@ export const ProjectTableSkeleton = createLoadingSkeleton<ProjectTableSkeletonPr
 
 export const ProjectListSkeleton = createLoadingSkeleton<ProjectTableSkeletonProps>("ProjectListSkeleton");
 
-export const PipelineWizardSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("PipelineWizardSkeleton");
-
 export const AutoVideoStudioSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("AutoVideoStudioSkeleton");
 
 export const DashboardSkeleton = createLoadingSkeleton<LoadingSkeletonProps>("DashboardSkeleton");

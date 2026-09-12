@@ -194,7 +194,6 @@ export enum FolderSelectionType {
 }
 
 export enum AppTab {
-  STUDIO = "studio",
   PROJECTS = "projects",
   AUTO_GENERATOR = "auto-generator",
   CINEMATIC_FILM = "cinematic-film",

@@ -49,15 +49,12 @@ import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
 import { storageUtils } from "./lib/storage";
 
-import PipelineWizard from "./components/PipelineWizard.tsx";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
-import { MinimalSpinnerLoading } from "./components/ui/Skeleton.tsx";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
-  if (_.isEqual(tab, AppTab.STUDIO)) return ProjectKind.Studio;
   if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
   if (_.isEqual(tab, AppTab.CINEMATIC_FILM)) return ProjectKind.Cinematic;
   return undefined;
@@ -66,7 +63,6 @@ const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
 const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefined => {
   if (!project) return undefined;
   if (project.projectKind) return project.projectKind;
-  if (_.endsWith(project.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) return ProjectKind.Studio;
   if (_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) return ProjectKind.Auto;
   if (_.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) return ProjectKind.Cinematic;
   return project.parentId ? undefined : ProjectKind.Container;
@@ -116,16 +112,11 @@ export default function App() {
     const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);
     const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
     if (isValidTab) {
-      if (_.isEqual(savedTab, AppTab.STUDIO)) {
-        const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-        const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
-        return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
-      }
       return savedTab!;
     }
     const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
     const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
-    return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
+    return isValidProj ? AppTab.AUTO_GENERATOR : AppTab.PROJECTS;
   });
 
   useEffect(() => {
@@ -194,9 +185,6 @@ export default function App() {
     setTheme((prev) => (_.isEqual(prev, THEME_VALUES.DARK) ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
   };
 
-  const [credits] = useState<number>(REFACTOR_CONSTANTS.CREDITS_DEFAULT_10000);
-  const [costTracker, setCostTracker] = useState<number>(REFACTOR_CONSTANTS.ZERO_FLOAT);
-
   useEffect(() => {
     let active = true;
     let timerId: NodeJS.Timeout;
@@ -261,57 +249,6 @@ export default function App() {
       if (timerId) clearTimeout(timerId);
     };
   }, []);
-
-  useEffect(() => {
-    if (_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId) {
-      const activeProj = _.find(projects, { id: selectedProjectId });
-      if (activeProj) {
-        if (!activeProj.parentId) {
-          const studioChild = findWorkspaceChild(projects, activeProj.id, ProjectKind.Studio);
-          if (studioChild) setSelectedProjectId(studioChild.id);
-          else {
-            if (creatingChildRef.current[activeProj.id]) return;
-            creatingChildRef.current[activeProj.id] = true;
-
-            const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
-            const randomStr = generateRandomString();
-            const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr}`;
-            const childProject: VideoProject = {
-              ...activeProj,
-              id: childId,
-              parentId: activeProj.id,
-              projectKind: ProjectKind.Studio,
-              name: `${activeProj.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-
-            fetch(API_ROUTES.PROJECTS, {
-              method: HTTP_METHODS.POST,
-              headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify(childProject),
-            })
-              .then((response) => {
-                if (response.ok) {
-                  setProjects((prev) => [...prev, childProject]);
-                  setSelectedProjectId(childId);
-                }
-              })
-              .catch((err) => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
-              .finally(() => {
-                creatingChildRef.current[activeProj.id] = false;
-              });
-          }
-        } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), ProjectKind.Studio)) {
-          const studioChild = findWorkspaceChild(projects, activeProj.parentId, ProjectKind.Studio);
-          if (studioChild) setSelectedProjectId(studioChild.id);
-          else {
-            setSelectedProjectId(_.some(projects, { id: activeProj.parentId }) ? activeProj.parentId : null);
-          }
-        }
-      }
-    }
-  }, [activeTab, selectedProjectId, projects]);
 
   useEffect(() => {
     if (_.includes([AppTab.AUTO_GENERATOR, AppTab.CINEMATIC_FILM], activeTab as AppTab) && selectedProjectId) {
@@ -407,7 +344,7 @@ export default function App() {
         } else if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto)) {
           setActiveTab(AppTab.AUTO_GENERATOR);
         } else {
-          setActiveTab(AppTab.STUDIO);
+          setActiveTab(AppTab.PROJECTS);
         }
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
@@ -419,7 +356,7 @@ export default function App() {
       } else if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto)) {
         setActiveTab(AppTab.AUTO_GENERATOR);
       } else {
-        setActiveTab(AppTab.STUDIO);
+        setActiveTab(AppTab.PROJECTS);
       }
     }
   }, []);
@@ -485,17 +422,6 @@ export default function App() {
       creditsUsed: 0,
     };
 
-    const studioChildId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr()}`;
-    const studioChildProject: VideoProject = {
-      ...parentProject,
-      id: studioChildId,
-      parentId: parentId,
-      projectKind: ProjectKind.Studio,
-      name: `${parentProject.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
     const autoChildId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_auto_${randomStr()}`;
     const autoChildProject: VideoProject = {
       ...parentProject,
@@ -535,13 +461,12 @@ export default function App() {
 
     try {
       const parentData = await createProjectRecord(parentProject);
-      const [studioData, autoData, filmData] = await Promise.all([
-        createProjectRecord(studioChildProject),
+      const [autoData, filmData] = await Promise.all([
         createProjectRecord(autoChildProject),
         createProjectRecord(filmChildProject),
       ]);
 
-      setProjects((prev) => [...prev, parentData, studioData, autoData, filmData]);
+      setProjects((prev) => [...prev, parentData, autoData, filmData]);
       setSelectedProjectId(parentData.id);
     } catch (e) {
       appError(ERROR_MESSAGES.CREATING_PROJECT, e);
@@ -624,7 +549,7 @@ export default function App() {
         setSelectedProjectId(null);
       } else if (targetWorkspaceProject) {
         setSelectedProjectId(targetWorkspaceProject.id);
-      } else if (_.isEqual(tab, AppTab.STUDIO) && _.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
+    } else if (_.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
         const fallbackProj = _.first(projectsRef.current);
         if (fallbackProj) setSelectedProjectId(fallbackProj.id);
       }
@@ -751,32 +676,6 @@ export default function App() {
             </div>
           )}
 
-          {_.isEqual(activeTab, AppTab.STUDIO) &&
-            (selectedProjectId && activeProject ? (
-              <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
-                <PipelineWizard
-                  key={selectedProjectId}
-                  theme={theme as any}
-                  currentLang={currentLang}
-                  project={activeProject}
-                  onSaveProject={async (project) => {
-                    await handleUpdateProject(project);
-                  }}
-                  setProject={async (project) => {
-                    await handleUpdateProject(project);
-                  }}
-                  onBackToDashboard={() => handleSelectProject(null)}
-                  costTracker={costTracker}
-                  setCostTracker={setCostTracker}
-                  credits={credits}
-                  setCredits={() => {}}
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 space-y-4">
-                <MinimalSpinnerLoading />
-              </div>
-            ))}
         </main>
       </div>
     </div>
