@@ -367,7 +367,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /if \(!_.isEmpty\(responseCandidates\)\) throw new Error\(CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\)/);
   assert.match(planningServiceSource, /configuredSendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
   assert.match(planningServiceSource, /semanticSendButton[\s\S]*getByRole/);
-  assert.match(controllerSource, /closeRoomOnComplete: false/);
+  assert.match(controllerSource, /keepPlanningRoomOpen = req\.body\?\.keepPlanningRoomOpen !== false/);
   assert.match(controllerSource, /res\.once\("finish"[\s\S]*closePlanningRoom/);
   assert.match(planningServiceSource, /selectGeminiChatModel/);
   assert.match(planningServiceSource, /GEMINI_CHAT_BASE_MODEL_LABELS/);

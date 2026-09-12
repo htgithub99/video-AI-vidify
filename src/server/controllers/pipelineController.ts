@@ -56,11 +56,7 @@ import {
 } from "../../constants/config.js";
 import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
-import {
-  getThumbnailPlanningIssues,
-  getThumbnailTechnicalPlanningIssues,
-  normalizeThumbnailIdeas,
-} from "../../services/thumbnailPromptService.js";
+import { getThumbnailPlanningIssues, getThumbnailTechnicalPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectSceneOutput, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
 import { createGenreEditorialDirective } from "../../services/genreEditorialBlueprintService.js";
@@ -230,12 +226,7 @@ import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, getUnderfilledCinematicSceneIds, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { normalizeContentSafety } from "../../services/contentSafetyService.js";
-import {
-  detectVietnameseNarrationStyleWarnings,
-  isSatiricalVideoGenre,
-  normalizeScriptQualityReport,
-  parseTargetDurationSeconds,
-} from "../../services/scriptQualityService.js";
+import { detectVietnameseNarrationStyleWarnings, isSatiricalVideoGenre, normalizeScriptQualityReport, parseTargetDurationSeconds } from "../../services/scriptQualityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
@@ -568,7 +559,12 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(chunkItem, "id");
         const returnedIds = _.map(_.castArray(parsed), "id");
-        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(chunkItem)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+        if (
+          !_.isArray(parsed) ||
+          !_.isEqual(_.size(parsed), _.size(chunkItem)) ||
+          !_.isEmpty(_.difference(expectedIds, returnedIds)) ||
+          !_.isEmpty(_.difference(returnedIds, expectedIds))
+        ) {
           throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
         }
         for (const item of parsed) {
@@ -636,7 +632,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         ? AiPlanningExecutionMode.ApiOnly
         : AiPlanningExecutionMode.RoomOnly;
     const usesChatPlanning = !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly);
-    const keepPlanningRoomOpen = Boolean(req.body?.keepPlanningRoomOpen);
+    const keepPlanningRoomOpen = req.body?.keepPlanningRoomOpen !== false;
     const planningWorkerId = _.toString(req.body?.planningWorkerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID);
     const planningRun = beginChatPlanningRun(
       _.toString(req.body?.pipelineRunId),
@@ -661,7 +657,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     });
     res.once("close", () => {
       if (!res.writableEnded) planningRun.cancel();
-      void closePlanningRoom();
     });
     const planningChromeHeadless = _.isBoolean(req.body?.planningChromeHeadless) ? req.body.planningChromeHeadless : req.body?.chromeHeadless;
     const clipDurationSeconds = resolveCinematicClipDuration(resolvedVisualConfig.videoDuration);
@@ -1024,7 +1019,11 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       let parsedItems = await requestVisualPlan(initialApiPrompt, initialChatUiPrompt);
       let planningIssues = collectPlanningIssues(parsedItems);
       const getCorrectablePlanningIssues = (issues: string[]): string[] => issues;
-      for (let correctionAttempt = 0; correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues)); correctionAttempt++) {
+      for (
+        let correctionAttempt = 0;
+        correctionAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.MAX_CORRECTION_ATTEMPTS && !_.isEmpty(getCorrectablePlanningIssues(planningIssues));
+        correctionAttempt++
+      ) {
         const correctionIssues = getCorrectablePlanningIssues(planningIssues);
         const correctionIssuesJson = jsonUtils.safeStringify(correctionIssues);
         const correctionPrompt = isCinematicPlanning ? createRepairPrompt(parsedItems, correctionIssues, sceneIds) : createPlanningPrompt(correctionIssuesJson);
@@ -1176,7 +1175,12 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(thumbsToRewrite, "id");
         const returnedIds = _.map(_.castArray(parsed), "id");
-        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+        if (
+          !_.isArray(parsed) ||
+          !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) ||
+          !_.isEmpty(_.difference(expectedIds, returnedIds)) ||
+          !_.isEmpty(_.difference(returnedIds, expectedIds))
+        ) {
           throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
         }
         for (const item of parsed) {
@@ -1249,7 +1253,12 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(thumbsToRewrite, "id");
         const returnedIds = _.map(_.castArray(parsed), "id");
-        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
+        if (
+          !_.isArray(parsed) ||
+          !_.isEqual(_.size(parsed), _.size(thumbsToRewrite)) ||
+          !_.isEmpty(_.difference(expectedIds, returnedIds)) ||
+          !_.isEmpty(_.difference(returnedIds, expectedIds))
+        ) {
           throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
         }
         for (const item of parsed) {
@@ -2245,7 +2254,10 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
         !_.isArray(videoSceneIds) && "videoSceneIds:array_required",
         _.isArray(videoSceneIds) && _.gt(videoSceneIds.length, maxVideos) && `videoSceneIds:too_many:${videoSceneIds.length}/${maxVideos}`,
         _.isArray(videoSceneIds) && _.uniq(videoSceneIds).length !== videoSceneIds.length && "videoSceneIds:duplicate",
-        ..._.map(_.reject(_.castArray(videoSceneIds), (sceneId) => _.includes(validSceneIds, sceneId)), (sceneId) => `videoSceneIds:unknown:${sceneId}`),
+        ..._.map(
+          _.reject(_.castArray(videoSceneIds), (sceneId) => _.includes(validSceneIds, sceneId)),
+          (sceneId) => `videoSceneIds:unknown:${sceneId}`,
+        ),
       ]);
       if (_.isEmpty(lastIssues)) return res.json({ videoSceneIds });
     }
@@ -2404,9 +2416,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
   }
   const parsedReferenceCharacters = _.attempt(JSON.parse, characterRef || "[]");
-  const referenceCharacterIds = new Set(
-    _.map(_.isArray(parsedReferenceCharacters) ? parsedReferenceCharacters : [], (character) => _.trim(_.toString(character?.id))),
-  );
+  const referenceCharacterIds = new Set(_.map(_.isArray(parsedReferenceCharacters) ? parsedReferenceCharacters : [], (character) => _.trim(_.toString(character?.id))));
   const isVi = config?.language === ProjectLanguage.VI;
   const splitStrategy = config?.splitStrategy || SplitStrategy.LONG_SENTENCE;
 

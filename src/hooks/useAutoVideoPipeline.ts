@@ -1568,10 +1568,7 @@ export function useAutoVideoPipeline(
 
       const hasGlobalNarration = !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl);
       const hasCachedAlignment =
-        config.resumeMode &&
-        isScriptCached &&
-        !config.forceRegenerateVoice &&
-        hasCompleteSceneAlignment(realScenes as StoryboardScene[], hasGlobalNarration);
+        config.resumeMode && isScriptCached && !config.forceRegenerateVoice && hasCompleteSceneAlignment(realScenes as StoryboardScene[], hasGlobalNarration);
       let alignmentCompleted = hasCachedAlignment;
       const alignmentRequest =
         globalAudioBase64 && !hasCachedAlignment
@@ -1685,7 +1682,7 @@ export function useAutoVideoPipeline(
           chromeHeadless: config.chromeHeadless,
           pipelineRunId: pipelineArtifactRunId,
           pipelineStartedAt,
-          keepPlanningRoomOpen: isCinematicEpisodeGenre(config.genre),
+          keepPlanningRoomOpen: true,
         };
         let optimizeRes: Awaited<ReturnType<typeof safeSystemFetch>>;
         if (isCinematicEpisodeGenre(config.genre)) {
@@ -1918,7 +1915,6 @@ export function useAutoVideoPipeline(
           voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt ||
           config.thumbnailStylePreset;
       }
-
 
       if (isCinematicEpisodeGenre(config.genre)) {
         const clipDurationSeconds = resolveCinematicClipDuration(config.videoDuration);
@@ -4299,7 +4295,11 @@ export function useAutoVideoPipeline(
           workerIds: Object.values(CINEMATIC_ROOM_STAGE),
         }).catch(() => undefined);
         planningRoomClosedBeforeVideo = true;
-        appendLog(config.language === ProjectLanguage.VI ? "[AI] Đã hoàn tất planning; đóng tab room AI trước khi chuyển sang Flow tạo video." : "[AI] Planning is complete; closing the AI room tab before switching to Flow video generation.");
+        appendLog(
+          config.language === ProjectLanguage.VI
+            ? "[AI] Đã hoàn tất planning; đóng tab room AI trước khi chuyển sang Flow tạo video."
+            : "[AI] Planning is complete; closing the AI room tab before switching to Flow video generation.",
+        );
       }
 
       let acceptedScenes = nativeFilmAudio
