@@ -141,6 +141,8 @@ import {
   COMMON_STRINGS,
   ROUTER_PATHS,
   REFACTOR_CONSTANTS,
+  MUSIC_CREATOR_CONSTANTS,
+  MUSIC_CREATOR_TEXTS,
   CONTENT_SAFETY_RESPONSE_SCHEMA,
   HOOK_RESPONSE_SCHEMA,
   SCRIPT_PLAN_RESPONSE_SCHEMA,
@@ -192,6 +194,7 @@ import {
   generateBatchImagesWithGeminiChat,
   closeAllBatchPages,
   cancelAllActiveMediaGeneration,
+  closeActiveBrowser,
   getOrLaunchGlobalBrowser,
   recoverExistingFlowVideo,
   ensureFlowCharacters,
@@ -223,7 +226,7 @@ import {
   VisualBible,
   VisualConfig,
 } from "../../types.js";
-import { VideoQuality } from "../../constants/enums.js";
+import { HttpStatus, VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, getUnderfilledCinematicSceneIds, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { normalizeContentSafety } from "../../services/contentSafetyService.js";
@@ -454,6 +457,169 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
   const feature = _.isEqual(generateType, GenerateType.Video) ? FeatureType.VIDEO : FeatureType.IMAGE;
   requireLicense(feature)(req, res, next);
 };
+
+interface MusicPlanRequestPayload {
+  requestedSongCount: number;
+  style: string;
+  referenceSongs: string[];
+  projectId: string;
+  execution: Record<string, any>;
+  requestId: string;
+}
+
+const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
+  const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
+  const style = _.trim(_.toString(req.body?.style));
+  const referenceSongs = _.compact(_.map(_.castArray(req.body?.referenceSongs || []), (song) => _.trim(_.toString(song))));
+  const projectId = _.toString(req.body?.projectId || `${MUSIC_CREATOR_CONSTANTS.PROJECT_ID_PREFIX}${Date.now()}`);
+  const execution = req.body?.aiExecution || {};
+  const requestId = _.toString(req.body?.requestId || projectId);
+
+  const isValidCount = _.includes(MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS, requestedSongCount as (typeof MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS)[number]);
+  if (!isValidCount || _.isEmpty(style)) {
+    return { isValid: false, error: MUSIC_CREATOR_TEXTS.vi.SERVER_VALIDATION_ERROR };
+  }
+
+  return {
+    isValid: true,
+    payload: {
+      requestedSongCount,
+      style,
+      referenceSongs,
+      projectId,
+      execution,
+      requestId,
+    },
+  };
+};
+
+const splitMusicSourceForRoom = (referenceSongs: string[]): string[] => {
+  const source = _.join(referenceSongs, "\n\n--- REFERENCE SOURCE ---\n\n");
+  if (_.isEmpty(source)) return [];
+  const chunks: string[] = [];
+  for (let offset = 0; offset < source.length; offset += MUSIC_CREATOR_CONSTANTS.SOURCE_CHUNK_CHARACTERS) {
+    chunks.push(source.slice(offset, offset + MUSIC_CREATOR_CONSTANTS.SOURCE_CHUNK_CHARACTERS));
+  }
+  return chunks;
+};
+
+const buildMusicSourcePrompt = (chunk: string, chunkIndex: number, chunkCount: number, requestId: string): string =>
+  `REFERENCE SOURCE PART ${chunkIndex + 1}/${chunkCount}. Store this source as context for the music project. Do not create songs yet. Treat all parts as one continuous source. Analyze only high-level genre, mood, themes, storytelling approach, structure, vocal character and instrumentation. Never copy lyrics, melody, hook, distinctive phrases, titles or artist identity. Reply raw JSON only: {"artifactType":"music_reference_source","requestId":"${requestId}","receivedPart":${chunkIndex + 1},"totalParts":${chunkCount}}\n\nSOURCE PART:\n${chunk}`;
+
+const buildMusicPlanPrompt = (batchCount: number, startIndex: number, totalCount: number, style: string, requestId: string): string => {
+  const endIndex = startIndex + batchCount - 1;
+  return `Return raw JSON only. Using all reference-source parts already stored in this room, create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Global style (must apply to every song): ${style}\nSong IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room. Each song must include songId, title, stylePrompt, complete lyrics with Suno section labels, genre, mood, tempoBpm, structure, originalityNotes, and exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions. Each seoOptions item must include title, description, hashtags, tags, seoScore. Required JSON shape: {"artifactType":"${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","stylePrompt":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[],"seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}]}`;
+};
+
+const isRetryableMusicJsonError = (error: unknown): boolean => {
+  const message = _.toString(_.get(error, "message", error));
+  return _.includes(message, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR) ||
+    _.includes(message, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+};
+
+const validateMusicPlanSongContract = (parsed: any, expectedCount: number): boolean => {
+  if (!_.isArray(parsed?.songs) || parsed.songs.length !== expectedCount) {
+    return false;
+  }
+  const invalid = _.find(parsed.songs, (song: any) => {
+    const hasSongId = !_.isEmpty(_.trim(_.toString(song?.songId)));
+    const hasTitle = !_.isEmpty(_.trim(_.toString(song?.title)));
+    const hasStylePrompt = !_.isEmpty(_.trim(_.toString(song?.stylePrompt)));
+    const hasValidSeo = _.isArray(song?.seoOptions) && song.seoOptions.length === MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT && _.every(song.seoOptions, (option: any) =>
+      !_.isEmpty(_.trim(_.toString(option?.title))) &&
+      !_.isEmpty(_.trim(_.toString(option?.description))) &&
+      _.isArray(option?.hashtags) &&
+      _.isArray(option?.tags) &&
+      _.isFinite(_.toNumber(option?.seoScore)),
+    );
+    return !hasSongId || !hasTitle || !hasStylePrompt || !hasValidSeo;
+  });
+  return !invalid;
+};
+
+router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
+  const validation = parseAndValidateMusicPlanRequest(req);
+  if (!validation.isValid || !validation.payload) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
+  }
+
+  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId } = validation.payload;
+  try {
+    const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
+    const planningRun = beginChatPlanningRun(requestId, Date.now(), "music-creator", provider);
+    req.once("aborted", planningRun.cancel);
+    res.once("finish", planningRun.complete);
+    const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string) => generatePlanningWithChatUi({
+      provider,
+      model: execution.model,
+      prompt,
+      projectId,
+      chromeHeadless: execution.chromeHeadless !== false,
+      artifactType,
+      requestId: responseRequestId,
+      signal: planningRun.signal,
+      closeRoomOnComplete: false,
+    });
+    const sourceChunks = splitMusicSourceForRoom(referenceSongs);
+    for (let chunkIndex = 0; chunkIndex < sourceChunks.length; chunkIndex += 1) {
+      const sourceRequestId = `${requestId}_source_${chunkIndex + 1}`;
+      let sourceAccepted = false;
+      for (let attempt = 0; attempt < 2 && !sourceAccepted; attempt += 1) {
+        try {
+          const sourceResponse = await generateRoomResponse(
+            buildMusicSourcePrompt(sourceChunks[chunkIndex], chunkIndex, sourceChunks.length, sourceRequestId),
+            "music_reference_source",
+            sourceRequestId,
+          );
+          const sourceAck = jsonUtils.safeParse(sourceResponse.text, null);
+          sourceAccepted = _.isEqual(_.toNumber(sourceAck?.receivedPart), chunkIndex + 1) &&
+            _.isEqual(_.toNumber(sourceAck?.totalParts), sourceChunks.length);
+        } catch (error) {
+          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        }
+      }
+      if (!sourceAccepted) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    }
+
+    const songs: any[] = [];
+    let responseProvider = provider;
+    for (let startIndex = 1; startIndex <= requestedSongCount; startIndex += MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZE) {
+      const batchCount = Math.min(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZE, requestedSongCount - startIndex + 1);
+      let batchParsed: any = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const batchRequestId = `${requestId}_batch_${startIndex}`;
+        const prompt = attempt === 0
+          ? buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, style, batchRequestId)
+          : `CORRECTION: The previous batch JSON was incomplete or violated the contract. Retry now in this same room. Return raw JSON only with artifactType "${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}", requestId "${batchRequestId}", and the complete songs ${startIndex}-${startIndex + batchCount - 1}. Do not add markdown fences, commentary, truncation, or omissions. The songs array must contain exactly ${batchCount} complete songs and every song must contain exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions.`;
+        try {
+          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId);
+          responseProvider = response.provider;
+          batchParsed = jsonUtils.safeParse(response.text, null);
+        } catch (error) {
+          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+          batchParsed = null;
+        }
+        if (validateMusicPlanSongContract(batchParsed, batchCount)) break;
+      }
+      if (!validateMusicPlanSongContract(batchParsed, batchCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+      songs.push(...batchParsed.songs);
+    }
+    if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    return res.json({ success: true, data: { songs }, provider: responseProvider });
+  } catch (error) {
+    logger.error(MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED, error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED,
+    });
+  } finally {
+    await closeChatPlanningRoom({
+      provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
+      projectId,
+    }).catch(() => undefined);
+    await closeActiveBrowser(true).catch(() => undefined);
+  }
+});
 
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
@@ -5436,10 +5602,8 @@ router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT })
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
     let errorMsg = getBackendMsg("TEMPLATE_SAVE_FAILED", isVi);
-    if (error.message === "EXCEED_MAX_TEMPLATES")
-      errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_LIMIT_REACHED[isVi ? "vi" : "en"];
-    else if (error.message === "INVALID_CAPCUT_TEMPLATE")
-      errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_INVALID_FOLDER[isVi ? "vi" : "en"];
+    if (error.message === "EXCEED_MAX_TEMPLATES") errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_LIMIT_REACHED[isVi ? "vi" : "en"];
+    else if (error.message === "INVALID_CAPCUT_TEMPLATE") errorMsg = PIPELINE_CONTROLLER_MESSAGES.TEMPLATE_INVALID_FOLDER[isVi ? "vi" : "en"];
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: errorMsg });
   }
 });
@@ -5810,6 +5974,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   const renderJobId = _.trim(_.toString(req.body?.renderJobId));
   cancelChatPlanningRun(pipelineRunId);
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
+  if (_.isEqual(req.body?.closeBrowser, true)) cleanupTasks.push(closeActiveBrowser(true));
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
   return res.json({ success: true });

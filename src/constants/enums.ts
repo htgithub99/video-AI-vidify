@@ -197,6 +197,7 @@ export enum AppTab {
   PROJECTS = "projects",
   AUTO_GENERATOR = "auto-generator",
   CINEMATIC_FILM = "cinematic-film",
+  MUSIC_CREATOR = "music-creator",
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }

@@ -51,6 +51,7 @@ import { storageUtils } from "./lib/storage";
 
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
+import MusicCreator from "./components/MusicCreator.tsx";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 
@@ -100,7 +101,7 @@ const createProjectRecord = async (project: VideoProject): Promise<VideoProject>
     signal: AbortSignal.timeout(PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
-  const savedProject = jsonUtils.safeParse<VideoProject>(await response.text(), null);
+  const savedProject = jsonUtils.safeParse<VideoProject | null>(await response.text(), null);
   if (!savedProject) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
   return savedProject;
 };
@@ -277,21 +278,21 @@ export default function App() {
               input: isFilmWorkspace ? { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING } : activeProj.input,
               config: isFilmWorkspace
                 ? {
-                    ...activeProj.config,
-                    genre: VideoGenre.CINEMATIC_EPISODE,
-                    filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
-                    episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
-                    seriesBibleRequired: false,
-                  }
+                  ...activeProj.config,
+                  genre: VideoGenre.CINEMATIC_EPISODE,
+                  filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
+                  episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
+                  seriesBibleRequired: false,
+                }
                 : activeProj.config,
               visualConfig: isFilmWorkspace
                 ? {
-                    ...activeProj.visualConfig,
-                    style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
-                    generationMode: ImageGenerationMode.LabsFlow,
-                    generateType: GenerateType.Video,
-                    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-                  }
+                  ...activeProj.visualConfig,
+                  style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
+                  generationMode: ImageGenerationMode.LabsFlow,
+                  generateType: GenerateType.Video,
+                  imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+                }
                 : activeProj.visualConfig,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -563,7 +564,7 @@ export default function App() {
         setSelectedProjectId(null);
       } else if (targetWorkspaceProject) {
         setSelectedProjectId(targetWorkspaceProject.id);
-    } else if (_.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
+      } else if (_.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
         const fallbackProj = _.first(projectsRef.current);
         if (fallbackProj) setSelectedProjectId(fallbackProj.id);
       }
@@ -683,6 +684,12 @@ export default function App() {
               theme={theme as any}
             />
           </div>
+
+          {_.isEqual(activeTab, AppTab.MUSIC_CREATOR) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+              <MusicCreator currentLang={currentLang} />
+            </div>
+          )}
 
           {_.isEqual(activeTab, AppTab.SETTINGS) && (
             <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>

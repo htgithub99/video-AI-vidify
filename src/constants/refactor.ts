@@ -216,6 +216,11 @@ export const REFACTOR_CONSTANTS = {
     "[Grok] Chrome đang chờ người dùng hoàn tất xác minh bảo mật; chưa kết nối tự động hóa để tránh tải lại trang xác minh.",
   GROK_PRECONNECT_TIMEOUT_ERROR: "Grok chưa hoàn tất xác minh trong cửa sổ Chrome hiển thị.",
   WINDOWS_CHROME_PATH: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  SHARED_CHROME_DEBUG_PORT: 9222,
+  SHARED_CHROME_PROFILE_DIR: "chrome_debug_profile",
+  SHARED_CHROME_PROFILE_NAME: "Profile 2",
+  SHARED_CHROME_READY_ATTEMPTS: 40,
+  SHARED_CHROME_READY_INTERVAL_MS: 500,
   CHROME_REMOTE_DEBUGGING_ARG: "--remote-debugging-port={0}",
   CHROME_USER_DATA_ARG: "--user-data-dir={0}",
   CHROME_NO_FIRST_RUN_ARG: "--no-first-run",
@@ -515,4 +520,29 @@ export const ROUTER_PATHS = {
   SELECT_VIDEO_SCENES: "/select-video-scenes",
   VALIDATE_SCENE_IMAGE: "/validate-scene-image",
   SEARCH_ARCHIVAL_IMAGE: "/search-archival-image",
+  MUSIC_PLAN: "/music-plan",
+} as const;
+
+export const MUSIC_CREATOR_CONSTANTS = {
+  ALLOWED_SONG_COUNTS: [5, 10, 15, 20, 25, 30] as const,
+  DEFAULT_SONG_COUNT: 10,
+  RECOMMENDED_SONG_COUNT: 10,
+  REQUIRED_SEO_OPTIONS_COUNT: 5,
+  ARTIFACT_TYPE: "music_project",
+  PROJECT_ID_PREFIX: "music-",
+  SOURCE_CHUNK_CHARACTERS: 12_000,
+  OUTPUT_BATCH_SIZE: 5,
+  PRESET_STYLES: [
+    "Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào",
+    "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc",
+    "Acoustic Indie Pop, guitar mộc mạc, giọng nam ấm áp",
+    "Cinematic Epic hào hùng, dàn nhạc giao hưởng, tiết tấu dồn dập",
+    "EDM Bass Boosted sôi động, drop bùng nổ, synthesizer hiện đại",
+    "R&B Soul hiện đại, giai điệu quyến rũ, nhịp beat êm ái",
+  ] as const,
+  SAMPLE_REFERENCES: [
+    "Nàng Thơ - Hoàng Dũng",
+    "Đi Để Trở Về - Soobin Hoàng Sơn",
+    "Ngày Chưa Giông Bão - Bùi Lan Hương",
+  ] as const,
 } as const;

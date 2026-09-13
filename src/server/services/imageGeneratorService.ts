@@ -1589,7 +1589,7 @@ export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
 
 let lastUsedEmail: string | undefined = undefined;
 
-const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
+const connectToSharedChromeBrowser = async (logConnectionError: boolean = true): Promise<BrowserSession | null> => {
   try {
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
     const context = _.first(browser.contexts());
@@ -1609,9 +1609,32 @@ const connectToSharedChromeBrowser = async (): Promise<BrowserSession | null> =>
       preserveExternalPages: true,
     };
   } catch (error) {
-    appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, error);
+    if (logConnectionError) appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, error);
     return null;
   }
+};
+
+const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
+  if (!_.isEqual(process.platform, "win32") || !fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH)) return null;
+  const sharedProfilePath = path.join(process.env.SystemDrive || "C:", REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR);
+  spawn(
+    REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH,
+    [
+      _.replace(REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG, "{0}", _.toString(REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT)),
+      "--remote-allow-origins=*",
+      `--user-data-dir=${sharedProfilePath}`,
+      `--profile-directory=${REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_NAME}`,
+      REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
+      REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
+    ],
+    { windowsHide: false, detached: true, stdio: "ignore" },
+  ).unref();
+  for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS));
+    const sharedBrowser = await connectToSharedChromeBrowser(false);
+    if (sharedBrowser) return sharedBrowser;
+  }
+  return null;
 };
 
 export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
@@ -1622,7 +1645,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
   let page: Page | null = null;
 
   if (preferSharedChrome) {
-    const sharedBrowser = await connectToSharedChromeBrowser();
+    const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
     if (sharedBrowser) return sharedBrowser;
   }
 
@@ -1630,7 +1653,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     attempts++;
     account = await getNextAccount(lastUsedEmail);
     if (!account) {
-      const sharedBrowser = await connectToSharedChromeBrowser();
+      const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
       if (sharedBrowser) return sharedBrowser;
       throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
     }
@@ -1695,7 +1718,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     }
   }
 
-  const sharedBrowser = await connectToSharedChromeBrowser();
+  const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
   if (sharedBrowser) return sharedBrowser;
   throw new Error(REFACTOR_CONSTANTS.MSG_ALL_ACC_FAILED);
 }
@@ -1713,7 +1736,20 @@ let activeBrowserHeadless: boolean | undefined = undefined;
 let activeBrowserLaunchPromise: Promise<BrowserSession> | null = null;
 let activeFlowVideoGenerationCount = SecurityConstants.ZERO;
 
-export async function closeActiveBrowser() {
+const terminateSharedChromeProcess = async (): Promise<void> => {
+  if (!_.isEqual(process.platform, "win32")) return;
+  await new Promise<void>((resolve) => {
+    const command = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'chrome.exe' -and $_.CommandLine -match '--remote-debugging-port=${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}' -and $_.CommandLine -match '${REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
+    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], {
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    child.once("close", () => resolve());
+    child.once("error", () => resolve());
+  });
+};
+
+export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = false) {
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -1721,7 +1757,9 @@ export async function closeActiveBrowser() {
   if (activeBrowserInstance) {
     appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
     try {
-      if (activeBrowserInstance.preserveExternalPages) {
+      if (activeBrowserInstance.preserveExternalPages && forceCloseSharedBrowser) {
+        await activeBrowserInstance.context.browser()?.close();
+      } else if (activeBrowserInstance.preserveExternalPages) {
         appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
       } else if (activeBrowserInstance.ownsContext === false) {
         const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), "grok.com"));
@@ -1733,6 +1771,7 @@ export async function closeActiveBrowser() {
     } catch (e) {}
     activeBrowserInstance = null;
   }
+  if (forceCloseSharedBrowser) await terminateSharedChromeProcess();
   activeBrowserHeadless = undefined;
 }
 
@@ -2709,7 +2748,6 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const promptApplied = await replaceFlowPromptInput(activePage, inputLoc, targetPrompt);
           if (!promptApplied) {
             const observedPrompt = await readFlowPromptInput(inputLoc);
-            // expected=${normalizeFlowPromptValue(targetPrompt).length}, observed=${normalizeFlowPromptValue(observedPrompt).length}
             appLog(
               FLOW_AUTOMATION_MESSAGES.FLOW_PROMPT_MISMATCH(normalizeFlowPromptValue(targetPrompt).length, normalizeFlowPromptValue(observedPrompt).length),
             );

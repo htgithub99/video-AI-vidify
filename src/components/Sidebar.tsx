@@ -4,7 +4,7 @@ import { Lang } from "../lib/lang.js";
 import { SIDEBAR_TEXTS } from "../constants/texts";
 import { PlanType } from "../constants/security";
 import { AppTab } from "../constants/enums";
-import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, LucideIcon, X } from "lucide-react";
+import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, Music2, LucideIcon, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useLicense } from "../contexts/LicenseContext";
 import _ from "lodash";
@@ -73,7 +73,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
 
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab;
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.isEqual(activeTab, AppTab.MUSIC_CREATOR);
 
   const menuItems: MenuItemConfig[] = [
     {
@@ -101,6 +101,12 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       icon: Clapperboard,
       requiresProject: true,
       hide: shouldHideProjectTabs,
+    },
+    {
+      id: AppTab.MUSIC_CREATOR,
+      label: texts.MUSIC_CREATOR,
+      icon: Music2,
+      requiresProject: false,
     },
     {
       id: AppTab.SETTINGS,
