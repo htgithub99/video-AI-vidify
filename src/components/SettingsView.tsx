@@ -60,7 +60,7 @@ const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) =
       </span>
       <span className={cn("text-[10px] text-slate-500 font-mono truncate")}>{hiddenPwdText}</span>
     </div>
-    <button onClick={onRemove} className={cn("text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors p-1.5 rounded-lg shrink-0")}>
+    <button onClick={onRemove} className={cn("btn-icon-tiny text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors p-1.5 rounded-lg shrink-0")}>
       <X className={cn("w-3.5 h-3.5")} />
     </button>
   </div>

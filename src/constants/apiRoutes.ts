@@ -31,6 +31,7 @@ export const API_ROUTES = {
   PIPELINE_REPAIR_VIDEO_PROMPT: "/api/pipeline/repair-video-prompt",
   PIPELINE_REPAIR_VISUAL_PROMPT: "/api/pipeline/repair-visual-prompt",
   PIPELINE_MUSIC_PLAN: "/api/pipeline/music-plan",
+  PIPELINE_MUSIC_THUMBNAIL: "/api/pipeline/music-thumbnail",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
   PIPELINE_CANCEL_ACTIVE_RUN: "/api/pipeline/cancel-active-run",

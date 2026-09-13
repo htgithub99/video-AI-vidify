@@ -45,10 +45,10 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, 
           type="button"
           onClick={onClose}
           className={cn(
-            "absolute top-3 right-3 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center border border-white/30 shadow-xl transition-colors cursor-pointer",
+            "btn-icon-tiny absolute top-3 right-3 w-9 h-9 min-w-[36px] max-w-[36px] min-h-[36px] max-h-[36px] !p-0 aspect-square rounded-xl bg-black/70 hover:bg-black/95 text-white flex items-center justify-center border border-white/30 backdrop-blur-md shadow-xl transition-all cursor-pointer active:scale-95",
           )}
           title={uiTexts.closeEsc}>
-          <X className={cn("w-5 h-5 stroke-[2.5]")} />
+          <X className={cn("w-5 h-5 stroke-[2.5] shrink-0")} />
         </button>
       </div>
     </div>,

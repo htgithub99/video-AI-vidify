@@ -3314,7 +3314,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
   }
 }
 
-const getGeminiWorkspaceUrl = (generateType?: GenerateType): string => (_.isEqual(generateType, GenerateType.Video) ? EXTERNAL_URLS.GEMINI_CHAT : EXTERNAL_URLS.GEMINI_IMAGES);
+const getGeminiWorkspaceUrl = (_generateType?: GenerateType): string => EXTERNAL_URLS.GEMINI_CHAT;
 
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
@@ -4457,54 +4457,42 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
 
   for (let attempt = 0; attempt < 3; attempt++) {
     let uploadSuccess = false;
+    const plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
+    const fallbackPlus = page.locator(".input-area, .chat-input, input-area, form").locator("button").first();
+    const targetPlus = (await plusButton.isVisible().catch(() => false)) ? plusButton : fallbackPlus;
+    if (await targetPlus.isVisible().catch(() => false)) {
+      await targetPlus.click().catch(() => {});
+      await randomDelay(500, 1000);
+    }
 
-    const fileInputs = page.locator('input[type="file"]');
-    const inputCount = await fileInputs.count().catch(() => 0);
-    for (let i = 0; i < inputCount; i++) {
+    const uploadCandidates = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.UPLOAD_MENU_ITEM);
+    const uploadCount = await uploadCandidates.count().catch(() => 0);
+    for (let index = 0; index < uploadCount && !uploadSuccess; index++) {
+      const uploadButton = uploadCandidates.nth(index);
+      if (!(await uploadButton.isVisible().catch(() => false))) continue;
       try {
-        await fileInputs.nth(i).setInputFiles(referenceFiles);
-        uploadSuccess = true;
-        break;
+        const [fileChooser] = await Promise.all([
+          page.waitForEvent("filechooser", { timeout: 6000 }).catch(() => null),
+          uploadButton.click(),
+        ]);
+        if (fileChooser) {
+          await fileChooser.setFiles(referenceFiles);
+          uploadSuccess = true;
+        }
       } catch {}
     }
 
     if (!uploadSuccess) {
-      const plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
-      const fallbackPlus = page.locator(".input-area, .chat-input, input-area, form").locator("button").first();
-      const targetPlus = (await plusButton.isVisible().catch(() => false)) ? plusButton : fallbackPlus;
-
-      if (await targetPlus.isVisible().catch(() => false)) {
-        await targetPlus.click().catch(() => {});
-        await randomDelay(500, 1000);
-
-        const newInputs = page.locator('input[type="file"]');
-        const newInputCount = await newInputs.count().catch(() => 0);
-        for (let i = 0; i < newInputCount; i++) {
-          try {
-            await newInputs.nth(i).setInputFiles(referenceFiles);
-            uploadSuccess = true;
-            break;
-          } catch {}
-        }
-
-        if (!uploadSuccess) {
-          const uploadMenuItem = page
-            .locator('[role="menuitem"], button')
-            .filter({ hasText: /upload|tải|file/i })
-            .first();
-          if (await uploadMenuItem.isVisible().catch(() => false)) {
-            try {
-              const [fileChooser] = await Promise.all([page.waitForEvent("filechooser", { timeout: 4000 }).catch(() => null), uploadMenuItem.click().catch(() => {})]);
-              if (fileChooser) {
-                await fileChooser.setFiles(referenceFiles);
-                uploadSuccess = true;
-              }
-            } catch {}
-          }
-        }
-        await page.keyboard.press("Escape").catch(() => {});
+      const fileInputs = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT);
+      const inputCount = await fileInputs.count().catch(() => 0);
+      for (let index = 0; index < inputCount && !uploadSuccess; index++) {
+        try {
+          await fileInputs.nth(index).setInputFiles(referenceFiles);
+          uploadSuccess = true;
+        } catch {}
       }
     }
+    await page.keyboard.press("Escape").catch(() => {});
 
     if (uploadSuccess) {
       try {
@@ -4513,14 +4501,14 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
             ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
             { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: referenceFiles.length },
             { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
-          )
-          .catch(() => undefined);
+          );
         await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS);
         roomReferenceSignatureMap.set(page, nextSignature);
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(SecurityConstants.PLACEHOLDER_0, _.toString(referenceFiles.length)));
         return;
       } catch (uploadErr) {
         appError(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED, uploadErr);
+        await captureGeminiDomState(page, `reference-upload-unverified-attempt-${_.add(attempt, 1)}`).catch(() => undefined);
       }
     }
 
@@ -4528,6 +4516,7 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
   }
 
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND);
+  throw createAppError(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED);
 }
 
 async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: GeminiVisualConfig) {

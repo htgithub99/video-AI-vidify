@@ -216,6 +216,9 @@ import {
   AssetAcceptance,
   ContentSafetyReport,
   GenerateType,
+  ImageGenerationMode,
+  ImageGeneratorEngine,
+  PromptInputMethod,
   ProjectLanguage,
   SceneAssetStatus,
   StoryboardScene,
@@ -465,6 +468,9 @@ interface MusicPlanRequestPayload {
   projectId: string;
   execution: Record<string, any>;
   requestId: string;
+  thumbnailReference: string;
+  thumbnailReferenceName: string;
+  thumbnailDescription: string;
 }
 
 let activeMusicPlanRuns = 0;
@@ -476,6 +482,9 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
   const projectId = _.toString(req.body?.projectId || `${MUSIC_CREATOR_CONSTANTS.PROJECT_ID_PREFIX}${Date.now()}`);
   const execution = req.body?.aiExecution || {};
   const requestId = _.toString(req.body?.requestId || projectId);
+  const thumbnailReference = _.toString(req.body?.thumbnailReference);
+  const thumbnailReferenceName = _.toString(req.body?.thumbnailReferenceName || "thumbnail-reference.png");
+  const thumbnailDescription = _.trim(_.toString(req.body?.thumbnailDescription));
 
   const isValidCount = _.includes(MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS, requestedSongCount as (typeof MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS)[number]);
   if (!isValidCount || _.isEmpty(style)) {
@@ -491,6 +500,9 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
       projectId,
       execution,
       requestId,
+      thumbnailReference,
+      thumbnailReferenceName,
+      thumbnailDescription,
     },
   };
 };
@@ -514,7 +526,91 @@ const buildMusicPlanPrompt = (batchCount: number, startIndex: number, totalCount
 };
 
 const buildMusicPlaylistSeoPrompt = (songCount: number, requestId: string): string =>
-  `Return raw JSON only. Using the complete ${songCount}-song list created earlier in this same room, create exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} SEO metadata options for publishing the WHOLE LIST as one YouTube playlist/album/collection. Every option must describe and represent the entire song list, never an individual song. Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"music_playlist_seo","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`;
+  `Return raw JSON only. Act as a Vietnamese YouTube music SEO editor. Using the complete ${songCount}-song list created earlier in this same room, create exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} distinct metadata options for publishing the WHOLE LIST as one Vietnamese-market album/collection video. Never optimize an individual song.
+
+Vietnam SEO requirements for every option:
+- Write natural, correctly accented Vietnamese for real Vietnamese listeners; avoid translated-sounding prose, keyword stuffing, clickbait, unverifiable claims such as "hay nhất", "top 1", "mới nhất", artist names, or current-year claims unless supported by the source.
+- Title: 55-90 characters and never over YouTube's 100-character limit. Put 1 primary search phrase near the beginning, clearly communicate genre/mood/use case, and represent all ${songCount} songs.
+- Description: 350-900 Vietnamese characters. The first 2 lines must naturally summarize the entire list and repeat the primary phrase once. Then describe genre, listening mood/use case and collection value; finish with a short natural engagement invitation. Do not paste tag lists into the description.
+- Hashtags: exactly 3-5 highly relevant Vietnamese hashtags, no spaces inside a hashtag, no duplicates, no unrelated trending terms.
+- Tags: 12-18 unique search phrases covering accented Vietnamese queries, useful unaccented variants, genre, mood, listening occasion, and whole-list/album intent. Tags are metadata only and must not be copied into the description.
+- Make the 5 options target genuinely different Vietnamese search intents: (1) genre + compilation, (2) mood, (3) listening occasion, (4) audience/theme, (5) discovery/long-play collection.
+- seoScore must be an honest integer 0-100 using this rubric: title relevance/readability 30, description relevance/opening 30, whole-list coverage 20, click appeal without clickbait 10, hashtag/tag hygiene 10. Do not give every option the same score and do not claim measured ranking data.
+
+Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"music_playlist_seo","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`;
+
+const buildMusicThumbnailPrompt = (songs: any[], style: string, seoOptions: any[], description: string, hasReference: boolean): string => {
+  const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");
+  const primarySeoTitle = _.toString(seoOptions?.[0]?.title);
+  const userChangeNote = description || "Only adapt the cover so it accurately represents this complete music collection.";
+  const referenceDirective = hasReference
+    ? `EDIT THE ATTACHED IMAGE; do not create an unrelated replacement. The attachment is the authoritative visual source.
+- First, internally extract every requested change from USER CHANGE NOTE as a mandatory checklist. A requested change always overrides reference fidelity. If the note asks for a different person, pose, clothing, scenery, text or any other element, replace that element clearly and completely; do not preserve or merely tweak it.
+- Preserve only elements that USER CHANGE NOTE does not ask to change, especially the reference's overall thumbnail layout, visual hierarchy, framing logic, text zones, contrast and rendering language.
+- Do not turn the image into an unrelated generic music poster.
+- The result must remain immediately recognizable as an edit of the attachment when viewed side by side. Similar subject matter alone is not sufficient.`
+    : "There is no attached reference image. Create an original visual direction from the collection context.";
+  return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers.
+
+PRIORITY 1 — REFERENCE FIDELITY:
+${referenceDirective}
+
+PRIORITY 2 — USER CHANGE NOTE (follow literally; do not omit, soften, or reinterpret any concrete detail):
+<user_change_note>
+${userChangeNote}
+</user_change_note>
+
+USER-NOTE COMPLIANCE RULES:
+- Complete every requested change in the note, including all requested subject, identity, pose, clothing, scenery and typography changes. Do not leave any requested item unchanged.
+- When replacing quoted/source wording, the old wording must not remain anywhere in the result.
+- If the note specifies an exact word count, invent one meaningful Vietnamese replacement that fits the whole collection, count words by space-separated lexical words, and render exactly that count. Do not use code, abbreviations, dates or punctuation as extra words.
+- Render the replacement phrase once, prominently and with correct Vietnamese spelling. Do not add alternative versions of it.
+
+PRIORITY 3 — COLLECTION ACCURACY:
+The cover represents the complete ${songs.length}-song list, not one individual song.
+Global music style: ${style}
+Complete song list:
+${songTitles}
+Primary collection SEO direction: ${primarySeoTitle}
+
+The song titles and SEO direction above are semantic context only. Do not print the numbered song list, individual song titles, SEO title, year/date, artist name or extra slogans on the image unless USER CHANGE NOTE explicitly requests them. Keep a clear focal point, clean hierarchy, strong mobile contrast, safe margins and correctly spelled Vietnamese display text. Do not add logos or watermarks that are not requested. Before producing the final image, internally compare it with the attachment and verify the mandatory checklist item by item; correct every mismatch before responding. Output only the finished cover image.`;
+};
+
+const generateMusicThumbnailAsset = async (input: {
+  songs: any[];
+  style: string;
+  seoOptions: any[];
+  description: string;
+  reference: string;
+  referenceName: string;
+  chromeHeadless: boolean;
+}): Promise<{ thumbnail: string | null; warning?: string }> => {
+  try {
+    const result = await generateImageWithPlaywright({
+      prompt: buildMusicThumbnailPrompt(input.songs, input.style, input.seoOptions, input.description, !_.isEmpty(input.reference)),
+      style: input.style,
+      retainBrowserSession: true,
+      visualConfig: {
+        chromeHeadless: input.chromeHeadless,
+        generateType: GenerateType.Image,
+        aspectRatio: AspectRatio.SixteenNine,
+        generateCount: 1,
+        imageGeneratorEngine: ImageGeneratorEngine.Imagen,
+        generationMode: ImageGenerationMode.GeminiChat,
+        promptInputMethod: PromptInputMethod.Paste,
+        referenceImages: _.isEmpty(input.reference) ? [] : [input.reference],
+        referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
+      },
+    });
+    if (!result.success) return { thumbnail: null, warning: result.warning || MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR };
+    const encodedImage = _.toString(result.base64);
+    const mimeType = _.startsWith(encodedImage, "/9j/") ? "image/jpeg" : "image/png";
+    return { thumbnail: !_.isEmpty(encodedImage) ? `data:${mimeType};base64,${encodedImage}` : _.toString(result.fallbackUrl) || null };
+  } catch (error) {
+    logger.error("Could not generate music cover with Gemini.", error);
+    return { thumbnail: null, warning: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
+  }
+};
 
 const isRetryableMusicJsonError = (error: unknown): boolean => {
   const message = _.toString(_.get(error, "message", error));
@@ -538,11 +634,11 @@ const validateMusicPlaylistSeoContract = (parsed: any): boolean =>
   _.isArray(parsed?.seoOptions) &&
   parsed.seoOptions.length === MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT &&
   _.every(parsed.seoOptions, (option: any) =>
-    !_.isEmpty(_.trim(_.toString(option?.title))) &&
-    !_.isEmpty(_.trim(_.toString(option?.description))) &&
-    _.isArray(option?.hashtags) &&
-    _.isArray(option?.tags) &&
-    _.isFinite(_.toNumber(option?.seoScore)),
+    _.inRange(_.size(_.trim(_.toString(option?.title))), 55, 101) &&
+    _.inRange(_.size(_.trim(_.toString(option?.description))), 350, 901) &&
+    _.isArray(option?.hashtags) && _.inRange(option.hashtags.length, 3, 6) &&
+    _.isArray(option?.tags) && _.inRange(option.tags.length, 12, 19) &&
+    _.isInteger(_.toNumber(option?.seoScore)) && _.inRange(_.toNumber(option.seoScore), 0, 101),
   );
 
 router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
@@ -551,7 +647,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
   }
 
-  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId } = validation.payload;
+  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription } = validation.payload;
   activeMusicPlanRuns += 1;
   try {
     const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
@@ -619,7 +715,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const prompt = attempt === 0
         ? buildMusicPlaylistSeoPrompt(requestedSongCount, seoRequestId)
-        : `CORRECTION: The previous playlist SEO JSON was incomplete or invalid. Retry in this same room. Return raw JSON only with artifactType "music_playlist_seo", requestId "${seoRequestId}", and exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions for the WHOLE ${requestedSongCount}-song list, not for individual songs. Each option requires title, description, hashtags, tags and seoScore.`;
+        : `CORRECTION: The previous Vietnamese playlist SEO JSON violated the contract. Retry in this same room. Return raw JSON only with artifactType "music_playlist_seo", requestId "${seoRequestId}", and exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions for the WHOLE ${requestedSongCount}-song list, never individual songs. For every option: natural Vietnamese title 55-90 characters; Vietnamese description 350-900 characters with the primary phrase naturally in its opening; 3-5 relevant hashtags; 12-18 unique tags including useful accented and unaccented Vietnamese search variants; integer seoScore 0-100 based on the supplied rubric. Keep all five search intents distinct and avoid keyword stuffing, unsupported superlatives, artist names, and fake trend claims.`;
       try {
         const response = await generateRoomResponse(prompt, "music_playlist_seo", seoRequestId);
         responseProvider = response.provider;
@@ -631,7 +727,20 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       if (validateMusicPlaylistSeoContract(playlistSeoParsed)) break;
     }
     if (!validateMusicPlaylistSeoContract(playlistSeoParsed)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-    return res.json({ success: true, data: { songs, playlistSeoOptions: playlistSeoParsed.seoOptions }, provider: responseProvider });
+    const { thumbnail, warning: thumbnailWarning } = await generateMusicThumbnailAsset({
+      songs,
+      style,
+      seoOptions: playlistSeoParsed.seoOptions,
+      description: thumbnailDescription,
+      reference: thumbnailReference,
+      referenceName: thumbnailReferenceName,
+      chromeHeadless: execution.chromeHeadless !== false,
+    });
+    return res.json({
+      success: true,
+      data: { songs, playlistSeoOptions: playlistSeoParsed.seoOptions, thumbnail, thumbnailWarning },
+      provider: responseProvider,
+    });
   } catch (error) {
     logger.error(MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED, error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -643,6 +752,32 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
       projectId,
     }).catch(() => undefined);
+    activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
+    if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
+  }
+});
+
+router.post("/music-thumbnail", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
+  const songs = _.castArray(req.body?.songs || []);
+  const style = _.trim(_.toString(req.body?.style));
+  if (_.isEmpty(songs) || _.isEmpty(style)) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, warning: MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR });
+  }
+  activeMusicPlanRuns += 1;
+  try {
+    const result = await generateMusicThumbnailAsset({
+      songs,
+      style,
+      seoOptions: _.castArray(req.body?.playlistSeoOptions || []),
+      description: _.trim(_.toString(req.body?.thumbnailDescription)),
+      reference: _.toString(req.body?.thumbnailReference),
+      referenceName: _.toString(req.body?.thumbnailReferenceName || "thumbnail-reference.png"),
+      chromeHeadless: req.body?.chromeHeadless !== false,
+    });
+    if (_.isEmpty(result.thumbnail)) return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, warning: result.warning });
+    await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
+    return res.json({ success: true, thumbnail: result.thumbnail });
+  } finally {
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
   }

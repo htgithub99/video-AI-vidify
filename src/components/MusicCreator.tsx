@@ -20,6 +20,10 @@ import {
   Columns,
   Clock,
   AlertTriangle,
+  Upload,
+  Image as ImageIcon,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
@@ -27,6 +31,7 @@ import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock";
 import { Tooltip } from "./ui/Tooltip";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
+import { ImagePreviewModal } from "./auto-video/ImagePreviewModal";
 import {
   AiPlanningChatModel,
   AiPlanningExecutionMode,
@@ -45,6 +50,36 @@ import { storageUtils } from "../lib/storage";
 
 const MUSIC_STYLE_LIBRARY_KEY = "music_creator_style_library";
 const MUSIC_CREATOR_STATE_KEY = "music_creator_workspace_state_v1";
+const MUSIC_MEDIA_DB_NAME = "music_creator_media";
+const MUSIC_MEDIA_STORE_NAME = "assets";
+
+const openMusicMediaDb = (): Promise<IDBDatabase> => new Promise((resolve, reject) => {
+  const request = indexedDB.open(MUSIC_MEDIA_DB_NAME, 1);
+  request.onupgradeneeded = () => {
+    if (!request.result.objectStoreNames.contains(MUSIC_MEDIA_STORE_NAME)) request.result.createObjectStore(MUSIC_MEDIA_STORE_NAME);
+  };
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+
+const readMusicMedia = async (key: string): Promise<string> => {
+  const db = await openMusicMediaDb();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(MUSIC_MEDIA_STORE_NAME, "readonly").objectStore(MUSIC_MEDIA_STORE_NAME).get(key);
+    request.onsuccess = () => resolve(_.toString(request.result));
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const writeMusicMedia = async (key: string, value: string): Promise<void> => {
+  const db = await openMusicMediaDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(MUSIC_MEDIA_STORE_NAME, "readwrite");
+    transaction.objectStore(MUSIC_MEDIA_STORE_NAME).put(value, key);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+};
 
 interface SavedMusicStyle {
   title: string;
@@ -101,6 +136,8 @@ interface PersistedMusicCreatorState {
   isAiConfigOpen?: boolean;
   songs?: GeneratedSong[];
   playlistSeoOptions?: SongSeoOption[];
+  thumbnailDescription?: string;
+  thumbnailReferenceName?: string;
   viewMode?: ResultViewMode;
   selectedSeoSongIndex?: number;
 }
@@ -474,6 +511,22 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(initialState.playlistSeoOptions || []);
+  const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || "");
+  const [thumbnailReference, setThumbnailReference] = useState<string>("");
+  const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || "");
+  const [generatedThumbnail, setGeneratedThumbnail] = useState<string>("");
+  const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    void Promise.all([readMusicMedia("reference"), readMusicMedia("generated")])
+      .then(([reference, generated]) => {
+        if (reference) setThumbnailReference(reference);
+        if (generated) setGeneratedThumbnail(generated);
+      })
+      .catch(() => undefined);
+  }, []);
   const [viewMode, setViewMode] = useState<ResultViewMode>(initialState.viewMode || "lyrics");
   const [selectedSeoSongIndex, setSelectedSeoSongIndex] = useState<number>(initialState.selectedSeoSongIndex || 0);
 
@@ -492,13 +545,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           isAiConfigOpen,
           songs,
           playlistSeoOptions,
+          thumbnailDescription,
+          thumbnailReferenceName,
           viewMode,
           selectedSeoSongIndex,
         } satisfies PersistedMusicCreatorState),
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, viewMode, selectedSeoSongIndex]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -598,6 +653,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const referenceSource = _.trim(referenceSongs);
 
     setIsLoading(true);
+    setIsGeneratingThumbnail(true);
+    setGeneratedThumbnail("");
+    void writeMusicMedia("generated", "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
@@ -612,6 +670,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource],
           projectId: runId,
           requestId: runId,
+          thumbnailReference,
+          thumbnailReferenceName,
+          thumbnailDescription,
           aiExecution: {
             provider,
             model,
@@ -629,10 +690,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
+      const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
+      const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSongs(generatedSongs);
       setPlaylistSeoOptions(generatedPlaylistSeo);
+      setGeneratedThumbnail(generatedThumbnailUrl);
+      void writeMusicMedia("generated", generatedThumbnailUrl).catch(() => undefined);
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
+      if (thumbnailWarning) toast.error(thumbnailWarning);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
@@ -641,6 +707,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       musicAbortControllerRef.current = null;
       musicRunIdRef.current = null;
       setIsLoading(false);
+      setIsGeneratingThumbnail(false);
     }
   };
 
@@ -656,6 +723,63 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       }).catch(() => undefined);
     }
     toast.info(currentLang === "vi" ? "Đã dừng tạo." : "Stopped generation.");
+  };
+
+  const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(texts.THUMBNAIL_IMAGE_INVALID);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setThumbnailReference(_.toString(reader.result));
+      setThumbnailReferenceName(file.name);
+      setGeneratedThumbnail("");
+      void writeMusicMedia("reference", _.toString(reader.result)).catch(() => undefined);
+      void writeMusicMedia("generated", "").catch(() => undefined);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDownloadThumbnail = () => {
+    if (_.isEmpty(generatedThumbnail)) return;
+    const anchor = document.createElement("a");
+    anchor.href = generatedThumbnail;
+    const extension = generatedThumbnail.startsWith("data:image/jpeg") ? "jpg" : "png";
+    anchor.download = `music-cover-${Date.now()}.${extension}`;
+    anchor.click();
+  };
+
+  const handleRegenerateThumbnail = async () => {
+    if (_.isEmpty(songs) || isGeneratingThumbnail) return;
+    setIsGeneratingThumbnail(true);
+    try {
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({
+          songs,
+          style,
+          playlistSeoOptions,
+          thumbnailDescription,
+          thumbnailReference,
+          thumbnailReferenceName,
+          chromeHeadless,
+        }),
+      });
+      const result = await response.json();
+      const imageUrl = _.toString(result.thumbnail);
+      if (!response.ok || !result.success || _.isEmpty(imageUrl)) throw new Error(result.warning || texts.THUMBNAIL_GENERATE_ERROR);
+      setGeneratedThumbnail(imageUrl);
+      await writeMusicMedia("generated", imageUrl);
+      toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
+    } catch (error: any) {
+      toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
   };
 
   const isFormValid = !_.isEmpty(_.trim(style));
@@ -686,9 +810,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-2 flex flex-col gap-5 min-w-0">
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="lg:col-span-2 flex flex-col gap-5 min-w-0 h-full">
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0">
               <div className="flex items-center justify-between relative z-10 flex-wrap gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
@@ -835,8 +959,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               </div>
             </div>
 
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full">
-              <div className="flex items-center justify-between relative z-10">
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col">
+              <div className="flex items-center justify-between relative z-10 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
                     02
@@ -858,20 +982,21 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 </Button>
               </div>
 
-              <div className="relative z-10">
+              <div className="relative z-10 flex-1 flex flex-col min-h-0">
                 <textarea
                   rows={4}
                   value={referenceSongs}
                   onChange={(e) => setReferenceSongs(e.target.value)}
                   placeholder={texts.REFERENCE_PLACEHOLDER}
                   disabled={isLoading}
-                  className="w-full min-h-[90px] sm:min-h-[100px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                  className="w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar"
                 />
               </div>
             </div>
+
           </div>
 
-          <div className="lg:col-span-1 flex flex-col gap-5 min-w-0">
+          <div className="lg:col-span-1 flex flex-col gap-5 min-w-0 h-full">
             <div className="glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -930,11 +1055,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <span className="font-bold text-slate-200">{outputCount} {texts.SONG_UNIT}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Engine:</span>
+                  <span>{texts.ENGINE_LABEL}:</span>
                   <span className="font-bold text-purple-300">{texts.HEADER_BADGE}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Mô hình:</span>
+                  <span>{texts.MODEL_LABEL}:</span>
                   <span className="font-bold text-slate-200 truncate max-w-[130px]">{model}</span>
                 </div>
               </div>
@@ -990,6 +1115,153 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </Button>
                 )}
               </div>
+            </div>
+
+            <div className="glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-fuchsia-400" />
+                  {texts.THUMBNAIL_TITLE}
+                </h3>
+                <span className="text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full">Gemini · 16:9</span>
+              </div>
+
+              <input ref={thumbnailFileInputRef} type="file" accept="image/*" onChange={handleThumbnailReferenceChange} className="hidden" />
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {thumbnailReference ? (
+                  <div className="relative w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center">
+                    <img
+                      src={thumbnailReference}
+                      alt={texts.THUMBNAIL_REFERENCE_ALT}
+                      title={currentLang === "vi" ? "Nhấn để xem ảnh phóng to" : "Click to view full image"}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setPreviewThumbnail(thumbnailReference);
+                      }}
+                      className="w-full h-full object-contain cursor-zoom-in"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
+                      <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">Ảnh mẫu</span>
+                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        thumbnailFileInputRef.current?.click();
+                      }}
+                      title={currentLang === "vi" ? "Đổi ảnh khác" : "Change image"}
+                      className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center">
+                      <Upload className="w-3.5 h-3.5 shrink-0" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => thumbnailFileInputRef.current?.click()}
+                    disabled={isGeneratingThumbnail}
+                    className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
+                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
+                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
+                    <span className="text-[8px] font-mono text-slate-500">Ảnh mẫu 16:9</span>
+                  </button>
+                )}
+
+                {generatedThumbnail && !isGeneratingThumbnail ? (
+                  <div className="relative group block w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center">
+                    <img
+                      src={generatedThumbnail}
+                      alt={texts.THUMBNAIL_RESULT_ALT}
+                      title={currentLang === "vi" ? "Nhấn để xem ảnh phóng to" : "Click to view full image"}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setPreviewThumbnail(generatedThumbnail);
+                      }}
+                      className="w-full h-full object-contain cursor-zoom-in"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
+                      <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">Ảnh AI</span>
+                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9 HD</span>
+                    </div>
+                  </div>
+                ) : isGeneratingThumbnail ? (
+                  <div className="w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-purple-600 p-0.5 shadow-xs">
+                      <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[6px] flex items-center justify-center">
+                        <Sparkles className="w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400 animate-spin" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] font-black tracking-tight !text-[#86198f] dark:!text-fuchsia-300 leading-tight">
+                      {texts.THUMBNAIL_GENERATING}
+                    </p>
+                    <p className="text-[8px] font-medium !text-slate-500 dark:!text-slate-400">
+                      Gemini 2.5 Flash
+                    </p>
+                  </div>
+                ) : (
+                  <div className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500">
+                    <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-500" />
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight">
+                      {currentLang === "vi" ? "Ảnh bìa AI" : "AI Cover"}
+                    </span>
+                    <span className="text-[8px] font-mono text-slate-500">
+                      {currentLang === "vi" ? "Chưa tạo ảnh" : "Not created yet"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <textarea
+                  rows={4}
+                  value={thumbnailDescription}
+                  onChange={(event) => setThumbnailDescription(event.target.value)}
+                  disabled={isGeneratingThumbnail}
+                  placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER}
+                  className="w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar"
+                />
+              </div>
+
+              {!_.isEmpty(songs) && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={handleRegenerateThumbnail}
+                    disabled={isGeneratingThumbnail}
+                    className={cn(
+                      "h-9 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs",
+                      isGeneratingThumbnail
+                        ? "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait"
+                        : "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95",
+                    )}>
+                    <RefreshCw className={cn("w-3.5 h-3.5 shrink-0", isGeneratingThumbnail && "animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
+                    <span>
+                      {isGeneratingThumbnail
+                        ? (currentLang === "vi" ? "Đang tạo..." : "Creating...")
+                        : (generatedThumbnail ? texts.THUMBNAIL_REGENERATE : (currentLang === "vi" ? "Tạo ảnh bìa" : "Create cover"))}
+                    </span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={handleDownloadThumbnail}
+                    disabled={!generatedThumbnail || isGeneratingThumbnail}
+                    className={cn(
+                      "h-9 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs",
+                      !generatedThumbnail || isGeneratingThumbnail
+                        ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04] !text-[#94a3b8] dark:!text-slate-500 cursor-not-allowed shadow-none"
+                        : "border-slate-300 hover:border-purple-400 dark:border-slate-700 dark:hover:border-purple-500 bg-white hover:bg-purple-50/50 dark:bg-slate-800 dark:hover:bg-slate-700 !text-[#0f172a] hover:!text-purple-700 dark:!text-slate-100 dark:hover:!text-white cursor-pointer active:scale-95",
+                    )}>
+                    <Download className={cn("w-3.5 h-3.5 shrink-0", !generatedThumbnail || isGeneratingThumbnail ? "text-[#94a3b8] dark:text-slate-500" : "text-purple-600 dark:text-purple-400")} />
+                    <span>{texts.THUMBNAIL_DOWNLOAD}</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1168,6 +1440,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           )}
         </div>
       </div>
+
+      <ImagePreviewModal imageUrl={previewThumbnail} onClose={() => setPreviewThumbnail(null)} />
 
       <Modal
         isOpen={Boolean(styleToDelete)}
