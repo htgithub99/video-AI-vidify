@@ -636,7 +636,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       type="button"
                       onClick={handleSaveStyle}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-purple-300/80 dark:border-purple-500/30 bg-purple-100/80 hover:bg-purple-600 dark:bg-purple-500/15 dark:hover:bg-purple-600 text-purple-800 hover:!text-white dark:text-purple-300 dark:hover:!text-white flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-all shadow-xs [&>svg]:text-purple-700 dark:[&>svg]:text-purple-400 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
+                      className="h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-all shadow-xs [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
                       <Save className="w-3 h-3" />
                       <span>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                     </button>
@@ -644,7 +644,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       type="button"
                       onClick={handleCancelStyleEdit}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-rose-600 dark:bg-slate-800/80 dark:hover:bg-rose-600 text-[11px] font-bold text-slate-700 hover:!text-white dark:text-slate-400 dark:hover:!text-white cursor-pointer transition-colors flex items-center justify-center">
+                      className="h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors flex items-center justify-center">
                       {currentLang === "vi" ? "Hủy" : "Cancel"}
                     </button>
                   </div>
@@ -796,7 +796,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   type="button"
                   onClick={handleFillSampleReferences}
                   disabled={isLoading}
-                  className="text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border shadow-xs bg-purple-100/80 border-purple-300/80 text-purple-800 dark:bg-purple-500/15 dark:border-purple-500/30 dark:text-purple-300 hover:bg-purple-600 hover:border-purple-600 hover:!text-white dark:hover:bg-purple-600 dark:hover:border-purple-600 dark:hover:!text-white [&>svg]:text-purple-700 dark:[&>svg]:text-purple-400 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
+                  className="text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
                   <Sparkles className="w-3 h-3" />
                   <span>{texts.QUICK_FILL_LABEL}</span>
                 </button>
