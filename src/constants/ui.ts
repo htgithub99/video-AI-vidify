@@ -42,7 +42,7 @@ export const MODAL_CLASS_NAME = {
   BOTTOM_DECORATION: "absolute bottom-0 left-0 w-64 h-64 bg-amber-500/[0.03] rounded-full blur-3xl pointer-events-none z-0",
   HEADER: "modal-header-bar flex items-center justify-between px-6 py-4 border-b border-amber-900/10 dark:border-slate-800/80 relative z-10 bg-[#f7f2e7] dark:bg-[#1a1424] backdrop-blur-sm",
   TITLE: "modal-title-text text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 truncate",
-  CLOSE_BUTTON: "modal-close-button-custom w-8 h-8 rounded-xl flex items-center justify-center bg-slate-200/90 hover:bg-rose-100/90 text-slate-800 hover:text-rose-600 border border-slate-300/80 hover:border-rose-300/60 shadow-xs dark:bg-slate-800/90 dark:hover:bg-rose-950/80 dark:text-slate-200 dark:hover:text-rose-400 dark:border-slate-700/90 dark:hover:border-rose-500/40 transition-all ml-auto shrink-0 cursor-pointer",
+  CLOSE_BUTTON: "modal-close-button-custom btn-icon-tiny w-8 h-8 rounded-lg aspect-square flex items-center justify-center bg-slate-200/90 hover:bg-rose-100/90 text-slate-800 hover:text-rose-600 border border-slate-300/80 hover:border-rose-300/60 shadow-xs dark:bg-slate-800/90 dark:hover:bg-rose-950/80 dark:text-slate-200 dark:hover:text-rose-400 dark:border-slate-700/90 dark:hover:border-rose-500/40 transition-all ml-auto shrink-0 cursor-pointer",
   CLOSE_ICON: "w-4 h-4 stroke-[2.5]",
   BODY: "modal-body-area flex-1 overflow-y-auto bg-transparent relative z-10 p-6 text-slate-900 dark:text-slate-100",
   DEFAULT_WIDTH: "max-w-2xl",

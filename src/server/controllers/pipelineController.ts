@@ -467,6 +467,8 @@ interface MusicPlanRequestPayload {
   requestId: string;
 }
 
+let activeMusicPlanRuns = 0;
+
 const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
   const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
   const style = _.trim(_.toString(req.body?.style));
@@ -508,8 +510,11 @@ const buildMusicSourcePrompt = (chunk: string, chunkIndex: number, chunkCount: n
 
 const buildMusicPlanPrompt = (batchCount: number, startIndex: number, totalCount: number, style: string, requestId: string): string => {
   const endIndex = startIndex + batchCount - 1;
-  return `Return raw JSON only. Using all reference-source parts already stored in this room, create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Global style (must apply to every song): ${style}\nSong IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room. Each song must include songId, title, stylePrompt, complete lyrics with Suno section labels, genre, mood, tempoBpm, structure, originalityNotes, and exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions. Each seoOptions item must include title, description, hashtags, tags, seoScore. Required JSON shape: {"artifactType":"${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","stylePrompt":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[],"seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}]}`;
+  return `Return raw JSON only. Using all reference-source parts already stored in this room, create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Global style (must apply to every song): ${style}\nSong IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room. Each song must include songId, title, complete lyrics with Suno section labels, genre, mood, tempoBpm, structure and originalityNotes. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
 };
+
+const buildMusicPlaylistSeoPrompt = (songCount: number, requestId: string): string =>
+  `Return raw JSON only. Using the complete ${songCount}-song list created earlier in this same room, create exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} SEO metadata options for publishing the WHOLE LIST as one YouTube playlist/album/collection. Every option must describe and represent the entire song list, never an individual song. Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"music_playlist_seo","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`;
 
 const isRetryableMusicJsonError = (error: unknown): boolean => {
   const message = _.toString(_.get(error, "message", error));
@@ -524,18 +529,21 @@ const validateMusicPlanSongContract = (parsed: any, expectedCount: number): bool
   const invalid = _.find(parsed.songs, (song: any) => {
     const hasSongId = !_.isEmpty(_.trim(_.toString(song?.songId)));
     const hasTitle = !_.isEmpty(_.trim(_.toString(song?.title)));
-    const hasStylePrompt = !_.isEmpty(_.trim(_.toString(song?.stylePrompt)));
-    const hasValidSeo = _.isArray(song?.seoOptions) && song.seoOptions.length === MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT && _.every(song.seoOptions, (option: any) =>
-      !_.isEmpty(_.trim(_.toString(option?.title))) &&
-      !_.isEmpty(_.trim(_.toString(option?.description))) &&
-      _.isArray(option?.hashtags) &&
-      _.isArray(option?.tags) &&
-      _.isFinite(_.toNumber(option?.seoScore)),
-    );
-    return !hasSongId || !hasTitle || !hasStylePrompt || !hasValidSeo;
+    return !hasSongId || !hasTitle;
   });
   return !invalid;
 };
+
+const validateMusicPlaylistSeoContract = (parsed: any): boolean =>
+  _.isArray(parsed?.seoOptions) &&
+  parsed.seoOptions.length === MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT &&
+  _.every(parsed.seoOptions, (option: any) =>
+    !_.isEmpty(_.trim(_.toString(option?.title))) &&
+    !_.isEmpty(_.trim(_.toString(option?.description))) &&
+    _.isArray(option?.hashtags) &&
+    _.isArray(option?.tags) &&
+    _.isFinite(_.toNumber(option?.seoScore)),
+  );
 
 router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   const validation = parseAndValidateMusicPlanRequest(req);
@@ -544,6 +552,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   }
 
   const { requestedSongCount, style, referenceSongs, projectId, execution, requestId } = validation.payload;
+  activeMusicPlanRuns += 1;
   try {
     const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
     const planningRun = beginChatPlanningRun(requestId, Date.now(), "music-creator", provider);
@@ -590,7 +599,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         const batchRequestId = `${requestId}_batch_${startIndex}`;
         const prompt = attempt === 0
           ? buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, style, batchRequestId)
-          : `CORRECTION: The previous batch JSON was incomplete or violated the contract. Retry now in this same room. Return raw JSON only with artifactType "${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}", requestId "${batchRequestId}", and the complete songs ${startIndex}-${startIndex + batchCount - 1}. Do not add markdown fences, commentary, truncation, or omissions. The songs array must contain exactly ${batchCount} complete songs and every song must contain exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions.`;
+          : `CORRECTION: The previous batch JSON was incomplete or violated the contract. Retry now in this same room. Return raw JSON only with artifactType "${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}", requestId "${batchRequestId}", and the complete songs ${startIndex}-${startIndex + batchCount - 1}. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`;
         try {
           const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId);
           responseProvider = response.provider;
@@ -605,7 +614,24 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       songs.push(...batchParsed.songs);
     }
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-    return res.json({ success: true, data: { songs }, provider: responseProvider });
+    const seoRequestId = `${requestId}_playlist_seo`;
+    let playlistSeoParsed: any = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const prompt = attempt === 0
+        ? buildMusicPlaylistSeoPrompt(requestedSongCount, seoRequestId)
+        : `CORRECTION: The previous playlist SEO JSON was incomplete or invalid. Retry in this same room. Return raw JSON only with artifactType "music_playlist_seo", requestId "${seoRequestId}", and exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} seoOptions for the WHOLE ${requestedSongCount}-song list, not for individual songs. Each option requires title, description, hashtags, tags and seoScore.`;
+      try {
+        const response = await generateRoomResponse(prompt, "music_playlist_seo", seoRequestId);
+        responseProvider = response.provider;
+        playlistSeoParsed = jsonUtils.safeParse(response.text, null);
+      } catch (error) {
+        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        playlistSeoParsed = null;
+      }
+      if (validateMusicPlaylistSeoContract(playlistSeoParsed)) break;
+    }
+    if (!validateMusicPlaylistSeoContract(playlistSeoParsed)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    return res.json({ success: true, data: { songs, playlistSeoOptions: playlistSeoParsed.seoOptions }, provider: responseProvider });
   } catch (error) {
     logger.error(MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED, error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -617,7 +643,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
       projectId,
     }).catch(() => undefined);
-    await closeActiveBrowser(true).catch(() => undefined);
+    activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
+    if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
   }
 });
 
@@ -5974,7 +6001,6 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   const renderJobId = _.trim(_.toString(req.body?.renderJobId));
   cancelChatPlanningRun(pipelineRunId);
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
-  if (_.isEqual(req.body?.closeBrowser, true)) cleanupTasks.push(closeActiveBrowser(true));
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
   return res.json({ success: true });
