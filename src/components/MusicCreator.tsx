@@ -122,6 +122,7 @@ interface GeneratedSong {
   structure: string[];
   originalityNotes: string[];
 }
+interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
 
 type ResultViewMode = "lyrics" | "seo" | "split";
 
@@ -140,6 +141,9 @@ interface PersistedMusicCreatorState {
   thumbnailReferenceName?: string;
   viewMode?: ResultViewMode;
   selectedSeoSongIndex?: number;
+  sunoPlaylistUrl?: string;
+  sunoInspo?: string;
+  sunoSettings?: SunoSettings;
 }
 
 const readMusicCreatorState = (): PersistedMusicCreatorState => {
@@ -157,9 +161,6 @@ interface MusicCreatorProps {
 
 type MusicCreatorTexts = (typeof MUSIC_CREATOR_TEXTS)[keyof typeof MUSIC_CREATOR_TEXTS];
 
-/* -------------------------------------------------------------------------- */
-/* HEADER COMPONENT                                                           */
-/* -------------------------------------------------------------------------- */
 interface HeaderProps {
   texts: MusicCreatorTexts;
   isAiConfigOpen: boolean;
@@ -222,9 +223,6 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({
   </div>
 );
 
-/* -------------------------------------------------------------------------- */
-/* SONG CARD COMPONENT                                                       */
-/* -------------------------------------------------------------------------- */
 interface SongCardProps {
   song: GeneratedSong;
   index: number;
@@ -322,15 +320,13 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/* PLAYLIST SEO CARD COMPONENT                                                */
-/* -------------------------------------------------------------------------- */
 interface PlaylistSeoCardProps {
   seoOptions: SongSeoOption[];
   texts: MusicCreatorTexts;
+  columns?: 1 | 2 | 3;
 }
 
-const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) => {
+const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, columns = 3 }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleCopy = (text: string, key: string, successMsg: string) => {
@@ -345,24 +341,29 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) 
     handleCopy(fullText, `seo-all-${index}`, texts.COPY_SEO_OPTION_SUCCESS);
   };
 
-  const CopyFieldButton = ({ text, field, optionIndex, label }: { text: string; field: string; optionIndex: number; label?: string }) => {
+  const CopyFieldButton = ({ text, field, optionIndex, titleText }: { text: string; field: string; optionIndex: number; titleText?: string }) => {
     const key = `seo-${optionIndex}-${field}`;
+    const isCopied = copiedKey === key;
     return (
-      <Button
+      <button
         type="button"
-        variant="unstyled"
         onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)}
-        className="text-xs font-bold !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1 cursor-pointer transition-colors shrink-0 select-none"
-        title={texts.COPY_FIELD_BTN}>
-        {copiedKey === key ? (
-          <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+        className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+        title={isCopied ? texts.COPIED_LABEL : (titleText || texts.COPY_FIELD_BTN)}>
+        {isCopied ? (
+          <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
         ) : (
-          <Copy className="w-3.5 h-3.5" />
+          <Copy className="w-3.5 h-3.5 shrink-0" />
         )}
-        <span>{copiedKey === key ? texts.COPIED_LABEL : label || texts.COPY_FIELD_BTN}</span>
-      </Button>
+      </button>
     );
   };
+
+  const gridColumnsClass = columns === 3
+    ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+    : columns === 2
+      ? "grid-cols-1 lg:grid-cols-2"
+      : "grid-cols-1";
 
   return (
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md">
@@ -376,14 +377,13 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) 
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className={cn("grid gap-4 items-stretch", gridColumnsClass)}>
         {_.map(seoOptions, (opt, sIdx) => {
           return (
             <div
               key={sIdx}
-              className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3.5 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm">
-              {/* Header của phương án SEO */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
+              className="p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 !text-[#a21caf] dark:!text-fuchsia-300 font-mono text-xs font-black shadow-2xs">
                     {texts.formatOptionLabel(sIdx + 1)}
@@ -394,65 +394,61 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) 
                   </span>
                 </div>
 
-                <Button
+                <button
                   type="button"
-                  variant="unstyled"
                   onClick={() => handleCopyFullOption(opt, sIdx)}
-                  className="text-xs font-bold !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1.5 cursor-pointer transition-colors px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 shadow-2xs">
+                  className="btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer"
+                  title={copiedKey === `seo-all-${sIdx}` ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}>
                   {copiedKey === `seo-all-${sIdx}` ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                    <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4 shrink-0" />
                   )}
-                  <span>{copiedKey === `seo-all-${sIdx}` ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}</span>
-                </Button>
+                </button>
               </div>
 
-              {/* Các khối thông tin SEO */}
-              <div className="space-y-3">
-                {/* Khối 1: Tiêu đề YouTube */}
-                <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <FileText className="w-3 h-3 text-purple-500" />
-                      <span>{texts.SEO_FIELD_TITLE}</span>
-                    </span>
-                    <CopyFieldButton text={opt.title} field="title" optionIndex={sIdx} />
+              <div className="space-y-2.5 flex-1 flex flex-col justify-between">
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <FileText className="w-3 h-3 text-purple-500" />
+                        <span>{texts.SEO_FIELD_TITLE}</span>
+                      </span>
+                      <CopyFieldButton text={opt.title} field="title" optionIndex={sIdx} />
+                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words">
+                      {opt.title}
+                    </h4>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words">
-                    {opt.title}
-                  </h4>
+
+                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3 h-3 text-sky-500" />
+                        <span>{texts.SEO_FIELD_DESCRIPTION}</span>
+                      </span>
+                      <CopyFieldButton text={opt.description} field="description" optionIndex={sIdx} />
+                    </div>
+                    <p className="text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-32 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-pre-line break-words">
+                      {opt.description}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Khối 2: Mô tả video */}
-                <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <SlidersHorizontal className="w-3 h-3 text-sky-500" />
-                      <span>{texts.SEO_FIELD_DESCRIPTION}</span>
-                    </span>
-                    <CopyFieldButton text={opt.description} field="description" optionIndex={sIdx} />
-                  </div>
-                  <p className="text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-36 overflow-y-auto custom-scrollbar whitespace-pre-line break-words">
-                    {opt.description}
-                  </p>
-                </div>
-
-                {/* Khối 3 & 4: Hashtag và Tag chia 2 cột */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Cột Hashtags */}
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
+                <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1">
+                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                           <span className="font-bold text-purple-600 dark:text-purple-400">#</span>
-                          <span>Hashtags ({opt.hashtags.length})</span>
+                          <span>{texts.HASHTAGS_LABEL} ({opt.hashtags.length})</span>
                         </span>
                         <CopyFieldButton text={opt.hashtags.join(" ")} field="hashtags" optionIndex={sIdx} />
                       </div>
-                      <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar">
+                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {_.map(opt.hashtags, (tag, i) => (
-                          <span key={i} className="text-[11px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/25 px-2 py-0.5 rounded-md select-all">
+                          <span key={i} className="text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/25 px-2 py-0.5 rounded-md select-all">
                             {tag}
                           </span>
                         ))}
@@ -460,17 +456,16 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) 
                     </div>
                   </div>
 
-                  {/* Cột Tags (Keywords) */}
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
+                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                           <Search className="w-3 h-3 text-emerald-500" />
-                          <span>Từ khóa / Tags ({opt.tags.length})</span>
+                          <span>{texts.TAGS_LABEL} ({opt.tags.length})</span>
                         </span>
                         <CopyFieldButton text={opt.tags.join(", ")} field="tags" optionIndex={sIdx} />
                       </div>
-                      <p className="text-[11px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-28 overflow-y-auto custom-scrollbar break-words select-all">
+                      <p className="text-[10px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words select-all">
                         {opt.tags.join(", ")}
                       </p>
                     </div>
@@ -485,9 +480,6 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts }) 
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/* MAIN MUSIC CREATOR COMPONENT                                               */
-/* -------------------------------------------------------------------------- */
 export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) {
   const texts = MUSIC_CREATOR_TEXTS[currentLang] || MUSIC_CREATOR_TEXTS.vi;
   const [initialState] = useState<PersistedMusicCreatorState>(readMusicCreatorState);
@@ -517,6 +509,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [generatedThumbnail, setGeneratedThumbnail] = useState<string>("");
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [isCreatingSuno, setIsCreatingSuno] = useState(false);
+  const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
+  const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
+  const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -549,11 +545,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           thumbnailReferenceName,
           viewMode,
           selectedSeoSongIndex,
+          sunoPlaylistUrl,
+          sunoInspo,
+          sunoSettings,
         } satisfies PersistedMusicCreatorState),
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -608,7 +607,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     if (!styleToDelete) return;
     handleDeleteStyle(styleToDelete);
     setStyleToDelete(null);
-    toast.success(currentLang === "vi" ? "Đã xóa style." : "Style deleted.");
+    toast.success(texts.STYLE_DELETE_SUCCESS);
   };
 
   const handleFillSampleReferences = () => {
@@ -691,6 +690,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
       const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
+      setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSongs(generatedSongs);
       setPlaylistSeoOptions(generatedPlaylistSeo);
@@ -722,7 +722,28 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: JSON.stringify({ pipelineRunId: runId, closeBrowser: true }),
       }).catch(() => undefined);
     }
-    toast.info(currentLang === "vi" ? "Đã dừng tạo." : "Stopped generation.");
+    toast.info(texts.STOPPED_TOAST);
+  };
+
+  const handleCreateSunoMusic = async () => {
+    if (_.isEmpty(songs) || isCreatingSuno) return;
+    setIsCreatingSuno(true);
+    setSunoPlaylistUrl("");
+    try {
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
+      setSunoPlaylistUrl(_.toString(result.playlistUrl));
+      toast.success(texts.SUNO_CREATE_SUCCESS);
+    } catch (error: any) {
+      toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
+    } finally {
+      setIsCreatingSuno(false);
+    }
   };
 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -844,7 +865,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       onClick={handleCancelStyleEdit}
                       disabled={isLoading}
                       className="h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors flex items-center justify-center">
-                      {currentLang === "vi" ? "Hủy" : "Cancel"}
+                      {texts.CANCEL_BTN}
                     </Button>
                   </div>
                 )}
@@ -858,6 +879,21 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   placeholder={texts.STYLE_PLACEHOLDER}
                   disabled={isLoading}
                   className="w-full min-h-[100px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                />
+              </div>
+
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                  <Disc3 className="w-3.5 h-3.5 text-orange-400" />
+                  <span>{texts.SUNO_INSPO_LABEL}</span>
+                </div>
+                <input
+                  type="text"
+                  value={sunoInspo}
+                  onChange={(event) => setSunoInspo(event.target.value)}
+                  disabled={isLoading || isCreatingSuno}
+                  placeholder={texts.SUNO_INSPO_PLACEHOLDER}
+                  className="w-full h-11 bg-slate-955/90 text-slate-100 px-3.5 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-orange-500/80 focus:ring-1 focus:ring-orange-500/20"
                 />
               </div>
 
@@ -1099,7 +1135,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       onClick={handleCancelGeneration}
                       className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 shrink-0">
                       <X className="w-4 h-4 shrink-0" />
-                      <span>{currentLang === "vi" ? "Dừng" : "Stop"}</span>
+                      <span>{texts.STOP_BTN}</span>
                     </Button>
                   )}
                 </div>
@@ -1134,7 +1170,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <img
                       src={thumbnailReference}
                       alt={texts.THUMBNAIL_REFERENCE_ALT}
-                      title={currentLang === "vi" ? "Nhấn để xem ảnh phóng to" : "Click to view full image"}
+                      title={texts.CLICK_TO_ZOOM}
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -1143,7 +1179,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       className="w-full h-full object-contain cursor-zoom-in"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
-                      <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">Ảnh mẫu</span>
+                      <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_REFERENCE_BADGE}</span>
                       <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9</span>
                     </div>
                     <button
@@ -1152,7 +1188,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         e.stopPropagation();
                         thumbnailFileInputRef.current?.click();
                       }}
-                      title={currentLang === "vi" ? "Đổi ảnh khác" : "Change image"}
+                      title={texts.CHANGE_IMAGE_BTN}
                       className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center">
                       <Upload className="w-3.5 h-3.5 shrink-0" />
                     </button>
@@ -1165,7 +1201,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
                     <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
                     <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
-                    <span className="text-[8px] font-mono text-slate-500">Ảnh mẫu 16:9</span>
+                    <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
                   </button>
                 )}
 
@@ -1174,7 +1210,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <img
                       src={generatedThumbnail}
                       alt={texts.THUMBNAIL_RESULT_ALT}
-                      title={currentLang === "vi" ? "Nhấn để xem ảnh phóng to" : "Click to view full image"}
+                      title={texts.CLICK_TO_ZOOM}
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -1183,7 +1219,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       className="w-full h-full object-contain cursor-zoom-in"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
-                      <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">Ảnh AI</span>
+                      <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_AI_BADGE}</span>
                       <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9 HD</span>
                     </div>
                   </div>
@@ -1205,10 +1241,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <div className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500">
                     <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-500" />
                     <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight">
-                      {currentLang === "vi" ? "Ảnh bìa AI" : "AI Cover"}
+                      {texts.THUMBNAIL_AI_TITLE}
                     </span>
                     <span className="text-[8px] font-mono text-slate-500">
-                      {currentLang === "vi" ? "Chưa tạo ảnh" : "Not created yet"}
+                      {texts.THUMBNAIL_NOT_CREATED}
                     </span>
                   </div>
                 )}
@@ -1241,8 +1277,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <RefreshCw className={cn("w-3.5 h-3.5 shrink-0", isGeneratingThumbnail && "animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
                     <span>
                       {isGeneratingThumbnail
-                        ? (currentLang === "vi" ? "Đang tạo..." : "Creating...")
-                        : (generatedThumbnail ? texts.THUMBNAIL_REGENERATE : (currentLang === "vi" ? "Tạo ảnh bìa" : "Create cover"))}
+                        ? texts.THUMBNAIL_CREATING_SHORT
+                        : (generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN)}
                     </span>
                   </Button>
 
@@ -1330,14 +1366,25 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               )}
 
               {!_.isEmpty(songs) && (
-                <Button
-                  type="button"
-                  variant="unstyled"
-                  onClick={viewMode === "seo" ? handleCopyAllSeo : handleCopyAllLyrics}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs">
-                  <Copy className="w-3 h-3 text-purple-400" />
-                  <span>{texts.COPY_ALL_BTN}</span>
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={handleCreateSunoMusic}
+                    disabled={isCreatingSuno}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
+                    {isCreatingSuno ? <Disc3 className="w-3.5 h-3.5 animate-spin" /> : <Music2 className="w-3.5 h-3.5" />}
+                    <span>{isCreatingSuno ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={viewMode === "seo" ? handleCopyAllSeo : handleCopyAllLyrics}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs">
+                    <Copy className="w-3 h-3 text-purple-400" />
+                    <span>{texts.COPY_ALL_BTN}</span>
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -1380,6 +1427,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </div>
           ) : (
             <div>
+              {!_.isEmpty(sunoPlaylistUrl) && (
+                <a
+                  href={sunoPlaylistUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-300 hover:bg-orange-500/15 transition-colors">
+                  <span>{texts.SUNO_PLAYLIST_READY}</span>
+                  <span className="truncate font-mono font-normal underline">{sunoPlaylistUrl}</span>
+                </a>
+              )}
               {viewMode === "lyrics" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1">
                   {_.map(songs, (song, idx) => (
@@ -1431,7 +1488,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         index={selectedSeoSongIndex}
                         texts={texts}
                       />
-                      <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} />
+                      <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} columns={1} />
                     </div>
                   )}
                 </div>
@@ -1455,12 +1512,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         }>
         <div className="space-y-4 text-left">
           <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-            {currentLang === "vi" ? "Xác nhận xóa mẫu" : "Confirm delete"}{" "}
+            {texts.STYLE_DELETE_CONFIRM}{" "}
             <span className="font-extrabold !text-[#1e1b4b] dark:!text-white">“{styleToDelete?.title}”</span>?
           </p>
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>{currentLang === "vi" ? "Không thể hoàn tác." : "Cannot be undone."}</span>
+            <span>{texts.CANNOT_BE_UNDONE}</span>
           </div>
           <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
             <Button
@@ -1469,7 +1526,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               size="sm"
               onClick={() => setStyleToDelete(null)}
               className="h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs">
-              {currentLang === "vi" ? "Hủy" : "Cancel"}
+              {texts.CANCEL_BTN}
             </Button>
             <Button
               type="button"

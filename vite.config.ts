@@ -32,8 +32,10 @@ export default defineConfig(() => {
         ignored: [
           '**/projects.json',
           '**/google_profile/**',
+          '**/suno_chrome_profile/**',
           /[\\/]projects\.json$/,
-          /[\\/]google_profile[\\/]/
+          /[\\/]google_profile[\\/]/,
+          /[\\/]suno_chrome_profile[\\/]/
         ]
       },
     },

@@ -206,6 +206,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 import { analyzeCinematicClipsWithLibraries, validateCinematicEditorialDecisions } from "../services/cinematicClipAnalyzerService.js";
+import { createSunoPlaylist, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
 import { hasCinematicSceneDialogue } from "../../services/cinematicEditTimelineService.js";
 
 import {
@@ -525,6 +526,17 @@ const buildMusicPlanPrompt = (batchCount: number, startIndex: number, totalCount
   return `Return raw JSON only. Using all reference-source parts already stored in this room, create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Global style (must apply to every song): ${style}\nSong IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room. Each song must include songId, title, complete lyrics with Suno section labels, genre, mood, tempoBpm, structure and originalityNotes. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
 };
 
+const buildMusicRankingPrompt = (songCount: number, requestId: string): string =>
+  `Return raw JSON only. Review the complete lyrics and metadata of all ${songCount} songs created earlier in this same room. Rank them from strongest/most attractive to weakest, using professional music-editor judgment rather than creation order.
+
+Evaluate every song comparatively on: emotional impact, memorable title and hook potential, meaningful and coherent lyrics, natural Vietnamese wording, singability and phrasing, imagery, narrative development, originality, fit with the global music style, and likely listener retention. Put the best overall song first and decrease gradually through the list. Do not rewrite, add, remove or rename any song.
+
+  Return every existing songId exactly once. Required JSON shape: {"artifactType":"music_song_ranking","requestId":"${requestId}","orderedSongIds":["song_001"]}`;
+
+const buildSunoSettingsPrompt = (style: string, songCount: number, requestId: string): string =>
+  `Return raw JSON only. Act as a professional Suno production engineer. Analyze the global style and all ${songCount} songs already created in this room, then choose ONE Advanced/More Options configuration that will be applied unchanged to the entire creation run. Optimize genre fidelity, vocal suitability, musical coherence, hook quality and listenability; do not use generic defaults without musical reasoning. Global style: ${style}
+Required JSON: {"artifactType":"music_suno_settings","requestId":"${requestId}","settings":{"excludeStyles":"comma-separated unwanted styles","vocalGender":"male|female|auto","duration":"auto","maxMode":false,"weirdness":0,"styleInfluence":0,"variety":0,"personalize":false}}. weirdness, styleInfluence and variety must be integers 0-100. Use personalize=false unless a known Suno taste profile is explicitly part of the project.`;
+
 const buildMusicPlaylistSeoPrompt = (songCount: number, requestId: string): string =>
   `Return raw JSON only. Act as a Vietnamese YouTube music SEO editor. Using the complete ${songCount}-song list created earlier in this same room, create exactly ${MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT} distinct metadata options for publishing the WHOLE LIST as one Vietnamese-market album/collection video. Never optimize an individual song.
 
@@ -585,7 +597,9 @@ const generateMusicThumbnailAsset = async (input: {
   referenceName: string;
   chromeHeadless: boolean;
 }): Promise<{ thumbnail: string | null; warning?: string }> => {
-  try {
+  let lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+   try {
     const result = await generateImageWithPlaywright({
       prompt: buildMusicThumbnailPrompt(input.songs, input.style, input.seoOptions, input.description, !_.isEmpty(input.reference)),
       style: input.style,
@@ -602,14 +616,21 @@ const generateMusicThumbnailAsset = async (input: {
         referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
       },
     });
-    if (!result.success) return { thumbnail: null, warning: result.warning || MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR };
+    if (!result.success) {
+      lastWarning = result.warning || lastWarning;
+      continue;
+    }
     const encodedImage = _.toString(result.base64);
     const mimeType = _.startsWith(encodedImage, "/9j/") ? "image/jpeg" : "image/png";
-    return { thumbnail: !_.isEmpty(encodedImage) ? `data:${mimeType};base64,${encodedImage}` : _.toString(result.fallbackUrl) || null };
+    const thumbnail = !_.isEmpty(encodedImage) ? `data:${mimeType};base64,${encodedImage}` : _.toString(result.fallbackUrl) || null;
+    if (thumbnail) return { thumbnail };
+    lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
   } catch (error) {
     logger.error("Could not generate music cover with Gemini.", error);
-    return { thumbnail: null, warning: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
+    lastWarning = _.toString(_.get(error, "message", lastWarning));
   }
+  }
+  return { thumbnail: null, warning: lastWarning };
 };
 
 const isRetryableMusicJsonError = (error: unknown): boolean => {
@@ -628,6 +649,24 @@ const validateMusicPlanSongContract = (parsed: any, expectedCount: number): bool
     return !hasSongId || !hasTitle;
   });
   return !invalid;
+};
+
+const validateMusicSongRankingContract = (parsed: any, songs: any[], requestId: string): boolean => {
+  const expectedIds = _.map(songs, (song) => _.trim(_.toString(song?.songId)));
+  const orderedIds = _.map(_.castArray(parsed?.orderedSongIds || []), (songId) => _.trim(_.toString(songId)));
+  return _.isEqual(parsed?.artifactType, "music_song_ranking") &&
+    _.isEqual(parsed?.requestId, requestId) &&
+    _.isEqual(orderedIds.length, expectedIds.length) &&
+    _.isEqual(_.uniq(orderedIds).length, expectedIds.length) &&
+    _.isEqual(_.sortBy(orderedIds), _.sortBy(expectedIds));
+};
+
+const validateSunoSettingsContract = (parsed: any, requestId: string): boolean => {
+  const settings = parsed?.settings;
+  return parsed?.artifactType === "music_suno_settings" && parsed?.requestId === requestId &&
+    _.includes(["male", "female", "auto"], settings?.vocalGender) && settings?.duration === "auto" &&
+    _.every([settings?.weirdness, settings?.styleInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
+    _.isBoolean(settings?.maxMode) && _.isBoolean(settings?.personalize);
 };
 
 const validateMusicPlaylistSeoContract = (parsed: any): boolean =>
@@ -710,6 +749,35 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       songs.push(...batchParsed.songs);
     }
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    const rankingRequestId = `${requestId}_song_ranking`;
+    let rankingParsed: any = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const prompt = attempt === 0
+        ? buildMusicRankingPrompt(requestedSongCount, rankingRequestId)
+        : `CORRECTION: The previous ranking JSON violated the contract. Re-evaluate all ${requestedSongCount} complete songs in this same room and rank them from strongest to weakest. Return raw JSON only with artifactType "music_song_ranking", requestId "${rankingRequestId}", and orderedSongIds containing every existing songId exactly once. Do not use creation order, rewrite songs, add commentary or omit IDs.`;
+      try {
+        const response = await generateRoomResponse(prompt, "music_song_ranking", rankingRequestId);
+        responseProvider = response.provider;
+        rankingParsed = jsonUtils.safeParse(response.text, null);
+      } catch (error) {
+        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        rankingParsed = null;
+      }
+      if (validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) break;
+    }
+    if (!validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    const songsById = _.keyBy(songs, (song) => _.trim(_.toString(song?.songId)));
+    const rankedSongs = _.map(rankingParsed.orderedSongIds, (songId) => songsById[_.trim(_.toString(songId))]);
+    const sunoSettingsRequestId = `${requestId}_suno_settings`;
+    let sunoSettingsParsed: any = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const prompt = attempt === 0 ? buildSunoSettingsPrompt(style, requestedSongCount, sunoSettingsRequestId) : `CORRECTION: Return complete raw JSON only for artifactType "music_suno_settings", requestId "${sunoSettingsRequestId}". Include settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list.`;
+      const response = await generateRoomResponse(prompt, "music_suno_settings", sunoSettingsRequestId);
+      responseProvider = response.provider;
+      sunoSettingsParsed = jsonUtils.safeParse(response.text, null);
+      if (validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) break;
+    }
+    if (!validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const seoRequestId = `${requestId}_playlist_seo`;
     let playlistSeoParsed: any = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -728,7 +796,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
     if (!validateMusicPlaylistSeoContract(playlistSeoParsed)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const { thumbnail, warning: thumbnailWarning } = await generateMusicThumbnailAsset({
-      songs,
+      songs: rankedSongs,
       style,
       seoOptions: playlistSeoParsed.seoOptions,
       description: thumbnailDescription,
@@ -738,7 +806,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     });
     return res.json({
       success: true,
-      data: { songs, playlistSeoOptions: playlistSeoParsed.seoOptions, thumbnail, thumbnailWarning },
+      data: { songs: rankedSongs, sunoSettings: sunoSettingsParsed.settings, playlistSeoOptions: playlistSeoParsed.seoOptions, thumbnail, thumbnailWarning },
       provider: responseProvider,
     });
   } catch (error) {
@@ -781,6 +849,32 @@ router.post("/music-thumbnail", requireLicense(FeatureType.IMAGE), async (req: R
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
   }
+});
+
+router.post("/music-suno-create", async (req: Request, res: Response) => {
+  const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
+    songId: _.trim(_.toString(song?.songId)),
+    title: _.trim(_.toString(song?.title)),
+    lyrics: _.trim(_.toString(song?.lyrics)),
+  }));
+  const style = _.trim(_.toString(req.body?.style));
+  const inspo = _.trim(_.toString(req.body?.inspo));
+  const initialSongIds = _.castArray(req.body?.initialSongIds || []);
+  if ((_.isEmpty(songs) && _.isEmpty(initialSongIds)) || _.isEmpty(style) || _.some(songs, (song) => _.isEmpty(song.songId) || _.isEmpty(song.title) || _.isEmpty(song.lyrics))) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: "Danh sách bài hát hoặc phong cách Suno chưa đầy đủ." });
+  }
+  try {
+    const result = await createSunoPlaylist(songs, style, inspo, req.body?.sunoSettings, initialSongIds);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error("Suno automation failed.", error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", "Không thể hoàn tất tạo nhạc trên Suno.")) });
+  }
+});
+
+router.post("/music-suno-login", async (_req: Request, res: Response) => {
+  try { return res.json({ success: true, ...(await launchSunoLoginBrowser()) }); }
+  catch (error) { return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", "Không thể mở Chrome Suno.")) }); }
 });
 
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
