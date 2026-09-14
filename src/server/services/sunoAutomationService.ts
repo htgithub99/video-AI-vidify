@@ -220,23 +220,20 @@ const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => 
   await fillEditable(searchInput, targetName);
   await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SEARCH_WAIT_MS);
 
-  const dialog = page.locator(SUNO_AUTOMATION_SELECTORS.DIALOG_ROLE).last();
-  const exactResult = (await dialog.count().catch(() => 0))
-    ? dialog.getByText(targetName, { exact: true })
-    : page.getByText(targetName, { exact: true });
+  const exactResult = page.getByText(targetName, { exact: true });
   const resultCount = await exactResult.count().catch(() => 0);
   let selected = false;
   for (let index = 0; index < resultCount; index += 1) {
     const candidate = exactResult.nth(index);
     if (!(await candidate.isVisible().catch(() => false))) continue;
-    await candidate.click();
+    const playlistRow = candidate.locator("xpath=ancestor::div[contains(@class, 'cursor-pointer')][1]");
+    if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
+    else await candidate.click();
     selected = true;
     break;
   }
   if (!selected) throw new Error(SUNO_AUTOMATION_TEXTS.formatInspoNotFoundErr(targetName));
-  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SELECT_WAIT_MS);
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SELECT_WAIT_MS);
+  await searchInput.waitFor({ state: "hidden", timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
 };
 
 const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]> => {
