@@ -18,8 +18,10 @@ export const SUNO_AUTOMATION_CONFIG = {
   GENERATE_RESPONSE_TIMEOUT_MS: 30_000,
   CREATE_ATTEMPTS_PER_PROMPT: 2,
   MIN_TRACKS_PER_PROMPT: 2,
-  BETWEEN_SONG_PROMPTS_DELAY_MS: 6000,
-  RETRY_PROMPT_DELAY_MS: 4000,
+  BETWEEN_SONG_PROMPTS_DELAY_MS: 3000,
+  RETRY_PROMPT_DELAY_MS: 3000,
+  MAX_CONCURRENT_PROMPTS: 10,
+  GENERATION_SLOT_POLL_MS: 2000,
   POLL_INTERVAL_MS: 1500,
   PLAYLIST_WAIT_MS: 1500,
   SONG_PAGE_READY_TIMEOUT_MS: 30_000,
@@ -125,6 +127,8 @@ export const SUNO_AUTOMATION_TEXTS = {
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
   CANCELLED_ERR: "Đã hủy tạo nhạc Suno.",
   ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
+  GENERATION_FAILED_ERR: "Suno không thể hoàn tất một bài hát trong hàng đợi.",
+  GENERATION_QUEUE_TIMEOUT_ERR: "Suno xử lý hàng đợi quá lâu. Vui lòng tiếp tục lại sau.",
 
   formatChromeLaunchedMsg: (email: string) =>
     `Đã mở Chrome Suno riêng cho ${email}. Hãy đăng nhập rồi đóng tab này khi xong.`,

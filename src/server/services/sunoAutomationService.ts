@@ -24,6 +24,7 @@ export interface SunoCreationResult {
   createdSongIds: string[];
 }
 export interface SunoAdvancedSettings { excludeStyles?: string; vocalGender?: "male" | "female" | "auto"; duration?: "auto"; maxMode?: boolean; weirdness?: number; styleInfluence?: number; variety?: number; personalize?: boolean }
+interface ActiveSunoGeneration { title: string; songIds: string[] }
 
 const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), "VideoAI-Vidify", SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = `http://${SUNO_AUTOMATION_CONFIG.SUNO_CDP_HOST}:${SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT}`;
@@ -268,6 +269,38 @@ const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]>
   throw new Error(SUNO_AUTOMATION_TEXTS.formatSongIdTimeoutErr(song.title));
 };
 
+const getSunoClipStatus = async (page: Page, songId: string): Promise<string> => {
+  const response = await page.request.get(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/clip/${songId}`).catch(() => null);
+  if (!response?.ok()) return "pending";
+  const payload = await response.json().catch(() => null);
+  return _.toLower(_.trim(_.toString(_.get(payload, "status", "pending"))));
+};
+
+const removeCompletedGenerations = async (page: Page, active: ActiveSunoGeneration[]): Promise<void> => {
+  const terminalFailures = new Set(["error", "failed", "blocked", "cancelled"]);
+  const statusesByGeneration = await Promise.all(active.map(async (generation) => ({
+    generation,
+    statuses: await Promise.all(generation.songIds.map((songId) => getSunoClipStatus(page, songId))),
+  })));
+  const failed = statusesByGeneration.find(({ statuses }) => statuses.some((status) => terminalFailures.has(status)));
+  if (failed) throw new Error(`${SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR} ${failed.generation.title}`);
+  _.remove(active, (generation) => {
+    const current = statusesByGeneration.find((entry) => entry.generation === generation);
+    return Boolean(current && current.statuses.length > 0 && current.statuses.every((status) => status === "complete"));
+  });
+};
+
+const waitForGenerationCapacity = async (page: Page, active: ActiveSunoGeneration[], targetActiveCount: number): Promise<void> => {
+  const deadline = Date.now() + SUNO_AUTOMATION_CONFIG.CREATE_SONG_DEADLINE_MS;
+  while (active.length > targetActiveCount) {
+    ensureSunoNotCancelled();
+    await removeCompletedGenerations(page, active);
+    if (active.length <= targetActiveCount) return;
+    if (Date.now() >= deadline) throw new Error(SUNO_AUTOMATION_TEXTS.GENERATION_QUEUE_TIMEOUT_ERR);
+    await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.GENERATION_SLOT_POLL_MS);
+  }
+};
+
 const addSongIdsByPlaylistId = async (
   page: Page,
   requestHeaders: Record<string, string>,
@@ -371,8 +404,10 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       await ensureAdvancedMode(page);
       await selectInspoPlaylist(page, inspo);
       await configureAdvancedOnce(page, style, aiSettings);
+      const activeGenerations: ActiveSunoGeneration[] = [];
       for (const [songIndex, song] of songs.entries()) {
         ensureSunoNotCancelled();
+        await waitForGenerationCapacity(page, activeGenerations, SUNO_AUTOMATION_CONFIG.MAX_CONCURRENT_PROMPTS - 1);
         const numberedSong = { ...song, title: formatNumberedSongTitle(song.title, songIndex) };
         let songIds: string[] = [];
         for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_ATTEMPTS_PER_PROMPT && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
@@ -383,10 +418,12 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
           throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(numberedSong.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
         }
         createdSongIds.push(...songIds);
+        activeGenerations.push({ title: numberedSong.title, songIds });
         if (songIndex < songs.length - 1) {
           await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.BETWEEN_SONG_PROMPTS_DELAY_MS);
         }
       }
+      await waitForGenerationCapacity(page, activeGenerations, 0);
     }
     const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
     const playlistName = !_.isEmpty(songs)
