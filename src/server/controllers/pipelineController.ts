@@ -275,7 +275,7 @@ import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
 import ffmpeg from "fluent-ffmpeg";
 import { createHash, randomUUID } from "crypto";
 import os from "os";
-import { exec, spawn } from "child_process";
+import { exec, execFile, spawn } from "child_process";
 import { StepLogger } from "../../lib/stepLogger.js";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
 import { delayAsync } from "../../lib/shared-utils.js";
@@ -5696,6 +5696,30 @@ router.post("/select-folder", async (req: Request, res: Response) => {
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });
+});
+
+router.post("/save-file", async (req: Request, res: Response) => {
+  const suggestedName = path.basename(_.trim(_.toString(req.body?.suggestedName)) || "export.txt");
+  const extension = path.extname(suggestedName) || ".txt";
+  const dataMatch = _.toString(req.body?.dataUrl).match(/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([a-z0-9+/=\r\n]+)$/i);
+  if (!dataMatch) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: "Dữ liệu tệp không hợp lệ." });
+  const temporaryDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), "vidify-save-file-"));
+  const temporaryPath = path.join(temporaryDirectory, `payload${extension}`);
+  try {
+    await fs.promises.writeFile(temporaryPath, Buffer.from(dataMatch[2], "base64"));
+    const savedPath = await new Promise<string>((resolve, reject) => {
+      execFile(getPythonCommand(), [getStaticResourcePath("python_scripts/capcut_ultra_tool.py"), "save-file", temporaryPath, suggestedName, extension], { windowsHide: true }, (error, stdout) => {
+        if (error) reject(error);
+        else resolve(_.trim(stdout));
+      });
+    });
+    return res.json({ success: true, cancelled: _.isEmpty(savedPath), filePath: savedPath });
+  } catch (error) {
+    logger.error("Save file dialog failed", error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: "Không thể mở hộp thoại hoặc lưu tệp." });
+  } finally {
+    await fs.promises.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => undefined);
+  }
 });
 
 router.post("/export-zip", async (req: Request, res: Response) => {

@@ -52,6 +52,23 @@ import {
 import { cn } from "../lib/utils";
 import { storageUtils } from "../lib/storage";
 
+const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promise<boolean> => {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(_.toString(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, {
+    method: HTTP_METHODS.POST,
+    headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+    body: JSON.stringify({ suggestedName, dataUrl }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.success) throw new Error(result.error || "save_file_failed");
+  return !result.cancelled;
+};
+
 
 
 const openMusicMediaDb = (): Promise<IDBDatabase> => new Promise((resolve, reject) => {
@@ -276,7 +293,8 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           <h3 className="text-sm sm:text-base font-black !text-[#0f172a] dark:!text-slate-100 truncate max-w-[200px] sm:max-w-md" title={displayTitle}>
             {displayTitle}
           </h3>
-          <button
+          <Button
+            variant="unstyled"
             type="button"
             onClick={() => handleCopy(numberedTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
             className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
@@ -286,7 +304,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
             ) : (
               <Copy className="w-3.5 h-3.5 shrink-0" />
             )}
-          </button>
+          </Button>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {song.genre && (
@@ -315,7 +333,8 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
               <FileText className="w-3 h-3" />
               {texts.LYRICS_TITLE}
             </span>
-            <button
+            <Button
+              variant="unstyled"
               type="button"
               onClick={() => handleCopy(`${numberedTitle}\n\n${song.lyrics}`, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
               className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
@@ -325,7 +344,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
               ) : (
                 <Copy className="w-3.5 h-3.5 shrink-0" />
               )}
-            </button>
+            </Button>
           </div>
           <pre className="p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner">
             {song.lyrics}
@@ -339,10 +358,11 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
 interface PlaylistSeoCardProps {
   seoOptions: SongSeoOption[];
   texts: MusicCreatorTexts;
+  playlistUrl: string;
   columns?: 1 | 2 | 3;
 }
 
-const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, columns = 3 }) => {
+const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, playlistUrl, columns = 3 }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleCopy = (text: string, key: string, successMsg: string) => {
@@ -357,11 +377,26 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
     handleCopy(fullText, `seo-all-${index}`, texts.COPY_SEO_OPTION_SUCCESS);
   };
 
+  const handleExportText = async () => {
+    const optionSections = _.map(seoOptions, (opt, index) =>
+      `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`
+    );
+    const exportText = `${texts.SEO_EXPORT_TITLE}\n\n[${texts.SEO_PLAYLIST_URL_LABEL}]:\n${_.trim(playlistUrl) || texts.SEO_PLAYLIST_URL_EMPTY}\n\n${optionSections.join(SUNO_AUTOMATION_CONFIG.SECTION_DIVIDER)}`;
+    const baseName = (_.trim(seoOptions[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_SEO_EXPORT_FILENAME).replace(SUNO_AUTOMATION_PATTERNS.INVALID_FILE_CHARS, "-").replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, " ").slice(0, 80).trim() || SUNO_AUTOMATION_CONFIG.DEFAULT_SEO_EXPORT_FILENAME);
+    try {
+      const saved = await saveMusicBlobWithDialog(new Blob([`\uFEFF${exportText}`], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), `${baseName}${SUNO_AUTOMATION_CONFIG.TXT_EXTENSION}`);
+      if (saved) toast.success(texts.SEO_EXPORT_TXT_SUCCESS);
+    } catch (error) {
+      if (_.get(error, "name") !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
+    }
+  };
+
   const CopyFieldButton = ({ text, field, optionIndex, titleText }: { text: string; field: string; optionIndex: number; titleText?: string }) => {
     const key = `seo-${optionIndex}-${field}`;
     const isCopied = copiedKey === key;
     return (
-      <button
+      <Button
+        variant="unstyled"
         type="button"
         onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)}
         className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
@@ -371,7 +406,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
         ) : (
           <Copy className="w-3.5 h-3.5 shrink-0" />
         )}
-      </button>
+      </Button>
     );
   };
 
@@ -388,9 +423,13 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
           <Sparkles className="w-4 h-4 text-fuchsia-500 shrink-0" />
           <h3 className="text-sm sm:text-base font-extrabold !text-[#0f172a] dark:!text-slate-100">{texts.PLAYLIST_SEO_TITLE}</h3>
         </div>
-        <span className="text-[11px] font-mono font-bold !text-[#a21caf] dark:!text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg shadow-2xs">
-          {texts.SEO_OPTIONS_COUNT_BADGE}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold !text-[#a21caf] dark:!text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg shadow-2xs">{texts.SEO_OPTIONS_COUNT_BADGE}</span>
+          <Button variant="unstyled" type="button" onClick={handleExportText} disabled={_.isEmpty(seoOptions)} title={texts.SEO_EXPORT_TXT_TOOLTIP} className="h-8 px-3 rounded-lg inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 border border-fuchsia-400/40 shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+            <Download className="w-3.5 h-3.5" />
+            <span>{texts.SEO_EXPORT_TXT_BTN}</span>
+          </Button>
+        </div>
       </div>
 
       <div className={cn("grid gap-4 items-stretch", gridColumnsClass)}>
@@ -410,7 +449,8 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
                   </span>
                 </div>
 
-                <button
+                <Button
+                  variant="unstyled"
                   type="button"
                   onClick={() => handleCopyFullOption(opt, sIdx)}
                   className="btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer"
@@ -420,7 +460,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
                   ) : (
                     <Copy className="w-4 h-4 shrink-0" />
                   )}
-                </button>
+                </Button>
               </div>
 
               <div className="space-y-2.5 flex-1 flex flex-col justify-between">
@@ -922,13 +962,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     reader.readAsDataURL(file);
   };
 
-  const handleDownloadThumbnail = () => {
+  const handleDownloadThumbnail = async () => {
     if (_.isEmpty(generatedThumbnail)) return;
-    const anchor = document.createElement("a");
-    anchor.href = generatedThumbnail;
     const extension = generatedThumbnail.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
-    anchor.download = `${SUNO_AUTOMATION_CONFIG.THUMBNAIL_FILE_PREFIX}${Date.now()}.${extension}`;
-    anchor.click();
+    try {
+      const blob = await fetch(generatedThumbnail).then((response) => response.blob());
+      const saved = await saveMusicBlobWithDialog(blob, `${SUNO_AUTOMATION_CONFIG.THUMBNAIL_FILE_PREFIX}${Date.now()}.${extension}`);
+      if (saved) toast.success(texts.THUMBNAIL_SAVE_SUCCESS);
+    } catch (error) {
+      if (_.get(error, "name") !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
+    }
   };
 
   const handleRegenerateThumbnail = async () => {
@@ -1475,7 +1518,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_REFERENCE_BADGE}</span>
                       <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_RATIO_OVERLAY}</span>
                     </div>
-                    <button
+                    <Button
+                      variant="unstyled"
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1484,10 +1528,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       title={texts.CHANGE_IMAGE_BTN}
                       className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center">
                       <Upload className="w-3.5 h-3.5 shrink-0" />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
-                  <button
+                  <Button
+                    variant="unstyled"
                     type="button"
                     onClick={() => thumbnailFileInputRef.current?.click()}
                     disabled={isGeneratingThumbnail}
@@ -1495,7 +1540,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
                     <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
                     <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
-                  </button>
+                  </Button>
                 )}
 
                 {generatedThumbnail && !isGeneratingThumbnail ? (
@@ -1679,13 +1724,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span className="inline-flex items-center leading-none">{texts.SUNO_CANCEL_BTN}</span>
                     </Button>
                   )}
-                  <button
+                  <Button
+                    variant="unstyled"
                     type="button"
                     onClick={viewMode === "seo" ? handleCopyAllSeo : handleCopyAllLyrics}
                     className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
                     title={texts.COPY_ALL_BTN}>
                     <Copy className="w-4 h-4 shrink-0" />
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -1705,36 +1751,36 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </div>
             <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
-                <button type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", sunoEvaluateTracks ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", sunoEvaluateTracks ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
                   <Sparkles className="w-3 h-3 shrink-0" /><span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_ON}</span>
-                </button>
+                </Button>
               </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
-                <button type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", !sunoEvaluateTracks ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", !sunoEvaluateTracks ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
                   <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_OFF}</span>
-                </button>
+                </Button>
               </Tooltip>
             </div>
             <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
               {(["mp3", "wav"] as SunoDownloadFormat[]).map((format) => (
                 <Tooltip key={format} content={format === "mp3" ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align="center">
-                  <button type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", sunoDownloadFormat === format ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>{format}</button>
+                  <Button variant="unstyled" type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", sunoDownloadFormat === format ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>{format}</Button>
                 </Tooltip>
               ))}
             </div>
-            <button type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
+            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
               {isDownloadingSuno ? <Disc3 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-200" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
               <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
-            </button>
+            </Button>
             <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
-              <button type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none">
+              <Button variant="unstyled" type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none">
                 {isCopiedPlaylistUrl ? <Check className="w-4 h-4 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0" />}
-              </button>
+              </Button>
             </Tooltip>
-            <button type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
+            <Button variant="unstyled" type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
               <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
               <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
-            </button>
+            </Button>
           </div>
 
           {isLoading ? (
@@ -1818,7 +1864,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               )}
 
               {viewMode === "seo" && (
-                <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} />
+                <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} />
               )}
 
               {viewMode === "split" && (
@@ -1860,7 +1906,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         index={selectedSeoSongIndex}
                         texts={texts}
                       />
-                      <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} columns={1} />
+                      <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} columns={1} />
                     </div>
                   )}
                 </div>

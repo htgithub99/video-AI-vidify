@@ -55,6 +55,7 @@ export const API_ROUTES = {
   PIPELINE_TEMPLATES: "/api/pipeline/templates",
   PIPELINE_SELECT_FILE: "/api/pipeline/select-file",
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
+  PIPELINE_SAVE_FILE: "/api/pipeline/save-file",
   PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
   PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
   PIPELINE_FFMPEG_RENDER_CANCEL: "/api/pipeline/ffmpeg-render/cancel/",
