@@ -96,6 +96,18 @@ const dismissCookieConsent = async (page: Page): Promise<void> => {
   await consentDialog.first().waitFor({ state: "hidden", timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
 };
 
+const revealSunoWindow = async (page: Page): Promise<void> => {
+  await page.bringToFront();
+  const session = await page.context().newCDPSession(page).catch(() => null);
+  if (!session) return;
+  try {
+    const { windowId } = await session.send("Browser.getWindowForTarget");
+    await session.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
+  } finally {
+    await session.detach().catch(() => undefined);
+  }
+};
+
 const fillEditable = async (locator: Locator, value: string): Promise<void> => {
   await locator.fill(value).catch(async () => {
     await locator.click({ force: true });
@@ -355,6 +367,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   activeSunoPage = page;
   const createdSongIds: string[] = _.uniq(_.compact(_.map(initialSongIds, (id) => _.trim(_.toString(id)))));
   try {
+    await revealSunoWindow(page);
     await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, { waitUntil: "domcontentloaded", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.VERIFY_ACCOUNT_WAIT_MS);
     await dismissCookieConsent(page);
