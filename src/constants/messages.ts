@@ -1380,5 +1380,26 @@ export const CHAT_UI_AUTOMATION_MESSAGES = {
   FALLBACK_UNSUPPORTED: "Chế độ AI dự phòng chưa được hỗ trợ.",
   PLANNING_QUEUE_ACQUIRED: (workerId: string, providerName: string, projectId: string, elapsedMs: number) =>
     `[AI Chat Planning][${workerId}] Đang sử dụng ${providerName} cho project ${projectId} (chờ hàng đợi ${elapsedMs} ms).`,
+  CLEANUP_FAILED: (provider: string, identity: string, remaining: number, current: string) =>
+    `[AI Chat Cleanup] ${provider}: không xóa được ${identity}; remaining=${remaining}, current=${current}.`,
+  CLEANUP_ERROR: (provider: string, message: string) =>
+    `[AI Chat Cleanup] ${provider}: ${message}`,
+  PLANNING_RAW_CONTRACT_FALLBACK: (expected: string, completionMarker: string) =>
+    `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${expected}, completionMarker=${completionMarker}).`,
+  PLANNING_RESPONSE_TIMEOUT_LOG: (
+    responses: number,
+    initial: number,
+    candidateLength: number,
+    busy: boolean,
+    identityMatch: boolean,
+    completionMarker: string,
+  ) =>
+    `[AI Chat Planning] Response timeout (responses=${responses}, initial=${initial}, candidateLength=${candidateLength}, busy=${busy}, identityMatch=${identityMatch}, completionMarker=${completionMarker}).`,
+  INPUT_NOT_FOUND_DETAIL: (url: string, title: string, selectorMatches: number, error: string) =>
+    `AI Chat chưa tìm thấy ô nhập (url=${url}, title=${title}, selectorMatches=${selectorMatches}): ${error}`,
+  CHATGPT_LOGIN_INCOMPLETE: (url: string, title: string, error: string) =>
+    `ChatGPT chưa hoàn tất đăng nhập (url=${url}, title=${title}): ${error}`,
+  PLANNING_PROVIDER_INCOMPLETE: (provider: string, error: string) =>
+    `[AI Chat Planning] ${provider} chưa hoàn tất: ${error}`,
 } as const;
 

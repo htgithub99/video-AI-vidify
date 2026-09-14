@@ -70,7 +70,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
       headers: { Accept: format === "wav" ? "audio/wav,*/*" : "audio/mpeg,*/*" },
       signal: AbortSignal.timeout(format === "wav" ? 180_000 : 120_000),
     });
-    if (!response.ok || !response.body) throw new Error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} ${track.title}`);
+    if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackFailedErr(track.title));
     try {
       await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
       downloadedPaths.push(filePath);
@@ -499,6 +499,36 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   } finally {
     await closeSunoChrome(page);
     activeSunoPage = null;
+    await browser.close().catch(() => undefined);
+  }
+};
+
+export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<string[]> => {
+  const normalizedUrl = _.trim(playlistUrl);
+  if (!/^https:\/\/(?:www\.)?suno\.com\/playlist\//i.test(normalizedUrl)) {
+    throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+  }
+  let browser: any;
+  try { browser = await chromium.connectOverCDP(SUNO_CDP_URL); } catch {
+    await launchSunoLoginBrowser();
+    for (let attempt = 0; attempt < 30 && !browser; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      browser = await chromium.connectOverCDP(SUNO_CDP_URL).catch(() => null);
+    }
+  }
+  if (!browser) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
+  const context = browser.contexts()[0];
+  if (!context) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
+  const page = context.pages()[0] || await context.newPage();
+  try {
+    await revealSunoWindow(page);
+    await page.goto(normalizedUrl, { waitUntil: "domcontentloaded", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_VERIFY_WAIT_MS);
+    const songIds = _.uniq(await collectSongIds(page));
+    if (_.isEmpty(songIds)) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+    return songIds;
+  } finally {
+    await closeSunoChrome(page);
     await browser.close().catch(() => undefined);
   }
 };

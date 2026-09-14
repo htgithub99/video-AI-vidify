@@ -788,7 +788,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleDownloadSunoMusic = async () => {
-    if (_.isEmpty(sunoTrackIds) || isDownloadingSuno) return;
+    if (_.isEmpty(sunoPlaylistUrl) || isDownloadingSuno) return;
     setIsDownloadingSuno(true);
     try {
       const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {
@@ -804,10 +804,34 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         const variantSuffix = ` - ${(index % 2) + 1}`;
         return { songId, title: `${songNumber}. ${songs[songIndex]?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`}${variantSuffix}` };
       });
+      const evaluationProjectId = `music-track-evaluation-${Date.now()}`;
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ folderPath, tracks, format: sunoDownloadFormat, evaluateTracks: sunoEvaluateTracks, style }),
+        body: JSON.stringify({
+          folderPath,
+          tracks,
+          playlistUrl: sunoPlaylistUrl,
+          songTitles: _.map(songs, "title"),
+          format: sunoDownloadFormat,
+          evaluateTracks: sunoEvaluateTracks,
+          style,
+          aiExecution: sunoEvaluateTracks
+            ? {
+                mode: AiPlanningExecutionMode.RoomOnly,
+                provider: AiPlanningFallbackProvider.GeminiChat,
+                model: _.includes([
+                  AiPlanningChatModel.GeminiFlashLite,
+                  AiPlanningChatModel.GeminiFlash,
+                  AiPlanningChatModel.GeminiPro,
+                  AiPlanningChatModel.GeminiThinking,
+                  AiPlanningChatModel.GeminiDeepThink,
+                ], model) ? model : AiPlanningChatModel.GeminiPro,
+                projectId: evaluationProjectId,
+                chromeHeadless: false,
+              }
+            : undefined,
+        }),
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
@@ -1606,7 +1630,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <button
                         type="button"
                         onClick={handleDownloadSunoMusic}
-                        disabled={isDownloadingSuno || _.isEmpty(sunoTrackIds)}
+                        disabled={isDownloadingSuno || _.isEmpty(sunoPlaylistUrl)}
                         className={cn(
                           "h-8 px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all select-none border cursor-pointer active:scale-95 shadow-md",
                           isDownloadingSuno

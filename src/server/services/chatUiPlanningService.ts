@@ -276,10 +276,12 @@ const deleteFirstProviderConversation = async (page: Page, provider: AiPlanningF
     if (await waitForConversationIdentityChange(page, itemSelector, previousIdentity)) return true;
   }
   appWarn(
-    `[AI Chat Cleanup] ${provider}: không xóa được ${previousIdentity}; remaining=${await page
-      .locator(itemSelector)
-      .count()
-      .catch(() => 0)}, current=${await getConversationIdentity(page.locator(itemSelector).first())}.`,
+    CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_FAILED(
+      provider,
+      previousIdentity,
+      await page.locator(itemSelector).count().catch(() => 0),
+      await getConversationIdentity(page.locator(itemSelector).first()),
+    ),
   );
   return false;
 };
@@ -385,7 +387,7 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
     return { closedRoomCount: pages.length, deletedConversationCount };
   } catch (error) {
-    appWarn(`[AI Chat Cleanup] ${provider}: ${_.toString(_.get(error, "message", error))}`);
+    appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ERROR(provider, _.toString(_.get(error, "message", error))));
     throw error;
   } finally {
     rooms.clear();
@@ -554,9 +556,10 @@ const waitForStableResponse = async (
         if (belongsToCurrentRequest || mayUseUnmarkedJsonFallback) {
           if (!belongsToCurrentRequest) {
             appWarn(
-              `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${
-                _.join(expectedSceneIds, ",") || "not-required"
-              }, completionMarker=${completionMarker || "not-required"}).`,
+              CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RAW_CONTRACT_FALLBACK(
+                _.join(expectedSceneIds, ",") || "not-required",
+                completionMarker || "not-required",
+              ),
             );
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
@@ -575,7 +578,14 @@ const waitForStableResponse = async (
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(
-    `[AI Chat Planning] Response timeout (responses=${lastResponseCount}, initial=${initialCount}, candidateLength=${lastCandidateLength}, busy=${lastBusyState}, identityMatch=${lastIdentityMatch}, completionMarker=${completionMarker || "not-required"}).`,
+    CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(
+      lastResponseCount,
+      initialCount,
+      lastCandidateLength,
+      lastBusyState,
+      lastIdentityMatch,
+      completionMarker || "not-required",
+    ),
   );
   const timeoutError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE);
   Object.assign(timeoutError, { code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE });
@@ -622,14 +632,25 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
 
   if (!uploaded) {
     const attachmentButton = page
-      .getByRole("button", { name: /attach|upload|add files?|đính kèm|tải tệp|thêm tệp|thêm tệp và ảnh/i })
-      .or(page.locator('button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i]'))
+      .getByRole("button", { name: /attach|upload|add files?|open upload file menu|đính kèm|tải tệp|thêm tệp|thêm tệp và ảnh|mở trình đơn tải tệp|nội dung tải lên và công cụ/i })
+      .or(page.locator('button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i], button[aria-label*="tải tệp" i], button[aria-label*="nội dung tải lên" i]'))
       .filter({ visible: true })
       .last();
-    const chooser = await Promise.all([
+    let chooser = await Promise.all([
       page.waitForEvent("filechooser", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
       attachmentButton.click().catch(() => undefined),
     ]).then(([fileChooser]) => fileChooser);
+    if (!chooser) {
+      const uploadMenuItem = page
+        .getByRole("menuitem", { name: /upload files?|tải tệp lên|tải tệp|thêm tệp/i })
+        .or(page.getByRole("button", { name: /upload files?|tải tệp lên/i }))
+        .filter({ visible: true })
+        .last();
+      chooser = await Promise.all([
+        page.waitForEvent("filechooser", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
+        uploadMenuItem.click().catch(() => undefined),
+      ]).then(([fileChooser]) => fileChooser);
+    }
     if (chooser) {
       await chooser.setFiles(attachments);
       uploaded = true;
@@ -743,11 +764,14 @@ const submitPrompt = async (
     await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   } catch (error) {
     const title = await page.title().catch(() => "");
+    const selectorMatches = await page.locator(inputSelector).count().catch(() => 0);
     throw new Error(
-      `AI Chat chưa tìm thấy ô nhập (url=${page.url()}, title=${title}, selectorMatches=${await page
-        .locator(inputSelector)
-        .count()
-        .catch(() => 0)}): ${_.toString(_.get(error, "message", error))}`,
+      CHAT_UI_AUTOMATION_MESSAGES.INPUT_NOT_FOUND_DETAIL(
+        page.url(),
+        title,
+        selectorMatches,
+        _.toString(_.get(error, "message", error)),
+      ),
     );
   }
   appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
@@ -818,13 +842,20 @@ const getChatModelOption = (page: Page, modelLabel: RegExp) =>
 
 const clickChatModelOption = async (page: Page, modelLabel: RegExp): Promise<boolean> => {
   const option = getChatModelOption(page, modelLabel);
-  const optionAvailable = await option
-    .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS })
-    .then(() => true)
-    .catch(() => false);
-  if (!optionAvailable) return false;
-  await option.click();
-  return true;
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const count = await option.count().catch(() => 0);
+    for (let index = 0; index < count; index += 1) {
+      const candidate = option.nth(index);
+      if (!(await candidate.isVisible().catch(() => false))) continue;
+      if (!(await candidate.isEnabled().catch(() => false))) continue;
+      if (_.isEqual(await candidate.getAttribute("aria-disabled").catch(() => null), "true")) continue;
+      await candidate.click();
+      return true;
+    }
+    await page.waitForTimeout(100);
+  }
+  return false;
 };
 
 const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefined, buttonSelector: string): Promise<void> => {
@@ -1008,7 +1039,13 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
   try {
     await input.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   } catch (error) {
-    throw new Error(`ChatGPT chưa hoàn tất đăng nhập (url=${page.url()}, title=${await page.title().catch(() => "")}): ${_.toString(_.get(error, "message", error))}`);
+    throw new Error(
+      CHAT_UI_AUTOMATION_MESSAGES.CHATGPT_LOGIN_INCOMPLETE(
+        page.url(),
+        await page.title().catch(() => ""),
+        _.toString(_.get(error, "message", error)),
+      ),
+    );
   }
 };
 
@@ -1147,7 +1184,7 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     throw lastError;
   } catch (error) {
     if (!_.isEqual(_.toString(_.get(error, "message", error)), CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR)) {
-      appWarn(`[AI Chat Planning] ${providerNames[request.provider]} chưa hoàn tất: ${_.toString(_.get(error, "message", error))}`);
+      appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_PROVIDER_INCOMPLETE(providerNames[request.provider], _.toString(_.get(error, "message", error))));
     }
     throw error;
   } finally {

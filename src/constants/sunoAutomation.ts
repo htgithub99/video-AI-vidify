@@ -50,6 +50,10 @@ export const SUNO_AUTOMATION_CONFIG = {
   SECTION_PERSONALIZE: /Personalize/i,
 
   DEFAULT_COLLECTION_TITLE: "Tuyển tập Bolero 15 bài",
+  TRACK_EVALUATION_WORKER_ID: "music-track-evaluation-room",
+  ARTIFACT_TYPE_MUSIC_EVALUATION: "music-track-evaluation",
+  AUDIO_DOWNLOAD_TIMEOUT_MS: 120_000,
+  MAX_EVALUATION_ATTEMPTS: 3,
 } as const;
 
 export const SUNO_AUTOMATION_PATTERNS = {
@@ -181,4 +185,12 @@ export const SUNO_AUTOMATION_TEXTS = {
     `${title} và ${remainingCount} bài hát - ${createdAt}`,
   formatDefaultPlaylistTitle: (defaultTitle: string, createdAt: string) =>
     `${defaultTitle} - ${createdAt}`,
+  TRACK_EVALUATION_ROOM_REQUIRED_ERR: "Thẩm âm bài hát bằng AI yêu cầu cấu hình phòng Gemini.",
+  INVALID_TRACK_SELECTION_ARTIFACT: "invalid_suno_track_selection",
+  INVALID_SELECTED_TRACK_ID_ERR: "invalid_suno_selected_track_id",
+  formatDownloadTrackFailedErr: (title: string) => `${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} ${title}`,
+  buildTrackEvaluationPrompt: (title: string, style: string, candidateA: string, candidateB: string, schemaString: string) =>
+    `Act as a professional music selection panel consisting of a lead singer, songwriter-composer, record producer, audio engineer, and music-market editor. Listen fully and comparatively to both candidate recordings for the same song.\n\nSong: ${title}\nRequested genre/style and intended market: ${style}\nCandidate A trackId: ${candidateA}\nCandidate B trackId: ${candidateB}\n\nInfer the correct target country, audience, listening culture, and commercial context from the language and requested style. Judge as working professionals in that exact market, not as a generic global listener. Score vocal technique, diction, emotional delivery, melody and harmonic coherence, arrangement and song structure, production/mix, technical defects, genre authenticity, audience fit, replay value, and release potential. A technically broken performance cannot win. Select exactly one supplied trackId.\n\nReturn raw JSON only, matching this contract exactly:\n${schemaString}`,
+  buildTrackEvaluationRetryPrompt: (candidates: string[]) =>
+    `Your previous response was invalid. Re-evaluate the two audio files already attached in this same conversation. Return raw JSON only using the exact schema previously requested. selectedTrackId must be exactly one of: ${candidates.join(", ")}. Do not use Markdown or add commentary.`,
 } as const;
