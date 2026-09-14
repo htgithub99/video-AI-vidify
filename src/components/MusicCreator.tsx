@@ -235,6 +235,9 @@ const toSentenceCase = (text: string): string => {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
 
+const formatNumberedSongTitle = (title: string, index: number): string =>
+  `${index + 1}. ${toSentenceCase(title).replace(/^\d+[.)]\s*/, "")}`;
+
 const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -246,6 +249,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   };
 
   const displayTitle = toSentenceCase(song.title);
+  const numberedTitle = formatNumberedSongTitle(song.title, index);
 
   return (
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md">
@@ -260,7 +264,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           <Button
             type="button"
             variant="unstyled"
-            onClick={() => handleCopy(displayTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
+            onClick={() => handleCopy(numberedTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
             className="text-[11px] !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1 cursor-pointer font-bold transition-colors shrink-0"
             title={texts.COPY_TITLE_BTN}>
             {copiedKey === `title-${index}` ? (
@@ -301,7 +305,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
             <Button
               type="button"
               variant="unstyled"
-              onClick={() => handleCopy(song.lyrics, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
+              onClick={() => handleCopy(`${numberedTitle}\n\n${song.lyrics}`, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
               className="text-[11px] !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1 cursor-pointer font-bold transition-colors shrink-0">
               {copiedKey === `lyrics-${index}` ? (
                 <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
@@ -627,7 +631,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const allContent = _.map(
       songs,
       (s, i) =>
-        `=== ${texts.SONG_UNIT.toUpperCase()} ${i + 1}: ${toSentenceCase(s.title)} ===\n[${texts.LYRICS_TITLE}]:\n${s.lyrics}\n`,
+        `${formatNumberedSongTitle(s.title, i)}\n\n${s.lyrics}\n`,
     ).join("\n----------------------------------------\n\n");
     navigator.clipboard.writeText(allContent);
     toast.success(texts.COPY_ALL_SUCCESS);

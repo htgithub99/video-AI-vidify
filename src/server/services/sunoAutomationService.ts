@@ -73,6 +73,9 @@ const fillEditable = async (locator: Locator, value: string): Promise<void> => {
   });
 };
 
+const formatNumberedSongTitle = (title: string, index: number): string =>
+  `${index + 1}. ${_.trim(title).replace(/^\d+[.)]\s*/, "")}`;
+
 const collectSongIds = async (page: Page): Promise<string[]> => {
   const hrefs = await page.locator(SUNO_AUTOMATION_SELECTORS.SONG_ANCHOR).evaluateAll((anchors) => anchors.map((anchor) => (anchor as HTMLAnchorElement).href)).catch(() => [] as string[]);
   return _.uniq(_.compact(_.map(hrefs, (href) => href.match(SUNO_AUTOMATION_PATTERNS.SONG_URL)?.[1])));
@@ -311,13 +314,14 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       await ensureAdvancedMode(page);
       await selectInspoPlaylist(page, inspo);
       await configureAdvancedOnce(page, style, aiSettings);
-      for (const song of songs) {
+      for (const [songIndex, song] of songs.entries()) {
+        const numberedSong = { ...song, title: formatNumberedSongTitle(song.title, songIndex) };
         let songIds: string[] = [];
         for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_ATTEMPTS_PER_PROMPT && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
-          songIds = _.uniq([...songIds, ...(await createOneSong(page, song))]);
+          songIds = _.uniq([...songIds, ...(await createOneSong(page, numberedSong))]);
         }
         if (songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) {
-          throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(song.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
+          throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(numberedSong.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
         }
         createdSongIds.push(...songIds);
       }
