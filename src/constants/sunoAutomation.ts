@@ -37,6 +37,17 @@ export const SUNO_AUTOMATION_CONFIG = {
   VARIETY_GENTLE: 25,
   VARIETY_DEFAULT: 45,
 
+  APP_SUBDIR: "VideoAI-Vidify",
+  STATUS_PENDING: "pending",
+  STATUS_COMPLETE: "complete",
+  STATUS_TERMINAL_FAILURES: ["error", "failed", "blocked", "cancelled"] as const,
+  OPTION_AUTO: "Auto",
+  OPTION_ON: "On",
+  OPTION_OFF: "Off",
+  SECTION_DURATION: /Duration/i,
+  SECTION_MAX_MODE: /Max Mode/i,
+  SECTION_PERSONALIZE: /Personalize/i,
+
   DEFAULT_COLLECTION_TITLE: "Tuyển tập Bolero 15 bài",
 } as const;
 
@@ -52,6 +63,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   WEIRDNESS_LABEL: /Weirdness/i,
   STYLE_INFLUENCE_LABEL: /Style Influence/i,
   VARIETY_LABEL: /Variety/i,
+  PLAYLIST_API: /studio-api-prod\.suno\.com\/api\/playlist\//i,
 } as const;
 
 export const SUNO_AUTOMATION_SELECTORS = {
@@ -111,6 +123,11 @@ export const SUNO_AUTOMATION_SELECTORS = {
   CREATE_BUTTON: [
     'button:has-text("Create")',
   ] as const,
+
+  MORE_MENU_NAME: "More menu contents",
+  ADD_TO_PLAYLIST_TEXT: "Add to Playlist",
+  PLAYLIST_NAME_PLACEHOLDER: "Playlist Name",
+  CREATE_PLAYLIST_NAME: "Create Playlist",
 } as const;
 
 export const SUNO_AUTOMATION_TEXTS = {
@@ -129,11 +146,20 @@ export const SUNO_AUTOMATION_TEXTS = {
   ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
   GENERATION_FAILED_ERR: "Suno không thể hoàn tất một bài hát trong hàng đợi.",
   GENERATION_QUEUE_TIMEOUT_ERR: "Suno xử lý hàng đợi quá lâu. Vui lòng tiếp tục lại sau.",
+  EMPTY_DIAGNOSTIC: "trang trống",
+
+  VALIDATION_PLAYLIST_INPUT_ERR: "Danh sách bài hát hoặc phong cách Suno chưa đầy đủ.",
+  FAILED_COMPLETE_SUNO_ERR: "Không thể hoàn tất tạo nhạc trên Suno.",
+  CHROME_LOGIN_FAILED_ERR: "Không thể mở Chrome Suno.",
+  LOG_SUNO_AUTOMATION_FAILED: "Suno automation failed.",
+  LOG_MUSIC_COVER_FAILED: "Could not generate music cover with Gemini.",
 
   formatChromeLaunchedMsg: (email: string) =>
     `Đã mở Chrome Suno riêng cho ${email}. Hãy đăng nhập rồi đóng tab này khi xong.`,
   formatProfileNotSignedInErr: (email: string) =>
     `Profile Chrome của "${email}" chưa đăng nhập đúng workspace Suno đã cấu hình.`,
+  formatDiagnosticDisplay: (diagnostic: string) =>
+    `Suno hiện hiển thị: ${diagnostic}`,
   formatInspoNotFoundErr: (targetName: string) =>
     `Không tìm thấy playlist Inspo khớp chính xác: "${targetName}".`,
   formatInputsNotFoundErr: (title: string) =>
@@ -146,4 +172,8 @@ export const SUNO_AUTOMATION_TEXTS = {
     `Suno chỉ trả ${actual}/${expected} track cho prompt "${title}"; đã dừng để không tạo playlist thiếu bài.`,
   formatPlaylistMissingTracksErr: (missing: number, expected: number) =>
     `Playlist Suno vẫn thiếu ${missing}/${expected} track sau khi hệ thống đã tự thêm lại.`,
+  formatPlaylistTitle: (title: string, remainingCount: number, createdAt: string) =>
+    `${title} và ${remainingCount} bài hát - ${createdAt}`,
+  formatDefaultPlaylistTitle: (defaultTitle: string, createdAt: string) =>
+    `${defaultTitle} - ${createdAt}`,
 } as const;

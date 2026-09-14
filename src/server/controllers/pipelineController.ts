@@ -188,6 +188,7 @@ import {
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
+import { SUNO_AUTOMATION_TEXTS } from "../../constants/sunoAutomation.js";
 
 import {
   generateImageWithPlaywright,
@@ -626,7 +627,7 @@ const generateMusicThumbnailAsset = async (input: {
     if (thumbnail) return { thumbnail };
     lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
   } catch (error) {
-    logger.error("Could not generate music cover with Gemini.", error);
+    logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
     lastWarning = _.toString(_.get(error, "message", lastWarning));
   }
   }
@@ -825,7 +826,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/music-thumbnail", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
   const songs = _.castArray(req.body?.songs || []);
   const style = _.trim(_.toString(req.body?.style));
   if (_.isEmpty(songs) || _.isEmpty(style)) {
@@ -851,7 +852,7 @@ router.post("/music-thumbnail", requireLicense(FeatureType.IMAGE), async (req: R
   }
 });
 
-router.post("/music-suno-create", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) => {
   const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
     songId: _.trim(_.toString(song?.songId)),
     title: _.trim(_.toString(song?.title)),
@@ -861,25 +862,25 @@ router.post("/music-suno-create", async (req: Request, res: Response) => {
   const inspo = _.trim(_.toString(req.body?.inspo));
   const initialSongIds = _.castArray(req.body?.initialSongIds || []);
   if ((_.isEmpty(songs) && _.isEmpty(initialSongIds)) || _.isEmpty(style) || _.some(songs, (song) => _.isEmpty(song.songId) || _.isEmpty(song.title) || _.isEmpty(song.lyrics))) {
-    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: "Danh sách bài hát hoặc phong cách Suno chưa đầy đủ." });
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.VALIDATION_PLAYLIST_INPUT_ERR });
   }
   try {
     const result = await createSunoPlaylist(songs, style, inspo, req.body?.sunoSettings, initialSongIds);
     return res.json({ success: true, ...result });
   } catch (error) {
-    logger.error("Suno automation failed.", error);
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", "Không thể hoàn tất tạo nhạc trên Suno.")) });
+    logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)) });
   }
 });
 
-router.post("/music-suno-cancel", async (_req: Request, res: Response) => {
+router.post(ROUTER_PATHS.MUSIC_SUNO_CANCEL, async (_req: Request, res: Response) => {
   await cancelActiveSunoCreation();
   return res.json({ success: true });
 });
 
-router.post("/music-suno-login", async (_req: Request, res: Response) => {
+router.post(ROUTER_PATHS.MUSIC_SUNO_LOGIN, async (_req: Request, res: Response) => {
   try { return res.json({ success: true, ...(await launchSunoLoginBrowser()) }); }
-  catch (error) { return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", "Không thể mở Chrome Suno.")) }); }
+  catch (error) { return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.CHROME_LOGIN_FAILED_ERR)) }); }
 });
 
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {

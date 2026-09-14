@@ -283,7 +283,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           {song.tempoBpm > 0 && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 !text-[#9a3412] dark:!text-amber-300 inline-flex items-center gap-1 select-none">
               <Clock className="w-3 h-3 !text-[#c2410c] dark:!text-amber-400 shrink-0" />
-              <span>{song.tempoBpm} BPM</span>
+              <span>{song.tempoBpm} {texts.BPM_UNIT}</span>
             </span>
           )}
           {song.mood && (
@@ -339,7 +339,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, co
   };
 
   const handleCopyFullOption = (opt: SongSeoOption, index: number) => {
-    const fullText = `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[HASHTAGS]:\n${opt.hashtags.join(" ")}\n\n[TAGS / KEYWORDS]:\n${opt.tags.join(", ")}`;
+    const fullText = `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`;
     handleCopy(fullText, `seo-all-${index}`, texts.COPY_SEO_OPTION_SUCCESS);
   };
 
@@ -640,7 +640,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleCopyAllSeo = () => {
     if (_.isEmpty(playlistSeoOptions)) return;
     const allContent = _.map(playlistSeoOptions, (opt, idx) =>
-      `[${texts.formatOptionLabel(idx + 1)}] (${texts.formatScoreLabel(opt.seoScore)})\n${texts.SEO_FIELD_TITLE}: ${opt.title}\n${texts.SEO_FIELD_DESCRIPTION}: ${opt.description}\nHashtags: ${opt.hashtags.join(" ")}\nTags: ${opt.tags.join(", ")}`,
+      `[${texts.formatOptionLabel(idx + 1)}] (${texts.formatScoreLabel(opt.seoScore)})\n${texts.SEO_FIELD_TITLE}: ${opt.title}\n${texts.SEO_FIELD_DESCRIPTION}: ${opt.description}\n${texts.HASHTAGS_LABEL}: ${opt.hashtags.join(" ")}\n${texts.TAGS_LABEL}: ${opt.tags.join(", ")}`,
     ).join("\n----------------------------------------\n\n");
     navigator.clipboard.writeText(allContent);
     toast.success(texts.COPY_ALL_SEO_SUCCESS);
@@ -863,7 +863,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               <div className="flex items-center justify-between relative z-10 flex-wrap gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
-                    01
+                    {texts.STEP_01}
                   </span>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -1025,7 +1025,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               <div className="flex items-center justify-between relative z-10 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
-                    02
+                    {texts.STEP_02}
                   </span>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-purple-400" />
@@ -1185,7 +1185,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <ImageIcon className="w-3.5 h-3.5 text-fuchsia-400" />
                   {texts.THUMBNAIL_TITLE}
                 </h3>
-                <span className="text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full">Gemini · 16:9</span>
+                <span className="text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full">{texts.THUMBNAIL_RATIO_BADGE}</span>
               </div>
 
               <input ref={thumbnailFileInputRef} type="file" accept="image/*" onChange={handleThumbnailReferenceChange} className="hidden" />
@@ -1206,7 +1206,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
                       <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_REFERENCE_BADGE}</span>
-                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9</span>
+                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_RATIO_OVERLAY}</span>
                     </div>
                     <button
                       type="button"
@@ -1246,7 +1246,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
                       <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_AI_BADGE}</span>
-                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">16:9 HD</span>
+                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_RATIO_HD}</span>
                     </div>
                   </div>
                 ) : isGeneratingThumbnail ? (
@@ -1260,7 +1260,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       {texts.THUMBNAIL_GENERATING}
                     </p>
                     <p className="text-[8px] font-medium !text-slate-500 dark:!text-slate-400">
-                      Gemini 2.5 Flash
+                      {texts.THUMBNAIL_MODEL_TAG}
                     </p>
                   </div>
                 ) : (

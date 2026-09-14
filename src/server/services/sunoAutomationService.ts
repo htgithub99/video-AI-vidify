@@ -26,7 +26,7 @@ export interface SunoCreationResult {
 export interface SunoAdvancedSettings { excludeStyles?: string; vocalGender?: "male" | "female" | "auto"; duration?: "auto"; maxMode?: boolean; weirdness?: number; styleInfluence?: number; variety?: number; personalize?: boolean }
 interface ActiveSunoGeneration { title: string; songIds: string[] }
 
-const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), "VideoAI-Vidify", SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
+const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), SUNO_AUTOMATION_CONFIG.APP_SUBDIR, SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = `http://${SUNO_AUTOMATION_CONFIG.SUNO_CDP_HOST}:${SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT}`;
 let activeSunoPage: Page | null = null;
 let sunoCancellationRequested = false;
@@ -138,7 +138,7 @@ const verifySunoAccount = async (page: Page): Promise<void> => {
   const hasSignedInWorkspace = hasExpectedWorkspace && hasCreateWorkspace && hasCreationForm;
   if (hasSignedInWorkspace) return;
   const diagnostic = bodyText.replace(/\s+/g, " ").trim().slice(0, 240);
-  throw new Error(`${SUNO_AUTOMATION_TEXTS.formatProfileNotSignedInErr(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL)} Suno hiện hiển thị: ${diagnostic || "trang trống"}`);
+  throw new Error(`${SUNO_AUTOMATION_TEXTS.formatProfileNotSignedInErr(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL)} ${SUNO_AUTOMATION_TEXTS.formatDiagnosticDisplay(diagnostic || SUNO_AUTOMATION_TEXTS.EMPTY_DIAGNOSTIC)}`);
 };
 
 const setRangeByLabel = async (page: Page, label: RegExp, value: number): Promise<void> => {
@@ -193,9 +193,9 @@ const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: Sun
   await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.VARIETY_LABEL, aiSettings?.variety ?? (isGentleGenre ? SUNO_AUTOMATION_CONFIG.VARIETY_GENTLE : SUNO_AUTOMATION_CONFIG.VARIETY_DEFAULT));
   const excludeInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.EXCLUDE_STYLES_INPUT);
   if (excludeInput && !_.isEmpty(_.trim(aiSettings?.excludeStyles))) await fillEditable(excludeInput, _.trim(aiSettings?.excludeStyles));
-  await selectOptionBySection(page, /Duration/i, "Auto");
-  await selectOptionBySection(page, /Max Mode/i, aiSettings?.maxMode ? "On" : "Off");
-  await selectOptionBySection(page, /Personalize/i, aiSettings?.personalize ? "On" : "Off");
+  await selectOptionBySection(page, SUNO_AUTOMATION_CONFIG.SECTION_DURATION, SUNO_AUTOMATION_CONFIG.OPTION_AUTO);
+  await selectOptionBySection(page, SUNO_AUTOMATION_CONFIG.SECTION_MAX_MODE, aiSettings?.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
+  await selectOptionBySection(page, SUNO_AUTOMATION_CONFIG.SECTION_PERSONALIZE, aiSettings?.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
 
   const resolvedGender = aiSettings?.vocalGender || (SUNO_AUTOMATION_PATTERNS.FEMALE_VOICE.test(normalizedStyle) ? "female" : SUNO_AUTOMATION_PATTERNS.MALE_VOICE.test(normalizedStyle) ? "male" : "auto");
   if (resolvedGender === "female") {
@@ -271,13 +271,13 @@ const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]>
 
 const getSunoClipStatus = async (page: Page, songId: string): Promise<string> => {
   const response = await page.request.get(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/clip/${songId}`).catch(() => null);
-  if (!response?.ok()) return "pending";
+  if (!response?.ok()) return SUNO_AUTOMATION_CONFIG.STATUS_PENDING;
   const payload = await response.json().catch(() => null);
-  return _.toLower(_.trim(_.toString(_.get(payload, "status", "pending"))));
+  return _.toLower(_.trim(_.toString(_.get(payload, "status", SUNO_AUTOMATION_CONFIG.STATUS_PENDING))));
 };
 
 const removeCompletedGenerations = async (page: Page, active: ActiveSunoGeneration[]): Promise<void> => {
-  const terminalFailures = new Set(["error", "failed", "blocked", "cancelled"]);
+  const terminalFailures = new Set<string>(SUNO_AUTOMATION_CONFIG.STATUS_TERMINAL_FAILURES);
   const statusesByGeneration = await Promise.all(active.map(async (generation) => ({
     generation,
     statuses: await Promise.all(generation.songIds.map((songId) => getSunoClipStatus(page, songId))),
@@ -286,7 +286,7 @@ const removeCompletedGenerations = async (page: Page, active: ActiveSunoGenerati
   if (failed) throw new Error(`${SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR} ${failed.generation.title}`);
   _.remove(active, (generation) => {
     const current = statusesByGeneration.find((entry) => entry.generation === generation);
-    return Boolean(current && current.statuses.length > 0 && current.statuses.every((status) => status === "complete"));
+    return Boolean(current && current.statuses.length > 0 && current.statuses.every((status) => status === SUNO_AUTOMATION_CONFIG.STATUS_COMPLETE));
   });
 };
 
@@ -331,20 +331,20 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
     waitUntil: "commit",
     timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
   });
-  const songMenu = page.getByRole("button", { name: "More menu contents" }).first();
+  const songMenu = page.getByRole("button", { name: SUNO_AUTOMATION_SELECTORS.MORE_MENU_NAME }).first();
   await songMenu.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
   await songMenu.click();
-  const addButton = page.getByText("Add to Playlist", { exact: true }).last();
+  const addButton = page.getByText(SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST_TEXT, { exact: true }).last();
   await addButton.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
   await addButton.click();
 
-  const nameInput = page.getByPlaceholder("Playlist Name").first();
+  const nameInput = page.getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER).first();
   await nameInput.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
   await fillEditable(nameInput, playlistName);
-  const create = page.getByRole("button", { name: "Create Playlist", exact: true }).first();
+  const create = page.getByRole("button", { name: SUNO_AUTOMATION_SELECTORS.CREATE_PLAYLIST_NAME, exact: true }).first();
   await create.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
   const playlistMutation = page.waitForRequest((request) =>
-    /studio-api-prod\.suno\.com\/api\/playlist\//i.test(request.url())
+    SUNO_AUTOMATION_PATTERNS.PLAYLIST_API.test(request.url())
     && ["POST", "PUT", "PATCH"].includes(request.method()),
   { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
   await create.click();
@@ -427,8 +427,8 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
     }
     const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
     const playlistName = !_.isEmpty(songs)
-      ? `${_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE)} và ${Math.max(0, songs.length - 1)} bài hát - ${createdAt}`
-      : `${SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE} - ${createdAt}`;
+      ? SUNO_AUTOMATION_TEXTS.formatPlaylistTitle(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE), Math.max(0, songs.length - 1), createdAt)
+      : SUNO_AUTOMATION_TEXTS.formatDefaultPlaylistTitle(SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE, createdAt);
     const playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName);
     return { playlistUrl, createdSongIds: _.uniq(createdSongIds) };
   } catch (error) {
