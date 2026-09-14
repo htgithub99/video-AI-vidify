@@ -25,6 +25,7 @@ import {
   Download,
   RefreshCw,
   ExternalLink,
+  Link2,
 } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
@@ -144,6 +145,7 @@ interface PersistedMusicCreatorState {
   viewMode?: ResultViewMode;
   selectedSeoSongIndex?: number;
   sunoPlaylistUrl?: string;
+  downloadPlaylistUrl?: string;
   sunoTrackIds?: string[];
   sunoDownloadFormat?: SunoDownloadFormat;
   sunoEvaluateTracks?: boolean;
@@ -518,6 +520,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
+  const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || "");
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
   const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || "wav");
   const [sunoEvaluateTracks, setSunoEvaluateTracks] = useState(initialState.sunoEvaluateTracks ?? true);
@@ -558,6 +561,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           viewMode,
           selectedSeoSongIndex,
           sunoPlaylistUrl,
+          downloadPlaylistUrl,
           sunoTrackIds,
           sunoDownloadFormat,
           sunoEvaluateTracks,
@@ -567,7 +571,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -780,15 +784,18 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleCopyPlaylistUrl = () => {
-    if (!sunoPlaylistUrl) return;
-    navigator.clipboard.writeText(sunoPlaylistUrl);
+    const activePlaylistUrl = _.trim(downloadPlaylistUrl) || sunoPlaylistUrl;
+    if (!activePlaylistUrl) return;
+    navigator.clipboard.writeText(activePlaylistUrl);
     setIsCopiedPlaylistUrl(true);
     toast.success(texts.SUNO_PLAYLIST_COPY_SUCCESS);
     setTimeout(() => setIsCopiedPlaylistUrl(false), 2000);
   };
 
   const handleDownloadSunoMusic = async () => {
-    if (_.isEmpty(sunoPlaylistUrl) || isDownloadingSuno) return;
+    const requestedPlaylistUrl = _.trim(downloadPlaylistUrl);
+    const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl;
+    if (_.isEmpty(activePlaylistUrl) || isDownloadingSuno) return;
     setIsDownloadingSuno(true);
     try {
       const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {
@@ -798,7 +805,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const folderResult = await folderResponse.json();
       const folderPath = _.trim(_.toString(folderResult.folderPath));
       if (!folderResponse.ok || !folderResult.success || _.isEmpty(folderPath)) return;
-      const tracks = _.map(sunoTrackIds, (songId, index) => {
+      const tracks = requestedPlaylistUrl ? [] : _.map(sunoTrackIds, (songId, index) => {
         const songIndex = Math.floor(index / 2);
         const songNumber = songIndex + 1;
         const variantSuffix = ` - ${(index % 2) + 1}`;
@@ -811,7 +818,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: JSON.stringify({
           folderPath,
           tracks,
-          playlistUrl: sunoPlaylistUrl,
+          playlistUrl: activePlaylistUrl,
           songTitles: _.map(songs, "title"),
           format: sunoDownloadFormat,
           evaluateTracks: sunoEvaluateTracks,
@@ -1495,6 +1502,52 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[240px] flex-1">
+              <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
+              <input
+                type="url"
+                value={downloadPlaylistUrl}
+                onChange={(event) => setDownloadPlaylistUrl(event.target.value)}
+                placeholder={texts.SUNO_DOWNLOAD_PLAYLIST_PLACEHOLDER}
+                disabled={isDownloadingSuno}
+                className="h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60"
+              />
+            </div>
+            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
+              <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
+                <button type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", sunoEvaluateTracks ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
+                  <Sparkles className="w-3 h-3 shrink-0" /><span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_ON}</span>
+                </button>
+              </Tooltip>
+              <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
+                <button type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", !sunoEvaluateTracks ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
+                  <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_OFF}</span>
+                </button>
+              </Tooltip>
+            </div>
+            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
+              {(["mp3", "wav"] as SunoDownloadFormat[]).map((format) => (
+                <Tooltip key={format} content={format === "mp3" ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align="center">
+                  <button type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", sunoDownloadFormat === format ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>{format}</button>
+                </Tooltip>
+              ))}
+            </div>
+            <button type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-amber-600/50 border-amber-500/40 text-white cursor-wait animate-pulse" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
+              {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
+              <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
+            </button>
+            <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
+              <button type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none">
+                {isCopiedPlaylistUrl ? <Check className="w-4 h-4 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0" />}
+              </button>
+            </Tooltip>
+            <button type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, "_blank", "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
+              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+            </button>
+          </div>
+
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -1533,7 +1586,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </div>
           ) : (
             <div>
-              {!_.isEmpty(sunoPlaylistUrl) && (
+              {!_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl) && (
                 <div className="relative mb-5 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-slate-900/95 via-amber-955/20 to-slate-900/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-xl shadow-black/40 transition-all hover:border-amber-500/40">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
@@ -1564,106 +1617,6 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
-                      <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
-                        <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
-                          <button
-                            type="button"
-                            onClick={() => setSunoEvaluateTracks(true)}
-                            disabled={isDownloadingSuno}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none",
-                              sunoEvaluateTracks
-                                ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs"
-                                : "text-slate-400 hover:text-slate-200 border border-transparent",
-                            )}>
-                            <Sparkles className="w-3 h-3 shrink-0" />
-                            <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_ON}</span>
-                          </button>
-                        </Tooltip>
-                        <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
-                          <button
-                            type="button"
-                            onClick={() => setSunoEvaluateTracks(false)}
-                            disabled={isDownloadingSuno}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
-                              !sunoEvaluateTracks
-                                ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs"
-                                : "text-slate-400 hover:text-slate-200 border border-transparent",
-                            )}>
-                            <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_OFF}</span>
-                          </button>
-                        </Tooltip>
-                      </div>
-                      <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
-                        <Tooltip content={texts.FORMAT_MP3_TOOLTIP} align="center">
-                          <button
-                            type="button"
-                            onClick={() => setSunoDownloadFormat("mp3")}
-                            disabled={isDownloadingSuno}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
-                              sunoDownloadFormat === "mp3"
-                                ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs"
-                                : "text-slate-400 hover:text-slate-200 border border-transparent",
-                            )}>
-                            <span className="inline-flex items-center leading-none">{texts.FORMAT_MP3_LABEL}</span>
-                          </button>
-                        </Tooltip>
-                        <Tooltip content={texts.FORMAT_WAV_TOOLTIP} align="center">
-                          <button
-                            type="button"
-                            onClick={() => setSunoDownloadFormat("wav")}
-                            disabled={isDownloadingSuno}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
-                              sunoDownloadFormat === "wav"
-                                ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs"
-                                : "text-slate-400 hover:text-slate-200 border border-transparent",
-                            )}>
-                            <span className="inline-flex items-center leading-none">{texts.FORMAT_WAV_LABEL}</span>
-                          </button>
-                        </Tooltip>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleDownloadSunoMusic}
-                        disabled={isDownloadingSuno || _.isEmpty(sunoPlaylistUrl)}
-                        className={cn(
-                          "h-8 px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all select-none border cursor-pointer active:scale-95 shadow-md",
-                          isDownloadingSuno
-                            ? "bg-amber-600/50 border-amber-500/40 text-white cursor-wait animate-pulse"
-                            : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed",
-                        )}>
-                        {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
-                        <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
-                      </button>
-
-                      <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
-                        <button
-                          type="button"
-                          onClick={handleCopyPlaylistUrl}
-                          className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl inline-flex items-center justify-center bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 hover:border-amber-500/40 text-slate-300 hover:text-amber-300 transition-all cursor-pointer shrink-0 select-none active:scale-95 shadow-xs"
-                          title={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN}>
-                          {isCopiedPlaylistUrl ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5 shrink-0" />
-                          )}
-                        </button>
-                      </Tooltip>
-
-                      <button
-                        type="button"
-                        onClick={() => window.open(sunoPlaylistUrl, "_blank", "noopener,noreferrer")}
-                        className="h-8 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 hover:border-amber-500/50 !text-slate-200 hover:!text-white border border-slate-700/80 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs select-none active:scale-95"
-                        title={texts.SUNO_PLAYLIST_OPEN_BTN}>
-                        <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                        <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               )}
