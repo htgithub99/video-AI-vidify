@@ -852,39 +852,8 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   }
 });
 
-const SUNO_TRACK_SELECTION_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["selectedTrackId", "targetMarket", "professionalRationale", "candidateScores"],
-  properties: {
-    selectedTrackId: { type: "string" },
-    targetMarket: { type: "string" },
-    professionalRationale: { type: "string" },
-    candidateScores: {
-      type: "array",
-      minItems: 2,
-      maxItems: 2,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["trackId", "vocalPerformance", "composition", "production", "marketFit", "technicalQuality", "total"],
-        properties: {
-          trackId: { type: "string" },
-          vocalPerformance: { type: "integer", minimum: 0, maximum: 100 },
-          composition: { type: "integer", minimum: 0, maximum: 100 },
-          production: { type: "integer", minimum: 0, maximum: 100 },
-          marketFit: { type: "integer", minimum: 0, maximum: 100 },
-          technicalQuality: { type: "integer", minimum: 0, maximum: 100 },
-          total: { type: "integer", minimum: 0, maximum: 100 },
-        },
-      },
-    },
-  },
-} as const;
-
-const selectProfessionalSunoTrack = async (
-  title: string,
-  songIds: string[],
+const selectProfessionalSunoTracks = async (
+  groups: Array<{ title: string; candidates: string[] }>,
   style: string,
   room: {
     projectId: string;
@@ -892,16 +861,39 @@ const selectProfessionalSunoTrack = async (
     model?: AiPlanningChatModel;
     signal?: AbortSignal;
   },
-): Promise<string> => {
-  const candidates = _.take(songIds, 2);
-  if (_.size(candidates) < 2) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+): Promise<Array<{ songId: string; title: string }>> => {
+  if (_.isEmpty(groups) || _.some(groups, (group) => _.size(group.candidates) !== 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+  const schema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["selectedTracks"],
+    properties: {
+      selectedTracks: {
+        type: "array",
+        minItems: groups.length,
+        maxItems: groups.length,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["songTitle", "selectedTrackId", "professionalRationale", "score"],
+          properties: {
+            songTitle: { type: "string" },
+            selectedTrackId: { type: "string" },
+            professionalRationale: { type: "string" },
+            score: { type: "integer", minimum: 0, maximum: 100 },
+          },
+        },
+      },
+    },
+  } as const;
+  const allCandidateIds = _.flatMap(groups, "candidates");
   const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(/\/$/, "");
-  const audioBuffers = await Promise.all(_.map(candidates, async (songId) => {
+  const audioBuffers = await Promise.all(_.map(allCandidateIds, async (songId) => {
     const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(songId)}/mp3`, { signal: AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS) });
     if (!response.ok) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
     return Buffer.from(await response.arrayBuffer());
   }));
-  const prompt = SUNO_AUTOMATION_TEXTS.buildTrackEvaluationPrompt(title, style, candidates[0], candidates[1], JSON.stringify(SUNO_TRACK_SELECTION_SCHEMA));
+  const prompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, JSON.stringify(schema));
   let retryPrompt = prompt;
   let lastError: unknown;
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MAX_EVALUATION_ATTEMPTS; attempt++) {
@@ -914,22 +906,23 @@ const selectProfessionalSunoTrack = async (
       chromeHeadless: false,
       signal: room.signal,
       attachments: attempt === 0
-        ? [
-            { name: `${candidates[0]}.mp3`, mimeType: "audio/mpeg", buffer: audioBuffers[0] },
-            { name: `${candidates[1]}.mp3`, mimeType: "audio/mpeg", buffer: audioBuffers[1] },
-          ]
+        ? _.map(allCandidateIds, (songId, index) => ({ name: `${index + 1}-${songId}.mp3`, mimeType: "audio/mpeg", buffer: audioBuffers[index] }))
         : undefined,
       artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
-      requestId: `${room.projectId}-${_.kebabCase(title)}-${attempt + 1}`,
+      requestId: `${room.projectId}-chunk-${_.kebabCase(groups[0].title)}-${attempt + 1}`,
       closeRoomOnComplete: false,
     });
     try {
-      const evaluation = parseAiJsonArtifact<{ selectedTrackId: string }>(response.text, SUNO_TRACK_SELECTION_SCHEMA, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
-      if (!_.includes(candidates, evaluation.selectedTrackId)) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
-      return evaluation.selectedTrackId;
+      const evaluation = parseAiJsonArtifact<{ selectedTracks: Array<{ selectedTrackId: string }> }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+      if (_.size(evaluation.selectedTracks) !== groups.length) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
+      return _.map(groups, (group, index) => {
+        const selectedTrackId = _.trim(_.toString(evaluation.selectedTracks[index]?.selectedTrackId));
+        if (!_.includes(group.candidates, selectedTrackId)) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
+        return { songId: selectedTrackId, title: group.title };
+      });
     } catch (error) {
       lastError = error;
-      retryPrompt = SUNO_AUTOMATION_TEXTS.buildTrackEvaluationRetryPrompt(candidates);
+      retryPrompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, JSON.stringify(schema));
     }
   }
   throw lastError;
@@ -998,24 +991,24 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         AiPlanningFallbackProvider.GeminiChat,
       );
       req.once("aborted", planningRun.cancel);
-      const selectedTracks: typeof tracks = [];
-      for (const pair of _.chunk(tracks, 2)) {
-        if (_.size(pair) < 2) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
-        const baseTitle = _.trim(pair[0].title.replace(/\s+-\s+[12]$/, ""));
-        const selectedId = await selectProfessionalSunoTrack(
-          baseTitle,
-          _.map(pair, "songId"),
-          _.trim(_.toString(req.body?.style)),
-          {
-            projectId: evaluationProjectId,
-            workerId: SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID,
-            model: req.body?.aiExecution?.model,
-            signal: planningRun.signal,
-          },
-        );
-        selectedTracks.push({ songId: selectedId, title: baseTitle });
+      const downloadedPaths: string[] = [];
+      const trackPairs = _.chunk(tracks, 2);
+      if (_.some(trackPairs, (pair) => _.size(pair) < 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+      const format = _.toLower(_.trim(_.toString(req.body?.format))) as "mp3" | "wav";
+      for (const pairChunk of _.chunk(trackPairs, SUNO_AUTOMATION_CONFIG.EVALUATION_SONGS_PER_CHUNK)) {
+        const groups = _.map(pairChunk, (pair) => ({
+          title: _.trim(pair[0].title.replace(/\s+-\s+[12]$/, "")),
+          candidates: _.map(pair, "songId"),
+        }));
+        const selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), {
+          projectId: evaluationProjectId,
+          workerId: SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID,
+          model: req.body?.aiExecution?.model,
+          signal: planningRun.signal,
+        });
+        downloadedPaths.push(...await downloadSunoTracksToFolder(selectedTracks, _.toString(req.body?.folderPath), format));
       }
-      tracks = selectedTracks;
+      return res.json({ success: true, downloadedPaths });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as "mp3" | "wav";
     const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format);

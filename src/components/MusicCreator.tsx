@@ -51,6 +51,7 @@ import { cn } from "../lib/utils";
 import { storageUtils } from "../lib/storage";
 
 const MUSIC_STYLE_LIBRARY_KEY = "music_creator_style_library";
+const MUSIC_INSPO_LIBRARY_KEY = "music_creator_inspo_library";
 const MUSIC_CREATOR_STATE_KEY = "music_creator_workspace_state_v1";
 const MUSIC_MEDIA_DB_NAME = "music_creator_media";
 const MUSIC_MEDIA_STORE_NAME = "assets";
@@ -87,6 +88,15 @@ interface SavedMusicStyle {
   title: string;
   content: string;
 }
+
+type SavedMusicInspo = SavedMusicStyle;
+
+const readSavedInspos = (): SavedMusicInspo[] => {
+  try {
+    const value = storageUtils.get(MUSIC_INSPO_LIBRARY_KEY);
+    return value ? _.filter(JSON.parse(value), (item) => !_.isEmpty(_.trim(item?.title)) && !_.isEmpty(_.trim(item?.content))) : [];
+  } catch { return []; }
+};
 
 const readSavedStyles = (): SavedMusicStyle[] => {
   try {
@@ -494,6 +504,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [initialSavedStyles] = useState<SavedMusicStyle[]>(readSavedStyles);
   const [style, setStyle] = useState(() => initialState.style || initialSavedStyles[0]?.content || "");
   const [savedStyles, setSavedStyles] = useState<SavedMusicStyle[]>(initialSavedStyles);
+  const [styleName, setStyleName] = useState("");
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
   const [editingOriginalStyle, setEditingOriginalStyle] = useState("");
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
@@ -527,6 +538,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
+  const [savedInspos, setSavedInspos] = useState<SavedMusicInspo[]>(readSavedInspos);
+  const [inspoName, setInspoName] = useState("");
+  const [editingInspoIndex, setEditingInspoIndex] = useState<number | null>(null);
+  const [inspoToDelete, setInspoToDelete] = useState<SavedMusicInspo | null>(null);
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -583,6 +598,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setEditingStyleIndex(index);
     setEditingOriginalStyle(style);
     setStyle(savedStyles[index].content);
+    setStyleName(savedStyles[index].title);
   };
 
   const handleCopyStyle = (savedStyle: SavedMusicStyle, index: number) => {
@@ -596,12 +612,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setStyle(editingStyleIndex === null ? "" : editingOriginalStyle);
     setEditingStyleIndex(null);
     setEditingOriginalStyle("");
+    setStyleName("");
   };
 
   const handleSaveStyle = () => {
     const nextContent = _.trim(style);
     if (_.isEmpty(nextContent)) return;
-    const nextTitle = _.truncate(_.split(nextContent, /[,.;\n]/)[0], { length: 32 });
+    const nextTitle = _.trim(styleName) || _.truncate(_.split(nextContent, /[,.;\n]/)[0], { length: 32 });
     const nextItem = { title: nextTitle, content: nextContent };
     const nextStyles =
       editingStyleIndex === null
@@ -610,7 +627,36 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     persistStyles(nextStyles);
     setEditingStyleIndex(null);
     setEditingOriginalStyle("");
+    setStyleName("");
     toast.success(texts.STYLE_SAVE_SUCCESS);
+  };
+
+  const persistInspos = (items: SavedMusicInspo[]) => {
+    setSavedInspos(items);
+    storageUtils.set(MUSIC_INSPO_LIBRARY_KEY, JSON.stringify(items));
+  };
+
+  const handleSaveInspo = () => {
+    const content = _.trim(sunoInspo);
+    if (_.isEmpty(content)) return;
+    const item = { title: _.trim(inspoName) || content, content };
+    persistInspos(editingInspoIndex === null ? [...savedInspos, item] : _.map(savedInspos, (value, index) => index === editingInspoIndex ? item : value));
+    setEditingInspoIndex(null);
+    setInspoName("");
+    toast.success(texts.INSPO_SAVE_SUCCESS);
+  };
+
+  const handleCancelInspoEdit = () => {
+    setEditingInspoIndex(null);
+    setInspoName("");
+    setSunoInspo("");
+  };
+
+  const confirmDeleteInspo = () => {
+    if (!inspoToDelete) return;
+    persistInspos(_.reject(savedInspos, (item) => _.isEqual(item, inspoToDelete)));
+    if (_.isEqual(sunoInspo, inspoToDelete.content)) setSunoInspo("");
+    setInspoToDelete(null);
   };
 
   const handleDeleteStyle = (savedStyle: SavedMusicStyle) => {
@@ -711,15 +757,31 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
       const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
+      let resolvedThumbnailUrl = generatedThumbnailUrl;
       setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSongs(generatedSongs);
       setPlaylistSeoOptions(generatedPlaylistSeo);
       setGeneratedThumbnail(generatedThumbnailUrl);
       void writeMusicMedia("generated", generatedThumbnailUrl).catch(() => undefined);
+      if (_.isEmpty(generatedThumbnailUrl)) {
+        const retryResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
+          method: HTTP_METHODS.POST,
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+          body: JSON.stringify({ songs: generatedSongs, style: trimmedStyle, playlistSeoOptions: generatedPlaylistSeo, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless }),
+          signal: abortController.signal,
+        });
+        const retryResult = await retryResponse.json();
+        const retryImage = _.toString(retryResult.thumbnail);
+        if (retryResponse.ok && retryResult.success && !_.isEmpty(retryImage)) {
+          resolvedThumbnailUrl = retryImage;
+          setGeneratedThumbnail(retryImage);
+          void writeMusicMedia("generated", retryImage).catch(() => undefined);
+        }
+      }
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
-      if (thumbnailWarning) toast.error(thumbnailWarning);
+      if (thumbnailWarning && _.isEmpty(resolvedThumbnailUrl)) toast.error(thumbnailWarning);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
@@ -975,45 +1037,42 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 )}
               </div>
 
-              <div className="relative z-10">
-                <textarea
-                  rows={4}
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                  placeholder={texts.STYLE_PLACEHOLDER}
-                  disabled={isLoading}
-                  className="w-full min-h-[100px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
-                />
-              </div>
-
-              <div className="space-y-2 relative z-10">
-                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-                  <Disc3 className="w-3.5 h-3.5 text-orange-400" />
-                  <span>{texts.SUNO_INSPO_LABEL}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 relative z-10">
+                <div className="sm:col-span-4">
+                  <input
+                    type="text"
+                    value={styleName}
+                    onChange={(event) => setStyleName(event.target.value)}
+                    placeholder={texts.STYLE_NAME_PLACEHOLDER}
+                    disabled={isLoading}
+                    className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={sunoInspo}
-                  onChange={(event) => setSunoInspo(event.target.value)}
-                  disabled={isLoading || isCreatingSuno}
-                  placeholder={texts.SUNO_INSPO_PLACEHOLDER}
-                  className="w-full h-11 bg-slate-955/90 text-slate-100 px-3.5 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-orange-500/80 focus:ring-1 focus:ring-orange-500/20"
-                />
+                <div className="sm:col-span-8">
+                  <input
+                    type="text"
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    placeholder={texts.STYLE_PLACEHOLDER}
+                    disabled={isLoading}
+                    className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2 pt-1 border-t border-slate-800/60 relative z-10">
+              <div className="space-y-1.5 pt-0.5 relative z-10">
                 <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
                   <Flame className="w-3.5 h-3.5 text-amber-400" />
                   <span>{texts.STYLE_YOUR_STYLES}</span>
                 </div>
-                <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto custom-scrollbar p-1">
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5">
                   {_.map(savedStyles, (savedStyle, styleIndex) => {
                     const isSelected = _.isEqual(style, savedStyle.content);
                     return (
                       <div
                         key={`${styleIndex}-${savedStyle.title}`}
                         className={cn(
-                          "group relative inline-flex items-center pl-3 pr-2 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[38px] min-h-[38px]",
+                          "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
                           isSelected
                             ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-500/80 ring-1 ring-purple-500/30 shadow-2xs"
                             : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-purple-400",
@@ -1022,7 +1081,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <Button
                             type="button"
                             variant="unstyled"
-                            onClick={() => setStyle(savedStyle.content)}
+                            onClick={() => { setStyle(savedStyle.content); setStyleName(savedStyle.title); }}
                             disabled={isLoading}
                             className="text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
                             title={savedStyle.content}>
@@ -1042,7 +1101,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         </Tooltip>
 
                         <div className="flex items-center gap-1 ml-1.5 shrink-0 self-center">
-                          <Tooltip content={texts.COPY_STYLE_BTN} align="center" className="w-5.5 h-5.5 min-w-5.5 min-h-5.5 max-w-5.5 max-h-5.5 shrink-0 self-center p-0 flex items-center justify-center">
+                          <Tooltip content={texts.COPY_STYLE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
                             <Button
                               type="button"
                               variant="unstyled"
@@ -1052,12 +1111,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.COPY_STYLE_BTN}
-                              className="btn-icon-tiny !w-[22px] !h-[22px] !min-w-[22px] !min-h-[22px] !max-w-[22px] !max-h-[22px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300">
-                              {copiedStyleIndex === styleIndex ? <Check className="w-[11px] h-[11px] shrink-0 text-emerald-500" /> : <Copy className="w-[11px] h-[11px] shrink-0" />}
+                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300">
+                              {copiedStyleIndex === styleIndex ? <Check className="w-2.5 h-2.5 shrink-0 text-emerald-500" /> : <Copy className="w-2.5 h-2.5 shrink-0" />}
                             </Button>
                           </Tooltip>
 
-                          <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className="w-5.5 h-5.5 min-w-5.5 min-h-5.5 max-w-5.5 max-h-5.5 shrink-0 self-center p-0 flex items-center justify-center">
+                          <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
                             <Button
                               type="button"
                               variant="unstyled"
@@ -1067,12 +1126,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_UPDATE_BTN}
-                              className="btn-icon-tiny !w-[22px] !h-[22px] !min-w-[22px] !min-h-[22px] !max-w-[22px] !max-h-[22px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300">
-                              <Pencil className="w-[11px] h-[11px] shrink-0" />
+                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300">
+                              <Pencil className="w-2.5 h-2.5 shrink-0" />
                             </Button>
                           </Tooltip>
 
-                          <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className="w-5.5 h-5.5 min-w-5.5 min-h-5.5 max-w-5.5 max-h-5.5 shrink-0 self-center p-0 flex items-center justify-center">
+                          <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
                             <Button
                               type="button"
                               variant="unstyled"
@@ -1082,8 +1141,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_DELETE_BTN}
-                              className="btn-icon-tiny !w-[22px] !h-[22px] !min-w-[22px] !min-h-[22px] !max-w-[22px] !max-h-[22px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400">
-                              <Trash2 className="w-[11px] h-[11px] shrink-0" />
+                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400">
+                              <Trash2 className="w-2.5 h-2.5 shrink-0" />
                             </Button>
                           </Tooltip>
                         </div>
@@ -1096,6 +1155,144 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </span>
                   )}
                 </div>
+              </div>
+
+              <div className="space-y-2.5 relative z-10 border-t border-slate-800/60 pt-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Disc3 className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
+                      <span>{texts.SUNO_INSPO_LABEL}</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono">
+                        {texts.SUNO_INSPO_BADGE}
+                      </span>
+                    </span>
+                  </div>
+                  {!_.isEmpty(_.trim(sunoInspo)) && (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="unstyled"
+                        onClick={handleSaveInspo}
+                        disabled={isLoading || isCreatingSuno}
+                        className="h-7.5 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
+                        <Save className="w-3 h-3 shrink-0" />
+                        <span className="inline-flex items-center leading-none">{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="unstyled"
+                        onClick={handleCancelInspoEdit}
+                        disabled={isLoading || isCreatingSuno}
+                        className="h-7.5 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none">
+                        <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <div className="sm:col-span-4">
+                    <input
+                      type="text"
+                      value={inspoName}
+                      onChange={(event) => setInspoName(event.target.value)}
+                      disabled={isLoading || isCreatingSuno}
+                      placeholder={texts.INSPO_NAME_PLACEHOLDER}
+                      className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80"
+                    />
+                  </div>
+                  <div className="sm:col-span-8">
+                    <input
+                      type="text"
+                      value={sunoInspo}
+                      onChange={(event) => setSunoInspo(event.target.value)}
+                      disabled={isLoading || isCreatingSuno}
+                      placeholder={texts.SUNO_INSPO_PLACEHOLDER}
+                      className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                    />
+                  </div>
+                </div>
+
+                {!_.isEmpty(savedInspos) && (
+                  <div className="space-y-1.5 pt-0.5">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <span>{texts.INSPO_YOUR_INSPOS}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5">
+                      {_.map(savedInspos, (item, index) => {
+                        const isSelected = _.isEqual(sunoInspo, item.content);
+                        return (
+                          <div
+                            key={`${item.title}-${index}`}
+                            className={cn(
+                              "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
+                              isSelected
+                                ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-500/80 ring-1 ring-purple-500/30 shadow-2xs"
+                                : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-purple-400",
+                            )}>
+                            <Tooltip content={item.content} align="start">
+                              <Button
+                                type="button"
+                                variant="unstyled"
+                                onClick={() => { setSunoInspo(item.content); setInspoName(item.title); }}
+                                disabled={isLoading || isCreatingSuno}
+                                className="text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
+                                title={item.content}>
+                                <span
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
+                                    isSelected
+                                      ? "bg-purple-600 dark:bg-purple-400 ring-1 ring-purple-400/40"
+                                      : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-500",
+                                  )}
+                                />
+                                <span className="truncate font-black !text-[#1e1b4b] dark:!text-white text-[11px] leading-none">
+                                  {item.title}
+                                </span>
+                              </Button>
+                            </Tooltip>
+
+                            <div className="flex items-center gap-1 ml-1.5 shrink-0 self-center">
+                              <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
+                                <Button
+                                  type="button"
+                                  variant="unstyled"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingInspoIndex(index);
+                                    setInspoName(item.title);
+                                    setSunoInspo(item.content);
+                                  }}
+                                  disabled={isLoading || isCreatingSuno}
+                                  title={texts.STYLE_UPDATE_BTN}
+                                  className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300">
+                                  <Pencil className="w-2.5 h-2.5 shrink-0" />
+                                </Button>
+                              </Tooltip>
+
+                              <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
+                                <Button
+                                  type="button"
+                                  variant="unstyled"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInspoToDelete(item);
+                                  }}
+                                  disabled={isLoading || isCreatingSuno}
+                                  title={texts.STYLE_DELETE_BTN}
+                                  className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400">
+                                  <Trash2 className="w-2.5 h-2.5 shrink-0" />
+                                </Button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1719,6 +1916,19 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               className="h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none">
               <span className="inline-flex items-center leading-none">{texts.STYLE_DELETE_BTN}</span>
             </Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        isOpen={Boolean(inspoToDelete)}
+        onClose={() => setInspoToDelete(null)}
+        maxWidth="max-w-md"
+        title={texts.INSPO_DELETE_CONFIRM}>
+        <div className="space-y-4 text-left">
+          <p className="text-sm text-slate-300">{texts.INSPO_DELETE_CONFIRM} <span className="font-extrabold text-white">“{inspoToDelete?.title}”</span>?</p>
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <Button type="button" variant="outline" size="sm" onClick={() => setInspoToDelete(null)}>{texts.CANCEL_BTN}</Button>
+            <Button type="button" variant="danger" size="sm" onClick={confirmDeleteInspo}>{texts.STYLE_DELETE_BTN}</Button>
           </div>
         </div>
       </Modal>
