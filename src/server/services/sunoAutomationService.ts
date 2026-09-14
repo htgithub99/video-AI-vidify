@@ -34,6 +34,14 @@ const ensureSunoNotCancelled = (): void => {
   if (sunoCancellationRequested) throw new Error(SUNO_AUTOMATION_TEXTS.CANCELLED_ERR);
 };
 
+const waitWithCancellation = async (page: Page, durationMs: number): Promise<void> => {
+  const deadline = Date.now() + durationMs;
+  while (Date.now() < deadline) {
+    ensureSunoNotCancelled();
+    await page.waitForTimeout(Math.min(500, deadline - Date.now()));
+  }
+};
+
 export const cancelActiveSunoCreation = async (): Promise<void> => {
   sunoCancellationRequested = true;
   await activeSunoPage?.close().catch(() => undefined);
@@ -368,12 +376,16 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
         const numberedSong = { ...song, title: formatNumberedSongTitle(song.title, songIndex) };
         let songIds: string[] = [];
         for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_ATTEMPTS_PER_PROMPT && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
+          if (attempt > 0) await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.RETRY_PROMPT_DELAY_MS);
           songIds = _.uniq([...songIds, ...(await createOneSong(page, numberedSong))]);
         }
         if (songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) {
           throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(numberedSong.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
         }
         createdSongIds.push(...songIds);
+        if (songIndex < songs.length - 1) {
+          await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.BETWEEN_SONG_PROMPTS_DELAY_MS);
+        }
       }
     }
     const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
