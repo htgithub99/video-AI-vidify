@@ -524,6 +524,7 @@ export const ROUTER_PATHS = {
   MUSIC_THUMBNAIL: "/music-thumbnail",
   MUSIC_SUNO_CREATE: "/music-suno-create",
   MUSIC_SUNO_CANCEL: "/music-suno-cancel",
+  MUSIC_SUNO_DOWNLOAD: "/music-suno-download",
   MUSIC_SUNO_LOGIN: "/music-suno-login",
 } as const;
 

@@ -143,6 +143,7 @@ interface PersistedMusicCreatorState {
   viewMode?: ResultViewMode;
   selectedSeoSongIndex?: number;
   sunoPlaylistUrl?: string;
+  sunoTrackIds?: string[];
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
 }
@@ -514,6 +515,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
+  const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
+  const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
@@ -550,13 +553,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           viewMode,
           selectedSeoSongIndex,
           sunoPlaylistUrl,
+          sunoTrackIds,
           sunoInspo,
           sunoSettings,
         } satisfies PersistedMusicCreatorState),
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -658,6 +662,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
     setGeneratedThumbnail("");
+    setSunoPlaylistUrl("");
+    setSunoTrackIds([]);
     void writeMusicMedia("generated", "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
@@ -735,6 +741,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
     setSunoPlaylistUrl("");
+    setSunoTrackIds([]);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
@@ -745,6 +752,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const result = await response.json();
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
       setSunoPlaylistUrl(_.toString(result.playlistUrl));
+      setSunoTrackIds(_.map(_.castArray(result.createdSongIds || []), _.toString));
       toast.success(texts.SUNO_CREATE_SUCCESS);
     } catch (error: any) {
       if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
@@ -770,6 +778,38 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setIsCopiedPlaylistUrl(true);
     toast.success(texts.SUNO_PLAYLIST_COPY_SUCCESS);
     setTimeout(() => setIsCopiedPlaylistUrl(false), 2000);
+  };
+
+  const handleDownloadSunoMusic = async () => {
+    if (_.isEmpty(sunoTrackIds) || isDownloadingSuno) return;
+    setIsDownloadingSuno(true);
+    try {
+      const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+      });
+      const folderResult = await folderResponse.json();
+      const folderPath = _.trim(_.toString(folderResult.folderPath));
+      if (!folderResponse.ok || !folderResult.success || _.isEmpty(folderPath)) return;
+      const tracks = _.map(sunoTrackIds, (songId, index) => {
+        const sourceSong = songs[Math.floor(index / 2)];
+        const songNumber = Math.floor(index / 2) + 1;
+        const variantNumber = (index % 2) + 1;
+        return { songId, title: `${songNumber}. ${sourceSong?.title || `Suno track ${songNumber}`} - ${variantNumber}` };
+      });
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({ folderPath, tracks }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
+      toast.success(texts.SUNO_DOWNLOAD_SUCCESS.replace("{count}", _.toString(_.size(result.downloadedPaths))).replace("{folder}", folderPath));
+    } catch (error: any) {
+      toast.error(_.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR));
+    } finally {
+      setIsDownloadingSuno(false);
+    }
   };
 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1474,6 +1514,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleDownloadSunoMusic}
+                      disabled={isDownloadingSuno || _.isEmpty(sunoTrackIds)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 !text-white border border-emerald-400/50 flex items-center gap-1.5 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm select-none active:scale-95">
+                      {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                      <span>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={handleCopyPlaylistUrl}

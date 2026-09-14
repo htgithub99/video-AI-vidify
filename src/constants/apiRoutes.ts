@@ -34,6 +34,7 @@ export const API_ROUTES = {
   PIPELINE_MUSIC_THUMBNAIL: "/api/pipeline/music-thumbnail",
   PIPELINE_MUSIC_SUNO_CREATE: "/api/pipeline/music-suno-create",
   PIPELINE_MUSIC_SUNO_CANCEL: "/api/pipeline/music-suno-cancel",
+  PIPELINE_MUSIC_SUNO_DOWNLOAD: "/api/pipeline/music-suno-download",
   PIPELINE_MUSIC_SUNO_LOGIN: "/api/pipeline/music-suno-login",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",

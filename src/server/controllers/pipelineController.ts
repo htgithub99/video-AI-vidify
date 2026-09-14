@@ -207,7 +207,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 import { analyzeCinematicClipsWithLibraries, validateCinematicEditorialDecisions } from "../services/cinematicClipAnalyzerService.js";
-import { cancelActiveSunoCreation, createSunoPlaylist, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
+import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
 import { hasCinematicSceneDialogue } from "../../services/cinematicEditTimelineService.js";
 
 import {
@@ -876,6 +876,19 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
 router.post(ROUTER_PATHS.MUSIC_SUNO_CANCEL, async (_req: Request, res: Response) => {
   await cancelActiveSunoCreation();
   return res.json({ success: true });
+});
+
+router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response) => {
+  try {
+    const tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({
+      songId: _.trim(_.toString(track?.songId)),
+      title: _.trim(_.toString(track?.title)),
+    }));
+    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath));
+    return res.json({ success: true, downloadedPaths });
+  } catch (error) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR)) });
+  }
 });
 
 router.post(ROUTER_PATHS.MUSIC_SUNO_LOGIN, async (_req: Request, res: Response) => {

@@ -1,6 +1,7 @@
 export const SUNO_AUTOMATION_CONFIG = {
   SUNO_BASE_URL: "https://suno.com",
   SUNO_STUDIO_API_URL: "https://studio-api-prod.suno.com",
+  SUNO_DOWNLOAD_ORIGIN: "https://download.sunoupload.site",
   SUNO_CREATE_URL: "https://suno.com/create",
   EXPECTED_ACCOUNT_EMAIL: "toanleoht@gmail.com",
   SUNO_CDP_PORT: 9444,
@@ -146,6 +147,9 @@ export const SUNO_AUTOMATION_TEXTS = {
   ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
   GENERATION_FAILED_ERR: "Suno không thể hoàn tất một bài hát trong hàng đợi.",
   GENERATION_QUEUE_TIMEOUT_ERR: "Suno xử lý hàng đợi quá lâu. Vui lòng tiếp tục lại sau.",
+  DOWNLOAD_FOLDER_INVALID_ERR: "Thư mục lưu nhạc không hợp lệ.",
+  DOWNLOAD_TRACKS_REQUIRED_ERR: "Không có bài hát Suno để tải xuống.",
+  DOWNLOAD_TRACK_FAILED_ERR: "Không thể tải bài hát Suno.",
   EMPTY_DIAGNOSTIC: "trang trống",
 
   VALIDATION_PLAYLIST_INPUT_ERR: "Danh sách bài hát hoặc phong cách Suno chưa đầy đủ.",
