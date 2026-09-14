@@ -124,6 +124,7 @@ interface GeneratedSong {
   originalityNotes: string[];
 }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
+type SunoDownloadFormat = "mp3" | "wav";
 
 type ResultViewMode = "lyrics" | "seo" | "split";
 
@@ -144,6 +145,7 @@ interface PersistedMusicCreatorState {
   selectedSeoSongIndex?: number;
   sunoPlaylistUrl?: string;
   sunoTrackIds?: string[];
+  sunoDownloadFormat?: SunoDownloadFormat;
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
 }
@@ -516,6 +518,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
+  const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || "mp3");
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
@@ -554,13 +557,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           selectedSeoSongIndex,
           sunoPlaylistUrl,
           sunoTrackIds,
+          sunoDownloadFormat,
           sunoInspo,
           sunoSettings,
         } satisfies PersistedMusicCreatorState),
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -800,7 +804,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ folderPath, tracks }),
+        body: JSON.stringify({ folderPath, tracks, format: sunoDownloadFormat }),
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
@@ -1514,6 +1518,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <select
+                      value={sunoDownloadFormat}
+                      onChange={(event) => setSunoDownloadFormat(event.target.value as SunoDownloadFormat)}
+                      disabled={isDownloadingSuno}
+                      className="h-8 rounded-xl border border-emerald-500/40 bg-slate-900 px-2 text-xs font-bold text-emerald-300 outline-none focus:border-emerald-400 cursor-pointer disabled:opacity-50">
+                      <option value="mp3">MP3</option>
+                      <option value="wav">WAV</option>
+                    </select>
                     <button
                       type="button"
                       onClick={handleDownloadSunoMusic}

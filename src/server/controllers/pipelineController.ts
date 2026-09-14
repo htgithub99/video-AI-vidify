@@ -884,7 +884,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       songId: _.trim(_.toString(track?.songId)),
       title: _.trim(_.toString(track?.title)),
     }));
-    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath));
+    const format = _.toLower(_.trim(_.toString(req.body?.format))) as "mp3" | "wav";
+    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format);
     return res.json({ success: true, downloadedPaths });
   } catch (error) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR)) });

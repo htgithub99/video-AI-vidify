@@ -28,19 +28,20 @@ export interface SunoCreationResult {
 export interface SunoAdvancedSettings { excludeStyles?: string; vocalGender?: "male" | "female" | "auto"; duration?: "auto"; maxMode?: boolean; weirdness?: number; styleInfluence?: number; variety?: number; personalize?: boolean }
 interface ActiveSunoGeneration { title: string; songIds: string[] }
 export interface SunoDownloadTrack { songId: string; title: string }
+export type SunoDownloadFormat = "mp3" | "wav";
 
 const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), SUNO_AUTOMATION_CONFIG.APP_SUBDIR, SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = `http://${SUNO_AUTOMATION_CONFIG.SUNO_CDP_HOST}:${SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT}`;
 let activeSunoPage: Page | null = null;
 let sunoCancellationRequested = false;
 
-const createSafeAudioFileName = (title: string, index: number): string => {
+const createSafeAudioFileName = (title: string, index: number, format: SunoDownloadFormat): string => {
   const safeTitle = _.trim(title).split("").filter((character) => character.charCodeAt(0) >= 32).join("")
     .replace(/[<>:"/\\|?*]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/[. ]+$/g, "")
     .slice(0, 140) || `Suno track ${index + 1}`;
-  return `${safeTitle}.mp3`;
+  return `${safeTitle}.${format}`;
 };
 
 const resolveAvailableFilePath = (folderPath: string, fileName: string): string => {
@@ -51,7 +52,7 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
   return candidate;
 };
 
-export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string): Promise<string[]> => {
+export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat): Promise<string[]> => {
   const requestedFolder = _.trim(folderPath);
   if (_.isEmpty(requestedFolder) || !path.isAbsolute(requestedFolder)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
   const resolvedFolder = path.resolve(requestedFolder);
@@ -59,14 +60,15 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
   if (!folderStat?.isDirectory()) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
   const validTracks = _.filter(tracks, (track) => !_.isEmpty(_.trim(track.songId)));
   if (_.isEmpty(validTracks)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACKS_REQUIRED_ERR);
+  if (!_.includes(["mp3", "wav"], format)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
 
   const downloadedPaths: string[] = [];
   for (const [index, track] of validTracks.entries()) {
-    const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index));
+    const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(/\/$/, "");
-    const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(track.songId)}/mp3`, {
-      headers: { Accept: "audio/mpeg,*/*" },
-      signal: AbortSignal.timeout(120_000),
+    const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(track.songId)}/${format}`, {
+      headers: { Accept: format === "wav" ? "audio/wav,*/*" : "audio/mpeg,*/*" },
+      signal: AbortSignal.timeout(format === "wav" ? 180_000 : 120_000),
     });
     if (!response.ok || !response.body) throw new Error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} ${track.title}`);
     try {
