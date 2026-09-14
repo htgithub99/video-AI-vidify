@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   Download,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
@@ -513,6 +514,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
+  const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -760,6 +762,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
     }).catch(() => undefined);
     toast.info(texts.SUNO_CANCELLED_TOAST);
+  };
+
+  const handleCopyPlaylistUrl = () => {
+    if (!sunoPlaylistUrl) return;
+    navigator.clipboard.writeText(sunoPlaylistUrl);
+    setIsCopiedPlaylistUrl(true);
+    toast.success(texts.SUNO_PLAYLIST_COPY_SUCCESS);
+    setTimeout(() => setIsCopiedPlaylistUrl(false), 2000);
   };
 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1402,14 +1412,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span>{texts.SUNO_CANCEL_BTN}</span>
                     </Button>
                   )}
-                  <Button
+                  <button
                     type="button"
-                    variant="unstyled"
                     onClick={viewMode === "seo" ? handleCopyAllSeo : handleCopyAllLyrics}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs">
-                    <Copy className="w-3 h-3 text-purple-400" />
-                    <span>{texts.COPY_ALL_BTN}</span>
-                  </Button>
+                    className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
+                    title={texts.COPY_ALL_BTN}>
+                    <Copy className="w-4 h-4 shrink-0" />
+                  </button>
                 </div>
               )}
             </div>
@@ -1454,14 +1463,39 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           ) : (
             <div>
               {!_.isEmpty(sunoPlaylistUrl) && (
-                <a
-                  href={sunoPlaylistUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-300 hover:bg-orange-500/15 transition-colors">
-                  <span>{texts.SUNO_PLAYLIST_READY}</span>
-                  <span className="truncate font-mono font-normal underline">{sunoPlaylistUrl}</span>
-                </a>
+                <div className="mb-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-500/12 via-amber-500/8 to-slate-900/60 p-3 sm:px-4 text-xs backdrop-blur-md shadow-md">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center shrink-0 shadow-xs">
+                      <Disc3 className="w-4 h-4 animate-spin [animation-duration:8s]" />
+                    </div>
+                    <span className="font-extrabold text-slate-100 text-xs sm:text-sm whitespace-nowrap">
+                      {texts.SUNO_PLAYLIST_LABEL}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleCopyPlaylistUrl}
+                      className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-orange-300 hover:text-white transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
+                      title={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN}>
+                      {isCopiedPlaylistUrl ? (
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <Copy className="w-4 h-4 shrink-0" />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => window.open(sunoPlaylistUrl, "_blank", "noopener,noreferrer")}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 !text-white hover:!text-white border border-orange-400/50 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm select-none active:scale-95"
+                      title={texts.SUNO_PLAYLIST_OPEN_BTN}>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0 !text-white" />
+                      <span className="!text-white">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+                    </button>
+                  </div>
+                </div>
               )}
               {viewMode === "lyrics" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1">
