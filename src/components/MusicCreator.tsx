@@ -46,20 +46,18 @@ import {
   CONTENT_TYPES,
   MUSIC_CREATOR_CONSTANTS,
   MUSIC_CREATOR_TEXTS,
+  SUNO_AUTOMATION_CONFIG,
+  SUNO_AUTOMATION_PATTERNS,
 } from "../constants";
 import { cn } from "../lib/utils";
 import { storageUtils } from "../lib/storage";
 
-const MUSIC_STYLE_LIBRARY_KEY = "music_creator_style_library";
-const MUSIC_INSPO_LIBRARY_KEY = "music_creator_inspo_library";
-const MUSIC_CREATOR_STATE_KEY = "music_creator_workspace_state_v1";
-const MUSIC_MEDIA_DB_NAME = "music_creator_media";
-const MUSIC_MEDIA_STORE_NAME = "assets";
+
 
 const openMusicMediaDb = (): Promise<IDBDatabase> => new Promise((resolve, reject) => {
-  const request = indexedDB.open(MUSIC_MEDIA_DB_NAME, 1);
+  const request = indexedDB.open(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_DB_NAME, 1);
   request.onupgradeneeded = () => {
-    if (!request.result.objectStoreNames.contains(MUSIC_MEDIA_STORE_NAME)) request.result.createObjectStore(MUSIC_MEDIA_STORE_NAME);
+    if (!request.result.objectStoreNames.contains(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME)) request.result.createObjectStore(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME);
   };
   request.onsuccess = () => resolve(request.result);
   request.onerror = () => reject(request.error);
@@ -68,7 +66,7 @@ const openMusicMediaDb = (): Promise<IDBDatabase> => new Promise((resolve, rejec
 const readMusicMedia = async (key: string): Promise<string> => {
   const db = await openMusicMediaDb();
   return new Promise((resolve, reject) => {
-    const request = db.transaction(MUSIC_MEDIA_STORE_NAME, "readonly").objectStore(MUSIC_MEDIA_STORE_NAME).get(key);
+    const request = db.transaction(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME, "readonly").objectStore(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME).get(key);
     request.onsuccess = () => resolve(_.toString(request.result));
     request.onerror = () => reject(request.error);
   });
@@ -77,8 +75,8 @@ const readMusicMedia = async (key: string): Promise<string> => {
 const writeMusicMedia = async (key: string, value: string): Promise<void> => {
   const db = await openMusicMediaDb();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(MUSIC_MEDIA_STORE_NAME, "readwrite");
-    transaction.objectStore(MUSIC_MEDIA_STORE_NAME).put(value, key);
+    const transaction = db.transaction(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME, "readwrite");
+    transaction.objectStore(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME).put(value, key);
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
   });
@@ -93,14 +91,14 @@ type SavedMusicInspo = SavedMusicStyle;
 
 const readSavedInspos = (): SavedMusicInspo[] => {
   try {
-    const value = storageUtils.get(MUSIC_INSPO_LIBRARY_KEY);
+    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY);
     return value ? _.filter(JSON.parse(value), (item) => !_.isEmpty(_.trim(item?.title)) && !_.isEmpty(_.trim(item?.content))) : [];
   } catch { return []; }
 };
 
 const readSavedStyles = (): SavedMusicStyle[] => {
   try {
-    const value = storageUtils.get(MUSIC_STYLE_LIBRARY_KEY);
+    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY);
     if (!value) return [];
     return _.compact(
       _.map(JSON.parse(value), (item) =>
@@ -165,7 +163,7 @@ interface PersistedMusicCreatorState {
 
 const readMusicCreatorState = (): PersistedMusicCreatorState => {
   try {
-    const value = storageUtils.get(MUSIC_CREATOR_STATE_KEY);
+    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY);
     return value ? JSON.parse(value) : {};
   } catch {
     return {};
@@ -253,7 +251,7 @@ const toSentenceCase = (text: string): string => {
 };
 
 const formatNumberedSongTitle = (title: string, index: number): string =>
-  `${index + 1}. ${toSentenceCase(title).replace(/^\d+[.)]\s*/, "")}`;
+  `${index + 1}. ${toSentenceCase(title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`;
 
 const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -546,7 +544,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    void Promise.all([readMusicMedia("reference"), readMusicMedia("generated")])
+    void Promise.all([readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED)])
       .then(([reference, generated]) => {
         if (reference) setThumbnailReference(reference);
         if (generated) setGeneratedThumbnail(generated);
@@ -559,7 +557,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
       storageUtils.set(
-        MUSIC_CREATOR_STATE_KEY,
+        SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY,
         JSON.stringify({
           style,
           outputCount,
@@ -590,7 +588,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
-    storageUtils.set(MUSIC_STYLE_LIBRARY_KEY, JSON.stringify(nextStyles));
+    storageUtils.set(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, JSON.stringify(nextStyles));
   };
 
   const handleEditStyle = (index: number) => {
@@ -618,7 +616,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleSaveStyle = () => {
     const nextContent = _.trim(style);
     if (_.isEmpty(nextContent)) return;
-    const nextTitle = _.trim(styleName) || _.truncate(_.split(nextContent, /[,.;\n]/)[0], { length: 32 });
+    const nextTitle = _.trim(styleName) || _.truncate(_.split(nextContent, SUNO_AUTOMATION_PATTERNS.STYLE_SPLIT_SEPARATORS)[0], { length: 32 });
     const nextItem = { title: nextTitle, content: nextContent };
     const nextStyles =
       editingStyleIndex === null
@@ -633,7 +631,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const persistInspos = (items: SavedMusicInspo[]) => {
     setSavedInspos(items);
-    storageUtils.set(MUSIC_INSPO_LIBRARY_KEY, JSON.stringify(items));
+    storageUtils.set(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, JSON.stringify(items));
   };
 
   const handleSaveInspo = () => {
@@ -721,7 +719,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setGeneratedThumbnail("");
     setSunoPlaylistUrl("");
     setSunoTrackIds([]);
-    void writeMusicMedia("generated", "").catch(() => undefined);
+    void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
@@ -763,7 +761,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setSongs(generatedSongs);
       setPlaylistSeoOptions(generatedPlaylistSeo);
       setGeneratedThumbnail(generatedThumbnailUrl);
-      void writeMusicMedia("generated", generatedThumbnailUrl).catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, generatedThumbnailUrl).catch(() => undefined);
       if (_.isEmpty(generatedThumbnailUrl)) {
         const retryResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
           method: HTTP_METHODS.POST,
@@ -776,7 +774,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         if (retryResponse.ok && retryResult.success && !_.isEmpty(retryImage)) {
           resolvedThumbnailUrl = retryImage;
           setGeneratedThumbnail(retryImage);
-          void writeMusicMedia("generated", retryImage).catch(() => undefined);
+          void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, retryImage).catch(() => undefined);
         }
       }
       setSelectedSeoSongIndex(0);
@@ -909,7 +907,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith(SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)) {
       toast.error(texts.THUMBNAIL_IMAGE_INVALID);
       return;
     }
@@ -918,8 +916,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setThumbnailReference(_.toString(reader.result));
       setThumbnailReferenceName(file.name);
       setGeneratedThumbnail("");
-      void writeMusicMedia("reference", _.toString(reader.result)).catch(() => undefined);
-      void writeMusicMedia("generated", "").catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE, _.toString(reader.result)).catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
     };
     reader.readAsDataURL(file);
   };
@@ -928,8 +926,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     if (_.isEmpty(generatedThumbnail)) return;
     const anchor = document.createElement("a");
     anchor.href = generatedThumbnail;
-    const extension = generatedThumbnail.startsWith("data:image/jpeg") ? "jpg" : "png";
-    anchor.download = `music-cover-${Date.now()}.${extension}`;
+    const extension = generatedThumbnail.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
+    anchor.download = `${SUNO_AUTOMATION_CONFIG.THUMBNAIL_FILE_PREFIX}${Date.now()}.${extension}`;
     anchor.click();
   };
 
@@ -954,7 +952,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const imageUrl = _.toString(result.thumbnail);
       if (!response.ok || !result.success || _.isEmpty(imageUrl)) throw new Error(result.warning || texts.THUMBNAIL_GENERATE_ERROR);
       setGeneratedThumbnail(imageUrl);
-      await writeMusicMedia("generated", imageUrl);
+      await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
       toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
     } catch (error: any) {
       toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
@@ -1733,7 +1731,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 {isCopiedPlaylistUrl ? <Check className="w-4 h-4 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0" />}
               </button>
             </Tooltip>
-            <button type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, "_blank", "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
+            <button type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
               <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
               <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
             </button>
