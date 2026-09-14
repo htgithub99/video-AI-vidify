@@ -65,16 +65,6 @@ const firstVisible = async (page: Page, selectors: readonly string[] | string[])
   return null;
 };
 
-const visibleExactText = async (page: Page, value: string): Promise<Locator | null> => {
-  const candidates = page.getByText(value, { exact: true });
-  const count = await candidates.count().catch(() => 0);
-  for (let index = 0; index < count; index += 1) {
-    const candidate = candidates.nth(index);
-    if (await candidate.isVisible().catch(() => false)) return candidate;
-  }
-  return null;
-};
-
 const fillEditable = async (locator: Locator, value: string): Promise<void> => {
   await locator.click();
   await locator.fill(value).catch(async () => {
@@ -225,61 +215,55 @@ const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]>
 };
 
 const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: string): Promise<string> => {
-  let playlistHref: string | null = null;
-  for (let index = 0; index < songIds.length; index += 1) {
-    await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/song/${songIds[index]}`, {
-      waitUntil: "commit",
-      timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
-    });
-    const songMenu = page.getByRole("button", { name: "More menu contents" }).first();
-    await songMenu.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS }).catch(() => undefined);
-    const overflow = await songMenu.isVisible().catch(() => false) ? songMenu : await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OVERFLOW_BUTTON);
-    if (!overflow) throw new Error(SUNO_AUTOMATION_TEXTS.ADD_TO_PLAYLIST_NOT_FOUND_ERR);
-    await overflow.click();
-    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.MENU_OPEN_WAIT_MS);
-    await page.getByText("Add to Playlist", { exact: true }).last()
-      .waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS })
-      .catch(() => undefined);
-    const addButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST);
-    if (!addButton) throw new Error(SUNO_AUTOMATION_TEXTS.ADD_TO_PLAYLIST_NOT_FOUND_ERR);
-    await addButton.click();
-    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.MENU_OPEN_WAIT_MS);
+  const uniqueSongIds = _.uniq(_.compact(songIds));
+  await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/song/${uniqueSongIds[0]}`, {
+    waitUntil: "commit",
+    timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
+  });
+  const songMenu = page.getByRole("button", { name: "More menu contents" }).first();
+  await songMenu.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  await songMenu.click();
+  const addButton = page.getByText("Add to Playlist", { exact: true }).last();
+  await addButton.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
+  await addButton.click();
 
-    if (index === 0) {
-      const existingPlaylist = await visibleExactText(page, playlistName);
-      if (existingPlaylist) await existingPlaylist.click();
-      else {
-        const nameInput = page.getByPlaceholder("Playlist Name").first();
-        await nameInput.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS }).catch(() => undefined);
-        if (!(await nameInput.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_NAME_INPUT_NOT_FOUND_ERR);
-        await fillEditable(nameInput, playlistName);
-        const create = page.getByRole("button", { name: "Create Playlist", exact: true }).first();
-        await create.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS }).catch(() => undefined);
-        if (!(await create.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR);
-        await create.click();
-      }
-      await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_WAIT_MS);
-    } else {
-      await page.getByText(playlistName, { exact: true }).first()
-        .waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS })
-        .catch(() => undefined);
-      const playlist = await visibleExactText(page, playlistName);
-      if (!playlist) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_CREATE_NOT_FOUND_ERR);
-      await playlist.click();
-      await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_WAIT_MS);
-    }
+  const nameInput = page.getByPlaceholder("Playlist Name").first();
+  await nameInput.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  await fillEditable(nameInput, playlistName);
+  const create = page.getByRole("button", { name: "Create Playlist", exact: true }).first();
+  await create.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const playlistMutation = page.waitForRequest((request) =>
+    /studio-api-prod\.suno\.com\/api\/playlist\//i.test(request.url())
+    && ["POST", "PUT", "PATCH"].includes(request.method()),
+  { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
+  await create.click();
+  const mutationRequest = await playlistMutation;
+  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_WAIT_MS);
 
-    if (!playlistHref) {
-      playlistHref = await page.locator(`${SUNO_AUTOMATION_SELECTORS.PLAYLIST_ANCHOR}:has-text("${playlistName.replace(/"/g, '\\"')}")`).first().getAttribute("href").catch(() => null);
-    }
-  }
-  if (!playlistHref) {
-    await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/me/playlists`, { waitUntil: "commit", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
-    const playlistLink = page.getByRole("link", { name: playlistName, exact: true }).first();
-    await playlistLink.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS }).catch(() => undefined);
-    playlistHref = await playlistLink.getAttribute("href").catch(() => null);
-  }
+  await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/me/playlists`, { waitUntil: "commit", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+  const playlistLink = page.getByRole("link", { name: playlistName, exact: true }).first();
+  await playlistLink.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const playlistHref = await playlistLink.getAttribute("href");
   if (!playlistHref) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+  const playlistId = playlistHref.match(/\/playlist\/([^/?]+)/i)?.[1];
+  if (!playlistId) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+
+  const requestHeaders = mutationRequest.headers();
+  const batchResponse = await page.request.post(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/update_clips/`, {
+    headers: {
+      authorization: requestHeaders.authorization,
+      "browser-token": requestHeaders["browser-token"],
+      "device-id": requestHeaders["device-id"],
+      "content-type": "application/json",
+    },
+    data: {
+      playlist_id: playlistId,
+      update_type: "add",
+      metadata: { clip_ids: uniqueSongIds },
+      recommendation_metadata: {},
+    },
+  });
+  if (!batchResponse.ok()) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_BATCH_ADD_FAILED_ERR);
   return new URL(playlistHref, SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL).toString();
 };
 
@@ -308,9 +292,10 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       await configureAdvancedOnce(page, style, aiSettings);
       for (const song of songs) createdSongIds.push(...(await createOneSong(page, song)));
     }
+    const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
     const playlistName = !_.isEmpty(songs)
-      ? `${_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE)} và ${Math.max(0, songs.length - 1)} bài hát - ${new Date().toISOString().slice(0, 10)}`
-      : `${SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE} - ${new Date().toISOString().slice(0, 10)}`;
+      ? `${_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE)} và ${Math.max(0, songs.length - 1)} bài hát - ${createdAt}`
+      : `${SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE} - ${createdAt}`;
     const playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName);
     return { playlistUrl, createdSongIds: _.uniq(createdSongIds) };
   } finally {

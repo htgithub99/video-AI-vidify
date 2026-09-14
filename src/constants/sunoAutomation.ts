@@ -1,5 +1,6 @@
 export const SUNO_AUTOMATION_CONFIG = {
   SUNO_BASE_URL: "https://suno.com",
+  SUNO_STUDIO_API_URL: "https://studio-api-prod.suno.com",
   SUNO_CREATE_URL: "https://suno.com/create",
   EXPECTED_ACCOUNT_EMAIL: "toanleoht@gmail.com",
   SUNO_CDP_PORT: 9444,
@@ -145,6 +146,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   PLAYLIST_CREATE_NOT_FOUND_ERR: "Không thể tạo hoặc chọn playlist mới trên Suno.",
   PLAYLIST_NAME_INPUT_NOT_FOUND_ERR: "Không tìm thấy ô nhập tên playlist mới trên Suno.",
   PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút tạo playlist mới trên Suno.",
+  PLAYLIST_BATCH_ADD_FAILED_ERR: "Suno không chấp nhận thêm toàn bộ bài hát vào playlist mới.",
   MISSING_SONGS_OR_STYLE_ERR: "Thiếu bài hát hoặc phong cách Suno.",
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
 
