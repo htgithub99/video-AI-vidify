@@ -209,17 +209,17 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({
           onClick={onToggleAiConfig}
           disabled={isLoading}
           className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs",
+            "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none",
             isAiConfigOpen
               ? "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10"
               : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-slate-700 hover:!text-slate-950 dark:!text-slate-400 dark:hover:!text-slate-200 hover:border-purple-500/40 hover:bg-purple-50/50 dark:hover:bg-slate-900",
           )}>
-          <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400" />
-          <span>{texts.AI_CONFIG_TITLE}</span>
+          <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+          <span className="inline-flex items-center leading-none">{texts.AI_CONFIG_TITLE}</span>
           {isAiConfigOpen ? (
-            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           ) : (
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           )}
         </Button>
       </Tooltip>
@@ -799,7 +799,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         const sourceSong = songs[Math.floor(index / 2)];
         const songNumber = Math.floor(index / 2) + 1;
         const variantNumber = (index % 2) + 1;
-        return { songId, title: `${songNumber}. ${sourceSong?.title || `Suno track ${songNumber}`} - ${variantNumber}` };
+        return { songId, title: `${songNumber}. ${sourceSong?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`} - ${variantNumber}` };
       });
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
@@ -925,17 +925,17 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       variant="unstyled"
                       onClick={handleSaveStyle}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-all shadow-xs [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
-                      <Save className="w-3 h-3" />
-                      <span>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                      className="h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
+                      <Save className="w-3 h-3 shrink-0" />
+                      <span className="inline-flex items-center leading-none">{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                     </Button>
                     <Button
                       type="button"
                       variant="unstyled"
                       onClick={handleCancelStyleEdit}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors flex items-center justify-center">
-                      {texts.CANCEL_BTN}
+                      className="h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none">
+                      <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
                     </Button>
                   </div>
                 )}
@@ -1082,9 +1082,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   variant="unstyled"
                   onClick={handleFillSampleReferences}
                   disabled={isLoading}
-                  className="text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
-                  <Sparkles className="w-3 h-3" />
-                  <span>{texts.QUICK_FILL_LABEL}</span>
+                  className="text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs leading-none !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  <span className="inline-flex items-center leading-none">{texts.QUICK_FILL_LABEL}</span>
                 </Button>
               </div>
 
@@ -1178,7 +1178,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     onClick={handleGenerate}
                     disabled={!isFormValid || isLoading}
                     className={cn(
-                      "h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border",
+                      "h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none",
                       isLoading
                         ? "flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse"
                         : isFormValid
@@ -1188,12 +1188,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
-                        <span className="truncate">{texts.BLOCK_LYRICS_LOADING}</span>
+                        <span className="truncate inline-flex items-center leading-none">{texts.BLOCK_LYRICS_LOADING}</span>
                       </>
                     ) : (
                       <>
                         <WandSparkles className="w-4 h-4 shrink-0" />
-                        <span>{texts.formatGenerateBtn(outputCount)}</span>
+                        <span className="inline-flex items-center leading-none">{texts.formatGenerateBtn(outputCount)}</span>
                       </>
                     )}
                   </Button>
@@ -1203,9 +1203,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       type="button"
                       variant="unstyled"
                       onClick={handleCancelGeneration}
-                      className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 shrink-0">
+                      className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 shrink-0 leading-none">
                       <X className="w-4 h-4 shrink-0" />
-                      <span>{texts.STOP_BTN}</span>
+                      <span className="inline-flex items-center leading-none">{texts.STOP_BTN}</span>
                     </Button>
                   )}
                 </div>
@@ -1215,9 +1215,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     type="button"
                     variant="unstyled"
                     onClick={handleTrySampleTemplate}
-                    className="w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors flex items-center justify-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    <span>{texts.TRY_SAMPLE_BTN}</span>
+                    className="w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors inline-flex items-center justify-center gap-1 leading-none">
+                    <Sparkles className="w-3 h-3 shrink-0" />
+                    <span className="inline-flex items-center leading-none">{texts.TRY_SAMPLE_BTN}</span>
                   </Button>
                 )}
               </div>
@@ -1339,13 +1339,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     onClick={handleRegenerateThumbnail}
                     disabled={isGeneratingThumbnail}
                     className={cn(
-                      "h-9 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs",
+                      "h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none",
                       isGeneratingThumbnail
                         ? "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait"
                         : "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95",
                     )}>
                     <RefreshCw className={cn("w-3.5 h-3.5 shrink-0", isGeneratingThumbnail && "animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
-                    <span>
+                    <span className="inline-flex items-center leading-none">
                       {isGeneratingThumbnail
                         ? texts.THUMBNAIL_CREATING_SHORT
                         : (generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN)}
@@ -1358,13 +1358,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     onClick={handleDownloadThumbnail}
                     disabled={!generatedThumbnail || isGeneratingThumbnail}
                     className={cn(
-                      "h-9 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs",
+                      "h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none",
                       !generatedThumbnail || isGeneratingThumbnail
                         ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04] !text-[#94a3b8] dark:!text-slate-500 cursor-not-allowed shadow-none"
                         : "border-slate-300 hover:border-purple-400 dark:border-slate-700 dark:hover:border-purple-500 bg-white hover:bg-purple-50/50 dark:bg-slate-800 dark:hover:bg-slate-700 !text-[#0f172a] hover:!text-purple-700 dark:!text-slate-100 dark:hover:!text-white cursor-pointer active:scale-95",
                     )}>
                     <Download className={cn("w-3.5 h-3.5 shrink-0", !generatedThumbnail || isGeneratingThumbnail ? "text-[#94a3b8] dark:text-slate-500" : "text-purple-600 dark:text-purple-400")} />
-                    <span>{texts.THUMBNAIL_DOWNLOAD}</span>
+                    <span className="inline-flex items-center leading-none">{texts.THUMBNAIL_DOWNLOAD}</span>
                   </Button>
                 </div>
               )}
@@ -1398,39 +1398,39 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     variant="unstyled"
                     onClick={() => setViewMode("lyrics")}
                     className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none",
+                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
                       viewMode === "lyrics"
                         ? "bg-purple-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    <Music2 className="w-3 h-3" />
-                    <span>{texts.TAB_LYRICS}</span>
+                    <Music2 className="w-3 h-3 shrink-0" />
+                    <span className="inline-flex items-center leading-none">{texts.TAB_LYRICS}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="unstyled"
                     onClick={() => setViewMode("seo")}
                     className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none",
+                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
                       viewMode === "seo"
                         ? "bg-fuchsia-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    <Search className="w-3 h-3" />
-                    <span>{texts.TAB_SEO}</span>
+                    <Search className="w-3 h-3 shrink-0" />
+                    <span className="inline-flex items-center leading-none">{texts.TAB_SEO}</span>
                   </Button>
                   <Button
                     type="button"
                     variant="unstyled"
                     onClick={() => setViewMode("split")}
                     className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none",
+                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
                       viewMode === "split"
                         ? "bg-indigo-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-indigo-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    <Columns className="w-3 h-3" />
-                    <span>{texts.TAB_SPLIT}</span>
+                    <Columns className="w-3 h-3 shrink-0" />
+                    <span className="inline-flex items-center leading-none">{texts.TAB_SPLIT}</span>
                   </Button>
                 </div>
               )}
@@ -1442,18 +1442,18 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     variant="unstyled"
                     onClick={handleCreateSunoMusic}
                     disabled={isCreatingSuno}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
-                    {isCreatingSuno ? <Disc3 className="w-3.5 h-3.5 animate-spin" /> : <Music2 className="w-3.5 h-3.5" />}
-                    <span>{isCreatingSuno ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none">
+                    {isCreatingSuno ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="inline-flex items-center leading-none">{isCreatingSuno ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
                   </Button>
                   {isCreatingSuno && (
                     <Button
                       type="button"
                       variant="unstyled"
                       onClick={handleCancelSunoMusic}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95">
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 leading-none">
                       <X className="w-3.5 h-3.5 shrink-0" />
-                      <span>{texts.SUNO_CANCEL_BTN}</span>
+                      <span className="inline-flex items-center leading-none">{texts.SUNO_CANCEL_BTN}</span>
                     </Button>
                   )}
                   <button
@@ -1499,61 +1499,113 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 type="button"
                 variant="unstyled"
                 onClick={handleTrySampleTemplate}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <span>{texts.TRY_SAMPLE_BTN}</span>
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="inline-flex items-center leading-none">{texts.TRY_SAMPLE_BTN}</span>
               </Button>
             </div>
           ) : (
             <div>
               {!_.isEmpty(sunoPlaylistUrl) && (
-                <div className="mb-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-500/12 via-amber-500/8 to-slate-900/60 p-3 sm:px-4 text-xs backdrop-blur-md shadow-md">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center shrink-0 shadow-xs">
-                      <Disc3 className="w-4 h-4 animate-spin [animation-duration:8s]" />
+                <div className="relative mb-5 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-slate-900/95 via-amber-955/20 to-slate-900/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-xl shadow-black/40 transition-all hover:border-amber-500/40">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md shadow-orange-500/20 shrink-0">
+                        <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400">
+                          <Disc3 className="w-5 h-5 animate-spin [animation-duration:8s]" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-slate-100 text-sm sm:text-base tracking-tight">
+                            {texts.SUNO_PLAYLIST_LABEL}
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            {texts.SUNO_PLAYLIST_STATUS_READY}
+                          </span>
+                          {!_.isEmpty(sunoTrackIds) && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-xs">
+                              {texts.formatTrackCount(sunoTrackIds.length)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-normal truncate max-w-md sm:max-w-xl">
+                          {texts.SUNO_PLAYLIST_SUBTITLE}
+                        </p>
+                      </div>
                     </div>
-                    <span className="font-extrabold text-slate-100 text-xs sm:text-sm whitespace-nowrap">
-                      {texts.SUNO_PLAYLIST_LABEL}
-                    </span>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={sunoDownloadFormat}
-                      onChange={(event) => setSunoDownloadFormat(event.target.value as SunoDownloadFormat)}
-                      disabled={isDownloadingSuno}
-                      className="h-8 rounded-xl border border-emerald-500/40 bg-slate-900 px-2 text-xs font-bold text-emerald-300 outline-none focus:border-emerald-400 cursor-pointer disabled:opacity-50">
-                      <option value="mp3">MP3</option>
-                      <option value="wav">WAV</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={handleDownloadSunoMusic}
-                      disabled={isDownloadingSuno || _.isEmpty(sunoTrackIds)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 !text-white border border-emerald-400/50 flex items-center gap-1.5 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm select-none active:scale-95">
-                      {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                      <span>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCopyPlaylistUrl}
-                      className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-orange-300 hover:text-white transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
-                      title={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN}>
-                      {isCopiedPlaylistUrl ? (
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                      ) : (
-                        <Copy className="w-4 h-4 shrink-0" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+                      <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
+                        <Tooltip content={texts.FORMAT_MP3_TOOLTIP} align="center">
+                          <button
+                            type="button"
+                            onClick={() => setSunoDownloadFormat("mp3")}
+                            disabled={isDownloadingSuno}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
+                              sunoDownloadFormat === "mp3"
+                                ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs"
+                                : "text-slate-400 hover:text-slate-200 border border-transparent",
+                            )}>
+                            <span className="inline-flex items-center leading-none">{texts.FORMAT_MP3_LABEL}</span>
+                          </button>
+                        </Tooltip>
+                        <Tooltip content={texts.FORMAT_WAV_TOOLTIP} align="center">
+                          <button
+                            type="button"
+                            onClick={() => setSunoDownloadFormat("wav")}
+                            disabled={isDownloadingSuno}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
+                              sunoDownloadFormat === "wav"
+                                ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs"
+                                : "text-slate-400 hover:text-slate-200 border border-transparent",
+                            )}>
+                            <span className="inline-flex items-center leading-none">{texts.FORMAT_WAV_LABEL}</span>
+                          </button>
+                        </Tooltip>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => window.open(sunoPlaylistUrl, "_blank", "noopener,noreferrer")}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 !text-white hover:!text-white border border-orange-400/50 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm select-none active:scale-95"
-                      title={texts.SUNO_PLAYLIST_OPEN_BTN}>
-                      <ExternalLink className="w-3.5 h-3.5 shrink-0 !text-white" />
-                      <span className="!text-white">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadSunoMusic}
+                        disabled={isDownloadingSuno || _.isEmpty(sunoTrackIds)}
+                        className={cn(
+                          "h-8 px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all select-none border cursor-pointer active:scale-95 shadow-md",
+                          isDownloadingSuno
+                            ? "bg-amber-600/50 border-amber-500/40 text-white cursor-wait animate-pulse"
+                            : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed",
+                        )}>
+                        {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
+                      </button>
+
+                      <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
+                        <button
+                          type="button"
+                          onClick={handleCopyPlaylistUrl}
+                          className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl inline-flex items-center justify-center bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 hover:border-amber-500/40 text-slate-300 hover:text-amber-300 transition-all cursor-pointer shrink-0 select-none active:scale-95 shadow-xs"
+                          title={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN}>
+                          {isCopiedPlaylistUrl ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5 shrink-0" />
+                          )}
+                        </button>
+                      </Tooltip>
+
+                      <button
+                        type="button"
+                        onClick={() => window.open(sunoPlaylistUrl, "_blank", "noopener,noreferrer")}
+                        className="h-8 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 hover:border-amber-500/50 !text-slate-200 hover:!text-white border border-slate-700/80 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs select-none active:scale-95"
+                        title={texts.SUNO_PLAYLIST_OPEN_BTN}>
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                        <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1581,21 +1633,21 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           variant="unstyled"
                           onClick={() => setSelectedSeoSongIndex(idx)}
                           className={cn(
-                            "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0 inline-flex items-center gap-1.5 group select-none shadow-2xs",
+                            "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0 inline-flex items-center justify-center gap-1.5 group select-none shadow-2xs leading-none",
                             isSelected
                               ? "bg-gradient-to-r from-indigo-600 to-purple-600 !text-white border-indigo-400 shadow-sm shadow-indigo-600/20"
                               : "bg-white/80 dark:bg-slate-955/90 border-slate-200/90 dark:border-slate-800 !text-[#1e293b] hover:!text-[#4338ca] dark:!text-slate-300 dark:hover:!text-white hover:border-indigo-400/60 dark:hover:border-indigo-500/40 hover:bg-indigo-50/70 dark:hover:bg-slate-900/90",
                           )}>
                           <span
                             className={cn(
-                              "font-mono font-black",
+                              "font-mono font-black inline-flex items-center leading-none",
                               isSelected
                                 ? "!text-indigo-100"
                                 : "!text-indigo-600 group-hover:!text-indigo-800 dark:!text-indigo-400 dark:group-hover:!text-indigo-300",
                             )}>
                             #{idx + 1}
                           </span>
-                          <span>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
+                          <span className="inline-flex items-center leading-none">{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>
                       );
                     })}
@@ -1645,16 +1697,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               variant="outline"
               size="sm"
               onClick={() => setStyleToDelete(null)}
-              className="h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs">
-              {texts.CANCEL_BTN}
+              className="h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none">
+              <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
             </Button>
             <Button
               type="button"
               variant="danger"
               size="sm"
               onClick={confirmDeleteStyle}
-              className="h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all">
-              {texts.STYLE_DELETE_BTN}
+              className="h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none">
+              <span className="inline-flex items-center leading-none">{texts.STYLE_DELETE_BTN}</span>
             </Button>
           </div>
         </div>

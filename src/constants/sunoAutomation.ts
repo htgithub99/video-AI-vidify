@@ -150,6 +150,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   DOWNLOAD_FOLDER_INVALID_ERR: "Thư mục lưu nhạc không hợp lệ.",
   DOWNLOAD_TRACKS_REQUIRED_ERR: "Không có bài hát Suno để tải xuống.",
   DOWNLOAD_TRACK_FAILED_ERR: "Không thể tải bài hát Suno.",
+  DEFAULT_TRACK_PREFIX: "Suno track",
   EMPTY_DIAGNOSTIC: "trang trống",
 
   VALIDATION_PLAYLIST_INPUT_ERR: "Danh sách bài hát hoặc phong cách Suno chưa đầy đủ.",

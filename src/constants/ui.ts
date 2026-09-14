@@ -3,11 +3,11 @@ import type { ButtonVariant } from "../types";
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 export const BUTTON_CLASS_NAME = {
-  BASE: "inline-flex items-center gap-2 justify-center font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm relative overflow-hidden select-none",
-  LOADING: "button-skeleton-loading !opacity-100 disabled:!opacity-100 cursor-wait active:scale-100",
-  LOADING_CONTENT: "inline-flex items-center gap-2 justify-center w-full [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden relative z-10",
+  BASE: "inline-flex items-center gap-2 justify-center font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm relative overflow-hidden select-none leading-none",
+  LOADING: "button-skeleton-loading !opacity-100 disabled:!opacity-100 cursor-wait active:scale-100 leading-none",
+  LOADING_CONTENT: "inline-flex items-center gap-2 justify-center w-full [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden relative z-10 leading-none",
   LOADING_SPINNER: "w-4 h-4 animate-spin shrink-0 app-loading-spinner inline-block text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]",
-  LOADING_TEXT: "truncate font-extrabold text-white tracking-wide drop-shadow-sm",
+  LOADING_TEXT: "truncate font-extrabold text-white tracking-wide drop-shadow-sm inline-flex items-center leading-none",
 } as const;
 
 export const BUTTON_SIZE_CLASS_NAME: Record<ButtonSize, string> = {

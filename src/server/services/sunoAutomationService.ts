@@ -40,7 +40,7 @@ const createSafeAudioFileName = (title: string, index: number, format: SunoDownl
     .replace(/[<>:"/\\|?*]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/[. ]+$/g, "")
-    .slice(0, 140) || `Suno track ${index + 1}`;
+    .slice(0, 140) || `${SUNO_AUTOMATION_TEXTS.DEFAULT_TRACK_PREFIX} ${index + 1}`;
   return `${safeTitle}.${format}`;
 };
 
