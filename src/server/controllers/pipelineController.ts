@@ -188,7 +188,7 @@ import {
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
-import { SUNO_AUTOMATION_TEXTS } from "../../constants/sunoAutomation.js";
+import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } from "../../constants/sunoAutomation.js";
 
 import {
   generateImageWithPlaywright,
@@ -852,6 +852,68 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   }
 });
 
+const SUNO_TRACK_SELECTION_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["selectedTrackId", "targetMarket", "professionalRationale", "candidateScores"],
+  properties: {
+    selectedTrackId: { type: "string" },
+    targetMarket: { type: "string" },
+    professionalRationale: { type: "string" },
+    candidateScores: {
+      type: "array",
+      minItems: 2,
+      maxItems: 2,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["trackId", "vocalPerformance", "composition", "production", "marketFit", "technicalQuality", "total"],
+        properties: {
+          trackId: { type: "string" },
+          vocalPerformance: { type: "integer", minimum: 0, maximum: 100 },
+          composition: { type: "integer", minimum: 0, maximum: 100 },
+          production: { type: "integer", minimum: 0, maximum: 100 },
+          marketFit: { type: "integer", minimum: 0, maximum: 100 },
+          technicalQuality: { type: "integer", minimum: 0, maximum: 100 },
+          total: { type: "integer", minimum: 0, maximum: 100 },
+        },
+      },
+    },
+  },
+} as const;
+
+const selectProfessionalSunoTrack = async (title: string, songIds: string[], style: string): Promise<string> => {
+  const candidates = _.take(songIds, 2);
+  if (_.size(candidates) < 2) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+  const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(/\/$/, "");
+  const audioBuffers = await Promise.all(_.map(candidates, async (songId) => {
+    const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(songId)}/mp3`, { signal: AbortSignal.timeout(120_000) });
+    if (!response.ok) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+    return Buffer.from(await response.arrayBuffer()).toString("base64");
+  }));
+  const prompt = `Act as a professional music selection panel consisting of a lead singer, songwriter-composer, record producer, audio engineer, and music-market editor. Listen fully and comparatively to both candidate recordings for the same song.
+
+Song: ${title}
+Requested genre/style and intended market: ${style}
+Candidate A trackId: ${candidates[0]}
+Candidate B trackId: ${candidates[1]}
+
+Infer the correct target country, audience, listening culture, and commercial context from the language and requested style. Judge as working professionals in that exact market, not as a generic global listener. Score vocal technique, diction, emotional delivery, melody and harmonic coherence, arrangement and song structure, production/mix, technical defects, genre authenticity, audience fit, replay value, and release potential. A technically broken performance cannot win. Select exactly one supplied trackId. Return raw JSON only.`;
+  const response = await generateContentWithRetry({
+    contents: [{ role: "user", parts: [
+      { text: `${prompt}\n\nCandidate A audio:` },
+      { inlineData: { mimeType: "audio/mpeg", data: audioBuffers[0] } },
+      { text: "Candidate B audio:" },
+      { inlineData: { mimeType: "audio/mpeg", data: audioBuffers[1] } },
+    ] }],
+    config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: SUNO_TRACK_SELECTION_SCHEMA },
+    task: { capability: AiTaskCapability.AudioQa },
+  });
+  const evaluation = parseAiJsonArtifact<{ selectedTrackId: string }>(response.text, SUNO_TRACK_SELECTION_SCHEMA, "invalid_suno_track_selection");
+  if (!_.includes(candidates, evaluation.selectedTrackId)) throw createAppError("invalid_suno_selected_track_id");
+  return evaluation.selectedTrackId;
+};
+
 router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) => {
   const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
     songId: _.trim(_.toString(song?.songId)),
@@ -880,10 +942,20 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CANCEL, async (_req: Request, res: Response)
 
 router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response) => {
   try {
-    const tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({
+    let tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({
       songId: _.trim(_.toString(track?.songId)),
       title: _.trim(_.toString(track?.title)),
     }));
+    if (req.body?.evaluateTracks !== false) {
+      const selectedTracks: typeof tracks = [];
+      for (const pair of _.chunk(tracks, 2)) {
+        if (_.size(pair) < 2) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+        const baseTitle = _.trim(pair[0].title.replace(/\s+-\s+[12]$/, ""));
+        const selectedId = await selectProfessionalSunoTrack(baseTitle, _.map(pair, "songId"), _.trim(_.toString(req.body?.style)));
+        selectedTracks.push({ songId: selectedId, title: baseTitle });
+      }
+      tracks = selectedTracks;
+    }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as "mp3" | "wav";
     const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format);
     return res.json({ success: true, downloadedPaths });

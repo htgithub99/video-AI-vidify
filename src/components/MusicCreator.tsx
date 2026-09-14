@@ -146,6 +146,7 @@ interface PersistedMusicCreatorState {
   sunoPlaylistUrl?: string;
   sunoTrackIds?: string[];
   sunoDownloadFormat?: SunoDownloadFormat;
+  sunoEvaluateTracks?: boolean;
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
 }
@@ -518,7 +519,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
-  const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || "mp3");
+  const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || "wav");
+  const [sunoEvaluateTracks, setSunoEvaluateTracks] = useState(initialState.sunoEvaluateTracks ?? true);
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
@@ -558,13 +560,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoPlaylistUrl,
           sunoTrackIds,
           sunoDownloadFormat,
+          sunoEvaluateTracks,
           sunoInspo,
           sunoSettings,
         } satisfies PersistedMusicCreatorState),
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -750,7 +753,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings }),
+        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks }),
         signal: abortController.signal,
       });
       const result = await response.json();
@@ -796,15 +799,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const folderPath = _.trim(_.toString(folderResult.folderPath));
       if (!folderResponse.ok || !folderResult.success || _.isEmpty(folderPath)) return;
       const tracks = _.map(sunoTrackIds, (songId, index) => {
-        const sourceSong = songs[Math.floor(index / 2)];
-        const songNumber = Math.floor(index / 2) + 1;
-        const variantNumber = (index % 2) + 1;
-        return { songId, title: `${songNumber}. ${sourceSong?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`} - ${variantNumber}` };
+        const songIndex = Math.floor(index / 2);
+        const songNumber = songIndex + 1;
+        const variantSuffix = ` - ${(index % 2) + 1}`;
+        return { songId, title: `${songNumber}. ${songs[songIndex]?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`}${variantSuffix}` };
       });
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ folderPath, tracks, format: sunoDownloadFormat }),
+        body: JSON.stringify({ folderPath, tracks, format: sunoDownloadFormat, evaluateTracks: sunoEvaluateTracks, style }),
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
@@ -1538,6 +1541,37 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+                      <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
+                        <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
+                          <button
+                            type="button"
+                            onClick={() => setSunoEvaluateTracks(true)}
+                            disabled={isDownloadingSuno}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none",
+                              sunoEvaluateTracks
+                                ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs"
+                                : "text-slate-400 hover:text-slate-200 border border-transparent",
+                            )}>
+                            <Sparkles className="w-3 h-3 shrink-0" />
+                            <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_ON}</span>
+                          </button>
+                        </Tooltip>
+                        <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
+                          <button
+                            type="button"
+                            onClick={() => setSunoEvaluateTracks(false)}
+                            disabled={isDownloadingSuno}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none",
+                              !sunoEvaluateTracks
+                                ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs"
+                                : "text-slate-400 hover:text-slate-200 border border-transparent",
+                            )}>
+                            <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_OFF}</span>
+                          </button>
+                        </Tooltip>
+                      </div>
                       <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
                         <Tooltip content={texts.FORMAT_MP3_TOOLTIP} align="center">
                           <button

@@ -26,7 +26,7 @@ export interface SunoCreationResult {
   createdSongIds: string[];
 }
 export interface SunoAdvancedSettings { excludeStyles?: string; vocalGender?: "male" | "female" | "auto"; duration?: "auto"; maxMode?: boolean; weirdness?: number; styleInfluence?: number; variety?: number; personalize?: boolean }
-interface ActiveSunoGeneration { title: string; songIds: string[] }
+export interface ActiveSunoGeneration { title: string; songIds: string[] }
 export interface SunoDownloadTrack { songId: string; title: string }
 export type SunoDownloadFormat = "mp3" | "wav";
 
