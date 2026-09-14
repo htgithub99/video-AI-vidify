@@ -94,9 +94,20 @@ const waitWithCancellation = async (page: Page, durationMs: number): Promise<voi
   }
 };
 
+const closeSunoChrome = async (page: Page | null): Promise<void> => {
+  if (!page || page.isClosed()) return;
+  const session = await page.context().newCDPSession(page).catch(() => null);
+  if (!session) {
+    await page.close().catch(() => undefined);
+    return;
+  }
+  await session.send("Browser.close").catch(() => undefined);
+  await session.detach().catch(() => undefined);
+};
+
 export const cancelActiveSunoCreation = async (): Promise<void> => {
   sunoCancellationRequested = true;
-  await activeSunoPage?.close().catch(() => undefined);
+  await closeSunoChrome(activeSunoPage);
 };
 
 export const launchSunoLoginBrowser = async (): Promise<{ message: string; profilePath: string; cdpPort: number }> => {
@@ -486,6 +497,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
     if (sunoCancellationRequested) throw new Error(SUNO_AUTOMATION_TEXTS.CANCELLED_ERR);
     throw error;
   } finally {
+    await closeSunoChrome(page);
     activeSunoPage = null;
     await browser.close().catch(() => undefined);
   }
