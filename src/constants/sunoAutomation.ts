@@ -73,9 +73,10 @@ export const SUNO_AUTOMATION_SELECTORS = {
   ] as const,
   EXCLUDE_STYLES_INPUT: ['input[placeholder*="Exclude styles" i]', 'textarea[placeholder*="Exclude styles" i]'] as const,
   OPTIONS_BUTTON: [
-    'button:has-text("Options")',
+    '[role="button"]:has-text("More Options")',
     'button:has-text("More Options")',
     'button:has-text("Advanced Options")',
+    'button:has-text("Options")',
   ] as const,
   FEMALE_BUTTON: [
     'button:has-text("Female")',

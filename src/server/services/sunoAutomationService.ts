@@ -76,16 +76,6 @@ const firstVisible = async (page: Page, selectors: readonly string[] | string[])
   return null;
 };
 
-const firstVisibleText = async (page: Page, text: RegExp): Promise<Locator | null> => {
-  const candidates = page.getByText(text);
-  const count = await candidates.count().catch(() => 0);
-  for (let index = 0; index < count; index += 1) {
-    const candidate = candidates.nth(index);
-    if (await candidate.isVisible().catch(() => false)) return candidate;
-  }
-  return null;
-};
-
 const dismissCookieConsent = async (page: Page): Promise<void> => {
   const consentDialog = page.locator(SUNO_AUTOMATION_SELECTORS.DIALOG_ROLE)
     .filter({ hasText: /Privacy Preference Center/i });
@@ -175,12 +165,12 @@ const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: Sun
   if (!styleInput) throw new Error(SUNO_AUTOMATION_TEXTS.STYLE_INPUT_NOT_FOUND_ERR);
   await fillEditable(styleInput, style);
 
-  if (!(await firstVisibleText(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL))) {
-    const optionsButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OPTIONS_BUTTON);
-    if (!optionsButton) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
+  const optionsButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OPTIONS_BUTTON);
+  if (!optionsButton) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
+  if ((await optionsButton.getAttribute("aria-expanded")) !== "true") {
     await optionsButton.click();
     const deadline = Date.now() + SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS;
-    while (!(await firstVisibleText(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL))) {
+    while ((await optionsButton.getAttribute("aria-expanded")) !== "true") {
       ensureSunoNotCancelled();
       if (Date.now() >= deadline) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
       await page.waitForTimeout(250);
