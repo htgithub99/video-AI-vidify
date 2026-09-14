@@ -19,7 +19,8 @@ import { getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowser
 interface ChatRoomAttachment {
   name: string;
   mimeType: string;
-  buffer: Buffer;
+  buffer?: Buffer;
+  path?: string;
 }
 
 interface ChatResponseSnapshot {
@@ -609,7 +610,36 @@ const isPendingResponseForRequest = (
 
 const isResponseTimeoutError = (error: unknown): boolean => _.isEqual(_.toString(_.get(error, "code")), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE);
 
+const setLocalFilePathsViaCdp = async (page: Page, filePaths: string[]): Promise<boolean> => {
+  if (_.isEmpty(filePaths)) return false;
+  const session = await page.context().newCDPSession(page).catch(() => null);
+  if (!session) return false;
+  try {
+    await session.send(CINEMATIC_CHAT_PLANNING_CONFIG.CDP_DOM_ENABLE as any);
+    const { nodes } = await session.send(CINEMATIC_CHAT_PLANNING_CONFIG.CDP_DOM_GET_FLATTENED_DOCUMENT as any, { depth: -1, pierce: true });
+    const fileInputNode = _.findLast(nodes, (node) => {
+      if (!_.isEqual(_.toUpper(node.nodeName), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_TAG_NAME)) return false;
+      const attributes = _.chunk(node.attributes || [], 2);
+      return _.some(attributes, ([name, value]) => _.isEqual(_.toLower(name), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_TYPE_ATTR) && _.isEqual(_.toLower(value), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_FILE_VALUE));
+    });
+    if (!fileInputNode?.backendNodeId) return false;
+    await session.send(CINEMATIC_CHAT_PLANNING_CONFIG.CDP_DOM_SET_FILE_INPUT_FILES as any, { files: filePaths, backendNodeId: fileInputNode.backendNodeId });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await session.detach().catch(() => undefined);
+  }
+};
+
 const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): Promise<void> => {
+  const localFilePaths = _.compact(_.map(attachments, "path"));
+  const usesOnlyLocalPaths = _.size(localFilePaths) === _.size(attachments);
+  const inputFiles = _.map(attachments, (attachment) => attachment.path || {
+    name: attachment.name,
+    mimeType: attachment.mimeType,
+    buffer: attachment.buffer as Buffer,
+  });
   const removableAttachments = page.locator(
     'button[aria-label*="remove attachment" i], button[aria-label*="remove file" i], button[aria-label*="xóa tệp" i], button[aria-label*="gỡ tệp" i]',
   );
@@ -621,13 +651,18 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
   }
 
   let uploaded = false;
+  let lastUploadError: unknown;
   const fileInputs = page.locator('input[type="file"]');
   for (let index = 0; index < (await fileInputs.count().catch(() => 0)); index++) {
     try {
-      await fileInputs.nth(index).setInputFiles(attachments);
+      if (usesOnlyLocalPaths) {
+        if (!(await setLocalFilePathsViaCdp(page, localFilePaths))) continue;
+      } else {
+        await fileInputs.nth(index).setInputFiles(inputFiles);
+      }
       uploaded = true;
       break;
-    } catch {}
+    } catch (error) { lastUploadError = error; }
   }
 
   if (!uploaded) {
@@ -638,26 +673,31 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
       .last();
     let chooser = await Promise.all([
       page.waitForEvent("filechooser", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
-      attachmentButton.click().catch(() => undefined),
+      attachmentButton.click().catch((error) => { lastUploadError = error; }),
     ]).then(([fileChooser]) => fileChooser);
     if (!chooser) {
       const uploadMenuItem = page
         .getByRole("menuitem", { name: /upload files?|tải tệp lên|tải tệp|thêm tệp/i })
-        .or(page.getByRole("button", { name: /upload files?|tải tệp lên/i }))
+        .or(page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_MENU_ITEM_NAME_PATTERN }))
         .filter({ visible: true })
         .last();
       chooser = await Promise.all([
         page.waitForEvent("filechooser", { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
-        uploadMenuItem.click().catch(() => undefined),
+        uploadMenuItem.click().catch((error) => { lastUploadError = error; }),
       ]).then(([fileChooser]) => fileChooser);
     }
     if (chooser) {
-      await chooser.setFiles(attachments);
-      uploaded = true;
+      if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
+      else {
+        try {
+          await chooser.setFiles(inputFiles);
+          uploaded = true;
+        } catch (error) { lastUploadError = error; }
+      }
     }
   }
 
-  if (!uploaded) throw new Error("Room-only AI execution could not attach the required media files to the selected chat room.");
+  if (!uploaded) throw new Error(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX} ${_.toString(_.get(lastUploadError, "message", ""))}`.trim());
 };
 
 const getComposerText = async (input: Locator): Promise<string> => {

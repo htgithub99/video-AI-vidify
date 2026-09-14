@@ -889,13 +889,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             ? {
                 mode: AiPlanningExecutionMode.RoomOnly,
                 provider: AiPlanningFallbackProvider.GeminiChat,
-                model: _.includes([
-                  AiPlanningChatModel.GeminiFlashLite,
-                  AiPlanningChatModel.GeminiFlash,
-                  AiPlanningChatModel.GeminiPro,
-                  AiPlanningChatModel.GeminiThinking,
-                  AiPlanningChatModel.GeminiDeepThink,
-                ], model) ? model : AiPlanningChatModel.GeminiPro,
+                model: AiPlanningChatModel.GeminiFlash,
                 projectId: evaluationProjectId,
                 chromeHeadless: false,
               }
@@ -1730,8 +1724,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 </Tooltip>
               ))}
             </div>
-            <button type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-amber-600/50 border-amber-500/40 text-white cursor-wait animate-pulse" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
-              {isDownloadingSuno ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
+            <button type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
+              {isDownloadingSuno ? <Disc3 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-200" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
               <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </button>
             <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">

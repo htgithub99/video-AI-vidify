@@ -66,18 +66,27 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
   for (const [index, track] of validTracks.entries()) {
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(/\/$/, "");
-    const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(track.songId)}/${format}`, {
-      headers: { Accept: format === "wav" ? "audio/wav,*/*" : "audio/mpeg,*/*" },
-      signal: AbortSignal.timeout(format === "wav" ? 180_000 : 120_000),
-    });
-    if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackFailedErr(track.title));
-    try {
-      await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
-      downloadedPaths.push(filePath);
-    } catch (error) {
-      await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
-      throw error;
+    let downloaded = false;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS && !downloaded; attempt += 1) {
+      try {
+        const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(track.songId)}/${format}`, {
+          headers: { Accept: format === "wav" ? "audio/wav,*/*" : "audio/mpeg,*/*" },
+          signal: AbortSignal.timeout(format === "wav" ? 180_000 : 120_000),
+        });
+        if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
+        await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
+        downloadedPaths.push(filePath);
+        downloaded = true;
+      } catch (error) {
+        lastError = error;
+        await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+        if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
+          await new Promise((resolve) => setTimeout(resolve, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1)));
+        }
+      }
     }
+    if (!downloaded) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackWithCauseErr(track.title, lastError));
   }
   return downloadedPaths;
 };

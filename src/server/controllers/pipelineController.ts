@@ -866,33 +866,71 @@ const selectProfessionalSunoTracks = async (
   const schema = {
     type: "object",
     additionalProperties: false,
-    required: ["selectedTracks"],
+    required: ["selectedTrackIds"],
     properties: {
-      selectedTracks: {
+      selectedTrackIds: {
         type: "array",
         minItems: groups.length,
         maxItems: groups.length,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["songTitle", "selectedTrackId", "professionalRationale", "score"],
-          properties: {
-            songTitle: { type: "string" },
-            selectedTrackId: { type: "string" },
-            professionalRationale: { type: "string" },
-            score: { type: "integer", minimum: 0, maximum: 100 },
-          },
-        },
+        items: { type: "string" },
       },
     },
   } as const;
   const allCandidateIds = _.flatMap(groups, "candidates");
   const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(/\/$/, "");
-  const audioBuffers = await Promise.all(_.map(allCandidateIds, async (songId) => {
-    const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(songId)}/mp3`, { signal: AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS) });
-    if (!response.ok) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
-    return Buffer.from(await response.arrayBuffer());
-  }));
+  const audioBuffers: Buffer[] = [];
+  for (const idChunk of _.chunk(allCandidateIds, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY)) {
+    const chunkBuffers = await Promise.all(_.map(idChunk, async (songId) => {
+      let lastError: unknown;
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS; attempt += 1) {
+        try {
+          const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(songId)}/mp3`, { signal: AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS) });
+          if (!response.ok) throw new Error(`suno_evaluation_audio_http_${response.status}`);
+          return Buffer.from(await response.arrayBuffer());
+        } catch (error) {
+          lastError = error;
+          if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
+            await delayAsync(SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1));
+          }
+        }
+      }
+      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}`, lastError);
+      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+    }));
+    audioBuffers.push(...chunkBuffers);
+  }
+  const attachments = _.map(allCandidateIds, (songId, index) => ({ name: `${index + 1}-${songId}.mp3`, mimeType: "audio/mpeg", buffer: audioBuffers[index] }));
+  const uploadBatches: typeof attachments[] = [];
+  let currentBatch: typeof attachments = [];
+  let currentBatchBytes = 0;
+  for (const attachment of attachments) {
+    if (!_.isEmpty(currentBatch) && (
+      currentBatchBytes + attachment.buffer.length > SUNO_AUTOMATION_CONFIG.EVALUATION_UPLOAD_BATCH_MAX_BYTES ||
+      currentBatch.length >= SUNO_AUTOMATION_CONFIG.EVALUATION_UPLOAD_BATCH_MAX_FILES
+    )) {
+      uploadBatches.push(currentBatch);
+      currentBatch = [];
+      currentBatchBytes = 0;
+    }
+    currentBatch.push(attachment);
+    currentBatchBytes += attachment.buffer.length;
+  }
+  if (!_.isEmpty(currentBatch)) uploadBatches.push(currentBatch);
+  for (const [batchIndex, attachmentBatch] of uploadBatches.entries()) {
+    await generatePlanningWithChatUi({
+      provider: AiPlanningFallbackProvider.GeminiChat,
+      model: room.model,
+      prompt: SUNO_AUTOMATION_TEXTS.buildAudioBatchUploadPrompt(batchIndex + 1, uploadBatches.length),
+      projectId: room.projectId,
+      workerId: room.workerId,
+      chromeHeadless: false,
+      signal: room.signal,
+      attachments: attachmentBatch,
+      artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_AUDIO_UPLOAD,
+      requestId: `${room.projectId}-${SUNO_AUTOMATION_CONFIG.AUDIO_BATCH_REQUEST_ID_PREFIX}-${_.kebabCase(groups[0].title)}-${batchIndex + 1}`,
+      closeRoomOnComplete: false,
+    });
+  }
   const prompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, JSON.stringify(schema));
   let retryPrompt = prompt;
   let lastError: unknown;
@@ -905,18 +943,15 @@ const selectProfessionalSunoTracks = async (
       workerId: room.workerId,
       chromeHeadless: false,
       signal: room.signal,
-      attachments: attempt === 0
-        ? _.map(allCandidateIds, (songId, index) => ({ name: `${index + 1}-${songId}.mp3`, mimeType: "audio/mpeg", buffer: audioBuffers[index] }))
-        : undefined,
       artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
       requestId: `${room.projectId}-chunk-${_.kebabCase(groups[0].title)}-${attempt + 1}`,
       closeRoomOnComplete: false,
     });
     try {
-      const evaluation = parseAiJsonArtifact<{ selectedTracks: Array<{ selectedTrackId: string }> }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
-      if (_.size(evaluation.selectedTracks) !== groups.length) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
+      const evaluation = parseAiJsonArtifact<{ selectedTrackIds: string[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+      if (_.size(evaluation.selectedTrackIds) !== groups.length) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
       return _.map(groups, (group, index) => {
-        const selectedTrackId = _.trim(_.toString(evaluation.selectedTracks[index]?.selectedTrackId));
+        const selectedTrackId = _.trim(_.toString(evaluation.selectedTrackIds[index]));
         if (!_.includes(group.candidates, selectedTrackId)) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
         return { songId: selectedTrackId, title: group.title };
       });

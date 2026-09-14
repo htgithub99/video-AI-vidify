@@ -195,6 +195,14 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_SIDEBAR_READY_SELECTOR: 'nav[aria-label="Chat history"], nav[aria-label="Lịch sử trò chuyện"]',
   CONVERSATION_DELETE_PATTERN: /^(?:Xóa|Xoá|Delete|Delete chat|Delete conversation)$/i,
   CONVERSATION_DELETE_FALLBACK_PATTERN: /(?:Xóa|Xoá|Delete)/i,
+  CDP_DOM_ENABLE: "DOM.enable",
+  CDP_DOM_GET_FLATTENED_DOCUMENT: "DOM.getFlattenedDocument",
+  CDP_DOM_SET_FILE_INPUT_FILES: "DOM.setFileInputFiles",
+  CDP_INPUT_TAG_NAME: "INPUT",
+  CDP_INPUT_TYPE_ATTR: "type",
+  CDP_INPUT_FILE_VALUE: "file",
+  ATTACHMENT_MENU_ITEM_NAME_PATTERN: /upload files?|tải tệp lên|^tệp$|^files?$/i,
+  ATTACHMENT_FALLBACK_ERROR_PREFIX: "Room-only AI execution could not attach the required media files to the selected chat room.",
 } as const;
 
 export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string =>

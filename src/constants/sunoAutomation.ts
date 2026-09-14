@@ -1,3 +1,5 @@
+import _ from "lodash";
+
 export const SUNO_AUTOMATION_CONFIG = {
   SUNO_BASE_URL: "https://suno.com",
   SUNO_STUDIO_API_URL: "https://studio-api-prod.suno.com",
@@ -55,6 +57,13 @@ export const SUNO_AUTOMATION_CONFIG = {
   AUDIO_DOWNLOAD_TIMEOUT_MS: 120_000,
   MAX_EVALUATION_ATTEMPTS: 3,
   EVALUATION_SONGS_PER_CHUNK: 5,
+  EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY: 2,
+  EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS: 3,
+  EVALUATION_AUDIO_RETRY_DELAY_MS: 1500,
+  EVALUATION_UPLOAD_BATCH_MAX_BYTES: 30 * 1024 * 1024,
+  EVALUATION_UPLOAD_BATCH_MAX_FILES: 2,
+  ARTIFACT_TYPE_MUSIC_AUDIO_UPLOAD: "music-evaluation-audio-upload",
+  AUDIO_BATCH_REQUEST_ID_PREFIX: "audio",
 } as const;
 
 export const SUNO_AUTOMATION_PATTERNS = {
@@ -189,13 +198,14 @@ export const SUNO_AUTOMATION_TEXTS = {
   TRACK_EVALUATION_ROOM_REQUIRED_ERR: "Thẩm âm bài hát bằng AI yêu cầu cấu hình phòng Gemini.",
   INVALID_TRACK_SELECTION_ARTIFACT: "invalid_suno_track_selection",
   INVALID_SELECTED_TRACK_ID_ERR: "invalid_suno_selected_track_id",
+  formatDownloadHttpError: (status: number) => `suno_download_http_${status}`,
   formatDownloadTrackFailedErr: (title: string) => `${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} ${title}`,
-  buildTrackEvaluationPrompt: (title: string, style: string, candidateA: string, candidateB: string, schemaString: string) =>
-    `Act as a professional music selection panel consisting of a lead singer, songwriter-composer, record producer, audio engineer, and music-market editor. Listen fully and comparatively to both candidate recordings for the same song.\n\nSong: ${title}\nRequested genre/style and intended market: ${style}\nCandidate A trackId: ${candidateA}\nCandidate B trackId: ${candidateB}\n\nInfer the correct target country, audience, listening culture, and commercial context from the language and requested style. Judge as working professionals in that exact market, not as a generic global listener. Score vocal technique, diction, emotional delivery, melody and harmonic coherence, arrangement and song structure, production/mix, technical defects, genre authenticity, audience fit, replay value, and release potential. A technically broken performance cannot win. Select exactly one supplied trackId.\n\nReturn raw JSON only, matching this contract exactly:\n${schemaString}`,
-  buildTrackEvaluationRetryPrompt: (candidates: string[]) =>
-    `Your previous response was invalid. Re-evaluate the two audio files already attached in this same conversation. Return raw JSON only using the exact schema previously requested. selectedTrackId must be exactly one of: ${candidates.join(", ")}. Do not use Markdown or add commentary.`,
+  formatDownloadTrackWithCauseErr: (title: string, cause?: unknown) =>
+    `${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} ${title} ${_.toString(_.get(cause, "message", ""))}`.trim(),
+  buildAudioBatchUploadPrompt: (currentBatch: number, totalBatches: number) =>
+    `Store audio batch ${currentBatch}/${totalBatches} for the upcoming professional comparison. Do not evaluate yet. Reply raw JSON only: {"receivedAudioBatch":${currentBatch}}`,
   buildTrackBatchEvaluationPrompt: (style: string, groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
-    `Act as a professional Vietnamese-market music selection panel: lead singer, songwriter-composer, record producer, audio engineer, and music editor. Evaluate all ${groups.length} songs in this batch. Each song has exactly two attached Suno recordings. Listen fully, compare only the two candidates belonging to the same song, and select exactly one winner per song. Judge vocal technique, diction, emotion, composition, arrangement, mix, technical defects, genre authenticity, replay value and market fit. A technically broken recording cannot win.\n\nRequested style: ${style}\nSong pairs:\n${groups.map((group, index) => `${index + 1}. ${group.title}\n- Candidate A: ${group.candidates[0]}\n- Candidate B: ${group.candidates[1]}`).join("\n")}\n\nReturn raw JSON only. Preserve the song order above and match this schema exactly:\n${schemaString}`,
+    `Act as a professional Vietnamese-market singer, songwriter, producer and music editor. Internally evaluate each pair for vocal quality, diction, emotion, composition, arrangement, mix, defects, genre authenticity, replay value and market fit. Select exactly one winner per song; never compare candidates across different songs. Do not explain your scores.\n\nStyle: ${style}\nPairs:\n${groups.map((group, index) => `${index + 1}. ${group.title}: ${group.candidates[0]} OR ${group.candidates[1]}`).join("\n")}\n\nReturn raw JSON only, preserving pair order:\n${schemaString}`,
   buildTrackBatchEvaluationRetryPrompt: (groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
-    `Your previous response was incomplete or invalid. In this same room, use the audio files already attached and return exactly one valid winner for every one of the ${groups.length} song pairs. Keep the original song order. Every selectedTrackId must belong to its corresponding pair. Return raw JSON only, without Markdown or commentary. Required schema:\n${schemaString}`,
+    `Previous JSON was invalid. Using the attached audio, return selectedTrackIds with exactly ${groups.length} IDs in pair order. Each ID must belong to its corresponding pair. Return raw JSON only:\n${schemaString}`,
 } as const;
