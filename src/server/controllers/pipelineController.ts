@@ -933,7 +933,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.VALIDATION_PLAYLIST_INPUT_ERR });
   }
   try {
-    const result = await createSunoPlaylist(songs, style, inspo, req.body?.sunoSettings, initialSongIds);
+    const result = await createSunoPlaylist(songs, style, inspo, req.body?.sunoSettings, initialSongIds, _.trim(_.toString(req.body?.playlistName)));
     return res.json({ success: true, ...result });
   } catch (error) {
     logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, error);

@@ -34,5 +34,12 @@ assert.doesNotMatch(component, /showSaveFilePicker/);
 assert.match(component, /saveMusicBlobWithDialog\(new Blob\(\[`\\uFEFF\$\{exportText\}`\]/);
 assert.match(component, /const handleDownloadThumbnail = async/);
 assert.doesNotMatch(component, /anchor\.download/);
+assert.match(constants, /SEO_EXPORT_FILENAME:\s*"SEO"/);
+assert.match(constants, /THUMBNAIL_EXPORT_FILENAME:\s*"COVER"/);
+assert.match(component, /playlistName: playlistSeoOptions\[0\]\?\.title/);
+assert.match(controller, /req\.body\?\.playlistName/);
+assert.match(constants, /`TUYỂN TẬP \$\{songCount\} CA KHÚC - \$\{firstSongTitle\.toLocaleUpperCase\("vi-VN"\)\}`/);
+assert.match(controller, /req\.body\?\.playlistName/);
+assert.match(fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8"), /playlistName[\s\S]*toLocaleUpperCase\("vi-VN"\)/);
 
 process.stdout.write("Music curation gates, ranking, concurrent chunks, SEO TXT export, and Save As dialogs are present.\n");

@@ -48,7 +48,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   OPTION_ON: "On",
   OPTION_OFF: "Off",
 
-  DEFAULT_COLLECTION_TITLE: "Tuyển tập Bolero 15 bài",
+  DEFAULT_COLLECTION_TITLE: "Tuyển tập nhạc",
   DEFAULT_REFERENCE_THUMBNAIL_NAME: "thumbnail-reference.png",
   REFERENCE_SOURCE_CHUNK_DIVIDER: "\n\n--- REFERENCE SOURCE ---\n\n",
   SECTION_DIVIDER: "\n\n----------------------------------------\n\n",
@@ -69,7 +69,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   EVALUATION_AUDIO_RETRY_DELAY_MS: 1500,
   EVALUATION_RUN_ID_PREFIX: "music-track-evaluation-",
   RUN_ID_PREFIX: "music_",
-  THUMBNAIL_FILE_PREFIX: "music-cover-",
+  THUMBNAIL_EXPORT_FILENAME: "COVER",
   TEMP_ATTACHMENT_DIR_PREFIX: "vidify-suno-evaluation-",
 
   VOCAL_GENDER_MALE: "male",
@@ -107,7 +107,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
   MEDIA_KEY_GENERATED: "generated",
-  DEFAULT_SEO_EXPORT_FILENAME: "seo-playlist-suno",
+  SEO_EXPORT_FILENAME: "SEO",
   TEXT_PLAIN_UTF8: "text/plain;charset=utf-8",
   OCTET_STREAM: "application/octet-stream",
   TXT_EXTENSION: ".txt",
@@ -286,10 +286,8 @@ export const SUNO_AUTOMATION_TEXTS = {
     `Suno chỉ trả ${actual}/${expected} track cho prompt "${title}"; đã dừng để không tạo playlist thiếu bài.`,
   formatPlaylistMissingTracksErr: (missing: number, expected: number) =>
     `Playlist Suno vẫn thiếu ${missing}/${expected} track sau khi hệ thống đã tự thêm lại.`,
-  formatPlaylistTitle: (title: string, remainingCount: number, createdAt: string) =>
-    `${title} và ${remainingCount} bài hát - ${createdAt}`,
-  formatDefaultPlaylistTitle: (defaultTitle: string, createdAt: string) =>
-    `${defaultTitle} - ${createdAt}`,
+  formatPlaylistTitle: (firstSongTitle: string, songCount: number) =>
+    `TUYỂN TẬP ${songCount} CA KHÚC - ${firstSongTitle.toLocaleUpperCase("vi-VN")}`,
   TRACK_EVALUATION_ROOM_REQUIRED_ERR: "Thẩm âm bài hát bằng AI yêu cầu cấu hình phòng Gemini.",
   INVALID_TRACK_SELECTION_ARTIFACT: "invalid_suno_track_selection",
   INVALID_SELECTED_TRACK_ID_ERR: "invalid_suno_selected_track_id",

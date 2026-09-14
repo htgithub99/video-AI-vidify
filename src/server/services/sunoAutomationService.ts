@@ -473,7 +473,7 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   return playlistUrl;
 };
 
-export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = []): Promise<SunoCreationResult> => {
+export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = [], requestedPlaylistName: string = ""): Promise<SunoCreationResult> => {
   if ((_.isEmpty(songs) && _.isEmpty(initialSongIds)) || _.isEmpty(_.trim(style))) throw new Error(SUNO_AUTOMATION_TEXTS.MISSING_SONGS_OR_STYLE_ERR);
   if (activeSunoPage) throw new Error(SUNO_AUTOMATION_TEXTS.ALREADY_RUNNING_ERR);
   sunoCancellationRequested = false;
@@ -522,10 +522,9 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       }
       await waitForGenerationCapacity(page, activeGenerations, 0);
     }
-    const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
-    const playlistName = !_.isEmpty(songs)
-      ? SUNO_AUTOMATION_TEXTS.formatPlaylistTitle(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE), Math.max(0, songs.length - 1), createdAt)
-      : SUNO_AUTOMATION_TEXTS.formatDefaultPlaylistTitle(SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE, createdAt);
+    const playlistName = (_.trim(requestedPlaylistName).slice(0, 120) || (!_.isEmpty(songs)
+      ? SUNO_AUTOMATION_TEXTS.formatPlaylistTitle(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE), songs.length)
+      : SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE)).toLocaleUpperCase("vi-VN");
     const playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName);
     return { playlistUrl, createdSongIds: _.uniq(createdSongIds) };
   } catch (error) {

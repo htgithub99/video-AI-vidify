@@ -382,9 +382,8 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
       `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`
     );
     const exportText = `${texts.SEO_EXPORT_TITLE}\n\n[${texts.SEO_PLAYLIST_URL_LABEL}]:\n${_.trim(playlistUrl) || texts.SEO_PLAYLIST_URL_EMPTY}\n\n${optionSections.join(SUNO_AUTOMATION_CONFIG.SECTION_DIVIDER)}`;
-    const baseName = (_.trim(seoOptions[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_SEO_EXPORT_FILENAME).replace(SUNO_AUTOMATION_PATTERNS.INVALID_FILE_CHARS, "-").replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, " ").slice(0, 80).trim() || SUNO_AUTOMATION_CONFIG.DEFAULT_SEO_EXPORT_FILENAME);
     try {
-      const saved = await saveMusicBlobWithDialog(new Blob([`\uFEFF${exportText}`], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), `${baseName}${SUNO_AUTOMATION_CONFIG.TXT_EXTENSION}`);
+      const saved = await saveMusicBlobWithDialog(new Blob([`\uFEFF${exportText}`], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), `${SUNO_AUTOMATION_CONFIG.SEO_EXPORT_FILENAME}${SUNO_AUTOMATION_CONFIG.TXT_EXTENSION}`);
       if (saved) toast.success(texts.SEO_EXPORT_TXT_SUCCESS);
     } catch (error) {
       if (_.get(error, "name") !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
@@ -857,7 +856,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks }),
+        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks, playlistName: playlistSeoOptions[0]?.title }),
         signal: abortController.signal,
       });
       const result = await response.json();
@@ -967,7 +966,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const extension = generatedThumbnail.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
     try {
       const blob = await fetch(generatedThumbnail).then((response) => response.blob());
-      const saved = await saveMusicBlobWithDialog(blob, `${SUNO_AUTOMATION_CONFIG.THUMBNAIL_FILE_PREFIX}${Date.now()}.${extension}`);
+      const saved = await saveMusicBlobWithDialog(blob, `${SUNO_AUTOMATION_CONFIG.THUMBNAIL_EXPORT_FILENAME}.${extension}`);
       if (saved) toast.success(texts.THUMBNAIL_SAVE_SUCCESS);
     } catch (error) {
       if (_.get(error, "name") !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
