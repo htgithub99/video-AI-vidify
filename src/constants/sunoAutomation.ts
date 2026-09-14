@@ -56,6 +56,11 @@ export const SUNO_AUTOMATION_SELECTORS = {
   RANGE_INPUT: 'input[type="range"]',
   RANGE_CONTAINER_XPATH: "xpath=ancestor::*[.//input[@type='range']][1]",
   DIALOG_ROLE: '[role="dialog"]',
+  COOKIE_CONSENT_BUTTON: [
+    'button:has-text("Reject All")',
+    'button:has-text("Allow All")',
+    'button:has-text("Confirm My Choices")',
+  ] as const,
 
   ADVANCED: [
     'button:has-text("Advanced")',

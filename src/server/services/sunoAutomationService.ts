@@ -86,9 +86,19 @@ const firstVisibleText = async (page: Page, text: RegExp): Promise<Locator | nul
   return null;
 };
 
+const dismissCookieConsent = async (page: Page): Promise<void> => {
+  const consentDialog = page.locator(SUNO_AUTOMATION_SELECTORS.DIALOG_ROLE)
+    .filter({ hasText: /Privacy Preference Center/i });
+  if (!(await consentDialog.first().isVisible().catch(() => false))) return;
+  const dismissButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.COOKIE_CONSENT_BUTTON);
+  if (!dismissButton) return;
+  await dismissButton.click();
+  await consentDialog.first().waitFor({ state: "hidden", timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
+};
+
 const fillEditable = async (locator: Locator, value: string): Promise<void> => {
-  await locator.click();
   await locator.fill(value).catch(async () => {
+    await locator.click({ force: true });
     await locator.press("Control+A");
     await locator.pressSequentially(value, { delay: 1 });
   });
@@ -212,6 +222,8 @@ const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => 
     break;
   }
   if (!selected) throw new Error(SUNO_AUTOMATION_TEXTS.formatInspoNotFoundErr(targetName));
+  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SELECT_WAIT_MS);
+  await page.keyboard.press("Escape");
   await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SELECT_WAIT_MS);
 };
 
@@ -345,6 +357,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   try {
     await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, { waitUntil: "domcontentloaded", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.VERIFY_ACCOUNT_WAIT_MS);
+    await dismissCookieConsent(page);
     await verifySunoAccount(page);
     if (!_.isEmpty(songs)) {
       await ensureAdvancedMode(page);
