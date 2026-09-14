@@ -261,19 +261,17 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           <h3 className="text-sm sm:text-base font-black !text-[#0f172a] dark:!text-slate-100 truncate max-w-[200px] sm:max-w-md" title={displayTitle}>
             {displayTitle}
           </h3>
-          <Button
+          <button
             type="button"
-            variant="unstyled"
             onClick={() => handleCopy(numberedTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
-            className="text-[11px] !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1 cursor-pointer font-bold transition-colors shrink-0"
-            title={texts.COPY_TITLE_BTN}>
+            className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+            title={copiedKey === `title-${index}` ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
             {copiedKey === `title-${index}` ? (
-              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5 shrink-0" />
             )}
-            <span>{copiedKey === `title-${index}` ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}</span>
-          </Button>
+          </button>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {song.genre && (
@@ -302,18 +300,17 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
               <FileText className="w-3 h-3" />
               {texts.LYRICS_TITLE}
             </span>
-            <Button
+            <button
               type="button"
-              variant="unstyled"
               onClick={() => handleCopy(`${numberedTitle}\n\n${song.lyrics}`, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
-              className="text-[11px] !text-[#7e22ce] hover:!text-[#4c1d95] dark:!text-purple-300 dark:hover:!text-purple-100 flex items-center gap-1 cursor-pointer font-bold transition-colors shrink-0">
+              className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+              title={copiedKey === `lyrics-${index}` ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
               {copiedKey === `lyrics-${index}` ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5 shrink-0" />
               )}
-              <span>{copiedKey === `lyrics-${index}` ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}</span>
-            </Button>
+            </button>
           </div>
           <pre className="p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner">
             {song.lyrics}
@@ -502,6 +499,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [chromeHeadless, setChromeHeadless] = useState(initialState.chromeHeadless ?? true);
   const musicRunIdRef = useRef<string | null>(null);
   const musicAbortControllerRef = useRef<AbortController | null>(null);
+  const sunoAbortControllerRef = useRef<AbortController | null>(null);
 
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
@@ -731,6 +729,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleCreateSunoMusic = async () => {
     if (_.isEmpty(songs) || isCreatingSuno) return;
+    const abortController = new AbortController();
+    sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
     setSunoPlaylistUrl("");
     try {
@@ -738,16 +738,28 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings }),
+        signal: abortController.signal,
       });
       const result = await response.json();
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
       setSunoPlaylistUrl(_.toString(result.playlistUrl));
       toast.success(texts.SUNO_CREATE_SUCCESS);
     } catch (error: any) {
-      toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
+      if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
     } finally {
+      sunoAbortControllerRef.current = null;
       setIsCreatingSuno(false);
     }
+  };
+
+  const handleCancelSunoMusic = () => {
+    if (!isCreatingSuno) return;
+    sunoAbortControllerRef.current?.abort();
+    void fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CANCEL, {
+      method: HTTP_METHODS.POST,
+      headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+    }).catch(() => undefined);
+    toast.info(texts.SUNO_CANCELLED_TOAST);
   };
 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1380,6 +1392,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     {isCreatingSuno ? <Disc3 className="w-3.5 h-3.5 animate-spin" /> : <Music2 className="w-3.5 h-3.5" />}
                     <span>{isCreatingSuno ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
                   </Button>
+                  {isCreatingSuno && (
+                    <Button
+                      type="button"
+                      variant="unstyled"
+                      onClick={handleCancelSunoMusic}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white flex items-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95">
+                      <X className="w-3.5 h-3.5 shrink-0" />
+                      <span>{texts.SUNO_CANCEL_BTN}</span>
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="unstyled"

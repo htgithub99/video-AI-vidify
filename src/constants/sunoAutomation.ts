@@ -108,12 +108,15 @@ export const SUNO_AUTOMATION_TEXTS = {
   CHROME_NOT_FOUND_ERR: "Không tìm thấy Chrome để mở profile Suno.",
   ADVANCED_MODE_NOT_FOUND_ERR: "Không tìm thấy chế độ Advanced của Suno.",
   STYLE_INPUT_NOT_FOUND_ERR: "Không tìm thấy ô Styles của Suno.",
+  MORE_OPTIONS_NOT_FOUND_ERR: "Không tìm thấy mục More Options của Suno.",
   INSPO_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút Inspo của Suno.",
   INSPO_SEARCH_NOT_FOUND_ERR: "Không tìm thấy ô tìm kiếm playlist Inspo.",
   PLAYLIST_URL_NOT_FOUND_ERR: "Đã tạo nhạc nhưng chưa lấy được URL playlist từ Suno.",
   PLAYLIST_BATCH_ADD_FAILED_ERR: "Suno không chấp nhận thêm toàn bộ bài hát vào playlist mới.",
   MISSING_SONGS_OR_STYLE_ERR: "Thiếu bài hát hoặc phong cách Suno.",
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
+  CANCELLED_ERR: "Đã hủy tạo nhạc Suno.",
+  ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
 
   formatChromeLaunchedMsg: (email: string) =>
     `Đã mở Chrome Suno riêng cho ${email}. Hãy đăng nhập rồi đóng tab này khi xong.`,

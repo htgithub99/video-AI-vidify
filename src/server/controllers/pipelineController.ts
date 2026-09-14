@@ -206,7 +206,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 import { analyzeCinematicClipsWithLibraries, validateCinematicEditorialDecisions } from "../services/cinematicClipAnalyzerService.js";
-import { createSunoPlaylist, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
+import { cancelActiveSunoCreation, createSunoPlaylist, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
 import { hasCinematicSceneDialogue } from "../../services/cinematicEditTimelineService.js";
 
 import {
@@ -870,6 +870,11 @@ router.post("/music-suno-create", async (req: Request, res: Response) => {
     logger.error("Suno automation failed.", error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", "Không thể hoàn tất tạo nhạc trên Suno.")) });
   }
+});
+
+router.post("/music-suno-cancel", async (_req: Request, res: Response) => {
+  await cancelActiveSunoCreation();
+  return res.json({ success: true });
 });
 
 router.post("/music-suno-login", async (_req: Request, res: Response) => {
