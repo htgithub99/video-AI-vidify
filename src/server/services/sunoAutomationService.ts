@@ -214,6 +214,29 @@ const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]>
   throw new Error(SUNO_AUTOMATION_TEXTS.formatSongIdTimeoutErr(song.title));
 };
 
+const addSongIdsByPlaylistId = async (
+  page: Page,
+  requestHeaders: Record<string, string>,
+  playlistId: string,
+  songIds: string[],
+): Promise<void> => {
+  const response = await page.request.post(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/update_clips/`, {
+    headers: {
+      authorization: requestHeaders.authorization,
+      "browser-token": requestHeaders["browser-token"],
+      "device-id": requestHeaders["device-id"],
+      "content-type": "application/json",
+    },
+    data: {
+      playlist_id: playlistId,
+      update_type: "add",
+      metadata: { clip_ids: songIds },
+      recommendation_metadata: {},
+    },
+  });
+  if (!response.ok()) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_BATCH_ADD_FAILED_ERR);
+};
+
 const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: string): Promise<string> => {
   const uniqueSongIds = _.uniq(_.compact(songIds));
   await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/song/${uniqueSongIds[0]}`, {
@@ -249,22 +272,20 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   if (!playlistId) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
 
   const requestHeaders = mutationRequest.headers();
-  const batchResponse = await page.request.post(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/update_clips/`, {
-    headers: {
-      authorization: requestHeaders.authorization,
-      "browser-token": requestHeaders["browser-token"],
-      "device-id": requestHeaders["device-id"],
-      "content-type": "application/json",
-    },
-    data: {
-      playlist_id: playlistId,
-      update_type: "add",
-      metadata: { clip_ids: uniqueSongIds },
-      recommendation_metadata: {},
-    },
-  });
-  if (!batchResponse.ok()) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_BATCH_ADD_FAILED_ERR);
-  return new URL(playlistHref, SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL).toString();
+  await addSongIdsByPlaylistId(page, requestHeaders, playlistId, uniqueSongIds);
+
+  const playlistUrl = new URL(playlistHref, SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL).toString();
+  await page.goto(playlistUrl, { waitUntil: "commit", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_VERIFY_WAIT_MS);
+  let missingIds = _.difference(uniqueSongIds, await collectSongIds(page));
+  if (!_.isEmpty(missingIds)) {
+    await addSongIdsByPlaylistId(page, requestHeaders, playlistId, missingIds);
+    await page.reload({ waitUntil: "commit", timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_VERIFY_WAIT_MS);
+    missingIds = _.difference(uniqueSongIds, await collectSongIds(page));
+  }
+  if (!_.isEmpty(missingIds)) throw new Error(SUNO_AUTOMATION_TEXTS.formatPlaylistMissingTracksErr(missingIds.length, uniqueSongIds.length));
+  return playlistUrl;
 };
 
 export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = []): Promise<SunoCreationResult> => {
@@ -290,7 +311,16 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       await ensureAdvancedMode(page);
       await selectInspoPlaylist(page, inspo);
       await configureAdvancedOnce(page, style, aiSettings);
-      for (const song of songs) createdSongIds.push(...(await createOneSong(page, song)));
+      for (const song of songs) {
+        let songIds: string[] = [];
+        for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_ATTEMPTS_PER_PROMPT && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
+          songIds = _.uniq([...songIds, ...(await createOneSong(page, song))]);
+        }
+        if (songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) {
+          throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(song.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
+        }
+        createdSongIds.push(...songIds);
+      }
     }
     const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
     const playlistName = !_.isEmpty(songs)

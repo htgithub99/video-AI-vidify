@@ -16,12 +16,13 @@ export const SUNO_AUTOMATION_CONFIG = {
   CREATE_FORM_TIMEOUT_MS: 30_000,
   CREATE_SONG_DEADLINE_MS: 120_000,
   GENERATE_RESPONSE_TIMEOUT_MS: 30_000,
+  CREATE_ATTEMPTS_PER_PROMPT: 2,
+  MIN_TRACKS_PER_PROMPT: 2,
   POLL_INTERVAL_MS: 1500,
   PLAYLIST_WAIT_MS: 1500,
-  PLAYLIST_ADD_WAIT_MS: 500,
-  MENU_OPEN_WAIT_MS: 500,
   SONG_PAGE_READY_TIMEOUT_MS: 30_000,
   PLAYLIST_OPTION_TIMEOUT_MS: 10_000,
+  PLAYLIST_VERIFY_WAIT_MS: 4000,
   INSPO_SEARCH_WAIT_MS: 1000,
   INSPO_SELECT_WAIT_MS: 500,
 
@@ -52,42 +53,10 @@ export const SUNO_AUTOMATION_PATTERNS = {
 export const SUNO_AUTOMATION_SELECTORS = {
   BODY: "body",
   SONG_ANCHOR: 'a[href*="/song/"]',
-  PLAYLIST_ANCHOR: 'a[href*="/playlist/"]',
-  CHECKBOX_INPUT: 'input[type="checkbox"]',
-  CHECKBOX_CONTAINER_XPATH: "xpath=ancestor::*[.//input[@type='checkbox']][1]",
   RANGE_INPUT: 'input[type="range"]',
   RANGE_CONTAINER_XPATH: "xpath=ancestor::*[.//input[@type='range']][1]",
   DIALOG_ROLE: '[role="dialog"]',
 
-  ADD_TO_PLAYLIST: [
-    'button:has-text("Add to Playlist")',
-    '[role="menuitem"]:has-text("Add to Playlist")',
-    'text="Add to Playlist"',
-  ] as const,
-  OVERFLOW_BUTTON: [
-    'button[aria-label="More menu contents"]',
-    'button[aria-label*="more" i]',
-    'button[aria-label*="option" i]',
-    'button:has-text("⋯")',
-    'button:has-text("...")',
-  ] as const,
-  NEW_PLAYLIST: [
-    'button:has-text("Create Playlist")',
-    'text="Create Playlist"',
-    'button:has-text("Create New Playlist")',
-    'button:has-text("New Playlist")',
-    'button:has-text("Create Playlist")',
-    'button:has-text("Create new")',
-  ] as const,
-  PLAYLIST_NAME_INPUT: [
-    'input[placeholder*="playlist" i]',
-    'input[aria-label*="playlist" i]',
-  ] as const,
-  PLAYLIST_CONFIRM: [
-    'button:has-text("Create")',
-    'button:has-text("Save")',
-    'button:has-text("Add")',
-  ] as const,
   ADVANCED: [
     'button:has-text("Advanced")',
     '[role="tab"]:has-text("Advanced")',
@@ -141,11 +110,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   STYLE_INPUT_NOT_FOUND_ERR: "Không tìm thấy ô Styles của Suno.",
   INSPO_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút Inspo của Suno.",
   INSPO_SEARCH_NOT_FOUND_ERR: "Không tìm thấy ô tìm kiếm playlist Inspo.",
-  ADD_TO_PLAYLIST_NOT_FOUND_ERR: "Không tìm thấy thao tác Add to Playlist sau khi chọn các bài đã tạo.",
   PLAYLIST_URL_NOT_FOUND_ERR: "Đã tạo nhạc nhưng chưa lấy được URL playlist từ Suno.",
-  PLAYLIST_CREATE_NOT_FOUND_ERR: "Không thể tạo hoặc chọn playlist mới trên Suno.",
-  PLAYLIST_NAME_INPUT_NOT_FOUND_ERR: "Không tìm thấy ô nhập tên playlist mới trên Suno.",
-  PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút tạo playlist mới trên Suno.",
   PLAYLIST_BATCH_ADD_FAILED_ERR: "Suno không chấp nhận thêm toàn bộ bài hát vào playlist mới.",
   MISSING_SONGS_OR_STYLE_ERR: "Thiếu bài hát hoặc phong cách Suno.",
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
@@ -162,4 +127,8 @@ export const SUNO_AUTOMATION_TEXTS = {
     `Nút Create chưa sẵn sàng cho bài "${title}".`,
   formatSongIdTimeoutErr: (title: string) =>
     `Suno chưa trả ID cho bài "${title}".`,
+  formatNotEnoughTracksErr: (title: string, actual: number, expected: number) =>
+    `Suno chỉ trả ${actual}/${expected} track cho prompt "${title}"; đã dừng để không tạo playlist thiếu bài.`,
+  formatPlaylistMissingTracksErr: (missing: number, expected: number) =>
+    `Playlist Suno vẫn thiếu ${missing}/${expected} track sau khi hệ thống đã tự thêm lại.`,
 } as const;
