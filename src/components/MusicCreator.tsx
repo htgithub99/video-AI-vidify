@@ -799,31 +799,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
       const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
-      let resolvedThumbnailUrl = generatedThumbnailUrl;
-      setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
+      setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       setSongs(generatedSongs);
       setPlaylistSeoOptions(generatedPlaylistSeo);
       setGeneratedThumbnail(generatedThumbnailUrl);
       void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, generatedThumbnailUrl).catch(() => undefined);
-      if (_.isEmpty(generatedThumbnailUrl)) {
-        const retryResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: JSON.stringify({ songs: generatedSongs, style: trimmedStyle, playlistSeoOptions: generatedPlaylistSeo, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless }),
-          signal: abortController.signal,
-        });
-        const retryResult = await retryResponse.json();
-        const retryImage = _.toString(retryResult.thumbnail);
-        if (retryResponse.ok && retryResult.success && !_.isEmpty(retryImage)) {
-          resolvedThumbnailUrl = retryImage;
-          setGeneratedThumbnail(retryImage);
-          void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, retryImage).catch(() => undefined);
-        }
-      }
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
-      if (thumbnailWarning && _.isEmpty(resolvedThumbnailUrl)) toast.error(thumbnailWarning);
+      if (thumbnailWarning && _.isEmpty(generatedThumbnailUrl)) toast.error(thumbnailWarning);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));

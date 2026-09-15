@@ -522,7 +522,6 @@ const splitMusicSourceForRoom = (referenceSongs: string[]): string[] => {
 const generateMusicThumbnailAsset = async (input: {
   songs: any[];
   style: string;
-  seoOptions: any[];
   description: string;
   reference: string;
   referenceName: string;
@@ -532,7 +531,7 @@ const generateMusicThumbnailAsset = async (input: {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const result = await generateImageWithPlaywright({
-        prompt: SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.seoOptions, input.description, !_.isEmpty(input.reference)),
+        prompt: SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference)),
         style: input.style,
         retainBrowserSession: true,
         visualConfig: {
@@ -581,7 +580,13 @@ const validateMusicPlanSongContract = (parsed: any, expectedCount: number): bool
   const invalid = _.find(parsed.songs, (song: any) => {
     const hasSongId = !_.isEmpty(_.trim(_.toString(song?.songId)));
     const hasTitle = !_.isEmpty(_.trim(_.toString(song?.title)));
-    return !hasSongId || !hasTitle;
+    const lyrics = _.trim(_.toString(song?.lyrics));
+    const hasCompleteLyrics = lyrics.length >= 300 && /\[[^\]]+\]/.test(lyrics);
+    const hasMusicalDirection = !_.isEmpty(_.trim(_.toString(song?.genre))) && !_.isEmpty(_.trim(_.toString(song?.mood))) &&
+      _.isInteger(_.toNumber(song?.tempoBpm)) && _.inRange(_.toNumber(song?.tempoBpm), 40, 241);
+    const hasStructure = _.isArray(song?.structure) && song.structure.length >= 3 && _.every(song.structure, (section) => !_.isEmpty(_.trim(_.toString(section))));
+    const hasOriginalityNotes = _.isArray(song?.originalityNotes) && !_.isEmpty(song.originalityNotes) && _.every(song.originalityNotes, (note) => !_.isEmpty(_.trim(_.toString(note))));
+    return !hasSongId || !hasTitle || !hasCompleteLyrics || !hasMusicalDirection || !hasStructure || !hasOriginalityNotes;
   });
   return !invalid;
 };
@@ -608,8 +613,7 @@ const validateSunoSettingsContract = (parsed: any, requestId: string): boolean =
 const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean => {
   if (!_.isArray(parsed?.seoOptions) || parsed.seoOptions.length !== MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT) return false;
   const normalizedTitles = _.map(parsed.seoOptions, (option: any) => _.toLower(_.trim(_.toString(option?.title))));
-  const openingKeys = _.map(normalizedTitles, (title) => _.words(title).slice(0, 4).join(" "));
-  if (_.uniq(normalizedTitles).length !== normalizedTitles.length || _.uniq(openingKeys).length !== openingKeys.length) return false;
+  if (_.uniq(normalizedTitles).length !== normalizedTitles.length) return false;
   return _.every(parsed.seoOptions, (option: any) => {
     const title = _.trim(_.toString(option?.title));
     const description = _.trim(_.toString(option?.description));
@@ -619,14 +623,12 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
     const isAllCaps = letterOnlyTitle.length > 8 && letterOnlyTitle === letterOnlyTitle.toLocaleUpperCase(SUNO_AUTOMATION_CONFIG.LOCALE_VI);
     const titleWords = title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES).filter((word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
     const titleCaseRatio = _.size(_.filter(titleWords.slice(1), (word) => SUNO_AUTOMATION_PATTERNS.UNICODE_UPPERCASE_LETTER.test(word))) / Math.max(1, titleWords.length - 1);
-    const searchableOpening = title.slice(0, 45);
     const songCountMatches = title.match(SUNO_AUTOMATION_PATTERNS.buildSongCountMatchRegex(songs.length)) || [];
-    return _.inRange(_.size(title), 55, 86) && !isAllCaps && titleCaseRatio < 0.6 &&
-      SUNO_AUTOMATION_PATTERNS.SEO_SEARCHABLE_OPENING.test(searchableOpening) &&
+    return _.inRange(_.size(title), 50, 91) && !isAllCaps && titleCaseRatio < 0.75 &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title) &&
       songCountMatches.length === 1 &&
-      _.inRange(_.size(description), 1000, 3001) &&
+      _.inRange(_.size(description), 500, 1801) &&
       _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST) &&
       _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_OCCASIONS) &&
       _.every(songs, (song) => _.includes(_.toLower(description), _.toLower(_.trim(_.toString(song?.title))))) &&
@@ -741,31 +743,35 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
     if (!validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const seoRequestId = `${requestId}_playlist_seo`;
-    let playlistSeoParsed: any = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const prompt = attempt === 0
-        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
-        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(requestedSongCount, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId);
-      try {
-        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, seoRequestId);
-        responseProvider = response.provider;
-        playlistSeoParsed = jsonUtils.safeParse(response.text, null);
-      } catch (error) {
-        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
-        playlistSeoParsed = null;
+    const generatePlaylistSeo = async (): Promise<any> => {
+      let parsed: any = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const prompt = attempt === 0
+          ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
+          : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(requestedSongCount, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId);
+        try {
+          const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, seoRequestId);
+          responseProvider = response.provider;
+          parsed = jsonUtils.safeParse(response.text, null);
+        } catch (error) {
+          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+          parsed = null;
+        }
+        if (validateMusicPlaylistSeoContract(parsed, rankedSongs)) return parsed;
       }
-      if (validateMusicPlaylistSeoContract(playlistSeoParsed, rankedSongs)) break;
-    }
-    if (!validateMusicPlaylistSeoContract(playlistSeoParsed, rankedSongs)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-    const { thumbnail, warning: thumbnailWarning } = await generateMusicThumbnailAsset({
-      songs: rankedSongs,
-      style,
-      seoOptions: playlistSeoParsed.seoOptions,
-      description: thumbnailDescription,
-      reference: thumbnailReference,
-      referenceName: thumbnailReferenceName,
-      chromeHeadless: execution.chromeHeadless !== false,
-    });
+      throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    };
+    const [playlistSeoParsed, { thumbnail, warning: thumbnailWarning }] = await Promise.all([
+      generatePlaylistSeo(),
+      generateMusicThumbnailAsset({
+        songs: rankedSongs,
+        style,
+        description: thumbnailDescription,
+        reference: thumbnailReference,
+        referenceName: thumbnailReferenceName,
+        chromeHeadless: execution.chromeHeadless !== false,
+      }),
+    ]);
     return res.json({
       success: true,
       data: { songs: rankedSongs, sunoSettings: sunoSettingsParsed.settings, playlistSeoOptions: playlistSeoParsed.seoOptions, thumbnail, thumbnailWarning },
@@ -798,7 +804,6 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
     const result = await generateMusicThumbnailAsset({
       songs,
       style,
-      seoOptions: _.castArray(req.body?.playlistSeoOptions || []),
       description: _.trim(_.toString(req.body?.thumbnailDescription)),
       reference: _.toString(req.body?.thumbnailReference),
       referenceName: _.toString(req.body?.thumbnailReferenceName || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),

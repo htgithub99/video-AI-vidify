@@ -27,7 +27,7 @@ assert.match(component, /SEO_PLAYLIST_URL_LABEL/);
 assert.match(component, /playlistUrl=\{_.trim\(downloadPlaylistUrl\) \|\| sunoPlaylistUrl\}/);
 assert.equal((component.match(/<PlaylistSeoCard seoOptions/g) || []).length, 2);
 assert.match(routes, /PIPELINE_SAVE_FILE:\s*"\/api\/pipeline\/save-file"/);
-assert.match(controller, /router\.post\("\/save-file"/);
+assert.match(controller, /router\.post\(ROUTER_PATHS\.SAVE_FILE/);
 assert.match(controller, /execFile\(getPythonCommand\(\)/);
 assert.match(pythonDialog, /filedialog\.asksaveasfilename/);
 assert.doesNotMatch(component, /showSaveFilePicker/);

@@ -5,22 +5,22 @@ const source = fs.readFileSync("src/server/controllers/pipelineController.ts", "
 const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
 const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
 
-assert.match(constants, /Title: 55-85 characters/);
+assert.match(constants, /Title: 50-90 characters/);
 assert.match(constants, /natural Vietnamese sentence case/);
 assert.match(constants, /never ALL CAPS/);
 assert.match(constants, /primary searchable genre\/collection phrase within the first 45 characters/);
 assert.match(constants, /Read every existing title, lyric, mood and genre/);
-assert.match(constants, /Do not repeat the same first four meaningful words/);
-assert.match(constants, /Description: 1,000-3,000 Vietnamese characters/);
+assert.match(constants, /natural overlap in important genre keywords is allowed/);
+assert.match(constants, /Description: 500-1,800 Vietnamese characters/);
 assert.match(constants, /DANH SÁCH CA KHÚC:/);
 assert.match(constants, /PHÙ HỢP KHI:/);
 assert.match(constants, /Hashtags: exactly 8-12 unique/);
 assert.match(constants, /Tags: 20-30 unique/);
-assert.match(source, /_.inRange\(_.size\(title\), 55, 86\)/);
-assert.match(source, /titleCaseRatio < 0\.6/);
+assert.match(source, /_.inRange\(_.size\(title\), 50, 91\)/);
+assert.match(source, /titleCaseRatio < 0\.75/);
 assert.match(source, /SEO_TITLE_MISLEADING_CLAIMS/);
 assert.match(source, /songCountMatches\.length === 1/);
-assert.match(source, /_.uniq\(openingKeys\)\.length/);
+assert.match(source, /_.uniq\(normalizedTitles\)\.length/);
 assert.match(source, /_.inRange\(hashtags\.length, 8, 13\)/);
 assert.match(source, /_.inRange\(tags\.length, 20, 31\)/);
 assert.match(source, /_.every\(songs, \(song\) => _.includes/);
