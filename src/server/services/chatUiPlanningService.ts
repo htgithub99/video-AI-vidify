@@ -38,6 +38,8 @@ interface PendingRoomResponse {
   requestId?: string;
 }
 
+const attachmentUploadMutex = new SimpleMutex();
+
 interface ChatPlanningRequest {
   provider: AiPlanningFallbackProvider;
   model?: AiPlanningChatModel;
@@ -641,7 +643,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
     buffer: attachment.buffer as Buffer,
   });
   const removableAttachments = page.locator(
-    'button[aria-label*="remove attachment" i], button[aria-label*="remove file" i], button[aria-label*="xóa tệp" i], button[aria-label*="gỡ tệp" i]',
+    CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_REMOVABLE_BUTTON_SELECTOR,
   );
   for (let index = (await removableAttachments.count().catch(() => 0)) - 1; index >= 0; index--) {
     await removableAttachments
@@ -667,8 +669,8 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
 
   if (!uploaded) {
     const attachmentButton = page
-      .getByRole("button", { name: /attach|upload|add files?|open upload file menu|đính kèm|tải tệp|thêm tệp|thêm tệp và ảnh|mở trình đơn tải tệp|nội dung tải lên và công cụ/i })
-      .or(page.locator('button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i], button[aria-label*="tải tệp" i], button[aria-label*="nội dung tải lên" i]'))
+      .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN })
+      .or(page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_SELECTOR))
       .filter({ visible: true })
       .last();
     let chooser = await Promise.all([
@@ -677,7 +679,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
     ]).then(([fileChooser]) => fileChooser);
     if (!chooser) {
       const uploadMenuItem = page
-        .getByRole("menuitem", { name: /upload files?|tải tệp lên|tải tệp|thêm tệp/i })
+        .getByRole("menuitem", { name: CINEMATIC_CHAT_PLANNING_CONFIG.UPLOAD_FILE_MENU_NAME_PATTERN })
         .or(page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_MENU_ITEM_NAME_PATTERN }))
         .filter({ visible: true })
         .last();
@@ -817,7 +819,15 @@ const submitPrompt = async (
   appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
   const initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
   const initialCount = initialResponseSnapshots.length;
-  if (!_.isEmpty(attachments)) await attachRoomFiles(page, attachments);
+  if (!_.isEmpty(attachments)) {
+    const releaseAttachmentUpload = await attachmentUploadMutex.acquire();
+    try {
+      throwIfPlanningCancelled(signal);
+      await attachRoomFiles(page, attachments);
+    } finally {
+      releaseAttachmentUpload();
+    }
+  }
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
   await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
@@ -829,7 +839,7 @@ const submitPrompt = async (
     }
     const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
     const semanticSendButton = page
-      .getByRole("button", { name: /Gửi tin nhắn|Send message/i })
+      .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
       .filter({ visible: true })
       .last();
     const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
@@ -951,8 +961,8 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
   await modelButton.click();
   const thinkingLevelTrigger = page
-    .getByRole("menuitem", { name: /Thinking level|Mức tư duy|Cấp độ tư duy/i })
-    .or(page.getByRole("button", { name: /Thinking level|Mức tư duy|Cấp độ tư duy/i }))
+    .getByRole("menuitem", { name: CINEMATIC_CHAT_PLANNING_CONFIG.THINKING_LEVEL_NAME_PATTERN })
+    .or(page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.THINKING_LEVEL_NAME_PATTERN }))
     .filter({ visible: true })
     .first();
   if (await thinkingLevelTrigger.isVisible().catch(() => false)) await thinkingLevelTrigger.click();
@@ -1010,9 +1020,8 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
       stableReadyPolls = 0;
       previousReadyUrl = "";
       challengeWasVisible = true;
-      if (request.chromeHeadless !== false) throw new Error("grok_security_verification_requires_visible_chrome");
+      if (request.chromeHeadless !== false) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ERROR_GROK_SECURITY_HEADLESS);
       if (!challengeActiveLastPoll) {
-        // Cloudflare yêu cầu xác minh
         appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLOUDFLARE_CHALLENGE_NOTICE);
         await page.bringToFront().catch(() => undefined);
       }
@@ -1193,7 +1202,6 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   let responseCompleted = false;
   try {
     throwIfPlanningCancelled(request.signal);
-    // chờ hàng đợi
     appLog(
       CHAT_UI_AUTOMATION_MESSAGES.PLANNING_QUEUE_ACQUIRED(
         request.workerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID,

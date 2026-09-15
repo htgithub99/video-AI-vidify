@@ -862,6 +862,38 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   }
 });
 
+const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSignal): Promise<Map<string, Buffer>> => {
+  const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
+  const audioBySongId = new Map<string, Buffer>();
+  for (const idChunk of _.chunk(_.uniq(songIds), SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY)) {
+    signal?.throwIfAborted();
+    const downloaded = await Promise.all(_.map(idChunk, async (songId) => {
+      let lastError: unknown;
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS; attempt += 1) {
+        signal?.throwIfAborted();
+        try {
+          const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS);
+          const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_MP3), {
+            signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
+          });
+          if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
+          return [songId, Buffer.from(await response.arrayBuffer())] as const;
+        } catch (error) {
+          lastError = error;
+          signal?.throwIfAborted();
+          if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
+            await delayAsync(SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1));
+          }
+        }
+      }
+      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}`, lastError);
+      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+    }));
+    _.forEach(downloaded, ([songId, buffer]) => audioBySongId.set(songId, buffer));
+  }
+  return audioBySongId;
+};
+
 const selectProfessionalSunoTracks = async (
   groups: Array<{ title: string; candidates: string[] }>,
   style: string,
@@ -871,6 +903,7 @@ const selectProfessionalSunoTracks = async (
     model?: AiPlanningChatModel;
     signal?: AbortSignal;
   },
+  audioBySongId: Map<string, Buffer>,
 ): Promise<Array<{ songId: string; title: string; qualityScore: number }>> => {
   if (_.isEmpty(groups) || _.some(groups, (group) => _.size(group.candidates) !== 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
   const schema = {
@@ -893,32 +926,11 @@ const selectProfessionalSunoTracks = async (
     },
   } as const;
   const allCandidateIds = _.flatMap(groups, "candidates");
-  const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
-  const audioBuffers: Buffer[] = [];
-  for (const idChunk of _.chunk(allCandidateIds, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY)) {
-    const chunkBuffers = await Promise.all(_.map(idChunk, async (songId) => {
-      let lastError: unknown;
-      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS; attempt += 1) {
-        try {
-          const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(songId)}/${SUNO_AUTOMATION_CONFIG.FORMAT_MP3}`, { signal: AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS) });
-          if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
-          return Buffer.from(await response.arrayBuffer());
-        } catch (error) {
-          lastError = error;
-          if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
-            await delayAsync(SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1));
-          }
-        }
-      }
-      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}`, lastError);
-      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
-    }));
-    audioBuffers.push(...chunkBuffers);
-  }
+  if (_.some(allCandidateIds, (songId) => !audioBySongId.has(songId))) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
   const attachmentDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), SUNO_AUTOMATION_CONFIG.TEMP_ATTACHMENT_DIR_PREFIX));
   const attachments = await Promise.all(_.map(allCandidateIds, async (songId, index) => {
-    const filePath = path.join(attachmentDirectory, `${index + 1}-${songId}.${SUNO_AUTOMATION_CONFIG.FORMAT_MP3}`);
-    await fs.promises.writeFile(filePath, audioBuffers[index]);
+    const filePath = path.join(attachmentDirectory, SUNO_AUTOMATION_CONFIG.formatTempAttachmentFileName(index, songId, SUNO_AUTOMATION_CONFIG.FORMAT_MP3));
+    await fs.promises.writeFile(filePath, audioBySongId.get(songId)!);
     return { name: path.basename(filePath), mimeType: SUNO_AUTOMATION_CONFIG.MIME_MP3, path: filePath };
   }));
   try {
@@ -937,7 +949,7 @@ const selectProfessionalSunoTracks = async (
           signal: room.signal,
           attachments,
           artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
-          requestId: `${room.projectId}-chunk-${_.kebabCase(groups[0].title)}-${attempt + 1}`,
+          requestId: SUNO_AUTOMATION_CONFIG.formatChunkEvaluationRequestId(room.projectId, groups[0].title, attempt + 1),
           closeRoomOnComplete: false,
         });
         const evaluation = parseAiJsonArtifact<{ selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
@@ -1016,6 +1028,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   const evaluationMode = req.body?.aiExecution?.mode;
   const evaluationRunId = evaluationProjectId || `${SUNO_AUTOMATION_CONFIG.EVALUATION_RUN_ID_PREFIX}${Date.now()}`;
   let planningRun: ReturnType<typeof beginChatPlanningRun> | undefined;
+  const downloadAbortController = new AbortController();
+  req.once(SUNO_AUTOMATION_CONFIG.EVENT_ABORTED, () => downloadAbortController.abort());
   try {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_STARTED, {
       evaluationRunId,
@@ -1062,6 +1076,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         songCount: trackPairs.length,
         chunkCount: pairChunks.length,
       });
+      const evaluationAudioBySongId = await downloadSunoEvaluationAudio(_.map(tracks, "songId"), planningRun.signal);
       const selectedTrackChunks = await Promise.all(_.map(pairChunks, async (pairChunk, chunkIndex) => {
         const groups = _.map(pairChunk, (pair) => ({
           title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, "")),
@@ -1080,7 +1095,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
             workerId: chunkWorkerId,
             model: req.body?.aiExecution?.model,
             signal: planningRun.signal,
-          });
+          }, evaluationAudioBySongId);
           await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, {
             evaluationRunId,
             chunk: chunkIndex + 1,
@@ -1121,7 +1136,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         trackCount: selectedTracksForDownload.length,
         format,
       });
-      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format);
+      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, {
         evaluationRunId,
         expectedDownloadCount: trackPairs.length,
@@ -1132,7 +1147,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       return res.json({ success: true, downloadedPaths });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
-    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format);
+    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
     return res.json({ success: true, downloadedPaths });
   } catch (error) {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, {

@@ -5,6 +5,8 @@ const controller = fs.readFileSync("src/server/controllers/pipelineController.ts
 const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
 const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
 const routes = fs.readFileSync("src/constants/apiRoutes.ts", "utf8");
+const service = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
+const chatService = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf8");
 
 // Curated mode may download only after every AI selection and score validates.
@@ -18,8 +20,21 @@ assert.doesNotMatch(controller, /catch[\s\S]{0,300}downloadSunoTracksToFolder\(s
 // Five-song chunks run concurrently, then AI scores define download order and names.
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
 assert.match(controller, /Promise\.all\(_.map\(pairChunks/);
+assert.match(controller, /downloadSunoEvaluationAudio\(_.map\(tracks, "songId"\), planningRun\.signal\)/);
+assert.match(controller, /evaluationAudioBySongId/);
+assert.doesNotMatch(controller, /selectProfessionalSunoTracks[\s\S]{0,2200}const downloadOrigin/);
 assert.match(controller, /_.orderBy\(evaluatedTracks, \[\(track\) => track\.qualityScore\], \["desc"\]\)/);
 assert.match(controller, /_.padStart\(_.toString\(rank \+ 1\), 2, "0"\)/);
+assert.match(component, /handleCancelSunoDownload/);
+assert.match(component, /sunoDownloadAbortControllerRef\.current\?\.abort\(\)/);
+assert.match(component, /SUNO_DOWNLOAD_CANCEL_BTN/);
+assert.match(controller, /downloadAbortController\.signal/);
+assert.match(service, /AbortSignal\.any/);
+assert.match(service, /signal\?\.throwIfAborted\(\)/);
+assert.match(chatService, /attachmentUploadMutex = new SimpleMutex/);
+assert.match(chatService, /releaseAttachmentUpload = await attachmentUploadMutex\.acquire\(\)/);
+assert.match(constants, /evaluate these exact pairs again/);
+assert.match(constants, /Never return an ID outside its listed pair/);
 
 // SEO TXT includes the active playlist URL and both file actions require Save As.
 assert.match(component, /const handleExportText = async/);

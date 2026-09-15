@@ -31,7 +31,7 @@ export interface SunoDownloadTrack { songId: string; title: string }
 export type SunoDownloadFormat = "mp3" | "wav";
 
 const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), SUNO_AUTOMATION_CONFIG.APP_SUBDIR, SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
-const SUNO_CDP_URL = `http://${SUNO_AUTOMATION_CONFIG.SUNO_CDP_HOST}:${SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT}`;
+const SUNO_CDP_URL = SUNO_AUTOMATION_CONFIG.SUNO_CDP_URL;
 let activeSunoPage: Page | null = null;
 let sunoCancellationRequested = false;
 
@@ -52,7 +52,8 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
   return candidate;
 };
 
-export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat): Promise<string[]> => {
+export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal): Promise<string[]> => {
+  signal?.throwIfAborted();
   const requestedFolder = _.trim(folderPath);
   if (_.isEmpty(requestedFolder) || !path.isAbsolute(requestedFolder)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
   const resolvedFolder = path.resolve(requestedFolder);
@@ -64,15 +65,18 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
 
   const downloadedPaths: string[] = [];
   for (const [index, track] of validTracks.entries()) {
+    signal?.throwIfAborted();
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
     let downloaded = false;
     let lastError: unknown;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS && !downloaded; attempt += 1) {
+      signal?.throwIfAborted();
       try {
-        const response = await fetch(`${downloadOrigin}/api/file/${encodeURIComponent(track.songId)}/${format}`, {
+        const timeoutSignal = AbortSignal.timeout(format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV ? SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS : SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS);
+        const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, format), {
           headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(format) },
-          signal: AbortSignal.timeout(format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV ? SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS : SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS),
+          signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
         });
         if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
         await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
@@ -81,6 +85,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
       } catch (error) {
         lastError = error;
         await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+        signal?.throwIfAborted();
         if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
           await new Promise((resolve) => setTimeout(resolve, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1)));
         }
@@ -322,7 +327,7 @@ const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => 
   for (let index = 0; index < resultCount; index += 1) {
     const candidate = exactResult.nth(index);
     if (!(await candidate.isVisible().catch(() => false))) continue;
-    const playlistRow = candidate.locator("xpath=ancestor::div[contains(@class, 'cursor-pointer')][1]");
+    const playlistRow = candidate.locator(SUNO_AUTOMATION_CONFIG.XPATH_CURSOR_POINTER_DIV);
     if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
     else await candidate.click();
     selected = true;
@@ -344,7 +349,7 @@ const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]>
   const createButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_BUTTON);
   if (!createButton || (await createButton.isDisabled().catch(() => true))) throw new Error(SUNO_AUTOMATION_TEXTS.formatCreateButtonNotReadyErr(song.title));
   const generationResponse = page.waitForResponse(
-    (response) => response.request().method() === "POST" && SUNO_AUTOMATION_PATTERNS.GENERATE_API.test(response.url()),
+    (response) => response.request().method() === SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST && SUNO_AUTOMATION_PATTERNS.GENERATE_API.test(response.url()),
     { timeout: SUNO_AUTOMATION_CONFIG.GENERATE_RESPONSE_TIMEOUT_MS },
   ).catch(() => null);
   await createButton.click();
@@ -407,9 +412,9 @@ const addSongIdsByPlaylistId = async (
   const response = await page.request.post(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/update_clips/`, {
     headers: {
       authorization: requestHeaders.authorization,
-      "browser-token": requestHeaders["browser-token"],
-      "device-id": requestHeaders["device-id"],
-      "content-type": "application/json",
+      [SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN],
+      [SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID],
+      [SUNO_AUTOMATION_CONFIG.HEADER_CONTENT_TYPE]: SUNO_AUTOMATION_CONFIG.MIME_APPLICATION_JSON,
     },
     data: {
       playlist_id: playlistId,
@@ -442,7 +447,7 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   await create.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
   const playlistMutation = page.waitForRequest((request) =>
     SUNO_AUTOMATION_PATTERNS.PLAYLIST_API.test(request.url())
-    && ["POST", "PUT", "PATCH"].includes(request.method()),
+    && [SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST, "PUT", SUNO_AUTOMATION_CONFIG.HTTP_METHOD_PATCH].includes(request.method()),
   { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
   await create.click();
   const mutationRequest = await playlistMutation;

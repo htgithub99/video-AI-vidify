@@ -497,7 +497,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <span className="font-bold text-purple-600 dark:text-purple-400">#</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400">{texts.HASH_SYMBOL}</span>
                           <span>{texts.HASHTAGS_LABEL} ({opt.hashtags.length})</span>
                         </span>
                         <CopyFieldButton text={opt.hashtags.join(" ")} field="hashtags" optionIndex={sIdx} />
@@ -556,6 +556,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const musicRunIdRef = useRef<string | null>(null);
   const musicAbortControllerRef = useRef<AbortController | null>(null);
   const sunoAbortControllerRef = useRef<AbortController | null>(null);
+  const sunoDownloadAbortControllerRef = useRef<AbortController | null>(null);
+  const sunoDownloadRunIdRef = useRef<string | null>(null);
 
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
@@ -919,11 +921,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const requestedPlaylistUrl = _.trim(downloadPlaylistUrl);
     const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl;
     if (_.isEmpty(activePlaylistUrl) || isDownloadingSuno) return;
+    const abortController = new AbortController();
+    sunoDownloadAbortControllerRef.current = abortController;
     setIsDownloadingSuno(true);
     try {
       const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        signal: abortController.signal,
       });
       const folderResult = await folderResponse.json();
       const folderPath = _.trim(_.toString(folderResult.folderPath));
@@ -935,6 +940,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         return { songId, title: `${songNumber}. ${songs[songIndex]?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`}${variantSuffix}` };
       });
       const evaluationProjectId = `music-track-evaluation-${Date.now()}`;
+      sunoDownloadRunIdRef.current = evaluationProjectId;
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
@@ -956,15 +962,33 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             }
             : undefined,
         }),
+        signal: abortController.signal,
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
       toast.success(texts.SUNO_DOWNLOAD_SUCCESS.replace("{count}", _.toString(_.size(result.downloadedPaths))).replace("{folder}", folderPath));
     } catch (error: any) {
-      toast.error(_.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR));
+      if (error?.name !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(_.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR));
     } finally {
+      sunoDownloadAbortControllerRef.current = null;
+      sunoDownloadRunIdRef.current = null;
       setIsDownloadingSuno(false);
     }
+  };
+
+  const handleCancelSunoDownload = () => {
+    if (!isDownloadingSuno) return;
+    sunoDownloadAbortControllerRef.current?.abort();
+    const runId = sunoDownloadRunIdRef.current;
+    if (runId) {
+      void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({ pipelineRunId: runId, closeBrowser: true }),
+      }).catch(() => undefined);
+    }
+    setIsDownloadingSuno(false);
+    toast.info(texts.SUNO_DOWNLOAD_CANCELLED_TOAST);
   };
 
   const handleThumbnailReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1832,6 +1856,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               {isDownloadingSuno ? <Disc3 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-200" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
               <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>
+            {isDownloadingSuno && (
+              <Button variant="unstyled" type="button" onClick={handleCancelSunoDownload} className="h-9 px-3 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-600 hover:bg-rose-500 text-white inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 select-none">
+                <X className="w-3.5 h-3.5 shrink-0" />
+                <span className="inline-flex items-center leading-none">{texts.SUNO_DOWNLOAD_CANCEL_BTN}</span>
+              </Button>
+            )}
             <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
               <Button variant="unstyled" type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none">
                 {isCopiedPlaylistUrl ? <Check className="w-4 h-4 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0" />}
@@ -1951,7 +1981,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 ? "!text-indigo-100"
                                 : "!text-indigo-600 group-hover:!text-indigo-800 dark:!text-indigo-400 dark:group-hover:!text-indigo-300",
                             )}>
-                            #{idx + 1}
+                            {texts.formatTrackBadge(idx + 1)}
                           </span>
                           <span className="inline-flex items-center leading-none">{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>

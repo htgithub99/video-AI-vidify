@@ -64,6 +64,7 @@ export const API_ROUTES = {
 } as const;
 
 export const EXTERNAL_URLS = {
+  GOOGLE_FONTS_MERIENDA: "https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap",
   FFMPEG_URL: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z",
   PLAYWRIGHT_CDP: "http://127.0.0.1:9222",
   GOOGLE_LABS: "https://labs.google/",

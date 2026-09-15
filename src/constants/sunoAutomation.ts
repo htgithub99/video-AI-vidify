@@ -98,6 +98,22 @@ export const SUNO_AUTOMATION_CONFIG = {
   EVENT_DOWNLOAD_STARTED: "download_started",
   EVENT_REQUEST_COMPLETED: "request_completed",
   EVENT_REQUEST_FAILED: "request_failed",
+  EVENT_ABORTED: "aborted",
+  SUNO_CDP_URL: "http://127.0.0.1:9444",
+  HEADER_BROWSER_TOKEN: "browser-token",
+  HEADER_DEVICE_ID: "device-id",
+  HEADER_CONTENT_TYPE: "content-type",
+  MIME_APPLICATION_JSON: "application/json",
+  HTTP_METHOD_POST: "POST",
+  HTTP_METHOD_PATCH: "PATCH",
+  XPATH_CURSOR_POINTER_DIV: "xpath=ancestor::div[contains(@class, 'cursor-pointer')][1]",
+  HASH_PREFIX: "#",
+  formatAudioDownloadUrl: (origin: string, songId: string, format: string): string =>
+    `${_.trim(origin).replace(/\/$/, "")}/api/file/${encodeURIComponent(songId)}/${format}`,
+  formatTempAttachmentFileName: (index: number, songId: string, format: string = "mp3"): string =>
+    `${index + 1}-${songId}.${format}`,
+  formatChunkEvaluationRequestId: (projectId: string, title: string, attempt: number): string =>
+    `${projectId}-chunk-${_.kebabCase(title)}-${attempt}`,
 
   MUSIC_STYLE_LIBRARY_KEY: "music_creator_style_library",
   MUSIC_INSPO_LIBRARY_KEY: "music_creator_inspo_library",
@@ -327,7 +343,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   buildTrackBatchEvaluationPrompt: (style: string, groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
     `Listen to every attached audio file before answering. Act as a professional Vietnamese-market singer, songwriter, producer and music editor. Evaluate each pair for vocal quality, diction, emotion, composition, arrangement, mix, defects, genre authenticity, replay value and market fit. Select exactly one winner per song; never select a losing take. Then assign each selected winner a strict integer quality score from 0 to 100 so winners can be ranked across the complete playlist. Attachment filenames contain the corresponding track IDs. Do not explain your scores.\n\nStyle: ${style}\nPairs:\n${groups.map((group, index) => `${index + 1}. ${group.title}: ${group.candidates[0]} OR ${group.candidates[1]}`).join("\n")}\n\nReturn raw JSON only. selectedTrackIds and qualityScores must preserve pair order:\n${schemaString}`,
   buildTrackBatchEvaluationRetryPrompt: (groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
-    `Previous JSON was invalid. Using the attached audio, return selectedTrackIds and integer qualityScores with exactly ${groups.length} entries each in pair order. Each ID must belong to its corresponding pair and every score must be from 0 to 100. Return raw JSON only:\n${schemaString}`,
+    `Previous response was invalid. Listen to the attached audio and evaluate these exact pairs again:\n${groups.map((group, index) => `${index + 1}. ${group.title}: choose exactly one of [${group.candidates.join(" OR ")}]`).join("\n")}\nReturn selectedTrackIds and integer qualityScores with exactly ${groups.length} entries each in the same pair order. Never return an ID outside its listed pair. Every score must be from 0 to 100. Return raw JSON only:\n${schemaString}`,
 
   buildMusicSourcePrompt: (chunk: string, chunkIndex: number, chunkCount: number, requestId: string): string =>
     `REFERENCE SOURCE PART ${chunkIndex + 1}/${chunkCount}. Store this source as authoritative creative context for the music project; do not create songs yet. Treat all parts as one continuous source.

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -83,7 +83,6 @@
   font-style: normal;
 }
 
-/* VÔ HIỆU HÓA ANIMATION CHUYỂN ĐỘNG NẶNG NỀ */
 .animate-pulse,
 .animate-bounce,
 .skeleton-shimmer {
@@ -134,7 +133,6 @@ html.light .tab-loading-overlay {
   background-color: #f8f9fa;
 }
 
-/* LOADER CIRCLE ĐỒNG BỘ 100% VỚI INDEX.HTML */
 .loader-circle {
   position: relative;
   width: 52px;
@@ -171,7 +169,6 @@ html.light .loader-circle::after {
   }
 }
 
-/* BACKGROUND VÀ SHADOW CHO PANEL CẤU HÌNH NÂNG CAO */
 .advanced-config-panel {
   background-color: rgba(15, 23, 42, 0.8) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -190,7 +187,6 @@ html.light .advanced-config-icon {
   background-color: rgba(59, 130, 246, 0.15) !important;
 }
 
-/* ĐỒNG NHẤT CHIỀU CAO CỦA CÁC HEADER BUTTON VÀ BADGES ĐI KÈM */
 .header-badge,
 .header-action-btn,
 .header-control-item,
@@ -208,7 +204,6 @@ html.light .advanced-config-icon {
   box-sizing: border-box !important;
 }
 
-/* NÚT CON BÊN TRONG CONTAINER HEADER (NHƯ LANGUAGE SWITCHER) */
 .header-control-container {
   height: 32px !important;
   min-height: 32px !important;
@@ -256,8 +251,9 @@ html.light .advanced-config-icon {
   color: #334155 !important;
 }
 
-/* ĐỒNG NHẤT CHIỀU CAO BUTTON TRÊN TOÀN BỘ CÁC MÀN HÌNH */
-button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]) {
+button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not(
+    [data-close-button]
+  ) {
   min-height: 40px !important;
 }
 
@@ -280,7 +276,9 @@ button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-i
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: color 0.15s ease, transform 0.15s ease !important;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease !important;
 }
 
 .toast-close-btn:hover,
@@ -837,7 +835,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes button-pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.4));
   }
   50% {
@@ -858,12 +857,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   bottom: 0;
   left: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.28) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.28) 50%, rgba(255, 255, 255, 0) 100%);
   animation: button-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   pointer-events: none;
 }
@@ -1106,7 +1100,6 @@ textarea {
   }
 }
 
-/* KHÓA KHÍT CHIỀU CAO 100VH TOÀN DIỆN & KHÔNG SCROLL KHUNG NGOÀI */
 html,
 body,
 #root {
@@ -1146,7 +1139,6 @@ body,
   overflow-x: hidden !important;
 }
 
-/* BORDER-FREE FRAMELESS AESTHETIC & BẢNG MÀU PHONG THỦY TUỔI 1999 (KỶ MÃO - MỆNH THÀNH ĐẦU THỔ) */
 *,
 *::before,
 *::after,
@@ -1185,7 +1177,6 @@ aside {
   outline: none !important;
 }
 
-/* THẺ SELECT VÀ KHUNG CHỨA SELECT TRONG SUỐT HOÀN TOÀN KHÔNG CÓ NỀN ĐỤC */
 select,
 .custom-select-trigger,
 div:has(> select) {
@@ -1196,7 +1187,6 @@ div:has(> select) {
   border: none !important;
 }
 
-/* ẨN HOÀN TOÀN CONTAINER TOASTER KHI RỖNG TRÁNH VỆT MỜ LEM NHIỄM Ở GÓC */
 [data-sonner-toaster],
 [data-sonner-toaster] *,
 ol[data-sonner-toaster] {
@@ -1214,7 +1204,6 @@ ol[data-sonner-toaster] {
   pointer-events: none !important;
 }
 
-/* Nổi khối sang trọng bằng Soft Ambient Shadows thuần túy (Không có bất kỳ đường viền nào) */
 .glass-card,
 .workspace-card,
 .glass-panel,
@@ -1241,7 +1230,6 @@ ol[data-sonner-toaster] {
   backdrop-filter: blur(28px) !important;
 }
 
-/* Các khối cấu hình lớn (Setting Blocks, Sub-cards) nổi khối mềm mại */
 .creation-workspace .bg-slate-955\/50,
 .creation-workspace .bg-slate-900\/60,
 .creation-workspace .bg-slate-900\/80 {
@@ -1258,7 +1246,6 @@ ol[data-sonner-toaster] {
     0 2px 6px -1px rgba(120, 70, 10, 0.04) !important;
 }
 
-/* XÓA HOÀN TOÀN BOX-SHADOW VÀ NỀN KHỎI CÁC THANH TIÊU ĐỀ SECTION, HEADER BARS, BADGES */
 .header-badge,
 div:has(> .header-badge),
 div:has(> .header-badge) *,
@@ -1267,7 +1254,6 @@ div:has(> .header-badge) *,
   border: none !important;
 }
 
-/* BẢO VỆ TUYỆT ĐỐI NHÃN (LABELS, TITLES) KHÔNG BỊ LOANG BACKGROUND */
 label,
 .field-label,
 .section-title,
@@ -1283,7 +1269,6 @@ h6 {
   box-shadow: none !important;
 }
 
-/* CHỈ ÁP DỤNG NỀN VÀ BÓNG CHÌM CHO CHÍNH XÁC Ô NHẬP LIỆU */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 textarea,
 .relative:has(> select) {
@@ -1314,7 +1299,6 @@ select optgroup {
   border: none !important;
 }
 
-/* BẢNG MÀU CHUẨN PHONG THỦY TUỔI 1999 (KỶ MÃO - MỆNH THÀNH ĐẦU THỔ - HỎA SINH THỔ) */
 :root {
   --color-slate-955: #0c0a0f;
   --color-slate-950: #120e17;
@@ -1382,9 +1366,6 @@ html.light,
   --color-slate-100: #09060c;
 }
 
-/* ==========================================================================
-   AI CINEMATIC STUDIO TOAST NOTIFICATION STYLES (SONNER)
-   ========================================================================== */
 [data-sonner-toaster] {
   font-family: inherit !important;
   z-index: 999999 !important;
@@ -1398,7 +1379,9 @@ html.light,
   font-family: inherit !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
-  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.25), 0 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 16px 36px -8px rgba(0, 0, 0, 0.25),
+    0 0 1px 1px rgba(255, 255, 255, 0.1) !important;
   border-width: 1.5px !important;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
@@ -1413,7 +1396,9 @@ html.light,
   background: rgba(255, 255, 255, 0.96) !important;
   border-color: rgba(226, 232, 240, 0.95) !important;
   color: #0f172a !important;
-  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow:
+    0 16px 36px -8px rgba(0, 0, 0, 0.12),
+    0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
 }
 
 [data-sonner-toast][data-type="success"] {
@@ -1465,9 +1450,6 @@ html.light,
   transform: scale(1.1) !important;
 }
 
-/* ==========================================================================
-   MODAL & DIALOG UI SYSTEM - LIGHT & DARK CONTRAST SPECIFICATION
-   ========================================================================== */
 .modal-content-card {
   background: #14101d !important;
   color: #f8fafc !important;
@@ -1496,7 +1478,6 @@ html.light .modal-header-bar,
   border-bottom: 1px solid rgba(180, 140, 80, 0.18) !important;
 }
 
-/* TIÊU ĐỀ MODAL LUÔN VIẾT HOA (CAPSLOCK) VÀ TƯƠNG PHẢN RỰC NÉT */
 .modal-title-text,
 .modal-title-text *,
 .modal-title-text span,
@@ -1549,7 +1530,6 @@ html.light .modal-body-area label,
   font-weight: 700 !important;
 }
 
-/* MODAL TITLE CAPSLOCK ENFORCEMENT */
 .modal-title-text,
 .modal-title-text *,
 .modal-title-text span,
@@ -1563,7 +1543,6 @@ html.light .modal-body-area label,
   font-weight: 800 !important;
 }
 
-/* BẢO VỆ ĐỘ TƯƠNG PHẢN TÊN GIỌNG ĐỌC VÀ TIÊU ĐỀ TRONG MODAL */
 .voice-item-name,
 :root.light .voice-item-name,
 html.light .voice-item-name,
@@ -1585,7 +1564,6 @@ html.dark .modal-body-area h3,
   font-weight: 800 !important;
 }
 
-/* NÚT CLOSE MODAL TƯƠNG PHẢN CAO TRÊN CẢ 2 GIAO DIỆN */
 .modal-close-button-custom,
 :root.light .modal-close-button-custom,
 html.light .modal-close-button-custom,
@@ -1624,6 +1602,3 @@ html.dark .modal-close-button-custom:hover,
 .modal-close-button-custom svg {
   stroke-width: 2.5px !important;
 }
-
-
-
