@@ -158,6 +158,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   PLAYLIST_ID_IN_HREF: /\/playlist\/([^/?]+)/i,
   VALID_PLAYLIST_URL: /^https:\/\/(?:www\.)?suno\.com\/playlist\//i,
   HASHTAG_VALIDATION: /^#[\p{L}\p{N}_]+$/u,
+  ASCII_HASHTAG_VALIDATION: /^#[A-Za-z0-9_]+$/,
   STYLE_SPLIT_SEPARATORS: /[,.;\n]/,
   TRACK_VARIANT_SUFFIX: /\s+-\s+[12]$/,
   SEO_TITLE_LOUD_PUNCTUATION: /!{2,}|\?{2,}/,
@@ -384,13 +385,13 @@ Keep only these practical SEO basics:
 - Natural, correctly accented Vietnamese; sentence case; no ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
 - A clear, attractive title under 100 characters. Put useful search language where it sounds natural, but do not force every title to start with the genre or the ${songCount}-song count.
 - A readable description with a strong opening written specifically for this playlist, a short inviting account of its musical and emotional journey, then "DANH SÁCH CA KHÚC:" followed by all ${songCount} exact song titles in order. Add a natural listening suggestion or CTA only if it improves the copy. Do not invent timestamps.
-- 5-12 focused hashtags and 12-25 useful search tags. Choose relevance over quantity; vary their emphasis between options.
+- 5-12 focused hashtags written without Vietnamese diacritics, using only A-Z, a-z, 0-9 and underscores after # (for example #NhacBolero, #NhacTruTinh). Keep normal Vietnamese accents in titles and descriptions. Use 12-25 useful search tags and include natural accented and unaccented search phrases where relevant. Choose relevance over quantity; vary emphasis between options.
 - Give an honest integer seoScore from 0 to 100 based on clarity, search relevance, playlist fidelity and click appeal.
 
 Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`,
 
   buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string): string =>
-    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh SEO options for the whole playlist. Keep every claim grounded in the songs; make each title natural, attractive and under 100 characters; make the five creative angles clearly different without keyword stuffing or fake hype. Each description needs a compelling playlist-specific opening and "DANH SÁCH CA KHÚC:" with every exact title in order. Include 5-12 relevant hashtags, 12-25 useful tags and integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh SEO options for the whole playlist. Keep every claim grounded in the songs; make each title natural, attractive and under 100 characters; make the five creative angles clearly different without keyword stuffing or fake hype. Each description needs a compelling playlist-specific opening and "DANH SÁCH CA KHÚC:" with every exact title in order. Include 5-12 relevant hashtags without Vietnamese diacritics using only A-Z, a-z, 0-9 and underscores after #; include 12-25 useful tags and integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
 
   buildMusicPlaylistSeoRegenerationPrompt: (songs: any[], style: string, requestId: string, requiredCount: number): string => {
     const compactSongs = _.map(songs, (song) => ({

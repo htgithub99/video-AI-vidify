@@ -13,7 +13,9 @@ assert.match(constants, /clear, attractive title under 100 characters/);
 assert.match(constants, /do not force every title to start with the genre/);
 assert.match(constants, /buildMusicPlaylistSeoRegenerationPrompt/);
 assert.match(constants, /DANH SÁCH CA KHÚC:/);
-assert.match(constants, /5-12 focused hashtags and 12-25 useful search tags/);
+assert.match(constants, /5-12 focused hashtags written without Vietnamese diacritics/);
+assert.match(constants, /hashtags written without Vietnamese diacritics/);
+assert.match(constants, /ASCII_HASHTAG_VALIDATION/);
 assert.match(source, /_.inRange\(_.size\(title\), 30, 100\)/);
 assert.match(source, /titleCaseRatio < 0\.75/);
 assert.match(source, /SEO_TITLE_MISLEADING_CLAIMS/);
@@ -24,6 +26,7 @@ assert.match(source, /buildMusicPlaylistSeoCorrectionPrompt\(requestedSongCount,
 assert.match(source, /ROUTER_PATHS\.MUSIC_SEO_REGENERATE/);
 assert.match(source, /buildMusicPlaylistSeoRegenerationPrompt\(songs, style/);
 assert.match(source, /_.inRange\(hashtags\.length, 5, 13\)/);
+assert.match(source, /ASCII_HASHTAG_VALIDATION/);
 assert.match(source, /_.inRange\(tags\.length, 12, 26\)/);
 assert.match(source, /_.every\(songs, \(song\) => _.includes/);
 assert.doesNotMatch(source, /SEO_HEADING_OCCASIONS/);

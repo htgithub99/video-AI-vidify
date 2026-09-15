@@ -15,7 +15,6 @@ import {
   Save,
   Trash2,
   Pencil,
-  Loader2,
   X,
   Columns,
   Clock,
@@ -503,9 +502,9 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                         </span>
                         <CopyFieldButton text={opt.hashtags.join(" ")} field="hashtags" optionIndex={sIdx} />
                       </div>
-                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="flex flex-wrap gap-x-2.5 gap-y-2 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {_.map(opt.hashtags, (tag, i) => (
-                          <span key={i} className="text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/25 px-2 py-0.5 rounded-md select-all">
+                          <span key={i} className="text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 select-all hover:underline cursor-pointer">
                             {tag}
                           </span>
                         ))}
@@ -949,12 +948,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           style,
           aiExecution: sunoEvaluateTracks
             ? {
-                mode: AiPlanningExecutionMode.RoomOnly,
-                provider: AiPlanningFallbackProvider.GeminiChat,
-                model: AiPlanningChatModel.GeminiFlash,
-                projectId: evaluationProjectId,
-                chromeHeadless: false,
-              }
+              mode: AiPlanningExecutionMode.RoomOnly,
+              provider: AiPlanningFallbackProvider.GeminiChat,
+              model: AiPlanningChatModel.GeminiFlash,
+              projectId: evaluationProjectId,
+              chromeHeadless: false,
+            }
             : undefined,
         }),
       });
@@ -1494,7 +1493,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     )}>
                     {isLoading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                        <Sparkles className="w-4 h-4 animate-spin text-white shrink-0" />
                         <span className="truncate inline-flex items-center leading-none">{texts.BLOCK_LYRICS_LOADING}</span>
                       </>
                     ) : (
@@ -1712,7 +1711,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         ? "bg-purple-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    {isLoading ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> : <Music2 className="w-3 h-3 shrink-0" />}
+                    <Music2 className="w-3 h-3 shrink-0" />
                     <span className="inline-flex items-center leading-none">{texts.TAB_LYRICS}</span>
                   </Button>
                   <Button
@@ -1725,7 +1724,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         ? "bg-fuchsia-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    {isRegeneratingSeo ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> : <Search className="w-3 h-3 shrink-0" />}
+                    <Sparkles className="w-3 h-3 shrink-0" />
                     <span className="inline-flex items-center leading-none">{texts.TAB_SEO}</span>
                   </Button>
                   <Button

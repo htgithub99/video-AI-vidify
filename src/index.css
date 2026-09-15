@@ -1,11 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
-  --font-logo: "Inter", "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-sans: "Merienda", cursive, "Inter", system-ui, -apple-system, sans-serif;
+  --font-logo: "Merienda", cursive, "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --radius-xs: 0.75rem;
@@ -564,6 +565,19 @@ input[type="range"]::-webkit-slider-thumb {
   transition:
     transform 0.1s ease,
     background-color 0.15s ease;
+}
+
+
+html, body, #root {
+  font-family: "Merienda", cursive, var(--font-sans);
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+.merienda {
+  font-family: "Merienda", cursive;
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {

@@ -631,7 +631,7 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
       _.every(songs, (song) => _.includes(_.toLower(description), _.toLower(_.trim(_.toString(song?.title))))) &&
       _.isArray(option?.hashtags) && _.inRange(hashtags.length, 5, 13) &&
       _.isEqual(_.uniq(_.map(hashtags, _.toLower)).length, hashtags.length) &&
-      _.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.HASHTAG_VALIDATION.test(value)) &&
+      _.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.ASCII_HASHTAG_VALIDATION.test(value)) &&
       _.isArray(option?.tags) && _.inRange(tags.length, 12, 26) &&
       _.isEqual(_.uniq(_.map(tags, _.toLower)).length, tags.length) &&
       _.every(tags, (value) => !_.isEmpty(value) && !_.includes(value, ",")) &&
