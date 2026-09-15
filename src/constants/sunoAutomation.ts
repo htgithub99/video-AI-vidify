@@ -102,7 +102,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_STYLE_LIBRARY_KEY: "music_creator_style_library",
   MUSIC_INSPO_LIBRARY_KEY: "music_creator_inspo_library",
   MUSIC_CREATOR_STATE_KEY: "music_creator_workspace_state_v1",
-  MUSIC_SEO_SCHEMA_VERSION: 2,
+  MUSIC_SEO_SCHEMA_VERSION: 3,
   MUSIC_MEDIA_DB_NAME: "music_creator_media",
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
@@ -119,6 +119,15 @@ export const SUNO_AUTOMATION_CONFIG = {
   VIEW_MODE_SPLIT: "split",
   TARGET_BLANK: "_blank",
   OPENER_POLICY: "noopener,noreferrer",
+  LOCALE_VI: "vi-VN",
+  DEFAULT_SAVE_FILE_NAME: "export.txt",
+  SAVE_FILE_TEMP_PREFIX: "vidify-save-file-",
+  SAVE_FILE_PAYLOAD_NAME: "payload",
+  CAPCUT_ULTRA_TOOL_SCRIPT: "python_scripts/capcut_ultra_tool.py",
+  CMD_SAVE_FILE: "save-file",
+  ENCODING_BASE64: "base64",
+  SEO_HEADING_TRACKLIST: "DANH SÁCH CA KHÚC:",
+  SEO_HEADING_OCCASIONS: "PHÙ HỢP KHI:",
 } as const;
 
 export const SUNO_AUTOMATION_PATTERNS = {
@@ -151,6 +160,14 @@ export const SUNO_AUTOMATION_PATTERNS = {
   HASHTAG_VALIDATION: /^#[\p{L}\p{N}_]+$/u,
   STYLE_SPLIT_SEPARATORS: /[,.;\n]/,
   TRACK_VARIANT_SUFFIX: /\s+-\s+[12]$/,
+  SEO_TITLE_LOUD_PUNCTUATION: /!{2,}|\?{2,}/,
+  SEO_TITLE_MISLEADING_CLAIMS: /\b(hay nhất|top\s*1|số\s*1|triệu view|viral|gây sốc|không thể bỏ qua|mới nhất)\b/i,
+  LETTER_ONLY: /[^\p{L}]+/gu,
+  UNICODE_LETTER: /\p{L}/u,
+  UNICODE_UPPERCASE_LETTER: /^\p{Lu}/u,
+  SEO_SEARCHABLE_OPENING: /nhạc|bolero|ballad|trữ tình|tuyển tập|playlist|album/i,
+  DATA_URL_BASE64: /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([a-z0-9+\/=\r\n]+)$/i,
+  buildSongCountMatchRegex: (songsLength: number) => new RegExp(`\\b${songsLength}\\s*(?:ca khúc|bài hát|bài)\\b`, "gi"),
 } as const;
 
 export const SUNO_AUTOMATION_SELECTORS = {
@@ -267,6 +284,10 @@ export const SUNO_AUTOMATION_TEXTS = {
   LOG_SUNO_AUTOMATION_FAILED: "Suno automation failed.",
   LOG_CURATED_DOWNLOAD_FAILED: "Suno curated download failed.",
   LOG_MUSIC_COVER_FAILED: "Could not generate music cover with Gemini.",
+  INVALID_FILE_DATA_ERR: "Dữ liệu tệp không hợp lệ.",
+  SAVE_FILE_DIALOG_FAILED_LOG: "Save file dialog failed",
+  SAVE_FILE_DIALOG_FAILED_ERR: "Không thể mở hộp thoại hoặc lưu tệp.",
+  SAVE_FILE_FAILED_ERR: "save_file_failed",
 
   formatChromeLaunchedMsg: (email: string) =>
     `Đã mở Chrome Suno riêng cho ${email}. Hãy đăng nhập rồi đóng tab này khi xong.`,
@@ -339,8 +360,10 @@ Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}
     `Return raw JSON only. Act as a Vietnamese YouTube music SEO editor. Using the complete ${songCount}-song list created earlier in this same room, create exactly ${requiredCount} distinct metadata options for publishing the WHOLE LIST as one Vietnamese-market album/collection video. Never optimize an individual song.
 
 Vietnam SEO requirements for every option:
-- Write natural, correctly accented Vietnamese. Never use translation-shaped prose, keyword stuffing, clickbait, unsupported "hay nhất/top 1/mới nhất", artist names, or fake year/trend claims.
-- Title: 60-95 characters, never above YouTube's 100-character limit. Lead with one strong searchable phrase, then state the ${songCount}-song collection's distinct mood or listening use case. Avoid colon-heavy keyword lists, repeated words and generic filler.
+- Write natural, correctly accented Vietnamese. Never use translation-shaped prose, keyword stuffing, clickbait, unsupported "hay nhất/top 1/mới nhất", artist names, or fake year/trend claims. Every claim must be supported by the actual songs already present in the room.
+- Title: 55-85 characters, always within YouTube's 100-character limit. Use natural Vietnamese sentence case: capitalize only the first word and genuine proper names; never ALL CAPS, Title Case Every Word, decorative capitalization, repeated punctuation or emoji stuffing.
+- Put the primary searchable genre/collection phrase within the first 45 characters. Include the exact ${songCount}-song count once, then add one concrete emotional hook or listening benefit genuinely supported by the tracklist. Make the title compelling through specificity and curiosity, not exaggeration.
+- Read every existing title, lyric, mood and genre before writing. The title and first two description lines must summarize the dominant genre, emotional arc and strongest listener use case of this exact list—not a reusable generic Bolero template.
 - Description: 1,000-3,000 Vietnamese characters with real line breaks and exactly this readable structure:
   1) Two opening lines containing the primary search phrase naturally and a concrete listening promise.
   2) One editorial paragraph describing genre, vocal/instrumental character, emotional arc and intended audience.
@@ -350,13 +373,13 @@ Vietnam SEO requirements for every option:
   Never put tags or a hashtag dump inside the description.
 - Hashtags: exactly 8-12 unique and relevant hashtags. Each starts with # and contains no spaces. Cover genre, mood, collection format and listening occasion without unrelated trends or near-duplicates.
 - Tags: 20-30 unique, comma-safe search phrases covering accented queries, useful unaccented/misspelling variants, genre/subgenre, mood, occasion, instrumentation/vocal character and album/playlist/long-play intent. Avoid trivial word-order duplicates. Tags are metadata only.
-- Make the 5 options target genuinely different Vietnamese search intents: (1) genre + compilation, (2) mood, (3) listening occasion, (4) audience/theme, (5) discovery/long-play collection.
+- Make the 5 options target genuinely different Vietnamese search intents and opening constructions: (1) genre + compilation, (2) dominant emotional journey, (3) listening occasion, (4) audience/story theme, (5) discovery/long-play collection. Do not repeat the same first four meaningful words across options.
 - seoScore must be conservative and evidence-based: title clarity/search fit 25, opening and description usefulness 25, exact full tracklist/structure 20, audience fit and honest click appeal 15, hashtag/tag diversity and hygiene 15. Deduct repetition and generic wording; never give 90+ unless every requirement is exceptional. This is an editorial estimate, not a measured ranking.
 
 Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`,
 
   buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, requiredCount: number, seoRequestId: string): string =>
-    `CORRECTION: The previous Vietnamese playlist SEO JSON violated the contract. Retry the complete JSON in this same room. Return exactly ${requiredCount} seoOptions for the WHOLE ${requestedSongCount}-song list. Every option requires: title 60-95 characters; structured description 1,000-3,000 characters containing headings "DANH SÁCH CA KHÚC:" and "PHÙ HỢP KHI:" plus every exact song title; 8-12 unique hashtags; 20-30 unique tags; conservative integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}". Avoid keyword stuffing, unsupported superlatives, artist names and fake trend claims.`,
+    `CORRECTION: The previous Vietnamese playlist SEO JSON violated the contract. Re-read the complete song list and retry raw JSON only. Return exactly ${requiredCount} distinct seoOptions for the WHOLE ${requestedSongCount}-song list. Every option requires: a natural sentence-case title of 55-85 characters with the primary genre/collection phrase in the first 45 characters, the exact song count once, a list-specific honest emotional hook, no ALL CAPS/clickbait/repeated punctuation; structured description 1,000-3,000 characters containing headings "DANH SÁCH CA KHÚC:" and "PHÙ HỢP KHI:" plus every exact song title; 8-12 unique hashtags; 20-30 unique tags; conservative integer seoScore 0-100. The five titles must use different search intents and must not repeat the same first four meaningful words. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
 
   buildMusicThumbnailPrompt: (songs: any[], style: string, seoOptions: any[], description: string, hasReference: boolean): string => {
     const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");

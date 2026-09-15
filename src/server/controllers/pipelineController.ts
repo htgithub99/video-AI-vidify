@@ -605,17 +605,30 @@ const validateSunoSettingsContract = (parsed: any, requestId: string): boolean =
     _.isBoolean(settings?.maxMode) && _.isBoolean(settings?.personalize);
 };
 
-const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
-  _.isArray(parsed?.seoOptions) &&
-  parsed.seoOptions.length === MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT &&
-  _.every(parsed.seoOptions, (option: any) => {
+const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean => {
+  if (!_.isArray(parsed?.seoOptions) || parsed.seoOptions.length !== MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT) return false;
+  const normalizedTitles = _.map(parsed.seoOptions, (option: any) => _.toLower(_.trim(_.toString(option?.title))));
+  const openingKeys = _.map(normalizedTitles, (title) => _.words(title).slice(0, 4).join(" "));
+  if (_.uniq(normalizedTitles).length !== normalizedTitles.length || _.uniq(openingKeys).length !== openingKeys.length) return false;
+  return _.every(parsed.seoOptions, (option: any) => {
+    const title = _.trim(_.toString(option?.title));
     const description = _.trim(_.toString(option?.description));
     const hashtags = _.map(_.castArray(option?.hashtags || []), (value) => _.trim(_.toString(value)));
     const tags = _.map(_.castArray(option?.tags || []), (value) => _.trim(_.toString(value)));
-    return _.inRange(_.size(_.trim(_.toString(option?.title))), 60, 96) &&
+    const letterOnlyTitle = title.replace(SUNO_AUTOMATION_PATTERNS.LETTER_ONLY, "");
+    const isAllCaps = letterOnlyTitle.length > 8 && letterOnlyTitle === letterOnlyTitle.toLocaleUpperCase(SUNO_AUTOMATION_CONFIG.LOCALE_VI);
+    const titleWords = title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES).filter((word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
+    const titleCaseRatio = _.size(_.filter(titleWords.slice(1), (word) => SUNO_AUTOMATION_PATTERNS.UNICODE_UPPERCASE_LETTER.test(word))) / Math.max(1, titleWords.length - 1);
+    const searchableOpening = title.slice(0, 45);
+    const songCountMatches = title.match(SUNO_AUTOMATION_PATTERNS.buildSongCountMatchRegex(songs.length)) || [];
+    return _.inRange(_.size(title), 55, 86) && !isAllCaps && titleCaseRatio < 0.6 &&
+      SUNO_AUTOMATION_PATTERNS.SEO_SEARCHABLE_OPENING.test(searchableOpening) &&
+      !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) &&
+      !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title) &&
+      songCountMatches.length === 1 &&
       _.inRange(_.size(description), 1000, 3001) &&
-      _.includes(description, "DANH SÁCH CA KHÚC:") &&
-      _.includes(description, "PHÙ HỢP KHI:") &&
+      _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST) &&
+      _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_OCCASIONS) &&
       _.every(songs, (song) => _.includes(_.toLower(description), _.toLower(_.trim(_.toString(song?.title))))) &&
       _.isArray(option?.hashtags) && _.inRange(hashtags.length, 8, 13) &&
       _.isEqual(_.uniq(_.map(hashtags, _.toLower)).length, hashtags.length) &&
@@ -625,6 +638,7 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
       _.every(tags, (value) => !_.isEmpty(value) && !_.includes(value, ",")) &&
       _.isInteger(_.toNumber(option?.seoScore)) && _.inRange(_.toNumber(option.seoScore), 0, 101);
   });
+};
 
 router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   const validation = parseAndValidateMusicPlanRequest(req);
@@ -5698,25 +5712,25 @@ router.post("/select-folder", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/save-file", async (req: Request, res: Response) => {
-  const suggestedName = path.basename(_.trim(_.toString(req.body?.suggestedName)) || "export.txt");
-  const extension = path.extname(suggestedName) || ".txt";
-  const dataMatch = _.toString(req.body?.dataUrl).match(/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([a-z0-9+/=\r\n]+)$/i);
-  if (!dataMatch) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: "Dữ liệu tệp không hợp lệ." });
-  const temporaryDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), "vidify-save-file-"));
-  const temporaryPath = path.join(temporaryDirectory, `payload${extension}`);
+router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {
+  const suggestedName = path.basename(_.trim(_.toString(req.body?.suggestedName)) || SUNO_AUTOMATION_CONFIG.DEFAULT_SAVE_FILE_NAME);
+  const extension = path.extname(suggestedName) || SUNO_AUTOMATION_CONFIG.TXT_EXTENSION;
+  const dataMatch = _.toString(req.body?.dataUrl).match(SUNO_AUTOMATION_PATTERNS.DATA_URL_BASE64);
+  if (!dataMatch) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.INVALID_FILE_DATA_ERR });
+  const temporaryDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), SUNO_AUTOMATION_CONFIG.SAVE_FILE_TEMP_PREFIX));
+  const temporaryPath = path.join(temporaryDirectory, `${SUNO_AUTOMATION_CONFIG.SAVE_FILE_PAYLOAD_NAME}${extension}`);
   try {
-    await fs.promises.writeFile(temporaryPath, Buffer.from(dataMatch[2], "base64"));
+    await fs.promises.writeFile(temporaryPath, Buffer.from(dataMatch[2], SUNO_AUTOMATION_CONFIG.ENCODING_BASE64 as BufferEncoding));
     const savedPath = await new Promise<string>((resolve, reject) => {
-      execFile(getPythonCommand(), [getStaticResourcePath("python_scripts/capcut_ultra_tool.py"), "save-file", temporaryPath, suggestedName, extension], { windowsHide: true }, (error, stdout) => {
+      execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SUNO_AUTOMATION_CONFIG.CMD_SAVE_FILE, temporaryPath, suggestedName, extension], { windowsHide: true }, (error, stdout) => {
         if (error) reject(error);
         else resolve(_.trim(stdout));
       });
     });
     return res.json({ success: true, cancelled: _.isEmpty(savedPath), filePath: savedPath });
   } catch (error) {
-    logger.error("Save file dialog failed", error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: "Không thể mở hộp thoại hoặc lưu tệp." });
+    logger.error(SUNO_AUTOMATION_TEXTS.SAVE_FILE_DIALOG_FAILED_LOG, error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: SUNO_AUTOMATION_TEXTS.SAVE_FILE_DIALOG_FAILED_ERR });
   } finally {
     await fs.promises.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => undefined);
   }

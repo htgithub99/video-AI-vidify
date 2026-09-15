@@ -48,6 +48,7 @@ import {
   MUSIC_CREATOR_TEXTS,
   SUNO_AUTOMATION_CONFIG,
   SUNO_AUTOMATION_PATTERNS,
+  SUNO_AUTOMATION_TEXTS,
 } from "../constants";
 import { cn } from "../lib/utils";
 import { storageUtils } from "../lib/storage";
@@ -65,7 +66,7 @@ const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promi
     body: JSON.stringify({ suggestedName, dataUrl }),
   });
   const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || "save_file_failed");
+  if (!response.ok || !result.success) throw new Error(result.error || SUNO_AUTOMATION_TEXTS.SAVE_FILE_FAILED_ERR);
   return !result.cancelled;
 };
 
@@ -165,6 +166,7 @@ interface PersistedMusicCreatorState {
   isAiConfigOpen?: boolean;
   songs?: GeneratedSong[];
   playlistSeoOptions?: SongSeoOption[];
+  seoSchemaVersion?: number;
   thumbnailDescription?: string;
   thumbnailReferenceName?: string;
   viewMode?: ResultViewMode;
@@ -559,7 +561,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
-  const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(initialState.playlistSeoOptions || []);
+  const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
+    initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
+  );
   const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || "");
   const [thumbnailReference, setThumbnailReference] = useState<string>("");
   const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || "");
@@ -608,6 +612,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           isAiConfigOpen,
           songs,
           playlistSeoOptions,
+          seoSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION,
           thumbnailDescription,
           thumbnailReferenceName,
           viewMode,
