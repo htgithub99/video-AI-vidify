@@ -894,6 +894,14 @@ const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSign
   return audioBySongId;
 };
 
+const readMediaDurationSeconds = async (filePath: string): Promise<number> =>
+  new Promise((resolve) => {
+    ffmpeg.ffprobe(filePath, (error, metadata) => {
+      if (error) return resolve(0);
+      resolve(Math.max(0, _.toNumber(metadata?.format?.duration)));
+    });
+  });
+
 const selectProfessionalSunoTracks = async (
   groups: Array<{ title: string; candidates: string[] }>,
   style: string,
@@ -1144,7 +1152,21 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         success: _.isEqual(downloadedPaths.length, trackPairs.length),
       });
       if (!_.isEqual(downloadedPaths.length, trackPairs.length)) throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_DOWNLOAD_COUNT_MISMATCH_ERR);
-      return res.json({ success: true, downloadedPaths });
+      const durations = await Promise.all(_.map(downloadedPaths, readMediaDurationSeconds));
+      let cumulativeSeconds = 0;
+      const curatedTracks = _.map(selectedTracksForDownload, (track, index) => {
+        const durationSeconds = durations[index] || 0;
+        const result = {
+          songId: track.songId,
+          title: _.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, ""),
+          qualityScore: track.qualityScore,
+          durationSeconds,
+          startSeconds: cumulativeSeconds,
+        };
+        cumulativeSeconds += durationSeconds;
+        return result;
+      });
+      return res.json({ success: true, downloadedPaths, curatedTracks });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
     const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal);

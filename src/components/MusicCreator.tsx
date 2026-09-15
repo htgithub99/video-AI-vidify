@@ -149,10 +149,37 @@ interface GeneratedSong {
   structure: string[];
   originalityNotes: string[];
 }
+interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
 type SunoDownloadFormat = "mp3" | "wav";
 
 type ResultViewMode = "lyrics" | "seo" | "split";
+
+const normalizeMusicTitle = (value: string): string => _.toLower(_.trim(value).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, ""));
+
+const formatPlaylistTimestamp = (seconds: number): string => {
+  const wholeSeconds = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(wholeSeconds / 3600);
+  const minutes = Math.floor((wholeSeconds % 3600) / 60);
+  const remainingSeconds = wholeSeconds % 60;
+  return hours > 0
+    ? `${_.padStart(_.toString(hours), 2, "0")}:${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(remainingSeconds), 2, "0")}`
+    : `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(remainingSeconds), 2, "0")}`;
+};
+
+const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedDownloadedTrack[]): string => {
+  const heading = SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST;
+  const headingIndex = description.indexOf(heading);
+  if (headingIndex < 0) return description;
+  const beforeTracklist = description.slice(0, headingIndex + heading.length);
+  const afterHeading = description.slice(headingIndex + heading.length);
+  const remainingLines = afterHeading.split("\n");
+  let lineIndex = 0;
+  while (lineIndex < remainingLines.length && (_.isEmpty(_.trim(remainingLines[lineIndex])) || /^\s*\d+[.)]\s+/.test(remainingLines[lineIndex]))) lineIndex += 1;
+  const suffix = remainingLines.slice(lineIndex).join("\n").trim();
+  const timestampLines = _.map(tracks, (track) => `${formatPlaylistTimestamp(track.startSeconds)} ${track.title}`).join("\n");
+  return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
+};
 
 interface PersistedMusicCreatorState {
   style?: string;
@@ -966,6 +993,19 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
+      if (sunoEvaluateTracks) {
+        const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
+        if (_.size(curatedTracks) === _.size(songs)) {
+          const songsByTitle = new Map(_.map(songs, (song) => [normalizeMusicTitle(song.title), song]));
+          const reorderedSongs = _.compact(_.map(curatedTracks, (track) => songsByTitle.get(normalizeMusicTitle(track.title))));
+          if (_.size(reorderedSongs) === _.size(songs)) setSongs(reorderedSongs);
+          setPlaylistSeoOptions((currentOptions) => _.map(currentOptions, (option) => ({
+            ...option,
+            description: replaceSeoTracklistWithTimestamps(option.description, curatedTracks),
+          })));
+          setSelectedSeoSongIndex(0);
+        }
+      }
       toast.success(texts.SUNO_DOWNLOAD_SUCCESS.replace("{count}", _.toString(_.size(result.downloadedPaths))).replace("{folder}", folderPath));
     } catch (error: any) {
       if (error?.name !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(_.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR));
