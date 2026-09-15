@@ -542,10 +542,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [initialState] = useState<PersistedMusicCreatorState>(readMusicCreatorState);
   const [initialSavedStyles] = useState<SavedMusicStyle[]>(readSavedStyles);
   const [style, setStyle] = useState(() => initialState.style || initialSavedStyles[0]?.content || "");
+  const [styleDraft, setStyleDraft] = useState("");
   const [savedStyles, setSavedStyles] = useState<SavedMusicStyle[]>(initialSavedStyles);
   const [styleName, setStyleName] = useState("");
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
-  const [editingOriginalStyle, setEditingOriginalStyle] = useState("");
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
   const [copiedStyleIndex, setCopiedStyleIndex] = useState<number | null>(null);
   const [outputCount, setOutputCount] = useState<number>(initialState.outputCount || MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
@@ -560,6 +560,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
     initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
@@ -579,6 +580,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
+  const [sunoInspoDraft, setSunoInspoDraft] = useState("");
   const [savedInspos, setSavedInspos] = useState<SavedMusicInspo[]>(readSavedInspos);
   const [inspoName, setInspoName] = useState("");
   const [editingInspoIndex, setEditingInspoIndex] = useState<number | null>(null);
@@ -638,8 +640,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleEditStyle = (index: number) => {
     if (!savedStyles[index]) return;
     setEditingStyleIndex(index);
-    setEditingOriginalStyle(style);
     setStyle(savedStyles[index].content);
+    setStyleDraft(savedStyles[index].content);
     setStyleName(savedStyles[index].title);
   };
 
@@ -651,14 +653,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleCancelStyleEdit = () => {
-    setStyle(editingStyleIndex === null ? "" : editingOriginalStyle);
     setEditingStyleIndex(null);
-    setEditingOriginalStyle("");
+    setStyleDraft("");
     setStyleName("");
   };
 
   const handleSaveStyle = () => {
-    const nextContent = _.trim(style);
+    const nextContent = _.trim(styleDraft);
     if (_.isEmpty(nextContent)) return;
     const nextTitle = _.trim(styleName) || _.truncate(_.split(nextContent, SUNO_AUTOMATION_PATTERNS.STYLE_SPLIT_SEPARATORS)[0], { length: 32 });
     const nextItem = { title: nextTitle, content: nextContent };
@@ -667,8 +668,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         ? [...savedStyles, nextItem]
         : _.map(savedStyles, (item, index) => (index === editingStyleIndex ? nextItem : item));
     persistStyles(nextStyles);
+    setStyle(nextContent);
     setEditingStyleIndex(null);
-    setEditingOriginalStyle("");
+    setStyleDraft("");
     setStyleName("");
     toast.success(texts.STYLE_SAVE_SUCCESS);
   };
@@ -679,11 +681,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleSaveInspo = () => {
-    const content = _.trim(sunoInspo);
+    const content = _.trim(sunoInspoDraft);
     if (_.isEmpty(content)) return;
     const item = { title: _.trim(inspoName) || content, content };
     persistInspos(editingInspoIndex === null ? [...savedInspos, item] : _.map(savedInspos, (value, index) => index === editingInspoIndex ? item : value));
+    setSunoInspo(content);
     setEditingInspoIndex(null);
+    setSunoInspoDraft("");
     setInspoName("");
     toast.success(texts.INSPO_SAVE_SUCCESS);
   };
@@ -691,7 +695,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleCancelInspoEdit = () => {
     setEditingInspoIndex(null);
     setInspoName("");
-    setSunoInspo("");
+    setSunoInspoDraft("");
   };
 
   const confirmDeleteInspo = () => {
@@ -758,6 +762,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
     const referenceSource = _.trim(referenceSongs);
 
+    setViewMode("lyrics");
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
     setGeneratedThumbnail("");
@@ -817,6 +822,37 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       musicRunIdRef.current = null;
       setIsLoading(false);
       setIsGeneratingThumbnail(false);
+    }
+  };
+
+  const handleRegenerateSeo = async () => {
+    const activeStyle = _.trim(style);
+    if (_.isEmpty(songs) || _.isEmpty(activeStyle) || isRegeneratingSeo) return;
+    setViewMode("seo");
+    setIsRegeneratingSeo(true);
+    const runId = `${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}seo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    try {
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({
+          songs,
+          style: activeStyle,
+          projectId: runId,
+          requestId: runId,
+          aiExecution: { provider, model, executionMode, chromeHeadless },
+        }),
+      });
+      const result = await response.json();
+      const regeneratedOptions = _.castArray(result.playlistSeoOptions || []) as SongSeoOption[];
+      if (!response.ok || !result.success || _.isEmpty(regeneratedOptions)) throw new Error(result.error || texts.SEO_REGENERATE_ERROR);
+      setPlaylistSeoOptions(regeneratedOptions);
+      setSelectedSeoSongIndex(0);
+      toast.success(texts.SEO_REGENERATE_SUCCESS);
+    } catch (error: any) {
+      toast.error(_.toString(error?.message || texts.SEO_REGENERATE_ERROR));
+    } finally {
+      setIsRegeneratingSeo(false);
     }
   };
 
@@ -1037,7 +1073,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </h3>
                 </div>
 
-                {!_.isEmpty(_.trim(style)) && (
+                {!_.isEmpty(_.trim(styleDraft)) && (
                   <div className="flex items-center gap-1.5">
                     <Button
                       type="button"
@@ -1074,8 +1110,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 <div className="sm:col-span-8">
                   <input
                     type="text"
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value)}
+                    value={styleDraft}
+                    onChange={(e) => {
+                      setStyleDraft(e.target.value);
+                      if (editingStyleIndex === null) setStyle(e.target.value);
+                    }}
                     placeholder={texts.STYLE_PLACEHOLDER}
                     disabled={isLoading}
                     className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
@@ -1104,7 +1143,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <Button
                             type="button"
                             variant="unstyled"
-                            onClick={() => { setStyle(savedStyle.content); setStyleName(savedStyle.title); }}
+                            onClick={() => {
+                              setStyle(savedStyle.content);
+                              setEditingStyleIndex(null);
+                              setStyleDraft("");
+                              setStyleName("");
+                            }}
                             disabled={isLoading}
                             className="text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
                             title={savedStyle.content}>
@@ -1191,7 +1235,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       </span>
                     </span>
                   </div>
-                  {!_.isEmpty(_.trim(sunoInspo)) && (
+                  {!_.isEmpty(_.trim(sunoInspoDraft)) && (
                     <div className="flex items-center gap-1.5">
                       <Button
                         type="button"
@@ -1228,8 +1272,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <div className="sm:col-span-8">
                     <input
                       type="text"
-                      value={sunoInspo}
-                      onChange={(event) => setSunoInspo(event.target.value)}
+                      value={sunoInspoDraft}
+                      onChange={(event) => {
+                        setSunoInspoDraft(event.target.value);
+                        if (editingInspoIndex === null) setSunoInspo(event.target.value);
+                      }}
                       disabled={isLoading || isCreatingSuno}
                       placeholder={texts.SUNO_INSPO_PLACEHOLDER}
                       className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
@@ -1259,7 +1306,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               <Button
                                 type="button"
                                 variant="unstyled"
-                                onClick={() => { setSunoInspo(item.content); setInspoName(item.title); }}
+                                onClick={() => {
+                                  setSunoInspo(item.content);
+                                  setEditingInspoIndex(null);
+                                  setSunoInspoDraft("");
+                                  setInspoName("");
+                                }}
                                 disabled={isLoading || isCreatingSuno}
                                 className="text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
                                 title={item.content}>
@@ -1287,6 +1339,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                     setEditingInspoIndex(index);
                                     setInspoName(item.title);
                                     setSunoInspo(item.content);
+                                    setSunoInspoDraft(item.content);
                                   }}
                                   disabled={isLoading || isCreatingSuno}
                                   title={texts.STYLE_UPDATE_BTN}
@@ -1659,7 +1712,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         ? "bg-purple-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    <Music2 className="w-3 h-3 shrink-0" />
+                    {isLoading ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> : <Music2 className="w-3 h-3 shrink-0" />}
                     <span className="inline-flex items-center leading-none">{texts.TAB_LYRICS}</span>
                   </Button>
                   <Button
@@ -1672,7 +1725,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         ? "bg-fuchsia-600 !text-white shadow-sm"
                         : "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100",
                     )}>
-                    <Search className="w-3 h-3 shrink-0" />
+                    {isRegeneratingSeo ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> : <Search className="w-3 h-3 shrink-0" />}
                     <span className="inline-flex items-center leading-none">{texts.TAB_SEO}</span>
                   </Button>
                   <Button
@@ -1693,6 +1746,26 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
               {!_.isEmpty(songs) && (
                 <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={handleGenerate}
+                    disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
+                    title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
+                    <RefreshCw className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300", isLoading && "animate-spin")} />
+                    <span className="inline-flex items-center leading-none">{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={handleRegenerateSeo}
+                    disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
+                    title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
+                    <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300", isRegeneratingSeo && "animate-spin")} />
+                    <span className="inline-flex items-center leading-none">{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
+                  </Button>
                   <Button
                     type="button"
                     variant="unstyled"
@@ -1771,17 +1844,17 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </Button>
           </div>
 
-          {isLoading ? (
+          {isLoading || (isRegeneratingSeo && viewMode === "seo") ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <Disc3 className="w-7 h-7 text-purple-400 animate-spin" />
+              <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg", isRegeneratingSeo ? "bg-fuchsia-500/15 border-fuchsia-500/30 shadow-fuchsia-500/20" : "bg-purple-500/15 border-purple-500/30 shadow-purple-500/20")}>
+                {isRegeneratingSeo ? <Search className="w-7 h-7 text-fuchsia-400 animate-pulse" /> : <Disc3 className="w-7 h-7 text-purple-400 animate-spin" />}
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-extrabold text-slate-200">
-                  {texts.BLOCK_LYRICS_LOADING}
+                  {isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING}
                 </p>
                 <p className="text-xs text-slate-400">
-                  {texts.HEADER_BADGE} • {outputCount} {texts.SONG_UNIT}
+                  {isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : `${texts.HEADER_BADGE} • ${outputCount} ${texts.SONG_UNIT}`}
                 </p>
               </div>
             </div>

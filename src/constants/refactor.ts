@@ -521,6 +521,7 @@ export const ROUTER_PATHS = {
   VALIDATE_SCENE_IMAGE: "/validate-scene-image",
   SEARCH_ARCHIVAL_IMAGE: "/search-archival-image",
   MUSIC_PLAN: "/music-plan",
+  MUSIC_SEO_REGENERATE: "/music-seo-regenerate",
   MUSIC_THUMBNAIL: "/music-thumbnail",
   MUSIC_SUNO_CREATE: "/music-suno-create",
   MUSIC_SUNO_CANCEL: "/music-suno-cancel",

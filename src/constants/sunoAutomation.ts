@@ -102,7 +102,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_STYLE_LIBRARY_KEY: "music_creator_style_library",
   MUSIC_INSPO_LIBRARY_KEY: "music_creator_inspo_library",
   MUSIC_CREATOR_STATE_KEY: "music_creator_workspace_state_v1",
-  MUSIC_SEO_SCHEMA_VERSION: 3,
+  MUSIC_SEO_SCHEMA_VERSION: 4,
   MUSIC_MEDIA_DB_NAME: "music_creator_media",
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
@@ -370,32 +370,38 @@ Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}
     `CORRECTION: Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}", requestId "${sunoSettingsRequestId}". Include settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list.`,
 
   buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number): string =>
-    `Return raw JSON only. Act as a Vietnamese YouTube music SEO editor. Using the complete ${songCount}-song list created earlier in this same room and the user's selected global music style below, create exactly ${requiredCount} genuinely different metadata options for publishing the WHOLE LIST as one Vietnamese-market album/collection video. Never optimize an individual song.
+    `Return raw JSON only. Act as an excellent Vietnamese music curator and YouTube copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then create exactly ${requiredCount} genuinely different ways to present the WHOLE playlist.
 
-USER-SELECTED GLOBAL MUSIC STYLE (authoritative for genre, rhythm, instrumentation, vocal character, mood and audience positioning):
+SELECTED MUSIC STYLE:
 ${style}
 
-Vietnam SEO requirements for every option:
-- Write natural, correctly accented Vietnamese. Never use translation-shaped prose, keyword stuffing, clickbait, unsupported "hay nhất/top 1/mới nhất", artist names, or fake year/trend claims. Every claim must be supported by the actual songs already present in the room.
-- Title: 50-90 characters, always within YouTube's 100-character limit. Use natural Vietnamese sentence case: capitalize only the first word and genuine proper names; never ALL CAPS, Title Case Every Word, decorative capitalization, repeated punctuation or emoji stuffing.
-- Include the exact ${songCount}-song count once and naturally reflect the selected style, but do not force every title to begin with the same genre phrase. Make each title compelling through a different specific, honest reason to click—not exaggeration.
-- Read every existing title, lyric, mood and genre before writing. The title and first two description lines must summarize the dominant genre, emotional arc and strongest listener use case of this exact list—not a reusable generic Bolero template.
-- Description: 500-1,800 Vietnamese characters with real line breaks and exactly this readable structure:
-  1) Two opening lines containing the primary search phrase naturally and a concrete listening promise.
-  2) One editorial paragraph describing genre, vocal/instrumental character, emotional arc and intended audience.
-  3) Heading "DANH SÁCH CA KHÚC:" followed by a numbered list of all ${songCount} exact existing song titles in their current order, one per line. Never invent timestamps because durations are unknown.
-  4) Heading "PHÙ HỢP KHI:" followed by 3 concise bullet lines describing genuine listening occasions.
-  5) One natural CTA inviting comments and subscription without unverifiable promises.
-  Never put tags or a hashtag dump inside the description.
-- Hashtags: exactly 8-12 unique and relevant hashtags. Each starts with # and contains no spaces. Cover genre, mood, collection format and listening occasion without unrelated trends or near-duplicates.
-- Tags: 20-30 unique, comma-safe search phrases covering accented queries, useful unaccented/misspelling variants, genre/subgenre, mood, occasion, instrumentation/vocal character and album/playlist/long-play intent. Avoid trivial word-order duplicates. Tags are metadata only.
-- Make the 5 options feel like real alternatives, not paraphrases. Give each one a different editorial concept, title opening, emotional promise, description introduction, primary keyword cluster, hashtag mix and tag mix: (1) genre + compilation, (2) dominant emotional journey, (3) a concrete listening occasion, (4) audience or story theme, (5) discovery/long-play experience. Reuse essential genre terms only where natural; do not repeat one title template or merely swap the final phrase.
-- seoScore must be conservative and evidence-based: title clarity/search fit 25, opening and description usefulness 25, exact full tracklist/structure 20, audience fit and honest click appeal 15, hashtag/tag diversity and hygiene 15. Deduct repetition and generic wording; never give 90+ unless every requirement is exceptional. This is an editorial estimate, not a measured ranking.
+Creative goal:
+- Make a real music listener feel the atmosphere immediately and want to press play. Use concrete emotions, memories, scenes, listening moments or musical character found in these songs—not empty phrases such as "tuyển chọn đặc sắc".
+- Stay completely honest to the actual song titles, lyrics, genre, mood, instrumentation, vocal character and selected style. Never invent an artist, year, trend, achievement or promise unsupported by the list.
+- Give the five options different personalities: one search-friendly genre angle, one vivid emotional image, one specific listening moment, one story/journey angle, and one concise curiosity-led angle. Do not reuse one sentence pattern. If two options feel interchangeable, freely rewrite one.
+
+Keep only these practical SEO basics:
+- Natural, correctly accented Vietnamese; sentence case; no ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
+- A clear, attractive title under 100 characters. Put useful search language where it sounds natural, but do not force every title to start with the genre or the ${songCount}-song count.
+- A readable description with a strong opening written specifically for this playlist, a short inviting account of its musical and emotional journey, then "DANH SÁCH CA KHÚC:" followed by all ${songCount} exact song titles in order. Add a natural listening suggestion or CTA only if it improves the copy. Do not invent timestamps.
+- 5-12 focused hashtags and 12-25 useful search tags. Choose relevance over quantity; vary their emphasis between options.
+- Give an honest integer seoScore from 0 to 100 based on clarity, search relevance, playlist fidelity and click appeal.
 
 Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`,
 
   buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string): string =>
-    `CORRECTION: The previous Vietnamese playlist SEO JSON violated the contract. Re-read the complete song list and the user-selected global style "${style}", then retry raw JSON only. Return exactly ${requiredCount} genuinely different seoOptions for the WHOLE ${requestedSongCount}-song list. Every option requires: a unique natural sentence-case title of 50-90 characters, the exact song count once, a list-specific honest emotional hook, no ALL CAPS/clickbait/repeated punctuation; structured description 500-1,800 characters containing headings "DANH SÁCH CA KHÚC:" and "PHÙ HỢP KHI:" plus every exact song title; 8-12 unique hashtags; 20-30 unique tags; conservative integer seoScore 0-100. Vary the editorial concept, title opening, description introduction and keyword/hashtag/tag mix instead of paraphrasing one template. Natural overlap in essential genre keywords is allowed. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh SEO options for the whole playlist. Keep every claim grounded in the songs; make each title natural, attractive and under 100 characters; make the five creative angles clearly different without keyword stuffing or fake hype. Each description needs a compelling playlist-specific opening and "DANH SÁCH CA KHÚC:" with every exact title in order. Include 5-12 relevant hashtags, 12-25 useful tags and integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+
+  buildMusicPlaylistSeoRegenerationPrompt: (songs: any[], style: string, requestId: string, requiredCount: number): string => {
+    const compactSongs = _.map(songs, (song) => ({
+      title: _.toString(song?.title),
+      lyrics: _.toString(song?.lyrics),
+      genre: _.toString(song?.genre),
+      mood: _.toString(song?.mood),
+      tempoBpm: _.toNumber(song?.tempoBpm),
+    }));
+    return `${SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(songs.length, style, requestId, requiredCount)}\n\nThis is a fresh SEO regeneration. Ignore earlier SEO wording and build five new alternatives from this authoritative current song data:\n${JSON.stringify(compactSongs)}`;
+  },
 
   buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean): string => {
     const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");

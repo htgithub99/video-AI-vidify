@@ -623,19 +623,16 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
     const isAllCaps = letterOnlyTitle.length > 8 && letterOnlyTitle === letterOnlyTitle.toLocaleUpperCase(SUNO_AUTOMATION_CONFIG.LOCALE_VI);
     const titleWords = title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES).filter((word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
     const titleCaseRatio = _.size(_.filter(titleWords.slice(1), (word) => SUNO_AUTOMATION_PATTERNS.UNICODE_UPPERCASE_LETTER.test(word))) / Math.max(1, titleWords.length - 1);
-    const songCountMatches = title.match(SUNO_AUTOMATION_PATTERNS.buildSongCountMatchRegex(songs.length)) || [];
-    return _.inRange(_.size(title), 50, 91) && !isAllCaps && titleCaseRatio < 0.75 &&
+    return _.inRange(_.size(title), 30, 100) && !isAllCaps && titleCaseRatio < 0.75 &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title) &&
-      songCountMatches.length === 1 &&
-      _.inRange(_.size(description), 500, 1801) &&
+      _.inRange(_.size(description), 250, 2001) &&
       _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST) &&
-      _.includes(description, SUNO_AUTOMATION_CONFIG.SEO_HEADING_OCCASIONS) &&
       _.every(songs, (song) => _.includes(_.toLower(description), _.toLower(_.trim(_.toString(song?.title))))) &&
-      _.isArray(option?.hashtags) && _.inRange(hashtags.length, 8, 13) &&
+      _.isArray(option?.hashtags) && _.inRange(hashtags.length, 5, 13) &&
       _.isEqual(_.uniq(_.map(hashtags, _.toLower)).length, hashtags.length) &&
       _.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.HASHTAG_VALIDATION.test(value)) &&
-      _.isArray(option?.tags) && _.inRange(tags.length, 20, 31) &&
+      _.isArray(option?.tags) && _.inRange(tags.length, 12, 26) &&
       _.isEqual(_.uniq(_.map(tags, _.toLower)).length, tags.length) &&
       _.every(tags, (value) => !_.isEmpty(value) && !_.includes(value, ",")) &&
       _.isInteger(_.toNumber(option?.seoScore)) && _.inRange(_.toNumber(option.seoScore), 0, 101);
@@ -788,6 +785,53 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
       projectId,
     }).catch(() => undefined);
+    activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
+    if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
+  }
+});
+
+router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Response) => {
+  const songs = _.castArray(req.body?.songs || []);
+  const style = _.trim(_.toString(req.body?.style));
+  const execution = req.body?.aiExecution || {};
+  const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
+  const projectId = _.trim(_.toString(req.body?.projectId)) || `${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}seo_${Date.now()}`;
+  const requestId = _.trim(_.toString(req.body?.requestId)) || `${projectId}_regenerate`;
+  if (_.isEmpty(songs) || _.isEmpty(style)) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.SERVER_VALIDATION_ERROR });
+  }
+
+  activeMusicPlanRuns += 1;
+  const planningRun = beginChatPlanningRun(requestId, Date.now(), `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-seo`, provider);
+  req.once("aborted", planningRun.cancel);
+  try {
+    let parsed: any = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const prompt = attempt === 0
+        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
+        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs.length, style, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId);
+      const response = await generatePlanningWithChatUi({
+        provider,
+        model: execution.model,
+        prompt,
+        projectId,
+        chromeHeadless: execution.chromeHeadless !== false,
+        artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO,
+        requestId,
+        signal: planningRun.signal,
+        closeRoomOnComplete: false,
+      });
+      parsed = jsonUtils.safeParse(response.text, null);
+      if (validateMusicPlaylistSeoContract(parsed, songs)) {
+        return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
+      }
+    }
+    throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+  } catch (error) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR)) });
+  } finally {
+    planningRun.complete();
+    await closeChatPlanningRoom({ provider, projectId }).catch(() => undefined);
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) await closeActiveBrowser(true).catch(() => undefined);
   }
