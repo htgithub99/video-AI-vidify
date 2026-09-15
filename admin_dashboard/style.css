@@ -22,8 +22,8 @@
 
     --input-bg: #27272a; /* Zinc 800 - Input background */
     --input-border: transparent;
-    --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
-    --font-mono: "JetBrains Mono", monospace;
+    --font-sans: "Merienda", cursive, system-ui, -apple-system, sans-serif;
+    --font-mono: "Merienda", cursive, monospace;
 }
 
 * {
@@ -31,6 +31,10 @@
     margin: 0;
     padding: 0;
     font-family: var(--font-sans);
+}
+
+button, input, select, textarea {
+    font-family: inherit;
 }
 
 html, body {

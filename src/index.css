@@ -5,9 +5,10 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Merienda", cursive, "Inter", system-ui, -apple-system, sans-serif;
-  --font-logo: "Merienda", cursive, "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "Merienda", cursive, system-ui, -apple-system, sans-serif;
+  --font-serif: "Merienda", cursive, serif;
+  --font-mono: "Merienda", cursive, monospace;
+  --font-logo: "Merienda", cursive, system-ui, -apple-system, sans-serif;
 
   --radius-xs: 0.75rem;
   --radius-sm: 0.75rem;
@@ -56,6 +57,30 @@
   --animate-fadeIn: none;
   --animate-shrinkWidth: none;
   --animate-shimmer: none;
+}
+
+@layer base {
+  :root,
+  html,
+  body {
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    font-style: normal;
+  }
+
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+}
+
+.merienda {
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 /* VÔ HIỆU HÓA ANIMATION CHUYỂN ĐỘNG NẶNG NỀ */
@@ -565,19 +590,6 @@ input[type="range"]::-webkit-slider-thumb {
   transition:
     transform 0.1s ease,
     background-color 0.15s ease;
-}
-
-
-html, body, #root {
-  font-family: "Merienda", cursive, var(--font-sans);
-  font-optical-sizing: auto;
-  font-style: normal;
-}
-
-.merienda {
-  font-family: "Merienda", cursive;
-  font-optical-sizing: auto;
-  font-style: normal;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
