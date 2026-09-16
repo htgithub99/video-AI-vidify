@@ -1484,7 +1484,7 @@ export class SimpleMutex {
 }
 
 export const imageGenMutex = new SimpleMutex();
-const geminiBatchMutex = new SimpleMutex();
+export const geminiBatchMutex = new SimpleMutex();
 const grokGenerationMutex = new SimpleMutex();
 const geminiRequestPacingMutex = new SimpleMutex();
 let nextGeminiRequestAt = SecurityConstants.ZERO;
@@ -2153,9 +2153,7 @@ export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions)
   if (
     _.gt(selectedCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS) ||
     _.uniq(_.map(selectedCharacters, "id")).length !== selectedCharacters.length ||
-    _.some(selectedCharacters, (character) =>
-      _.some([character.id, character.name, character.prompt], (value) => _.isEmpty(_.trim(value))),
-    )
+    _.some(selectedCharacters, (character) => _.some([character.id, character.name, character.prompt], (value) => _.isEmpty(_.trim(value))))
   ) {
     throw createAppError("invalid_ai_character_artifact");
   }
@@ -2395,9 +2393,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
       if (!selectedDuration.some((label) => label.includes(requestedResolution))) {
         appLog(GROK_AUTOMATION_MESSAGES.RESOLUTION_NOT_SUPPORTED(requestedResolution));
       }
-      appLog(
-        GROK_AUTOMATION_MESSAGES.CONFIG_DETAIL(targetRatio, requestedDuration, requestedResolution, options.visualConfig?.chromeHeadless === false),
-      );
+      appLog(GROK_AUTOMATION_MESSAGES.CONFIG_DETAIL(targetRatio, requestedDuration, requestedResolution, options.visualConfig?.chromeHeadless === false));
     }
 
     await uploadProviderCharacterReferences(page, options.visualConfig?.referenceImages, "grok", options.visualConfig?.referenceImageNames);
@@ -2748,9 +2744,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const promptApplied = await replaceFlowPromptInput(activePage, inputLoc, targetPrompt);
           if (!promptApplied) {
             const observedPrompt = await readFlowPromptInput(inputLoc);
-            appLog(
-              FLOW_AUTOMATION_MESSAGES.FLOW_PROMPT_MISMATCH(normalizeFlowPromptValue(targetPrompt).length, normalizeFlowPromptValue(observedPrompt).length),
-            );
+            appLog(FLOW_AUTOMATION_MESSAGES.FLOW_PROMPT_MISMATCH(normalizeFlowPromptValue(targetPrompt).length, normalizeFlowPromptValue(observedPrompt).length));
             await captureGeminiDomState(activePage, "flow-prompt-not-applied").catch(() => undefined);
             throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
           }
@@ -3265,13 +3259,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       if (!downloadedVideo && mediaId) {
         const mediaCard = await waitForFlowMediaCardReady(activePage, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
         if (mediaCard) {
-          downloadedVideo = await downloadFlowVideoFromCard(
-            activePage,
-            mediaCard,
-            oldVideoSources,
-            parseConfiguredVideoDuration(normalizedModelSettings.duration),
-            mediaId,
-          );
+          downloadedVideo = await downloadFlowVideoFromCard(activePage, mediaCard, oldVideoSources, parseConfiguredVideoDuration(normalizedModelSettings.duration), mediaId);
         }
       }
       results.push({
@@ -4471,10 +4459,7 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
       const uploadButton = uploadCandidates.nth(index);
       if (!(await uploadButton.isVisible().catch(() => false))) continue;
       try {
-        const [fileChooser] = await Promise.all([
-          page.waitForEvent("filechooser", { timeout: 6000 }).catch(() => null),
-          uploadButton.click(),
-        ]);
+        const [fileChooser] = await Promise.all([page.waitForEvent("filechooser", { timeout: 6000 }).catch(() => null), uploadButton.click()]);
         if (fileChooser) {
           await fileChooser.setFiles(referenceFiles);
           uploadSuccess = true;
@@ -4496,12 +4481,11 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
 
     if (uploadSuccess) {
       try {
-        await page
-          .waitForFunction(
-            ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
-            { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: referenceFiles.length },
-            { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
-          );
+        await page.waitForFunction(
+          ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
+          { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: referenceFiles.length },
+          { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
+        );
         await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS);
         roomReferenceSignatureMap.set(page, nextSignature);
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(SecurityConstants.PLACEHOLDER_0, _.toString(referenceFiles.length)));
