@@ -1207,7 +1207,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             type="button"
                             variant="unstyled"
                             onClick={() => {
-                              setStyle(savedStyle.content);
+                              const shouldClear = _.isEqual(style, savedStyle.content);
+                              setStyle(shouldClear ? "" : savedStyle.content);
                               setEditingStyleIndex(null);
                               setStyleDraft("");
                               setStyleName("");
@@ -1370,7 +1371,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 type="button"
                                 variant="unstyled"
                                 onClick={() => {
-                                  setSunoInspo(item.content);
+                                  const shouldClear = _.isEqual(sunoInspo, item.content);
+                                  setSunoInspo(shouldClear ? "" : item.content);
                                   setEditingInspoIndex(null);
                                   setSunoInspoDraft("");
                                   setInspoName("");
