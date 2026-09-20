@@ -58,7 +58,7 @@ import {
 } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { FLOW_AUTOMATION_MESSAGES, GROK_AUTOMATION_MESSAGES } from "../../constants/messages.js";
-import { appLog, appError, createAppError } from "../../lib/logger.js";
+import { appError, appLog, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import {
   GenerateType,
@@ -1531,6 +1531,7 @@ export interface ImageGeneratorOptions {
   prompt: string;
   style?: string;
   retainBrowserSession?: boolean;
+  forceNewPage?: boolean;
   visualConfig?: {
     chromeHeadless?: boolean;
     generateType?: GenerateType;
@@ -3318,6 +3319,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   const maxRoomAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 2 : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
+  let ownsActivePage = false;
   let terminalWarning = BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING;
 
   try {
@@ -3345,10 +3347,15 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       try {
         if (!browserInstance) {
           browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
-          activePage = browserInstance.page;
+          if (options.forceNewPage) {
+            activePage = await browserInstance.context.newPage();
+            ownsActivePage = true;
+          } else {
+            activePage = browserInstance.page;
+          }
           if (_.includes(activePage.url(), "grok.com")) {
             activePage = await browserInstance.context.newPage();
-            activeBrowserInstance = { ...browserInstance, page: activePage };
+            ownsActivePage = true;
           }
         }
         const currentUrl = activePage!.url();
@@ -3477,6 +3484,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(failureReason)) terminalWarning = failureReason;
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", failureReason));
   } finally {
+    if (ownsActivePage && activePage && !activePage.isClosed()) await activePage.close().catch(() => undefined);
     if (browserInstance) {
       if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
       else {

@@ -536,6 +536,7 @@ const generateMusicThumbnailAsset = async (input: {
         prompt: SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext),
         style: input.style,
         retainBrowserSession: true,
+        forceNewPage: true,
         visualConfig: {
           chromeHeadless: input.chromeHeadless,
           generateType: GenerateType.Image,
@@ -606,6 +607,15 @@ const validateMusicStyleAnalysisContract = (parsed: any, requestId: string): boo
       _.every([item?.claim, item?.sourceClue], isText) && _.isInteger(_.toNumber(item?.confidence)) && _.inRange(_.toNumber(item.confidence), 0, 101));
 };
 
+const getMusicStyleAnalysisContractIssues = (parsed: any, requestId: string): string[] => {
+  if (!parsed) return [SUNO_AUTOMATION_TEXTS.CONTRACT_INVALID_JSON_ISSUE];
+  const issues: string[] = [];
+  if (!_.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_ARTIFACT_TYPE_ISSUE);
+  if (!_.isEqual(parsed?.requestId, requestId)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_REQUEST_ID_ISSUE);
+  if (!validateMusicStyleAnalysisContract(parsed, requestId)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_STYLE_ANALYSIS_ISSUE);
+  return issues;
+};
+
 const validateMusicPlanSongContract = (parsed: any, expectedCount: number): boolean => {
   if (!_.isArray(parsed?.songs) || parsed.songs.length !== expectedCount) {
     return false;
@@ -622,6 +632,26 @@ const validateMusicPlanSongContract = (parsed: any, expectedCount: number): bool
     return !hasSongId || !hasTitle || !hasCompleteLyrics || !hasMusicalDirection || !hasStructure || !hasOriginalityNotes;
   });
   return !invalid;
+};
+
+const getMusicPlanSongContractIssues = (parsed: any, expectedCount: number): string[] => {
+  if (!parsed) return [SUNO_AUTOMATION_TEXTS.CONTRACT_INVALID_JSON_ISSUE];
+  const songs = _.castArray(parsed?.songs || []);
+  const issues: string[] = [];
+  if (!_.isArray(parsed?.songs) || songs.length !== expectedCount) issues.push(SUNO_AUTOMATION_TEXTS.formatSongCountIssue(expectedCount));
+  _.forEach(songs, (song, index) => {
+    const label = `song ${index + 1}`;
+    if (_.isEmpty(_.trim(_.toString(song?.songId)))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoIdIssue(label));
+    if (_.isEmpty(_.trim(_.toString(song?.title)))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoTitleIssue(label));
+    const lyrics = _.trim(_.toString(song?.lyrics));
+    if (lyrics.length < 300) issues.push(SUNO_AUTOMATION_TEXTS.formatSongLyricsLengthIssue(label, lyrics.length));
+    if (!/\[[^\]]+\]/.test(lyrics)) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoSectionLabelIssue(label));
+    if (_.isEmpty(_.trim(_.toString(song?.genre))) || _.isEmpty(_.trim(_.toString(song?.mood)))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongGenreMoodEmptyIssue(label));
+    if (!_.isInteger(_.toNumber(song?.tempoBpm)) || !_.inRange(_.toNumber(song?.tempoBpm), 40, 241)) issues.push(SUNO_AUTOMATION_TEXTS.formatSongTempoOutOfRangeIssue(label));
+    if (!_.isArray(song?.structure) || song.structure.length < 3) issues.push(SUNO_AUTOMATION_TEXTS.formatSongStructureIssue(label));
+    if (!_.isArray(song?.originalityNotes) || _.isEmpty(song.originalityNotes)) issues.push(SUNO_AUTOMATION_TEXTS.formatSongOriginalityNotesIssue(label));
+  });
+  return issues;
 };
 
 const validateMusicSongRankingContract = (parsed: any, songs: any[], requestId: string): boolean => {
@@ -658,10 +688,13 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
       return firstLetter === firstLetter.toLocaleUpperCase(SUNO_AUTOMATION_CONFIG.LOCALE_VI);
     });
     const hasSingleIcon = _.size(description.match(/\p{Extended_Pictographic}/gu) || []) === 1;
+    const startsWithIcon = /^\s*\p{Extended_Pictographic}\uFE0F?\s+/u.test(description);
+    const hasVietnameseDiacritics = (value: string): boolean => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(value);
     return _.inRange(_.size(title), 15, 100) && hasTitleCase &&
+      hasVietnameseDiacritics(title) &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) &&
       !SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title) &&
-      _.inRange(_.size(description), 40, 501) && hasSingleIcon &&
+      _.inRange(_.size(description), 40, 501) && hasSingleIcon && startsWithIcon && hasVietnameseDiacritics(description) &&
       _.isArray(option?.hashtags) && _.isEqual(hashtags.length, 10) &&
       _.isEqual(_.uniq(_.map(hashtags, _.toLower)).length, hashtags.length) &&
       _.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.ASCII_HASHTAG_VALIDATION.test(value)) &&
@@ -672,15 +705,42 @@ const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean =>
   });
 };
 
+const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
+  if (!parsed) return [SUNO_AUTOMATION_TEXTS.CONTRACT_INVALID_JSON_ISSUE];
+  const options = _.castArray(parsed?.seoOptions || []);
+  const issues: string[] = [];
+  if (!_.isArray(parsed?.seoOptions) || options.length !== MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT) {
+    issues.push(SUNO_AUTOMATION_TEXTS.formatSeoOptionsCountIssue(MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT));
+  }
+  _.forEach(options, (option, index) => {
+    const label = `SEO option ${index + 1}`;
+    const title = _.trim(_.toString(option?.title));
+    const description = _.trim(_.toString(option?.description));
+    const hashtags = _.castArray(option?.hashtags || []);
+    const tags = _.castArray(option?.tags || []);
+    if (!_.inRange(_.size(title), 15, 100)) issues.push(SUNO_AUTOMATION_TEXTS.formatTitleLengthIssue(label));
+    const hasVietnameseDiacritics = (value: string): boolean => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(value);
+    if (!hasVietnameseDiacritics(title)) issues.push(SUNO_AUTOMATION_TEXTS.formatTitleDiacriticsIssue(label));
+    if (!hasVietnameseDiacritics(description)) issues.push(SUNO_AUTOMATION_TEXTS.formatDescriptionDiacriticsIssue(label));
+    if (_.size(description.match(/\p{Extended_Pictographic}/gu) || []) !== 1 || !/^\s*\p{Extended_Pictographic}\uFE0F?\s+/u.test(description)) issues.push(SUNO_AUTOMATION_TEXTS.formatDescriptionEmojiIssue(label));
+    if (hashtags.length !== 10) issues.push(SUNO_AUTOMATION_TEXTS.formatHashtagsCountIssue(label));
+    if (tags.length !== 12) issues.push(SUNO_AUTOMATION_TEXTS.formatTagsCountIssue(label));
+    if (!_.isInteger(_.toNumber(option?.seoScore))) issues.push(SUNO_AUTOMATION_TEXTS.formatSeoScoreIntegerIssue(label));
+  });
+  if (!validateMusicPlaylistSeoContract(parsed, [])) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_SEO_CHECKS_FAILED_ISSUE);
+  return _.uniq(issues);
+};
+
 router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   const validation = parseAndValidateMusicPlanRequest(req);
   if (!validation.isValid || !validation.payload) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
   }
 
-  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId } = validation.payload;
+  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription } = validation.payload;
   const creativeStyle = style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE;
   activeMusicPlanRuns += 1;
+  let currentStage = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
   try {
     const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
     const planningRun = beginChatPlanningRun(requestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, provider);
@@ -698,6 +758,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       closeRoomOnComplete: false,
     });
     const sourceChunks = splitMusicSourceForRoom(referenceSongs);
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SOURCE_ANALYSIS;
     for (let chunkIndex = 0; chunkIndex < sourceChunks.length; chunkIndex += 1) {
       const sourceRequestId = `${requestId}_source_${chunkIndex + 1}`;
       let sourceAccepted = false;
@@ -719,11 +780,13 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
 
     const analysisRequestId = `${requestId}_style_analysis`;
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     let styleAnalysisParsed: any = null;
+    let styleAnalysisIssues: string[] = [];
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const prompt = attempt === 0
         ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId)
-        : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId);
+        : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId, styleAnalysisIssues);
       try {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
@@ -731,20 +794,24 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
         styleAnalysisParsed = null;
       }
+      styleAnalysisIssues = getMusicStyleAnalysisContractIssues(styleAnalysisParsed, analysisRequestId);
+      if (!_.isEmpty(styleAnalysisIssues)) logger.warn(`[MusicPlan] style-analysis contract attempt=${attempt + 1} issues=${styleAnalysisIssues.join(" | ")}`);
       if (validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) break;
     }
     if (!validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
 
     const songs: any[] = [];
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION;
     let responseProvider = provider;
     for (let startIndex = 1; startIndex <= requestedSongCount; startIndex += MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZE) {
       const batchCount = Math.min(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZE, requestedSongCount - startIndex + 1);
       let batchParsed: any = null;
+      let batchIssues: string[] = [];
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const batchRequestId = `${requestId}_batch_${startIndex}`;
         const prompt = attempt === 0
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE)
-          : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId);
+          : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues);
         try {
           const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId);
           responseProvider = response.provider;
@@ -753,6 +820,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
           batchParsed = null;
         }
+        batchIssues = getMusicPlanSongContractIssues(batchParsed, batchCount);
+        if (!_.isEmpty(batchIssues)) logger.warn(`[MusicPlan] song-composition contract batch=${startIndex} attempt=${attempt + 1} issues=${batchIssues.join(" | ")}`);
         if (validateMusicPlanSongContract(batchParsed, batchCount)) break;
       }
       if (!validateMusicPlanSongContract(batchParsed, batchCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
@@ -760,6 +829,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const rankingRequestId = `${requestId}_song_ranking`;
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_RANKING;
     let rankingParsed: any = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const prompt = attempt === 0
@@ -779,6 +849,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const songsById = _.keyBy(songs, (song) => _.trim(_.toString(song?.songId)));
     const rankedSongs = _.map(rankingParsed.orderedSongIds, (songId) => songsById[_.trim(_.toString(songId))]);
     const sunoSettingsRequestId = `${requestId}_suno_settings`;
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SUNO_SETTINGS;
     let sunoSettingsParsed: any = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const prompt = attempt === 0
@@ -793,10 +864,11 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const seoRequestId = `${requestId}_playlist_seo`;
     const generatePlaylistSeo = async (): Promise<any> => {
       let parsed: any = null;
+      let seoIssues: string[] = [];
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const prompt = attempt === 0
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, creativeStyle, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
-          : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(requestedSongCount, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId);
+          : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(requestedSongCount, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId, seoIssues);
         try {
           const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, seoRequestId);
           responseProvider = response.provider;
@@ -805,21 +877,50 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
           parsed = null;
         }
+        seoIssues = getMusicPlaylistSeoContractIssues(parsed);
+        if (!_.isEmpty(seoIssues)) logger.warn(`[MusicPlan] SEO contract attempt=${attempt + 1} issues=${seoIssues.join(" | ")}`);
         if (validateMusicPlaylistSeoContract(parsed, rankedSongs)) return parsed;
       }
       throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     };
-    const playlistSeoParsed = await generatePlaylistSeo();
+    currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL;
+    const [{ parsed: playlistSeoParsed, warning: seoWarning }, { thumbnail, warning: thumbnailWarning }] = await Promise.all([
+      generatePlaylistSeo()
+        .then((parsed) => ({ parsed, warning: undefined as string | undefined }))
+        .catch((error) => {
+          const warning = _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR));
+          logger.error(`[MusicPlan] non-fatal SEO failure requestId=${requestId}`, error);
+          return { parsed: null, warning };
+        }),
+      generateMusicThumbnailAsset({
+        songs: rankedSongs,
+        style: creativeStyle,
+        sourceContext: _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER),
+        description: thumbnailDescription,
+        reference: thumbnailReference,
+        referenceName: thumbnailReferenceName,
+        chromeHeadless: execution.chromeHeadless !== false,
+      }),
+    ]);
     return res.json({
       success: true,
-      data: { songs: rankedSongs, styleAnalysis: styleAnalysisParsed, sunoSettings: sunoSettingsParsed.settings, playlistSeoOptions: playlistSeoParsed.seoOptions },
+      data: {
+        songs: rankedSongs,
+        styleAnalysis: styleAnalysisParsed,
+        sunoSettings: sunoSettingsParsed.settings,
+        playlistSeoOptions: _.castArray(playlistSeoParsed?.seoOptions || []),
+        seoWarning,
+        thumbnail,
+        thumbnailWarning,
+      },
       provider: responseProvider,
     });
   } catch (error) {
-    logger.error(MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED, error);
+    const cause = _.toString(_.get(error, "message", error));
+    logger.error(`[MusicPlan] failed requestId=${requestId} stage=${currentStage} cause=${cause}`, error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED,
+      error: `${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED} (${currentStage}: ${cause})`,
     });
   } finally {
     await closeChatPlanningRoom({
@@ -847,27 +948,35 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
   req.once("aborted", planningRun.cancel);
   try {
     let parsed: any = null;
+    let seoIssues: string[] = [];
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const prompt = attempt === 0
-        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || "Tự do sáng tạo theo nội dung bài hát", requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
-        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs.length, style || "Tự do sáng tạo theo nội dung bài hát", MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId);
-      const response = await generatePlanningWithChatUi({
-        provider,
-        model: execution.model,
-        prompt,
-        projectId,
-        chromeHeadless: execution.chromeHeadless !== false,
-        artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO,
-        requestId,
-        signal: planningRun.signal,
-        closeRoomOnComplete: false,
-      });
-      parsed = jsonUtils.safeParse(response.text, null);
+        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
+        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs.length, style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId, seoIssues);
+      try {
+        const response = await generatePlanningWithChatUi({
+          provider,
+          model: execution.model,
+          prompt,
+          projectId,
+          chromeHeadless: execution.chromeHeadless !== false,
+          artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO,
+          requestId,
+          signal: planningRun.signal,
+          closeRoomOnComplete: false,
+        });
+        parsed = jsonUtils.safeParse(response.text, null);
+      } catch (error) {
+        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        parsed = null;
+      }
+      seoIssues = getMusicPlaylistSeoContractIssues(parsed);
+      if (!_.isEmpty(seoIssues)) logger.warn(`[MusicSeoRegenerate] contract attempt=${attempt + 1} issues=${seoIssues.join(" | ")}`);
       if (validateMusicPlaylistSeoContract(parsed, songs)) {
         return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
       }
     }
-    throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    throw createAppError(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}: ${seoIssues.join("; ")}`);
   } catch (error) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR)) });
   } finally {
@@ -987,7 +1096,7 @@ const selectProfessionalSunoTracks = async (
     return { name: path.basename(filePath), mimeType: SUNO_AUTOMATION_CONFIG.MIME_MP3, path: filePath };
   }));
   try {
-    const prompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, JSON.stringify(schema));
+    const prompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, jsonUtils.safeStringify(schema));
     let retryPrompt = prompt;
     let lastError: unknown;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MAX_EVALUATION_ATTEMPTS; attempt++) {
@@ -1016,7 +1125,7 @@ const selectProfessionalSunoTracks = async (
         });
       } catch (error) {
         lastError = error;
-        retryPrompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, JSON.stringify(schema));
+        retryPrompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, jsonUtils.safeStringify(schema));
         await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_RETRY, {
           projectId: room.projectId,
           workerId: room.workerId,
@@ -1042,7 +1151,7 @@ const writeSunoCuratedLog = async (event: string, details: Record<string, unknow
     await fs.promises.mkdir(path.dirname(SUNO_CURATED_LOG_PATH), { recursive: true });
     await fs.promises.appendFile(
       SUNO_CURATED_LOG_PATH,
-      `${JSON.stringify({ timestamp: new Date().toISOString(), event, ...details })}\n`,
+      `${jsonUtils.safeStringify({ timestamp: new Date().toISOString(), event, ...details })}\n`,
       SUNO_AUTOMATION_CONFIG.ENCODING_UTF8,
     );
   } catch {}
@@ -1061,7 +1170,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.VALIDATION_PLAYLIST_INPUT_ERR });
   }
   try {
-    const effectiveStyle = style || _.uniq(_.compact(_.map(_.castArray(req.body?.songs || []), (song) => _.trim(_.toString(song?.genre))))).join(", ") || "Original music";
+    const effectiveStyle = style || _.uniq(_.compact(_.map(_.castArray(req.body?.songs || []), (song) => _.trim(_.toString(song?.genre))))).join(", ") || SUNO_AUTOMATION_CONFIG.DEFAULT_FALLBACK_STYLE;
     const result = await createSunoPlaylist(songs, effectiveStyle, inspo, req.body?.sunoSettings, initialSongIds, _.trim(_.toString(req.body?.playlistName)));
     return res.json({ success: true, ...result });
   } catch (error) {
@@ -1101,7 +1210,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       tracks = _.map(recoveredSongIds, (songId, index) => {
         const songIndex = Math.floor(index / 2);
         const songNumber = songIndex + 1;
-        const title = songTitles[songIndex] || `Track ${songNumber}`;
+        const title = songTitles[songIndex] || `${SUNO_AUTOMATION_CONFIG.DEFAULT_TRACK_LABEL} ${songNumber}`;
         return { songId, title: SUNO_AUTOMATION_TEXTS.formatSongVariantTitle(songNumber, title, (index % 2) + 1) };
       });
     }

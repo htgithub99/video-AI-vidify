@@ -210,8 +210,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_EXPORT_WARN_NO_AUDIO: "⚠️ [Xuất Video] Không có âm thanh thuyết minh, sẽ kết xuất video im lặng.",
     PARSE_URL_ERR: "Không thể đọc dữ liệu định danh từ URL",
     FFMPEG_RENDER_ERROR: "Lỗi kết xuất video",
+    INVALID_AI_JSON_RESPONSE: "Dữ liệu phản hồi AI không hợp lệ.",
   },
   en: {
+    INVALID_AI_JSON_RESPONSE: "Invalid AI response structure.",
     TEMPLATE_RENAME_REQUIRED: "New name is required.",
     TEMPLATE_RENAME_NOT_FOUND: "Template not found or rename failed.",
     TEMPLATE_RENAME_FAILED: "Error renaming template",

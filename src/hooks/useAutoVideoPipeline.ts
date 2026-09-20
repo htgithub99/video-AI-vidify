@@ -2726,7 +2726,6 @@ export function useAutoVideoPipeline(
                 generateType: GenerateType.Video,
               };
             });
-            // cùng 1 Room; mỗi prompt tạo 1 video
             appendLog(
               PF.formatGoogleFlowBatch(
                 _.add(batchIndex, SecurityConstants.DEFAULT_AMOUNT),

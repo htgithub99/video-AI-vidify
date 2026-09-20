@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { jsonUtils } from "../lib/json.js";
 
 export const SUNO_AUTOMATION_CONFIG = {
   SUNO_BASE_URL: "https://suno.com",
@@ -119,7 +120,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_STYLE_LIBRARY_KEY: "music_creator_style_library",
   MUSIC_INSPO_LIBRARY_KEY: "music_creator_inspo_library",
   MUSIC_CREATOR_STATE_KEY: "music_creator_workspace_state_v1",
-  MUSIC_SEO_SCHEMA_VERSION: 5,
+  MUSIC_SEO_SCHEMA_VERSION: 6,
   MUSIC_MEDIA_DB_NAME: "music_creator_media",
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
@@ -145,6 +146,15 @@ export const SUNO_AUTOMATION_CONFIG = {
   ENCODING_BASE64: "base64",
   SEO_HEADING_TRACKLIST: "DANH SÁCH CA KHÚC:",
   SEO_HEADING_OCCASIONS: "PHÙ HỢP KHI:",
+  STAGE_INITIALIZE: "initialize",
+  STAGE_SOURCE_ANALYSIS: "source-analysis",
+  STAGE_STYLE_ANALYSIS: "style-analysis",
+  STAGE_SONG_COMPOSITION: "song-composition",
+  STAGE_SONG_RANKING: "song-ranking",
+  STAGE_SUNO_SETTINGS: "suno-settings",
+  STAGE_SEO_AND_THUMBNAIL: "seo-and-thumbnail",
+  DEFAULT_FALLBACK_STYLE: "Original music",
+  DEFAULT_TRACK_LABEL: "Track",
 } as const;
 
 export const SUNO_AUTOMATION_PATTERNS = {
@@ -341,6 +351,29 @@ export const SUNO_AUTOMATION_TEXTS = {
   formatAudioHeaderAccept: (format: string) =>
     format === "wav" ? "audio/wav,*/*" : "audio/mpeg,*/*",
 
+  CONTRACT_INVALID_JSON_ISSUE: "response is not parseable JSON",
+  CONTRACT_ARTIFACT_TYPE_ISSUE: "artifactType is incorrect",
+  CONTRACT_REQUEST_ID_ISSUE: "requestId is incorrect",
+  CONTRACT_STYLE_ANALYSIS_ISSUE: "one or more required Music DNA fields or arrays are empty/invalid",
+  CONTRACT_SEO_CHECKS_FAILED_ISSUE: "one or more title-case, uniqueness, ASCII, length, or clickbait checks failed",
+  formatSongCountIssue: (expected: number) => `songs must contain exactly ${expected} items`,
+  formatSongNoIdIssue: (label: string) => `${label} has no songId`,
+  formatSongNoTitleIssue: (label: string) => `${label} has no title`,
+  formatSongLyricsLengthIssue: (label: string, actual: number) => `${label} lyrics have ${actual}/300 characters`,
+  formatSongNoSectionLabelIssue: (label: string) => `${label} lyrics have no Suno section label`,
+  formatSongGenreMoodEmptyIssue: (label: string) => `${label} genre or mood is empty`,
+  formatSongTempoOutOfRangeIssue: (label: string) => `${label} tempoBpm is outside 40-240`,
+  formatSongStructureIssue: (label: string) => `${label} needs at least 3 structure entries`,
+  formatSongOriginalityNotesIssue: (label: string) => `${label} needs originalityNotes`,
+  formatSeoOptionsCountIssue: (expected: number) => `seoOptions must contain exactly ${expected} items`,
+  formatTitleLengthIssue: (label: string) => `${label} title length must be 15-99`,
+  formatTitleDiacriticsIssue: (label: string) => `${label} title must use Vietnamese diacritics`,
+  formatDescriptionDiacriticsIssue: (label: string) => `${label} description must use Vietnamese diacritics`,
+  formatDescriptionEmojiIssue: (label: string) => `${label} description must begin with exactly one emoji and a space`,
+  formatHashtagsCountIssue: (label: string) => `${label} must contain exactly 10 hashtags`,
+  formatTagsCountIssue: (label: string) => `${label} must contain exactly 12 tags`,
+  formatSeoScoreIntegerIssue: (label: string) => `${label} seoScore must be an integer`,
+
   buildTrackBatchEvaluationPrompt: (style: string, groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
     `Listen to every attached audio file before answering. Act as a professional Vietnamese-market singer, songwriter, producer and music editor. Evaluate each pair for vocal quality, diction, emotion, composition, arrangement, mix, defects, genre authenticity, replay value and market fit. Select exactly one winner per song; never select a losing take. Then assign each selected winner a strict integer quality score from 0 to 100 so winners can be ranked across the complete playlist. Attachment filenames contain the corresponding track IDs. Do not explain your scores.\n\nStyle: ${style}\nPairs:\n${groups.map((group, index) => `${index + 1}. ${group.title}: ${group.candidates[0]} OR ${group.candidates[1]}`).join("\n")}\n\nReturn raw JSON only. selectedTrackIds and qualityScores must preserve pair order:\n${schemaString}`,
   buildTrackBatchEvaluationRetryPrompt: (groups: Array<{ title: string; candidates: string[] }>, schemaString: string) =>
@@ -368,8 +401,8 @@ Identify relevant singers, songwriters, composers, scenes or traditions only as 
 
 Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS}","requestId":"${requestId}","market":{"country":"","region":"","language":"","dialect":"","audienceAge":"","lyricalCharacterAge":"","contentSuitability":"","confidence":0},"era":{"songwritingEra":"","productionEra":""},"genre":{"primary":"","secondary":[],"influences":[]},"musicalDna":{"tempoRange":"","rhythm":"","harmony":"","melodicLanguage":"","hookPlacement":"","songForms":[],"instrumentation":[],"vocalCharacter":"","listeningContext":""},"lyricalDna":{"themes":[],"narrativeVoice":"","vocabulary":"","imagery":[],"rhymeBehavior":""},"historicalInfluences":[{"name":"","role":"","relevance":""}],"creativeProfile":{"role":"","strengths":[],"writingPrinciples":[],"productionPrinciples":[]},"mustPreserve":[],"mustVary":[],"mustNotCopy":[],"uncertainties":[],"evidence":[{"claim":"","sourceClue":"","confidence":0}]}. All confidence values are integers 0-100.`,
 
-  buildMusicStyleAnalysisCorrectionPrompt: (style: string, hasReferenceSource: boolean, requestId: string): string =>
-    `CORRECTION: Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS}" and requestId "${requestId}". Re-analyze ${hasReferenceSource ? "all stored reference parts plus" : "only"} the user guidance "${style}". Include complete market, era, genre, musicalDna, lyricalDna, historicalInfluences, creativeProfile, mustPreserve, mustVary, mustNotCopy, uncertainties and evidence fields. Use integer confidence 0-100, mark unsupported conclusions as uncertain, and convert artist references into high-level craft traits rather than imitation instructions.`,
+  buildMusicStyleAnalysisCorrectionPrompt: (style: string, hasReferenceSource: boolean, requestId: string, issues: string[] = []): string =>
+    `CORRECTION: The previous JSON failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS}" and requestId "${requestId}". Re-analyze ${hasReferenceSource ? "all stored reference parts plus" : "only"} the user guidance "${style}". Include complete market, era, genre, musicalDna, lyricalDna, historicalInfluences, creativeProfile, mustPreserve, mustVary, mustNotCopy, uncertainties and evidence fields. Every text field must contain a useful value; songForms, instrumentation, themes, imagery, strengths, writingPrinciples, productionPrinciples, mustPreserve, mustVary, mustNotCopy and evidence must each contain at least one item. Only secondary, influences, historicalInfluences and uncertainties may be empty. Use integer confidence 0-100, mark unsupported conclusions as uncertain, and convert artist references into high-level craft traits rather than imitation instructions.`,
 
   buildMusicPlanPrompt: (batchCount: number, startIndex: number, totalCount: number, style: string, styleAnalysis: unknown, requestId: string, artifactType: string): string => {
     const endIndex = startIndex + batchCount - 1;
@@ -378,17 +411,17 @@ Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STY
 Create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Adopt the synthetic songwriter role and craft principles from the approved Music DNA below. Do not impersonate or copy any named real artist; historical influences are context only. Treat mustPreserve, mustVary, mustNotCopy and uncertainties as binding constraints.
 
 APPROVED MUSIC DNA:
-${JSON.stringify(styleAnalysis)}
+${jsonUtils.safeStringify(styleAnalysis)}
 
 Global guidance: ${style}
 
 Before writing each song, internally decide its distinct central idea, emotional arc, memorable hook concept, verse-to-chorus development, rhyme/phonetic plan and arrangement arc. Lyrics must sound originally written by a native songwriter for the inferred target region, remain easy to sing at the chosen tempo, avoid translation-shaped wording, filler lines, forced rhymes, mixed dialects and generic repeated imagery. The chorus must deliver the song's emotional promise; verses must progress rather than paraphrase each other; bridge/outro must have a musical purpose.
 
-Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room while preserving the shared source/style identity. Each song must include songId, a compelling native-language title, complete performance-ready lyrics with Suno section labels, specific genre, mood, realistic tempoBpm, structure and originalityNotes explaining how it remains original while fitting the source-derived blueprint. Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity from the reference. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${artifactType}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
+Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room while preserving the shared source/style identity. Each song must include songId, a compelling native-language title, complete performance-ready lyrics of at least 300 characters with Suno section labels, specific genre, mood, integer tempoBpm from 40 through 240, structure with at least 3 non-empty sections, and originalityNotes with at least one concrete note explaining how it remains original while fitting the source-derived blueprint. Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity from the reference. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${artifactType}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
   },
 
-  buildMusicPlanCorrectionPrompt: (batchCount: number, startIndex: number, artifactType: string, batchRequestId: string): string =>
-    `CORRECTION: The previous batch JSON was incomplete or violated the contract. Retry now in this same room as songwriter/composer, lyricist and music producer. Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original. Return raw JSON only with artifactType "${artifactType}", requestId "${batchRequestId}", and the complete performance-ready songs ${startIndex}-${startIndex + batchCount - 1}. Every song needs a native-language title, complete singable lyrics with Suno section labels, specific genre, mood, realistic tempoBpm, structure and originalityNotes. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`,
+  buildMusicPlanCorrectionPrompt: (batchCount: number, startIndex: number, artifactType: string, batchRequestId: string, issues: string[] = []): string =>
+    `CORRECTION: The previous batch failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Retry now in this same room as songwriter/composer, lyricist and music producer. Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original. Return raw JSON only with artifactType "${artifactType}", requestId "${batchRequestId}", and the complete performance-ready songs ${startIndex}-${startIndex + batchCount - 1}. Every song needs a native-language title, at least 300 characters of complete singable lyrics with Suno section labels, specific genre, mood, integer tempoBpm 40-240, at least 3 non-empty structure entries, and at least 1 concrete originality note. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`,
 
   buildMusicRankingPrompt: (songCount: number, requestId: string): string =>
     `Return raw JSON only. Review the complete lyrics and metadata of all ${songCount} songs created earlier in this same room. Rank them from strongest/most attractive to weakest, using professional music-editor judgment rather than creation order.
@@ -419,16 +452,17 @@ Creative goal:
 - Give every option its own personality and search intent. Titles must be compelling and create a content-appropriate surprise, curiosity or mild shock without misleading clickbait. Do not reuse one sentence pattern.
 
 Keep only these practical SEO basics:
-- Natural, correctly accented Vietnamese; no ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
-- Capitalize the first letter of every word in each title. Keep each title attractive and under 100 characters; place useful search language naturally rather than forcing a fixed formula.
-- Keep the description concise (roughly 1-3 sentences), specific to this playlist, and include exactly one suitable icon/emoji. Do not append a forced track list or invent timestamps.
-- Include exactly 10 focused hashtags and exactly 12 useful search tags. Both hashtags and tags must be unaccented ASCII Vietnamese; hashtags may use only A-Z, a-z, 0-9 and underscores after #. Tags must not contain diacritics.
+- title: write natural Vietnamese WITH full Unicode diacritics (for example "Nhạc Trữ Tình Đêm Mưa", never "Nhac Tru Tinh Dem Mua"). Capitalize the first letter of every word. Keep it attractive and under 100 characters. No ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
+- description: the very first character must be exactly one suitable emoji, followed by one space, then a concise 1-3 sentence Vietnamese description WITH full diacritics (for example "🌧️ Tiếng đàn..."). Do not put any second emoji at the middle or end. Do not append a forced track list or invent timestamps.
+- hashtags: exactly 10 unique values and ONLY this field is unaccented ASCII Vietnamese. Each value starts with # and may use only A-Z, a-z, 0-9 and underscores.
+- tags: exactly 12 unique values and ONLY this field is unaccented ASCII Vietnamese. Tags must not contain #, commas inside an item, or Vietnamese diacritics.
+- Never apply the ASCII/no-diacritics rule for hashtags and tags to title or description.
 - Give an honest integer seoScore from 0 to 100 based on clarity, search relevance, playlist fidelity and click appeal.
 
-Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`,
+Before returning JSON, silently verify every title and description still contains Vietnamese diacritics, every description begins with its only emoji, and only hashtags/tags are ASCII. Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"Nhạc Trữ Tình Đêm Mưa","description":"🌧️ Tiếng đàn ngân lên giữa một đêm nhiều kỷ niệm.","hashtags":["#nhactrutinh"],"tags":["nhac tru tinh"],"seoScore":90}]}`,
 
-  buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string): string =>
-    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Capitalize the first letter of every title word and keep titles under 100 characters. Each concise description must contain exactly one suitable icon/emoji. Include exactly 10 relevant unaccented ASCII hashtags and exactly 12 useful unaccented ASCII tags. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+  buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string, issues: string[] = []): string =>
+    `CORRECTION: The previous SEO JSON failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. FIELD RULES MUST NOT BE MIXED: (1) title uses Vietnamese WITH full Unicode diacritics, Title Case, under 100 characters; (2) description starts with exactly one emoji plus one space, followed by concise Vietnamese WITH full diacritics and has no other emoji; (3) ONLY hashtags are unaccented ASCII, exactly 10 unique values; (4) ONLY tags are unaccented ASCII, exactly 12 unique values. Never strip accents from title or description because hashtags/tags are ASCII. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
 
   buildMusicPlaylistSeoRegenerationPrompt: (songs: any[], style: string, requestId: string, requiredCount: number): string => {
     const compactSongs = _.map(songs, (song) => ({
@@ -438,7 +472,7 @@ Each option must include title, description, hashtags, tags and seoScore. Requir
       mood: _.toString(song?.mood),
       tempoBpm: _.toNumber(song?.tempoBpm),
     }));
-    return `${SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(songs.length, style, requestId, requiredCount)}\n\nThis is a fresh SEO regeneration. Ignore earlier SEO wording and build five new alternatives from this authoritative current song data:\n${JSON.stringify(compactSongs)}`;
+    return `${SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(songs.length, style, requestId, requiredCount)}\n\nThis is a fresh SEO regeneration. Ignore earlier SEO wording and build five new alternatives from this authoritative current song data:\n${jsonUtils.safeStringify(compactSongs)}`;
   },
 
   buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean, sourceContext: string = ""): string => {

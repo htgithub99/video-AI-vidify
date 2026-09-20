@@ -1,5 +1,6 @@
 import { appLog } from "../../lib/logger.js";
 import _ from "lodash";
+import { BACKEND_MESSAGES } from "../../constants/messages.js";
 
 const parseJSON = (text: string, logFailure: boolean): unknown => {
   if (_.isEmpty(text)) return undefined;
@@ -7,8 +8,21 @@ const parseJSON = (text: string, logFailure: boolean): unknown => {
   if (_.includes(["", "undefined", "null"], trimmed)) {
     return undefined;
   }
-  const parsed = _.attempt(JSON.parse, trimmed);
-  if (!_.isError(parsed)) return parsed;
+  const fencedCandidates = Array.from(trimmed.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi), (match) => _.trim(match[1]));
+  const objectStart = trimmed.indexOf("{");
+  const objectEnd = trimmed.lastIndexOf("}");
+  const arrayStart = trimmed.indexOf("[");
+  const arrayEnd = trimmed.lastIndexOf("]");
+  const candidates = _.uniq(_.compact([
+    trimmed,
+    ...fencedCandidates,
+    objectStart >= 0 && objectEnd > objectStart ? trimmed.slice(objectStart, objectEnd + 1) : "",
+    arrayStart >= 0 && arrayEnd > arrayStart ? trimmed.slice(arrayStart, arrayEnd + 1) : "",
+  ]));
+  for (const candidate of candidates) {
+    const parsed = _.attempt(JSON.parse, candidate);
+    if (!_.isError(parsed)) return parsed;
+  }
 
   if (logFailure) appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
   return undefined;
@@ -16,7 +30,7 @@ const parseJSON = (text: string, logFailure: boolean): unknown => {
 
 export const safeParseJSON = (text: string, _defaultVal: any): any => {
   const parsed = parseJSON(text, true);
-  if (_.isUndefined(parsed)) throw new Error("invalid_ai_json_response");
+  if (_.isUndefined(parsed)) throw new Error(BACKEND_MESSAGES.INVALID_AI_JSON_RESPONSE);
   return parsed;
 };
 

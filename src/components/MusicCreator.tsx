@@ -50,7 +50,7 @@ import {
   SUNO_AUTOMATION_TEXTS,
 } from "../constants";
 import { cn } from "../lib/utils";
-import { storageUtils } from "../lib/storage";
+import { jsonUtils } from "../lib/json";
 
 const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promise<boolean> => {
   const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -62,7 +62,7 @@ const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promi
   const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, {
     method: HTTP_METHODS.POST,
     headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-    body: JSON.stringify({ suggestedName, dataUrl }),
+    body: jsonUtils.safeStringify({ suggestedName, dataUrl }),
   });
   const result = await response.json();
   if (!response.ok || !result.success) throw new Error(result.error || SUNO_AUTOMATION_TEXTS.SAVE_FILE_FAILED_ERR);
@@ -107,28 +107,21 @@ interface SavedMusicStyle {
 type SavedMusicInspo = SavedMusicStyle;
 
 const readSavedInspos = (): SavedMusicInspo[] => {
-  try {
-    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY);
-    return value ? _.filter(JSON.parse(value), (item) => !_.isEmpty(_.trim(item?.title)) && !_.isEmpty(_.trim(item?.content))) : [];
-  } catch { return []; }
+  const items = jsonUtils.getItem<SavedMusicInspo[]>(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, []);
+  return _.filter(items, (item) => !_.isEmpty(_.trim(item?.title)) && !_.isEmpty(_.trim(item?.content)));
 };
 
 const readSavedStyles = (): SavedMusicStyle[] => {
-  try {
-    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY);
-    if (!value) return [];
-    return _.compact(
-      _.map(JSON.parse(value), (item) =>
-        _.isString(item)
-          ? { title: _.split(item, ",")[0], content: item }
-          : item?.title && item?.content
-            ? item
-            : undefined,
-      ),
-    );
-  } catch {
-    return [];
-  }
+  const items = jsonUtils.getItem<any[]>(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, []);
+  return _.compact(
+    _.map(items, (item) =>
+      _.isString(item)
+        ? { title: _.split(item, ",")[0], content: item }
+        : item?.title && item?.content
+          ? item
+          : undefined,
+    ),
+  );
 };
 
 interface SongSeoOption {
@@ -220,14 +213,8 @@ interface PersistedMusicCreatorState {
   sunoSettings?: SunoSettings;
 }
 
-const readMusicCreatorState = (): PersistedMusicCreatorState => {
-  try {
-    const value = storageUtils.get(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY);
-    return value ? JSON.parse(value) : {};
-  } catch {
-    return {};
-  }
-};
+const readMusicCreatorState = (): PersistedMusicCreatorState =>
+  jsonUtils.getItem<PersistedMusicCreatorState>(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY, {});
 
 interface MusicCreatorProps {
   currentLang?: "vi" | "en";
@@ -643,9 +630,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
-      storageUtils.set(
+      jsonUtils.setItem(
         SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY,
-        JSON.stringify({
+        {
           style,
           outputCount,
           referenceSongs,
@@ -669,7 +656,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoEvaluateTracks,
           sunoInspo,
           sunoSettings,
-        } satisfies PersistedMusicCreatorState),
+        } satisfies PersistedMusicCreatorState,
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
@@ -677,7 +664,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
-    storageUtils.set(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, JSON.stringify(nextStyles));
+    jsonUtils.setItem(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, nextStyles);
   };
 
   const handleEditStyle = (index: number) => {
@@ -720,7 +707,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const persistInspos = (items: SavedMusicInspo[]) => {
     setSavedInspos(items);
-    storageUtils.set(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, JSON.stringify(items));
+    jsonUtils.setItem(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, items);
   };
 
   const handleSaveInspo = () => {
@@ -797,10 +784,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleGenerate = async () => {
     const trimmedStyle = _.trim(style);
     const referenceSource = _.trim(referenceSongs);
+    const previousSongs = songs;
+    const previousStyleAnalysis = styleAnalysis;
+    const previousPlaylistSeoOptions = playlistSeoOptions;
+    const previousGeneratedThumbnail = generatedThumbnail;
 
     setViewMode("lyrics");
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
+    setSongs([]);
+    setPlaylistSeoOptions([]);
     setGeneratedThumbnail("");
     setStyleAnalysis(undefined);
     setSunoPlaylistUrl("");
@@ -811,41 +804,18 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const abortController = new AbortController();
     musicAbortControllerRef.current = abortController;
     try {
-      const thumbnailPromise = fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({
-          songs: [],
-          style: trimmedStyle,
-          sourceContext: referenceSource,
-          thumbnailReference,
-          thumbnailReferenceName,
-          thumbnailDescription,
-          chromeHeadless,
-        }),
-        signal: abortController.signal,
-      })
-        .then(async (thumbnailResponse) => {
-          const thumbnailResult = await thumbnailResponse.json();
-          if (!thumbnailResponse.ok || !thumbnailResult.success) throw new Error(thumbnailResult.warning || texts.THUMBNAIL_GENERATE_ERROR);
-          const thumbnailUrl = _.toString(thumbnailResult.thumbnail);
-          setGeneratedThumbnail(thumbnailUrl);
-          void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, thumbnailUrl).catch(() => undefined);
-        })
-        .catch((error: any) => {
-          if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
-        })
-        .finally(() => setIsGeneratingThumbnail(false));
-
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({
+        body: jsonUtils.safeStringify({
           requestedSongCount: outputCount,
           style: trimmedStyle,
           referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource],
           projectId: runId,
           requestId: runId,
+          thumbnailReference,
+          thumbnailReferenceName,
+          thumbnailDescription,
           aiExecution: {
             provider,
             model,
@@ -864,27 +834,38 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedStyleAnalysis = _.get(result, "data.styleAnalysis") as MusicStyleAnalysis;
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
+      const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
+      const seoWarning = _.toString(_.get(result, "data.seoWarning", ""));
+      const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       setSongs(generatedSongs);
       setStyleAnalysis(generatedStyleAnalysis);
       setPlaylistSeoOptions(generatedPlaylistSeo);
+      setGeneratedThumbnail(generatedThumbnailUrl);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, generatedThumbnailUrl).catch(() => undefined);
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
-      void thumbnailPromise;
+      if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
+      if (thumbnailWarning && _.isEmpty(generatedThumbnailUrl)) toast.error(thumbnailWarning);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
+        setSongs(previousSongs);
+        setStyleAnalysis(previousStyleAnalysis);
+        setPlaylistSeoOptions(previousPlaylistSeoOptions);
+        setGeneratedThumbnail(previousGeneratedThumbnail);
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
       }
     } finally {
       musicAbortControllerRef.current = null;
       musicRunIdRef.current = null;
       setIsLoading(false);
+      setIsGeneratingThumbnail(false);
     }
   };
 
   const handleRegenerateSeo = async () => {
     const activeStyle = _.trim(style);
-    if (_.isEmpty(songs) || _.isEmpty(activeStyle) || isRegeneratingSeo) return;
+    if (_.isEmpty(songs) || isRegeneratingSeo) return;
     setViewMode("seo");
     setIsRegeneratingSeo(true);
     const runId = `${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}seo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -892,7 +873,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({
+        body: jsonUtils.safeStringify({
           songs,
           style: activeStyle,
           projectId: runId,
@@ -921,7 +902,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ pipelineRunId: runId, closeBrowser: true }),
+        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true }),
       }).catch(() => undefined);
     }
     toast.info(texts.STOPPED_TOAST);
@@ -938,7 +919,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks, playlistName: playlistSeoOptions[0]?.title }),
+        body: jsonUtils.safeStringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks, playlistName: playlistSeoOptions[0]?.title }),
         signal: abortController.signal,
       });
       const result = await response.json();
@@ -1000,7 +981,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({
+        body: jsonUtils.safeStringify({
           folderPath,
           tracks,
           playlistUrl: activePlaylistUrl,
@@ -1053,7 +1034,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ pipelineRunId: runId, closeBrowser: true }),
+        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true }),
       }).catch(() => undefined);
     }
     setIsDownloadingSuno(false);
@@ -1097,7 +1078,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({
+        body: jsonUtils.safeStringify({
           songs,
           style,
           playlistSeoOptions,

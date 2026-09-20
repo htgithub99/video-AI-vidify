@@ -371,12 +371,13 @@ const verifyPlanningRunIsolation = () => {
   assert.match(controllerSource, /res\.once\("finish"[\s\S]*closePlanningRoom/);
   assert.match(planningServiceSource, /selectGeminiChatModel/);
   assert.match(planningServiceSource, /GEMINI_CHAT_BASE_MODEL_LABELS/);
-  assert.match(planningServiceSource, /Thinking level\|Mức tư duy\|Cấp độ tư duy/);
+  assert.match(cinematicConstantsSource, /Thinking level\|Mức tư duy\|Cấp độ tư duy/);
+  assert.match(planningServiceSource, /THINKING_LEVEL_NAME_PATTERN/);
   assert.match(planningServiceSource, /grokBootstrapMutexes = new WeakMap<BrowserContext, SimpleMutex>/);
   assert.match(planningServiceSource, /getGrokBootstrapMutex\(browser\.context\)\.acquire\(\)/);
   assert.match(planningServiceSource, /isGrokSecurityChallengeActive/);
   assert.match(planningServiceSource, /ensureGrokReady\(room, request\)/);
-  assert.match(planningServiceSource, /Cloudflare yêu cầu xác minh[\s\S]*page\.bringToFront/);
+  assert.match(planningServiceSource, /CLOUDFLARE_CHALLENGE_NOTICE[\s\S]*page\.bringToFront/);
   assert.match(planningServiceSource, /releaseBootstrap = await getGrokBootstrapMutex\(browser\.context\)\.acquire\(\)[\s\S]*createRoom[\s\S]*releaseBootstrap\(\)/);
   const grokReadinessSource = planningServiceSource.match(/const ensureGrokReady[\s\S]*?const ensureChatGptReady/)?.[0] || "";
   assert.match(grokReadinessSource, /GROK_READY_STABLE_POLLS/);
@@ -393,7 +394,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
   assert.match(planningServiceSource, /const parsedLatest = tryParseJSON\(latestText\)/);
   assert.match(planningServiceSource, /INVALID_JSON_RESPONSE_ERROR/);
-  assert.match(planningServiceSource, /chờ hàng đợi/);
+  assert.match(planningServiceSource, /PLANNING_QUEUE_ACQUIRED/);
   assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);
   assert.match(planningServiceSource, /challengeBodyVisible = !chatReady/);
   assert.match(imageGeneratorSource, /activeBrowserLaunchPromise: Promise<BrowserSession> \| null/);
@@ -446,12 +447,12 @@ const verifyProviderRoomCleanup = () => {
 const verifyProviderJsonVariants = () => {
   const parsed = safeParseJSON('{"requestId":"room-json-test :video_prompts "}', {});
   assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
+  assert.equal(safeParseJSON('```json\n{"requestId":"room-json-test:video_prompts"}\n```', {}).requestId, "room-json-test:video_prompts");
+  assert.equal(safeParseJSON('Here is the result: {"requestId":"room-json-test:video_prompts"}', {}).requestId, "room-json-test:video_prompts");
   const invalidSamples = [
-    '```json\n{"requestId":"room-json-test:video_prompts"}\n```',
-    'Here is the result: {"requestId":"room-json-test:video_prompts"}',
     '{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}',
   ];
-  _.forEach(invalidSamples, (sample) => assert.throws(() => safeParseJSON(sample, {}), /invalid_ai_json_response/));
+  _.forEach(invalidSamples, (sample) => assert.throws(() => safeParseJSON(sample, {}), /invalid_ai_json_response|Dữ liệu phản hồi AI không hợp lệ|Invalid AI response structure/));
 };
 
 const verifyCinematicPlanningCheckpointing = () => {

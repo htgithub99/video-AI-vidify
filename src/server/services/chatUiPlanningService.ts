@@ -14,6 +14,7 @@ import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { tryParseJSON } from "../utils/helpers.js";
+import { jsonUtils } from "../../lib/json.js";
 import { geminiBatchMutex, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
 interface ChatRoomAttachment {
@@ -594,7 +595,7 @@ const waitForStableResponse = async (
     const isCompleteJson = !_.isUndefined(parsedLatest);
     if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && belongsToCurrentRequest && isCompleteJson && !isBusy) {
       appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_JSON_EARLY_RECEIVED(latestText.length, Date.now() - startedAt));
-      return latestText;
+      return jsonUtils.safeStringify(parsedLatest);
     }
     if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
@@ -611,7 +612,7 @@ const waitForStableResponse = async (
             );
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
-          return latestText;
+          return jsonUtils.safeStringify(parsedLatest);
         }
         if (!isCompleteJson && !_.isEmpty(responseCandidates)) {
           throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
