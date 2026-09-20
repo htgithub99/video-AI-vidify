@@ -120,16 +120,19 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
     setClearingProvider(provider);
     try {
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS, { provider });
-      const message = (response.success ? planningTexts.CLEAR_ROOM_SUCCESS : planningTexts.CLEAR_ROOM_ERROR)
+      const successTemplate = response.data?.deletedAll ? planningTexts.CLEAR_ROOM_ALL_SUCCESS : planningTexts.CLEAR_ROOM_SUCCESS;
+      const message = (response.success ? successTemplate : planningTexts.CLEAR_ROOM_ERROR)
         .replace(SecurityConstants.PLACEHOLDER_0, name)
-        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(response.data?.deletedConversationCount || SecurityConstants.ZERO));
+        .replace(SecurityConstants.PLACEHOLDER_1, response.success
+          ? _.toString(response.data?.deletedConversationCount || SecurityConstants.ZERO)
+          : _.toString(response.error || planningTexts.CLEAR_ROOM_ERROR));
       if (response.success) toast.success(message);
       else toast.error(message);
     } catch (error) {
       toast.error(
         planningTexts.CLEAR_ROOM_ERROR
           .replace(SecurityConstants.PLACEHOLDER_0, name)
-          .replace(SecurityConstants.PLACEHOLDER_1, _.toString(SecurityConstants.ZERO)),
+          .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.get(error, "message", SecurityConstants.ZERO))),
       );
     } finally {
       setIsClearing(false);

@@ -149,6 +149,19 @@ interface GeneratedSong {
   structure: string[];
   originalityNotes: string[];
 }
+interface MusicStyleAnalysis {
+  market: { country: string; region: string; language: string; dialect: string; audienceAge: string; lyricalCharacterAge: string; contentSuitability: string; confidence: number };
+  era: { songwritingEra: string; productionEra: string };
+  genre: { primary: string; secondary: string[]; influences: string[] };
+  musicalDna: { tempoRange: string; rhythm: string; harmony: string; melodicLanguage: string; hookPlacement: string; songForms: string[]; instrumentation: string[]; vocalCharacter: string; listeningContext: string };
+  lyricalDna: { themes: string[]; narrativeVoice: string; vocabulary: string; imagery: string[]; rhymeBehavior: string };
+  historicalInfluences: Array<{ name: string; role: string; relevance: string }>;
+  creativeProfile: { role: string; strengths: string[]; writingPrinciples: string[]; productionPrinciples: string[] };
+  mustPreserve: string[];
+  mustVary: string[];
+  mustNotCopy: string[];
+  uncertainties: string[];
+}
 interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
 type SunoDownloadFormat = "mp3" | "wav";
@@ -191,6 +204,7 @@ interface PersistedMusicCreatorState {
   chromeHeadless?: boolean;
   isAiConfigOpen?: boolean;
   songs?: GeneratedSong[];
+  styleAnalysis?: MusicStyleAnalysis;
   playlistSeoOptions?: SongSeoOption[];
   seoSchemaVersion?: number;
   thumbnailDescription?: string;
@@ -309,7 +323,6 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   };
 
   const displayTitle = toSentenceCase(song.title);
-  const numberedTitle = formatNumberedSongTitle(song.title, index);
 
   return (
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md">
@@ -324,7 +337,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           <Button
             variant="unstyled"
             type="button"
-            onClick={() => handleCopy(numberedTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
+            onClick={() => handleCopy(displayTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
             className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
             title={copiedKey === `title-${index}` ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
             {copiedKey === `title-${index}` ? (
@@ -364,7 +377,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
             <Button
               variant="unstyled"
               type="button"
-              onClick={() => handleCopy(`${numberedTitle}\n\n${song.lyrics}`, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
+              onClick={() => handleCopy(song.lyrics, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
               className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
               title={copiedKey === `lyrics-${index}` ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
               {copiedKey === `lyrics-${index}` ? (
@@ -567,7 +580,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const texts = MUSIC_CREATOR_TEXTS[currentLang] || MUSIC_CREATOR_TEXTS.vi;
   const [initialState] = useState<PersistedMusicCreatorState>(readMusicCreatorState);
   const [initialSavedStyles] = useState<SavedMusicStyle[]>(readSavedStyles);
-  const [style, setStyle] = useState(() => initialState.style || initialSavedStyles[0]?.content || "");
+  const [style, setStyle] = useState(() => initialState.style || "");
   const [styleDraft, setStyleDraft] = useState("");
   const [savedStyles, setSavedStyles] = useState<SavedMusicStyle[]>(initialSavedStyles);
   const [styleName, setStyleName] = useState("");
@@ -590,6 +603,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
+  const [styleAnalysis, setStyleAnalysis] = useState<MusicStyleAnalysis | undefined>(initialState.styleAnalysis);
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
     initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
   );
@@ -641,6 +655,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           chromeHeadless,
           isAiConfigOpen,
           songs,
+          styleAnalysis,
           playlistSeoOptions,
           seoSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION,
           thumbnailDescription,
@@ -658,7 +673,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -737,7 +752,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const nextStyles = _.reject(savedStyles, (item) => _.isEqual(item.content, savedStyle.content));
     persistStyles(nextStyles);
     if (_.isEqual(style, savedStyle.content)) {
-      setStyle(nextStyles[0]?.content || "");
+      setStyle("");
+      setStyleDraft("");
+      setStyleName("");
       setEditingStyleIndex(null);
     }
   };
@@ -763,11 +780,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleCopyAllLyrics = () => {
     if (_.isEmpty(songs)) return;
-    const allContent = _.map(
-      songs,
-      (s, i) =>
-        `${formatNumberedSongTitle(s.title, i)}\n\n${s.lyrics}\n`,
-    ).join("\n----------------------------------------\n\n");
+    const allContent = _.map(songs, (song) => song.lyrics).join("\n\n----------------------------------------\n\n");
     navigator.clipboard.writeText(allContent);
     toast.success(texts.COPY_ALL_SUCCESS);
   };
@@ -783,17 +796,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleGenerate = async () => {
     const trimmedStyle = _.trim(style);
-    if (_.isEmpty(trimmedStyle)) {
-      toast.error(texts.VALIDATION_STYLE_REQUIRED);
-      return;
-    }
-
     const referenceSource = _.trim(referenceSongs);
 
     setViewMode("lyrics");
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
     setGeneratedThumbnail("");
+    setStyleAnalysis(undefined);
     setSunoPlaylistUrl("");
     setSunoTrackIds([]);
     void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
@@ -802,6 +811,32 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const abortController = new AbortController();
     musicAbortControllerRef.current = abortController;
     try {
+      const thumbnailPromise = fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({
+          songs: [],
+          style: trimmedStyle,
+          sourceContext: referenceSource,
+          thumbnailReference,
+          thumbnailReferenceName,
+          thumbnailDescription,
+          chromeHeadless,
+        }),
+        signal: abortController.signal,
+      })
+        .then(async (thumbnailResponse) => {
+          const thumbnailResult = await thumbnailResponse.json();
+          if (!thumbnailResponse.ok || !thumbnailResult.success) throw new Error(thumbnailResult.warning || texts.THUMBNAIL_GENERATE_ERROR);
+          const thumbnailUrl = _.toString(thumbnailResult.thumbnail);
+          setGeneratedThumbnail(thumbnailUrl);
+          void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, thumbnailUrl).catch(() => undefined);
+        })
+        .catch((error: any) => {
+          if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
+        })
+        .finally(() => setIsGeneratingThumbnail(false));
+
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
@@ -811,9 +846,6 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource],
           projectId: runId,
           requestId: runId,
-          thumbnailReference,
-          thumbnailReferenceName,
-          thumbnailDescription,
           aiExecution: {
             provider,
             model,
@@ -830,17 +862,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       }
 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
+      const generatedStyleAnalysis = _.get(result, "data.styleAnalysis") as MusicStyleAnalysis;
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
-      const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
-      const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       setSongs(generatedSongs);
+      setStyleAnalysis(generatedStyleAnalysis);
       setPlaylistSeoOptions(generatedPlaylistSeo);
-      setGeneratedThumbnail(generatedThumbnailUrl);
-      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, generatedThumbnailUrl).catch(() => undefined);
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
-      if (thumbnailWarning && _.isEmpty(generatedThumbnailUrl)) toast.error(thumbnailWarning);
+      void thumbnailPromise;
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
@@ -849,7 +879,6 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       musicAbortControllerRef.current = null;
       musicRunIdRef.current = null;
       setIsLoading(false);
-      setIsGeneratingThumbnail(false);
     }
   };
 
@@ -1091,7 +1120,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     }
   };
 
-  const isFormValid = !_.isEmpty(_.trim(style));
+  const isFormValid = true;
 
   return (
     <div className="creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar">
@@ -1914,6 +1943,30 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
             </Button>
           </div>
+
+          {styleAnalysis && !isLoading && (
+            <details className="rounded-2xl border border-cyan-500/25 bg-cyan-500/[0.06] p-3.5 group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold text-cyan-200">
+                <span className="inline-flex items-center gap-2">
+                  <Search className="h-3.5 w-3.5" />
+                  {texts.DNA_ANALYSIS_TITLE}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] leading-relaxed text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
+                <div><span className="font-bold text-slate-100">{texts.MARKET_LABEL}</span> {[styleAnalysis.market.country, styleAnalysis.market.region, styleAnalysis.market.language].filter(Boolean).join(" • ")}</div>
+                <div><span className="font-bold text-slate-100">{texts.AUDIENCE_LABEL}</span> {styleAnalysis.market.audienceAge} ({styleAnalysis.market.confidence}%)</div>
+                <div><span className="font-bold text-slate-100">{texts.GENRE_LABEL}</span> {[styleAnalysis.genre.primary, ...styleAnalysis.genre.secondary].filter(Boolean).join(", ")}</div>
+                <div><span className="font-bold text-slate-100">{texts.ERA_LABEL}</span> {styleAnalysis.era.songwritingEra} / {styleAnalysis.era.productionEra}</div>
+                <div className="sm:col-span-2"><span className="font-bold text-slate-100">{texts.CREATIVE_ROLE_LABEL}</span> {styleAnalysis.creativeProfile.role}</div>
+                <div className="sm:col-span-2"><span className="font-bold text-slate-100">{texts.MUSIC_DNA_LABEL}</span> {[styleAnalysis.musicalDna.rhythm, styleAnalysis.musicalDna.tempoRange, styleAnalysis.musicalDna.vocalCharacter].filter(Boolean).join(" • ")}</div>
+                <div className="sm:col-span-2"><span className="font-bold text-emerald-300">{texts.PRESERVE_LABEL}</span> {styleAnalysis.mustPreserve.join("; ")}</div>
+                <div className="sm:col-span-2"><span className="font-bold text-amber-300">{texts.MUST_VARY_LABEL}</span> {styleAnalysis.mustVary.join("; ")}</div>
+                <div className="sm:col-span-2 lg:col-span-4"><span className="font-bold text-rose-300">{texts.MUST_NOT_COPY_LABEL}</span> {styleAnalysis.mustNotCopy.join("; ")}</div>
+                {!_.isEmpty(styleAnalysis.uncertainties) && <div className="sm:col-span-2 lg:col-span-4"><span className="font-bold text-slate-400">{texts.UNCERTAINTIES_LABEL}</span> {styleAnalysis.uncertainties.join("; ")}</div>}
+              </div>
+            </details>
+          )}
 
           {isLoading || (isRegeneratingSeo && viewMode === "seo") ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">

@@ -54,6 +54,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   SECTION_DIVIDER: "\n\n----------------------------------------\n\n",
   TEXT_SEPARATOR_LINE: "----------------------------------------",
   ARTIFACT_TYPE_SOURCE: "music_reference_source",
+  ARTIFACT_TYPE_STYLE_ANALYSIS: "music_style_analysis",
   ARTIFACT_TYPE_RANKING: "music_song_ranking",
   ARTIFACT_TYPE_SETTINGS: "music_suno_settings",
   ARTIFACT_TYPE_SEO: "music_playlist_seo",
@@ -118,7 +119,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_STYLE_LIBRARY_KEY: "music_creator_style_library",
   MUSIC_INSPO_LIBRARY_KEY: "music_creator_inspo_library",
   MUSIC_CREATOR_STATE_KEY: "music_creator_workspace_state_v1",
-  MUSIC_SEO_SCHEMA_VERSION: 4,
+  MUSIC_SEO_SCHEMA_VERSION: 5,
   MUSIC_MEDIA_DB_NAME: "music_creator_media",
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
@@ -355,11 +356,31 @@ Analyze internally as a complete professional music team:
 
 Build one source-derived creative blueprint and retain it for every later song batch. Distinguish non-negotiable style DNA from details that should vary between songs. The output must feel native and culturally credible to listeners in the source's region—not translated or generically Vietnamese by default. Use only high-level traits: never copy lyrics, melody, chord sequence, hook, distinctive phrases, titles, recording identity or artist identity. Reply raw JSON only: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SOURCE}","requestId":"${requestId}","receivedPart":${chunkIndex + 1},"totalParts":${chunkCount}}\n\nSOURCE PART:\n${chunk}`,
 
-  buildMusicPlanPrompt: (batchCount: number, startIndex: number, totalCount: number, style: string, requestId: string, artifactType: string): string => {
+  buildMusicStyleAnalysisPrompt: (style: string, hasReferenceSource: boolean, requestId: string): string =>
+    `Return raw JSON only. Before composing any song, act as a musicologist, cultural researcher, songwriter, lyricist, producer and A&R editor. ${hasReferenceSource ? "Analyze every reference-source part stored earlier in this room." : "No reference source was supplied, so analyze only the user's global guidance and clearly mark uncertain conclusions."}
+
+USER GLOBAL GUIDANCE:
+${style}
+
+Create one evidence-aware Music DNA and a SYNTHETIC SONGWRITER PROFILE for this project. Determine, when supportable: country and musical culture, region or diaspora context, language, dialect and register, intended listener age, lyrical-character age, content suitability, songwriting era, production era, primary genre and subgenres, rhythmic feel, tempo range, harmony, melodic phrasing, hook placement, song forms, instrumentation, vocal character, themes, imagery, rhyme behavior and listening context.
+
+Identify relevant singers, songwriters, composers, scenes or traditions only as historical influences. Never impersonate a real artist and never instruct later writing to copy a living artist's signature style. Convert all named influences into high-level, non-exclusive craft traits inside creativeProfile. Separate mustPreserve, mustVary and mustNotCopy. Put every weak inference in uncertainties. Evidence must cite a short source clue or "user guidance" and must not invent facts the input cannot support.
+
+Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS}","requestId":"${requestId}","market":{"country":"","region":"","language":"","dialect":"","audienceAge":"","lyricalCharacterAge":"","contentSuitability":"","confidence":0},"era":{"songwritingEra":"","productionEra":""},"genre":{"primary":"","secondary":[],"influences":[]},"musicalDna":{"tempoRange":"","rhythm":"","harmony":"","melodicLanguage":"","hookPlacement":"","songForms":[],"instrumentation":[],"vocalCharacter":"","listeningContext":""},"lyricalDna":{"themes":[],"narrativeVoice":"","vocabulary":"","imagery":[],"rhymeBehavior":""},"historicalInfluences":[{"name":"","role":"","relevance":""}],"creativeProfile":{"role":"","strengths":[],"writingPrinciples":[],"productionPrinciples":[]},"mustPreserve":[],"mustVary":[],"mustNotCopy":[],"uncertainties":[],"evidence":[{"claim":"","sourceClue":"","confidence":0}]}. All confidence values are integers 0-100.`,
+
+  buildMusicStyleAnalysisCorrectionPrompt: (style: string, hasReferenceSource: boolean, requestId: string): string =>
+    `CORRECTION: Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS}" and requestId "${requestId}". Re-analyze ${hasReferenceSource ? "all stored reference parts plus" : "only"} the user guidance "${style}". Include complete market, era, genre, musicalDna, lyricalDna, historicalInfluences, creativeProfile, mustPreserve, mustVary, mustNotCopy, uncertainties and evidence fields. Use integer confidence 0-100, mark unsupported conclusions as uncertain, and convert artist references into high-level craft traits rather than imitation instructions.`,
+
+  buildMusicPlanPrompt: (batchCount: number, startIndex: number, totalCount: number, style: string, styleAnalysis: unknown, requestId: string, artifactType: string): string => {
     const endIndex = startIndex + batchCount - 1;
     return `Return raw JSON only. Work simultaneously as: (1) songwriter/composer responsible for memorable melodic contour, harmony, hooks and complete song form; (2) lyricist responsible for meaningful, natural, singable lyrics; and (3) music producer responsible for genre authenticity, arrangement, vocal direction, pacing and audience fit.
 
-Using the complete source-derived creative blueprint already stored in this room, create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. The reference source is authoritative for language, regional listener culture, genre grammar, rhythmic feel, emotional vocabulary, vocal phrasing, instrumentation and production character. Global style (must also apply to every song): ${style}
+Create songs ${startIndex}-${endIndex} of the ${totalCount}-song project: exactly ${batchCount} original songs for Suno. Adopt the synthetic songwriter role and craft principles from the approved Music DNA below. Do not impersonate or copy any named real artist; historical influences are context only. Treat mustPreserve, mustVary, mustNotCopy and uncertainties as binding constraints.
+
+APPROVED MUSIC DNA:
+${JSON.stringify(styleAnalysis)}
+
+Global guidance: ${style}
 
 Before writing each song, internally decide its distinct central idea, emotional arc, memorable hook concept, verse-to-chorus development, rhyme/phonetic plan and arrangement arc. Lyrics must sound originally written by a native songwriter for the inferred target region, remain easy to sing at the chosen tempo, avoid translation-shaped wording, filler lines, forced rhymes, mixed dialects and generic repeated imagery. The chorus must deliver the song's emotional promise; verses must progress rather than paraphrase each other; bridge/outro must have a musical purpose.
 
@@ -387,7 +408,7 @@ Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}
     `CORRECTION: Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}", requestId "${sunoSettingsRequestId}". Include settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list.`,
 
   buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number): string =>
-    `Return raw JSON only. Act as an excellent Vietnamese music curator and YouTube copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then create exactly ${requiredCount} genuinely different ways to present the WHOLE playlist.
+    `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
 
 SELECTED MUSIC STYLE:
 ${style}
@@ -395,19 +416,19 @@ ${style}
 Creative goal:
 - Make a real music listener feel the atmosphere immediately and want to press play. Use concrete emotions, memories, scenes, listening moments or musical character found in these songs—not empty phrases such as "tuyển chọn đặc sắc".
 - Stay completely honest to the actual song titles, lyrics, genre, mood, instrumentation, vocal character and selected style. Never invent an artist, year, trend, achievement or promise unsupported by the list.
-- Give the five options different personalities: one search-friendly genre angle, one vivid emotional image, one specific listening moment, one story/journey angle, and one concise curiosity-led angle. Do not reuse one sentence pattern. If two options feel interchangeable, freely rewrite one.
+- Give every option its own personality and search intent. Titles must be compelling and create a content-appropriate surprise, curiosity or mild shock without misleading clickbait. Do not reuse one sentence pattern.
 
 Keep only these practical SEO basics:
-- Natural, correctly accented Vietnamese; sentence case; no ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
-- A clear, attractive title under 100 characters. Put useful search language where it sounds natural, but do not force every title to start with the genre or the ${songCount}-song count.
-- A readable description with a strong opening written specifically for this playlist, a short inviting account of its musical and emotional journey, then "DANH SÁCH CA KHÚC:" followed by all ${songCount} exact song titles in order. Add a natural listening suggestion or CTA only if it improves the copy. Do not invent timestamps.
-- 5-12 focused hashtags written without Vietnamese diacritics, using only A-Z, a-z, 0-9 and underscores after # (for example #NhacBolero, #NhacTruTinh). Keep normal Vietnamese accents in titles and descriptions. Use 12-25 useful search tags and include natural accented and unaccented search phrases where relevant. Choose relevance over quantity; vary emphasis between options.
+- Natural, correctly accented Vietnamese; no ALL CAPS, keyword stuffing, fake hype or repeated punctuation.
+- Capitalize the first letter of every word in each title. Keep each title attractive and under 100 characters; place useful search language naturally rather than forcing a fixed formula.
+- Keep the description concise (roughly 1-3 sentences), specific to this playlist, and include exactly one suitable icon/emoji. Do not append a forced track list or invent timestamps.
+- Include exactly 10 focused hashtags and exactly 12 useful search tags. Both hashtags and tags must be unaccented ASCII Vietnamese; hashtags may use only A-Z, a-z, 0-9 and underscores after #. Tags must not contain diacritics.
 - Give an honest integer seoScore from 0 to 100 based on clarity, search relevance, playlist fidelity and click appeal.
 
 Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"","description":"","hashtags":[],"tags":[],"seoScore":0}]}`,
 
   buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string): string =>
-    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh SEO options for the whole playlist. Keep every claim grounded in the songs; make each title natural, attractive and under 100 characters; make the five creative angles clearly different without keyword stuffing or fake hype. Each description needs a compelling playlist-specific opening and "DANH SÁCH CA KHÚC:" with every exact title in order. Include 5-12 relevant hashtags without Vietnamese diacritics using only A-Z, a-z, 0-9 and underscores after #; include 12-25 useful tags and integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+    `CORRECTION: Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Capitalize the first letter of every title word and keep titles under 100 characters. Each concise description must contain exactly one suitable icon/emoji. Include exactly 10 relevant unaccented ASCII hashtags and exactly 12 useful unaccented ASCII tags. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
 
   buildMusicPlaylistSeoRegenerationPrompt: (songs: any[], style: string, requestId: string, requiredCount: number): string => {
     const compactSongs = _.map(songs, (song) => ({
@@ -420,7 +441,7 @@ Each option must include title, description, hashtags, tags and seoScore. Requir
     return `${SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(songs.length, style, requestId, requiredCount)}\n\nThis is a fresh SEO regeneration. Ignore earlier SEO wording and build five new alternatives from this authoritative current song data:\n${JSON.stringify(compactSongs)}`;
   },
 
-  buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean): string => {
+  buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean, sourceContext: string = ""): string => {
     const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");
     const userChangeNote = description || "Only adapt the cover so it accurately represents this complete music collection.";
     const referenceDirective = hasReference
@@ -430,7 +451,7 @@ Each option must include title, description, hashtags, tags and seoScore. Requir
 - Do not turn the image into an unrelated generic music poster.
 - The result must remain immediately recognizable as an edit of the attachment when viewed side by side. Similar subject matter alone is not sufficient.`
       : "There is no attached reference image. Create an original visual direction from the collection context.";
-    return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers.
+    return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers. Source context when the song list is not ready yet: ${sourceContext || "No additional source context; follow the user note and selected style."}
 
 PRIORITY 1 — REFERENCE FIDELITY:
 ${referenceDirective}

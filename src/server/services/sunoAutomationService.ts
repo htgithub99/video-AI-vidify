@@ -479,7 +479,7 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
 };
 
 export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = [], requestedPlaylistName: string = ""): Promise<SunoCreationResult> => {
-  if ((_.isEmpty(songs) && _.isEmpty(initialSongIds)) || _.isEmpty(_.trim(style))) throw new Error(SUNO_AUTOMATION_TEXTS.MISSING_SONGS_OR_STYLE_ERR);
+  if (_.isEmpty(songs) && _.isEmpty(initialSongIds)) throw new Error(SUNO_AUTOMATION_TEXTS.MISSING_SONGS_OR_STYLE_ERR);
   if (activeSunoPage) throw new Error(SUNO_AUTOMATION_TEXTS.ALREADY_RUNNING_ERR);
   sunoCancellationRequested = false;
   let browser: any;

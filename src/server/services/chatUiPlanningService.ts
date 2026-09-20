@@ -185,7 +185,7 @@ const getProviderConversationSelectors = (
 };
 
 const getConversationIdentity = async (item: ReturnType<Page["locator"]>): Promise<string> =>
-  (await item
+  (await item.getAttribute("href").catch(() => null)) || (await item
     .locator("a")
     .first()
     .getAttribute("href")
@@ -210,7 +210,13 @@ const deleteFirstProviderConversation = async (page: Page, provider: AiPlanningF
     await item.scrollIntoViewIfNeeded({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
     await item.hover({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
     const directActionButton = item.locator(actionSelector).last();
-    const actionButton = _.gt(await directActionButton.count().catch(() => 0), 0) ? directActionButton : item.locator("xpath=..").locator(actionSelector).first();
+    const parentActionButton = item.locator("xpath=..").locator(actionSelector).last();
+    const containerActionButton = item.locator("xpath=../..").locator(actionSelector).last();
+    const actionButton = _.gt(await directActionButton.count().catch(() => 0), 0)
+      ? directActionButton
+      : _.gt(await parentActionButton.count().catch(() => 0), 0)
+        ? parentActionButton
+        : containerActionButton;
     const actionCount = await actionButton.count().catch(() => 0);
     if (_.isEqual(actionCount, 0)) {
       appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_OPTION_BUTTON_NOT_FOUND(provider));
@@ -314,9 +320,47 @@ const deleteAllGeminiActivity = async (page: Page, detectedConversationCount: nu
   return detectedConversationCount;
 };
 
+const deleteAllChatGptConversations = async (page: Page, detectedConversationCount: number): Promise<number> => {
+  await page.goto(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DATA_CONTROLS_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS,
+  });
+  const settingsDialog = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SETTINGS_DIALOG_SELECTOR).filter({ visible: true }).last();
+  await settingsDialog.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  await settingsDialog
+    .getByText(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DATA_CONTROLS_HEADING_PATTERN, { exact: true })
+    .first()
+    .waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+
+  const deleteAllButton = settingsDialog
+    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CHATS_PATTERN })
+    .filter({ visible: true })
+    .last();
+  await deleteAllButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await deleteAllButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+
+  const confirmationDialog = page
+    .getByRole("dialog")
+    .or(page.getByRole("alertdialog"))
+    .filter({ has: page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CONFIRM_PATTERN }) })
+    .filter({ visible: true })
+    .last();
+  await confirmationDialog.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_CONFIRM_TIMEOUT_MS });
+  const confirmButton = confirmationDialog
+    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CONFIRM_PATTERN })
+    .filter({ visible: true })
+    .last();
+  await confirmButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await confirmButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await confirmationDialog.waitFor({ state: "hidden", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.ChatGptUi));
+  return detectedConversationCount;
+};
+
 const deleteProviderConversationHistory = async (page: Page, provider: AiPlanningFallbackProvider): Promise<number> => {
   const selectors = getProviderConversationSelectors(provider);
   if (!selectors) return 0;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return deleteAllChatGptConversations(page, 0);
   if (!_.includes(page.url(), new URL(selectors.url).hostname)) {
     await page.goto(selectors.url, { waitUntil: "domcontentloaded", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
   }
@@ -365,10 +409,10 @@ const deleteProviderConversationHistory = async (page: Page, provider: AiPlannin
   return deletedCount;
 };
 
-export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number }> => {
+export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
   const rooms = getProviderRooms(provider);
   const selectors = getProviderConversationSelectors(provider);
-  if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0 };
+  if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0, deletedAll: false };
   const pages = [...rooms.values()];
   _.forEach([...activePlanningControllers.entries()], ([runId, runControllers]) => {
     _.forEach([...runControllers.entries()], ([workerId, record]) => {
@@ -382,13 +426,14 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   _.forEach([...planningMutexes.keys()], (roomKey) => {
     if (_.startsWith(roomKey, mutexPrefix)) planningMutexes.delete(roomKey);
   });
+  await Promise.allSettled(_.map(pages, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
     const browser = await getOrLaunchGlobalBrowser(true, true);
-    cleanupPage = _.find(pages, (page) => !page.isClosed()) || (await browser.context.newPage());
+    cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
-    return { closedRoomCount: pages.length, deletedConversationCount };
+    return { closedRoomCount: pages.length, deletedConversationCount, deletedAll: _.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi) };
   } catch (error) {
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ERROR(provider, _.toString(_.get(error, "message", error))));
     throw error;
