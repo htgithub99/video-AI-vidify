@@ -163,8 +163,6 @@ type SunoDownloadFormat = "mp3" | "wav";
 
 type ResultViewMode = "lyrics" | "seo" | "split";
 
-const normalizeMusicTitle = (value: string): string => _.toLower(_.trim(value).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, ""));
-
 const formatPlaylistTimestamp = (seconds: number): string => {
   const wholeSeconds = Math.max(0, Math.round(seconds));
   const hours = Math.floor(wholeSeconds / 3600);
@@ -178,14 +176,18 @@ const formatPlaylistTimestamp = (seconds: number): string => {
 const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedDownloadedTrack[]): string => {
   const heading = SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST;
   const headingIndex = description.indexOf(heading);
-  if (headingIndex < 0) return description;
+  const timestampLines = _.map(tracks, (track) => `${formatPlaylistTimestamp(track.startSeconds)} ${track.title}`).join("\n");
+  if (headingIndex < 0) return _.compact([_.trim(description), timestampLines]).join("\n\n");
   const beforeTracklist = description.slice(0, headingIndex + heading.length);
   const afterHeading = description.slice(headingIndex + heading.length);
   const remainingLines = afterHeading.split("\n");
   let lineIndex = 0;
-  while (lineIndex < remainingLines.length && (_.isEmpty(_.trim(remainingLines[lineIndex])) || /^\s*\d+[.)]\s+/.test(remainingLines[lineIndex]))) lineIndex += 1;
+  while (lineIndex < remainingLines.length && (
+    _.isEmpty(_.trim(remainingLines[lineIndex])) ||
+    /^\s*\d+[.)]\s+/.test(remainingLines[lineIndex]) ||
+    /^\s*(?:\d{1,2}:)?\d{1,2}:\d{2}\s+\S/.test(remainingLines[lineIndex])
+  )) lineIndex += 1;
   const suffix = remainingLines.slice(lineIndex).join("\n").trim();
-  const timestampLines = _.map(tracks, (track) => `${formatPlaylistTimestamp(track.startSeconds)} ${track.title}`).join("\n");
   return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
 };
 
@@ -1008,12 +1010,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       if (sunoEvaluateTracks) {
         const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
         if (_.size(curatedTracks) === _.size(songs)) {
-          const songsByTitle = new Map(_.map(songs, (song) => [normalizeMusicTitle(song.title), song]));
-          const reorderedSongs = _.compact(_.map(curatedTracks, (track) => songsByTitle.get(normalizeMusicTitle(track.title))));
-          if (_.size(reorderedSongs) === _.size(songs)) setSongs(reorderedSongs);
+          const timestampTracks = _.map(curatedTracks, (track, index) => ({
+            ...track,
+            title: _.trim(songs[index]?.title) || track.title,
+          }));
           setPlaylistSeoOptions((currentOptions) => _.map(currentOptions, (option) => ({
             ...option,
-            description: replaceSeoTracklistWithTimestamps(option.description, curatedTracks),
+            description: replaceSeoTracklistWithTimestamps(option.description, timestampTracks),
           })));
           setSelectedSeoSongIndex(0);
         }

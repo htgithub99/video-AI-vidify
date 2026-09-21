@@ -15,7 +15,7 @@ import { appLog, appWarn } from "../../lib/logger.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { tryParseJSON } from "../utils/helpers.js";
 import { jsonUtils } from "../../lib/json.js";
-import { geminiBatchMutex, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
+import { getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 
 interface ChatRoomAttachment {
   name: string;
@@ -38,8 +38,6 @@ interface PendingRoomResponse {
   artifactType?: string;
   requestId?: string;
 }
-
-const attachmentUploadMutex = new SimpleMutex();
 
 interface ChatPlanningRequest {
   provider: AiPlanningFallbackProvider;
@@ -866,13 +864,8 @@ const submitPrompt = async (
   const initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
   const initialCount = initialResponseSnapshots.length;
   if (!_.isEmpty(attachments)) {
-    const releaseAttachmentUpload = await attachmentUploadMutex.acquire();
-    try {
-      throwIfPlanningCancelled(signal);
-      await attachRoomFiles(page, attachments);
-    } finally {
-      releaseAttachmentUpload();
-    }
+    throwIfPlanningCancelled(signal);
+    await attachRoomFiles(page, attachments);
   }
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
@@ -1146,32 +1139,36 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const releaseGemini = await geminiBatchMutex.acquire();
-  try {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
-    await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
-    await selectGeminiChatModel(room, request.model);
-    const response = await submitPrompt(
-      room,
-      getPlanningRoomKey(request),
-      request.prompt,
-      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
-      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SEND_SELECTOR,
-      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
-      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
-      request.expectedSceneIds || [],
-      request.attachments || [],
-      request.completionMarker,
-      request.artifactType,
-      request.requestId,
-      request.signal,
-    );
-    scheduleGlobalBrowserCleanup();
-    return response;
-  } finally {
-    releaseGemini();
-  }
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
+  await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
+  await selectGeminiChatModel(room, request.model);
+  const response = await submitPrompt(
+    room,
+    getPlanningRoomKey(request),
+    request.prompt,
+    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SEND_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
+    request.expectedSceneIds || [],
+    request.attachments || [],
+    request.completionMarker,
+    request.artifactType,
+    request.requestId,
+    request.signal,
+  );
+  scheduleGlobalBrowserCleanup();
+  return response;
+};
+
+export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
+  if (!_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) return;
+  throwIfPlanningCancelled(request.signal);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
+  await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
+  await selectGeminiChatModel(room, request.model);
 };
 
 const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<string> => {

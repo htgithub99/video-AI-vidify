@@ -9,7 +9,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
@@ -1051,7 +1051,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSign
           }
         }
       }
-      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}`, lastError);
+      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId} cause=${_.toString(_.get(lastError, "stack", _.get(lastError, "message", lastError)))}`);
       throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
     }));
     _.forEach(downloaded, ([songId, buffer]) => audioBySongId.set(songId, buffer));
@@ -1061,10 +1061,19 @@ const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSign
 
 const readMediaDurationSeconds = async (filePath: string): Promise<number> =>
   new Promise((resolve) => {
-    ffmpeg.ffprobe(filePath, (error, metadata) => {
-      if (error) return resolve(0);
-      resolve(Math.max(0, _.toNumber(metadata?.format?.duration)));
-    });
+    let settled = false;
+    const command = ffmpeg(filePath);
+    const finish = (durationSeconds: number) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(durationSeconds);
+    };
+    const timeout = setTimeout(() => {
+      try { command.kill("SIGKILL"); } catch {}
+      finish(0);
+    }, SUNO_AUTOMATION_CONFIG.AUDIO_DURATION_PROBE_TIMEOUT_MS);
+    command.ffprobe((error, metadata) => finish(error ? 0 : Math.max(0, _.toNumber(metadata?.format?.duration))));
   });
 
 const selectProfessionalSunoTracks = async (
@@ -1202,6 +1211,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   const evaluationMode = req.body?.aiExecution?.mode;
   const evaluationRunId = evaluationProjectId || `${SUNO_AUTOMATION_CONFIG.EVALUATION_RUN_ID_PREFIX}${Date.now()}`;
   let planningRun: ReturnType<typeof beginChatPlanningRun> | undefined;
+  let evaluationWorkerIds: string[] = [];
   const downloadAbortController = new AbortController();
   req.once(SUNO_AUTOMATION_CONFIG.EVENT_ABORTED, () => downloadAbortController.abort());
   try {
@@ -1244,51 +1254,59 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       if (_.some(trackPairs, (pair) => _.size(pair) < 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
       const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
       const pairChunks = _.chunk(trackPairs, SUNO_AUTOMATION_CONFIG.EVALUATION_SONGS_PER_CHUNK);
+      evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => `${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}-chunk-${chunkIndex + 1}`);
+      const roomPreparations = _.map(evaluationWorkerIds, (workerId) => prepareChatPlanningRoom({
+        provider: AiPlanningFallbackProvider.GeminiChat,
+        model: req.body?.aiExecution?.model,
+        prompt: "",
+        projectId: evaluationProjectId,
+        workerId,
+        chromeHeadless: false,
+        signal: planningRun.signal,
+      }));
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, {
         evaluationRunId,
         trackCount: tracks.length,
         songCount: trackPairs.length,
         chunkCount: pairChunks.length,
       });
-      const evaluationAudioBySongId = await downloadSunoEvaluationAudio(_.map(tracks, "songId"), planningRun.signal);
-      const selectedTrackChunks = await Promise.all(_.map(pairChunks, async (pairChunk, chunkIndex) => {
+      const evaluationResults = await Promise.allSettled(_.map(pairChunks, async (pairChunk, chunkIndex) => {
         const groups = _.map(pairChunk, (pair) => ({
           title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, "")),
           candidates: _.map(pair, "songId"),
         }));
-        const chunkWorkerId = `${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}-chunk-${chunkIndex + 1}`;
-        try {
-          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, {
-            evaluationRunId,
-            chunk: chunkIndex + 1,
-            songs: groups.length,
-            candidateTracks: _.sumBy(groups, (group) => group.candidates.length),
-          });
-          const selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), {
-            projectId: evaluationProjectId,
-            workerId: chunkWorkerId,
-            model: req.body?.aiExecution?.model,
-            signal: planningRun.signal,
-          }, evaluationAudioBySongId);
-          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, {
-            evaluationRunId,
-            chunk: chunkIndex + 1,
-            selectedTrackCount: selectedTracks.length,
-            selectedTrackIds: _.map(selectedTracks, "songId"),
-            qualityScores: _.map(selectedTracks, "qualityScore"),
-          });
-          return selectedTracks;
-        } finally {
-          await closeChatPlanningRoom({
-            provider: AiPlanningFallbackProvider.GeminiChat,
-            projectId: evaluationProjectId,
-            workerId: chunkWorkerId,
-          }).catch(() => undefined);
-        }
+        await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, {
+          evaluationRunId,
+          chunk: chunkIndex + 1,
+          songs: groups.length,
+          candidateTracks: _.sumBy(groups, (group) => group.candidates.length),
+        });
+        const audioDownload = downloadSunoEvaluationAudio(_.flatMap(groups, "candidates"), planningRun.signal);
+        const [evaluationAudioBySongId] = await Promise.all([
+          audioDownload,
+          roomPreparations[chunkIndex],
+        ]);
+        const selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), {
+          projectId: evaluationProjectId,
+          workerId: evaluationWorkerIds[chunkIndex],
+          model: req.body?.aiExecution?.model,
+          signal: planningRun.signal,
+        }, evaluationAudioBySongId);
+        await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, {
+          evaluationRunId,
+          chunk: chunkIndex + 1,
+          selectedTrackCount: selectedTracks.length,
+          selectedTrackIds: _.map(selectedTracks, "songId"),
+          qualityScores: _.map(selectedTracks, "qualityScore"),
+        });
+        return selectedTracks;
       }));
+      const rejectedEvaluation = _.find(evaluationResults, (result) => _.isEqual(result.status, "rejected")) as PromiseRejectedResult | undefined;
+      if (rejectedEvaluation) throw rejectedEvaluation.reason;
+      const selectedTrackChunks = _.map(evaluationResults, (result) => (result as PromiseFulfilledResult<Array<{ songId: string; title: string; qualityScore: number }>>).value);
       const evaluatedTracks = _.flatten(selectedTrackChunks);
       const selectedTracksForDownload = _.map(
-        _.orderBy(evaluatedTracks, [(track) => track.qualityScore], ["desc"]),
+        evaluatedTracks,
         (track, rank) => ({
           songId: track.songId,
           title: `${_.padStart(_.toString(rank + 1), 2, "0")}. ${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`,
@@ -1311,12 +1329,6 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         format,
       });
       const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, {
-        evaluationRunId,
-        expectedDownloadCount: trackPairs.length,
-        downloadedCount: downloadedPaths.length,
-        success: _.isEqual(downloadedPaths.length, trackPairs.length),
-      });
       if (!_.isEqual(downloadedPaths.length, trackPairs.length)) throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_DOWNLOAD_COUNT_MISMATCH_ERR);
       const durations = await Promise.all(_.map(downloadedPaths, readMediaDurationSeconds));
       let cumulativeSeconds = 0;
@@ -1332,6 +1344,12 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         cumulativeSeconds += durationSeconds;
         return result;
       });
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, {
+        evaluationRunId,
+        expectedDownloadCount: trackPairs.length,
+        downloadedCount: downloadedPaths.length,
+        success: true,
+      });
       return res.json({ success: true, downloadedPaths, curatedTracks });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
@@ -1346,11 +1364,11 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   } finally {
     planningRun?.complete();
     if (shouldEvaluateTracks && !_.isEmpty(evaluationProjectId)) {
-      await closeChatPlanningRoom({
+      await Promise.allSettled(_.map(evaluationWorkerIds, (workerId) => closeChatPlanningRoom({
         provider: AiPlanningFallbackProvider.GeminiChat,
         projectId: evaluationProjectId,
-        workerId: SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID,
-      }).catch(() => undefined);
+        workerId,
+      })));
       await closeActiveBrowser(true).catch(() => undefined);
     }
   }

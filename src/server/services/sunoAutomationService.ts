@@ -190,6 +190,22 @@ const dismissCookieConsent = async (page: Page): Promise<void> => {
   await consentDialog.first().waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_HIDDEN, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
 };
 
+const ensureSunoCreatePage = async (page: Page): Promise<void> => {
+  await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, {
+    waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED,
+    timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
+  });
+  await dismissCookieConsent(page);
+  const isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
+  if (isCreateRoute && await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS)) return;
+  const createNavigation = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_NAVIGATION, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
+  if (!createNavigation) throw new Error(SUNO_AUTOMATION_TEXTS.CREATE_PAGE_NOT_READY_ERR);
+  await createNavigation.click();
+  if (!(await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS))) {
+    throw new Error(SUNO_AUTOMATION_TEXTS.CREATE_PAGE_NOT_READY_ERR);
+  }
+};
+
 const revealSunoWindow = async (page: Page): Promise<void> => {
   await page.bringToFront();
   const session = await page.context().newCDPSession(page).catch(() => null);
@@ -514,9 +530,8 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   const createdSongIds: string[] = _.uniq(_.compact(_.map(initialSongIds, (id) => _.trim(_.toString(id)))));
   try {
     await revealSunoWindow(page);
-    await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+    await ensureSunoCreatePage(page);
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.VERIFY_ACCOUNT_WAIT_MS);
-    await dismissCookieConsent(page);
     await verifySunoAccount(page);
     if (!_.isEmpty(songs)) {
       await ensureAdvancedMode(page);

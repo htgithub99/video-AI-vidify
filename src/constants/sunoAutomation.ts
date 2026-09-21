@@ -67,6 +67,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   ARTIFACT_TYPE_MUSIC_EVALUATION: "music-track-evaluation",
   AUDIO_DOWNLOAD_TIMEOUT_MS: 120_000,
   AUDIO_DOWNLOAD_WAV_TIMEOUT_MS: 180_000,
+  AUDIO_DURATION_PROBE_TIMEOUT_MS: 15_000,
   MAX_EVALUATION_ATTEMPTS: 3,
   EVALUATION_SONGS_PER_CHUNK: 5,
   EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY: 2,
@@ -187,6 +188,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   CREATION_FORM_KEYWORDS: /(Lyrics|Styles|Inspo)/i,
   PLAYLIST_ID_IN_HREF: /\/playlist\/([^/?]+)/i,
   VALID_PLAYLIST_URL: /^https:\/\/(?:www\.)?suno\.com\/playlist\//i,
+  CREATE_PATH: /^\/create(?:\/|$)/i,
   HASHTAG_VALIDATION: /^#[\p{L}\p{N}_]+$/u,
   ASCII_HASHTAG_VALIDATION: /^#[A-Za-z0-9_]+$/,
   STYLE_SPLIT_SEPARATORS: /[,.;\n]/,
@@ -269,6 +271,11 @@ export const SUNO_AUTOMATION_SELECTORS = {
     'button[aria-label="More menu contents"]',
     'button[aria-label*="More" i]',
   ] as const,
+  CREATE_NAVIGATION: [
+    'a[href="/create"]',
+    'a[aria-label="Create"]',
+    '[role="link"]:has-text("Create")',
+  ] as const,
   ADD_TO_PLAYLIST_TEXT: "Add to Playlist",
   PLAYLIST_NAME_PLACEHOLDER: "Playlist Name",
   CREATE_PLAYLIST_BUTTON: [
@@ -307,6 +314,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   PLAYLIST_BATCH_ADD_FAILED_ERR: "Suno không chấp nhận thêm toàn bộ bài hát vào playlist mới.",
   MISSING_SONGS_OR_STYLE_ERR: "Thiếu bài hát hoặc phong cách Suno.",
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
+  CREATE_PAGE_NOT_READY_ERR: "Không thể chuyển Suno sang màn hình tạo nhạc.",
   CANCELLED_ERR: "Đã hủy tạo nhạc Suno.",
   ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
   GENERATION_FAILED_ERR: "Suno không thể hoàn tất một bài hát trong hàng đợi.",
@@ -435,11 +443,11 @@ Global guidance: ${style}
 
 Before writing each song, internally decide its distinct central idea, emotional arc, memorable hook concept, verse-to-chorus development, rhyme/phonetic plan and arrangement arc. Lyrics must sound originally written by a native songwriter for the inferred target region, remain easy to sing at the chosen tempo, avoid translation-shaped wording, filler lines, forced rhymes, mixed dialects and generic repeated imagery. The chorus must deliver the song's emotional promise; verses must progress rather than paraphrase each other; bridge/outro must have a musical purpose.
 
-Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room while preserving the shared source/style identity. Each song must include songId, a compelling native-language title, complete performance-ready lyrics of at least 300 characters with Suno section labels, specific genre, mood, integer tempoBpm from 40 through 240, structure with at least 3 non-empty sections, and originalityNotes with at least one concrete note explaining how it remains original while fitting the source-derived blueprint. Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity from the reference. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${artifactType}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
+Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room while preserving the shared source/style identity. Each song must include songId, a compelling native-language title, complete performance-ready lyrics of at least 300 characters with Suno section labels, specific genre, mood, integer tempoBpm from 40 through 240, structure with at least 3 non-empty sections, and originalityNotes with at least one concrete note explaining how it remains original while fitting the source-derived blueprint. When the inferred language is Vietnamese, write every title and lyric in natural Vietnamese with complete Unicode diacritics; never output Vietnamese titles without tone marks. Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity from the reference. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${artifactType}","requestId":"${requestId}","songs":[{"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[]}]}`;
   },
 
   buildMusicPlanCorrectionPrompt: (batchCount: number, startIndex: number, artifactType: string, batchRequestId: string, issues: string[] = []): string =>
-    `CORRECTION: The previous batch failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Retry now in this same room as songwriter/composer, lyricist and music producer. Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original. Return raw JSON only with artifactType "${artifactType}", requestId "${batchRequestId}", and the complete performance-ready songs ${startIndex}-${startIndex + batchCount - 1}. Every song needs a native-language title, at least 300 characters of complete singable lyrics with Suno section labels, specific genre, mood, integer tempoBpm 40-240, at least 3 non-empty structure entries, and at least 1 concrete originality note. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`,
+    `CORRECTION: The previous batch failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Retry now in this same room as songwriter/composer, lyricist and music producer. Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original. Return raw JSON only with artifactType "${artifactType}", requestId "${batchRequestId}", and the complete performance-ready songs ${startIndex}-${startIndex + batchCount - 1}. Every song needs a native-language title, at least 300 characters of complete singable lyrics with Suno section labels, specific genre, mood, integer tempoBpm 40-240, at least 3 non-empty structure entries, and at least 1 concrete originality note. For Vietnamese songs, every title and lyric must use complete Unicode diacritics and tone marks. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`,
 
   buildMusicRankingPrompt: (songCount: number, requestId: string): string =>
     `Return raw JSON only. Review the complete lyrics and metadata of all ${songCount} songs created earlier in this same room. Rank them from strongest/most attractive to weakest, using professional music-editor judgment rather than creation order.
