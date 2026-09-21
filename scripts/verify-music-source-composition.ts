@@ -48,6 +48,11 @@ assert.match(chatPlanning, /await attachRoomFiles\(page, attachments\);[\s\S]*aw
 assert.doesNotMatch(component, /if \(headingIndex < 0\) return description/);
 assert.match(component, /if \(headingIndex < 0\) return _\.compact\(\[_\.trim\(description\), timestampLines\]\)\.join\("\\n\\n"\)/);
 assert.match(component, /title: _\.trim\(songs\[index\]\?\.title\) \|\| track\.title/);
+assert.match(component, /restoreSeoTimestampTitles\(option\.description, songs\)/);
+assert.match(constants, /CHAPTER_TIMESTAMP_LINE/);
+assert.match(component, /VIETNAMESE_MUSIC_TITLE_RESTORATIONS\[_\.toLower\(_\.trim\(song\.title\)\)\]/);
+assert.match(component, /const getSeoTrackOrder/);
+assert.match(component, /texts\.SEO_TRACK_ORDER/);
 assert.match(constants, /Vietnamese, write every title and lyric in natural Vietnamese with complete Unicode diacritics/);
 assert.match(constants, /Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity/);
 assert.match(controller, /lyrics\.length >= 300/);

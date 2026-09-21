@@ -193,6 +193,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   ASCII_HASHTAG_VALIDATION: /^#[A-Za-z0-9_]+$/,
   STYLE_SPLIT_SEPARATORS: /[,.;\n]/,
   TRACK_VARIANT_SUFFIX: /\s+-\s+[12]$/,
+  CHAPTER_TIMESTAMP_LINE: /^(\s*(?:\d{1,2}:)?\d{1,2}:\d{2})\s+\S.*$/,
   SEO_TITLE_LOUD_PUNCTUATION: /!{2,}|\?{2,}/,
   SEO_TITLE_MISLEADING_CLAIMS: /\b(hay nhất|top\s*1|số\s*1|triệu view|viral|gây sốc|không thể bỏ qua|mới nhất)\b/i,
   LETTER_ONLY: /[^\p{L}]+/gu,
@@ -202,6 +203,20 @@ export const SUNO_AUTOMATION_PATTERNS = {
   DATA_URL_BASE64: /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([a-z0-9+\/=\r\n]+)$/i,
   buildSongCountMatchRegex: (songsLength: number) => new RegExp(`\\b${songsLength}\\s*(?:ca khúc|bài hát|bài)\\b`, "gi"),
 } as const;
+
+export const VIETNAMESE_MUSIC_TITLE_RESTORATIONS: Record<string, string> = {
+  "tieng coi don coi": "Tiếng Còi Đơn Côi",
+  "ngo vang tan canh": "Ngõ Vắng Tàn Canh",
+  "sac hoa tim xua": "Sắc Hoa Tím Xưa",
+  "thu cuoi khoc tinh xua": "Thu Cuối Khóc Tình Xưa",
+  "men sau gac vang": "Men Sầu Gác Vắng",
+  "giot dang phong suong": "Giọt Đắng Phong Sương",
+  "tung phien gac lanh": "Từng Phiên Gác Lạnh",
+  "nhip cau xua gay doan": "Nhịp Cầu Xưa Gãy Đoạn",
+  "chieu mua ngo hen": "Chiều Mưa Ngõ Hẹn",
+  "ben vang thuyen hoa": "Bến Vắng Thuyền Hoa",
+  "tuyen xe chieu tan": "Tuyến Xe Chiều Tàn",
+};
 
 export const SUNO_AUTOMATION_SELECTORS = {
   BODY: "body",

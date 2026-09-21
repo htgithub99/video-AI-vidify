@@ -50,6 +50,7 @@ import {
   SUNO_AUTOMATION_CONFIG,
   SUNO_AUTOMATION_PATTERNS,
   SUNO_AUTOMATION_TEXTS,
+  VIETNAMESE_MUSIC_TITLE_RESTORATIONS,
 } from "../constants";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
@@ -190,6 +191,23 @@ const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedD
   const suffix = remainingLines.slice(lineIndex).join("\n").trim();
   return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
 };
+
+const restoreSeoTimestampTitles = (description: string, songs: GeneratedSong[]): string => {
+  let songIndex = 0;
+  return _.map(description.split("\n"), (line) => {
+    const match = line.match(SUNO_AUTOMATION_PATTERNS.CHAPTER_TIMESTAMP_LINE);
+    if (!match) return line;
+    const title = _.trim(songs[songIndex]?.title);
+    songIndex += 1;
+    return title ? `${match[1]} ${title}` : line;
+  }).join("\n");
+};
+
+const getSeoTrackOrder = (description: string): string =>
+  _.compact(_.map(description.split("\n"), (line) => {
+    const match = line.match(SUNO_AUTOMATION_PATTERNS.CHAPTER_TIMESTAMP_LINE);
+    return match ? _.trim(line.slice(match[1].length)) : "";
+  })).join(" / ");
 
 interface PersistedMusicCreatorState {
   style?: string;
@@ -405,14 +423,18 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
   };
 
   const handleCopyFullOption = (opt: SongSeoOption, index: number) => {
-    const fullText = `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`;
+    const trackOrder = getSeoTrackOrder(opt.description);
+    const trackOrderSection = trackOrder ? `\n\n[${texts.SEO_TRACK_ORDER}]:\n${trackOrder}` : "";
+    const fullText = `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}${trackOrderSection}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`;
     handleCopy(fullText, `seo-all-${index}`, texts.COPY_SEO_OPTION_SUCCESS);
   };
 
   const handleExportText = async () => {
-    const optionSections = _.map(seoOptions, (opt, index) =>
-      `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`
-    );
+    const optionSections = _.map(seoOptions, (opt, index) => {
+      const trackOrder = getSeoTrackOrder(opt.description);
+      const trackOrderSection = trackOrder ? `\n\n[${texts.SEO_TRACK_ORDER}]:\n${trackOrder}` : "";
+      return `=== ${texts.formatOptionLabel(index + 1)} (${texts.formatScoreLabel(opt.seoScore)}) ===\n\n[${texts.SEO_FIELD_TITLE}]:\n${opt.title}\n\n[${texts.SEO_FIELD_DESCRIPTION}]:\n${opt.description}${trackOrderSection}\n\n[${texts.SEO_HASHTAGS_SECTION}]:\n${opt.hashtags.join(" ")}\n\n[${texts.SEO_TAGS_SECTION}]:\n${opt.tags.join(", ")}`;
+    });
     const exportText = `${texts.SEO_EXPORT_TITLE}\n\n[${texts.SEO_PLAYLIST_URL_LABEL}]:\n${_.trim(playlistUrl) || texts.SEO_PLAYLIST_URL_EMPTY}\n\n${optionSections.join(SUNO_AUTOMATION_CONFIG.SECTION_DIVIDER)}`;
     try {
       const saved = await saveMusicBlobWithDialog(new Blob([`\uFEFF${exportText}`], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), `${SUNO_AUTOMATION_CONFIG.SEO_EXPORT_FILENAME}${SUNO_AUTOMATION_CONFIG.TXT_EXTENSION}`);
@@ -465,6 +487,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
 
       <div className={cn("grid gap-4 items-stretch", gridColumnsClass)}>
         {_.map(seoOptions, (opt, sIdx) => {
+          const trackOrder = getSeoTrackOrder(opt.description);
           return (
             <div
               key={sIdx}
@@ -521,6 +544,21 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                       {opt.description}
                     </p>
                   </div>
+
+                  {!_.isEmpty(trackOrder) && (
+                    <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <Music2 className="w-3 h-3 text-fuchsia-500" />
+                          <span>{texts.SEO_TRACK_ORDER}</span>
+                        </span>
+                        <CopyFieldButton text={trackOrder} field="track-order" optionIndex={sIdx} />
+                      </div>
+                      <p className="text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words">
+                        {trackOrder}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1">
@@ -594,10 +632,25 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
+  useEffect(() => {
+    const restoredSongs = _.map(songs, (song) => ({
+      ...song,
+      title: VIETNAMESE_MUSIC_TITLE_RESTORATIONS[_.toLower(_.trim(song.title))] || song.title,
+    }));
+    if (!_.isEqual(restoredSongs, songs)) setSongs(restoredSongs);
+  }, [songs]);
   const [styleAnalysis, setStyleAnalysis] = useState<MusicStyleAnalysis | undefined>(initialState.styleAnalysis);
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
     initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
   );
+  useEffect(() => {
+    if (_.isEmpty(songs) || _.isEmpty(playlistSeoOptions)) return;
+    const restoredOptions = _.map(playlistSeoOptions, (option) => ({
+      ...option,
+      description: restoreSeoTimestampTitles(option.description, songs),
+    }));
+    if (!_.isEqual(restoredOptions, playlistSeoOptions)) setPlaylistSeoOptions(restoredOptions);
+  }, [songs, playlistSeoOptions]);
   const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || "");
   const [thumbnailReference, setThumbnailReference] = useState<string>("");
   const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || "");
