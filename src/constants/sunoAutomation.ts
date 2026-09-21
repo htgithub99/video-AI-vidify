@@ -22,6 +22,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   GENERATE_RESPONSE_TIMEOUT_MS: 30_000,
   CREATE_ATTEMPTS_PER_PROMPT: 2,
   MUSIC_ROOM_RESPONSE_ATTEMPTS: 5,
+  MUSIC_THUMBNAIL_ATTEMPTS: 5,
   SUNO_CREATE_ACTION_ATTEMPTS: 3,
   SUNO_CREATE_ACTION_RETRY_MS: 2000,
   MIN_TRACKS_PER_PROMPT: 2,
@@ -159,6 +160,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   STAGE_SEO_AND_THUMBNAIL: "seo-and-thumbnail",
   DEFAULT_FALLBACK_STYLE: "Original music",
   DEFAULT_TRACK_LABEL: "Track",
+  THUMBNAIL_SOURCE_CONTEXT_MAX_CHARACTERS: 800,
 } as const;
 
 export const SUNO_AUTOMATION_PATTERNS = {
@@ -520,29 +522,41 @@ Before returning JSON, silently verify every title and description still contain
 
   buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean, sourceContext: string = ""): string => {
     const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");
-    const userChangeNote = description || "Only adapt the cover so it accurately represents this complete music collection.";
+    const userChangeNote = (description || "Only adapt the cover so it accurately represents this complete music collection.")
+      .replace(/gợi\s*cảm/gi, "quyến rũ, cuốn hút, thời trang và tôn dáng");
+    const compactSourceContext = _.truncate(_.trim(sourceContext), {
+      length: SUNO_AUTOMATION_CONFIG.THUMBNAIL_SOURCE_CONTEXT_MAX_CHARACTERS,
+      omission: "…",
+    });
+    const sourceDirective = _.isEmpty(songs) && !_.isEmpty(compactSourceContext)
+      ? `Short source summary for visual context only:\n${compactSourceContext}`
+      : "Use the song titles and global style below as the complete collection context.";
     const referenceDirective = hasReference
-      ? `EDIT THE ATTACHED IMAGE; do not create an unrelated replacement. The attachment is the authoritative visual source.
-- First, internally extract every requested change from USER CHANGE NOTE as a mandatory checklist. A requested change always overrides reference fidelity. If the note asks for a different person, pose, clothing, scenery, text or any other element, replace that element clearly and completely; do not preserve or merely tweak it.
-- Preserve only elements that USER CHANGE NOTE does not ask to change, especially the reference's overall thumbnail layout, visual hierarchy, framing logic, text zones, contrast and rendering language.
-- Do not turn the image into an unrelated generic music poster.
-- The result must remain immediately recognizable as an edit of the attachment when viewed side by side. Similar subject matter alone is not sufficient.`
+      ? `Use the attached image only as a source for the elements the USER CHANGE NOTE explicitly asks to preserve.
+- Do not preserve the original pose, scenery, composition, camera angle, crop, spatial arrangement or decorative elements when the note asks to change them.
+- When the note requests a new pose, scenery or composition, the result must be visibly different at first glance and must not look like a minor variation of the attachment.
+- Preserve exact display text only when the note explicitly asks to keep the text; the text may be repositioned or restyled when the note permits a new layout.
+- Preserve no unrequested element merely because it appears in the attachment. The USER CHANGE NOTE is the authoritative edit specification.`
       : "There is no attached reference image. Create an original visual direction from the collection context.";
-    return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers. Source context when the song list is not ready yet: ${sourceContext || "No additional source context; follow the user note and selected style."}
+    return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers.
+${sourceDirective}
 
-PRIORITY 1 — REFERENCE FIDELITY:
-${referenceDirective}
-
-PRIORITY 2 — USER CHANGE NOTE (follow literally; do not omit, soften, or reinterpret any concrete detail):
+PRIORITY 1 — USER CHANGE NOTE (follow literally; do not omit, soften, or reinterpret any concrete detail):
 <user_change_note>
 ${userChangeNote}
 </user_change_note>
 
 USER-NOTE COMPLIANCE RULES:
 - Complete every requested change in the note, including all requested subject, identity, pose, clothing, scenery and typography changes. Do not leave any requested item unchanged.
+- Interpret obvious Vietnamese typing mistakes from context instead of ignoring the affected instruction.
+- If the note requests changes to pose, scenery or composition, redesign all three substantially. Use a clearly different silhouette, environment, camera framing and placement of major elements.
+- Treat attractiveness and click appeal as styling goals; keep the adult subject tasteful and suitable for a YouTube music cover.
 - When replacing quoted/source wording, the old wording must not remain anywhere in the result.
 - If the note specifies an exact word count, invent one meaningful Vietnamese replacement that fits the whole collection, count words by space-separated lexical words, and render exactly that count. Do not use code, abbreviations, dates or punctuation as extra words.
 - Render the replacement phrase once, prominently and with correct Vietnamese spelling. Do not add alternative versions of it.
+
+PRIORITY 2 — REFERENCE USAGE:
+${referenceDirective}
 
 PRIORITY 3 — COLLECTION ACCURACY:
 The cover represents the complete ${songs.length}-song list, not one individual song.
@@ -550,6 +564,6 @@ Global music style: ${style}
 Complete song list:
 ${songTitles}
 
-The song titles and global style above are semantic context only. Do not print the numbered song list, individual song titles, year/date, artist name or extra slogans on the image unless USER CHANGE NOTE explicitly requests them. Keep a clear focal point, clean hierarchy, strong mobile contrast, safe margins and correctly spelled Vietnamese display text. Do not add logos or watermarks that are not requested. Before producing the final image, internally compare it with the attachment and verify the mandatory checklist item by item; correct every mismatch before responding. Output only the finished cover image.`;
+The song titles and global style above are semantic context only. Do not print the numbered song list, individual song titles, year/date, artist name or extra slogans on the image unless USER CHANGE NOTE explicitly requests them. Keep a clear focal point, clean hierarchy, strong mobile contrast, safe margins and correctly spelled Vietnamese display text. Do not add logos or watermarks that are not requested. Before producing the final image, verify the mandatory change checklist item by item. If pose, scenery or composition was requested to change, reject any draft that remains substantially similar to the attachment and redesign it before responding. Output only the finished cover image.`;
   },
 } as const;

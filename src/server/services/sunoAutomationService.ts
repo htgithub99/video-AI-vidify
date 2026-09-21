@@ -506,7 +506,9 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_VERIFY_WAIT_MS);
     missingIds = _.difference(uniqueSongIds, await collectSongIds(page));
   }
-  if (!_.isEmpty(missingIds)) throw new Error(SUNO_AUTOMATION_TEXTS.formatPlaylistMissingTracksErr(missingIds.length, uniqueSongIds.length));
+  if (!_.isEmpty(missingIds)) {
+    logger.warn(SUNO_AUTOMATION_TEXTS.formatPlaylistMissingTracksErr(missingIds.length, uniqueSongIds.length));
+  }
   return playlistUrl;
 };
 

@@ -971,6 +971,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
     setSunoPlaylistUrl("");
+    setDownloadPlaylistUrl("");
     setSunoTrackIds([]);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
@@ -981,7 +982,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       });
       const result = await response.json();
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
-      setSunoPlaylistUrl(_.toString(result.playlistUrl));
+      const createdPlaylistUrl = _.toString(result.playlistUrl);
+      setSunoPlaylistUrl(createdPlaylistUrl);
+      setDownloadPlaylistUrl(createdPlaylistUrl);
       setSunoTrackIds(_.map(_.castArray(result.createdSongIds || []), _.toString));
       toast.success(texts.SUNO_CREATE_SUCCESS);
     } catch (error: any) {
@@ -1139,6 +1142,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs,
           style,
+          sourceContext: referenceSongs,
           playlistSeoOptions,
           thumbnailDescription,
           thumbnailReference,

@@ -529,9 +529,9 @@ const generateMusicThumbnailAsset = async (input: {
   chromeHeadless: boolean;
 }): Promise<{ thumbnail: string | null; warning?: string }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
     try {
-      logger.info(`[MusicThumbnail] start attempt=${attempt + 1}/2 songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
+      logger.info(`[MusicThumbnail] start attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
       const result = await generateImageWithPlaywright({
         prompt: SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext),
         style: input.style,
@@ -561,15 +561,15 @@ const generateMusicThumbnailAsset = async (input: {
         ? SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage)
         : _.toString(result.fallbackUrl) || null;
       if (thumbnail) {
-        logger.info(`[MusicThumbnail] success attempt=${attempt + 1}/2 bytes=${encodedImage.length}`);
+        logger.info(`[MusicThumbnail] success attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} bytes=${encodedImage.length}`);
         return { thumbnail };
       }
       lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-      logger.warn(`[MusicThumbnail] Gemini returned no image attempt=${attempt + 1}/2 warning=${lastWarning}`);
+      logger.warn(`[MusicThumbnail] Gemini returned no image attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} warning=${lastWarning}`);
     } catch (error) {
       logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
       lastWarning = _.toString(_.get(error, "message", lastWarning));
-      logger.error(`[MusicThumbnail] failed attempt=${attempt + 1}/2 reason=${lastWarning}`);
+      logger.error(`[MusicThumbnail] failed attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} reason=${lastWarning}`);
     }
   }
   logger.error(`[MusicThumbnail] exhausted attempts warning=${lastWarning}`);
