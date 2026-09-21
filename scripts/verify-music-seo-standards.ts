@@ -32,7 +32,7 @@ assert.match(source, /ROUTER_PATHS\.MUSIC_SEO_REGENERATE/);
 assert.match(source, /buildMusicPlaylistSeoRegenerationPrompt\(songs, style \|\|/);
 assert.match(source, /buildMusicPlaylistSeoCorrectionPrompt\(songs\.length,[\s\S]*requestId, seoIssues\)/);
 assert.match(source, /\[MusicSeoRegenerate\] contract attempt=/);
-assert.match(source, /if \(!isRetryableMusicJsonError\(error\) \|\| attempt >= 1\) throw error/);
+assert.match(source, /if \(!isRetryableMusicRoomError\(error\) \|\| attempt >= SUNO_AUTOMATION_CONFIG\.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1\) throw error/);
 assert.match(source, /_.isEqual\(hashtags\.length, 10\)/);
 assert.match(source, /ASCII_HASHTAG_VALIDATION/);
 assert.match(source, /_.isEqual\(tags\.length, 12\)/);

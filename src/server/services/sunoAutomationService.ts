@@ -8,6 +8,7 @@ import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import { getDataDirectory } from "../utils/paths.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
+import { logger } from "../../lib/logger.js";
 import {
   SUNO_AUTOMATION_CONFIG,
   SUNO_AUTOMATION_PATTERNS,
@@ -149,15 +150,19 @@ export const launchSunoLoginBrowser = async (): Promise<{ message: string; profi
   };
 };
 
-const firstVisible = async (page: Page, selectors: readonly string[] | string[]): Promise<Locator | null> => {
-  for (const selector of selectors) {
-    const candidates = page.locator(selector);
-    const count = await candidates.count().catch(() => 0);
-    for (let index = 0; index < count; index += 1) {
-      const candidate = candidates.nth(index);
-      if (await candidate.isVisible().catch(() => false)) return candidate;
+const firstVisible = async (page: Page, selectors: readonly string[] | string[], timeoutMs = 0): Promise<Locator | null> => {
+  const deadline = Date.now() + timeoutMs;
+  do {
+    for (const selector of selectors) {
+      const candidates = page.locator(selector);
+      const count = await candidates.count().catch(() => 0);
+      for (let index = 0; index < count; index += 1) {
+        const candidate = candidates.nth(index);
+        if (await candidate.isVisible().catch(() => false)) return candidate;
+      }
     }
-  }
+    if (Date.now() < deadline) await page.waitForTimeout(Math.min(250, deadline - Date.now()));
+  } while (Date.now() < deadline);
   return null;
 };
 
@@ -313,11 +318,18 @@ const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => 
   const targetName = _.trim(inspo);
   if (_.isEmpty(targetName)) return;
   const inspoButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_BUTTON);
-  if (!inspoButton) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_BUTTON_NOT_FOUND_ERR);
+  if (!inspoButton) {
+    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
+    return;
+  }
   await inspoButton.click();
 
   const searchInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_SEARCH_INPUT);
-  if (!searchInput) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_SEARCH_NOT_FOUND_ERR);
+  if (!searchInput) {
+    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
+    await page.keyboard.press("Escape").catch(() => undefined);
+    return;
+  }
   await fillEditable(searchInput, targetName);
   await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SEARCH_WAIT_MS);
 
@@ -333,7 +345,11 @@ const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => 
     selected = true;
     break;
   }
-  if (!selected) throw new Error(SUNO_AUTOMATION_TEXTS.formatInspoNotFoundErr(targetName));
+  if (!selected) {
+    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
+    await page.keyboard.press("Escape").catch(() => undefined);
+    return;
+  }
   await searchInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_HIDDEN, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
 };
 
@@ -433,8 +449,8 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
     waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_COMMIT,
     timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
   });
-  const songMenu = page.getByRole("button", { name: SUNO_AUTOMATION_SELECTORS.MORE_MENU_NAME }).first();
-  await songMenu.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const songMenu = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.MORE_MENU_BUTTON, SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS);
+  if (!songMenu) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
   await songMenu.click();
   const addButton = page.getByText(SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST_TEXT, { exact: true }).last();
   await addButton.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
@@ -443,8 +459,8 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   const nameInput = page.getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER).first();
   await nameInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
   await fillEditable(nameInput, playlistName);
-  const create = page.getByRole("button", { name: SUNO_AUTOMATION_SELECTORS.CREATE_PLAYLIST_NAME, exact: true }).first();
-  await create.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const create = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_PLAYLIST_BUTTON, SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS);
+  if (!create) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR);
   const playlistMutation = page.waitForRequest((request) =>
     SUNO_AUTOMATION_PATTERNS.PLAYLIST_API.test(request.url())
     && [SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST, "PUT", SUNO_AUTOMATION_CONFIG.HTTP_METHOD_PATCH].includes(request.method()),
@@ -511,10 +527,19 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
         ensureSunoNotCancelled();
         await waitForGenerationCapacity(page, activeGenerations, SUNO_AUTOMATION_CONFIG.MAX_CONCURRENT_PROMPTS - 1);
         const numberedSong = { ...song, title: formatNumberedSongTitle(song.title, songIndex) };
+        const promptBaselineIds = await collectSongIds(page);
         let songIds: string[] = [];
-        for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_ATTEMPTS_PER_PROMPT && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
+        for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.SUNO_CREATE_ACTION_ATTEMPTS && songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT; attempt += 1) {
           if (attempt > 0) await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.RETRY_PROMPT_DELAY_MS);
-          songIds = _.uniq([...songIds, ...(await createOneSong(page, numberedSong))]);
+          try {
+            songIds = _.uniq([...songIds, ...(await createOneSong(page, numberedSong))]);
+          } catch (error) {
+            songIds = _.uniq([...songIds, ..._.difference(await collectSongIds(page), promptBaselineIds)]);
+            if (songIds.length >= SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) break;
+            if (sunoCancellationRequested || attempt >= SUNO_AUTOMATION_CONFIG.SUNO_CREATE_ACTION_ATTEMPTS - 1) throw error;
+            logger.warn(SUNO_AUTOMATION_TEXTS.formatSunoCreateRetryLog(numberedSong.title, attempt + 2, _.toString(_.get(error, "message", error))));
+            await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.SUNO_CREATE_ACTION_RETRY_MS);
+          }
         }
         if (songIds.length < SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) {
           throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(numberedSong.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));

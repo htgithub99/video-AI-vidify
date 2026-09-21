@@ -576,10 +576,9 @@ const generateMusicThumbnailAsset = async (input: {
   return { thumbnail: null, warning: lastWarning };
 };
 
-const isRetryableMusicJsonError = (error: unknown): boolean => {
+const isRetryableMusicRoomError = (error: unknown): boolean => {
   const message = _.toString(_.get(error, "message", error));
-  return _.includes(message, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR) ||
-    _.includes(message, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+  return !SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(message);
 };
 
 const validateMusicStyleAnalysisContract = (parsed: any, requestId: string): boolean => {
@@ -762,7 +761,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     for (let chunkIndex = 0; chunkIndex < sourceChunks.length; chunkIndex += 1) {
       const sourceRequestId = `${requestId}_source_${chunkIndex + 1}`;
       let sourceAccepted = false;
-      for (let attempt = 0; attempt < 2 && !sourceAccepted; attempt += 1) {
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS && !sourceAccepted; attempt += 1) {
         try {
           const sourceResponse = await generateRoomResponse(
             SUNO_AUTOMATION_TEXTS.buildMusicSourcePrompt(sourceChunks[chunkIndex], chunkIndex, sourceChunks.length, sourceRequestId),
@@ -773,7 +772,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           sourceAccepted = _.isEqual(_.toNumber(sourceAck?.receivedPart), chunkIndex + 1) &&
             _.isEqual(_.toNumber(sourceAck?.totalParts), sourceChunks.length);
         } catch (error) {
-          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+          if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+          logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
         }
       }
       if (!sourceAccepted) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
@@ -783,7 +783,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     let styleAnalysisParsed: any = null;
     let styleAnalysisIssues: string[] = [];
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
         ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId)
         : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId, styleAnalysisIssues);
@@ -791,7 +791,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
       } catch (error) {
-        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
         styleAnalysisParsed = null;
       }
       styleAnalysisIssues = getMusicStyleAnalysisContractIssues(styleAnalysisParsed, analysisRequestId);
@@ -807,7 +808,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const batchCount = Math.min(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZE, requestedSongCount - startIndex + 1);
       let batchParsed: any = null;
       let batchIssues: string[] = [];
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
         const batchRequestId = `${requestId}_batch_${startIndex}`;
         const prompt = attempt === 0
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE)
@@ -817,7 +818,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           responseProvider = response.provider;
           batchParsed = jsonUtils.safeParse(response.text, null);
         } catch (error) {
-          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+          if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+          logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
           batchParsed = null;
         }
         batchIssues = getMusicPlanSongContractIssues(batchParsed, batchCount);
@@ -831,7 +833,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const rankingRequestId = `${requestId}_song_ranking`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_RANKING;
     let rankingParsed: any = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
         ? SUNO_AUTOMATION_TEXTS.buildMusicRankingPrompt(requestedSongCount, rankingRequestId)
         : SUNO_AUTOMATION_TEXTS.buildMusicRankingCorrectionPrompt(requestedSongCount, rankingRequestId);
@@ -840,7 +842,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         responseProvider = response.provider;
         rankingParsed = jsonUtils.safeParse(response.text, null);
       } catch (error) {
-        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
         rankingParsed = null;
       }
       if (validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) break;
@@ -851,13 +854,19 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const sunoSettingsRequestId = `${requestId}_suno_settings`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SUNO_SETTINGS;
     let sunoSettingsParsed: any = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
         ? SUNO_AUTOMATION_TEXTS.buildSunoSettingsPrompt(creativeStyle, requestedSongCount, sunoSettingsRequestId)
         : SUNO_AUTOMATION_TEXTS.buildSunoSettingsCorrectionPrompt(sunoSettingsRequestId);
-      const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS, sunoSettingsRequestId);
-      responseProvider = response.provider;
-      sunoSettingsParsed = jsonUtils.safeParse(response.text, null);
+      try {
+        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS, sunoSettingsRequestId);
+        responseProvider = response.provider;
+        sunoSettingsParsed = jsonUtils.safeParse(response.text, null);
+      } catch (error) {
+        if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
+        sunoSettingsParsed = null;
+      }
       if (validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) break;
     }
     if (!validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
@@ -865,7 +874,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const generatePlaylistSeo = async (): Promise<any> => {
       let parsed: any = null;
       let seoIssues: string[] = [];
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
         const prompt = attempt === 0
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, creativeStyle, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
           : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(requestedSongCount, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId, seoIssues);
@@ -874,7 +883,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           responseProvider = response.provider;
           parsed = jsonUtils.safeParse(response.text, null);
         } catch (error) {
-          if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+          if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+          logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL, attempt + 2, _.toString(_.get(error, "message", error))));
           parsed = null;
         }
         seoIssues = getMusicPlaylistSeoContractIssues(parsed);
@@ -949,7 +959,7 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
   try {
     let parsed: any = null;
     let seoIssues: string[] = [];
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
         ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT)
         : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs.length, style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId, seoIssues);
@@ -967,7 +977,8 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
         });
         parsed = jsonUtils.safeParse(response.text, null);
       } catch (error) {
-        if (!isRetryableMusicJsonError(error) || attempt >= 1) throw error;
+        if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL, attempt + 2, _.toString(_.get(error, "message", error))));
         parsed = null;
       }
       seoIssues = getMusicPlaylistSeoContractIssues(parsed);
@@ -1174,7 +1185,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
     const result = await createSunoPlaylist(songs, effectiveStyle, inspo, req.body?.sunoSettings, initialSongIds, _.trim(_.toString(req.body?.playlistName)));
     return res.json({ success: true, ...result });
   } catch (error) {
-    logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, error);
+    logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, _.toString(_.get(error, "stack", _.get(error, "message", error))));
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)) });
   }
 });

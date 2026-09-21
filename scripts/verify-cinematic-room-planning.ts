@@ -449,6 +449,8 @@ const verifyProviderJsonVariants = () => {
   assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
   assert.equal(safeParseJSON('```json\n{"requestId":"room-json-test:video_prompts"}\n```', {}).requestId, "room-json-test:video_prompts");
   assert.equal(safeParseJSON('Here is the result: {"requestId":"room-json-test:video_prompts"}', {}).requestId, "room-json-test:video_prompts");
+  assert.equal(safeParseJSON('{"lyrics":"[Verse]\nDòng một\nDòng hai"}', {}).lyrics, "[Verse]\nDòng một\nDòng hai");
+  assert.equal(safeParseJSON('{"songs":[{"title":"Có Dấu",}],}', {}).songs[0].title, "Có Dấu");
   const invalidSamples = [
     '{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}',
   ];

@@ -2,6 +2,32 @@ import { appLog } from "../../lib/logger.js";
 import _ from "lodash";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 
+const repairJsonStringControls = (value: string): string => {
+  let insideString = false;
+  let escaped = false;
+  let repaired = "";
+  for (const character of value) {
+    if (escaped) {
+      repaired += character;
+      escaped = false;
+    } else if (character === "\\" && insideString) {
+      repaired += character;
+      escaped = true;
+    } else if (character === '"') {
+      insideString = !insideString;
+      repaired += character;
+    } else if (insideString && character === "\n") repaired += "\\n";
+    else if (insideString && character === "\r") repaired += "\\r";
+    else if (insideString && character === "\t") repaired += "\\t";
+    else repaired += character;
+  }
+  return repaired;
+};
+
+const repairJsonCandidate = (value: string): string => repairJsonStringControls(value)
+  .replace(/,\s*([}\]])/g, "$1")
+  .replace(/^\uFEFF/, "");
+
 const parseJSON = (text: string, logFailure: boolean): unknown => {
   if (_.isEmpty(text)) return undefined;
   const trimmed = _.trim(text);
@@ -20,8 +46,10 @@ const parseJSON = (text: string, logFailure: boolean): unknown => {
     arrayStart >= 0 && arrayEnd > arrayStart ? trimmed.slice(arrayStart, arrayEnd + 1) : "",
   ]));
   for (const candidate of candidates) {
-    const parsed = _.attempt(JSON.parse, candidate);
-    if (!_.isError(parsed)) return parsed;
+    for (const parseCandidate of _.uniq([candidate, repairJsonCandidate(candidate)])) {
+      const parsed = _.attempt(JSON.parse, parseCandidate);
+      if (!_.isError(parsed)) return parsed;
+    }
   }
 
   if (logFailure) appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
