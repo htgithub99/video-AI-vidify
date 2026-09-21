@@ -134,6 +134,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GEMINI_INPUT_SELECTOR: 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
   GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, .model-response-label-announcer[aria-busy="true"]',
+  GEMINI_USER_MESSAGE_SELECTOR: "user-query, .user-query-container",
+  GEMINI_STOPPED_RESPONSE_PATTERN: /Bạn đã dừng câu trả lời này|You stopped this response/i,
+  GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR: 'button[aria-label*="Edit" i], button[aria-label*="Chỉnh sửa" i], button[aria-label*="Sửa" i], button[title*="Edit" i], button[title*="Chỉnh sửa" i], button[title*="Sửa" i]',
   GROK_INPUT_SELECTOR: '[contenteditable="true"][role="textbox"], textarea, [contenteditable="true"]',
   GROK_RESPONSE_SELECTOR:
     '[data-testid="assistant-message"], [data-message-author-role="assistant"], [data-testid*="assistant" i][data-testid*="message" i], .response-content-markdown',

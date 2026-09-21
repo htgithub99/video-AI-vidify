@@ -13,30 +13,50 @@ const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf
 assert.match(controller, /if \(shouldEvaluateTracks\)[\s\S]*selectProfessionalSunoTracks/);
 assert.match(controller, /required: \["selectedTrackIds", "qualityScores"\]/);
 assert.match(controller, /Number\.isInteger\(qualityScore\)/);
-assert.match(controller, /if \(!_.isEqual\(selectedTracksForDownload\.length, trackPairs\.length\)\)[\s\S]*throw createAppError/);
+assert.match(controller, /!_.isEqual\(selectedTracksForDownload\.length, trackPairs\.length\)[\s\S]{0,300}throw createAppError/);
 assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload/);
 assert.doesNotMatch(controller, /catch[\s\S]{0,300}downloadSunoTracksToFolder\(selectedTracksForDownload/);
 
-// Five-song chunks run concurrently while preserving the original song order.
+// Five-song chunks run concurrently, then all room results are ranked globally.
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
+assert.match(constants, /EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS:\s*5/);
+assert.match(constants, /MAX_EVALUATION_ATTEMPTS:\s*5/);
+assert.match(constants, /getAudioRetryDelayMs/);
+assert.match(controller, /SUNO_AUTOMATION_CONFIG\.getAudioRetryDelayMs\(attempt\)/);
+assert.match(service, /SUNO_AUTOMATION_CONFIG\.getAudioRetryDelayMs\(attempt\)/);
+assert.match(constants, /formatPlaylistApiUrl/);
+assert.match(service, /playlist_clips/);
+assert.match(service, /if \(!_\.isEmpty\(songIds\)\) return songIds/);
 assert.match(controller, /Promise\.allSettled\(_\.map\(pairChunks/);
 assert.match(controller, /downloadSunoEvaluationAudio\(_\.flatMap\(groups, "candidates"\), planningRun\.signal\)/);
 assert.match(controller, /evaluationAudioBySongId/);
 assert.doesNotMatch(controller, /selectProfessionalSunoTracks[\s\S]{0,2200}const downloadOrigin/);
-assert.doesNotMatch(controller, /_\.orderBy\(evaluatedTracks/);
+assert.match(controller, /_\.orderBy\(evaluatedTracks, \["qualityScore"\], \["desc"\]\)/);
+assert.match(controller, /_\.uniq\(_\.map\(selectedTracksForDownload, "songId"\)\)/);
+assert.match(controller, /EVENT_ALL_EVALS_COMPLETED[\s\S]{0,900}await closeEvaluationRooms\(\)[\s\S]{0,200}EVENT_DOWNLOAD_STARTED/);
 assert.match(controller, /_\.padStart\(_\.toString\(rank \+ 1\), 2, "0"\)/);
 assert.match(controller, /readMediaDurationSeconds/);
 assert.match(controller, /startSeconds: cumulativeSeconds/);
 assert.match(controller, /curatedTracks/);
 assert.match(component, /replaceSeoTracklistWithTimestamps/);
+assert.match(component, /replaceSeoTracklistWithTimestamps\(option\.description, curatedTracks\)/);
+assert.match(component, /setCuratedDownloadedTracks\(curatedTracks\)/);
+assert.match(component, /if \(_\.isEqual\(curatedDownloadedTracks\.length, songs\.length\)\) return/);
+assert.match(controller, /AUDIO_DURATION_INVALID_ERR/);
+assert.match(controller, /curatedTracks,/);
 assert.match(component, /formatPlaylistTimestamp/);
 assert.match(component, /handleCancelSunoDownload/);
 assert.match(component, /sunoDownloadAbortControllerRef\.current\?\.abort\(\)/);
 assert.match(component, /SUNO_DOWNLOAD_CANCEL_BTN/);
 assert.match(controller, /downloadAbortController\.signal/);
+assert.doesNotMatch(controller, /MUSIC_SUNO_DOWNLOAD[\s\S]{0,1800}req\.once\([^\n]*aborted/);
+assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload[^\n]*planningRun\.signal\)/);
 assert.match(service, /AbortSignal\.any/);
 assert.match(service, /signal\?\.throwIfAborted\(\)/);
 assert.doesNotMatch(chatService, /attachmentUploadMutex/);
+assert.match(chatService, /const resubmitStoppedGeminiMessage/);
+assert.match(chatService, /GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR/);
+assert.match(chatService, /if \(composerIsEmpty \|\| responseStarted \|\| roomIsBusy\) return true/);
 assert.match(constants, /evaluate these exact pairs again/);
 assert.match(constants, /Never return an ID outside its listed pair/);
 

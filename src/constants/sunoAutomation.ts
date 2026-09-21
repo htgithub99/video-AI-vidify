@@ -69,11 +69,13 @@ export const SUNO_AUTOMATION_CONFIG = {
   AUDIO_DOWNLOAD_TIMEOUT_MS: 120_000,
   AUDIO_DOWNLOAD_WAV_TIMEOUT_MS: 180_000,
   AUDIO_DURATION_PROBE_TIMEOUT_MS: 15_000,
-  MAX_EVALUATION_ATTEMPTS: 3,
+  MAX_EVALUATION_ATTEMPTS: 5,
   EVALUATION_SONGS_PER_CHUNK: 5,
   EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY: 2,
-  EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS: 3,
+  EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS: 5,
   EVALUATION_AUDIO_RETRY_DELAY_MS: 1500,
+  AUDIO_RETRY_MAX_DELAY_MS: 30_000,
+  AUDIO_RETRY_JITTER_MS: 750,
   EVALUATION_RUN_ID_PREFIX: "music-track-evaluation-",
   RUN_ID_PREFIX: "music_",
   THUMBNAIL_EXPORT_FILENAME: "COVER",
@@ -117,6 +119,11 @@ export const SUNO_AUTOMATION_CONFIG = {
   HASH_PREFIX: "#",
   formatAudioDownloadUrl: (origin: string, songId: string, format: string): string =>
     `${_.trim(origin).replace(/\/$/, "")}/api/file/${encodeURIComponent(songId)}/${format}`,
+  formatPlaylistApiUrl: (playlistId: string): string =>
+    `${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/${encodeURIComponent(playlistId)}/`,
+  getAudioRetryDelayMs: (attempt: number): number =>
+    Math.min(SUNO_AUTOMATION_CONFIG.AUDIO_RETRY_MAX_DELAY_MS, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (2 ** attempt))
+      + Math.floor(Math.random() * SUNO_AUTOMATION_CONFIG.AUDIO_RETRY_JITTER_MS),
   formatTempAttachmentFileName: (index: number, songId: string, format: string = "mp3"): string =>
     `${index + 1}-${songId}.${format}`,
   formatChunkEvaluationRequestId: (projectId: string, title: string, attempt: number): string =>
@@ -339,6 +346,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   DOWNLOAD_FOLDER_INVALID_ERR: "Thư mục lưu nhạc không hợp lệ.",
   DOWNLOAD_TRACKS_REQUIRED_ERR: "Không có bài hát Suno để tải xuống.",
   DOWNLOAD_TRACK_FAILED_ERR: "Không thể tải bài hát Suno.",
+  AUDIO_DURATION_INVALID_ERR: "Không thể đọc chính xác thời lượng bài hát đã tải.",
   CURATED_DOWNLOAD_COUNT_MISMATCH_ERR: "Số bài Tuyển chọn tải về không khớp số bài đầu vào.",
   CURATED_EVALUATION_COUNT_MISMATCH_ERR: "Số bài được chọn thẩm âm không khớp với số bài yêu cầu.",
   DEFAULT_TRACK_PREFIX: "Suno track",

@@ -53,6 +53,7 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
   return candidate;
 };
 
+
 export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal): Promise<string[]> => {
   signal?.throwIfAborted();
   const requestedFolder = _.trim(folderPath);
@@ -88,7 +89,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
         signal?.throwIfAborted();
         if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
-          await new Promise((resolve) => setTimeout(resolve, SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1)));
+          await new Promise((resolve) => setTimeout(resolve, SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt)));
         }
       }
     }
@@ -588,6 +589,17 @@ export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<strin
   const normalizedUrl = _.trim(playlistUrl);
   if (!SUNO_AUTOMATION_PATTERNS.VALID_PLAYLIST_URL.test(normalizedUrl)) {
     throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+  }
+  const playlistId = normalizedUrl.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1];
+  if (!_.isEmpty(playlistId)) {
+    const response = await fetch(SUNO_AUTOMATION_CONFIG.formatPlaylistApiUrl(playlistId)).catch(() => null);
+    if (response?.ok) {
+      const payload = await response.json().catch(() => null);
+      const songIds = _.uniq(_.compact(_.map(_.castArray(_.get(payload, "playlist_clips", [])), (item) =>
+        _.trim(_.toString(_.get(item, "clip.id"))),
+      )));
+      if (!_.isEmpty(songIds)) return songIds;
+    }
   }
   let browser: any;
   try { browser = await chromium.connectOverCDP(SUNO_CDP_URL); } catch {

@@ -192,7 +192,7 @@ const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedD
   return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
 };
 
-const restoreSeoTimestampTitles = (description: string, songs: GeneratedSong[]): string => {
+const restoreSeoTimestampTitles = (description: string, songs: Array<{ title: string }>): string => {
   let songIndex = 0;
   return _.map(description.split("\n"), (line) => {
     const match = line.match(SUNO_AUTOMATION_PATTERNS.CHAPTER_TIMESTAMP_LINE);
@@ -229,6 +229,7 @@ interface PersistedMusicCreatorState {
   sunoPlaylistUrl?: string;
   downloadPlaylistUrl?: string;
   sunoTrackIds?: string[];
+  curatedDownloadedTracks?: CuratedDownloadedTrack[];
   sunoDownloadFormat?: SunoDownloadFormat;
   sunoEvaluateTracks?: boolean;
   sunoInspo?: string;
@@ -643,14 +644,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
     initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
   );
+  const [curatedDownloadedTracks, setCuratedDownloadedTracks] = useState<CuratedDownloadedTrack[]>(initialState.curatedDownloadedTracks || []);
   useEffect(() => {
     if (_.isEmpty(songs) || _.isEmpty(playlistSeoOptions)) return;
+    if (_.isEqual(curatedDownloadedTracks.length, songs.length)) return;
     const restoredOptions = _.map(playlistSeoOptions, (option) => ({
       ...option,
       description: restoreSeoTimestampTitles(option.description, songs),
     }));
     if (!_.isEqual(restoredOptions, playlistSeoOptions)) setPlaylistSeoOptions(restoredOptions);
-  }, [songs, playlistSeoOptions]);
+  }, [songs, playlistSeoOptions, curatedDownloadedTracks]);
   const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || "");
   const [thumbnailReference, setThumbnailReference] = useState<string>("");
   const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || "");
@@ -709,6 +712,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoPlaylistUrl,
           downloadPlaylistUrl,
           sunoTrackIds,
+          curatedDownloadedTracks,
           sunoDownloadFormat,
           sunoEvaluateTracks,
           sunoInspo,
@@ -717,7 +721,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -844,6 +848,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const previousSongs = songs;
     const previousStyleAnalysis = styleAnalysis;
     const previousPlaylistSeoOptions = playlistSeoOptions;
+    const previousCuratedDownloadedTracks = curatedDownloadedTracks;
     const previousGeneratedThumbnail = generatedThumbnail;
 
     setViewMode("lyrics");
@@ -855,6 +860,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setStyleAnalysis(undefined);
     setSunoPlaylistUrl("");
     setSunoTrackIds([]);
+    setCuratedDownloadedTracks([]);
     void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
@@ -909,6 +915,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         setSongs(previousSongs);
         setStyleAnalysis(previousStyleAnalysis);
         setPlaylistSeoOptions(previousPlaylistSeoOptions);
+        setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
         setGeneratedThumbnail(previousGeneratedThumbnail);
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
       }
@@ -973,6 +980,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setSunoPlaylistUrl("");
     setDownloadPlaylistUrl("");
     setSunoTrackIds([]);
+    setCuratedDownloadedTracks([]);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
@@ -1066,13 +1074,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       if (sunoEvaluateTracks) {
         const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
         if (_.size(curatedTracks) === _.size(songs)) {
-          const timestampTracks = _.map(curatedTracks, (track, index) => ({
-            ...track,
-            title: _.trim(songs[index]?.title) || track.title,
-          }));
+          setCuratedDownloadedTracks(curatedTracks);
           setPlaylistSeoOptions((currentOptions) => _.map(currentOptions, (option) => ({
             ...option,
-            description: replaceSeoTracklistWithTimestamps(option.description, timestampTracks),
+            description: replaceSeoTracklistWithTimestamps(option.description, curatedTracks),
           })));
           setSelectedSeoSongIndex(0);
         }

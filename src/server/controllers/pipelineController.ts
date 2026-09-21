@@ -1062,7 +1062,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSign
           lastError = error;
           signal?.throwIfAborted();
           if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
-            await delayAsync(SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_RETRY_DELAY_MS * (attempt + 1));
+            await delayAsync(SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt));
           }
         }
       }
@@ -1227,8 +1227,18 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   const evaluationRunId = evaluationProjectId || `${SUNO_AUTOMATION_CONFIG.EVALUATION_RUN_ID_PREFIX}${Date.now()}`;
   let planningRun: ReturnType<typeof beginChatPlanningRun> | undefined;
   let evaluationWorkerIds: string[] = [];
+  let evaluationRoomsClosed = false;
   const downloadAbortController = new AbortController();
-  req.once(SUNO_AUTOMATION_CONFIG.EVENT_ABORTED, () => downloadAbortController.abort());
+  const closeEvaluationRooms = async (): Promise<void> => {
+    if (evaluationRoomsClosed || _.isEmpty(evaluationProjectId)) return;
+    evaluationRoomsClosed = true;
+    await Promise.allSettled(_.map(evaluationWorkerIds, (workerId) => closeChatPlanningRoom({
+      provider: AiPlanningFallbackProvider.GeminiChat,
+      projectId: evaluationProjectId,
+      workerId,
+    })));
+    await closeActiveBrowser(true).catch(() => undefined);
+  };
   try {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_STARTED, {
       evaluationRunId,
@@ -1264,7 +1274,6 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID,
         AiPlanningFallbackProvider.GeminiChat,
       );
-      req.once("aborted", planningRun.cancel);
       const trackPairs = _.chunk(tracks, 2);
       if (_.some(trackPairs, (pair) => _.size(pair) < 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
       const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
@@ -1320,15 +1329,19 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       if (rejectedEvaluation) throw rejectedEvaluation.reason;
       const selectedTrackChunks = _.map(evaluationResults, (result) => (result as PromiseFulfilledResult<Array<{ songId: string; title: string; qualityScore: number }>>).value);
       const evaluatedTracks = _.flatten(selectedTrackChunks);
+      const globallyRankedTracks = _.orderBy(evaluatedTracks, ["qualityScore"], ["desc"]);
       const selectedTracksForDownload = _.map(
-        evaluatedTracks,
+        globallyRankedTracks,
         (track, rank) => ({
           songId: track.songId,
           title: `${_.padStart(_.toString(rank + 1), 2, "0")}. ${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`,
           qualityScore: track.qualityScore,
         }),
       );
-      if (!_.isEqual(selectedTracksForDownload.length, trackPairs.length)) {
+      if (
+        !_.isEqual(selectedTracksForDownload.length, trackPairs.length)
+        || !_.isEqual(_.uniq(_.map(selectedTracksForDownload, "songId")).length, trackPairs.length)
+      ) {
         throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_EVALUATION_COUNT_MISMATCH_ERR);
       }
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_ALL_EVALS_COMPLETED, {
@@ -1338,14 +1351,18 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         selectedTrackIds: _.map(selectedTracksForDownload, "songId"),
         qualityScores: _.map(selectedTracksForDownload, "qualityScore"),
       });
+      await closeEvaluationRooms();
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_DOWNLOAD_STARTED, {
         evaluationRunId,
         trackCount: selectedTracksForDownload.length,
         format,
       });
-      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
+      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, planningRun.signal);
       if (!_.isEqual(downloadedPaths.length, trackPairs.length)) throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_DOWNLOAD_COUNT_MISMATCH_ERR);
       const durations = await Promise.all(_.map(downloadedPaths, readMediaDurationSeconds));
+      if (_.some(durations, (durationSeconds) => !_.isFinite(durationSeconds) || durationSeconds <= 0)) {
+        throw createAppError(SUNO_AUTOMATION_TEXTS.AUDIO_DURATION_INVALID_ERR);
+      }
       let cumulativeSeconds = 0;
       const curatedTracks = _.map(selectedTracksForDownload, (track, index) => {
         const durationSeconds = durations[index] || 0;
@@ -1363,6 +1380,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         evaluationRunId,
         expectedDownloadCount: trackPairs.length,
         downloadedCount: downloadedPaths.length,
+        curatedTracks,
         success: true,
       });
       return res.json({ success: true, downloadedPaths, curatedTracks });
@@ -1379,12 +1397,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   } finally {
     planningRun?.complete();
     if (shouldEvaluateTracks && !_.isEmpty(evaluationProjectId)) {
-      await Promise.allSettled(_.map(evaluationWorkerIds, (workerId) => closeChatPlanningRoom({
-        provider: AiPlanningFallbackProvider.GeminiChat,
-        projectId: evaluationProjectId,
-        workerId,
-      })));
-      await closeActiveBrowser(true).catch(() => undefined);
+      await closeEvaluationRooms();
     }
   }
 });

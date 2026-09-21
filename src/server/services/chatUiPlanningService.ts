@@ -793,10 +793,43 @@ const waitForSubmissionConfirmation = async (
         .filter({ visible: true })
         .count()
         .catch(() => 0)) > 0;
-    if (composerIsEmpty && (responseStarted || roomIsBusy)) return true;
+    if (composerIsEmpty || responseStarted || roomIsBusy) return true;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
   return false;
+};
+
+const resubmitStoppedGeminiMessage = async (
+  page: Page,
+  prompt: string,
+  inputSelector: string,
+  sendSelector: string,
+  signal?: AbortSignal,
+): Promise<boolean> => {
+  const stoppedResponse = page.getByText(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_STOPPED_RESPONSE_PATTERN).filter({ visible: true }).last();
+  if (!(await stoppedResponse.isVisible().catch(() => false))) return false;
+  const userMessage = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_MESSAGE_SELECTOR).last();
+  if (!(await userMessage.isVisible().catch(() => false))) return false;
+  await userMessage.hover().catch(() => undefined);
+  const messageEditButton = userMessage.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR).filter({ visible: true }).last();
+  const pageEditButton = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR).filter({ visible: true }).last();
+  const editButton = (await messageEditButton.isVisible().catch(() => false)) ? messageEditButton : pageEditButton;
+  if (!(await editButton.isVisible().catch(() => false))) return false;
+  throwIfPlanningCancelled(signal);
+  await editButton.click();
+  const editInput = await getLastVisibleLocator(page, inputSelector);
+  await editInput.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  await editInput.fill(`${prompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+  await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+  const semanticSendButton = page
+    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
+    .filter({ visible: true })
+    .last();
+  const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
+  const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
+  if (!(await waitForSendButtonReady(sendButton, signal))) return false;
+  await sendButton.click();
+  return true;
 };
 
 const submitPrompt = async (
@@ -863,30 +896,30 @@ const submitPrompt = async (
   appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
   const initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
   const initialCount = initialResponseSnapshots.length;
-  if (!_.isEmpty(attachments)) {
-    throwIfPlanningCancelled(signal);
-    await attachRoomFiles(page, attachments);
-  }
   const normalizedPrompt = normalizeRoomPrompt(prompt);
-  await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
-  await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-  let submissionConfirmed = false;
-  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_ACTION_ATTEMPTS && !submissionConfirmed; attempt += 1) {
-    if ((await getComposerText(input)).length <= CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS) {
-      await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
-      await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+  let submissionConfirmed = await resubmitStoppedGeminiMessage(page, normalizedPrompt, inputSelector, sendSelector, signal);
+  if (!submissionConfirmed) {
+    if (!_.isEmpty(attachments)) {
+      throwIfPlanningCancelled(signal);
+      await attachRoomFiles(page, attachments);
     }
-    const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
-    const semanticSendButton = page
-      .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
-      .filter({ visible: true })
-      .last();
-    const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
-    const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
-    if (sendButtonReady) await sendButton.click();
-    else if (_.isEmpty(attachments)) await input.press("Enter");
-    else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-    submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+    await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+    await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+    for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_ACTION_ATTEMPTS && !submissionConfirmed; attempt += 1) {
+      const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
+      const semanticSendButton = page
+        .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
+        .filter({ visible: true })
+        .last();
+      const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
+      const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
+      if (sendButtonReady) await sendButton.click();
+      else if (_.isEmpty(attachments)) await input.press("Enter");
+      else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+      submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+    }
+  } else {
+    submissionConfirmed = await waitForSubmissionConfirmation(page, await getLastVisibleLocator(page, inputSelector), busySelector, responseSelector, initialCount, signal);
   }
   if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);
   appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace("{0}", _.toString(normalizedPrompt.length)));

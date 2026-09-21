@@ -1750,6 +1750,17 @@ const terminateSharedChromeProcess = async (): Promise<void> => {
   });
 };
 
+const isSharedChromeRunning = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`http://127.0.0.1:${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}/json/version`, {
+      signal: AbortSignal.timeout(1500),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
 export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = false) {
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
@@ -1772,7 +1783,7 @@ export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = fals
     } catch (e) {}
     activeBrowserInstance = null;
   }
-  if (forceCloseSharedBrowser) await terminateSharedChromeProcess();
+  if (forceCloseSharedBrowser && await isSharedChromeRunning()) await terminateSharedChromeProcess();
   activeBrowserHeadless = undefined;
 }
 
