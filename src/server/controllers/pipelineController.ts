@@ -585,11 +585,26 @@ const validateMusicStyleAnalysisContract = (parsed: any, requestId: string): boo
   const isText = (value: unknown): boolean => !_.isEmpty(_.trim(_.toString(value)));
   const isTextArray = (value: unknown, allowEmpty = false): boolean =>
     _.isArray(value) && (allowEmpty || !_.isEmpty(value)) && _.every(value, isText);
+  const explanatoryText = jsonUtils.safeStringify({
+    market: parsed?.market,
+    era: parsed?.era,
+    genre: parsed?.genre,
+    musicalDna: parsed?.musicalDna,
+    lyricalDna: parsed?.lyricalDna,
+    historicalInfluences: parsed?.historicalInfluences,
+    creativeProfile: parsed?.creativeProfile,
+    mustPreserve: parsed?.mustPreserve,
+    mustVary: parsed?.mustVary,
+    mustNotCopy: parsed?.mustNotCopy,
+    uncertainties: parsed?.uncertainties,
+    evidence: parsed?.evidence,
+  });
+  const hasVietnameseAnalysis = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(explanatoryText);
   const market = parsed?.market;
   const musicalDna = parsed?.musicalDna;
   const lyricalDna = parsed?.lyricalDna;
   const creativeProfile = parsed?.creativeProfile;
-  return _.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS) &&
+  return hasVietnameseAnalysis && _.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS) &&
     _.isEqual(parsed?.requestId, requestId) &&
     _.every([market?.country, market?.region, market?.language, market?.dialect, market?.audienceAge, market?.lyricalCharacterAge, market?.contentSuitability], isText) &&
     _.isInteger(_.toNumber(market?.confidence)) && _.inRange(_.toNumber(market?.confidence), 0, 101) &&
