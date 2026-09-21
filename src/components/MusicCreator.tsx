@@ -289,17 +289,19 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({
           onClick={onToggleAiConfig}
           disabled={isLoading}
           className={cn(
-            "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none",
+            "group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none",
             isAiConfigOpen
               ? "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10"
-              : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-slate-700 hover:!text-slate-950 dark:!text-slate-400 dark:hover:!text-slate-200 hover:border-purple-500/40 hover:bg-purple-50/50 dark:hover:bg-slate-900",
+              : "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300",
           )}>
-          <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-          <span className="inline-flex items-center leading-none">{texts.AI_CONFIG_TITLE}</span>
+          <SlidersHorizontal className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform" />
+          <span className="inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+            {texts.AI_CONFIG_TITLE}
+          </span>
           {isAiConfigOpen ? (
-            <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <ChevronUp className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors" />
           ) : (
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors" />
           )}
         </Button>
       </Tooltip>
@@ -318,9 +320,6 @@ const toSentenceCase = (text: string): string => {
   if (!trimmed) return "";
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
-
-const formatNumberedSongTitle = (title: string, index: number): string =>
-  `${index + 1}. ${toSentenceCase(title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`;
 
 const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);

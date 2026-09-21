@@ -680,14 +680,22 @@ const validateMusicSongRankingContract = (parsed: any, songs: any[], requestId: 
 
 const validateSunoSettingsContract = (parsed: any, requestId: string): boolean => {
   const settings = parsed?.settings;
+  const assessment = parsed?.productionAssessment;
+  const rationale = parsed?.parameterRationale;
+  const requiredAssessmentFields = ["syntheticRole", "cultureAndMarket", "eraAndGenre", "vocalProfile", "songAndArrangementProfile", "productionGoal"];
+  const requiredRationaleFields = ["excludeStyles", "vocalGender", "maxMode", "weirdness", "styleInfluence", "variety", "personalize"];
   return parsed?.artifactType === SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS && parsed?.requestId === requestId &&
+    _.every(requiredAssessmentFields, (field) => !_.isEmpty(_.trim(_.toString(assessment?.[field])))) &&
+    _.isArray(assessment?.risks) &&
+    _.every(requiredRationaleFields, (field) => !_.isEmpty(_.trim(_.toString(rationale?.[field])))) &&
+    _.isString(settings?.excludeStyles) &&
     _.includes([SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO], settings?.vocalGender) &&
     settings?.duration === SUNO_AUTOMATION_CONFIG.DURATION_AUTO &&
     _.every([settings?.weirdness, settings?.styleInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
     _.isBoolean(settings?.maxMode) && _.isBoolean(settings?.personalize);
 };
 
-const validateMusicPlaylistSeoContract = (parsed: any, songs: any[]): boolean => {
+const validateMusicPlaylistSeoContract = (parsed: any, _songs?: any[]): boolean => {
   if (!_.isArray(parsed?.seoOptions) || parsed.seoOptions.length !== MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT) return false;
   const normalizedTitles = _.map(parsed.seoOptions, (option: any) => _.toLower(_.trim(_.toString(option?.title))));
   if (_.uniq(normalizedTitles).length !== normalizedTitles.length) return false;
@@ -754,7 +762,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription } = validation.payload;
   const creativeStyle = style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE;
   activeMusicPlanRuns += 1;
-  let currentStage = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
+  let currentStage: string = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
   try {
     const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
     const planningRun = beginChatPlanningRun(requestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, provider);
@@ -871,8 +879,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     let sunoSettingsParsed: any = null;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
-        ? SUNO_AUTOMATION_TEXTS.buildSunoSettingsPrompt(creativeStyle, requestedSongCount, sunoSettingsRequestId)
-        : SUNO_AUTOMATION_TEXTS.buildSunoSettingsCorrectionPrompt(sunoSettingsRequestId);
+        ? SUNO_AUTOMATION_TEXTS.buildSunoSettingsPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId)
+        : SUNO_AUTOMATION_TEXTS.buildSunoSettingsCorrectionPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId);
       try {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS, sunoSettingsRequestId);
         responseProvider = response.provider;

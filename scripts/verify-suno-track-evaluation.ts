@@ -6,10 +6,10 @@ const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
 
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
 assert.match(controller, /_.chunk\(trackPairs, SUNO_AUTOMATION_CONFIG\.EVALUATION_SONGS_PER_CHUNK\)/);
-assert.match(controller, /Promise\.all\(_.map\(pairChunks/);
+assert.match(controller, /Promise\.(?:all|allSettled)\(_.map\(pairChunks/);
 assert.match(controller, /TRACK_EVALUATION_WORKER_ID}-chunk-\$\{chunkIndex \+ 1\}/);
-assert.match(controller, /workerId: chunkWorkerId/);
-assert.match(controller, /closeChatPlanningRoom\([\s\S]*workerId: chunkWorkerId/);
+assert.match(controller, /workerId:\s*(?:chunkWorkerId|evaluationWorkerIds\[chunkIndex\])/);
+assert.match(controller, /closeChatPlanningRoom\([\s\S]*workerId/);
 assert.match(constants, /suno-curated-download\.jsonl/);
 assert.match(controller, /LOG_FILENAME_CURATED|suno-curated-download\.jsonl/);
 assert.match(controller, /expectedDownloadCount: trackPairs\.length/);

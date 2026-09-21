@@ -68,7 +68,7 @@ export default function AutoVideoGenerator({
   currentLang,
   projects,
   selectedProjectId,
-  onSelectProject,
+  onSelectProject: _onSelectProject,
   onUpdateProject,
   theme = AppTheme.DARK,
   cinematicMode = false,

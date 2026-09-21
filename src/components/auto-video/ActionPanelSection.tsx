@@ -6,7 +6,6 @@ import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { Lang } from "../../lib/lang";
-import { AppLanguage } from "../../constants/enums";
 import { FLOW_DIRECT_VIDEO_CONFIG } from "../../constants/config";
 
 interface ActionPanelSectionProps {
@@ -38,7 +37,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
   cancelPipeline,
   T,
   cinematicMode = false,
-  currentLang = "vi",
+  currentLang: _currentLang = "vi",
   estimatedClipCount = 0,
   estimatedBatchCount = 0,
 }) => {

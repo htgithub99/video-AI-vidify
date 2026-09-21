@@ -60,6 +60,22 @@ assets/projects/
 database.db*
 *.db
 *.db-shm
+ms-playwright/
+
+# Scratch & Temporary workspaces
+scratch/
+workspace/
+projects.json
+new_dictionary.json
+activeSceneId.txt
+temp_render_*/
+
+# Local Projects Database and Assets
+projects/
+assets/projects/
+database.db*
+*.db
+*.db-shm
 *.db-wal
 projects.backup.json
 projects_backup_json/
@@ -70,6 +86,7 @@ dist-desktop*/
 build-desktop*/
 electron-dist*/
 builds/
+release/
 temp_align/
 clean-build.ps1
 .vscode/

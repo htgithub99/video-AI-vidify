@@ -666,7 +666,7 @@ const setLocalFilePathsViaCdp = async (page: Page, filePaths: string[]): Promise
     const fileInputNode = _.findLast(nodes, (node) => {
       if (!_.isEqual(_.toUpper(node.nodeName), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_TAG_NAME)) return false;
       const attributes = _.chunk(node.attributes || [], 2);
-      return _.some(attributes, ([name, value]) => _.isEqual(_.toLower(name), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_TYPE_ATTR) && _.isEqual(_.toLower(value), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_FILE_VALUE));
+      return _.some(attributes, ([name, value]) => _.isEqual(_.toLower(String(name)), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_TYPE_ATTR) && _.isEqual(_.toLower(String(value)), CINEMATIC_CHAT_PLANNING_CONFIG.CDP_INPUT_FILE_VALUE));
     });
     if (!fileInputNode?.backendNodeId) return false;
     await session.send(CINEMATIC_CHAT_PLANNING_CONFIG.CDP_DOM_SET_FILE_INPUT_FILES as any, { files: filePaths, backendNodeId: fileInputNode.backendNodeId });
@@ -704,7 +704,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
       if (usesOnlyLocalPaths) {
         if (!(await setLocalFilePathsViaCdp(page, localFilePaths))) continue;
       } else {
-        await fileInputs.nth(index).setInputFiles(inputFiles);
+        await fileInputs.nth(index).setInputFiles(inputFiles as any);
       }
       uploaded = true;
       break;

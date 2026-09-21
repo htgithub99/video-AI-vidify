@@ -486,12 +486,28 @@ Evaluate every song comparatively on: emotional impact, memorable title and hook
   buildMusicRankingCorrectionPrompt: (requestedSongCount: number, rankingRequestId: string): string =>
     `CORRECTION: The previous ranking JSON violated the contract. Re-evaluate all ${requestedSongCount} complete songs in this same room and rank them from strongest to weakest. Return raw JSON only with artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING}", requestId "${rankingRequestId}", and orderedSongIds containing every existing songId exactly once. Do not use creation order, rewrite songs, add commentary or omit IDs.`,
 
-  buildSunoSettingsPrompt: (style: string, songCount: number, requestId: string): string =>
-    `Return raw JSON only. Act as a professional Suno production engineer. Analyze the global style and all ${songCount} songs already created in this room, then choose ONE Advanced/More Options configuration that will be applied unchanged to the entire creation run. Optimize genre fidelity, vocal suitability, musical coherence, hook quality and listenability; do not use generic defaults without musical reasoning. Global style: ${style}
-Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}","requestId":"${requestId}","settings":{"excludeStyles":"comma-separated unwanted styles","vocalGender":"male|female|auto","duration":"auto","maxMode":false,"weirdness":0,"styleInfluence":0,"variety":0,"personalize":false}}. weirdness, styleInfluence and variety must be integers 0-100. Use personalize=false unless a known Suno taste profile is explicitly part of the project.`,
+  buildSunoSettingsPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], requestId: string): string => {
+    const compactSongs = _.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"]));
+    return `Return raw JSON only. Work as the synthetic songwriter-composer and producer defined by the approved Music DNA, as well as a professional vocal director, arranger, recording engineer and Suno production specialist. Never impersonate a real artist. Translate relevant historical influences into high-level musical judgment only.
 
-  buildSunoSettingsCorrectionPrompt: (sunoSettingsRequestId: string): string =>
-    `CORRECTION: Return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}", requestId "${sunoSettingsRequestId}". Include settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list.`,
+First evaluate the country and musical culture, region, language and dialect, target-listener age, lyrical-character age, songwriting and production eras, primary genre and subgenres, rhythmic and harmonic grammar, instrumentation, vocal character, intended singer profile, emotional arcs, song structures, tempo distribution, arrangement density, listening context and production risks across the complete song list. Then choose ONE coherent Advanced/More Options configuration for the entire run.
+
+Every setting must be a consequence of that assessment. Do not copy visible Suno defaults, mechanically use 50/50 values, or use a genre preset without explaining why it fits these exact songs. Balance genre fidelity against originality: weirdness controls experimental deviation, styleInfluence controls adherence to the supplied style, and variety controls variation between outputs. Choose vocalGender from the intended vocal character, not from stereotypes. Exclude only styles or production traits that would materially damage this project. Keep maxMode off unless the music and arrangement genuinely benefit from it. Keep personalize off unless a known Suno taste profile is explicitly part of the project.
+
+USER GLOBAL GUIDANCE:
+${style}
+
+APPROVED MUSIC DNA:
+${jsonUtils.safeStringify(styleAnalysis)}
+
+COMPLETE SONG SUMMARY:
+${jsonUtils.safeStringify(compactSongs)}
+
+Write assessment and rationale values in natural Vietnamese with complete Unicode diacritics. Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}","requestId":"${requestId}","productionAssessment":{"syntheticRole":"","cultureAndMarket":"","eraAndGenre":"","vocalProfile":"","songAndArrangementProfile":"","productionGoal":"","risks":[]},"parameterRationale":{"excludeStyles":"","vocalGender":"","maxMode":"","weirdness":"","styleInfluence":"","variety":"","personalize":""},"settings":{"excludeStyles":"comma-separated unwanted styles","vocalGender":"male|female|auto","duration":"auto","maxMode":false,"weirdness":0,"styleInfluence":0,"variety":0,"personalize":false}}. weirdness, styleInfluence and variety must be integers 0-100.`;
+  },
+
+  buildSunoSettingsCorrectionPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], sunoSettingsRequestId: string): string =>
+    `CORRECTION: Re-evaluate the complete project as its synthetic songwriter-composer, producer, vocal director and Suno production specialist. Do not return generic defaults or unexplained 50/50 values. Use the approved Music DNA and complete song summary below, and return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}", requestId "${sunoSettingsRequestId}". Include useful Vietnamese productionAssessment fields syntheticRole, cultureAndMarket, eraAndGenre, vocalProfile, songAndArrangementProfile, productionGoal and risks; useful Vietnamese parameterRationale for every setting; and settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list. Global guidance: ${style}\nApproved Music DNA: ${jsonUtils.safeStringify(styleAnalysis)}\nComplete song summary: ${jsonUtils.safeStringify(_.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"])))}`,
 
   buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number): string =>
     `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.

@@ -1337,10 +1337,10 @@ export const GROK_AUTOMATION_MESSAGES = {
   USING_ACCOUNT: (email: string) => `[Grok] Sử dụng tài khoản ${email}.`,
   NOT_LOGGED_IN: "Tài khoản Chrome chưa đăng nhập Grok. Vui lòng mở Chrome và đăng nhập một lần để tiếp tục.",
   AGE_GATE_PENDING: "Grok đang chờ xác nhận độ tuổi trong hồ sơ tài khoản.",
-  ATTACHED_ROOM: (projectId: string) => `[Grok] Đã kết nối phiên làm việc cho dự án.`,
+  ATTACHED_ROOM: (_projectId: string) => `[Grok] Đã kết nối phiên làm việc cho dự án.`,
   DURATION_NOT_SUPPORTED: (duration: string) => `[Grok] Thời lượng ${duration} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
   RESOLUTION_NOT_SUPPORTED: (res: string) => `[Grok] Độ phân giải ${res} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
-  CONFIG_DETAIL: (targetRatio: string, requestedDuration: string, requestedResolution: string, isHeadless: boolean) =>
+  CONFIG_DETAIL: (targetRatio: string, requestedDuration: string, requestedResolution: string, _isHeadless: boolean) =>
     `[Grok] Thiết lập: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}.`,
   SENT_PROMPT: (isVideo: boolean) => `[Grok] Đã gửi yêu cầu tạo ${isVideo ? "video" : "hình ảnh"}.`,
   NO_MEDIA_URL: "Grok chưa trả về tệp hình ảnh/video mới.",
@@ -1353,21 +1353,21 @@ export const GROK_AUTOMATION_MESSAGES = {
 export const CHAT_UI_AUTOMATION_MESSAGES = {
   CLEANUP_DELETING_ATTEMPT: (provider: string, attempt: number) => `[Dọn dẹp AI] ${provider}: đang xóa cuộc trò chuyện (lần ${attempt}).`,
   CLEANUP_OPTION_BUTTON_NOT_FOUND: (provider: string) => `[Dọn dẹp AI] ${provider}: không tìm thấy nút tùy chọn.`,
-  CLEANUP_OPTION_BUTTON_STAT: (provider: string, count: number, visible: boolean, clicked: boolean) =>
+  CLEANUP_OPTION_BUTTON_STAT: (provider: string, count: number, _visible: boolean, _clicked: boolean) =>
     `[Dọn dẹp AI] ${provider}: nút tùy chọn (${count} mục).`,
-  CLEANUP_DELETE_COMMAND_NOT_FOUND: (provider: string, menuText: string) => `[Dọn dẹp AI] ${provider}: chưa tìm thấy lệnh xóa.`,
-  CLEANUP_DIALOG_VISIBILITY: (provider: string, visible: boolean) => `[Dọn dẹp AI] ${provider}: hộp thoại xác nhận.`,
-  CLEANUP_CONFIRM_STAT: (provider: string, count: number, clicked: boolean) =>
+  CLEANUP_DELETE_COMMAND_NOT_FOUND: (provider: string, _menuText: string) => `[Dọn dẹp AI] ${provider}: chưa tìm thấy lệnh xóa.`,
+  CLEANUP_DIALOG_VISIBILITY: (provider: string, _visible: boolean) => `[Dọn dẹp AI] ${provider}: hộp thoại xác nhận.`,
+  CLEANUP_CONFIRM_STAT: (provider: string, _count: number, _clicked: boolean) =>
     `[Dọn dẹp AI] ${provider}: xác nhận xóa.`,
   CLEANUP_ALL_ACTIVITY_DELETED: (provider: string) => `[Dọn dẹp AI] ${provider}: đã xóa sạch lịch sử trò chuyện.`,
   CLEANUP_NO_CONVERSATIONS: (provider: string) => `[Dọn dẹp AI] ${provider}: không còn cuộc trò chuyện nào.`,
   CLEANUP_CONVERSATIONS_FOUND: (provider: string, count: number) => `[Dọn dẹp AI] ${provider}: tìm thấy ${count} cuộc trò chuyện.`,
   INPUT_AREA_NOT_FOUND: "Không tìm thấy ô nhập nội dung trên giao diện AI.",
-  PLANNING_JSON_EARLY_RECEIVED: (length: number, elapsedMs: number) =>
+  PLANNING_JSON_EARLY_RECEIVED: (length: number, _elapsedMs: number) =>
     `Đã nhận kịch bản hoàn chỉnh từ AI (${length} ký tự).`,
   PLANNING_RESPONSE_COMPLETE: (length: number) => `Đã nhận toàn bộ nội dung từ AI (${length} ký tự).`,
   PLANNING_WAITING_INPUT: "Đang chờ ô nhập nội dung sẵn sàng...",
-  PLANNING_INPUT_READY: (elapsedMs: number) => "Ô nhập nội dung đã sẵn sàng.",
+  PLANNING_INPUT_READY: (_elapsedMs: number) => "Ô nhập nội dung đã sẵn sàng.",
   MODEL_PICKER_NOT_FOUND: "Sử dụng mô hình mặc định hiện có.",
   SELECTED_MODEL_UNAVAILABLE: "Mô hình đã chọn chưa khả dụng; chuyển sang mô hình mặc định.",
   GEMINI_MODEL_PICKER_NOT_FOUND: "Tiếp tục bằng mô hình Gemini mặc định.",

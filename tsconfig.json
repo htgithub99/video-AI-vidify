@@ -25,7 +25,16 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
+  "include": [
+    "src/**/*",
+    "server.ts",
+    "vite.config.ts",
+    "electron/**/*"
+  ],
   "exclude": [
+    "node_modules",
+    "dist",
+    "release",
     "workspace",
     "scratch",
     "dist-desktop",
