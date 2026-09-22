@@ -26,7 +26,7 @@ export interface SunoCreationResult {
   playlistUrl: string;
   createdSongIds: string[];
 }
-export interface SunoAdvancedSettings { excludeStyles?: string; vocalGender?: "male" | "female" | "auto"; duration?: "auto"; maxMode?: boolean; weirdness?: number; styleInfluence?: number; variety?: number; personalize?: boolean }
+export interface SunoAdvancedSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
 export interface ActiveSunoGeneration { title: string; songIds: string[] }
 export interface SunoDownloadTrack { songId: string; title: string }
 export type SunoDownloadFormat = "mp3" | "wav";
@@ -296,6 +296,9 @@ const ensureAdvancedMode = async (page: Page): Promise<void> => {
 };
 
 const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings): Promise<void> => {
+  if (!aiSettings || !_.every([aiSettings.weirdness, aiSettings.styleInfluence, aiSettings.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101))) {
+    throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
+  }
   await ensureSunoStyle(page, style);
 
   const optionsButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OPTIONS_BUTTON);
@@ -310,18 +313,16 @@ const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: Sun
     }
   }
 
-  const normalizedStyle = style.toLocaleLowerCase("vi");
-  const isGentleGenre = SUNO_AUTOMATION_PATTERNS.GENTLE_GENRE.test(normalizedStyle);
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings?.weirdness ?? (isGentleGenre ? SUNO_AUTOMATION_CONFIG.WEIRDNESS_GENTLE : SUNO_AUTOMATION_CONFIG.WEIRDNESS_DEFAULT));
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings?.styleInfluence ?? (isGentleGenre ? SUNO_AUTOMATION_CONFIG.STYLE_INFLUENCE_GENTLE : SUNO_AUTOMATION_CONFIG.STYLE_INFLUENCE_DEFAULT));
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.VARIETY_LABEL, aiSettings?.variety ?? (isGentleGenre ? SUNO_AUTOMATION_CONFIG.VARIETY_GENTLE : SUNO_AUTOMATION_CONFIG.VARIETY_DEFAULT));
+  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings.weirdness);
+  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings.styleInfluence);
+  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.VARIETY_LABEL, aiSettings.variety);
   const excludeInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.EXCLUDE_STYLES_INPUT);
-  if (excludeInput && !_.isEmpty(_.trim(aiSettings?.excludeStyles))) await fillEditable(excludeInput, _.trim(aiSettings?.excludeStyles));
+  if (excludeInput) await fillEditable(excludeInput, _.trim(aiSettings.excludeStyles));
   await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_DURATION, SUNO_AUTOMATION_CONFIG.OPTION_AUTO);
-  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_MAX_MODE, aiSettings?.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
-  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_PERSONALIZE, aiSettings?.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
+  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_MAX_MODE, aiSettings.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
+  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_PERSONALIZE, aiSettings.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
 
-  const resolvedGender = aiSettings?.vocalGender || (SUNO_AUTOMATION_PATTERNS.FEMALE_VOICE.test(normalizedStyle) ? SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE : SUNO_AUTOMATION_PATTERNS.MALE_VOICE.test(normalizedStyle) ? SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE : SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO);
+  const resolvedGender = aiSettings.vocalGender;
   if (resolvedGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE) {
     const female = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.FEMALE_BUTTON);
     if (female) await female.click().catch(() => undefined);

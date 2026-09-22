@@ -38,13 +38,6 @@ export const SUNO_AUTOMATION_CONFIG = {
   INSPO_SEARCH_WAIT_MS: 1000,
   INSPO_SELECT_WAIT_MS: 500,
 
-  WEIRDNESS_GENTLE: 35,
-  WEIRDNESS_DEFAULT: 50,
-  STYLE_INFLUENCE_GENTLE: 80,
-  STYLE_INFLUENCE_DEFAULT: 65,
-  VARIETY_GENTLE: 25,
-  VARIETY_DEFAULT: 45,
-
   APP_SUBDIR: "VideoAI-Vidify",
   STATUS_PENDING: "pending",
   STATUS_COMPLETE: "complete",
@@ -176,9 +169,6 @@ export const SUNO_AUTOMATION_PATTERNS = {
   GENERATE_API: /\/api\/generate\//i,
   BODY_CREATE: /Create/i,
   BODY_LIBRARY_STUDIO: /Library|Studio/i,
-  GENTLE_GENRE: /(bolero|ballad|trữ tình|acoustic|folk|nhạc vàng)/i,
-  FEMALE_VOICE: /(female|nữ|woman|giọng nữ)/i,
-  MALE_VOICE: /(male|nam|man|giọng nam)/i,
   WEIRDNESS_LABEL: /Weirdness/i,
   STYLE_INFLUENCE_LABEL: /Style Influence/i,
   VARIETY_LABEL: /Variety/i,
@@ -329,6 +319,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   STYLE_INPUT_NOT_FOUND_ERR: "Không tìm thấy ô Styles của Suno.",
   STYLE_INPUT_NOT_APPLIED_ERR: "Suno chưa nhận phong cách đã chọn.",
   MORE_OPTIONS_NOT_FOUND_ERR: "Không tìm thấy mục More Options của Suno.",
+  SUNO_SETTINGS_REQUIRED_ERR: "Thiếu cấu hình Suno do AI phân tích. Vui lòng sáng tác lại để AI đánh giá trước khi tạo nhạc.",
   INSPO_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút Inspo của Suno.",
   INSPO_SEARCH_NOT_FOUND_ERR: "Không tìm thấy ô tìm kiếm playlist Inspo.",
   INSPO_SKIPPED_WARN: "Bỏ qua playlist Inspo không còn khả dụng: {0}",
@@ -357,7 +348,8 @@ export const SUNO_AUTOMATION_TEXTS = {
   CHROME_LOGIN_FAILED_ERR: "Không thể mở Chrome Suno.",
   LOG_SUNO_AUTOMATION_FAILED: "Suno automation failed: {0}",
   LOG_CURATED_DOWNLOAD_FAILED: "Suno curated download failed.",
-  LOG_MUSIC_COVER_FAILED: "Could not generate music cover with Gemini.",
+  LOG_MUSIC_COVER_FAILED: "Could not generate music cover.",
+  LOG_MUSIC_COVER_CHATGPT_FAILED: "ChatGPT could not generate the music cover. Switching to Gemini.",
   INVALID_FILE_DATA_ERR: "Dữ liệu tệp không hợp lệ.",
   SAVE_FILE_DIALOG_FAILED_LOG: "Save file dialog failed",
   SAVE_FILE_DIALOG_FAILED_ERR: "Không thể mở hộp thoại hoặc lưu tệp.",
@@ -405,6 +397,8 @@ export const SUNO_AUTOMATION_TEXTS = {
   MUSIC_ROOM_NON_RETRYABLE_ERROR: /chat_planning_cancelled|fallback.*(?:disabled|unsupported)|login_required|security_verification|attachment.*(?:failed|blocked)/i,
   formatMusicRoomRetryLog: (stage: string, attempt: number, reason: string) =>
     `[MusicPlan] ${stage} retry=${attempt} reason=${reason}`,
+  formatMusicBatchFallbackLog: (startIndex: number, batchCount: number, fallbackBatchSize: number) =>
+    `[MusicPlan] song-composition batch=${startIndex}-${startIndex + batchCount - 1} failed; splitting into batches of at most ${fallbackBatchSize}`,
   formatSunoCreateRetryLog: (title: string, attempt: number, reason: string) =>
     `[Suno] retry create title=${title} attempt=${attempt} reason=${reason}`,
   formatSongCountIssue: (expected: number) => `songs must contain exactly ${expected} items`,

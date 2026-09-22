@@ -538,7 +538,7 @@ export const MUSIC_CREATOR_CONSTANTS = {
   ARTIFACT_TYPE: "music_project",
   PROJECT_ID_PREFIX: "music-",
   SOURCE_CHUNK_CHARACTERS: 12_000,
-  OUTPUT_BATCH_SIZE: 2,
+  OUTPUT_BATCH_SIZES: [4, 3, 2] as const,
   PRESET_STYLES: [
     "Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào",
     "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc",

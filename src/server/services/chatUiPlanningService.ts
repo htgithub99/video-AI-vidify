@@ -1259,6 +1259,73 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
   return response;
 };
 
+export const generateImageWithChatGptUi = async (input: {
+  prompt: string;
+  reference?: string;
+  referenceName?: string;
+  chromeHeadless?: boolean;
+}): Promise<{ base64: string; mimeType: string }> => {
+  const browser = await getOrLaunchGlobalBrowser(input.chromeHeadless, true);
+  const roomKey = `${CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_PROJECT_PREFIX}-${Date.now()}`;
+  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, roomKey);
+  try {
+    await ensureChatGptReady(room, browser.account.email);
+    const imageLocator = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR);
+    const initialSources = await imageLocator.evaluateAll((images) => images.map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src).filter(Boolean));
+    const referenceMatch = _.toString(input.reference).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+    if (referenceMatch) {
+      await attachRoomFiles(room, [{
+        name: _.trim(input.referenceName) || CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_NAME,
+        mimeType: referenceMatch[1],
+        buffer: Buffer.from(referenceMatch[2], "base64"),
+      }]);
+    }
+    const composer = await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR);
+    await composer.fill(input.prompt);
+    const sendButton = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SEND_SELECTOR).filter({ visible: true }).last();
+    if (!(await waitForSendButtonReady(sendButton))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
+    await sendButton.click();
+    const imageSource = await room.waitForFunction(
+      ({ selector, previous }) => {
+        const prior = new Set(previous);
+        const images = Array.from(document.querySelectorAll(selector)) as HTMLImageElement[];
+        return images.map((image) => image.currentSrc || image.src).find((source) => source && !prior.has(source)) || "";
+      },
+      { selector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR, previous: initialSources },
+      { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_GENERATION_TIMEOUT_MS },
+    ).then((handle) => handle.jsonValue() as Promise<string>);
+    let buffer: Buffer;
+    let mimeType = "image/png";
+    const dataMatch = _.toString(imageSource).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+    if (dataMatch) {
+      mimeType = dataMatch[1];
+      buffer = Buffer.from(dataMatch[2], "base64");
+    }
+    else if (_.startsWith(imageSource, "blob:")) {
+      const encoded = await room.evaluate(async (source) => {
+        const response = await fetch(source);
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        let binary = "";
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return { base64: btoa(binary), mimeType: response.headers.get("content-type") || "image/png" };
+      }, imageSource);
+      mimeType = encoded.mimeType;
+      buffer = Buffer.from(encoded.base64, "base64");
+    } else {
+      const response = await room.request.get(imageSource, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_GENERATION_TIMEOUT_MS });
+      if (!response.ok()) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
+      mimeType = response.headers()["content-type"] || mimeType;
+      buffer = await response.body();
+    }
+    if (buffer.length < CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_MIN_BYTES) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
+    return { base64: buffer.toString("base64"), mimeType };
+  } finally {
+    chatGptRooms.delete(roomKey);
+    await room.close().catch(() => undefined);
+    scheduleGlobalBrowserCleanup();
+  }
+};
+
 const providerNames: Record<AiPlanningFallbackProvider, string> = {
   [AiPlanningFallbackProvider.GeminiChat]: "Gemini Chat",
   [AiPlanningFallbackProvider.GrokChat]: "Grok Chat",

@@ -160,6 +160,10 @@ interface MusicStyleAnalysis {
 }
 interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
+interface SunoSettingsAnalysis {
+  productionAssessment: { syntheticRole: string; cultureAndMarket: string; eraAndGenre: string; vocalProfile: string; songAndArrangementProfile: string; productionGoal: string; risks: string[] };
+  parameterRationale: { excludeStyles: string; vocalGender: string; maxMode: string; weirdness: string; styleInfluence: string; variety: string; personalize: string };
+}
 type SunoDownloadFormat = "mp3" | "wav";
 
 type ResultViewMode = "lyrics" | "seo" | "split";
@@ -234,6 +238,7 @@ interface PersistedMusicCreatorState {
   sunoEvaluateTracks?: boolean;
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
+  sunoSettingsAnalysis?: SunoSettingsAnalysis;
 }
 
 const readMusicCreatorState = (): PersistedMusicCreatorState =>
@@ -674,6 +679,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [editingInspoIndex, setEditingInspoIndex] = useState<number | null>(null);
   const [inspoToDelete, setInspoToDelete] = useState<SavedMusicInspo | null>(null);
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
+  const [sunoSettingsAnalysis, setSunoSettingsAnalysis] = useState<SunoSettingsAnalysis | undefined>(initialState.sunoSettingsAnalysis);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -716,11 +723,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoEvaluateTracks,
           sunoInspo,
           sunoSettings,
+          sunoSettingsAnalysis,
         } satisfies PersistedMusicCreatorState,
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings]);
+  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings, sunoSettingsAnalysis]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -846,6 +854,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const referenceSource = _.trim(referenceSongs);
     const previousSongs = songs;
     const previousStyleAnalysis = styleAnalysis;
+    const previousSunoSettings = sunoSettings;
+    const previousSunoSettingsAnalysis = sunoSettingsAnalysis;
     const previousPlaylistSeoOptions = playlistSeoOptions;
     const previousCuratedDownloadedTracks = curatedDownloadedTracks;
     const previousGeneratedThumbnail = generatedThumbnail;
@@ -857,6 +867,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setPlaylistSeoOptions([]);
     setGeneratedThumbnail("");
     setStyleAnalysis(undefined);
+    setSunoSettings(undefined);
+    setSunoSettingsAnalysis(undefined);
     setSunoPlaylistUrl("");
     setSunoTrackIds([]);
     setCuratedDownloadedTracks([]);
@@ -900,6 +912,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const seoWarning = _.toString(_.get(result, "data.seoWarning", ""));
       const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
+      setSunoSettingsAnalysis(_.get(result, "data.sunoSettingsAnalysis") as SunoSettingsAnalysis);
       setSongs(generatedSongs);
       setStyleAnalysis(generatedStyleAnalysis);
       setPlaylistSeoOptions(generatedPlaylistSeo);
@@ -913,6 +926,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       if (err?.name !== "AbortError") {
         setSongs(previousSongs);
         setStyleAnalysis(previousStyleAnalysis);
+        setSunoSettings(previousSunoSettings);
+        setSunoSettingsAnalysis(previousSunoSettingsAnalysis);
         setPlaylistSeoOptions(previousPlaylistSeoOptions);
         setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
         setGeneratedThumbnail(previousGeneratedThumbnail);
@@ -2128,7 +2143,191 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </p>
                   </div>
                 )}
-              </div>
+                {sunoSettings && (
+                  <div className={cn("pt-4 border-t border-fuchsia-500/20 space-y-3.5")}>
+                    <div className={cn("flex items-center gap-2 text-fuchsia-300")}>
+                      <SlidersHorizontal className={cn("h-4 w-4 shrink-0")} />
+                      <span className={cn("text-xs sm:text-sm font-bold")}>{texts.SUNO_SETTINGS_ANALYSIS_TITLE}</span>
+                    </div>
+
+                    {sunoSettingsAnalysis && (
+                      <div className={cn("p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/25 space-y-2 shadow-2xs")}>
+                        <div className={cn("text-[11px] uppercase tracking-wider font-mono font-bold text-purple-300 flex items-center gap-1.5")}>
+                          <WandSparkles className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+                          <span>{texts.SUNO_PRODUCTION_ASSESSMENT_LABEL}</span>
+                        </div>
+                        <div className={cn("flex flex-wrap gap-1.5 text-xs text-slate-200")}>
+                          {[
+                            sunoSettingsAnalysis.productionAssessment.syntheticRole,
+                            sunoSettingsAnalysis.productionAssessment.cultureAndMarket,
+                            sunoSettingsAnalysis.productionAssessment.eraAndGenre,
+                            sunoSettingsAnalysis.productionAssessment.vocalProfile,
+                            sunoSettingsAnalysis.productionAssessment.songAndArrangementProfile,
+                            sunoSettingsAnalysis.productionAssessment.productionGoal,
+                          ].filter(Boolean).map((assessment, idx) => (
+                            <span key={idx} className={cn("inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-slate-200 text-[11px] leading-relaxed")}>
+                              {assessment}
+                            </span>
+                          ))}
+                        </div>
+                        {!_.isEmpty(sunoSettingsAnalysis.productionAssessment.risks) && (
+                          <div className={cn("flex items-start gap-1.5 pt-1 text-[11px] text-amber-300 leading-relaxed border-t border-amber-500/20")}>
+                            <AlertTriangle className={cn("w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5")} />
+                            <span>{sunoSettingsAnalysis.productionAssessment.risks.join("; ")}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={cn("p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs min-w-0")}>
+                      <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
+                        <div className={cn("flex items-center gap-1.5 text-rose-400 font-mono font-bold text-[11px] uppercase tracking-wider")}>
+                          <X className={cn("w-3.5 h-3.5 shrink-0")} />
+                          <span>{texts.SUNO_EXCLUDE_STYLES_LABEL}</span>
+                        </div>
+                        {sunoSettings.excludeStyles && (
+                          <Button
+                            variant="unstyled"
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(sunoSettings.excludeStyles);
+                              setCopiedKey("excludeStyles");
+                              toast.success(texts.SUNO_COPY_EXCLUDE_STYLES_SUCCESS);
+                              setTimeout(() => setCopiedKey(null), 2000);
+                            }}
+                            className={cn(
+                              "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none",
+                            )}
+                            title={copiedKey === "excludeStyles" ? texts.COPIED_LABEL : texts.SUNO_COPY_EXCLUDE_STYLES_BTN}
+                          >
+                            {copiedKey === "excludeStyles" ? (
+                              <Check className={cn("w-3.5 h-3.5 text-emerald-400 shrink-0")} />
+                            ) : (
+                              <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+
+                      {sunoSettings.excludeStyles ? (
+                        <div className={cn("flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1 py-0.5")}>
+                          {sunoSettings.excludeStyles.split(",").map((styleItem, idx) => {
+                            const trimmed = _.trim(styleItem);
+                            if (!trimmed) return null;
+                            return (
+                              <span
+                                key={idx}
+                                className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-950/40 text-rose-200 border border-rose-500/20")}
+                              >
+                                {trimmed}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className={cn("text-[11px] font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-md inline-block")}>
+                          {texts.SUNO_AUTO_VALUE}
+                        </span>
+                      )}
+
+                      {sunoSettingsAnalysis?.parameterRationale.excludeStyles && (
+                        <div className={cn("space-y-0.5 pt-1.5 border-t border-slate-800/60 min-w-0")}>
+                          <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                          <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{sunoSettingsAnalysis.parameterRationale.excludeStyles}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>
+                      {[
+                        {
+                          label: texts.SUNO_VOCAL_GENDER_LABEL,
+                          value: sunoSettings.vocalGender === "male" ? texts.SUNO_MALE_VALUE : sunoSettings.vocalGender === "female" ? texts.SUNO_FEMALE_VALUE : texts.SUNO_AUTO_VALUE,
+                          reason: sunoSettingsAnalysis?.parameterRationale.vocalGender,
+                          badgeClass: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/25",
+                        },
+                        {
+                          label: texts.SUNO_DURATION_LABEL,
+                          value: texts.SUNO_AUTO_VALUE,
+                          reason: "",
+                          badgeClass: "text-slate-300 bg-slate-800/80 border-slate-700/60",
+                        },
+                        {
+                          label: texts.SUNO_MAX_MODE_LABEL,
+                          value: sunoSettings.maxMode ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
+                          reason: sunoSettingsAnalysis?.parameterRationale.maxMode,
+                          badgeClass: sunoSettings.maxMode ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
+                        },
+                        {
+                          label: texts.SUNO_PERSONALIZE_LABEL,
+                          value: sunoSettings.personalize ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
+                          reason: sunoSettingsAnalysis?.parameterRationale.personalize,
+                          badgeClass: sunoSettings.personalize ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
+                        },
+                      ].map((item) => (
+                        <div key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between min-w-0")}>
+                          <div className={cn("flex items-start justify-between gap-1.5")}>
+                            <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 shrink-0")}>{item.label}</span>
+                            <span className={cn("text-[11px] font-bold border px-2 py-0.5 rounded-md shrink-0", item.badgeClass)}>{item.value}</span>
+                          </div>
+                          {item.reason && (
+                            <div className={cn("space-y-0.5 min-w-0")}>
+                              <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                              <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3")}>
+                      {[
+                        {
+                          label: texts.SUNO_WEIRDNESS_LABEL,
+                          value: sunoSettings.weirdness,
+                          reason: sunoSettingsAnalysis?.parameterRationale.weirdness,
+                          gradient: "from-purple-500 to-indigo-500",
+                        },
+                        {
+                          label: texts.SUNO_STYLE_INFLUENCE_LABEL,
+                          value: sunoSettings.styleInfluence,
+                          reason: sunoSettingsAnalysis?.parameterRationale.styleInfluence,
+                          gradient: "from-fuchsia-500 to-pink-500",
+                        },
+                        {
+                          label: texts.SUNO_VARIETY_LABEL,
+                          value: sunoSettings.variety,
+                          reason: sunoSettingsAnalysis?.parameterRationale.variety,
+                          gradient: "from-indigo-500 to-cyan-500",
+                        },
+                      ].map((item) => (
+                        <div key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2.5 shadow-2xs min-w-0")}>
+                          <div className={cn("flex items-center justify-between gap-2")}>
+                            <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400")}>{item.label}</span>
+                            <span className={cn("text-xs font-mono font-bold text-fuchsia-300 bg-fuchsia-500/10 border border-fuchsia-500/25 px-2 py-0.5 rounded-md shrink-0")}>
+                              {item.value}%
+                            </span>
+                          </div>
+
+                          <div className={cn("w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden")}>
+                            <div
+                              className={cn("h-full rounded-full transition-all duration-300 bg-gradient-to-r", item.gradient)}
+                              style={{ width: `${Math.min(100, Math.max(0, item.value))}%` }}
+                            />
+                          </div>
+
+                          {item.reason && (
+                            <div className={cn("space-y-0.5 min-w-0")}>
+                              <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                              <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                </div>
             </details>
           )}
 
