@@ -27,6 +27,7 @@ import {
   Link2,
   Globe,
   Users,
+  Lock,
 } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
@@ -159,6 +160,7 @@ interface MusicStyleAnalysis {
   uncertainties: string[];
 }
 interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
+interface DownloadedMusicTrack { songId: string; title: string }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
 interface SunoSettingsAnalysis {
   productionAssessment: { syntheticRole: string; cultureAndMarket: string; eraAndGenre: string; vocalProfile: string; songAndArrangementProfile: string; productionGoal: string; risks: string[] };
@@ -239,6 +241,9 @@ interface PersistedMusicCreatorState {
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
   sunoSettingsAnalysis?: SunoSettingsAnalysis;
+  downloadedMusicTracks?: DownloadedMusicTrack[];
+  videoBackgroundDescription?: string;
+  showVideoTrackList?: boolean;
 }
 
 const readMusicCreatorState = (): PersistedMusicCreatorState =>
@@ -680,14 +685,20 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [inspoToDelete, setInspoToDelete] = useState<SavedMusicInspo | null>(null);
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
   const [sunoSettingsAnalysis, setSunoSettingsAnalysis] = useState<SunoSettingsAnalysis | undefined>(initialState.sunoSettingsAnalysis);
+  const [downloadedMusicTracks, setDownloadedMusicTracks] = useState<DownloadedMusicTrack[]>(initialState.downloadedMusicTracks || []);
+  const [videoBackgroundDescription, setVideoBackgroundDescription] = useState(initialState.videoBackgroundDescription || "");
+  const [showVideoTrackList, setShowVideoTrackList] = useState(initialState.showVideoTrackList ?? true);
+  const [generatedVideoBackground, setGeneratedVideoBackground] = useState("");
+  const [isGeneratingVideoBackground, setIsGeneratingVideoBackground] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    void Promise.all([readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED)])
-      .then(([reference, generated]) => {
+    void Promise.all([readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND)])
+      .then(([reference, generated, videoBackground]) => {
         if (reference) setThumbnailReference(reference);
         if (generated) setGeneratedThumbnail(generated);
+        if (videoBackground) setGeneratedVideoBackground(videoBackground);
       })
       .catch(() => undefined);
   }, []);
@@ -724,11 +735,19 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoInspo,
           sunoSettings,
           sunoSettingsAnalysis,
+          downloadedMusicTracks,
+          videoBackgroundDescription,
+          showVideoTrackList,
         } satisfies PersistedMusicCreatorState,
       );
     }, 250);
     return () => window.clearTimeout(saveTimer);
-  }, [style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs, styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex, sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks, sunoInspo, sunoSettings, sunoSettingsAnalysis]);
+  }, [
+    style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs,
+    styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex,
+    sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
+    sunoInspo, sunoSettings, sunoSettingsAnalysis, downloadedMusicTracks, videoBackgroundDescription, showVideoTrackList,
+  ]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
     setSavedStyles(nextStyles);
@@ -859,6 +878,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const previousPlaylistSeoOptions = playlistSeoOptions;
     const previousCuratedDownloadedTracks = curatedDownloadedTracks;
     const previousGeneratedThumbnail = generatedThumbnail;
+    const previousDownloadedMusicTracks = downloadedMusicTracks;
+    const previousGeneratedVideoBackground = generatedVideoBackground;
 
     setViewMode("lyrics");
     setIsLoading(true);
@@ -872,7 +893,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setSunoPlaylistUrl("");
     setSunoTrackIds([]);
     setCuratedDownloadedTracks([]);
+    setDownloadedMusicTracks([]);
+    setGeneratedVideoBackground("");
     void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
+    void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
@@ -931,6 +955,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         setPlaylistSeoOptions(previousPlaylistSeoOptions);
         setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
         setGeneratedThumbnail(previousGeneratedThumbnail);
+        setDownloadedMusicTracks(previousDownloadedMusicTracks);
+        setGeneratedVideoBackground(previousGeneratedVideoBackground);
         toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
       }
     } finally {
@@ -1085,6 +1111,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
+      const downloadedTracks = _.castArray(result.downloadedTracks || []) as DownloadedMusicTrack[];
+      if (!_.isEmpty(downloadedTracks)) setDownloadedMusicTracks(downloadedTracks);
       if (sunoEvaluateTracks) {
         const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
         if (_.size(curatedTracks) === _.size(songs)) {
@@ -1179,6 +1207,49 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
     } finally {
       setIsGeneratingThumbnail(false);
+    }
+  };
+
+  const handleGenerateVideoBackground = async () => {
+    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground) return;
+    setIsGeneratingVideoBackground(true);
+    try {
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: jsonUtils.safeStringify({
+          songs: downloadedMusicTracks,
+          style,
+          thumbnailDescription: videoBackgroundDescription,
+          thumbnailReference,
+          thumbnailReferenceName,
+          chromeHeadless,
+          assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
+          showTrackList: showVideoTrackList,
+        }),
+      });
+      const result = await response.json();
+      const imageUrl = _.toString(result.thumbnail);
+      if (!response.ok || !result.success || _.isEmpty(imageUrl)) throw new Error(result.warning || texts.VIDEO_BACKGROUND_ERROR);
+      setGeneratedVideoBackground(imageUrl);
+      await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, imageUrl);
+      toast.success(texts.VIDEO_BACKGROUND_SUCCESS);
+    } catch (error: any) {
+      toast.error(_.toString(error?.message || texts.VIDEO_BACKGROUND_ERROR));
+    } finally {
+      setIsGeneratingVideoBackground(false);
+    }
+  };
+
+  const handleDownloadVideoBackground = async () => {
+    if (_.isEmpty(generatedVideoBackground)) return;
+    const extension = generatedVideoBackground.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
+    try {
+      const blob = await fetch(generatedVideoBackground).then((response) => response.blob());
+      const saved = await saveMusicBlobWithDialog(blob, `${SUNO_AUTOMATION_CONFIG.VIDEO_BACKGROUND_EXPORT_FILENAME}.${extension}`);
+      if (saved) toast.success(texts.VIDEO_BACKGROUND_SUCCESS);
+    } catch (error) {
+      if (_.get(error, "name") !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
     }
   };
 
@@ -1833,6 +1904,130 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </Button>
                 </div>
               )}
+
+              <div className={cn("pt-4 border-t border-slate-800/80 space-y-3")}>
+                <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
+                  <div className={cn("flex items-center gap-2 min-w-0")}>
+                    <div className={cn("w-6 h-6 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0")}>
+                      <ImageIcon className={cn("w-3.5 h-3.5")} />
+                    </div>
+                    <h3 className={cn("text-xs font-black uppercase tracking-wider text-slate-100 font-mono")}>
+                      {texts.VIDEO_BACKGROUND_TITLE}
+                    </h3>
+                  </div>
+
+                  <label
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none",
+                      _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground
+                        ? "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60"
+                        : showVideoTrackList
+                        ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs"
+                        : "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showVideoTrackList}
+                      onChange={(event) => setShowVideoTrackList(event.target.checked)}
+                      disabled={_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground}
+                      className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")}
+                    />
+                    <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
+                  </label>
+                </div>
+
+                {_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) ? (
+                  <div className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
+                    <div className={cn("w-9 h-9 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto shadow-xs")}>
+                      <Lock className={cn("w-4 h-4 text-slate-400")} />
+                    </div>
+                    <div className={cn("space-y-1")}>
+                      <p className={cn("text-xs font-bold text-slate-300")}>
+                        {_.isEmpty(downloadedMusicTracks) ? texts.VIDEO_BACKGROUND_LOCKED : texts.VIDEO_BACKGROUND_REFERENCE_REQUIRED}
+                      </p>
+                      <p className={cn("text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto")}>
+                        {_.isEmpty(downloadedMusicTracks)
+                          ? "Cần tải file nhạc từ danh sách Suno để lấy thông tin bài hát và thời lượng cho khung hình video."
+                          : "Vui lòng tải lên một ảnh mẫu ở mục Ảnh bìa phía trên để AI tạo phong cách tương đồng."}
+                      </p>
+                    </div>
+
+                    <div className={cn("flex items-center justify-center gap-2 pt-1")}>
+                      <div
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
+                          !_.isEmpty(downloadedMusicTracks)
+                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                            : "bg-slate-900 text-slate-400 border-slate-800"
+                        )}
+                      >
+                        {!_.isEmpty(downloadedMusicTracks) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <Disc3 className={cn("w-3 h-3 text-slate-500")} />}
+                        <span>Tải nhạc Suno</span>
+                      </div>
+                      <div
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
+                          !_.isEmpty(thumbnailReference)
+                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                            : "bg-slate-900 text-slate-400 border-slate-800"
+                        )}
+                      >
+                        {!_.isEmpty(thumbnailReference) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <ImageIcon className={cn("w-3 h-3 text-slate-500")} />}
+                        <span>Ảnh bìa mẫu</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={cn("space-y-3")}>
+                    {generatedVideoBackground && !isGeneratingVideoBackground && (
+                      <div className={cn("relative group w-full aspect-video rounded-xl border border-cyan-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
+                        <img
+                          src={generatedVideoBackground}
+                          alt={texts.VIDEO_BACKGROUND_ALT}
+                          title={texts.CLICK_TO_ZOOM}
+                          onClick={() => setPreviewThumbnail(generatedVideoBackground)}
+                          className={cn("w-full h-full object-contain cursor-zoom-in")}
+                        />
+                        <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
+                          <span className={cn("text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>16:9 HD</span>
+                          <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.CLICK_TO_ZOOM}</span>
+                        </div>
+                      </div>
+                    )}
+                    <textarea
+                      rows={3}
+                      value={videoBackgroundDescription}
+                      onChange={(event) => setVideoBackgroundDescription(event.target.value)}
+                      disabled={isGeneratingVideoBackground}
+                      placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER}
+                      className={cn("w-full min-h-[78px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-cyan-500/80 custom-scrollbar")}
+                    />
+                    <div className={cn("grid grid-cols-2 gap-2")}>
+                      <Button
+                        type="button"
+                        variant="unstyled"
+                        onClick={handleGenerateVideoBackground}
+                        disabled={isGeneratingVideoBackground}
+                        className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
+                      >
+                        <RefreshCw className={cn("w-3.5 h-3.5", isGeneratingVideoBackground && "animate-spin")} />
+                        <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="unstyled"
+                        onClick={handleDownloadVideoBackground}
+                        disabled={_.isEmpty(generatedVideoBackground) || isGeneratingVideoBackground}
+                        className={cn("h-9 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed")}
+                      >
+                        <Download className={cn("w-3.5 h-3.5")} />
+                        <span>{texts.VIDEO_BACKGROUND_DOWNLOAD}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

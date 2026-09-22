@@ -4711,17 +4711,15 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       break;
     }
 
+    const responseText = await latestResponse.innerText().catch(() => "");
+    if (generationFailurePattern.test(responseText)) {
+      await captureGeminiDomState(page, isVideoGeneration ? "video_generation_rejected" : "image_generation_rejected");
+      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace("{error}", _.trim(responseText)));
+    }
+
     const isBusy = await latestResponse
       .evaluate((el: HTMLElement, busySelector: string) => Boolean(el.querySelector(busySelector)), GEMINI_MEDIA_EXTRACTION_CONFIG.BUSY_ELEMENT_SELECTOR)
       .catch(() => false);
-
-    if (!isBusy && _.gt(i, 5)) {
-      const responseText = await latestResponse.innerText().catch(() => "");
-      if (generationFailurePattern.test(responseText)) {
-        await captureGeminiDomState(page, isVideoGeneration ? "video_generation_rejected" : "image_generation_rejected");
-        throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace("{error}", _.trim(responseText)));
-      }
-    }
 
     if (!isVideoGeneration && !isBusy && _.gt(i, 5)) {
       const anyImg = await latestResponse

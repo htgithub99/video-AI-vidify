@@ -527,9 +527,13 @@ const generateMusicThumbnailAsset = async (input: {
   reference: string;
   referenceName: string;
   chromeHeadless: boolean;
+  assetPurpose?: string;
+  showTrackList?: boolean;
 }): Promise<{ thumbnail: string | null; warning?: string }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-  const prompt = SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext);
+  const prompt = input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
+    ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false)
+    : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext);
   try {
     logger.info(`[MusicThumbnail] ChatGPT start songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
     const chatGptResult = await generateImageWithChatGptUi({
@@ -1077,6 +1081,8 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
       reference,
       referenceName: _.toString(req.body?.thumbnailReferenceName || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
       chromeHeadless: req.body?.chromeHeadless !== false,
+      assetPurpose: _.toString(req.body?.assetPurpose),
+      showTrackList: req.body?.showTrackList !== false,
     });
     if (_.isEmpty(result.thumbnail)) return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, warning: result.warning });
     await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
@@ -1428,11 +1434,11 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         curatedTracks,
         success: true,
       });
-      return res.json({ success: true, downloadedPaths, curatedTracks });
+      return res.json({ success: true, downloadedPaths, curatedTracks, downloadedTracks: curatedTracks });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
     const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
-    return res.json({ success: true, downloadedPaths });
+    return res.json({ success: true, downloadedPaths, downloadedTracks: tracks });
   } catch (error) {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, {
       evaluationRunId,

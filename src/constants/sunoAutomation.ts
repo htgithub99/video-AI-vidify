@@ -130,6 +130,9 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
   MEDIA_KEY_GENERATED: "generated",
+  MEDIA_KEY_VIDEO_BACKGROUND: "video-background",
+  MUSIC_IMAGE_PURPOSE_VIDEO: "video-background",
+  VIDEO_BACKGROUND_EXPORT_FILENAME: "VIDEO-BACKGROUND",
   SEO_EXPORT_FILENAME: "SEO",
   TEXT_PLAIN_UTF8: "text/plain;charset=utf-8",
   OCTET_STREAM: "application/octet-stream",
@@ -193,6 +196,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   STYLE_SPLIT_SEPARATORS: /[,.;\n]/,
   TRACK_VARIANT_SUFFIX: /\s+-\s+[12]$/,
   CHAPTER_TIMESTAMP_LINE: /^(\s*(?:\d{1,2}:)?\d{1,2}:\d{2})\s+\S.*$/,
+  VIDEO_TRACK_LEADING_METADATA: /^\s*(?:(?:\d{1,2}:)?\d{1,2}:\d{2}|\d+[.)])\s*/,
   SEO_TITLE_LOUD_PUNCTUATION: /!{2,}|\?{2,}/,
   SEO_TITLE_MISLEADING_CLAIMS: /\b(hay nhất|top\s*1|số\s*1|triệu view|viral|gây sốc|không thể bỏ qua|mới nhất)\b/i,
   LETTER_ONLY: /[^\p{L}]+/gu,
@@ -583,5 +587,24 @@ Complete song list:
 ${songTitles}
 
 The song titles and global style above are semantic context only. Do not print the numbered song list, individual song titles, year/date, artist name or extra slogans on the image unless USER CHANGE NOTE explicitly requests them. Keep a clear focal point, clean hierarchy, strong mobile contrast, safe margins and correctly spelled Vietnamese display text. Do not add logos or watermarks that are not requested. Before producing the final image, verify the mandatory change checklist item by item. If pose, scenery or composition was requested to change, reject any draft that remains substantially similar to the attachment and redesign it before responding. Output only the finished cover image.`;
+  },
+
+  buildMusicVideoBackgroundPrompt: (tracks: any[], style: string, description: string, hasReference: boolean, showTrackList: boolean): string => {
+    const exactTrackList = _.map(tracks, (track, index) => {
+      const title = _.trim(_.toString(track?.title)).replace(SUNO_AUTOMATION_PATTERNS.VIDEO_TRACK_LEADING_METADATA, "");
+      return `${_.padStart(_.toString(index + 1), 2, "0")}. ${title}`;
+    }).join("\n");
+    const referenceDirective = hasReference
+      ? "Use the attached uploaded cover image as the visual reference for subject identity, music atmosphere and color direction, while redesigning it as a clean 16:9 in-video background."
+      : "Create an original clean 16:9 in-video background from the music style and downloaded track list.";
+    const trackListDirective = showTrackList
+      ? `Render this exact downloaded track list visibly and legibly on the image. Show only the two-digit track number and title in each line. Never show timestamps, start times or song durations. Preserve every title, Vietnamese diacritic, spelling and order exactly; do not translate, rewrite, omit, duplicate or invent titles:\n${exactTrackList}`
+      : "Do not render any song title or track list on the image.";
+    return `Create one finished professional 16:9 image that will remain visible throughout a Vietnamese music video.
+${referenceDirective}
+Global music style: ${style}
+User note: ${description || "Create an attractive, balanced and readable music-video background."}
+${trackListDirective}
+Keep the composition comfortable for long viewing, with safe margins, strong contrast and no logo or watermark. The image must be a complete final asset, not a mockup. Output only the finished image.`;
   },
 } as const;

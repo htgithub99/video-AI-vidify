@@ -1959,7 +1959,7 @@ export const GEMINI_MEDIA_ERRORS = {
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
   PROVIDER_REJECTION_PATTERN:
-    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|không thành công|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|từ chối|vi phạm (?:chính sách|quy tắc cộng đồng))/i,
+    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|encountered (?:an? )?error|experienced (?:an? )?error|ran into (?:an? )?error|error (?:doing|processing|while|occurred)[\s\S]*?(?:try|request)|(?:could|please) you try again|request failed|không thể tạo|không thành công|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|gặp (?:một )?lỗi|thử lại|từ chối|vi phạm (?:chính sách|quy tắc cộng đồng))/i,
 } as const;
 
 export const CINEMATIC_CONFIG = {
