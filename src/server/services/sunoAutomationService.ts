@@ -26,7 +26,7 @@ export interface SunoCreationResult {
   playlistUrl: string;
   createdSongIds: string[];
 }
-export interface SunoAdvancedSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
+export interface SunoAdvancedSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence?: number; variety: number; personalize: boolean }
 export interface ActiveSunoGeneration { title: string; songIds: string[] }
 export interface SunoDownloadTrack { songId: string; title: string }
 export type SunoDownloadFormat = "mp3" | "wav";
@@ -192,19 +192,29 @@ const dismissCookieConsent = async (page: Page): Promise<void> => {
 };
 
 const ensureSunoCreatePage = async (page: Page): Promise<void> => {
-  await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, {
-    waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED,
-    timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
-  });
-  await dismissCookieConsent(page);
-  const isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
-  if (isCreateRoute && await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS)) return;
-  const createNavigation = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_NAVIGATION, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
-  if (!createNavigation) throw new Error(SUNO_AUTOMATION_TEXTS.CREATE_PAGE_NOT_READY_ERR);
-  await createNavigation.click();
-  if (!(await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS))) {
-    throw new Error(SUNO_AUTOMATION_TEXTS.CREATE_PAGE_NOT_READY_ERR);
+  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_PAGE_NAVIGATION_ATTEMPTS; attempt += 1) {
+    await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, {
+      waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED,
+      timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
+    }).catch(() => undefined);
+    await dismissCookieConsent(page);
+    let isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
+    if (!isCreateRoute) {
+      const createNavigation = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_NAVIGATION, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
+      if (createNavigation) {
+        await createNavigation.click().catch(() => undefined);
+        await page.waitForURL((url) => SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(url.pathname), {
+          timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS,
+        }).catch(() => undefined);
+        isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
+      }
+    }
+    const createForm = isCreateRoute
+      ? await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS)
+      : null;
+    if (isCreateRoute && createForm) return;
   }
+  throw new Error(SUNO_AUTOMATION_TEXTS.CREATE_PAGE_NOT_READY_ERR);
 };
 
 const revealSunoWindow = async (page: Page): Promise<void> => {
@@ -268,25 +278,58 @@ const verifySunoAccount = async (page: Page): Promise<void> => {
 };
 
 const setRangeByLabel = async (page: Page, label: RegExp, value: number): Promise<void> => {
-  const labelLocator = page.getByText(label).first();
-  if (!(await labelLocator.isVisible().catch(() => false))) return;
-  const container = labelLocator.locator(SUNO_AUTOMATION_SELECTORS.RANGE_CONTAINER_XPATH);
-  const range = container.locator(SUNO_AUTOMATION_SELECTORS.RANGE_INPUT).first();
-  if (!(await range.count())) return;
-  await range.evaluate((element: HTMLInputElement, nextValue) => {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-    setter?.call(element, String(nextValue));
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-  }, value);
+  let range = page.getByRole("slider", { name: label }).first();
+  if (!(await range.isVisible().catch(() => false))) {
+    const labelLocator = page.getByText(label, { exact: true }).first();
+    if (!(await labelLocator.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(label.source));
+    range = labelLocator.locator(SUNO_AUTOMATION_SELECTORS.RANGE_CONTAINER_XPATH).locator(SUNO_AUTOMATION_SELECTORS.RANGE_CONTROL).first();
+  }
+  if (!(await range.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(label.source));
+  const container = range.locator("xpath=..");
+  const tagName = await range.evaluate((element) => element.tagName.toLowerCase());
+  const minimum = _.toNumber(await range.getAttribute("aria-valuemin") ?? await range.getAttribute("min") ?? 0);
+  const maximum = _.toNumber(await range.getAttribute("aria-valuemax") ?? await range.getAttribute("max") ?? 100);
+  const controlValue = minimum + ((maximum - minimum) * value / 100);
+  const targetControlValue = tagName === "input" ? controlValue : Math.round(controlValue);
+  if (tagName === "input") {
+    await range.evaluate((element: HTMLInputElement, nextValue) => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(element, String(nextValue));
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    }, targetControlValue);
+  } else {
+    const currentValue = _.toNumber(await range.getAttribute("aria-valuenow"));
+    if (!_.isFinite(currentValue)) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr(label.source));
+    const difference = targetControlValue - currentValue;
+    await range.focus();
+    const key = difference >= 0 ? "ArrowRight" : "ArrowLeft";
+    for (let step = 0; step < Math.abs(difference); step += 1) await range.press(key);
+  }
+  await page.waitForTimeout(250);
+  const rawValue = tagName === "input" ? await range.inputValue().catch(() => "") : await range.getAttribute("aria-valuenow");
+  const actualValue = _.toNumber(rawValue);
+  const containerText = await container.innerText().catch(() => "");
+  const applied = (_.isFinite(actualValue) && Math.abs(actualValue - targetControlValue) <= SUNO_AUTOMATION_CONFIG.RANGE_VALUE_TOLERANCE)
+    || containerText.includes(`${value}%`);
+  if (!applied) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr(label.source));
 };
 
 const selectOptionBySection = async (page: Page, sectionLabel: RegExp, optionText: string): Promise<void> => {
   const label = page.getByText(sectionLabel).first();
-  if (!(await label.isVisible().catch(() => false))) return;
-  const container = label.locator(SUNO_AUTOMATION_SELECTORS.RANGE_PARENT_XPATH);
+  if (!(await label.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(sectionLabel.source));
+  const container = label.locator(SUNO_AUTOMATION_SELECTORS.formatOptionSectionXpath(optionText));
   const option = container.getByText(optionText, { exact: true }).first();
-  if (await option.isVisible().catch(() => false)) await option.click().catch(() => undefined);
+  if (!(await option.isVisible().catch(() => false))) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(`${sectionLabel.source}: ${optionText}`));
+  await option.click();
+  await page.waitForTimeout(150);
+  const button = option.locator("xpath=ancestor-or-self::button[1]");
+  if (await button.count()) {
+    const selected = await button.getAttribute("data-selected");
+    if (selected !== null && selected !== SUNO_AUTOMATION_SELECTORS.VAL_TRUE) {
+      throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr(`${sectionLabel.source}: ${optionText}`));
+    }
+  }
 };
 
 const ensureAdvancedMode = async (page: Page): Promise<void> => {
@@ -295,41 +338,79 @@ const ensureAdvancedMode = async (page: Page): Promise<void> => {
   await advanced.click();
 };
 
-const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings): Promise<void> => {
+const ensureMoreOptionsOpen = async (page: Page): Promise<void> => {
+  const optionsButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OPTIONS_BUTTON);
+  if (!optionsButton) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
+  if ((await optionsButton.getAttribute(SUNO_AUTOMATION_SELECTORS.ARIA_EXPANDED)) === SUNO_AUTOMATION_SELECTORS.VAL_TRUE) return;
+  await optionsButton.click();
+  const deadline = Date.now() + SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS;
+  while ((await optionsButton.getAttribute(SUNO_AUTOMATION_SELECTORS.ARIA_EXPANDED)) !== SUNO_AUTOMATION_SELECTORS.VAL_TRUE) {
+    ensureSunoNotCancelled();
+    if (Date.now() >= deadline) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
+    await page.waitForTimeout(250);
+  }
+};
+
+const applySunoSetting = async (page: Page, label: string, action: () => Promise<void>): Promise<void> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.SUNO_SETTINGS_APPLY_ATTEMPTS; attempt += 1) {
+    try {
+      await ensureMoreOptionsOpen(page);
+      await action();
+      logger.info(SUNO_AUTOMATION_TEXTS.formatSettingAppliedLog(label));
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < SUNO_AUTOMATION_CONFIG.SUNO_SETTINGS_APPLY_ATTEMPTS - 1) {
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatSettingRetryLog(label, attempt + 2, _.toString(_.get(error, "message", error))));
+        await page.waitForTimeout(500);
+      }
+    }
+  }
+  throw lastError;
+};
+
+export const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings): Promise<void> => {
   if (!aiSettings || !_.every([aiSettings.weirdness, aiSettings.styleInfluence, aiSettings.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101))) {
     throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
   }
   await ensureSunoStyle(page, style);
 
-  const optionsButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.OPTIONS_BUTTON);
-  if (!optionsButton) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
-  if ((await optionsButton.getAttribute(SUNO_AUTOMATION_SELECTORS.ARIA_EXPANDED)) !== SUNO_AUTOMATION_SELECTORS.VAL_TRUE) {
-    await optionsButton.click();
-    const deadline = Date.now() + SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS;
-    while ((await optionsButton.getAttribute(SUNO_AUTOMATION_SELECTORS.ARIA_EXPANDED)) !== SUNO_AUTOMATION_SELECTORS.VAL_TRUE) {
-      ensureSunoNotCancelled();
-      if (Date.now() >= deadline) throw new Error(SUNO_AUTOMATION_TEXTS.MORE_OPTIONS_NOT_FOUND_ERR);
-      await page.waitForTimeout(250);
-    }
+  await applySunoSetting(page, "Weirdness", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings.weirdness));
+  await applySunoSetting(page, "Style Influence", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings.styleInfluence));
+  const audioInfluenceControl = page.getByRole("slider", { name: SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL }).first();
+  if (await audioInfluenceControl.isVisible().catch(() => false)) {
+    if (!_.isInteger(aiSettings.audioInfluence) || !_.inRange(aiSettings.audioInfluence!, 0, 101)) throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
+    await applySunoSetting(page, "Audio Influence", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL, aiSettings.audioInfluence));
+  } else {
+    logger.info(SUNO_AUTOMATION_TEXTS.formatConditionalSettingUnavailableLog("Audio Influence"));
   }
-
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings.weirdness);
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings.styleInfluence);
-  await setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.VARIETY_LABEL, aiSettings.variety);
-  const excludeInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.EXCLUDE_STYLES_INPUT);
-  if (excludeInput) await fillEditable(excludeInput, _.trim(aiSettings.excludeStyles));
-  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_DURATION, SUNO_AUTOMATION_CONFIG.OPTION_AUTO);
-  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_MAX_MODE, aiSettings.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
-  await selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_PERSONALIZE, aiSettings.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF);
-
-  const resolvedGender = aiSettings.vocalGender;
-  if (resolvedGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE) {
-    const female = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.FEMALE_BUTTON);
-    if (female) await female.click().catch(() => undefined);
-  } else if (resolvedGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE) {
-    const male = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.MALE_BUTTON);
-    if (male) await male.click().catch(() => undefined);
-  }
+  await applySunoSetting(page, "Variety", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.VARIETY_LABEL, aiSettings.variety));
+  await applySunoSetting(page, "Exclude styles", async () => {
+      const excludeInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.EXCLUDE_STYLES_INPUT);
+      if (!excludeInput) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr("Exclude styles"));
+      await fillEditable(excludeInput, _.trim(aiSettings.excludeStyles));
+      if (!_.isEqual(_.trim(await excludeInput.inputValue()), _.trim(aiSettings.excludeStyles))) {
+        throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr("Exclude styles"));
+      }
+  });
+  await applySunoSetting(page, "Duration", () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_DURATION, SUNO_AUTOMATION_CONFIG.OPTION_AUTO));
+  await applySunoSetting(page, "Max Mode", () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_MAX_MODE, aiSettings.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF));
+  await applySunoSetting(page, "Personalize", () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_PERSONALIZE, aiSettings.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF));
+  await applySunoSetting(page, "Vocal Gender", async () => {
+      const genderButton = aiSettings.vocalGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE
+        ? await firstVisible(page, SUNO_AUTOMATION_SELECTORS.FEMALE_BUTTON)
+        : aiSettings.vocalGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE
+          ? await firstVisible(page, SUNO_AUTOMATION_SELECTORS.MALE_BUTTON)
+          : null;
+      if (aiSettings.vocalGender !== SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO && !genderButton) {
+        throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr("Vocal Gender"));
+      }
+      if (genderButton) await genderButton.click();
+      if (genderButton && await genderButton.getAttribute("data-selected") !== SUNO_AUTOMATION_SELECTORS.VAL_TRUE) {
+        throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr("Vocal Gender"));
+      }
+  });
 };
 
 const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => {

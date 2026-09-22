@@ -11,6 +11,24 @@ assert.match(source, /const configureAdvancedOnce[\s\S]*await ensureSunoStyle\(p
 assert.match(constants, /placeholder\*="style" i\]:not\(\[placeholder\*="exclude" i\]\)/);
 assert.match(constants, /aria-label\*="style" i\]:not\(\[aria-label\*="exclude" i\]\)/);
 assert.doesNotMatch(constants, /textarea:below\(:text\("Styles"\)\)/);
+assert.match(source, /CREATE_PAGE_NAVIGATION_ATTEMPTS/);
+assert.match(source, /waitForURL\(\(url\) => SUNO_AUTOMATION_PATTERNS\.CREATE_PATH\.test\(url\.pathname\)/);
+assert.match(source, /SUNO_SETTINGS_APPLY_ATTEMPTS/);
+assert.match(source, /formatSettingNotAppliedErr/);
+assert.match(source, /aria-valuemin/);
+assert.match(source, /aria-valuemax/);
+assert.match(source, /targetControlValue - currentValue/);
+assert.match(source, /difference >= 0 \? "ArrowRight" : "ArrowLeft"/);
+assert.match(source, /getAttribute\("data-selected"\)/);
+assert.match(source, /getByRole\("slider", \{ name: label \}\)/);
+assert.match(source, /const applySunoSetting = async/);
+assert.match(source, /applySunoSetting\(page, "Weirdness"/);
+assert.match(source, /applySunoSetting\(page, "Style Influence"/);
+assert.match(source, /if \(await audioInfluenceControl\.isVisible\(\)\.catch\(\(\) => false\)\)/);
+assert.match(source, /formatConditionalSettingUnavailableLog\("Audio Influence"\)/);
+assert.doesNotMatch(source, /_\.every\(\[aiSettings\.weirdness, aiSettings\.styleInfluence, aiSettings\.audioInfluence, aiSettings\.variety\]/);
+assert.doesNotMatch(source, /if \(!\(await labelLocator\.isVisible\(\)\.catch\(\(\) => false\)\)\) return/);
+assert.doesNotMatch(source, /if \(excludeInput\) await fillEditable/);
 
 const browser = await chromium.launch({ headless: true });
 try {

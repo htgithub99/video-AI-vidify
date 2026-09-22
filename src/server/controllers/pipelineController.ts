@@ -473,6 +473,7 @@ interface MusicPlanRequestPayload {
   thumbnailReference: string;
   thumbnailReferenceName: string;
   thumbnailDescription: string;
+  sunoInspo: string;
 }
 
 let activeMusicPlanRuns = 0;
@@ -487,6 +488,7 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
   const thumbnailReference = _.toString(req.body?.thumbnailReference);
   const thumbnailReferenceName = _.toString(req.body?.thumbnailReferenceName || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME);
   const thumbnailDescription = _.trim(_.toString(req.body?.thumbnailDescription));
+  const sunoInspo = _.trim(_.toString(req.body?.sunoInspo));
 
   const isValidCount = _.includes(MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS, requestedSongCount as (typeof MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS)[number]);
   if (!isValidCount) {
@@ -505,6 +507,7 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
       thumbnailReference,
       thumbnailReferenceName,
       thumbnailDescription,
+      sunoInspo,
     },
   };
 };
@@ -534,19 +537,24 @@ const generateMusicThumbnailAsset = async (input: {
   const prompt = input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
     ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false)
     : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext);
-  try {
-    logger.info(`[MusicThumbnail] ChatGPT start songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
-    const chatGptResult = await generateImageWithChatGptUi({
-      prompt,
-      reference: input.reference,
-      referenceName: input.referenceName,
-      chromeHeadless: input.chromeHeadless,
-    });
-    logger.info(`[MusicThumbnail] ChatGPT success bytes=${chatGptResult.base64.length}`);
-    return { thumbnail: SUNO_AUTOMATION_TEXTS.formatDataUrl(chatGptResult.mimeType, chatGptResult.base64) };
-  } catch (error) {
-    lastWarning = _.toString(_.get(error, "message", lastWarning));
-    logger.warn(`${SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_CHATGPT_FAILED} reason=${lastWarning}`);
+  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
+    try {
+      logger.info(`[MusicThumbnail] ChatGPT start attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
+      const chatGptResult = await generateImageWithChatGptUi({
+        prompt,
+        reference: input.reference,
+        referenceName: input.referenceName,
+        chromeHeadless: input.chromeHeadless,
+      });
+      if (_.isEmpty(chatGptResult.base64) || chatGptResult.base64.length < CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_MIN_BYTES) {
+        throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
+      }
+      logger.info(`[MusicThumbnail] ChatGPT success attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} bytes=${chatGptResult.base64.length}`);
+      return { thumbnail: SUNO_AUTOMATION_TEXTS.formatDataUrl(chatGptResult.mimeType, chatGptResult.base64) };
+    } catch (error) {
+      lastWarning = _.toString(_.get(error, "message", lastWarning));
+      logger.warn(`${SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_CHATGPT_FAILED} attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} reason=${lastWarning}`);
+    }
   }
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
     try {
@@ -573,12 +581,15 @@ const generateMusicThumbnailAsset = async (input: {
         continue;
       }
       const encodedImage = _.toString(result.base64);
+      if (_.isEmpty(encodedImage) || encodedImage.length < CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_MIN_BYTES) {
+        lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+        logger.warn(`[MusicThumbnail] Gemini returned invalid image attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} bytes=${encodedImage.length}`);
+        continue;
+      }
       const mimeType = _.startsWith(encodedImage, SUNO_AUTOMATION_CONFIG.JPEG_HEADER_SIGNATURE)
         ? SUNO_AUTOMATION_CONFIG.MIME_IMAGE_JPEG
         : SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PNG;
-      const thumbnail = !_.isEmpty(encodedImage)
-        ? SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage)
-        : _.toString(result.fallbackUrl) || null;
+      const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
       if (thumbnail) {
         logger.info(`[MusicThumbnail] success attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} bytes=${encodedImage.length}`);
         return { thumbnail };
@@ -701,16 +712,24 @@ const validateSunoSettingsContract = (parsed: any, requestId: string): boolean =
   const settings = parsed?.settings;
   const assessment = parsed?.productionAssessment;
   const rationale = parsed?.parameterRationale;
+  const analysis = parsed?.parameterAnalysis;
   const requiredAssessmentFields = ["syntheticRole", "cultureAndMarket", "eraAndGenre", "vocalProfile", "songAndArrangementProfile", "productionGoal"];
-  const requiredRationaleFields = ["excludeStyles", "vocalGender", "maxMode", "weirdness", "styleInfluence", "variety", "personalize"];
+  const requiredRationaleFields = ["excludeStyles", "vocalGender", "maxMode", "weirdness", "styleInfluence", "audioInfluence", "variety", "personalize"];
+  const requiredAnalysisFields = ["excludeStyles", "vocalGender", "duration", "maxMode", "weirdness", "styleInfluence", "audioInfluence", "variety", "personalize"];
+  const hasCompleteAnalysis = _.every(requiredAnalysisFields, (field) => {
+    const item = analysis?.[field];
+    return _.every(["evidence", "expectedEffect", "risk", "interactions"], (key) => !_.isEmpty(_.trim(_.toString(item?.[key])))) &&
+      _.isInteger(item?.confidence) && _.inRange(item.confidence, 0, 101);
+  });
   return parsed?.artifactType === SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS && parsed?.requestId === requestId &&
     _.every(requiredAssessmentFields, (field) => !_.isEmpty(_.trim(_.toString(assessment?.[field])))) &&
     _.isArray(assessment?.risks) &&
     _.every(requiredRationaleFields, (field) => !_.isEmpty(_.trim(_.toString(rationale?.[field])))) &&
+    hasCompleteAnalysis &&
     _.isString(settings?.excludeStyles) &&
     _.includes([SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO], settings?.vocalGender) &&
     settings?.duration === SUNO_AUTOMATION_CONFIG.DURATION_AUTO &&
-    _.every([settings?.weirdness, settings?.styleInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
+    _.every([settings?.weirdness, settings?.styleInfluence, settings?.audioInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
     _.isBoolean(settings?.maxMode) && _.isBoolean(settings?.personalize);
 };
 
@@ -778,7 +797,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
   }
 
-  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription } = validation.payload;
+  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo } = validation.payload;
   const creativeStyle = style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE;
   activeMusicPlanRuns += 1;
   let currentStage: string = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
@@ -916,8 +935,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     let sunoSettingsParsed: any = null;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
-        ? SUNO_AUTOMATION_TEXTS.buildSunoSettingsPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId)
-        : SUNO_AUTOMATION_TEXTS.buildSunoSettingsCorrectionPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId);
+        ? SUNO_AUTOMATION_TEXTS.buildSunoSettingsPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId, sunoInspo)
+        : SUNO_AUTOMATION_TEXTS.buildSunoSettingsCorrectionPrompt(creativeStyle, styleAnalysisParsed, rankedSongs, sunoSettingsRequestId, sunoInspo);
       try {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS, sunoSettingsRequestId);
         responseProvider = response.provider;
@@ -981,6 +1000,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         sunoSettingsAnalysis: {
           productionAssessment: sunoSettingsParsed.productionAssessment,
           parameterRationale: sunoSettingsParsed.parameterRationale,
+          parameterAnalysis: sunoSettingsParsed.parameterAnalysis,
         },
         playlistSeoOptions: _.castArray(playlistSeoParsed?.seoOptions || []),
         seoWarning,

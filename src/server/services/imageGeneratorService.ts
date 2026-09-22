@@ -4721,16 +4721,11 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       .evaluate((el: HTMLElement, busySelector: string) => Boolean(el.querySelector(busySelector)), GEMINI_MEDIA_EXTRACTION_CONFIG.BUSY_ELEMENT_SELECTOR)
       .catch(() => false);
 
-    if (!isVideoGeneration && !isBusy && _.gt(i, 5)) {
-      const anyImg = await latestResponse
-        .locator(GEMINI_MEDIA_EXTRACTION_CONFIG.EXCLUDED_IMAGE_SELECTOR)
-        .first()
-        .isVisible()
-        .catch(() => false);
-      if (anyImg) {
-        isMediaFound = true;
-        break;
-      }
+    if (!isVideoGeneration && !isBusy && _.gt(i, 5) && !_.isEmpty(_.trim(responseText))) {
+      await captureGeminiDomState(page, "image_text_only_response");
+      throw new Error(GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE
+        .replace("{mediaType}", GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE)
+        .replace("{error}", _.truncate(_.trim(responseText), { length: 500 })));
     }
 
     await delayAsync(pollIntervalMs);

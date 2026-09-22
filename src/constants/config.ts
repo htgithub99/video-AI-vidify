@@ -1955,11 +1955,12 @@ export const GEMINI_MEDIA_ERRORS = {
   VIDEO_REQUEST_RETURNED_IMAGE: "Gemini trả về ảnh trong khi yêu cầu tạo video; chế độ Tạo video chưa được áp dụng.",
   GENERATION_REJECTED_TEMPLATE: "Gemini từ chối tạo nội dung: {error}",
   GENERATION_TIMEOUT_TEMPLATE: "Gemini không trả về {mediaType} trước khi hết thời gian chờ.",
+  TEXT_ONLY_RESPONSE_TEMPLATE: "Gemini chỉ trả về văn bản thay vì tạo {mediaType}: {error}",
   VIDEO_MEDIA_TYPE: "video",
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
   PROVIDER_REJECTION_PATTERN:
-    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|encountered (?:an? )?error|experienced (?:an? )?error|ran into (?:an? )?error|error (?:doing|processing|while|occurred)[\s\S]*?(?:try|request)|(?:could|please) you try again|request failed|không thể tạo|không thành công|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|gặp (?:một )?lỗi|thử lại|từ chối|vi phạm (?:chính sách|quy tắc cộng đồng))/i,
+    /(?:interests? of third-party content providers|third-party content|provider rejected|content policy|community guidelines|community policy|safety policy|safety filter|may violate|not allowed|couldn['’]?t generate|can['’]?t generate|unable to generate|generation failed|something went wrong|encounter(?:ed|ing) (?:an? )?error|experienced (?:an? )?error|ran into (?:an? )?error|error (?:doing|processing|while|occurred)[\s\S]*?(?:try|request)|(?:can|could|please) (?:i |you )?try (?:something else|again)|request failed|không thể tạo|không thành công|tạo ảnh thất bại|tạo video thất bại|đã xảy ra lỗi|gặp (?:một )?lỗi|thử lại|từ chối|vi phạm (?:chính sách|quy tắc cộng đồng))/i,
 } as const;
 
 export const CINEMATIC_CONFIG = {

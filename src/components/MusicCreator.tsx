@@ -161,11 +161,31 @@ interface MusicStyleAnalysis {
 }
 interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
 interface DownloadedMusicTrack { songId: string; title: string }
-interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; variety: number; personalize: boolean }
+interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence: number; variety: number; personalize: boolean }
 interface SunoSettingsAnalysis {
   productionAssessment: { syntheticRole: string; cultureAndMarket: string; eraAndGenre: string; vocalProfile: string; songAndArrangementProfile: string; productionGoal: string; risks: string[] };
-  parameterRationale: { excludeStyles: string; vocalGender: string; maxMode: string; weirdness: string; styleInfluence: string; variety: string; personalize: string };
+  parameterRationale: { excludeStyles: string; vocalGender: string; maxMode: string; weirdness: string; styleInfluence: string; audioInfluence: string; variety: string; personalize: string };
+  parameterAnalysis?: Record<string, { evidence: string; expectedEffect: string; risk: string; interactions: string; confidence: number }>;
 }
+type SunoParameterAnalysis = NonNullable<SunoSettingsAnalysis["parameterAnalysis"]>[string];
+
+const SunoParameterAnalysisDetails = ({ analysis, texts }: { analysis?: SunoParameterAnalysis; texts: any }) => {
+  if (!analysis) return null;
+  const rows = [
+    [texts.SUNO_SETTINGS_EVIDENCE_LABEL, analysis.evidence],
+    [texts.SUNO_SETTINGS_EFFECT_LABEL, analysis.expectedEffect],
+    [texts.SUNO_SETTINGS_RISK_LABEL, analysis.risk],
+    [texts.SUNO_SETTINGS_INTERACTION_LABEL, analysis.interactions],
+  ];
+  return (
+    <div className={cn("space-y-1.5 pt-1.5 border-t border-slate-800/60 min-w-0")}>
+      {rows.map(([label, value]) => value && (
+        <p key={label} className={cn("text-[10px] text-slate-300 leading-relaxed break-words")}><span className={cn("font-bold text-slate-500")}>{label}: </span>{value}</p>
+      ))}
+      <span className={cn("inline-flex text-[9px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded")}>{texts.SUNO_SETTINGS_CONFIDENCE_LABEL}: {analysis.confidence}%</span>
+    </div>
+  );
+};
 type SunoDownloadFormat = "mp3" | "wav";
 
 type ResultViewMode = "lyrics" | "seo" | "split";
@@ -233,6 +253,7 @@ interface PersistedMusicCreatorState {
   viewMode?: ResultViewMode;
   selectedSeoSongIndex?: number;
   sunoPlaylistUrl?: string;
+  sunoTestPlaylistUrl?: string;
   downloadPlaylistUrl?: string;
   sunoTrackIds?: string[];
   curatedDownloadedTracks?: CuratedDownloadedTrack[];
@@ -670,6 +691,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
+  const [isCreatingSunoTest, setIsCreatingSunoTest] = useState(false);
+  const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || "");
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
   const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || "");
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
@@ -727,6 +750,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           viewMode,
           selectedSeoSongIndex,
           sunoPlaylistUrl,
+          sunoTestPlaylistUrl,
           downloadPlaylistUrl,
           sunoTrackIds,
           curatedDownloadedTracks,
@@ -745,7 +769,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   }, [
     style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs,
     styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex,
-    sunoPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
+    sunoPlaylistUrl, sunoTestPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
     sunoInspo, sunoSettings, sunoSettingsAnalysis, downloadedMusicTracks, videoBackgroundDescription, showVideoTrackList,
   ]);
 
@@ -891,6 +915,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setSunoSettings(undefined);
     setSunoSettingsAnalysis(undefined);
     setSunoPlaylistUrl("");
+    setDownloadPlaylistUrl("");
+    setSunoTestPlaylistUrl("");
     setSunoTrackIds([]);
     setCuratedDownloadedTracks([]);
     setDownloadedMusicTracks([]);
@@ -914,6 +940,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           thumbnailReference,
           thumbnailReferenceName,
           thumbnailDescription,
+          sunoInspo,
           aiExecution: {
             provider,
             model,
@@ -1012,36 +1039,58 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     toast.info(texts.STOPPED_TOAST);
   };
 
-  const handleCreateSunoMusic = async () => {
+  const createSunoMusic = async (testOnly: boolean) => {
     if (_.isEmpty(songs) || isCreatingSuno) return;
     const abortController = new AbortController();
     sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
-    setSunoPlaylistUrl("");
-    setDownloadPlaylistUrl("");
-    setSunoTrackIds([]);
-    setCuratedDownloadedTracks([]);
+    setIsCreatingSunoTest(testOnly);
+    if (testOnly) {
+      setSunoTestPlaylistUrl("");
+    } else {
+      setSunoPlaylistUrl("");
+      setDownloadPlaylistUrl("");
+      setSunoTrackIds([]);
+      setCuratedDownloadedTracks([]);
+    }
     try {
+      const requestedSongs = testOnly ? _.take(songs, 1) : songs;
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ songs, style, inspo: sunoInspo, sunoSettings, evaluateTracks: sunoEvaluateTracks, playlistName: playlistSeoOptions[0]?.title }),
+        body: jsonUtils.safeStringify({
+          songs: requestedSongs,
+          style,
+          inspo: sunoInspo,
+          sunoSettings,
+          evaluateTracks: testOnly ? false : sunoEvaluateTracks,
+          playlistName: testOnly ? texts.formatSunoTestPlaylistName(requestedSongs[0]?.title) : playlistSeoOptions[0]?.title,
+        }),
         signal: abortController.signal,
       });
       const result = await response.json();
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
       const createdPlaylistUrl = _.toString(result.playlistUrl);
-      setSunoPlaylistUrl(createdPlaylistUrl);
-      setDownloadPlaylistUrl(createdPlaylistUrl);
-      setSunoTrackIds(_.map(_.castArray(result.createdSongIds || []), _.toString));
-      toast.success(texts.SUNO_CREATE_SUCCESS);
+      if (testOnly) {
+        setSunoTestPlaylistUrl(createdPlaylistUrl);
+        toast.success(texts.SUNO_TEST_CREATE_SUCCESS);
+      } else {
+        setSunoPlaylistUrl(createdPlaylistUrl);
+        setDownloadPlaylistUrl(createdPlaylistUrl);
+        setSunoTrackIds(_.map(_.castArray(result.createdSongIds || []), _.toString));
+        toast.success(texts.SUNO_CREATE_SUCCESS);
+      }
     } catch (error: any) {
       if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
     } finally {
       sunoAbortControllerRef.current = null;
       setIsCreatingSuno(false);
+      setIsCreatingSunoTest(false);
     }
   };
+
+  const handleCreateSunoMusic = () => createSunoMusic(false);
+  const handleCreateSunoTest = () => createSunoMusic(true);
 
   const handleCancelSunoMusic = () => {
     if (!isCreatingSuno) return;
@@ -2120,11 +2169,20 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button
                     type="button"
                     variant="unstyled"
+                    onClick={handleCreateSunoTest}
+                    disabled={isCreatingSuno}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-100 hover:bg-cyan-200/80 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none">
+                    {isCreatingSunoTest ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="inline-flex items-center leading-none">{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="unstyled"
                     onClick={handleCreateSunoMusic}
                     disabled={isCreatingSuno}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none">
-                    {isCreatingSuno ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
-                    <span className="inline-flex items-center leading-none">{isCreatingSuno ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
+                    {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="inline-flex items-center leading-none">{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
                   </Button>
                   {isCreatingSuno && (
                     <Button
@@ -2198,6 +2256,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             <Button variant="unstyled" type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
               <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
               <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+            </Button>
+            <Button variant="unstyled" type="button" onClick={() => window.open(sunoTestPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SUNO_AUTOMATION_CONFIG.OPENER_POLICY)} disabled={_.isEmpty(sunoTestPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-200 hover:text-white border border-cyan-600/40 hover:border-cyan-400/60 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
+              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+              <span className="inline-flex items-center leading-none">{texts.SUNO_TEST_OPEN_BTN}</span>
             </Button>
           </div>
 
@@ -2431,6 +2493,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{sunoSettingsAnalysis.parameterRationale.excludeStyles}</p>
                         </div>
                       )}
+                      <SunoParameterAnalysisDetails analysis={sunoSettingsAnalysis?.parameterAnalysis?.excludeStyles} texts={texts} />
                     </div>
 
                     <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>
@@ -2439,24 +2502,28 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           label: texts.SUNO_VOCAL_GENDER_LABEL,
                           value: sunoSettings.vocalGender === "male" ? texts.SUNO_MALE_VALUE : sunoSettings.vocalGender === "female" ? texts.SUNO_FEMALE_VALUE : texts.SUNO_AUTO_VALUE,
                           reason: sunoSettingsAnalysis?.parameterRationale.vocalGender,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.vocalGender,
                           badgeClass: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/25",
                         },
                         {
                           label: texts.SUNO_DURATION_LABEL,
                           value: texts.SUNO_AUTO_VALUE,
                           reason: "",
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.duration,
                           badgeClass: "text-slate-300 bg-slate-800/80 border-slate-700/60",
                         },
                         {
                           label: texts.SUNO_MAX_MODE_LABEL,
                           value: sunoSettings.maxMode ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
                           reason: sunoSettingsAnalysis?.parameterRationale.maxMode,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.maxMode,
                           badgeClass: sunoSettings.maxMode ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
                         },
                         {
                           label: texts.SUNO_PERSONALIZE_LABEL,
                           value: sunoSettings.personalize ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
                           reason: sunoSettingsAnalysis?.parameterRationale.personalize,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.personalize,
                           badgeClass: sunoSettings.personalize ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
                         },
                       ].map((item) => (
@@ -2471,28 +2538,39 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
                             </div>
                           )}
+                          <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
                         </div>
                       ))}
                     </div>
 
-                    <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3")}>
+                    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
                       {[
                         {
                           label: texts.SUNO_WEIRDNESS_LABEL,
                           value: sunoSettings.weirdness,
                           reason: sunoSettingsAnalysis?.parameterRationale.weirdness,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.weirdness,
                           gradient: "from-purple-500 to-indigo-500",
                         },
                         {
                           label: texts.SUNO_STYLE_INFLUENCE_LABEL,
                           value: sunoSettings.styleInfluence,
                           reason: sunoSettingsAnalysis?.parameterRationale.styleInfluence,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.styleInfluence,
                           gradient: "from-fuchsia-500 to-pink-500",
+                        },
+                        {
+                          label: texts.SUNO_AUDIO_INFLUENCE_LABEL,
+                          value: sunoSettings.audioInfluence,
+                          reason: sunoSettingsAnalysis?.parameterRationale.audioInfluence,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.audioInfluence,
+                          gradient: "from-amber-500 to-orange-500",
                         },
                         {
                           label: texts.SUNO_VARIETY_LABEL,
                           value: sunoSettings.variety,
                           reason: sunoSettingsAnalysis?.parameterRationale.variety,
+                          analysis: sunoSettingsAnalysis?.parameterAnalysis?.variety,
                           gradient: "from-indigo-500 to-cyan-500",
                         },
                       ].map((item) => (
@@ -2517,6 +2595,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
                             </div>
                           )}
+                          <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
                         </div>
                       ))}
                     </div>

@@ -23,6 +23,9 @@ export const SUNO_AUTOMATION_CONFIG = {
   CREATE_ATTEMPTS_PER_PROMPT: 2,
   MUSIC_ROOM_RESPONSE_ATTEMPTS: 5,
   MUSIC_THUMBNAIL_ATTEMPTS: 5,
+  CREATE_PAGE_NAVIGATION_ATTEMPTS: 3,
+  SUNO_SETTINGS_APPLY_ATTEMPTS: 3,
+  RANGE_VALUE_TOLERANCE: 1,
   SUNO_CREATE_ACTION_ATTEMPTS: 3,
   SUNO_CREATE_ACTION_RETRY_MS: 2000,
   MIN_TRACKS_PER_PROMPT: 2,
@@ -174,6 +177,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   BODY_LIBRARY_STUDIO: /Library|Studio/i,
   WEIRDNESS_LABEL: /Weirdness/i,
   STYLE_INFLUENCE_LABEL: /Style Influence/i,
+  AUDIO_INFLUENCE_LABEL: /Audio Influence/i,
   VARIETY_LABEL: /Variety/i,
   PLAYLIST_API: /studio-api-prod\.suno\.com\/api\/playlist\//i,
   SECTION_DURATION: /Duration/i,
@@ -225,8 +229,10 @@ export const SUNO_AUTOMATION_SELECTORS = {
   BODY: "body",
   SONG_ANCHOR: 'a[href*="/song/"]',
   RANGE_INPUT: 'input[type="range"]',
-  RANGE_CONTAINER_XPATH: "xpath=ancestor::*[.//input[@type='range']][1]",
+  RANGE_CONTROL: 'input[type="range"], [role="slider"]',
+  RANGE_CONTAINER_XPATH: "xpath=ancestor::*[.//input[@type='range'] or .//*[@role='slider']][1]",
   RANGE_PARENT_XPATH: "xpath=ancestor::*[.//button][1]",
+  formatOptionSectionXpath: (optionText: string): string => `xpath=ancestor::*[.//*[normalize-space()="${optionText}"]][1]`,
   STYLE_INPUT_CONTAINER_XPATH: 'xpath=ancestor::div[.//textarea or .//*[@contenteditable="true"]][1]',
   STYLE_TEXTAREA_FILTER: 'textarea:not([placeholder*="exclude" i]), [contenteditable="true"]:not([aria-label*="exclude" i])',
   DIALOG_ROLE: '[role="dialog"]',
@@ -334,6 +340,11 @@ export const SUNO_AUTOMATION_TEXTS = {
   MISSING_SONGS_OR_STYLE_ERR: "Thiếu bài hát hoặc phong cách Suno.",
   CONNECT_CDP_ERR: "Không thể kết nối Chrome Suno riêng.",
   CREATE_PAGE_NOT_READY_ERR: "Không thể chuyển Suno sang màn hình tạo nhạc.",
+  formatSettingControlNotFoundErr: (label: string): string => `Không tìm thấy điều khiển cấu hình Suno: ${label}.`,
+  formatSettingNotAppliedErr: (label: string): string => `Suno chưa áp dụng đúng cấu hình: ${label}.`,
+  formatSettingAppliedLog: (label: string): string => `[Suno Settings] Đã áp dụng: ${label}.`,
+  formatConditionalSettingUnavailableLog: (label: string): string => `[Suno Settings] Suno không hiển thị điều khiển có điều kiện: ${label}.`,
+  formatSettingRetryLog: (label: string, attempt: number, reason: string): string => `[Suno Settings] Thử lại ${label}, lần ${attempt}: ${reason}`,
   CANCELLED_ERR: "Đã hủy tạo nhạc Suno.",
   ALREADY_RUNNING_ERR: "Một tác vụ tạo nhạc Suno khác đang chạy.",
   GENERATION_FAILED_ERR: "Suno không thể hoàn tất một bài hát trong hàng đợi.",
@@ -484,13 +495,24 @@ Evaluate every song comparatively on: emotional impact, memorable title and hook
   buildMusicRankingCorrectionPrompt: (requestedSongCount: number, rankingRequestId: string): string =>
     `CORRECTION: The previous ranking JSON violated the contract. Re-evaluate all ${requestedSongCount} complete songs in this same room and rank them from strongest to weakest. Return raw JSON only with artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING}", requestId "${rankingRequestId}", and orderedSongIds containing every existing songId exactly once. Do not use creation order, rewrite songs, add commentary or omit IDs.`,
 
-  buildSunoSettingsPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], requestId: string): string => {
+  buildSunoSettingsPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], requestId: string, sunoInspo: string): string => {
     const compactSongs = _.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"]));
     return `Return raw JSON only. Work as the synthetic songwriter-composer and producer defined by the approved Music DNA, as well as a professional vocal director, arranger, recording engineer and Suno production specialist. Never impersonate a real artist. Translate relevant historical influences into high-level musical judgment only.
 
-First evaluate the country and musical culture, region, language and dialect, target-listener age, lyrical-character age, songwriting and production eras, primary genre and subgenres, rhythmic and harmonic grammar, instrumentation, vocal character, intended singer profile, emotional arcs, song structures, tempo distribution, arrangement density, listening context and production risks across the complete song list. Then choose ONE coherent Advanced/More Options configuration for the entire run.
+Use the same disciplined reasoning sequence as the composition stage, but change no lyrics, song, supplied Styles or Music DNA. First adopt the synthetic producer, arranger and vocal director appropriate to the approved Music DNA. Then derive a settings-only profile from the country and musical culture, era, primary genre and subgenres, rhythmic and harmonic grammar, instrumentation, vocal character, intended singer, emotional arcs, structures, tempo distribution and production risks across every song. Finally map that profile to ONE coherent Advanced/More Options configuration for the complete run and audit every value against the genre and song evidence.
 
-Every setting must be a consequence of that assessment. Do not copy visible Suno defaults, mechanically use 50/50 values, or use a genre preset without explaining why it fits these exact songs. Balance genre fidelity against originality: weirdness controls experimental deviation, styleInfluence controls adherence to the supplied style, and variety controls variation between outputs. Choose vocalGender from the intended vocal character, not from stereotypes. Exclude only styles or production traits that would materially damage this project. Keep maxMode off unless the music and arrangement genuinely benefit from it. Keep personalize off unless a known Suno taste profile is explicitly part of the project.
+Use Suno's documented control meanings, not invented genre presets:
+- weirdness runs from Safe to Chaos and 50 is Suno's normal expected result. Move away from 50 only when genre conventions and song evidence justify more safety or experimentation; do not automatically force traditional genres near zero.
+- styleInfluence runs from Loose to Strong and controls adherence to the supplied Styles. Judge the clarity, consistency and possible conflicts in the existing Styles, but never rewrite them.
+- variety introduces diversity by adjusting/updating style prompts. Use 0 when exact control of style tags is essential; raise it only when useful variation outweighs the risk of genre drift. Do not describe it merely as distance between songs.
+- audioInfluence controls adherence to an actually selected audio, Voice or inspiration source. Judge the source's purpose and compatibility with Styles. When no applicable source/control exists, explain that it is inactive and choose a neutral stored value; runtime may skip the hidden control.
+- maxMode spends more generation resources/credits and is most useful for songs longer than two minutes, close Covers, style transfer, or consistent vocals/style through a full track. Standard mode suits quick or short ideas. Do not infer it mainly from arrangement density.
+- vocalGender guides Male or Female vocal output; choose from narrator, lyrical viewpoint, intended range and timbre. Use auto when the complete list does not support one shared choice.
+- excludeStyles may contain specific conflicting genres, instruments or vocal styles. Prefer precise harmful traits, verify every exclusion against the primary genre and never exclude a core Music DNA element.
+- personalize uses account-specific My Taste/listening and creation habits. Keep it off unless intentional use of that real profile is explicitly established; genre alone is never evidence.
+- duration remains auto so song structure and lyric density determine the result.
+
+For each parameter, evidence must explicitly name both the relevant genre/Music DNA characteristic and the supporting pattern from the complete song list. State the expected effect, combined too-low/too-high risk, and interactions. Audit these conflicts: strong styleInfluence with low weirdness may repeat formulas; high weirdness with high variety may cause identity drift; strong audioInfluence with strong styleInfluence may overconstrain generation; Variety may mutate style tags the project needs preserved. Confidence must reflect input completeness, not rhetorical certainty. Do not use unexplained defaults, copy visible UI values or claim a control does more than Suno documents.
 
 USER GLOBAL GUIDANCE:
 ${style}
@@ -501,11 +523,14 @@ ${jsonUtils.safeStringify(styleAnalysis)}
 COMPLETE SONG SUMMARY:
 ${jsonUtils.safeStringify(compactSongs)}
 
-Write assessment and rationale values in natural Vietnamese with complete Unicode diacritics. Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}","requestId":"${requestId}","productionAssessment":{"syntheticRole":"","cultureAndMarket":"","eraAndGenre":"","vocalProfile":"","songAndArrangementProfile":"","productionGoal":"","risks":[]},"parameterRationale":{"excludeStyles":"","vocalGender":"","maxMode":"","weirdness":"","styleInfluence":"","variety":"","personalize":""},"settings":{"excludeStyles":"comma-separated unwanted styles","vocalGender":"male|female|auto","duration":"auto","maxMode":false,"weirdness":0,"styleInfluence":0,"variety":0,"personalize":false}}. weirdness, styleInfluence and variety must be integers 0-100.`;
+AUDIO/INSPO STATE:
+${_.isEmpty(_.trim(sunoInspo)) ? "No Audio/Inspo is selected; Suno may hide Audio Influence." : `Selected Audio/Inspo: ${sunoInspo}`}
+
+Write explanations in natural Vietnamese with full Unicode diacritics. Required JSON: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}","requestId":"${requestId}","productionAssessment":{"syntheticRole":"","cultureAndMarket":"","eraAndGenre":"","vocalProfile":"","songAndArrangementProfile":"","productionGoal":"","risks":[]},"parameterRationale":{"excludeStyles":"","vocalGender":"","maxMode":"","weirdness":"","styleInfluence":"","audioInfluence":"","variety":"","personalize":""},"parameterAnalysis":{"excludeStyles":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"vocalGender":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"duration":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"maxMode":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"weirdness":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"styleInfluence":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"audioInfluence":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"variety":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0},"personalize":{"evidence":"","expectedEffect":"","risk":"","interactions":"","confidence":0}},"settings":{"excludeStyles":"comma-separated unwanted styles","vocalGender":"male|female|auto","duration":"auto","maxMode":false,"weirdness":0,"styleInfluence":0,"audioInfluence":0,"variety":0,"personalize":false}}. All nine parameterAnalysis items require non-empty evidence, expectedEffect, risk, interactions and integer confidence 0-100. Numeric settings must be integers 0-100.`;
   },
 
-  buildSunoSettingsCorrectionPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], sunoSettingsRequestId: string): string =>
-    `CORRECTION: Re-evaluate the complete project as its synthetic songwriter-composer, producer, vocal director and Suno production specialist. Do not return generic defaults or unexplained 50/50 values. Use the approved Music DNA and complete song summary below, and return complete raw JSON only for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}", requestId "${sunoSettingsRequestId}". Include useful Vietnamese productionAssessment fields syntheticRole, cultureAndMarket, eraAndGenre, vocalProfile, songAndArrangementProfile, productionGoal and risks; useful Vietnamese parameterRationale for every setting; and settings with excludeStyles, vocalGender male|female|auto, duration auto, boolean maxMode, integer weirdness/styleInfluence/variety 0-100, and boolean personalize. This single configuration must suit the complete song list. Global guidance: ${style}\nApproved Music DNA: ${jsonUtils.safeStringify(styleAnalysis)}\nComplete song summary: ${jsonUtils.safeStringify(_.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"])))}`,
+  buildSunoSettingsCorrectionPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], sunoSettingsRequestId: string, sunoInspo: string): string =>
+    `CORRECTION: Re-evaluate only the Suno Advanced/More Options settings and return the exact complete JSON contract requested previously for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}" and requestId "${sunoSettingsRequestId}". Do not change songs, lyrics, Styles or Music DNA. Apply the approved Music DNA role and map genre plus complete-song evidence to every value. Follow Suno's documented meanings: Weirdness has 50 as normal; Style Influence is Loose-to-Strong adherence to existing Styles; Variety adjusts/updates style prompts and 0 preserves exact tag control; Audio Influence requires a real compatible audio/Voice/inspiration source; Max Mode is primarily for longer-than-two-minute songs, close Covers/style transfer and full-track vocal/style consistency at greater cost; Vocal Gender guides male/female output; Exclude Styles may precisely exclude conflicting genres, instruments or vocal styles; Personalize requires intentional My Taste use; duration stays auto. Do not use generic defaults or unexplained 50/50 values. Include every productionAssessment and parameterRationale field and all nine parameterAnalysis items. Each analysis item requires specific Vietnamese evidence naming both genre/Music DNA and complete-song support, expectedEffect, too-low/too-high risk, interactions and integer confidence 0-100 based on evidence completeness. Audio/Inspo is ${_.isEmpty(_.trim(sunoInspo)) ? "not selected" : `selected: ${sunoInspo}`}. Global guidance: ${style}\nApproved Music DNA: ${jsonUtils.safeStringify(styleAnalysis)}\nComplete song summary: ${jsonUtils.safeStringify(_.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"])))}`,
 
   buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number): string =>
     `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
@@ -560,7 +585,7 @@ Before returning JSON, silently verify every title and description still contain
 - Preserve exact display text only when the note explicitly asks to keep the text; the text may be repositioned or restyled when the note permits a new layout.
 - Preserve no unrequested element merely because it appears in the attachment. The USER CHANGE NOTE is the authoritative edit specification.`
       : "There is no attached reference image. Create an original visual direction from the collection context.";
-    return `Create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers.
+    return `Use the image-generation tool now and create one finished professional 16:9 YouTube music collection cover for Vietnamese viewers. Do not analyze, explain, write a production prompt, provide a blueprint, or answer with text. Your response must contain the newly generated final image itself.
 ${sourceDirective}
 
 PRIORITY 1 — USER CHANGE NOTE (follow literally; do not omit, soften, or reinterpret any concrete detail):
@@ -600,7 +625,7 @@ The song titles and global style above are semantic context only. Do not print t
     const trackListDirective = showTrackList
       ? `Render this exact downloaded track list visibly and legibly on the image. Show only the two-digit track number and title in each line. Never show timestamps, start times or song durations. Preserve every title, Vietnamese diacritic, spelling and order exactly; do not translate, rewrite, omit, duplicate or invent titles:\n${exactTrackList}`
       : "Do not render any song title or track list on the image.";
-    return `Create one finished professional 16:9 image that will remain visible throughout a Vietnamese music video.
+    return `Use the image-generation tool now and create one finished professional 16:9 image that will remain visible throughout a Vietnamese music video. Do not analyze, explain, provide instructions, write a generation prompt, or answer with text. Your response must contain the newly generated final image itself.
 ${referenceDirective}
 Global music style: ${style}
 User note: ${description || "Create an attractive, balanced and readable music-video background."}

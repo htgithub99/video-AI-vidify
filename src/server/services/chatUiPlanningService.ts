@@ -1272,28 +1272,56 @@ export const generateImageWithChatGptUi = async (input: {
     await ensureChatGptReady(room, browser.account.email);
     const imageLocator = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR);
     const initialSources = await imageLocator.evaluateAll((images) => images.map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src).filter(Boolean));
+    const initialResponseCount = await room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR).count();
     const referenceMatch = _.toString(input.reference).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+    if (!_.isEmpty(input.reference) && !referenceMatch) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_INVALID_ERROR);
     if (referenceMatch) {
+      const referenceName = _.trim(input.referenceName) || CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_NAME;
       await attachRoomFiles(room, [{
-        name: _.trim(input.referenceName) || CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_NAME,
+        name: referenceName,
         mimeType: referenceMatch[1],
         buffer: Buffer.from(referenceMatch[2], "base64"),
       }]);
+      const attachmentReady = room
+        .locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_REMOVABLE_BUTTON_SELECTOR)
+        .filter({ visible: true })
+        .or(room.getByText(referenceName, { exact: false }).filter({ visible: true }))
+        .last();
+      await attachmentReady.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_UPLOAD_TIMEOUT_MS })
+        .catch(() => { throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_UPLOAD_ERROR); });
     }
     const composer = await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR);
     await composer.fill(input.prompt);
     const sendButton = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SEND_SELECTOR).filter({ visible: true }).last();
     if (!(await waitForSendButtonReady(sendButton))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
     await sendButton.click();
-    const imageSource = await room.waitForFunction(
-      ({ selector, previous }) => {
+    const submittedAt = Date.now();
+    const generationResult = await room.waitForFunction(
+      ({ selector, previous, responseSelector, busySelector, previousResponseCount, submittedAtMs }) => {
         const prior = new Set(previous);
         const images = Array.from(document.querySelectorAll(selector)) as HTMLImageElement[];
-        return images.map((image) => image.currentSrc || image.src).find((source) => source && !prior.has(source)) || "";
+        const source = images.map((image) => image.currentSrc || image.src).find((value) => value && !prior.has(value)) || "";
+        if (source) return { source, textOnly: false };
+        const responses = Array.from(document.querySelectorAll(responseSelector));
+        const isBusy = Boolean(document.querySelector(busySelector));
+        if (!isBusy && Date.now() - submittedAtMs > 5000 && responses.length > previousResponseCount) {
+          const text = (responses.at(-1)?.textContent || "").trim();
+          if (text.length > 20) return { source: "", textOnly: true };
+        }
+        return null;
       },
-      { selector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR, previous: initialSources },
+      {
+        selector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR,
+        previous: initialSources,
+        responseSelector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR,
+        busySelector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
+        previousResponseCount: initialResponseCount,
+        submittedAtMs: submittedAt,
+      },
       { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_GENERATION_TIMEOUT_MS },
-    ).then((handle) => handle.jsonValue() as Promise<string>);
+    ).then((handle) => handle.jsonValue() as Promise<{ source: string; textOnly: boolean }>);
+    if (generationResult.textOnly || _.isEmpty(generationResult.source)) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_TEXT_ONLY_ERROR);
+    const imageSource = generationResult.source;
     let buffer: Buffer;
     let mimeType = "image/png";
     const dataMatch = _.toString(imageSource).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
