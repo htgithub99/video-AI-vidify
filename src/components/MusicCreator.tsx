@@ -1976,11 +1976,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     variant="unstyled"
                     onClick={() => { void handleNormalizeImageNote("cover"); }}
                     disabled={_.isEmpty(_.trim(thumbnailDescription)) || isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-fuchsia-300 hover:bg-fuchsia-500/10 transition-colors cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                     title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                   >
                     <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingThumbnailNote && "animate-spin")} />
-                    <span>{isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}</span>
                   </Button>
                 </div>
                 <textarea
@@ -2129,11 +2128,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           variant="unstyled"
                           onClick={() => { void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO); }}
                           disabled={_.isEmpty(_.trim(videoBackgroundDescription)) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
-                          className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-cyan-300 hover:bg-cyan-500/10 transition-colors cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                           title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                         >
                           <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingVideoBackgroundNote && "animate-spin")} />
-                          <span>{isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}</span>
                         </Button>
                       </div>
                       <textarea
