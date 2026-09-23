@@ -2102,35 +2102,35 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <label
                     className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none",
-                      _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground
+                      isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground
                         ? "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60"
                         : showVideoTrackList
-                        ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs"
-                        : "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer"
+                          ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs"
+                          : "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer"
                     )}
                   >
                     <input
                       type="checkbox"
                       checked={showVideoTrackList}
                       onChange={(event) => setShowVideoTrackList(event.target.checked)}
-                      disabled={_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground}
+                      disabled={isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground}
                       className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")}
                     />
                     <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
                   </label>
                 </div>
 
-                {_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) ? (
+                {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) ? (
                   <div className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
                     <div className={cn("w-9 h-9 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto shadow-xs")}>
                       <Lock className={cn("w-4 h-4 text-slate-400")} />
                     </div>
                     <div className={cn("space-y-1")}>
                       <p className={cn("text-xs font-bold text-slate-300")}>
-                        {_.isEmpty(downloadedMusicTracks) ? texts.VIDEO_BACKGROUND_LOCKED : texts.VIDEO_BACKGROUND_REFERENCE_REQUIRED}
+                        {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) ? texts.VIDEO_BACKGROUND_LOCKED : texts.VIDEO_BACKGROUND_REFERENCE_REQUIRED}
                       </p>
                       <p className={cn("text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto")}>
-                        {_.isEmpty(downloadedMusicTracks)
+                        {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks)
                           ? "Cần tải file nhạc từ danh sách Suno để lấy thông tin bài hát và thời lượng cho khung hình video."
                           : "Vui lòng tải lên một ảnh mẫu ở mục Ảnh bìa phía trên để AI tạo phong cách tương đồng."}
                       </p>
@@ -2140,12 +2140,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <div
                         className={cn(
                           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
-                          !_.isEmpty(downloadedMusicTracks)
+                          !isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks)
                             ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
                             : "bg-slate-900 text-slate-400 border-slate-800"
                         )}
                       >
-                        {!_.isEmpty(downloadedMusicTracks) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <Disc3 className={cn("w-3 h-3 text-slate-500")} />}
+                        {!isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <Disc3 className={cn("w-3 h-3 text-slate-500")} />}
                         <span>Tải nhạc Suno</span>
                       </div>
                       <div
@@ -2773,7 +2773,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </div>
                   </div>
                 )}
-                </div>
+              </div>
             </details>
           )}
 
