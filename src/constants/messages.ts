@@ -1403,5 +1403,8 @@ export const CHAT_UI_AUTOMATION_MESSAGES = {
     `ChatGPT chưa hoàn tất đăng nhập (url=${url}, title=${title}): ${error}`,
   PLANNING_PROVIDER_INCOMPLETE: (provider: string, error: string) =>
     `[AI Chat Planning] ${provider} chưa hoàn tất: ${error}`,
+  PLANNING_ROOM_RELOADED: (provider: string) =>
+    `[AI Chat Planning] ${provider} lỗi hai lần liên tiếp; đã tải lại trang trong cùng room.`,
+  PLANNING_ROOM_RELOAD_FAILED: (provider: string, error: string) =>
+    `[AI Chat Planning] Chưa thể tải lại trang ${provider}: ${error}`,
 } as const;
-

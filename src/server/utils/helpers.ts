@@ -28,6 +28,44 @@ const repairJsonCandidate = (value: string): string => repairJsonStringControls(
   .replace(/,\s*([}\]])/g, "$1")
   .replace(/^\uFEFF/, "");
 
+const extractBalancedJsonCandidates = (value: string): string[] => {
+  const candidates: string[] = [];
+  for (let start = 0; start < value.length; start += 1) {
+    const opening = value[start];
+    if (opening !== "{" && opening !== "[") continue;
+    const stack: string[] = [opening];
+    let insideString = false;
+    let escaped = false;
+    for (let index = start + 1; index < value.length; index += 1) {
+      const character = value[index];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (character === "\\" && insideString) {
+        escaped = true;
+        continue;
+      }
+      if (character === '"') {
+        insideString = !insideString;
+        continue;
+      }
+      if (insideString) continue;
+      if (character === "{" || character === "[") stack.push(character);
+      else if (character === "}" || character === "]") {
+        const expectedOpening = character === "}" ? "{" : "[";
+        if (stack[stack.length - 1] !== expectedOpening) break;
+        stack.pop();
+        if (_.isEmpty(stack)) {
+          candidates.push(value.slice(start, index + 1));
+          break;
+        }
+      }
+    }
+  }
+  return candidates;
+};
+
 const parseJSON = (text: string, logFailure: boolean): unknown => {
   if (_.isEmpty(text)) return undefined;
   const trimmed = _.trim(text);
@@ -42,6 +80,7 @@ const parseJSON = (text: string, logFailure: boolean): unknown => {
   const candidates = _.uniq(_.compact([
     trimmed,
     ...fencedCandidates,
+    ..._.orderBy(extractBalancedJsonCandidates(trimmed), "length", "desc"),
     objectStart >= 0 && objectEnd > objectStart ? trimmed.slice(objectStart, objectEnd + 1) : "",
     arrayStart >= 0 && arrayEnd > arrayStart ? trimmed.slice(arrayStart, arrayEnd + 1) : "",
   ]));

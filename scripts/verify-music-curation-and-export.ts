@@ -54,8 +54,8 @@ assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload[
 assert.match(service, /AbortSignal\.any/);
 assert.match(service, /signal\?\.throwIfAborted\(\)/);
 assert.doesNotMatch(chatService, /attachmentUploadMutex/);
-assert.match(chatService, /const resubmitStoppedGeminiMessage/);
-assert.match(chatService, /GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR/);
+assert.doesNotMatch(chatService, /resubmit(?:Failed|Stopped)GeminiMessage/);
+assert.doesNotMatch(chatService, /GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR|GEMINI_UPDATE_MESSAGE_BUTTON_SELECTOR/);
 assert.match(chatService, /if \(composerIsEmpty \|\| responseStarted \|\| roomIsBusy\) return true/);
 assert.match(constants, /evaluate these exact pairs again/);
 assert.match(constants, /Never return an ID outside its listed pair/);

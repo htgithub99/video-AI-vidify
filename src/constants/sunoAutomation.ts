@@ -23,6 +23,9 @@ export const SUNO_AUTOMATION_CONFIG = {
   CREATE_ATTEMPTS_PER_PROMPT: 2,
   MUSIC_ROOM_RESPONSE_ATTEMPTS: 5,
   MUSIC_THUMBNAIL_ATTEMPTS: 5,
+  MUSIC_IMAGE_NOTE_ATTEMPTS: 3,
+  MUSIC_IMAGE_NOTE_MAX_CHARACTERS: 3000,
+  MUSIC_IMAGE_MIN_BYTES: 10000,
   CREATE_PAGE_NAVIGATION_ATTEMPTS: 3,
   SUNO_SETTINGS_APPLY_ATTEMPTS: 3,
   RANGE_VALUE_TOLERANCE: 1,
@@ -59,7 +62,10 @@ export const SUNO_AUTOMATION_CONFIG = {
   ARTIFACT_TYPE_RANKING: "music_song_ranking",
   ARTIFACT_TYPE_SETTINGS: "music_suno_settings",
   ARTIFACT_TYPE_SEO: "music_playlist_seo",
+  ARTIFACT_TYPE_IMAGE_NOTE: "music_image_note",
+  MUSIC_IMAGE_NOTE_WORKER_TYPE: "music-image-note",
   MUSIC_PLAN_WORKER_TYPE: "music-creator",
+  MUSIC_COMPOSITION_ROOM_CONCURRENCY: 2,
   TRACK_EVALUATION_WORKER_ID: "music-track-evaluation-room",
   ARTIFACT_TYPE_MUSIC_EVALUATION: "music-track-evaluation",
   AUDIO_DOWNLOAD_TIMEOUT_MS: 120_000,
@@ -322,6 +328,10 @@ export const SUNO_AUTOMATION_SELECTORS = {
   STATE_VISIBLE: "visible" as const,
 } as const;
 
+export const MUSIC_IMAGE_NOTE_TEXTS = {
+  SHARED_PROMPT_RULES: `Treat the user's note as the authoritative edit specification. Make every requested change visually obvious while preserving only the elements explicitly requested. If a reference image is attached, do not copy its pose, scenery, crop or layout when those elements are requested to change. Any requested adult subject styling should be clear, confident and tasteful rather than being silently replaced with the original modest styling. Render only text explicitly required by the user or the authoritative track list; do not invent subtitles, years, genres, slogans, logos or watermarks. Check these conditions against the final image before returning it. Return the finished image, not an explanation.`,
+} as const;
+
 export const SUNO_AUTOMATION_TEXTS = {
   CHROME_OPENED: "Chrome Suno đang mở.",
   CHROME_NOT_FOUND_ERR: "Không tìm thấy Chrome để mở profile Suno.",
@@ -364,7 +374,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   LOG_SUNO_AUTOMATION_FAILED: "Suno automation failed: {0}",
   LOG_CURATED_DOWNLOAD_FAILED: "Suno curated download failed.",
   LOG_MUSIC_COVER_FAILED: "Could not generate music cover.",
-  LOG_MUSIC_COVER_CHATGPT_FAILED: "ChatGPT could not generate the music cover. Switching to Gemini.",
+  MUSIC_IMAGE_NOTE_INVALID_ERROR: "AI chưa trả về chú thích ảnh hợp lệ.",
   INVALID_FILE_DATA_ERR: "Dữ liệu tệp không hợp lệ.",
   SAVE_FILE_DIALOG_FAILED_LOG: "Save file dialog failed",
   SAVE_FILE_DIALOG_FAILED_ERR: "Không thể mở hộp thoại hoặc lưu tệp.",
@@ -408,8 +418,9 @@ export const SUNO_AUTOMATION_TEXTS = {
   CONTRACT_ARTIFACT_TYPE_ISSUE: "artifactType is incorrect",
   CONTRACT_REQUEST_ID_ISSUE: "requestId is incorrect",
   CONTRACT_STYLE_ANALYSIS_ISSUE: "one or more required Music DNA fields or arrays are empty/invalid",
+  CONTRACT_DUPLICATE_SONG_TITLE_ISSUE: "song titles duplicate another completed batch; choose distinct titles and song concepts",
   CONTRACT_SEO_CHECKS_FAILED_ISSUE: "one or more title-case, uniqueness, ASCII, length, or clickbait checks failed",
-  MUSIC_ROOM_NON_RETRYABLE_ERROR: /chat_planning_cancelled|fallback.*(?:disabled|unsupported)|login_required|security_verification|attachment.*(?:failed|blocked)/i,
+  MUSIC_ROOM_NON_RETRYABLE_ERROR: /chat_planning_cancelled|chat_planning_provider_error_room_reload_failed|fallback.*(?:disabled|unsupported)|login_required|security_verification|attachment.*(?:failed|blocked)/i,
   formatMusicRoomRetryLog: (stage: string, attempt: number, reason: string) =>
     `[MusicPlan] ${stage} retry=${attempt} reason=${reason}`,
   formatMusicBatchFallbackLog: (startIndex: number, batchCount: number, fallbackBatchSize: number) =>
@@ -417,7 +428,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   formatSunoCreateRetryLog: (title: string, attempt: number, reason: string) =>
     `[Suno] retry create title=${title} attempt=${attempt} reason=${reason}`,
   formatSongCountIssue: (expected: number) => `songs must contain exactly ${expected} items`,
-  formatSongNoIdIssue: (label: string) => `${label} has no songId`,
+  formatSongNoIdIssue: (label: string) => `${label} has a missing or incorrect songId`,
   formatSongNoTitleIssue: (label: string) => `${label} has no title`,
   formatSongLyricsLengthIssue: (label: string, actual: number) => `${label} lyrics have ${actual}/300 characters`,
   formatSongNoSectionLabelIssue: (label: string) => `${label} lyrics have no Suno section label`,
@@ -485,15 +496,21 @@ Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${Stri
   buildMusicPlanCorrectionPrompt: (batchCount: number, startIndex: number, artifactType: string, batchRequestId: string, issues: string[] = []): string =>
     `CORRECTION: The previous batch failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Retry now in this same room as songwriter/composer, lyricist and music producer. Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original. Return raw JSON only with artifactType "${artifactType}", requestId "${batchRequestId}", and the complete performance-ready songs ${startIndex}-${startIndex + batchCount - 1}. Every song needs a native-language title, at least 300 characters of complete singable lyrics with Suno section labels, specific genre, mood, integer tempoBpm 40-240, at least 3 non-empty structure entries, and at least 1 concrete originality note. For Vietnamese songs, every title and lyric must use complete Unicode diacritics and tone marks. Do not add markdown fences, commentary, truncation, omissions, or per-song SEO. The songs array must contain exactly ${batchCount} complete songs.`,
 
-  buildMusicRankingPrompt: (songCount: number, requestId: string): string =>
-    `Return raw JSON only. Review the complete lyrics and metadata of all ${songCount} songs created earlier in this same room. Rank them from strongest/most attractive to weakest, using professional music-editor judgment rather than creation order.
+  buildMusicRankingPrompt: (songCount: number, requestId: string, songs: unknown[] = []): string =>
+    `Return raw JSON only. Review the complete lyrics and metadata of all ${songCount} songs supplied below. Rank them from strongest/most attractive to weakest, using professional music-editor judgment rather than creation order.
+
+SONGS TO RANK:
+${jsonUtils.safeStringify(songs)}
 
 Evaluate every song comparatively on: emotional impact, memorable title and hook potential, meaningful and coherent lyrics, native wording for the source-inferred language and region, singability and phrasing, imagery, narrative development, originality, fit with the source-derived music identity and global style, production potential, and likely listener retention. Put the best overall song first and decrease gradually through the list. Do not rewrite, add, remove or rename any song.
 
   Return every existing songId exactly once. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING}","requestId":"${requestId}","orderedSongIds":["song_001"]}`,
 
-  buildMusicRankingCorrectionPrompt: (requestedSongCount: number, rankingRequestId: string): string =>
-    `CORRECTION: The previous ranking JSON violated the contract. Re-evaluate all ${requestedSongCount} complete songs in this same room and rank them from strongest to weakest. Return raw JSON only with artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING}", requestId "${rankingRequestId}", and orderedSongIds containing every existing songId exactly once. Do not use creation order, rewrite songs, add commentary or omit IDs.`,
+  buildMusicRankingCorrectionPrompt: (requestedSongCount: number, rankingRequestId: string, songs: unknown[] = []): string =>
+    `CORRECTION: The previous ranking JSON violated the contract. Re-evaluate all ${requestedSongCount} complete songs supplied below and rank them from strongest to weakest.
+SONGS TO RANK:
+${jsonUtils.safeStringify(songs)}
+Return raw JSON only with artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING}", requestId "${rankingRequestId}", and orderedSongIds containing every existing songId exactly once. Do not use creation order, rewrite songs, add commentary or omit IDs.`,
 
   buildSunoSettingsPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], requestId: string, sunoInspo: string): string => {
     const compactSongs = _.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"]));
@@ -532,8 +549,11 @@ Write explanations in natural Vietnamese with full Unicode diacritics. Required 
   buildSunoSettingsCorrectionPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], sunoSettingsRequestId: string, sunoInspo: string): string =>
     `CORRECTION: Re-evaluate only the Suno Advanced/More Options settings and return the exact complete JSON contract requested previously for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}" and requestId "${sunoSettingsRequestId}". Do not change songs, lyrics, Styles or Music DNA. Apply the approved Music DNA role and map genre plus complete-song evidence to every value. Follow Suno's documented meanings: Weirdness has 50 as normal; Style Influence is Loose-to-Strong adherence to existing Styles; Variety adjusts/updates style prompts and 0 preserves exact tag control; Audio Influence requires a real compatible audio/Voice/inspiration source; Max Mode is primarily for longer-than-two-minute songs, close Covers/style transfer and full-track vocal/style consistency at greater cost; Vocal Gender guides male/female output; Exclude Styles may precisely exclude conflicting genres, instruments or vocal styles; Personalize requires intentional My Taste use; duration stays auto. Do not use generic defaults or unexplained 50/50 values. Include every productionAssessment and parameterRationale field and all nine parameterAnalysis items. Each analysis item requires specific Vietnamese evidence naming both genre/Music DNA and complete-song support, expectedEffect, too-low/too-high risk, interactions and integer confidence 0-100 based on evidence completeness. Audio/Inspo is ${_.isEmpty(_.trim(sunoInspo)) ? "not selected" : `selected: ${sunoInspo}`}. Global guidance: ${style}\nApproved Music DNA: ${jsonUtils.safeStringify(styleAnalysis)}\nComplete song summary: ${jsonUtils.safeStringify(_.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"])))}`,
 
-  buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number): string =>
-    `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list already in this room and the selected style below, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
+  buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number, songs: unknown[] = []): string =>
+    `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list supplied below and the selected style, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
+
+SONGS IN PLAYLIST:
+${jsonUtils.safeStringify(songs)}
 
 SELECTED MUSIC STYLE:
 ${style}
@@ -553,8 +573,8 @@ Keep only these practical SEO basics:
 
 Before returning JSON, silently verify every title and description still contains Vietnamese diacritics, every description begins with its only emoji, and only hashtags/tags are ASCII. Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"Nhạc Trữ Tình Đêm Mưa","description":"🌧️ Tiếng đàn ngân lên giữa một đêm nhiều kỷ niệm.","hashtags":["#nhactrutinh"],"tags":["nhac tru tinh"],"seoScore":90}]}`,
 
-  buildMusicPlaylistSeoCorrectionPrompt: (requestedSongCount: number, style: string, requiredCount: number, seoRequestId: string, issues: string[] = []): string =>
-    `CORRECTION: The previous SEO JSON failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Return raw JSON only. Re-read the complete ${requestedSongCount}-song list and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. FIELD RULES MUST NOT BE MIXED: (1) title uses Vietnamese WITH full Unicode diacritics, Title Case, under 100 characters; (2) description starts with exactly one emoji plus one space, followed by concise Vietnamese WITH full diacritics and has no other emoji; (3) ONLY hashtags are unaccented ASCII, exactly 10 unique values; (4) ONLY tags are unaccented ASCII, exactly 12 unique values. Never strip accents from title or description because hashtags/tags are ASCII. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".`,
+  buildMusicPlaylistSeoCorrectionPrompt: (songs: unknown[], style: string, requiredCount: number, seoRequestId: string, issues: string[] = []): string =>
+    `CORRECTION: The previous SEO JSON failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Return raw JSON only. Re-read the complete ${songs.length}-song list below and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. FIELD RULES MUST NOT BE MIXED: (1) title uses Vietnamese WITH full Unicode diacritics, Title Case, under 100 characters; (2) description starts with exactly one emoji plus one space, followed by concise Vietnamese WITH full diacritics and has no other emoji; (3) ONLY hashtags are unaccented ASCII, exactly 10 unique values; (4) ONLY tags are unaccented ASCII, exactly 12 unique values. Never strip accents from title or description because hashtags/tags are ASCII. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".\nSONGS IN PLAYLIST:\n${jsonUtils.safeStringify(songs)}`,
 
   buildMusicPlaylistSeoRegenerationPrompt: (songs: any[], style: string, requestId: string, requiredCount: number): string => {
     const compactSongs = _.map(songs, (song) => ({
@@ -569,8 +589,7 @@ Before returning JSON, silently verify every title and description still contain
 
   buildMusicThumbnailPrompt: (songs: any[], style: string, description: string, hasReference: boolean, sourceContext: string = ""): string => {
     const songTitles = _.map(songs, (song, index) => `${index + 1}. ${_.toString(song?.title)}`).join("\n");
-    const userChangeNote = (description || "Only adapt the cover so it accurately represents this complete music collection.")
-      .replace(/gợi\s*cảm/gi, "quyến rũ, cuốn hút, thời trang và tôn dáng");
+    const userChangeNote = description || "Only adapt the cover so it accurately represents this complete music collection.";
     const compactSourceContext = _.truncate(_.trim(sourceContext), {
       length: SUNO_AUTOMATION_CONFIG.THUMBNAIL_SOURCE_CONTEXT_MAX_CHARACTERS,
       omission: "…",
@@ -592,6 +611,8 @@ PRIORITY 1 — USER CHANGE NOTE (follow literally; do not omit, soften, or reint
 <user_change_note>
 ${userChangeNote}
 </user_change_note>
+
+${MUSIC_IMAGE_NOTE_TEXTS.SHARED_PROMPT_RULES}
 
 USER-NOTE COMPLIANCE RULES:
 - Complete every requested change in the note, including all requested subject, identity, pose, clothing, scenery and typography changes. Do not leave any requested item unchanged.
@@ -630,6 +651,14 @@ ${referenceDirective}
 Global music style: ${style}
 User note: ${description || "Create an attractive, balanced and readable music-video background."}
 ${trackListDirective}
-Keep the composition comfortable for long viewing, with safe margins, strong contrast and no logo or watermark. The image must be a complete final asset, not a mockup. Output only the finished image.`;
+${MUSIC_IMAGE_NOTE_TEXTS.SHARED_PROMPT_RULES}
+Keep the composition comfortable for long viewing, with safe margins and strong contrast. When the track list is enabled, its exact downloaded titles and order take precedence over any text visible in the reference image. The image must be a complete final asset, not a mockup. Output only the finished image.`;
   },
+  buildMusicImageNoteNormalizationPrompt: (note: string, purpose: string, hasReference: boolean, showTrackList: boolean, requestId: string): string =>
+    `Act as a Vietnamese creative director. Rewrite the user's image note into a concise, actionable Vietnamese brief for ${purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? "a 16:9 music-video background" : "a 16:9 music collection cover"}. This is a text-editing task: do not generate an image. Preserve every user requirement and its priority. Separate what must be kept from what must visibly change. Clarify vague visual language with concrete pose, clothing, camera framing, scenery or layout directions only when the note calls for them. If the user asks for an attractive or sensual adult character, express that as a confident, tasteful adult stage look without weakening the requested visual effect. Never invent a new subject, slogan, year, genre or display text.
+${hasReference ? "An image is attached. Use it to identify the existing subject and visible display text only where the user's note asks to preserve them. Transcribe display text exactly when legible; if uncertain, say to keep the original text without guessing its spelling." : "No reference image is attached. Do not claim to have read an existing character or display text."}
+${purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? `The track-list checkbox is ${showTrackList ? "ON" : "OFF"}. The application supplies the authoritative downloaded track list separately at generation time. Do not invent or rewrite titles in this brief.` : "Do not introduce extra display text beyond the user's request."}
+Keep the rewritten note short enough to edit in a text box, using brief bullet points. Return raw JSON only: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE}","requestId":"${requestId}","normalizedNote":"..."}.
+ORIGINAL USER NOTE:
+${note}`,
 } as const;

@@ -449,6 +449,14 @@ const verifyProviderJsonVariants = () => {
   assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
   assert.equal(safeParseJSON('```json\n{"requestId":"room-json-test:video_prompts"}\n```', {}).requestId, "room-json-test:video_prompts");
   assert.equal(safeParseJSON('Here is the result: {"requestId":"room-json-test:video_prompts"}', {}).requestId, "room-json-test:video_prompts");
+  assert.equal(
+    safeParseJSON('{"requestId":"broken{"artifactType":"music_style_analysis","requestId":"music-ok","market":{"country":"Việt Nam"}}', {}).requestId,
+    "music-ok",
+  );
+  assert.equal(
+    safeParseJSON('{"requestId":"old"}{"artifactType":"music_reference_source","requestId":"source-new","receivedPart":2,"totalParts":3}', {}).requestId,
+    "source-new",
+  );
   assert.equal(safeParseJSON('{"lyrics":"[Verse]\nDòng một\nDòng hai"}', {}).lyrics, "[Verse]\nDòng một\nDòng hai");
   assert.equal(safeParseJSON('{"songs":[{"title":"Có Dấu",}],}', {}).songs[0].title, "Có Dấu");
   const invalidSamples = [

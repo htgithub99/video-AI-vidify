@@ -8,6 +8,18 @@ const imageGenerator = fs.readFileSync("src/server/services/imageGeneratorServic
 const sunoAutomation = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
 const chatPlanning = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const geminiMediaErrors = (await import("../src/constants/config.ts")).GEMINI_MEDIA_ERRORS;
+const { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } = await import("../src/constants/sunoAutomation.ts");
+const imageNotePrompt = SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt(
+  "Giữ nguyên text, đổi bố cục.",
+  SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
+  true,
+  true,
+  "note-test",
+);
+assert.match(imageNotePrompt, /Giữ nguyên text, đổi bố cục/);
+assert.match(imageNotePrompt, /image is attached/);
+assert.match(imageNotePrompt, /track-list checkbox is ON/);
+assert.match(imageNotePrompt, /"normalizedNote"/);
 
 assert.match(constants, /Songwriter\/composer/);
 assert.match(constants, /Lyricist:/);
@@ -30,8 +42,9 @@ assert.match(constants, /complete performance-ready lyrics of at least 300 chara
 assert.match(constants, /failed these exact checks/);
 assert.match(constants, /MUSIC_ROOM_RESPONSE_ATTEMPTS: 5/);
 assert.match(constants, /MUSIC_THUMBNAIL_ATTEMPTS: 5/);
+assert.match(constants, /MUSIC_COMPOSITION_ROOM_CONCURRENCY: 2/);
 const refactorConstants = fs.readFileSync("src/constants/refactor.ts", "utf8");
-assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[4, 3, 2\]/);
+assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[2\]/);
 assert.match(controller, /isRetryableMusicRoomError/);
 assert.match(sunoAutomation, /SUNO_CREATE_ACTION_ATTEMPTS/);
 assert.match(sunoAutomation, /formatSunoCreateRetryLog/);
@@ -74,21 +87,20 @@ assert.match(controller, /buildMusicPlanPrompt\(batchCount, startIndex, requeste
 assert.match(controller, /const composeAdaptiveBatch/);
 assert.match(controller, /size < batchCount/);
 assert.match(controller, /const initialBatchSize = _\.first\(MUSIC_CREATOR_CONSTANTS\.OUTPUT_BATCH_SIZES\)/);
+assert.match(controller, /closeChatPlanningRoom\(\{ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG\.MUSIC_PLAN_WORKER_TYPE \}\)/);
+assert.doesNotMatch(controller, /storeMusicSourceInRoom\(batch\.workerId\)/);
 assert.match(controller, /styleAnalysis: styleAnalysisParsed/);
-assert.match(controller, /const \[\{ parsed: playlistSeoParsed, warning: seoWarning \}, \{ thumbnail, warning: thumbnailWarning \}\] = await Promise\.all\(\[/);
-assert.match(controller, /generatePlaylistSeo\(\)[\s\S]*\.catch\([\s\S]*generateMusicThumbnailAsset\(\{[\s\S]*songs: rankedSongs/);
+assert.match(controller, /const \{ parsed: playlistSeoParsed, warning: seoWarning \} = await generatePlaylistSeo\(\)/);
+assert.doesNotMatch(controller, /generatePlaylistSeo\(\)[\s\S]*Promise\.all\([\s\S]*generateMusicThumbnailAsset/);
 assert.match(controller, /playlistSeoOptions: _\.castArray\(playlistSeoParsed\?\.seoOptions \|\| \[\]\)/);
+assert.match(controller, /thumbnail: null/);
 assert.match(controller, /non-fatal SEO failure/);
 assert.match(controller, /forceNewPage: true/);
 assert.match(controller, /attempt < SUNO_AUTOMATION_CONFIG\.MUSIC_THUMBNAIL_ATTEMPTS/);
-assert.match(controller, /generateImageWithChatGptUi\([\s\S]*generateImageWithPlaywright\(/);
-assert.match(controller, /for \(let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG\.MUSIC_THUMBNAIL_ATTEMPTS; attempt \+= 1\) \{[\s\S]*generateImageWithChatGptUi/);
-assert.match(chatPlanning, /export const generateImageWithChatGptUi/);
-assert.match(chatPlanning, /CHATGPT_GENERATED_IMAGE_SELECTOR/);
-assert.match(chatPlanning, /CHATGPT_IMAGE_TEXT_ONLY_ERROR/);
+assert.doesNotMatch(controller, /generateImageWithChatGptUi/);
+assert.match(controller, /for \(let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG\.MUSIC_THUMBNAIL_ATTEMPTS; attempt \+= 1\) \{[\s\S]*generateImageWithPlaywright/);
+assert.doesNotMatch(chatPlanning, /export const generateImageWithChatGptUi/);
 assert.match(imageGenerator, /TEXT_ONLY_RESPONSE_TEMPLATE/);
-assert.match(chatPlanning, /await attachRoomFiles\(room,[\s\S]*CHATGPT_IMAGE_REFERENCE_UPLOAD_TIMEOUT_MS/);
-assert.match(chatPlanning, /CHATGPT_IMAGE_REFERENCE_UPLOAD_ERROR/);
 assert.doesNotMatch(constants, /WEIRDNESS_GENTLE|STYLE_INFLUENCE_GENTLE|VARIETY_GENTLE|GENTLE_GENRE/);
 assert.match(sunoAutomation, /SUNO_SETTINGS_REQUIRED_ERR/);
 assert.match(constants, /weirdness runs from Safe to Chaos and 50 is Suno's normal expected result/);
@@ -108,6 +120,8 @@ assert.match("We ran into an error while processing your request. Please try aga
 assert.match("I seem to be encountering an error. Can I try something else for you?", geminiMediaErrors.PROVIDER_REJECTION_PATTERN);
 assert.match("Đã xảy ra lỗi khi tạo hình ảnh, vui lòng thử lại.", geminiMediaErrors.PROVIDER_REJECTION_PATTERN);
 assert.match(component, /thumbnailReference,[\s\S]*thumbnailReferenceName,[\s\S]*thumbnailDescription/);
+assert.match(component, /setSongs\(generatedSongs\)[\s\S]*fetch\(API_ROUTES\.PIPELINE_MUSIC_THUMBNAIL/);
+assert.doesNotMatch(component, /setIsLoading\(true\);\s*setIsGeneratingThumbnail\(true\);\s*setSongs\(\[\]\)/);
 assert.match(component, /sourceContext: referenceSongs/);
 assert.doesNotMatch(constants, /Primary collection SEO direction/);
 assert.match(constants, /buildMusicThumbnailPrompt: \(songs: any\[\], style: string, description: string, hasReference: boolean, sourceContext: string = ""\)/);
@@ -123,7 +137,13 @@ assert.match(component, /songs: downloadedMusicTracks/);
 assert.match(constants, /PRIORITY 1 — USER CHANGE NOTE/);
 assert.match(constants, /must be visibly different at first glance/);
 assert.match(constants, /reject any draft that remains substantially similar/);
-assert.match(constants, /replace\(\/gợi\\s\*cảm\/gi, "quyến rũ, cuốn hút, thời trang và tôn dáng"\)/);
+assert.match(constants, /buildMusicImageNoteNormalizationPrompt/);
+assert.match(constants, /MUSIC_IMAGE_NOTE_TEXTS\.SHARED_PROMPT_RULES/);
+assert.match(controller, /ROUTER_PATHS\.MUSIC_IMAGE_NOTE_NORMALIZE/);
+assert.match(controller, /generatePlanningWithChatUi\(\{[\s\S]*ARTIFACT_TYPE_IMAGE_NOTE/);
+assert.match(component, /PIPELINE_MUSIC_IMAGE_NOTE_NORMALIZE/);
+assert.match(component, /setThumbnailDescription\(normalizedNote\)/);
+assert.match(component, /setVideoBackgroundDescription\(normalizedNote\)/);
 assert.doesNotMatch(constants, /PRIORITY 1 — REFERENCE FIDELITY/);
 assert.match(constants, /THUMBNAIL_SOURCE_CONTEXT_MAX_CHARACTERS: 800/);
 assert.match(constants, /const sourceDirective = _\.isEmpty\(songs\)/);

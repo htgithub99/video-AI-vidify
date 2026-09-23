@@ -523,6 +523,7 @@ export const ROUTER_PATHS = {
   MUSIC_PLAN: "/music-plan",
   MUSIC_SEO_REGENERATE: "/music-seo-regenerate",
   MUSIC_THUMBNAIL: "/music-thumbnail",
+  MUSIC_IMAGE_NOTE_NORMALIZE: "/music-image-note-normalize",
   MUSIC_SUNO_CREATE: "/music-suno-create",
   MUSIC_SUNO_CANCEL: "/music-suno-cancel",
   MUSIC_SUNO_DOWNLOAD: "/music-suno-download",
@@ -538,7 +539,7 @@ export const MUSIC_CREATOR_CONSTANTS = {
   ARTIFACT_TYPE: "music_project",
   PROJECT_ID_PREFIX: "music-",
   SOURCE_CHUNK_CHARACTERS: 12_000,
-  OUTPUT_BATCH_SIZES: [4, 3, 2] as const,
+  OUTPUT_BATCH_SIZES: [2] as const,
   PRESET_STYLES: [
     "Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào",
     "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc",

@@ -33,6 +33,7 @@ export const API_ROUTES = {
   PIPELINE_MUSIC_PLAN: "/api/pipeline/music-plan",
   PIPELINE_MUSIC_SEO_REGENERATE: "/api/pipeline/music-seo-regenerate",
   PIPELINE_MUSIC_THUMBNAIL: "/api/pipeline/music-thumbnail",
+  PIPELINE_MUSIC_IMAGE_NOTE_NORMALIZE: "/api/pipeline/music-image-note-normalize",
   PIPELINE_MUSIC_SUNO_CREATE: "/api/pipeline/music-suno-create",
   PIPELINE_MUSIC_SUNO_CANCEL: "/api/pipeline/music-suno-cancel",
   PIPELINE_MUSIC_SUNO_DOWNLOAD: "/api/pipeline/music-suno-download",

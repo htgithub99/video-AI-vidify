@@ -159,6 +159,21 @@ interface MusicStyleAnalysis {
   mustNotCopy: string[];
   uncertainties: string[];
 }
+const formatStyleAnalysisItems = (items: unknown[]): string => _.chain(items)
+  .map((item) => {
+    if (_.isString(item)) return _.trim(item);
+    if (!_.isPlainObject(item)) return "";
+    return _.chain(item as Record<string, unknown>)
+      .values()
+      .filter((value) => _.isString(value) || _.isNumber(value))
+      .map((value) => _.trim(_.toString(value)))
+      .compact()
+      .join(" — ")
+      .value();
+  })
+  .compact()
+  .join("; ")
+  .value();
 interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number }
 interface DownloadedMusicTrack { songId: string; title: string }
 interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence: number; variety: number; personalize: boolean }
@@ -690,6 +705,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [generatedThumbnail, setGeneratedThumbnail] = useState<string>("");
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [isNormalizingThumbnailNote, setIsNormalizingThumbnailNote] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [isCreatingSunoTest, setIsCreatingSunoTest] = useState(false);
   const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || "");
@@ -713,6 +729,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [showVideoTrackList, setShowVideoTrackList] = useState(initialState.showVideoTrackList ?? true);
   const [generatedVideoBackground, setGeneratedVideoBackground] = useState("");
   const [isGeneratingVideoBackground, setIsGeneratingVideoBackground] = useState(false);
+  const [isNormalizingVideoBackgroundNote, setIsNormalizingVideoBackgroundNote] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -908,21 +925,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setViewMode("lyrics");
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
-    setSongs([]);
-    setPlaylistSeoOptions([]);
-    setGeneratedThumbnail("");
-    setStyleAnalysis(undefined);
-    setSunoSettings(undefined);
-    setSunoSettingsAnalysis(undefined);
     setSunoPlaylistUrl("");
     setDownloadPlaylistUrl("");
     setSunoTestPlaylistUrl("");
     setSunoTrackIds([]);
-    setCuratedDownloadedTracks([]);
-    setDownloadedMusicTracks([]);
-    setGeneratedVideoBackground("");
-    void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
-    void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, "").catch(() => undefined);
     const runId = `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
@@ -959,38 +965,63 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const generatedSongs = _.get(result, "data.songs", []) as GeneratedSong[];
       const generatedStyleAnalysis = _.get(result, "data.styleAnalysis") as MusicStyleAnalysis;
       const generatedPlaylistSeo = _.get(result, "data.playlistSeoOptions", []) as SongSeoOption[];
-      const generatedThumbnailUrl = _.toString(_.get(result, "data.thumbnail", ""));
       const seoWarning = _.toString(_.get(result, "data.seoWarning", ""));
-      const thumbnailWarning = _.toString(_.get(result, "data.thumbnailWarning", ""));
       setSunoSettings(_.get(result, "data.sunoSettings") as SunoSettings);
       setSunoSettingsAnalysis(_.get(result, "data.sunoSettingsAnalysis") as SunoSettingsAnalysis);
       setSongs(generatedSongs);
       setStyleAnalysis(generatedStyleAnalysis);
       setPlaylistSeoOptions(generatedPlaylistSeo);
-      setGeneratedThumbnail(generatedThumbnailUrl);
-      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, generatedThumbnailUrl).catch(() => undefined);
+      setGeneratedThumbnail("");
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
       setSelectedSeoSongIndex(0);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
       if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
-      if (thumbnailWarning && _.isEmpty(generatedThumbnailUrl)) toast.error(thumbnailWarning);
+      void (async () => {
+        try {
+          const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
+            method: HTTP_METHODS.POST,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            body: jsonUtils.safeStringify({
+              songs: generatedSongs,
+              style: trimmedStyle,
+              sourceContext: referenceSource,
+              playlistSeoOptions: generatedPlaylistSeo,
+              thumbnailDescription,
+              thumbnailReference,
+              thumbnailReferenceName,
+              chromeHeadless,
+            }),
+          });
+          const thumbnailResult = await thumbnailResponse.json();
+          const imageUrl = _.toString(thumbnailResult.thumbnail);
+          if (!thumbnailResponse.ok || !thumbnailResult.success || _.isEmpty(imageUrl)) {
+            throw new Error(thumbnailResult.warning || texts.THUMBNAIL_GENERATE_ERROR);
+          }
+          setGeneratedThumbnail(imageUrl);
+          await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
+          toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
+        } catch (error: any) {
+          toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
+        } finally {
+          setIsGeneratingThumbnail(false);
+        }
+      })();
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        setSongs(previousSongs);
-        setStyleAnalysis(previousStyleAnalysis);
-        setSunoSettings(previousSunoSettings);
-        setSunoSettingsAnalysis(previousSunoSettingsAnalysis);
-        setPlaylistSeoOptions(previousPlaylistSeoOptions);
-        setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
-        setGeneratedThumbnail(previousGeneratedThumbnail);
-        setDownloadedMusicTracks(previousDownloadedMusicTracks);
-        setGeneratedVideoBackground(previousGeneratedVideoBackground);
-        toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
-      }
+      setSongs(previousSongs);
+      setStyleAnalysis(previousStyleAnalysis);
+      setSunoSettings(previousSunoSettings);
+      setSunoSettingsAnalysis(previousSunoSettingsAnalysis);
+      setPlaylistSeoOptions(previousPlaylistSeoOptions);
+      setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
+      setGeneratedThumbnail(previousGeneratedThumbnail);
+      setDownloadedMusicTracks(previousDownloadedMusicTracks);
+      setGeneratedVideoBackground(previousGeneratedVideoBackground);
+      setIsGeneratingThumbnail(false);
+      if (err?.name !== "AbortError") toast.error(_.toString(err?.message || texts.ERROR_GENERATION_FAILED));
     } finally {
       musicAbortControllerRef.current = null;
       musicRunIdRef.current = null;
       setIsLoading(false);
-      setIsGeneratingThumbnail(false);
     }
   };
 
@@ -1228,8 +1259,40 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     }
   };
 
+  const handleNormalizeImageNote = async (assetPurpose: "cover" | "video-background") => {
+    const isVideoBackground = assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO;
+    const note = isVideoBackground ? videoBackgroundDescription : thumbnailDescription;
+    if (_.isEmpty(_.trim(note))) return;
+    const setNormalizing = isVideoBackground ? setIsNormalizingVideoBackgroundNote : setIsNormalizingThumbnailNote;
+    setNormalizing(true);
+    try {
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_IMAGE_NOTE_NORMALIZE, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: jsonUtils.safeStringify({
+          note,
+          assetPurpose,
+          thumbnailReference,
+          thumbnailReferenceName,
+          showTrackList: showVideoTrackList,
+          chromeHeadless,
+        }),
+      });
+      const result = await response.json();
+      const normalizedNote = _.trim(_.toString(result.normalizedNote));
+      if (!response.ok || !result.success || _.isEmpty(normalizedNote)) throw new Error(result.error || texts.IMAGE_NOTE_NORMALIZE_ERROR);
+      if (isVideoBackground) setVideoBackgroundDescription(normalizedNote);
+      else setThumbnailDescription(normalizedNote);
+      toast.success(texts.IMAGE_NOTE_NORMALIZED);
+    } catch (error) {
+      toast.error(_.toString(_.get(error, "message", texts.IMAGE_NOTE_NORMALIZE_ERROR)));
+    } finally {
+      setNormalizing(false);
+    }
+  };
+
   const handleRegenerateThumbnail = async () => {
-    if (_.isEmpty(songs) || isGeneratingThumbnail) return;
+    if (_.isEmpty(songs) || isGeneratingThumbnail || isNormalizingThumbnailNote) return;
     setIsGeneratingThumbnail(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
@@ -1260,7 +1323,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleGenerateVideoBackground = async () => {
-    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground) return;
+    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote) return;
     setIsGeneratingVideoBackground(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
@@ -1269,7 +1332,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs: downloadedMusicTracks,
           style,
-          thumbnailDescription: videoBackgroundDescription,
+          videoBackgroundDescription,
           thumbnailReference,
           thumbnailReferenceName,
           chromeHeadless,
@@ -1852,7 +1915,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     variant="unstyled"
                     type="button"
                     onClick={() => thumbnailFileInputRef.current?.click()}
-                    disabled={isGeneratingThumbnail}
+                    disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
                     className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
                     <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
                     <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
@@ -1906,11 +1969,25 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               </div>
 
               <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-slate-300">{texts.COVER_IMAGE_NOTE_LABEL}</span>
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    onClick={() => { void handleNormalizeImageNote("cover"); }}
+                    disabled={_.isEmpty(_.trim(thumbnailDescription)) || isGeneratingThumbnail || isNormalizingThumbnailNote}
+                    className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-fuchsia-300 hover:bg-fuchsia-500/10 transition-colors cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
+                  >
+                    <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingThumbnailNote && "animate-spin")} />
+                    <span>{isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}</span>
+                  </Button>
+                </div>
                 <textarea
                   rows={4}
                   value={thumbnailDescription}
                   onChange={(event) => setThumbnailDescription(event.target.value)}
-                  disabled={isGeneratingThumbnail}
+                  disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
                   placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER}
                   className="w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar"
                 />
@@ -1922,7 +1999,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     type="button"
                     variant="unstyled"
                     onClick={handleRegenerateThumbnail}
-                    disabled={isGeneratingThumbnail}
+                    disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
                     className={cn(
                       "h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none",
                       isGeneratingThumbnail
@@ -2044,20 +2121,36 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         </div>
                       </div>
                     )}
-                    <textarea
-                      rows={3}
-                      value={videoBackgroundDescription}
-                      onChange={(event) => setVideoBackgroundDescription(event.target.value)}
-                      disabled={isGeneratingVideoBackground}
-                      placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER}
-                      className={cn("w-full min-h-[78px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-cyan-500/80 custom-scrollbar")}
-                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-slate-300">{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
+                        <Button
+                          type="button"
+                          variant="unstyled"
+                          onClick={() => { void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO); }}
+                          disabled={_.isEmpty(_.trim(videoBackgroundDescription)) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                          className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-cyan-300 hover:bg-cyan-500/10 transition-colors cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
+                        >
+                          <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingVideoBackgroundNote && "animate-spin")} />
+                          <span>{isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}</span>
+                        </Button>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={videoBackgroundDescription}
+                        onChange={(event) => setVideoBackgroundDescription(event.target.value)}
+                        disabled={isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                        placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER}
+                        className={cn("w-full min-h-[78px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-cyan-500/80 custom-scrollbar")}
+                      />
+                    </div>
                     <div className={cn("grid grid-cols-2 gap-2")}>
                       <Button
                         type="button"
                         variant="unstyled"
                         onClick={handleGenerateVideoBackground}
-                        disabled={isGeneratingVideoBackground}
+                        disabled={isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
                         className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
                       >
                         <RefreshCw className={cn("w-3.5 h-3.5", isGeneratingVideoBackground && "animate-spin")} />
@@ -2396,7 +2489,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span>{texts.UNCERTAINTIES_LABEL.replace(":", "")}</span>
                     </div>
                     <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {styleAnalysis.uncertainties.join("; ")}
+                      {formatStyleAnalysisItems(styleAnalysis.uncertainties)}
                     </p>
                   </div>
                 )}

@@ -66,6 +66,7 @@ const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
 const pendingRoomResponses = new Map<string, PendingRoomResponse>();
+const providerErrorCounts = new Map<string, number>();
 const grokBootstrapMutexes = new WeakMap<BrowserContext, SimpleMutex>();
 const grokReadyContexts = new WeakSet<BrowserContext>();
 interface ActivePlanningController {
@@ -147,7 +148,22 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity): 
   rooms.delete(roomKey);
   pendingRoomResponses.delete(roomKey);
   if (page && !page.isClosed()) await page.close().catch(() => undefined);
-  scheduleGlobalBrowserCleanup();
+  const hasActiveChatRooms = _.some([geminiRooms, grokRooms, chatGptRooms], (providerRooms) =>
+    _.some([...providerRooms.values()], (room) => !room.isClosed()),
+  );
+  if (!hasActiveChatRooms) scheduleGlobalBrowserCleanup();
+};
+
+const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promise<void> => {
+  const rooms = getProviderRooms(request.provider);
+  const roomKey = getPlanningRoomKey(request);
+  const page = rooms?.get(roomKey);
+  pendingRoomResponses.delete(roomKey);
+  if (!page || page.isClosed()) throw new Error("chat_planning_room_unavailable_for_reload");
+  await page.reload({
+    waitUntil: "domcontentloaded",
+    timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS,
+  });
 };
 
 const getProviderConversationSelectors = (
@@ -557,7 +573,18 @@ const waitForStableResponse = async (
       "text",
     );
     const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
-    const selectedResponse = _.maxBy(responseCandidates, "length") || "";
+    const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
+    const matchingJsonResponse = _.findLast(responseCandidates, (candidate) => {
+      const parsedCandidate = tryParseJSON(candidate);
+      if (_.isUndefined(parsedCandidate)) return false;
+      const returnedArtifactType = _.trim(_.toString(_.get(parsedCandidate, "artifactType")));
+      const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedCandidate, "requestId"));
+      return (
+        (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) &&
+        (_.isEmpty(normalizedExpectedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId))
+      );
+    });
+    const selectedResponse = matchingJsonResponse || _.last(responseCandidates) || "";
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
@@ -579,7 +606,6 @@ const waitForStableResponse = async (
     const returnedCompletionMarker = _.trim(_.toString(_.get(parsedLatest, "completionMarker")));
     const returnedArtifactType = _.trim(_.toString(_.get(parsedLatest, "artifactType")));
     const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedLatest, "requestId"));
-    const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
     const hasRequiredCompletionMarker = _.isEmpty(completionMarker) || _.isEqual(returnedCompletionMarker, completionMarker);
     const hasRequiredArtifactIdentity =
       (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) &&
@@ -613,6 +639,10 @@ const waitForStableResponse = async (
           return jsonUtils.safeStringify(parsedLatest);
         }
         if (!isCompleteJson && !_.isEmpty(responseCandidates)) {
+          appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
+          if (CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText)) {
+            throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
+          }
           throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
         }
         if (!_.isEmpty(responseCandidates)) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
@@ -799,39 +829,6 @@ const waitForSubmissionConfirmation = async (
   return false;
 };
 
-const resubmitStoppedGeminiMessage = async (
-  page: Page,
-  prompt: string,
-  inputSelector: string,
-  sendSelector: string,
-  signal?: AbortSignal,
-): Promise<boolean> => {
-  const stoppedResponse = page.getByText(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_STOPPED_RESPONSE_PATTERN).filter({ visible: true }).last();
-  if (!(await stoppedResponse.isVisible().catch(() => false))) return false;
-  const userMessage = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_MESSAGE_SELECTOR).last();
-  if (!(await userMessage.isVisible().catch(() => false))) return false;
-  await userMessage.hover().catch(() => undefined);
-  const messageEditButton = userMessage.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR).filter({ visible: true }).last();
-  const pageEditButton = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR).filter({ visible: true }).last();
-  const editButton = (await messageEditButton.isVisible().catch(() => false)) ? messageEditButton : pageEditButton;
-  if (!(await editButton.isVisible().catch(() => false))) return false;
-  throwIfPlanningCancelled(signal);
-  await editButton.click();
-  const editInput = await getLastVisibleLocator(page, inputSelector);
-  await editInput.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  await editInput.fill(`${prompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
-  await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-  const semanticSendButton = page
-    .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
-    .filter({ visible: true })
-    .last();
-  const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
-  const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
-  if (!(await waitForSendButtonReady(sendButton, signal))) return false;
-  await sendButton.click();
-  return true;
-};
-
 const submitPrompt = async (
   page: Page,
   roomKey: string,
@@ -897,13 +894,15 @@ const submitPrompt = async (
   const initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
   const initialCount = initialResponseSnapshots.length;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
-  let submissionConfirmed = await resubmitStoppedGeminiMessage(page, normalizedPrompt, inputSelector, sendSelector, signal);
-  if (!submissionConfirmed) {
+  let submissionConfirmed = false;
+  {
     if (!_.isEmpty(attachments)) {
       throwIfPlanningCancelled(signal);
       await attachRoomFiles(page, attachments);
     }
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
     await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
     await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
     for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_ACTION_ATTEMPTS && !submissionConfirmed; attempt += 1) {
       const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
@@ -913,13 +912,14 @@ const submitPrompt = async (
         .last();
       const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
       const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
-      if (sendButtonReady) await sendButton.click();
+      if (sendButtonReady) {
+        await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+        await sendButton.click();
+      }
       else if (_.isEmpty(attachments)) await input.press("Enter");
       else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
       submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
     }
-  } else {
-    submissionConfirmed = await waitForSubmissionConfirmation(page, await getLastVisibleLocator(page, inputSelector), busySelector, responseSelector, initialCount, signal);
   }
   if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);
   appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace("{0}", _.toString(normalizedPrompt.length)));
@@ -1175,6 +1175,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
   await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
+  await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
   await selectGeminiChatModel(room, request.model);
   const response = await submitPrompt(
     room,
@@ -1259,101 +1260,6 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
   return response;
 };
 
-export const generateImageWithChatGptUi = async (input: {
-  prompt: string;
-  reference?: string;
-  referenceName?: string;
-  chromeHeadless?: boolean;
-}): Promise<{ base64: string; mimeType: string }> => {
-  const browser = await getOrLaunchGlobalBrowser(input.chromeHeadless, true);
-  const roomKey = `${CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_PROJECT_PREFIX}-${Date.now()}`;
-  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, roomKey);
-  try {
-    await ensureChatGptReady(room, browser.account.email);
-    const imageLocator = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR);
-    const initialSources = await imageLocator.evaluateAll((images) => images.map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src).filter(Boolean));
-    const initialResponseCount = await room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR).count();
-    const referenceMatch = _.toString(input.reference).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
-    if (!_.isEmpty(input.reference) && !referenceMatch) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_INVALID_ERROR);
-    if (referenceMatch) {
-      const referenceName = _.trim(input.referenceName) || CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_NAME;
-      await attachRoomFiles(room, [{
-        name: referenceName,
-        mimeType: referenceMatch[1],
-        buffer: Buffer.from(referenceMatch[2], "base64"),
-      }]);
-      const attachmentReady = room
-        .locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_REMOVABLE_BUTTON_SELECTOR)
-        .filter({ visible: true })
-        .or(room.getByText(referenceName, { exact: false }).filter({ visible: true }))
-        .last();
-      await attachmentReady.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_UPLOAD_TIMEOUT_MS })
-        .catch(() => { throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_REFERENCE_UPLOAD_ERROR); });
-    }
-    const composer = await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR);
-    await composer.fill(input.prompt);
-    const sendButton = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SEND_SELECTOR).filter({ visible: true }).last();
-    if (!(await waitForSendButtonReady(sendButton))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
-    await sendButton.click();
-    const submittedAt = Date.now();
-    const generationResult = await room.waitForFunction(
-      ({ selector, previous, responseSelector, busySelector, previousResponseCount, submittedAtMs }) => {
-        const prior = new Set(previous);
-        const images = Array.from(document.querySelectorAll(selector)) as HTMLImageElement[];
-        const source = images.map((image) => image.currentSrc || image.src).find((value) => value && !prior.has(value)) || "";
-        if (source) return { source, textOnly: false };
-        const responses = Array.from(document.querySelectorAll(responseSelector));
-        const isBusy = Boolean(document.querySelector(busySelector));
-        if (!isBusy && Date.now() - submittedAtMs > 5000 && responses.length > previousResponseCount) {
-          const text = (responses.at(-1)?.textContent || "").trim();
-          if (text.length > 20) return { source: "", textOnly: true };
-        }
-        return null;
-      },
-      {
-        selector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GENERATED_IMAGE_SELECTOR,
-        previous: initialSources,
-        responseSelector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR,
-        busySelector: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
-        previousResponseCount: initialResponseCount,
-        submittedAtMs: submittedAt,
-      },
-      { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_GENERATION_TIMEOUT_MS },
-    ).then((handle) => handle.jsonValue() as Promise<{ source: string; textOnly: boolean }>);
-    if (generationResult.textOnly || _.isEmpty(generationResult.source)) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_TEXT_ONLY_ERROR);
-    const imageSource = generationResult.source;
-    let buffer: Buffer;
-    let mimeType = "image/png";
-    const dataMatch = _.toString(imageSource).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
-    if (dataMatch) {
-      mimeType = dataMatch[1];
-      buffer = Buffer.from(dataMatch[2], "base64");
-    }
-    else if (_.startsWith(imageSource, "blob:")) {
-      const encoded = await room.evaluate(async (source) => {
-        const response = await fetch(source);
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        let binary = "";
-        for (const byte of bytes) binary += String.fromCharCode(byte);
-        return { base64: btoa(binary), mimeType: response.headers.get("content-type") || "image/png" };
-      }, imageSource);
-      mimeType = encoded.mimeType;
-      buffer = Buffer.from(encoded.base64, "base64");
-    } else {
-      const response = await room.request.get(imageSource, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_GENERATION_TIMEOUT_MS });
-      if (!response.ok()) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
-      mimeType = response.headers()["content-type"] || mimeType;
-      buffer = await response.body();
-    }
-    if (buffer.length < CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_MIN_BYTES) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_IMAGE_INVALID_ERROR);
-    return { base64: buffer.toString("base64"), mimeType };
-  } finally {
-    chatGptRooms.delete(roomKey);
-    await room.close().catch(() => undefined);
-    scheduleGlobalBrowserCleanup();
-  }
-};
-
 const providerNames: Record<AiPlanningFallbackProvider, string> = {
   [AiPlanningFallbackProvider.GeminiChat]: "Gemini Chat",
   [AiPlanningFallbackProvider.GrokChat]: "Grok Chat",
@@ -1391,13 +1297,30 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     let lastError: unknown;
     for (let recoveryAttempt = 0; recoveryAttempt <= CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS; recoveryAttempt++) {
       try {
+        await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
         const text = await generator(request);
+        providerErrorCounts.delete(roomKey);
         responseCompleted = true;
         return { text, provider: request.provider };
       } catch (error) {
         lastError = error;
         throwIfPlanningCancelled(request.signal);
         const errorMessage = _.toString(_.get(error, "message", error));
+        if (_.isEqual(errorMessage, CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR)) {
+          const providerErrorCount = (providerErrorCounts.get(roomKey) || 0) + 1;
+          providerErrorCounts.set(roomKey, providerErrorCount);
+          if (providerErrorCount >= 2) {
+            providerErrorCounts.delete(roomKey);
+            try {
+              await reloadChatPlanningRoom(request);
+              appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_ROOM_RELOADED(providerNames[request.provider]));
+            } catch (reloadError) {
+              appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_ROOM_RELOAD_FAILED(providerNames[request.provider], _.toString(_.get(reloadError, "message", reloadError))));
+              throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_FAILED_ERROR, { cause: reloadError });
+            }
+            throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_ERROR);
+          }
+        }
         const canRecoverClosedRoom =
           CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) && recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
         if (!canRecoverClosedRoom) throw error;
