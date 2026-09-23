@@ -1615,6 +1615,8 @@ const connectToSharedChromeBrowser = async (logConnectionError: boolean = true):
   }
 };
 
+let sharedChromeLaunchedByApp = false;
+
 const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
   if (!_.isEqual(process.platform, "win32") || !fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH)) return null;
   const sharedProfilePath = path.join(process.env.SystemDrive || "C:", REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR);
@@ -1633,7 +1635,10 @@ const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
   for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS));
     const sharedBrowser = await connectToSharedChromeBrowser(false);
-    if (sharedBrowser) return sharedBrowser;
+    if (sharedBrowser) {
+      sharedChromeLaunchedByApp = true;
+      return sharedBrowser;
+    }
   }
   return null;
 };
@@ -1784,7 +1789,17 @@ export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = fals
     activeBrowserInstance = null;
   }
   if (forceCloseSharedBrowser && await isSharedChromeRunning()) await terminateSharedChromeProcess();
+  if (forceCloseSharedBrowser) sharedChromeLaunchedByApp = false;
   activeBrowserHeadless = undefined;
+}
+
+export async function closeIdleAppChrome(): Promise<void> {
+  const browser = activeBrowserInstance;
+  if (!sharedChromeLaunchedByApp || !browser?.preserveExternalPages || activeFlowVideoGenerationCount > 0) return;
+  if (_.some(globalBatchPages, (page) => !page.isClosed())) return;
+  const pages = browser.context.pages().filter((page) => !page.isClosed());
+  if (_.some(pages, (page) => !_.includes(["about:blank", "chrome://newtab/", "chrome://new-tab-page/"], page.url()))) return;
+  await closeActiveBrowser(true);
 }
 
 export function scheduleGlobalBrowserCleanup() {

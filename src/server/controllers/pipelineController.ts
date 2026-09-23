@@ -9,7 +9,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
@@ -196,6 +196,7 @@ import {
   closeAllBatchPages,
   cancelAllActiveMediaGeneration,
   closeActiveBrowser,
+  closeIdleAppChrome,
   scheduleGlobalBrowserCleanup,
   getOrLaunchGlobalBrowser,
   recoverExistingFlowVideo,
@@ -1075,7 +1076,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       error: `${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED} (${currentStage}: ${cause})`,
     });
   } finally {
-    await closeChatPlanningRoom({
+    await closeChatPlanningRoomsForProject({
       provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
       projectId,
     }).catch(() => undefined);
@@ -6981,8 +6982,15 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   const renderJobId = _.trim(_.toString(req.body?.renderJobId));
   cancelChatPlanningRun(pipelineRunId);
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
+  const roomProvider = _.toString(req.body?.roomProvider) as AiPlanningFallbackProvider;
+  const roomProjectId = _.trim(_.toString(req.body?.roomProjectId));
+  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
+  if (closeMusicRooms) {
+    cleanupTasks.push(closeChatPlanningRoomsForProject({ provider: roomProvider, projectId: roomProjectId }));
+  }
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
+  if (closeMusicRooms && activeMusicPlanRuns <= 1) await closeIdleAppChrome().catch(() => undefined);
   return res.json({ success: true });
 });
 

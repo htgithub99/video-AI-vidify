@@ -154,6 +154,23 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity): 
   if (!hasActiveChatRooms) scheduleGlobalBrowserCleanup();
 };
 
+export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">): Promise<void> => {
+  const rooms = getProviderRooms(request.provider);
+  if (!rooms || _.isEmpty(request.projectId)) return;
+  const prefix = `${request.provider}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}${request.projectId}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`;
+  const roomKeys = _.filter([...rooms.keys()], (key) => _.startsWith(key, prefix));
+  await Promise.allSettled(_.map(roomKeys, async (key) => {
+    const page = rooms.get(key);
+    rooms.delete(key);
+    pendingRoomResponses.delete(key);
+    if (page && !page.isClosed()) await page.close().catch(() => undefined);
+  }));
+  const hasActiveChatRooms = _.some([geminiRooms, grokRooms, chatGptRooms], (providerRooms) =>
+    _.some([...providerRooms.values()], (room) => !room.isClosed()),
+  );
+  if (!hasActiveChatRooms) scheduleGlobalBrowserCleanup();
+};
+
 const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   const roomKey = getPlanningRoomKey(request);
@@ -790,9 +807,9 @@ const getComposerText = async (input: Locator): Promise<string> => {
   }
 };
 
-const waitForSendButtonReady = async (sendButton: Locator, signal?: AbortSignal): Promise<boolean> => {
+const waitForSendButtonReady = async (sendButton: Locator, timeoutMs: number, signal?: AbortSignal): Promise<boolean> => {
   const startedAt = Date.now();
-  while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS) {
+  while (Date.now() - startedAt < timeoutMs) {
     throwIfPlanningCancelled(signal);
     if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) return true;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
@@ -801,29 +818,18 @@ const waitForSendButtonReady = async (sendButton: Locator, signal?: AbortSignal)
 };
 
 const waitForSubmissionConfirmation = async (
-  page: Page,
   input: Locator,
-  busySelector: string,
-  responseSelector: string,
-  initialResponseCount: number,
   signal?: AbortSignal,
 ): Promise<boolean> => {
   const startedAt = Date.now();
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS) {
     throwIfPlanningCancelled(signal);
+    if (!(await input.isVisible().catch(() => false))) {
+      await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+      continue;
+    }
     const composerIsEmpty = (await getComposerText(input)).length <= CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS;
-    const responseStarted =
-      (await page
-        .locator(responseSelector)
-        .count()
-        .catch(() => 0)) > initialResponseCount;
-    const roomIsBusy =
-      (await page
-        .locator(busySelector)
-        .filter({ visible: true })
-        .count()
-        .catch(() => 0)) > 0;
-    if (composerIsEmpty || responseStarted || roomIsBusy) return true;
+    if (composerIsEmpty) return true;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
   return false;
@@ -904,21 +910,35 @@ const submitPrompt = async (
     await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
     await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-    for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_ACTION_ATTEMPTS && !submissionConfirmed; attempt += 1) {
+    {
       const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
       const semanticSendButton = page
         .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
         .filter({ visible: true })
         .last();
-      const sendButton = (await semanticSendButton.isVisible().catch(() => false)) ? semanticSendButton : configuredSendButton;
-      const sendButtonReady = await waitForSendButtonReady(sendButton, signal);
+      const sendButton = (await semanticSendButton.isVisible().catch(() => false)) && (await semanticSendButton.isEnabled().catch(() => false))
+        ? semanticSendButton
+        : configuredSendButton;
+      const sendButtonReady = await waitForSendButtonReady(
+        sendButton,
+        _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS,
+        signal,
+      );
       if (sendButtonReady) {
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
         await sendButton.click();
       }
-      else if (_.isEmpty(attachments)) await input.press("Enter");
+      else if (_.isEmpty(attachments)) {
+        await input.focus();
+        await input.press("Enter");
+      }
       else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-      submissionConfirmed = await waitForSubmissionConfirmation(page, input, busySelector, responseSelector, initialCount, signal);
+      submissionConfirmed = await waitForSubmissionConfirmation(input, signal);
+      if (!submissionConfirmed && _.isEmpty(attachments) && sendButtonReady) {
+        await input.focus();
+        await input.press("Enter");
+        submissionConfirmed = await waitForSubmissionConfirmation(input, signal);
+      }
     }
   }
   if (!submissionConfirmed) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_NOT_CONFIRMED_ERROR);

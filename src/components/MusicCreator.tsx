@@ -1064,7 +1064,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true }),
+        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true, roomProvider: provider, roomProjectId: runId }),
       }).catch(() => undefined);
     }
     toast.info(texts.STOPPED_TOAST);
@@ -1979,7 +1979,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                     title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                   >
-                    <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingThumbnailNote && "animate-spin")} />
+                    {isNormalizingThumbnailNote ? (
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-400" />
+                    ) : (
+                      <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                    )}
                   </Button>
                 </div>
                 <textarea
@@ -2005,7 +2009,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         ? "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait"
                         : "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95",
                     )}>
-                    <RefreshCw className={cn("w-3.5 h-3.5 shrink-0", isGeneratingThumbnail && "animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
+                    {isGeneratingThumbnail ? (
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400" />
+                    ) : (
+                      <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                    )}
                     <span className="inline-flex items-center leading-none">
                       {isGeneratingThumbnail
                         ? texts.THUMBNAIL_CREATING_SHORT
@@ -2131,7 +2139,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                           title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                         >
-                          <WandSparkles className={cn("w-3.5 h-3.5 shrink-0", isNormalizingVideoBackgroundNote && "animate-spin")} />
+                          {isNormalizingVideoBackgroundNote ? (
+                            <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-400" />
+                          ) : (
+                            <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                          )}
                         </Button>
                       </div>
                       <textarea
@@ -2151,7 +2163,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         disabled={isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
                         className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
                       >
-                        <RefreshCw className={cn("w-3.5 h-3.5", isGeneratingVideoBackground && "animate-spin")} />
+                        {isGeneratingVideoBackground ? (
+                          <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-300" />
+                        ) : (
+                          <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                        )}
                         <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
                       </Button>
                       <Button
@@ -2244,7 +2260,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
                     title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
-                    <RefreshCw className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300", isLoading && "animate-spin")} />
+                    {isLoading ? (
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300 animate-spin" />
+                    ) : (
+                      <WandSparkles className="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300" />
+                    )}
                     <span className="inline-flex items-center leading-none">{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
                   </Button>
                   <Button
@@ -2254,7 +2274,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
                     title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
-                    <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300", isRegeneratingSeo && "animate-spin")} />
+                    {isRegeneratingSeo ? (
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300 animate-spin" />
+                    ) : (
+                      <WandSparkles className="w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300" />
+                    )}
                     <span className="inline-flex items-center leading-none">{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
                   </Button>
                   <Button
