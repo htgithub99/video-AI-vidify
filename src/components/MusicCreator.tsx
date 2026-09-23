@@ -1516,8 +1516,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         className={cn(
                           "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
                           isSelected
-                            ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-500/80 ring-1 ring-purple-500/30 shadow-2xs"
-                            : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-purple-400",
+                            ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]"
+                            : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90",
                         )}>
                         <Tooltip content={savedStyle.content} align="start">
                           <Button
@@ -1537,12 +1537,17 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                                 isSelected
-                                  ? "bg-purple-600 dark:bg-purple-400 ring-1 ring-purple-400/40"
-                                  : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-500",
+                                  ? "bg-white ring-2 ring-white/40 shadow-xs"
+                                  : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400",
                               )}
                             />
                             <span
-                              className="truncate font-black !text-[#1e1b4b] dark:!text-white text-[11px] leading-none">
+                              className={cn(
+                                "truncate font-black text-[11px] leading-none transition-colors",
+                                isSelected
+                                  ? "!text-white"
+                                  : "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white",
+                              )}>
                               {savedStyle.title}
                             </span>
                           </Button>
@@ -1559,8 +1564,17 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.COPY_STYLE_BTN}
-                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300">
-                              {copiedStyleIndex === styleIndex ? <Check className="w-2.5 h-2.5 shrink-0 text-emerald-500" /> : <Copy className="w-2.5 h-2.5 shrink-0" />}
+                              className={cn(
+                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
+                                isSelected
+                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
+                                  : "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300",
+                              )}>
+                              {copiedStyleIndex === styleIndex ? (
+                                <Check className={cn("w-2.5 h-2.5 shrink-0", isSelected ? "text-emerald-300" : "text-emerald-500")} />
+                              ) : (
+                                <Copy className="w-2.5 h-2.5 shrink-0" />
+                              )}
                             </Button>
                           </Tooltip>
 
@@ -1574,7 +1588,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_UPDATE_BTN}
-                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300">
+                              className={cn(
+                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
+                                isSelected
+                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
+                                  : "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300",
+                              )}>
                               <Pencil className="w-2.5 h-2.5 shrink-0" />
                             </Button>
                           </Tooltip>
@@ -1589,7 +1608,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_DELETE_BTN}
-                              className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400">
+                              className={cn(
+                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
+                                isSelected
+                                  ? "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white"
+                                  : "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400",
+                              )}>
                               <Trash2 className="w-2.5 h-2.5 shrink-0" />
                             </Button>
                           </Tooltip>
@@ -1680,8 +1704,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             className={cn(
                               "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
                               isSelected
-                                ? "bg-purple-100/90 dark:bg-purple-950/70 border-purple-500/80 ring-1 ring-purple-500/30 shadow-2xs"
-                                : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-purple-400",
+                                ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]"
+                                : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90",
                             )}>
                             <Tooltip content={item.content} align="start">
                               <Button
@@ -1695,17 +1719,23 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   setInspoName("");
                                 }}
                                 disabled={isLoading || isCreatingSuno}
-                                className="text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
+                                className="text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 leading-none h-full"
                                 title={item.content}>
                                 <span
                                   className={cn(
                                     "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                                     isSelected
-                                      ? "bg-purple-600 dark:bg-purple-400 ring-1 ring-purple-400/40"
-                                      : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-500",
+                                      ? "bg-white ring-2 ring-white/40 shadow-xs"
+                                      : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400",
                                   )}
                                 />
-                                <span className="truncate font-black !text-[#1e1b4b] dark:!text-white text-[11px] leading-none">
+                                <span
+                                  className={cn(
+                                    "truncate font-black text-[11px] leading-none transition-colors",
+                                    isSelected
+                                      ? "!text-white"
+                                      : "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white",
+                                  )}>
                                   {item.title}
                                 </span>
                               </Button>
@@ -1725,7 +1755,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   }}
                                   disabled={isLoading || isCreatingSuno}
                                   title={texts.STYLE_UPDATE_BTN}
-                                  className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300">
+                                  className={cn(
+                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
+                                isSelected
+                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
+                                  : "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300",
+                              )}>
                                   <Pencil className="w-2.5 h-2.5 shrink-0" />
                                 </Button>
                               </Tooltip>
@@ -1740,7 +1775,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   }}
                                   disabled={isLoading || isCreatingSuno}
                                   title={texts.STYLE_DELETE_BTN}
-                                  className="btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400">
+                                  className={cn(
+                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
+                                isSelected
+                                  ? "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white"
+                                  : "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400",
+                              )}>
                                   <Trash2 className="w-2.5 h-2.5 shrink-0" />
                                 </Button>
                               </Tooltip>
