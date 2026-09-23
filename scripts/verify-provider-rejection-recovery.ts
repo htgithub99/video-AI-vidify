@@ -47,7 +47,7 @@ assert.match(imageGeneratorSource, /launchBrowserForAccount\(chromeHeadless\?: b
 assert.match(imageGeneratorSource, /getOrLaunchGlobalBrowser\(options\.chromeHeadless, true\)/);
 assert.match(
   imageGeneratorSource,
-  /const sharedBrowser = await connectToSharedChromeBrowser\(\);\s*if \(sharedBrowser\) return sharedBrowser;\s*throw new Error\(REFACTOR_CONSTANTS\.MSG_ALL_ACC_FAILED\)/,
+  /const sharedBrowser = \(await connectToSharedChromeBrowser\(\)\) \|\| \(chromeHeadless === false \? await launchSharedChromeBrowser\(\) : null\);\s*if \(sharedBrowser\) return sharedBrowser;\s*throw new Error\(REFACTOR_CONSTANTS\.MSG_ALL_ACC_FAILED\)/,
 );
 assert.match(imageGeneratorSource, /preserveExternalPages: true/);
 assert.match(imageGeneratorSource, /if \(activeBrowserInstance\.preserveExternalPages\)/);

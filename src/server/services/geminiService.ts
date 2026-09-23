@@ -9,6 +9,7 @@ import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure,
 import { classifyGeminiError } from "./geminiErrorClassifier.js";
 import { generateWithFreeProviders } from "./freeAiProviderService.js";
 import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { assertResponseSchema } from "./responseSchemaValidationService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 
@@ -148,9 +149,9 @@ export const generateContentWithRetry = async (
       try {
         const fullRegenerationDirective =
           attempt > 0
-            ? "\n\nYour previous response failed strict JSON.parse. Generate the entire requested JSON value again from the beginning as compact raw JSON. Validate every comma, brace, array, escape and string before submitting. Do not continue, patch, quote, concatenate, or repeat any part of the previous response."
+            ? "\n\nYour previous response failed strict JSON or the required schema. Generate the entire requested JSON value again from the beginning. Verify every required field, array length, enum and request identity before submitting. Do not continue, patch, quote, concatenate, or repeat any part of the previous response."
             : "";
-        roomResponse = await generatePlanningWithChatUi({
+        const candidateResponse = await generatePlanningWithChatUi({
           provider: roomExecution.aiRoomProvider!,
           model: roomExecution.aiRoomModel,
           prompt: `${roomPayload.prompt}${schemaContract}${fullRegenerationDirective}`,
@@ -163,13 +164,17 @@ export const generateContentWithRetry = async (
           requestId: params.config?.roomRequestId,
           closeRoomOnComplete: false,
         });
+        if (params.config?.responseJsonSchema) {
+          assertResponseSchema(JSON.parse(candidateResponse.text), params.config.responseJsonSchema, "chat_planning_schema_mismatch");
+        }
+        roomResponse = candidateResponse;
       } catch (error) {
         lastRoomError = error;
         const message = _.toString(_.get(error, "message", error));
         const responseWasInvalid = _.includes(
           [CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR],
           message,
-        );
+        ) || _.startsWith(message, "chat_planning_schema_mismatch");
         if (!responseWasInvalid) throw error;
       }
     }

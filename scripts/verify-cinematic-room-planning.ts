@@ -346,7 +346,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /initialResponseIdentitySet = new Set/);
   assert.match(planningServiceSource, /getChatResponseSnapshots/);
   assert.match(planningServiceSource, /responsesNotPresentBeforeSubmission/);
-  assert.match(planningServiceSource, /mayUseUnmarkedJsonFallback = _\.isEmpty\(expectedSceneIds\) && _\.isEmpty\(completionMarker\) && isCompleteJson/);
+  assert.match(planningServiceSource, /mayUseUnmarkedJsonFallback = _\.isEmpty\(expectedSceneIds\) && _\.isEmpty\(completionMarker\)[\s\S]{0,150}_\.isEmpty\(artifactType\) && _\.isEmpty\(normalizedExpectedRequestId\) && isCompleteJson/);
   assert.match(planningServiceSource, /belongsToCurrentRequest \|\| mayUseUnmarkedJsonFallback/);
   assert.match(planningServiceSource, /closeChatPlanningRoom/);
   assert.match(planningServiceSource, /request\.closeRoomOnComplete/);
@@ -364,7 +364,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /MODEL_PICKER_TIMEOUT_MS/);
   assert.match(planningServiceSource, /hasRequiredCompletionMarker/);
   assert.match(planningServiceSource, /hasRequiredArtifactIdentity/);
-  assert.match(planningServiceSource, /if \(!_.isEmpty\(responseCandidates\)\) throw new Error\(CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_ERROR\)/);
+  assert.match(planningServiceSource, /isCompleteJson && !_.isEmpty\(responseCandidates\) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG\.INVALID_RESPONSE_STABLE_POLLS/);
   assert.match(planningServiceSource, /configuredSendButton = page\.locator\(sendSelector\)\.filter\(\{ visible: true \}\)\.last\(\)/);
   assert.match(planningServiceSource, /semanticSendButton[\s\S]*getByRole/);
   assert.match(controllerSource, /keepPlanningRoomOpen = req\.body\?\.keepPlanningRoomOpen !== false/);
@@ -391,8 +391,11 @@ const verifyPlanningRunIsolation = () => {
   assert.equal(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS, 20);
   assert(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS > CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS);
   assert.match(CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, /parseable directly with JSON\.parse/i);
-  assert.match(planningServiceSource, /belongsToCurrentRequest && isCompleteJson/);
-  assert.match(planningServiceSource, /const parsedLatest = tryParseJSON\(latestText\)/);
+  assert.match(planningServiceSource, /belongsToCurrentRequest \|\| mayUseUnmarkedJsonFallback/);
+  assert.match(planningServiceSource, /stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG\.RESPONSE_STABLE_POLLS/);
+  assert.match(planningServiceSource, /pendingRoomResponses\.set\(roomKey,[\s\S]*if \(!submissionConfirmed\)/);
+  assert.match(planningServiceSource, /const parsedLatest = parseStrictRoomJson\(latestText\)/);
+  assert.match(planningServiceSource, /JSON\.parse\(_\.trim\(text\)\)/);
   assert.match(planningServiceSource, /INVALID_JSON_RESPONSE_ERROR/);
   assert.match(planningServiceSource, /PLANNING_QUEUE_ACQUIRED/);
   assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);

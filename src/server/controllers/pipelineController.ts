@@ -9,7 +9,8 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
+import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
+import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
@@ -195,8 +196,6 @@ import {
   generateBatchImagesWithGeminiChat,
   closeAllBatchPages,
   cancelAllActiveMediaGeneration,
-  closeActiveBrowser,
-  closeIdleAppChrome,
   scheduleGlobalBrowserCleanup,
   getOrLaunchGlobalBrowser,
   recoverExistingFlowVideo,
@@ -479,6 +478,7 @@ interface MusicPlanRequestPayload {
 }
 
 let activeMusicPlanRuns = 0;
+const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]> }>();
 
 const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
   const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
@@ -512,16 +512,6 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
       sunoInspo,
     },
   };
-};
-
-const splitMusicSourceForRoom = (referenceSongs: string[]): string[] => {
-  const source = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
-  if (_.isEmpty(source)) return [];
-  const chunks: string[] = [];
-  for (let offset = 0; offset < source.length; offset += MUSIC_CREATOR_CONSTANTS.SOURCE_CHUNK_CHARACTERS) {
-    chunks.push(source.slice(offset, offset + MUSIC_CREATOR_CONSTANTS.SOURCE_CHUNK_CHARACTERS));
-  }
-  return chunks;
 };
 
 const generateMusicThumbnailAsset = async (input: {
@@ -590,6 +580,7 @@ const generateMusicThumbnailAsset = async (input: {
 };
 
 const isRetryableMusicRoomError = (error: unknown): boolean => {
+  if (_.isEqual(_.toString(_.get(error, "code")), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE)) return false;
   const message = _.toString(_.get(error, "message", error));
   return !SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(message);
 };
@@ -639,7 +630,40 @@ const getMusicStyleAnalysisContractIssues = (parsed: any, requestId: string): st
   const issues: string[] = [];
   if (!_.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_ARTIFACT_TYPE_ISSUE);
   if (!_.isEqual(parsed?.requestId, requestId)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_REQUEST_ID_ISSUE);
-  if (!validateMusicStyleAnalysisContract(parsed, requestId)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_STYLE_ANALYSIS_ISSUE);
+  const isText = (value: unknown): boolean => _.isString(value) && !_.isEmpty(_.trim(value));
+  const checkText = (key: string, value: unknown): void => { if (!isText(value)) issues.push(`${key} must be non-empty text`); };
+  const checkArray = (key: string, value: unknown, allowEmpty = false): void => {
+    if (!_.isArray(value) || (!allowEmpty && _.isEmpty(value)) || !_.every(value, isText)) issues.push(`${key} must be ${allowEmpty ? "an array of text" : "a non-empty array of text"}`);
+  };
+  const checkConfidence = (key: string, value: unknown): void => {
+    if (!_.isInteger(_.toNumber(value)) || !_.inRange(_.toNumber(value), 0, 101)) issues.push(`${key} must be an integer from 0 to 100`);
+  };
+  for (const key of ["country", "region", "language", "dialect", "audienceAge", "lyricalCharacterAge", "contentSuitability"]) checkText(`market.${key}`, parsed?.market?.[key]);
+  checkConfidence("market.confidence", parsed?.market?.confidence);
+  for (const key of ["songwritingEra", "productionEra"]) checkText(`era.${key}`, parsed?.era?.[key]);
+  checkText("genre.primary", parsed?.genre?.primary);
+  checkArray("genre.secondary", parsed?.genre?.secondary, true);
+  checkArray("genre.influences", parsed?.genre?.influences, true);
+  for (const key of ["tempoRange", "rhythm", "harmony", "melodicLanguage", "hookPlacement", "vocalCharacter", "listeningContext"]) checkText(`musicalDna.${key}`, parsed?.musicalDna?.[key]);
+  for (const key of ["songForms", "instrumentation"]) checkArray(`musicalDna.${key}`, parsed?.musicalDna?.[key]);
+  for (const key of ["narrativeVoice", "vocabulary", "rhymeBehavior"]) checkText(`lyricalDna.${key}`, parsed?.lyricalDna?.[key]);
+  for (const key of ["themes", "imagery"]) checkArray(`lyricalDna.${key}`, parsed?.lyricalDna?.[key]);
+  if (!_.isArray(parsed?.historicalInfluences)) issues.push("historicalInfluences must be an array");
+  else parsed.historicalInfluences.forEach((item: any, index: number) => {
+    for (const key of ["name", "role", "relevance"]) checkText(`historicalInfluences[${index}].${key}`, item?.[key]);
+  });
+  checkText("creativeProfile.role", parsed?.creativeProfile?.role);
+  for (const key of ["strengths", "writingPrinciples", "productionPrinciples"]) checkArray(`creativeProfile.${key}`, parsed?.creativeProfile?.[key]);
+  for (const key of ["mustPreserve", "mustVary", "mustNotCopy"]) checkArray(key, parsed?.[key]);
+  checkArray("uncertainties", parsed?.uncertainties, true);
+  if (!_.isArray(parsed?.evidence) || _.isEmpty(parsed.evidence)) issues.push("evidence must be a non-empty array");
+  else parsed.evidence.forEach((item: any, index: number) => {
+    checkText(`evidence[${index}].claim`, item?.claim);
+    checkText(`evidence[${index}].sourceClue`, item?.sourceClue);
+    checkConfidence(`evidence[${index}].confidence`, item?.confidence);
+  });
+  const explanatoryText = jsonUtils.safeStringify(_.pick(parsed, ["market", "era", "genre", "musicalDna", "lyricalDna", "historicalInfluences", "creativeProfile", "mustPreserve", "mustVary", "mustNotCopy", "uncertainties", "evidence"]));
+  if (!/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(explanatoryText)) issues.push("explanatory text must contain Vietnamese diacritics");
   return issues;
 };
 
@@ -786,13 +810,26 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
 router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   const validation = parseAndValidateMusicPlanRequest(req);
   if (!validation.isValid || !validation.payload) {
+    await writeMusicDiagnostic("plan_validation_failed", { stage: "validation", code: "invalid_request" });
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
   }
 
   const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, sunoInspo } = validation.payload;
   const creativeStyle = style || MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE;
+  const checkpointSignature = jsonUtils.safeStringify([requestedSongCount, creativeStyle, referenceSongs, sunoInspo, execution.provider, execution.model]);
+  const checkpointNow = Date.now();
+  for (const [key, value] of musicPlanCheckpoints) {
+    if (checkpointNow - value.updatedAt > SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_CHECKPOINT_TTL_MS) musicPlanCheckpoints.delete(key);
+  }
+  const existingCheckpoint = musicPlanCheckpoints.get(requestId);
+  const checkpoint = existingCheckpoint?.signature === checkpointSignature
+    ? existingCheckpoint
+    : { signature: checkpointSignature, updatedAt: checkpointNow, styleAnalysis: null as any, batches: new Map<number, any[]>() };
+  musicPlanCheckpoints.set(requestId, checkpoint);
   activeMusicPlanRuns += 1;
   let currentStage: string = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
+  const planStartedAt = Date.now();
+  await writeMusicDiagnostic("plan_started", { runId: requestId, stage: currentStage, provider: execution.provider, model: execution.model, songCount: requestedSongCount, checkpoint: Boolean(existingCheckpoint) });
   try {
     const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
     const planningRun = beginChatPlanningRun(requestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, provider);
@@ -810,47 +847,28 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       signal: planningRun.signal,
       closeRoomOnComplete: false,
     });
-    const sourceChunks = splitMusicSourceForRoom(referenceSongs);
-    const storeMusicSourceInRoom = async (workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<void> => {
-      currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SOURCE_ANALYSIS;
-      for (let chunkIndex = 0; chunkIndex < sourceChunks.length; chunkIndex += 1) {
-        const sourceRequestId = `${requestId}_source_${chunkIndex + 1}`;
-        let sourceAccepted = false;
-        for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS && !sourceAccepted; attempt += 1) {
-          try {
-            const sourceResponse = await generateRoomResponse(
-              SUNO_AUTOMATION_TEXTS.buildMusicSourcePrompt(sourceChunks[chunkIndex], chunkIndex, sourceChunks.length, sourceRequestId),
-              SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SOURCE,
-              sourceRequestId,
-              workerId,
-            );
-            const sourceAck = jsonUtils.safeParse(sourceResponse.text, null);
-            sourceAccepted = _.isEqual(_.toNumber(sourceAck?.receivedPart), chunkIndex + 1) &&
-              _.isEqual(_.toNumber(sourceAck?.totalParts), sourceChunks.length);
-          } catch (error) {
-            if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
-            logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, "message", error))));
-          }
-        }
-        if (!sourceAccepted) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-      }
-    };
-    await storeMusicSourceInRoom();
-
+    const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
     const analysisRequestId = `${requestId}_style_analysis`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
-    let styleAnalysisParsed: any = null;
+    await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
+    // Never let a previous run's conversation contaminate the first analysis request.
+    // Retries within this run intentionally reuse the room so the correction prompt has context.
+    await closeChatPlanningRoom({ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE }).catch(() => undefined);
+    let styleAnalysisParsed: any = checkpoint.styleAnalysis;
     let styleAnalysisIssues: string[] = [];
     let analysisRoomWasReloaded = false;
-    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; !validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId) && attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0 || analysisRoomWasReloaded
-        ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId)
-        : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(creativeStyle, !_.isEmpty(sourceChunks), analysisRequestId, styleAnalysisIssues);
+        ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, referenceSource, analysisRequestId)
+        : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(analysisRequestId, styleAnalysisIssues);
       analysisRoomWasReloaded = false;
       try {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
+        await writeMusicDiagnostic("plan_style_response", { runId: requestId, stage: currentStage, attempt: attempt + 1, responseChars: response.text.length, status: styleAnalysisParsed ? "parsed" : "invalid_json" });
+        if (!styleAnalysisParsed) logger.warn(`[MusicPlan] style-analysis JSON parse failed attempt=${attempt + 1} responseChars=${response.text.length} promptChars=${prompt.length}`);
       } catch (error) {
+        await writeMusicDiagnostic("plan_style_attempt_failed", { runId: requestId, stage: currentStage, attempt: attempt + 1, ...musicErrorDetails(error) });
         if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
         const errorMessage = _.toString(_.get(error, "message", error));
         if (_.isEqual(errorMessage, CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_ERROR)) {
@@ -861,14 +879,21 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         styleAnalysisParsed = null;
       }
       styleAnalysisIssues = getMusicStyleAnalysisContractIssues(styleAnalysisParsed, analysisRequestId);
+      if (styleAnalysisIssues.length) await writeMusicDiagnostic("plan_contract_failed", { runId: requestId, stage: currentStage, attempt: attempt + 1, issueCount: styleAnalysisIssues.length, issues: styleAnalysisIssues });
       if (!_.isEmpty(styleAnalysisIssues)) logger.warn(`[MusicPlan] style-analysis contract attempt=${attempt + 1} issues=${styleAnalysisIssues.join(" | ")}`);
       if (validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) break;
     }
-    if (!validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    if (!validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) {
+      const failedFields = styleAnalysisIssues.slice(0, 5).join("; ");
+      throw createAppError(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}${failedFields ? ` Chi tiết: ${failedFields}` : ""}`);
+    }
+    checkpoint.styleAnalysis = styleAnalysisParsed;
+    checkpoint.updatedAt = Date.now();
 
     const songs: any[] = [];
     const completedSongTitles = new Set<string>();
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION;
+    await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage, songCount: requestedSongCount });
     let responseProvider = provider;
     const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix = "", workerId = `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-batch-${startIndex}`): Promise<any[] | null> => {
       let batchParsed: any = null;
@@ -884,7 +909,9 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId);
           responseProvider = response.provider;
           batchParsed = jsonUtils.safeParse(response.text, null);
+          await writeMusicDiagnostic("plan_batch_response", { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, attempt: attempt + 1, responseChars: response.text.length, status: batchParsed ? "parsed" : "invalid_json" });
         } catch (error) {
+          await writeMusicDiagnostic("plan_batch_attempt_failed", { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, attempt: attempt + 1, ...musicErrorDetails(error) });
           if (!isRetryableMusicRoomError(error)) throw error;
           if (_.isEqual(_.toString(_.get(error, "message", error)), CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_ERROR)) {
             roomWasReloaded = true;
@@ -903,6 +930,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           }
         }
         if (!_.isEmpty(batchIssues)) logger.warn(`[MusicPlan] song-composition contract batch=${startIndex} attempt=${attempt + 1} issues=${batchIssues.join(" | ")}`);
+        if (batchIssues.length) await writeMusicDiagnostic("plan_contract_failed", { runId: requestId, stage: currentStage, batch: startIndex, attempt: attempt + 1, issueCount: batchIssues.length, issues: batchIssues });
       }
       return null;
     };
@@ -914,6 +942,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const fallbackBatchSize = _.find(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES, (size) => size < batchCount);
       if (!fallbackBatchSize) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
       logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicBatchFallbackLog(startIndex, batchCount, fallbackBatchSize));
+      await writeMusicDiagnostic("plan_batch_fallback", { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, status: String(fallbackBatchSize) });
       const fallbackSongs: any[] = [];
       for (let offset = 0; offset < batchCount; offset += fallbackBatchSize) {
         const fallbackCount = Math.min(fallbackBatchSize, batchCount - offset);
@@ -927,16 +956,25 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       batchCount: Math.min(initialBatchSize, requestedSongCount - startIndex + 1),
       workerId: `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-batch-${startIndex}`,
     }));
+    for (const batch of compositionBatches) {
+      const savedSongs = checkpoint.batches.get(batch.startIndex);
+      if (!savedSongs || !validateMusicPlanSongContract({ songs: savedSongs }, batch.batchCount, batch.startIndex)) {
+        checkpoint.batches.delete(batch.startIndex);
+        continue;
+      }
+      _.forEach(savedSongs, (song) => completedSongTitles.add(_.toLower(_.deburr(_.trim(_.toString(song.title))))));
+    }
+    const pendingCompositionBatches = compositionBatches.filter((batch) => !checkpoint.batches.has(batch.startIndex));
     const closeCompositionRooms = async (): Promise<void> => {
       await Promise.allSettled(_.map(compositionBatches, (batch) => closeChatPlanningRoom({ provider, projectId, workerId: batch.workerId })));
     };
     await closeChatPlanningRoom({ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE }).catch(() => undefined);
     await closeCompositionRooms();
-    const composedBatchResults: any[][] = new Array(compositionBatches.length);
+    const composedBatchResults: any[][] = compositionBatches.map((batch) => checkpoint.batches.get(batch.startIndex) || []);
     let nextBatchIndex = 0;
     let compositionFailure: unknown;
     try {
-      await Promise.all(_.map(_.take(compositionBatches, SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY), (batch) => prepareChatPlanningRoom({
+      const roomPreparations = _.map(_.take(pendingCompositionBatches, SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY), (batch) => prepareChatPlanningRoom({
           provider,
           model: execution.model,
           prompt: "",
@@ -944,21 +982,27 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           workerId: batch.workerId,
           chromeHeadless: execution.chromeHeadless !== false,
           signal: planningRun.signal,
-        })));
-      const runCompositionWorker = async (): Promise<void> => {
-        while (nextBatchIndex < compositionBatches.length && !compositionFailure) {
-          const batchIndex = nextBatchIndex++;
-          const batch = compositionBatches[batchIndex];
+        }));
+      const runCompositionWorker = async (workerIndex: number): Promise<void> => {
+        await roomPreparations[workerIndex];
+        while (nextBatchIndex < pendingCompositionBatches.length && !compositionFailure) {
+          const batch = pendingCompositionBatches[nextBatchIndex++];
+          const batchIndex = compositionBatches.findIndex((item) => item.startIndex === batch.startIndex);
           try {
+            await writeMusicDiagnostic("plan_batch_started", { runId: requestId, stage: currentStage, batch: batch.startIndex, batchSize: batch.batchCount, workerId: batch.workerId });
             composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, "", batch.workerId);
+            await writeMusicDiagnostic("plan_batch_completed", { runId: requestId, stage: currentStage, batch: batch.startIndex, songCount: composedBatchResults[batchIndex].length });
+            checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
+            checkpoint.updatedAt = Date.now();
           } catch (error) {
+            await writeMusicDiagnostic("plan_batch_failed", { runId: requestId, stage: currentStage, batch: batch.startIndex, ...musicErrorDetails(error) });
             compositionFailure ||= error instanceof Error ? error : new Error(_.toString(error));
           } finally {
             await closeChatPlanningRoom({ provider, projectId, workerId: batch.workerId }).catch(() => undefined);
           }
         }
       };
-      await Promise.all(_.times(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, compositionBatches.length), () => runCompositionWorker()));
+      await Promise.all(_.times(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length), (workerIndex) => runCompositionWorker(workerIndex)));
       if (compositionFailure) throw compositionFailure;
     } finally {
       await closeCompositionRooms();
@@ -967,6 +1011,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const rankingRequestId = `${requestId}_song_ranking`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_RANKING;
+    await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
     let rankingParsed: any = null;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
@@ -988,6 +1033,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const rankedSongs = _.map(rankingParsed.orderedSongIds, (songId) => songsById[_.trim(_.toString(songId))]);
     const sunoSettingsRequestId = `${requestId}_suno_settings`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SUNO_SETTINGS;
+    await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
     let sunoSettingsParsed: any = null;
     let usableSunoSettingsParsed: any = null;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
@@ -1044,13 +1090,19 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     };
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL;
+    await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
     const { parsed: playlistSeoParsed, warning: seoWarning } = await generatePlaylistSeo()
       .then((parsed) => ({ parsed, warning: undefined as string | undefined }))
       .catch((error) => {
         const warning = _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR));
         logger.error(`[MusicPlan] non-fatal SEO failure requestId=${requestId}`, error);
+        void writeMusicDiagnostic("plan_seo_failed", { runId: requestId, stage: currentStage, ...musicErrorDetails(error) });
         return { parsed: null, warning };
       });
+    musicPlanCheckpoints.delete(requestId);
+    await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
+    scheduleGlobalBrowserCleanup();
+    await writeMusicDiagnostic("plan_completed", { runId: requestId, songCount: rankedSongs.length, elapsedMs: Date.now() - planStartedAt, status: seoWarning ? "seo_warning" : "success" });
     return res.json({
       success: true,
       data: {
@@ -1071,6 +1123,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   } catch (error) {
     const cause = _.toString(_.get(error, "message", error));
     logger.error(`[MusicPlan] failed requestId=${requestId} stage=${currentStage} cause=${cause}`, error);
+    await writeMusicDiagnostic("plan_failed", { runId: requestId, stage: currentStage, elapsedMs: Date.now() - planStartedAt, ...musicErrorDetails(error) });
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED} (${currentStage}: ${cause})`,
@@ -1136,6 +1189,7 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
   } finally {
     planningRun.complete();
     await closeChatPlanningRoom({ provider, projectId }).catch(() => undefined);
+    await closeChatBrowserIfIdle();
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) scheduleGlobalBrowserCleanup();
   }
@@ -1203,6 +1257,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   } finally {
     planningRun.complete();
     await closeChatPlanningRoom({ provider, projectId: requestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE }).catch(() => undefined);
+    await closeChatBrowserIfIdle();
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) scheduleGlobalBrowserCleanup();
   }
@@ -1236,7 +1291,7 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
     return res.json({ success: true, thumbnail: result.thumbnail });
   } finally {
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
-    if (_.isEqual(activeMusicPlanRuns, 0)) scheduleGlobalBrowserCleanup();
+    if (_.isEqual(activeMusicPlanRuns, 0)) await closeChatBrowserIfIdle();
   }
 });
 
@@ -1264,8 +1319,10 @@ const downloadSunoEvaluationAudio = async (songIds: string[], signal?: AbortSign
           }
         }
       }
-      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId} cause=${_.toString(_.get(lastError, "stack", _.get(lastError, "message", lastError)))}`);
-      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+      const cause = _.toString(_.get(lastError, "message", lastError));
+      logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId} cause=${cause}`);
+      await writeSunoCuratedLog("evaluation_audio_download_failed", { songId, cause });
+      throw createAppError(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}: ${cause}`);
     }));
     _.forEach(downloaded, ([songId, buffer]) => audioBySongId.set(songId, buffer));
   }
@@ -1301,25 +1358,27 @@ const selectProfessionalSunoTracks = async (
   audioBySongId: Map<string, Buffer>,
 ): Promise<Array<{ songId: string; title: string; qualityScore: number }>> => {
   if (_.isEmpty(groups) || _.some(groups, (group) => _.size(group.candidates) !== 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
-  const schema = {
-    type: "object",
+  const createEvaluationSchema = (requestId: string) => ({
+    type: "object" as const,
     additionalProperties: false,
-    required: ["selectedTrackIds", "qualityScores"],
+    required: ["artifactType", "requestId", "selectedTrackIds", "qualityScores"],
     properties: {
+      artifactType: { type: "string" as const, enum: [SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION] },
+      requestId: { type: "string" as const, enum: [requestId] },
       selectedTrackIds: {
-        type: "array",
+        type: "array" as const,
         minItems: groups.length,
         maxItems: groups.length,
-        items: { type: "string" },
+        items: { type: "string" as const },
       },
       qualityScores: {
-        type: "array",
+        type: "array" as const,
         minItems: groups.length,
         maxItems: groups.length,
-        items: { type: "integer", minimum: 0, maximum: 100 },
+        items: { type: "integer" as const, minimum: 0, maximum: 100 },
       },
     },
-  } as const;
+  });
   const allCandidateIds = _.flatMap(groups, "candidates");
   if (_.some(allCandidateIds, (songId) => !audioBySongId.has(songId))) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
   const attachmentDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), SUNO_AUTOMATION_CONFIG.TEMP_ATTACHMENT_DIR_PREFIX));
@@ -1329,25 +1388,32 @@ const selectProfessionalSunoTracks = async (
     return { name: path.basename(filePath), mimeType: SUNO_AUTOMATION_CONFIG.MIME_MP3, path: filePath };
   }));
   try {
-    const prompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, jsonUtils.safeStringify(schema));
-    let retryPrompt = prompt;
     let lastError: unknown;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MAX_EVALUATION_ATTEMPTS; attempt++) {
+      const requestId = SUNO_AUTOMATION_CONFIG.formatChunkEvaluationRequestId(room.projectId, groups[0].title, attempt + 1);
+      const schema = createEvaluationSchema(requestId);
+      const prompt = attempt === 0
+        ? SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, jsonUtils.safeStringify(schema))
+        : SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, jsonUtils.safeStringify(schema));
       try {
         const response = await generatePlanningWithChatUi({
           provider: AiPlanningFallbackProvider.GeminiChat,
           model: room.model,
-          prompt: retryPrompt,
+          prompt,
           projectId: room.projectId,
           workerId: room.workerId,
           chromeHeadless: false,
           signal: room.signal,
           attachments,
           artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
-          requestId: SUNO_AUTOMATION_CONFIG.formatChunkEvaluationRequestId(room.projectId, groups[0].title, attempt + 1),
+          requestId,
           closeRoomOnComplete: false,
         });
-        const evaluation = parseAiJsonArtifact<{ selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+        const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+        if (!_.isEqual(evaluation.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION) || !_.isEqual(normalizeCinematicArtifactIdentity(evaluation.requestId), normalizeCinematicArtifactIdentity(requestId))) {
+          throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+        }
+        await writeSunoCuratedLog("evaluation_response_parsed", { evaluationRunId: room.projectId, workerId: room.workerId, attempt: attempt + 1, expectedCount: groups.length, selectedCount: _.size(evaluation.selectedTrackIds), scoreCount: _.size(evaluation.qualityScores), responseChars: response.text.length });
         if (_.size(evaluation.selectedTrackIds) !== groups.length || _.size(evaluation.qualityScores) !== groups.length) throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_SELECTED_TRACK_ID_ERR);
         return _.map(groups, (group, index) => {
           const selectedTrackId = _.trim(_.toString(evaluation.selectedTrackIds[index]));
@@ -1358,12 +1424,12 @@ const selectProfessionalSunoTracks = async (
         });
       } catch (error) {
         lastError = error;
-        retryPrompt = SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, jsonUtils.safeStringify(schema));
+        if (_.isEqual(_.toString(_.get(error, "code")), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE)) throw error;
         await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_RETRY, {
           projectId: room.projectId,
           workerId: room.workerId,
           attempt: attempt + 1,
-          error: _.toString(_.get(error, "message", error)),
+          ...musicErrorDetails(error),
         });
       }
     }
@@ -1391,6 +1457,7 @@ const writeSunoCuratedLog = async (event: string, details: Record<string, unknow
 };
 
 router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) => {
+  const runId = `suno-create-${Date.now()}`;
   const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
     songId: _.trim(_.toString(song?.songId)),
     title: _.trim(_.toString(song?.title)),
@@ -1400,15 +1467,23 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
   const inspo = _.trim(_.toString(req.body?.inspo));
   const initialSongIds = _.castArray(req.body?.initialSongIds || []);
   if ((_.isEmpty(songs) && _.isEmpty(initialSongIds)) || _.some(songs, (song) => _.isEmpty(song.songId) || _.isEmpty(song.title) || _.isEmpty(song.lyrics))) {
+    await writeMusicDiagnostic("suno_create_validation_failed", { runId, songCount: songs.length, recoveredCount: initialSongIds.length });
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.VALIDATION_PLAYLIST_INPUT_ERR });
   }
   try {
+    await writeMusicDiagnostic("suno_create_started", { runId, songCount: songs.length, recoveredCount: initialSongIds.length });
     const effectiveStyle = style || _.uniq(_.compact(_.map(_.castArray(req.body?.songs || []), (song) => _.trim(_.toString(song?.genre))))).join(", ") || SUNO_AUTOMATION_CONFIG.DEFAULT_FALLBACK_STYLE;
-    const result = await createSunoPlaylist(songs, effectiveStyle, inspo, req.body?.sunoSettings, initialSongIds, _.trim(_.toString(req.body?.playlistName)));
+    const result = await createSunoPlaylist(songs, effectiveStyle, inspo, req.body?.sunoSettings, initialSongIds, _.trim(_.toString(req.body?.playlistName)), runId);
+    await writeMusicDiagnostic("suno_create_completed", { runId, createdCount: result.createdSongIds.length });
     return res.json({ success: true, ...result });
   } catch (error) {
     logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, _.toString(_.get(error, "stack", _.get(error, "message", error))));
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)) });
+    await writeMusicDiagnostic("suno_create_failed", { runId, createdCount: _.size(_.get(error, "createdSongIds", [])), ...musicErrorDetails(error) });
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)),
+      createdSongIds: _.castArray(_.get(error, "createdSongIds", [])),
+    });
   }
 });
 
@@ -1435,7 +1510,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       projectId: evaluationProjectId,
       workerId,
     })));
-    await closeActiveBrowser(true).catch(() => undefined);
+    const browserClosed = await closeChatBrowserIfIdle();
+    await writeSunoCuratedLog("evaluation_browser_cleanup", { evaluationRunId, browserClosed });
   };
   try {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_STARTED, {
@@ -1449,7 +1525,9 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       title: _.trim(_.toString(track?.title)),
     }));
     if (_.isEmpty(tracks)) {
+      await writeSunoCuratedLog("playlist_tracks_recovery_started", { evaluationRunId });
       const recoveredSongIds = await getSunoPlaylistSongIds(_.toString(req.body?.playlistUrl));
+      await writeSunoCuratedLog("playlist_tracks_recovered", { evaluationRunId, trackCount: recoveredSongIds.length });
       const songTitles = _.map(_.castArray(req.body?.songTitles || []), (title) => _.trim(_.toString(title)));
       tracks = _.map(recoveredSongIds, (songId, index) => {
         const songIndex = Math.floor(index / 2);
@@ -1477,6 +1555,20 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
       const pairChunks = _.chunk(trackPairs, SUNO_AUTOMATION_CONFIG.EVALUATION_SONGS_PER_CHUNK);
       evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => `${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}-chunk-${chunkIndex + 1}`);
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, {
+        evaluationRunId,
+        trackCount: tracks.length,
+        songCount: trackPairs.length,
+        chunkCount: pairChunks.length,
+      });
+      const groupsByChunk = _.map(pairChunks, (pairChunk) => _.map(pairChunk, (pair) => ({
+          title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, "")),
+          candidates: _.map(pair, "songId"),
+        })));
+      await writeSunoCuratedLog("evaluation_audio_preparation_started", { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: tracks.length });
+      const evaluationAudioByChunk = await Promise.all(_.map(groupsByChunk, (groups) =>
+        downloadSunoEvaluationAudio(_.flatMap(groups, "candidates"), planningRun.signal)));
+      await writeSunoCuratedLog("evaluation_audio_ready", { evaluationRunId, chunkCount: evaluationAudioByChunk.length });
       const roomPreparations = _.map(evaluationWorkerIds, (workerId) => prepareChatPlanningRoom({
         provider: AiPlanningFallbackProvider.GeminiChat,
         model: req.body?.aiExecution?.model,
@@ -1486,34 +1578,26 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         chromeHeadless: false,
         signal: planningRun.signal,
       }));
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, {
-        evaluationRunId,
-        trackCount: tracks.length,
-        songCount: trackPairs.length,
-        chunkCount: pairChunks.length,
-      });
-      const evaluationResults = await Promise.allSettled(_.map(pairChunks, async (pairChunk, chunkIndex) => {
-        const groups = _.map(pairChunk, (pair) => ({
-          title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, "")),
-          candidates: _.map(pair, "songId"),
-        }));
+      const evaluationResults = await Promise.allSettled(_.map(groupsByChunk, async (groups, chunkIndex) => {
         await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, {
           evaluationRunId,
           chunk: chunkIndex + 1,
           songs: groups.length,
           candidateTracks: _.sumBy(groups, (group) => group.candidates.length),
         });
-        const audioDownload = downloadSunoEvaluationAudio(_.flatMap(groups, "candidates"), planningRun.signal);
-        const [evaluationAudioBySongId] = await Promise.all([
-          audioDownload,
-          roomPreparations[chunkIndex],
-        ]);
+        try {
+          await roomPreparations[chunkIndex];
+          await writeSunoCuratedLog("evaluation_room_ready", { evaluationRunId, chunk: chunkIndex + 1, workerId: evaluationWorkerIds[chunkIndex] });
+        } catch (error) {
+          await writeSunoCuratedLog("evaluation_room_failed", { evaluationRunId, chunk: chunkIndex + 1, ...musicErrorDetails(error) });
+          throw error;
+        }
         const selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), {
           projectId: evaluationProjectId,
           workerId: evaluationWorkerIds[chunkIndex],
           model: req.body?.aiExecution?.model,
           signal: planningRun.signal,
-        }, evaluationAudioBySongId);
+        }, evaluationAudioByChunk[chunkIndex]);
         await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, {
           evaluationRunId,
           chunk: chunkIndex + 1,
@@ -1555,9 +1639,11 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         trackCount: selectedTracksForDownload.length,
         format,
       });
-      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, planningRun.signal);
+      const downloadedPaths = await downloadSunoTracksToFolder(selectedTracksForDownload, _.toString(req.body?.folderPath), format, planningRun.signal, evaluationRunId);
       if (!_.isEqual(downloadedPaths.length, trackPairs.length)) throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_DOWNLOAD_COUNT_MISMATCH_ERR);
+      await writeSunoCuratedLog("selected_tracks_downloaded", { evaluationRunId, downloadedCount: downloadedPaths.length });
       const durations = await Promise.all(_.map(downloadedPaths, readMediaDurationSeconds));
+      await writeSunoCuratedLog("selected_tracks_durations_checked", { evaluationRunId, trackCount: durations.length, invalidCount: durations.filter((duration) => !_.isFinite(duration) || duration <= 0).length });
       if (_.some(durations, (durationSeconds) => !_.isFinite(durationSeconds) || durationSeconds <= 0)) {
         throw createAppError(SUNO_AUTOMATION_TEXTS.AUDIO_DURATION_INVALID_ERR);
       }
@@ -1584,12 +1670,13 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       return res.json({ success: true, downloadedPaths, curatedTracks, downloadedTracks: curatedTracks });
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
-    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal);
+    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal, evaluationRunId);
+    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, trackCount: downloadedPaths.length, format, success: true });
     return res.json({ success: true, downloadedPaths, downloadedTracks: tracks });
   } catch (error) {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, {
       evaluationRunId,
-      error: _.toString(_.get(error, "message", error)),
+      ...musicErrorDetails(error),
     });
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, "message", SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR)) });
   } finally {
@@ -1798,7 +1885,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         provider: planningFallbackProvider,
         projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
         workerId: planningWorkerId,
-      });
+      }).then(async () => { await closeChatBrowserIfIdle(); });
       return planningRoomClosePromise;
     };
     req.once("aborted", planningRun.cancel);
@@ -6979,6 +7066,7 @@ router.post(RENDER_QUEUE_CONFIG.CANCEL_ROUTE, async (req: Request, res: Response
 
 router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
   const pipelineRunId = _.trim(_.toString(req.body?.pipelineRunId));
+  musicPlanCheckpoints.delete(pipelineRunId);
   const renderJobId = _.trim(_.toString(req.body?.renderJobId));
   cancelChatPlanningRun(pipelineRunId);
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
@@ -6990,7 +7078,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   }
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
-  if (closeMusicRooms && activeMusicPlanRuns <= 1) await closeIdleAppChrome().catch(() => undefined);
+  if (closeMusicRooms) await closeChatBrowserIfIdle();
   return res.json({ success: true });
 });
 
@@ -7014,6 +7102,7 @@ router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIP
   const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
   if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
+  await closeChatBrowserIfIdle();
   return res.json({ success: true, closedRoomCount: workerIds.length });
 });
 

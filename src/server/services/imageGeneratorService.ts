@@ -1742,19 +1742,6 @@ let activeBrowserHeadless: boolean | undefined = undefined;
 let activeBrowserLaunchPromise: Promise<BrowserSession> | null = null;
 let activeFlowVideoGenerationCount = SecurityConstants.ZERO;
 
-const terminateSharedChromeProcess = async (): Promise<void> => {
-  if (!_.isEqual(process.platform, "win32")) return;
-  await new Promise<void>((resolve) => {
-    const command = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'chrome.exe' -and $_.CommandLine -match '--remote-debugging-port=${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}' -and $_.CommandLine -match '${REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], {
-      windowsHide: true,
-      stdio: "ignore",
-    });
-    child.once("close", () => resolve());
-    child.once("error", () => resolve());
-  });
-};
-
 const isSharedChromeRunning = async (): Promise<boolean> => {
   try {
     const response = await fetch(`http://127.0.0.1:${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}/json/version`, {
@@ -1766,7 +1753,15 @@ const isSharedChromeRunning = async (): Promise<boolean> => {
   }
 };
 
-export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = false) {
+const waitForSharedChromeExit = async (): Promise<boolean> => {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    if (!(await isSharedChromeRunning())) return true;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return false;
+};
+
+export async function closeActiveBrowser() {
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -1774,10 +1769,25 @@ export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = fals
   if (activeBrowserInstance) {
     appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
     try {
-      if (activeBrowserInstance.preserveExternalPages && forceCloseSharedBrowser) {
-        await activeBrowserInstance.context.browser()?.close();
-      } else if (activeBrowserInstance.preserveExternalPages) {
-        appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
+      if (activeBrowserInstance.preserveExternalPages) {
+        const sharedSession = activeBrowserInstance;
+        const hasOtherPages = sharedSession.context.pages().some((page) => !page.isClosed() && page !== sharedSession.page);
+        if (sharedChromeLaunchedByApp && !hasOtherPages && activeFlowVideoGenerationCount === SecurityConstants.ZERO) {
+          const page = sharedSession.page.isClosed()
+            ? sharedSession.context.pages().find((candidate) => !candidate.isClosed()) || await sharedSession.context.newPage().catch(() => undefined)
+            : sharedSession.page;
+          if (page) {
+            const cdp = await sharedSession.context.newCDPSession(page);
+            await cdp.send("Browser.close" as any).catch(() => undefined);
+            if (await waitForSharedChromeExit()) sharedChromeLaunchedByApp = false;
+            else return;
+          }
+        } else if (sharedChromeLaunchedByApp) {
+          appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
+          return;
+        } else {
+          appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
+        }
       } else if (activeBrowserInstance.ownsContext === false) {
         const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), "grok.com"));
         await Promise.allSettled(_.map(geminiPages, (page) => page.close()));
@@ -1788,18 +1798,67 @@ export async function closeActiveBrowser(forceCloseSharedBrowser: boolean = fals
     } catch (e) {}
     activeBrowserInstance = null;
   }
-  if (forceCloseSharedBrowser && await isSharedChromeRunning()) await terminateSharedChromeProcess();
-  if (forceCloseSharedBrowser) sharedChromeLaunchedByApp = false;
   activeBrowserHeadless = undefined;
 }
 
-export async function closeIdleAppChrome(): Promise<void> {
-  const browser = activeBrowserInstance;
-  if (!sharedChromeLaunchedByApp || !browser?.preserveExternalPages || activeFlowVideoGenerationCount > 0) return;
-  if (_.some(globalBatchPages, (page) => !page.isClosed())) return;
-  const pages = browser.context.pages().filter((page) => !page.isClosed());
-  if (_.some(pages, (page) => !_.includes(["about:blank", "chrome://newtab/", "chrome://new-tab-page/"], page.url()))) return;
-  await closeActiveBrowser(true);
+/** Close an app-owned Chrome after the last task page is gone. Never terminate an attached user browser. */
+export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false): Promise<boolean> {
+  if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
+  if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {
+    scheduleGlobalBrowserCleanup();
+    return false;
+  }
+  const session = activeBrowserInstance || (sharedChromeLaunchedByApp ? await connectToSharedChromeBrowser(false) : null);
+  if (!session) return !(await isSharedChromeRunning());
+  if (session.preserveExternalPages) {
+    const isChatOrBlankPage = (page: Page): boolean =>
+      /^(?:about:blank|chrome:\/\/newtab|https:\/\/(?:gemini\.google\.com|chatgpt\.com|grok\.com)(?:\/|$))/i.test(page.url());
+    const openPages = session.context.pages().filter((page) => !page.isClosed());
+    const canCloseAttachedChatBrowser = closeOrphanChatTabs && openPages.length > 0 && openPages.every(isChatOrBlankPage);
+    if (!sharedChromeLaunchedByApp && !canCloseAttachedChatBrowser) {
+      await closeActiveBrowser();
+      return false;
+    }
+    const otherPages = session.context.pages().filter((page) => !page.isClosed() && page !== session.page);
+    if (otherPages.length) {
+      const canCloseOrphanChatTabs = closeOrphanChatTabs && otherPages.every(isChatOrBlankPage);
+      if (!canCloseOrphanChatTabs) {
+        scheduleGlobalBrowserCleanup();
+        return false;
+      }
+      await Promise.allSettled(otherPages.map((page) => page.close()));
+    }
+    const page = session.page.isClosed()
+      ? session.context.pages().find((candidate) => !candidate.isClosed()) || await session.context.newPage().catch(() => undefined)
+      : session.page;
+    if (!page) return false;
+    try {
+      const cdp = await session.context.newCDPSession(page);
+      await cdp.send("Browser.close" as any).catch(() => undefined);
+      if (!(await waitForSharedChromeExit())) {
+        scheduleGlobalBrowserCleanup();
+        return false;
+      }
+      activeBrowserInstance = null;
+      sharedChromeLaunchedByApp = false;
+      activeBrowserHeadless = undefined;
+      if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
+      activeBrowserTimeout = null;
+      return true;
+    } catch (error) {
+      if (await waitForSharedChromeExit()) {
+        activeBrowserInstance = null;
+        sharedChromeLaunchedByApp = false;
+        activeBrowserHeadless = undefined;
+        return true;
+      }
+      appError(`[Chrome] Graceful close failed: ${_.toString(_.get(error, "message", error))}`);
+      scheduleGlobalBrowserCleanup();
+      return false;
+    }
+  }
+  await closeActiveBrowser();
+  return true;
 }
 
 export function scheduleGlobalBrowserCleanup() {
@@ -1810,7 +1869,7 @@ export function scheduleGlobalBrowserCleanup() {
       return;
     }
     appLog(ImageGenMessages.AUTO_RELEASE_CHROME_IDLE);
-    await closeActiveBrowser();
+    await closeAppBrowserAfterTask();
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 
@@ -2310,7 +2369,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
     EXTERNAL_URLS.GROK_CHAT,
   ];
   if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
-  spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" });
+  spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: "ignore" }).unref();
   await waitForGrokChrome();
   if (chromeHeadless === false) await waitForVisibleGrokVerificationBeforeAutomation();
   else await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER);
@@ -2353,6 +2412,45 @@ export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<
   }
   return grokBrowserLaunchPromise;
 };
+
+const isGrokChromeRunning = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}${REFACTOR_CONSTANTS.GROK_CDP_VERSION_PATH}`, { signal: AbortSignal.timeout(1000) });
+    return response.ok;
+  } catch { return false; }
+};
+
+export async function closeOwnedGrokBrowserIfIdle(allowImaginePage: boolean = false): Promise<boolean> {
+  if (activeFlowVideoGenerationCount > 0) return false;
+  if (!grokBrowser?.isConnected()) {
+    if (!(await isGrokChromeRunning())) return true;
+    grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT).catch(() => null);
+    if (!grokBrowser) return false;
+  }
+  const grokContext = grokPage?.context() || _.first(grokBrowser.contexts());
+  const pages = grokContext?.pages().filter((page) => !page.isClosed()) || [];
+  if (_.some(pages, (page) => !/(?:grok\.com|about:blank|chrome:\/\/newtab)/i.test(page.url()))) return false;
+  if (!allowImaginePage && _.some(pages, (page) => /grok\.com\/imagine/i.test(page.url()))) return false;
+  if (allowImaginePage && pages.length > 1) return false;
+  const page = pages[0] || await grokContext?.newPage().catch(() => undefined);
+  if (!page) return false;
+  try {
+    const cdp = await grokContext!.newCDPSession(page);
+    await cdp.send("Browser.close" as any).catch(() => undefined);
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      if (!(await isGrokChromeRunning())) break;
+      await delayAsync(250);
+    }
+    if (await isGrokChromeRunning()) return false;
+    grokBrowser = null;
+    grokPage = null;
+    if (activeBrowserInstance?.context === grokContext) activeBrowserInstance = null;
+    return true;
+  } catch (error) {
+    appError(`[Grok Chrome] Graceful close failed: ${getErrorMessage(error)}`);
+    return false;
+  }
+}
 
 const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Promise<ImageGeneratorResult> => {
   const generationRevision = mediaGenerationRevision;
@@ -2485,6 +2583,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
     appError("[Grok Imagine] Generation failed", error);
     return { success: false, base64: null, fallbackUrl: "", warning: getErrorMessage(error) };
   } finally {
+    await closeOwnedGrokBrowserIfIdle(true);
     release();
   }
 };
@@ -3603,6 +3702,7 @@ export async function closeAllBatchPages() {
     } catch (e) {}
   }
   if (grokPage && !grokPage.isClosed()) await grokPage.close().catch(() => undefined);
+  await closeOwnedGrokBrowserIfIdle(true);
   if (grokBrowser?.isConnected()) await grokBrowser.close().catch(() => undefined);
   globalBatchPages = [];
   grokPage = null;
@@ -3627,6 +3727,7 @@ export async function cancelAllActiveMediaGeneration(): Promise<void> {
   if (activeBrowserInstance?.ownsContext !== false) {
     await activeBrowserInstance?.context.close().catch(() => undefined);
   }
+  await closeOwnedGrokBrowserIfIdle(true);
   if (grokBrowser?.isConnected()) await grokBrowser.close().catch(() => undefined);
   globalBatchPages = [];
   activeBrowserInstance = null;

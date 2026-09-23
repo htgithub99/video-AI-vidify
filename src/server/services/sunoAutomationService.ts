@@ -9,6 +9,7 @@ import { pipeline } from "stream/promises";
 import { getDataDirectory } from "../utils/paths.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { logger } from "../../lib/logger.js";
+import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import {
   SUNO_AUTOMATION_CONFIG,
   SUNO_AUTOMATION_PATTERNS,
@@ -54,7 +55,7 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
 };
 
 
-export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal): Promise<string[]> => {
+export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal, runId?: string): Promise<string[]> => {
   signal?.throwIfAborted();
   const requestedFolder = _.trim(folderPath);
   if (_.isEmpty(requestedFolder) || !path.isAbsolute(requestedFolder)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
@@ -68,6 +69,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
   const downloadedPaths: string[] = [];
   for (const [index, track] of validTracks.entries()) {
     signal?.throwIfAborted();
+    await writeMusicDiagnostic("audio_track_started", { runId, songId: track.songId, songIndex: index + 1, trackCount: validTracks.length, format });
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
     let downloaded = false;
@@ -84,8 +86,10 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
         downloadedPaths.push(filePath);
         downloaded = true;
+        await writeMusicDiagnostic("audio_track_completed", { runId, songId: track.songId, songIndex: index + 1, attempt: attempt + 1, format });
       } catch (error) {
         lastError = error;
+        await writeMusicDiagnostic("audio_track_attempt_failed", { runId, songId: track.songId, songIndex: index + 1, attempt: attempt + 1, format, ...musicErrorDetails(error) });
         await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
         signal?.throwIfAborted();
         if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
@@ -93,7 +97,10 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         }
       }
     }
-    if (!downloaded) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackWithCauseErr(track.title, lastError));
+    if (!downloaded) {
+      await writeMusicDiagnostic("audio_track_failed", { runId, songId: track.songId, songIndex: index + 1, format, ...musicErrorDetails(lastError) });
+      throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackWithCauseErr(track.title, lastError));
+    }
   }
   return downloadedPaths;
 };
@@ -560,23 +567,31 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   await fillEditable(nameInput, playlistName);
   const create = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_PLAYLIST_BUTTON, SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS);
   if (!create) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR);
-  const playlistMutation = page.waitForRequest((request) =>
-    SUNO_AUTOMATION_PATTERNS.PLAYLIST_API.test(request.url())
-    && [SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST, "PUT", SUNO_AUTOMATION_CONFIG.HTTP_METHOD_PATCH].includes(request.method()),
+  const playlistMutation = page.waitForResponse((response) =>
+    SUNO_AUTOMATION_PATTERNS.PLAYLIST_API.test(response.url())
+    && !response.url().includes("/update_clips/")
+    && [SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST, "PUT", SUNO_AUTOMATION_CONFIG.HTTP_METHOD_PATCH].includes(response.request().method()),
   { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
   await create.click();
-  const mutationRequest = await playlistMutation;
-  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_WAIT_MS);
-
-  await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/me/playlists`, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_COMMIT, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
-  const playlistLink = page.getByRole("link", { name: playlistName, exact: true }).first();
-  await playlistLink.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
-  const playlistHref = await playlistLink.getAttribute("href");
-  if (!playlistHref) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
-  const playlistId = playlistHref.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1];
+  const mutationResponse = await playlistMutation;
+  if (!mutationResponse.ok()) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+  const mutationPayload = await mutationResponse.json().catch(() => null);
+  const responsePlaylistId = _.trim(_.toString(
+    mutationPayload?.id || mutationPayload?.playlist?.id || mutationPayload?.playlist_id || mutationPayload?.playlistId || mutationPayload?.data?.id || "",
+  ));
+  let playlistId = responsePlaylistId;
+  let playlistHref = playlistId ? `/playlist/${encodeURIComponent(playlistId)}` : "";
+  if (!playlistId) {
+    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_WAIT_MS);
+    await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}/me/playlists`, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_COMMIT, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+    const playlistLink = page.locator('a[href*="/playlist/"]').filter({ hasText: playlistName }).first();
+    await playlistLink.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+    playlistHref = await playlistLink.getAttribute("href") || "";
+    playlistId = playlistHref.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1] || "";
+  }
   if (!playlistId) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
 
-  const requestHeaders = mutationRequest.headers();
+  const requestHeaders = mutationResponse.request().headers();
   await addSongIdsByPlaylistId(page, requestHeaders, playlistId, uniqueSongIds);
 
   const playlistUrl = new URL(playlistHref, SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL).toString();
@@ -595,10 +610,12 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   return playlistUrl;
 };
 
-export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = [], requestedPlaylistName: string = ""): Promise<SunoCreationResult> => {
+export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = [], requestedPlaylistName: string = "", runId = `suno-create-${Date.now()}`): Promise<SunoCreationResult> => {
   if (_.isEmpty(songs) && _.isEmpty(initialSongIds)) throw new Error(SUNO_AUTOMATION_TEXTS.MISSING_SONGS_OR_STYLE_ERR);
   if (activeSunoPage) throw new Error(SUNO_AUTOMATION_TEXTS.ALREADY_RUNNING_ERR);
   sunoCancellationRequested = false;
+  let stage = "connect_chrome";
+  await writeMusicDiagnostic("suno_stage_started", { runId, stage });
   let browser: any;
   try { browser = await chromium.connectOverCDP(SUNO_CDP_URL); } catch {
     await launchSunoLoginBrowser();
@@ -614,16 +631,24 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   activeSunoPage = page;
   const createdSongIds: string[] = _.uniq(_.compact(_.map(initialSongIds, (id) => _.trim(_.toString(id)))));
   try {
+    stage = "open_create_page";
+    await writeMusicDiagnostic("suno_stage_started", { runId, stage });
     await revealSunoWindow(page);
     await ensureSunoCreatePage(page);
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.VERIFY_ACCOUNT_WAIT_MS);
+    stage = "verify_account";
+    await writeMusicDiagnostic("suno_stage_started", { runId, stage });
     await verifySunoAccount(page);
     if (!_.isEmpty(songs)) {
+      stage = "configure_generation";
+      await writeMusicDiagnostic("suno_stage_started", { runId, stage });
       await ensureAdvancedMode(page);
       await selectInspoPlaylist(page, inspo);
       await configureAdvancedOnce(page, style, aiSettings);
       const activeGenerations: ActiveSunoGeneration[] = [];
       for (const [songIndex, song] of songs.entries()) {
+        stage = "generate_song";
+        await writeMusicDiagnostic("suno_song_started", { runId, stage, songIndex: songIndex + 1, songCount: songs.length });
         ensureSunoNotCancelled();
         await waitForGenerationCapacity(page, activeGenerations, SUNO_AUTOMATION_CONFIG.MAX_CONCURRENT_PROMPTS - 1);
         const numberedSong = { ...song, title: formatNumberedSongTitle(song.title, songIndex) };
@@ -634,6 +659,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
           try {
             songIds = _.uniq([...songIds, ...(await createOneSong(page, numberedSong))]);
           } catch (error) {
+            await writeMusicDiagnostic("suno_song_attempt_failed", { runId, stage, songIndex: songIndex + 1, attempt: attempt + 1, ...musicErrorDetails(error) });
             songIds = _.uniq([...songIds, ..._.difference(await collectSongIds(page), promptBaselineIds)]);
             if (songIds.length >= SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT) break;
             if (sunoCancellationRequested || attempt >= SUNO_AUTOMATION_CONFIG.SUNO_CREATE_ACTION_ATTEMPTS - 1) throw error;
@@ -645,6 +671,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
           throw new Error(SUNO_AUTOMATION_TEXTS.formatNotEnoughTracksErr(numberedSong.title, songIds.length, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT));
         }
         createdSongIds.push(...songIds);
+        await writeMusicDiagnostic("suno_song_completed", { runId, stage, songIndex: songIndex + 1, createdCount: songIds.length });
         activeGenerations.push({ title: numberedSong.title, songIds });
         if (songIndex < songs.length - 1) {
           await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.BETWEEN_SONG_PROMPTS_DELAY_MS);
@@ -652,12 +679,23 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       }
       await waitForGenerationCapacity(page, activeGenerations, 0);
     }
+    stage = "create_playlist";
+    await writeMusicDiagnostic("suno_stage_started", { runId, stage, createdCount: createdSongIds.length });
     const playlistName = (_.trim(requestedPlaylistName).slice(0, 120) || (!_.isEmpty(songs)
       ? SUNO_AUTOMATION_TEXTS.formatPlaylistTitle(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE), songs.length)
       : SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE)).toLocaleUpperCase("vi-VN");
-    const playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName);
+    let playlistUrl: string;
+    try {
+      playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName);
+      await writeMusicDiagnostic("suno_playlist_completed", { runId, stage, createdCount: _.uniq(createdSongIds).length });
+    } catch (error) {
+      await writeMusicDiagnostic("suno_playlist_failed", { runId, stage, createdCount: createdSongIds.length, ...musicErrorDetails(error) });
+      if (createdSongIds.length && error instanceof Error) Object.assign(error, { createdSongIds: _.uniq(createdSongIds) });
+      throw error;
+    }
     return { playlistUrl, createdSongIds: _.uniq(createdSongIds) };
   } catch (error) {
+    await writeMusicDiagnostic("suno_stage_failed", { runId, stage, createdCount: createdSongIds.length, ...musicErrorDetails(error) });
     if (sunoCancellationRequested) throw new Error(SUNO_AUTOMATION_TEXTS.CANCELLED_ERR);
     throw error;
   } finally {

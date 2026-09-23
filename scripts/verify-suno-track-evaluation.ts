@@ -6,7 +6,8 @@ const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
 
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
 assert.match(controller, /_.chunk\(trackPairs, SUNO_AUTOMATION_CONFIG\.EVALUATION_SONGS_PER_CHUNK\)/);
-assert.match(controller, /Promise\.(?:all|allSettled)\(_.map\(pairChunks/);
+assert.match(controller, /const evaluationAudioByChunk = await Promise\.all[\s\S]*const roomPreparations = _\.map\(evaluationWorkerIds/);
+assert.match(controller, /Promise\.allSettled\(_\.map\(groupsByChunk/);
 assert.match(controller, /TRACK_EVALUATION_WORKER_ID}-chunk-\$\{chunkIndex \+ 1\}/);
 assert.match(controller, /workerId:\s*(?:chunkWorkerId|evaluationWorkerIds\[chunkIndex\])/);
 assert.match(controller, /closeChatPlanningRoom\([\s\S]*workerId/);
@@ -26,7 +27,8 @@ assert.match(controller, /fs\.promises\.rm\(attachmentDirectory, \{ recursive: t
 assert.doesNotMatch(controller, /buildAudioBatchUploadPrompt/);
 assert.match(constants, /Listen to every attached audio file before answering/);
 assert.match(constants, /quality score from 0 to 100/);
-assert.match(controller, /required: \["selectedTrackIds", "qualityScores"\]/);
+assert.match(controller, /required: \["artifactType", "requestId", "selectedTrackIds", "qualityScores"\]/);
+assert.match(controller, /requestId: \{ type: "string" as const, enum: \[requestId\] \}/);
 assert.match(controller, /_.orderBy\(evaluatedTracks[\s\S]*qualityScore[\s\S]*\["desc"\]/);
 assert.match(controller, /_.padStart\(_.toString\(rank \+ 1\), 2, "0"\)/);
 

@@ -11,7 +11,7 @@ const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf
 
 // Curated mode may download only after every AI selection and score validates.
 assert.match(controller, /if \(shouldEvaluateTracks\)[\s\S]*selectProfessionalSunoTracks/);
-assert.match(controller, /required: \["selectedTrackIds", "qualityScores"\]/);
+assert.match(controller, /required: \["artifactType", "requestId", "selectedTrackIds", "qualityScores"\]/);
 assert.match(controller, /Number\.isInteger\(qualityScore\)/);
 assert.match(controller, /!_.isEqual\(selectedTracksForDownload\.length, trackPairs\.length\)[\s\S]{0,300}throw createAppError/);
 assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload/);
@@ -27,9 +27,9 @@ assert.match(service, /SUNO_AUTOMATION_CONFIG\.getAudioRetryDelayMs\(attempt\)/)
 assert.match(constants, /formatPlaylistApiUrl/);
 assert.match(service, /playlist_clips/);
 assert.match(service, /if \(!_\.isEmpty\(songIds\)\) return songIds/);
-assert.match(controller, /Promise\.allSettled\(_\.map\(pairChunks/);
+assert.match(controller, /Promise\.allSettled\(_\.map\(groupsByChunk/);
 assert.match(controller, /downloadSunoEvaluationAudio\(_\.flatMap\(groups, "candidates"\), planningRun\.signal\)/);
-assert.match(controller, /evaluationAudioBySongId/);
+assert.match(controller, /evaluationAudioByChunk/);
 assert.doesNotMatch(controller, /selectProfessionalSunoTracks[\s\S]{0,2200}const downloadOrigin/);
 assert.match(controller, /_\.orderBy\(evaluatedTracks, \["qualityScore"\], \["desc"\]\)/);
 assert.match(controller, /_\.uniq\(_\.map\(selectedTracksForDownload, "songId"\)\)/);
@@ -50,13 +50,14 @@ assert.match(component, /sunoDownloadAbortControllerRef\.current\?\.abort\(\)/);
 assert.match(component, /SUNO_DOWNLOAD_CANCEL_BTN/);
 assert.match(controller, /downloadAbortController\.signal/);
 assert.doesNotMatch(controller, /MUSIC_SUNO_DOWNLOAD[\s\S]{0,1800}req\.once\([^\n]*aborted/);
-assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload[^\n]*planningRun\.signal\)/);
+assert.match(controller, /downloadSunoTracksToFolder\(selectedTracksForDownload[^\n]*planningRun\.signal, evaluationRunId\)/);
 assert.match(service, /AbortSignal\.any/);
 assert.match(service, /signal\?\.throwIfAborted\(\)/);
 assert.doesNotMatch(chatService, /attachmentUploadMutex/);
 assert.doesNotMatch(chatService, /resubmit(?:Failed|Stopped)GeminiMessage/);
 assert.doesNotMatch(chatService, /GEMINI_EDIT_MESSAGE_BUTTON_SELECTOR|GEMINI_UPDATE_MESSAGE_BUTTON_SELECTOR/);
-assert.match(chatService, /if \(composerIsEmpty \|\| responseStarted \|\| roomIsBusy\) return true/);
+assert.match(chatService, /if \(composerIsEmpty\) return true/);
+assert.match(chatService, /pendingRoomResponses\.set\(roomKey,[\s\S]*if \(!submissionConfirmed\)/);
 assert.match(constants, /evaluate these exact pairs again/);
 assert.match(constants, /Never return an ID outside its listed pair/);
 
@@ -75,7 +76,8 @@ assert.match(component, /const handleDownloadThumbnail = async/);
 assert.doesNotMatch(component, /anchor\.download/);
 assert.match(constants, /SEO_EXPORT_FILENAME:\s*"SEO"/);
 assert.match(constants, /THUMBNAIL_EXPORT_FILENAME:\s*"COVER"/);
-assert.match(component, /playlistName: playlistSeoOptions\[0\]\?\.title/);
+assert.match(component, /const playlistName = testOnly \? texts\.formatSunoTestPlaylistName[\s\S]*playlistSeoOptions\[0\]\?\.title/);
+assert.match(component, /playlistName,/);
 assert.match(component, /setDownloadPlaylistUrl\(createdPlaylistUrl\)/);
 assert.doesNotMatch(service, /if \(!_\.isEmpty\(missingIds\)\) throw new Error/);
 assert.match(service, /logger\.warn\(SUNO_AUTOMATION_TEXTS\.formatPlaylistMissingTracksErr/);
