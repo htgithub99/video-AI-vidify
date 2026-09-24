@@ -55,7 +55,10 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
 };
 
 
-export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal, runId?: string): Promise<string[]> => {
+export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal, runId?: string, resume?: {
+  existingPaths?: Record<string, string>;
+  onTrackDownloaded?: (songId: string, filePath: string) => Promise<void>;
+}): Promise<string[]> => {
   signal?.throwIfAborted();
   const requestedFolder = _.trim(folderPath);
   if (_.isEmpty(requestedFolder) || !path.isAbsolute(requestedFolder)) throw new Error(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
@@ -69,6 +72,15 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
   const downloadedPaths: string[] = [];
   for (const [index, track] of validTracks.entries()) {
     signal?.throwIfAborted();
+    const existingPath = resume?.existingPaths?.[track.songId];
+    if (existingPath && path.dirname(path.resolve(existingPath)) === resolvedFolder && path.extname(existingPath).toLowerCase() === `.${format}`) {
+      const existingStat = await fs.promises.stat(existingPath).catch(() => null);
+      if (existingStat?.isFile() && existingStat.size > 0) {
+        downloadedPaths.push(existingPath);
+        await writeMusicDiagnostic("audio_track_resumed", { runId, songId: track.songId, songIndex: index + 1, format, bytes: existingStat.size });
+        continue;
+      }
+    }
     await writeMusicDiagnostic("audio_track_started", { runId, songId: track.songId, songIndex: index + 1, trackCount: validTracks.length, format });
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
@@ -84,6 +96,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         });
         if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
         await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
+        await resume?.onTrackDownloaded?.(track.songId, filePath);
         downloadedPaths.push(filePath);
         downloaded = true;
         await writeMusicDiagnostic("audio_track_completed", { runId, songId: track.songId, songIndex: index + 1, attempt: attempt + 1, format });
