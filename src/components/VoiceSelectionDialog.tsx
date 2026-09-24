@@ -279,7 +279,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
         <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
           <div className={cn("flex items-center gap-3 cursor-help uppercase tracking-wider font-extrabold")}>
             <Mic className={cn("w-5 h-5 text-rose-500")} />
-            <span className="uppercase font-extrabold tracking-wider">{String(dialogTexts.TITLE).toUpperCase()}</span>
+            <span className={cn("uppercase font-extrabold tracking-wider")}>{String(dialogTexts.TITLE).toUpperCase()}</span>
           </div>
         </Tooltip>
       }>
@@ -354,8 +354,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
-                    <Button
-                      variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                    <Button variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                       key={g}
                       type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                       onClick={() => setGender(g)}
@@ -425,7 +424,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                         "bg-white/90 dark:bg-slate-900/80 border-amber-900/10 dark:border-slate-800 hover:bg-amber-50/60 dark:hover:bg-slate-850 hover:border-rose-400/40 hover:shadow-md hover:-translate-y-0.5": !isSelected,
                       })}
                       onClick={() => onSelectVoice({ ...voice, provider })}>
-                      <button
+                      <Button variant="unstyled"
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -436,7 +435,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                           "bg-rose-100 dark:bg-slate-950/80 text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying,
                         })}>
                         {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4 h-4 fill-current ml-0.5")} />}
-                      </button>
+                      </Button>
 
                       <div className={cn("flex-1 min-w-0")}>
                         <div className={cn("flex items-center justify-between gap-2 mb-1.5")}>
@@ -448,7 +447,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                                 {dialogTexts.selectedLabel}
                               </span>
                             )}
-                            <button
+                            <Button variant="unstyled"
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -459,14 +458,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                               )}
                               title={dialogTexts.favoriteTooltip}>
                               <Heart
-                                className={cn(
-                                  "w-4 h-4 transition-all duration-200",
-                                  _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id")))
-                                    ? "text-rose-500 fill-rose-500 scale-110"
-                                    : "text-slate-400 hover:text-rose-500",
-                                )}
+                                className={cn("w-4 h-4 transition-all duration-200", { "text-rose-500 fill-rose-500 scale-110": _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))), "text-slate-400 hover:text-rose-500": !(_.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id")))) })}
                               />
-                            </button>
+                            </Button>
                           </div>
                         </div>
 

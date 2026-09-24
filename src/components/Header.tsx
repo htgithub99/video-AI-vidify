@@ -206,50 +206,31 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
           />
 
           <div className={cn("relative shrink-0")} ref={dropdownRef}>
-            <button
+            <Button variant="unstyled"
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className={cn(
-                "header-control-item px-2.5 rounded-xl inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer shadow-sm select-none",
-                isDark
-                  ? "bg-slate-900/80 border border-slate-800 text-slate-200"
-                  : "bg-white/90 border border-stone-200 text-zinc-700",
-                isDropdownOpen && (isDark ? "border-slate-700 bg-slate-850 text-white" : "border-stone-300 bg-stone-50 text-zinc-900"),
-              )}
+              className={cn("header-control-item px-2.5 rounded-xl inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer shadow-sm select-none", { "bg-slate-900/80 border border-slate-800 text-slate-200": isDark, "bg-white/90 border border-stone-200 text-zinc-700": !isDark, "border-slate-700 bg-slate-850 text-white": isDropdownOpen && isDark, "border-stone-300 bg-stone-50 text-zinc-900": isDropdownOpen && !isDark })}
               title={planningTexts.CLEAR_AI_SESSIONS}
               aria-label={planningTexts.CLEAR_AI_SESSIONS}
               aria-expanded={isDropdownOpen}>
               <Trash2 className={cn("w-3.5 h-3.5 shrink-0 text-rose-500")} />
-              <span className="leading-none hidden sm:inline">{planningTexts.CLEAR_AI_SHORT}</span>
+              <span className={cn("leading-none hidden sm:inline")}>{planningTexts.CLEAR_AI_SHORT}</span>
               <ChevronDown className={cn("w-3 h-3 shrink-0 text-slate-400 transition-transform duration-150", isDropdownOpen && "rotate-180")} />
-            </button>
+            </Button>
 
             {isDropdownOpen && (
               <div
-                className={cn(
-                  "absolute right-0 top-full mt-2 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl flex flex-col gap-1.5",
-                  isDark
-                    ? "bg-[#181424]/98 border border-[#2c233a] shadow-black/60"
-                    : "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10",
-                )}>
+                className={cn("absolute right-0 top-full mt-2 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl flex flex-col gap-1.5", { "bg-[#181424]/98 border border-[#2c233a] shadow-black/60": isDark, "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10": !(isDark) })}>
                 <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b",
-                    isDark ? "border-[#2c233a] text-zinc-400" : "border-zinc-100 text-zinc-500",
-                  )}>
+                  className={cn("px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b", { "border-[#2c233a] text-zinc-400": isDark, "border-zinc-100 text-zinc-500": !(isDark) })}>
                   <div className={cn("flex items-center gap-1.5")}>
                     <Trash2 className={cn("w-3 h-3 text-rose-500")} />
-                    <span className={cn(isDark ? "text-zinc-200" : "text-zinc-800")}>
+                    <span className={cn({ "text-zinc-200": isDark, "text-zinc-800": !isDark })}>
                       {planningTexts.CLEAR_AI_MENU}
                     </span>
                   </div>
                   <span
-                    className={cn(
-                      "text-[9px] font-medium normal-case px-1.5 py-0.5 rounded border",
-                      isDark
-                        ? "text-zinc-400 bg-zinc-800/80 border-zinc-700/50"
-                        : "text-zinc-500 bg-zinc-100 border-zinc-200",
-                    )}>
+                    className={cn("text-[9px] font-medium normal-case px-1.5 py-0.5 rounded border", { "text-zinc-400 bg-zinc-800/80 border-zinc-700/50": isDark, "text-zinc-500 bg-zinc-100 border-zinc-200": !(isDark) })}>
                     {planningTexts.CLOSE_HIDDEN_TABS}
                   </span>
                 </div>
@@ -258,52 +239,35 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
                   {_.map(roomActions, (action) => (
                     <div
                       key={action.provider}
-                      className={cn(
-                        "w-full p-2 rounded-xl flex items-center justify-between gap-2.5 text-left border cursor-default select-none transition-none",
-                        isDark
-                          ? "bg-[#221b2d]/60 border-[#2c233a]/80"
-                          : "bg-zinc-50/80 border-zinc-200/70",
-                      )}>
+                      className={cn("w-full p-2 rounded-xl flex items-center justify-between gap-2.5 text-left border cursor-default select-none transition-none", { "bg-[#221b2d]/60 border-[#2c233a]/80": isDark, "bg-zinc-50/80 border-zinc-200/70": !(isDark) })}>
                       <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
                         <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border shadow-xs", action.badgeStyle)}>
                           {action.icon}
                         </div>
                         <div className={cn("flex flex-col min-w-0")}>
                           <span
-                            className={cn(
-                              "text-xs font-bold truncate leading-tight",
-                              isDark ? "text-zinc-100" : "text-zinc-900",
-                            )}>
+                            className={cn("text-xs font-bold truncate leading-tight", { "text-zinc-100": isDark, "text-zinc-900": !(isDark) })}>
                             {action.name}
                           </span>
                           <span
-                            className={cn(
-                              "text-[10px] font-medium truncate leading-tight mt-0.5",
-                              isDark ? "text-zinc-400" : "text-zinc-500",
-                            )}>
+                            className={cn("text-[10px] font-medium truncate leading-tight mt-0.5", { "text-zinc-400": isDark, "text-zinc-500": !(isDark) })}>
                             {action.subtext}
                           </span>
                         </div>
                       </div>
 
-                      <button
+                      <Button variant="unstyled"
                         type="button"
                         disabled={!_.isNull(clearingProvider)}
                         onClick={() => {
                           setIsDropdownOpen(false);
                           setConfirmAction(action);
                         }}
-                        className={cn(
-                          "btn-icon-tiny group/btn w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] p-0 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer shadow-xs active:scale-90 shrink-0",
-                          isDark
-                            ? "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30"
-                            : "bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-200 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/20",
-                          "disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-rose-500/30",
-                        )}
+                        className={cn("btn-icon-tiny group/btn w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] p-0 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer shadow-xs active:scale-90 shrink-0", { "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30": isDark, "bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-200 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/20": !(isDark) }, "disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-rose-500/30")}
                         title={planningTexts.CLEAR_ROOM_TOOLTIP.replace(SecurityConstants.PLACEHOLDER_0, action.name)}
                         aria-label={action.label}>
                         <Trash2 className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/btn:scale-110")} />
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -311,7 +275,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             )}
           </div>
 
-          <button
+          <Button variant="unstyled"
             type="button"
             onClick={toggleTheme}
             className={cn(
@@ -319,9 +283,9 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             )}
             title={themeTooltip}>
             {_.isEqual(theme, AppTheme.DARK) ? <Sun className={cn("w-3.5 h-3.5 text-amber-400")} /> : <Moon className={cn("w-3.5 h-3.5 text-sky-400")} />}
-          </button>
+          </Button>
 
-          <button
+          <Button variant="unstyled"
             type="button"
             onClick={logoutLicense}
             className={cn(
@@ -330,19 +294,16 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             title={logoutTooltip}>
             <LogOut className={cn("w-3.5 h-3.5")} />
             <span className={cn("hidden lg:inline text-[10px]")}>{logoutLabel}</span>
-          </button>
+          </Button>
 
           <div className={cn("header-control-container bg-slate-900/80 border border-slate-800 rounded-xl shrink-0 gap-0.5 shadow-inner relative")}>
             {_.map(Object.values(AppLanguage), (langCode) => (
-              <button
+              <Button variant="unstyled"
                 key={langCode}
                 onClick={() => setLang(langCode as Lang)}
-                className={cn(
-                  "btn-lang-item px-2 sm:px-2.5 text-[9px] sm:text-[10px] rounded-lg font-black outline-none flex items-center justify-center relative z-10 cursor-pointer",
-                  _.isEqual(currentLang, langCode) ? "bg-rose-600 text-white shadow-sm shadow-rose-600/30" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60",
-                )}>
+                className={cn("btn-lang-item px-2 sm:px-2.5 text-[9px] sm:text-[10px] rounded-lg font-black outline-none flex items-center justify-center relative z-10 cursor-pointer", { "bg-rose-600 text-white shadow-sm shadow-rose-600/30": _.isEqual(currentLang, langCode), "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60": !(_.isEqual(currentLang, langCode)) })}>
                 {langCode.toUpperCase()}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -357,7 +318,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
         title={
           <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span className="uppercase font-extrabold tracking-wider">{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
+            <span className={cn("uppercase font-extrabold tracking-wider")}>{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
           </div>
         }>
         <div className={cn("space-y-4 pt-1")}>
@@ -371,15 +332,13 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             </span>
           </div>
           <div className={cn("flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800")}>
-            <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
               disabled={isClearing || !_.isNull(clearingProvider)}
               onClick={() => setConfirmAction(null)}
               className={cn("px-5 py-2.5 text-xs font-bold rounded-xl")}>
               {t.cancel || planningTexts.CANCEL_FALLBACK}
             </Button>
-            <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
               isLoading={isClearing || !_.isNull(clearingProvider)}
               onClick={handleExecuteClearRooms}
               className={cn("px-6 py-2.5 text-xs font-bold rounded-xl shadow-md shadow-rose-600/20")}>

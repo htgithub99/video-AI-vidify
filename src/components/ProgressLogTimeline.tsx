@@ -6,6 +6,7 @@ import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
 import { formatUserFacingLog } from "../lib/userLogFormatter";
+import { Button } from "./ui/Button";
 
 interface ProgressLogTimelineProps {
   logs: string[];
@@ -59,7 +60,10 @@ const parseProgressLog = (log: string, language?: string) => {
 
 const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {
   const style = PROGRESS_LOG_CONFIG.STYLES[tone];
-  const iconClassName = cn(PROGRESS_LOG_CONFIG.CLASSES.ICON, _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME) ? style.iconLight : style.iconDark);
+  const iconClassName = cn(PROGRESS_LOG_CONFIG.CLASSES.ICON, {
+    [style.iconLight]: _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME),
+    [style.iconDark]: !_.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME),
+  });
 
   const Icon = _.get(
     {
@@ -77,7 +81,7 @@ const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: A
     Activity,
   );
 
-  return <Icon className={iconClassName} />;
+  return <Icon className={cn(iconClassName)} />;
 });
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
@@ -105,7 +109,10 @@ export const ProgressLogTimeline = memo(({ logs, theme, language, context = Prog
   return (
     <div className={cn("relative pl-1.5 py-1 space-y-4")}>
       {entries.length > 1 && (
-        <div className={cn(PROGRESS_LOG_CONFIG.CLASSES.LINE, isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK)} />
+        <div className={cn(PROGRESS_LOG_CONFIG.CLASSES.LINE, {
+          [PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT]: isLightTheme,
+          [PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK]: !isLightTheme,
+        })} />
       )}
 
       {_.map(entries, (entry, index) => {
@@ -126,36 +133,44 @@ export const ProgressLogTimeline = memo(({ logs, theme, language, context = Prog
 
         return (
           <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, "group/log relative")}>
-            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER, isLightTheme ? style.iconBgLight : style.iconBgDark)}>
+            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER, {
+              [style.iconBgLight]: isLightTheme,
+              [style.iconBgDark]: !isLightTheme,
+            })}>
               <ProgressLogIcon tone={entry.tone} theme={theme} />
             </span>
 
-            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, isLightTheme ? style.textLight : style.textDark)}>{entry.message}</span>
+            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, {
+              [style.textLight]: isLightTheme,
+              [style.textDark]: !isLightTheme,
+            })}>{entry.message}</span>
 
             <div className={cn("h-6 flex items-center gap-1.5 ml-2 shrink-0")}>
-              <button
+              <Button variant="unstyled"
                 type="button"
                 onClick={() => handleCopy(entry.rawMessage, index)}
                 className={cn(
                   "w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent transition-all",
                   "opacity-40 group-hover/log:opacity-100 hover:!opacity-100 focus:opacity-100",
-                  isCopied
-                    ? "text-emerald-400 !opacity-100"
-                    : isError
-                      ? "text-slate-400 hover:text-rose-400"
-                      : isWarning
-                        ? "text-slate-400 hover:text-amber-400"
-                        : isLightTheme
-                          ? "text-slate-400 hover:text-sky-600"
-                          : "text-slate-400 hover:text-sky-400",
+                  {
+                    "text-emerald-400 !opacity-100": isCopied,
+                    "text-slate-400 hover:text-rose-400": !isCopied && isError,
+                    "text-slate-400 hover:text-amber-400": !isCopied && !isError && isWarning,
+                    "text-slate-400 hover:text-sky-600": !isCopied && !isError && !isWarning && isLightTheme,
+                    "text-slate-400 hover:text-sky-400": !isCopied && !isError && !isWarning && !isLightTheme,
+                  },
                 )}
                 title={isCopied ? copiedTooltip : copyTooltip}
                 aria-label={isCopied ? copiedTooltip : copyTooltip}>
                 {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5")} />}
-              </button>
+              </Button>
 
               {!_.isEmpty(entry.time) && (
-                <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.TIME, isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK)}>
+                <span className={cn(
+                  PROGRESS_LOG_CONFIG.CLASSES.TIME,
+                  { [PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT]: isLightTheme },
+                  { [PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK]: !isLightTheme },
+                )}>
                   {entry.time}
                 </span>
               )}

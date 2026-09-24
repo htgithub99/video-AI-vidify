@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { BrowserContext, Page, chromium } from "playwright";
-import { VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX } from "../../constants/regexes.js";
+import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
+import { HTTP_URL_REGEX, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX } from "../../constants/regexes.js";
 
 export interface ArchivalImageResult {
   success: boolean;
@@ -18,9 +19,9 @@ interface SearchCandidate {
   title?: string;
 }
 
-const COMMONS_HOST = "https://commons.wikimedia.org";
-const GOOGLE_IMAGE_SEARCH = "https://www.google.com/search?tbm=isch&safe=active&hl=en&q=";
-const BING_IMAGE_SEARCH = "https://www.bing.com/images/search?safeSearch=Strict&q=";
+const COMMONS_HOST = EXTERNAL_URLS.WIKIMEDIA_COMMONS;
+const GOOGLE_IMAGE_SEARCH = EXTERNAL_URLS.GOOGLE_IMAGE_SEARCH;
+const BING_IMAGE_SEARCH = EXTERNAL_URLS.BING_IMAGE_SEARCH;
 const SUPPORTED_MEDIA_PATTERN = /\.(?:jpe?g|png|webp)(?:\?|$)/i;
 const MINIMUM_IMAGE_BYTES = 20_000;
 const DOWNLOAD_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36";
@@ -105,13 +106,13 @@ export const isArchivalSearchCandidateRelevant = (candidate: SearchCandidate, qu
 };
 
 const downloadCandidate = async (context: BrowserContext, candidate: SearchCandidate) => {
-  if (!/^https?:\/\//i.test(candidate.mediaUrl)) return null;
-  const response = await context.request.get(candidate.mediaUrl, { timeout: 30000, headers: { referer: candidate.sourceUrl || "https://www.google.com/" } }).catch(() => null);
+  if (!HTTP_URL_REGEX.test(candidate.mediaUrl)) return null;
+  const response = await context.request.get(candidate.mediaUrl, { timeout: 30000, headers: { referer: candidate.sourceUrl || EXTERNAL_URLS.GOOGLE_HOME } }).catch(() => null);
   let body: Buffer | undefined;
   let mimeType = _.toLower(response?.headers()["content-type"] || "").split(";")[0];
   if (response?.ok()) body = await response.body();
   if (!body) {
-    const directResponse = await fetch(candidate.mediaUrl, { headers: { "user-agent": DOWNLOAD_USER_AGENT, referer: candidate.sourceUrl || "https://www.google.com/" } }).catch(
+    const directResponse = await fetch(candidate.mediaUrl, { headers: { "user-agent": DOWNLOAD_USER_AGENT, referer: candidate.sourceUrl || EXTERNAL_URLS.GOOGLE_HOME } }).catch(
       () => null,
     );
     if (directResponse?.ok) {

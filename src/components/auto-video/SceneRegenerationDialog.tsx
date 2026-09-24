@@ -59,19 +59,14 @@ export const SceneRegenerationDialog: React.FC<SceneRegenerationDialogProps> = (
               const isSelected = _.isEqual(selectedSceneId, scene.id);
               const description = getSceneDescription(scene);
               return (
-                <button
+                <Button variant="unstyled"
                   key={scene.id}
                   type="button"
                   onClick={() => setSelectedSceneId(scene.id)}
                   title={description}
-                  className={cn(
-                    "w-full rounded-xl border p-3 text-left transition-all cursor-pointer",
-                    isSelected
-                      ? "border-purple-500 bg-purple-500/15 ring-1 ring-purple-500/40 shadow-sm"
-                      : "border-amber-900/15 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 hover:border-purple-400 dark:hover:border-slate-500 hover:bg-amber-50/50 dark:hover:bg-slate-800/80 shadow-sm",
-                  )}>
+                  className={cn("w-full rounded-xl border p-3 text-left transition-all cursor-pointer", { "border-purple-500 bg-purple-500/15 ring-1 ring-purple-500/40 shadow-sm": isSelected, "border-amber-900/15 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 hover:border-purple-400 dark:hover:border-slate-500 hover:bg-amber-50/50 dark:hover:bg-slate-800/80 shadow-sm": !(isSelected) })}>
                   <span className={cn("flex items-start gap-3")}>
-                    <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", isSelected ? "bg-purple-600 text-white" : "bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-purple-300")}>
+                    <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", { "bg-purple-600 text-white": isSelected, "bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-purple-300": !isSelected })}>
                       {isSelected ? <Check className={cn("h-4 w-4 stroke-[2.5]")} /> : <Video className={cn("h-4 w-4")} />}
                     </span>
                     <span className={cn("min-w-0")}>
@@ -79,15 +74,14 @@ export const SceneRegenerationDialog: React.FC<SceneRegenerationDialogProps> = (
                       <span className={cn("mt-1 block truncate text-xs text-[#334155] dark:text-slate-300 font-normal")}>{description}</span>
                     </span>
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>
         )}
 
         <div className={cn("flex justify-end gap-2 pt-2")}>
-          <Button
-            variant="ghost"
+          <Button variant="ghost"
             size="sm"
             onClick={onClose}
             disabled={isProcessing}
@@ -95,8 +89,7 @@ export const SceneRegenerationDialog: React.FC<SceneRegenerationDialogProps> = (
             className={cn("text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white font-bold")}>
             {texts.sceneCancel}
           </Button>
-          <Button
-            variant="purple"
+          <Button variant="purple"
             size="sm"
             onClick={confirmSelection}
             disabled={isProcessing || _.isEmpty(selectedSceneId)}

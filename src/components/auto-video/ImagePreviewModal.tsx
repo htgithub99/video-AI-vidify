@@ -5,6 +5,7 @@ import _ from "lodash";
 import { X } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
+import { Button } from "../ui/Button";
 
 interface ImagePreviewModalProps {
   imageUrl: string | null;
@@ -41,7 +42,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, 
         onClick={(e) => e.stopPropagation()}>
         <img src={imageUrl} alt={REFACTOR_CONSTANTS.THUMB_REF_PREFIX} className={cn("max-w-full max-h-[85vh] object-contain rounded-2xl select-none")} />
 
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={onClose}
           className={cn(
@@ -49,7 +50,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, 
           )}
           title={uiTexts.closeEsc}>
           <X className={cn("w-5 h-5 stroke-[2.5] shrink-0")} />
-        </button>
+        </Button>
       </div>
     </div>,
     document.body,

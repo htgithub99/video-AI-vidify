@@ -3,20 +3,20 @@ import { cn } from "../../lib/utils";
 
 export const MinimalSpinnerLoading: FC<{ className?: string }> = ({ className }) => (
   <div className={cn("w-full h-full min-h-[220px] flex-1 flex items-center justify-center p-6 select-none", className)}>
-    <div className="loader-circle" />
+    <div className={cn("loader-circle")} />
   </div>
 );
 
 export const PageLoadingSpinner: FC<{ className?: string }> = ({ className }) => (
   <div className={cn("flex items-center justify-center select-none", className)}>
-    <div className="loader-circle" />
+    <div className={cn("loader-circle")} />
   </div>
 );
 
 type LoadingSkeletonProps = { className?: string };
 
 const createLoadingSkeleton = <T extends LoadingSkeletonProps>(displayName: string): FC<T> => {
-  const LoadingSkeleton: FC<T> = ({ className }) => <MinimalSpinnerLoading className={className} />;
+  const LoadingSkeleton: FC<T> = ({ className }) => <MinimalSpinnerLoading className={cn(className)} />;
   LoadingSkeleton.displayName = displayName;
   return LoadingSkeleton;
 };

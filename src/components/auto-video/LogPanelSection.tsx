@@ -7,6 +7,7 @@ import { AppTheme } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { isProgressLogVisible, ProgressLogContext } from "../../constants/progressLog";
 import { formatUserFacingLogs } from "../../lib/userLogFormatter";
+import { Button } from "../ui/Button";
 
 interface LogPanelSectionProps {
   logs: string[];
@@ -50,7 +51,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
         </span>
         <div className={cn("flex items-center gap-2")}>
           {!_.isEmpty(visibleLogs) && (
-            <button
+            <Button variant="unstyled"
               type="button"
               onClick={scrollToLatest}
               className={cn(
@@ -59,7 +60,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
               title={T.logScrollLatestTooltip}>
               <ArrowDown className={cn("w-3.5 h-3.5")} />
               <span>{T.logScrollLatestBtn}</span>
-            </button>
+            </Button>
           )}
           <span className={cn("header-badge inline-flex items-center text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-300")}>
             {T.logEventsCount(visibleLogs.length)}
@@ -74,10 +75,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
         )}>
         {_.isEmpty(visibleLogs) ? (
           <div
-            className={cn(
-              "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
-              _.isEqual(theme, AppTheme.LIGHT) ? "text-slate-500" : "text-slate-400",
-            )}>
+            className={cn("flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2", { "text-slate-500": _.isEqual(theme, AppTheme.LIGHT), "text-slate-400": !(_.isEqual(theme, AppTheme.LIGHT)) })}>
             <Activity className={cn("w-8 h-8 mb-1 opacity-50")} />
             <span>{T.logEmpty}</span>
           </div>

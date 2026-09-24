@@ -3597,11 +3597,7 @@ export function useAutoVideoPipeline(
                 : `The clip was downloaded but did not pass QA: ${_.join(targetedTakeIssues, ", ")}`,
             );
           }
-          appendLog(
-            config.language === ProjectLanguage.VI
-              ? `Đã tạo, tải và duyệt các cảnh ${_.join(_.map(targetedScenes, "id"), ", ")}. Bấm Xuất video khi toàn bộ cảnh đã sẵn sàng.`
-              : `Created, downloaded and approved ${_.join(_.map(targetedScenes, "id"), ", ")}. Use Re-render when every scene is ready.`,
-          );
+          appendLog(PF.formatApprovedScenesReady(_.join(_.map(targetedScenes, "id"), ", ")));
           setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
           return;
         }
@@ -3633,11 +3629,7 @@ export function useAutoVideoPipeline(
         throw new Error(_.replace(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_INCOMPLETE, SecurityConstants.PLACEHOLDER_0, _.toString(_.size(sceneAssetSummary.missingSceneIds))));
       }
       const completedMedia = getSceneAssetSummary(realScenes as StoryboardScene[]);
-      appendLog(
-        config.language === ProjectLanguage.VI
-          ? `${completedMedia.complete ? "✅" : "⚠️"} Đã nhận ${completedMedia.completed}/${completedMedia.total} tài nguyên phân cảnh cần thiết.`
-          : `${completedMedia.complete ? "✅" : "⚠️"} Received ${completedMedia.completed}/${completedMedia.total} required scene assets.`,
-      );
+      appendLog(PF.formatReceivedSceneAssets(completedMedia.complete, completedMedia.completed, completedMedia.total));
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
 
       const imageUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"], thumbnails: unifiedBatchThumbnails || voiceUpdatedProj.thumbnails };

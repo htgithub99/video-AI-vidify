@@ -66,12 +66,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
               onClick={() => setInputType(type)}
-              className={cn(
-                "p-2.5 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none",
-                isSelected
-                  ? "bg-amber-500/15 text-amber-300 font-extrabold shadow-sm ring-1 ring-amber-500/30 border-amber-500/40"
-                  : "bg-slate-955/80 border-slate-850 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900",
-              )}
+              className={cn("p-2.5 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none", { "bg-amber-500/15 text-amber-300 font-extrabold shadow-sm ring-1 ring-amber-500/30 border-amber-500/40": isSelected, "bg-slate-955/80 border-slate-850 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900": !(isSelected) })}
               title={tooltip}>
               <div className={cn("flex items-center gap-2.5")}>
                 {icon}

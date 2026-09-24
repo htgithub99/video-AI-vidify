@@ -12,6 +12,7 @@ import { ImagePreviewModal } from "./ImagePreviewModal";
 import { StylePresetSelector } from "./StylePresetSelector";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { Button } from "../ui/Button";
 
 interface ProjectSettingsSectionProps {
   projectName: string;
@@ -169,13 +170,13 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           </div>
 
           {!_.isEmpty(musicAssetUrl) && onRemoveMusic && (
-            <button
+            <Button variant="unstyled"
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               onClick={onRemoveMusic}
               className={cn("flex items-center gap-1 text-[11px] font-mono text-rose-400 hover:text-rose-300 transition-colors cursor-pointer")}>
               <Trash2 className={cn("w-3 h-3")} />
               <span>{T.removeBtn}</span>
-            </button>
+            </Button>
           )}
         </div>
 

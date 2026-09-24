@@ -86,5 +86,5 @@ export const TIME_PARSING_REGEXES = {
 } as const;
 
 export const API_PROVIDER_ADVICE_PATTERN = /api\s*key|groq|cerebras|kh[oó]a/i;
-
-
+export const HTTP_URL_REGEX = /^https?:\/\//i;
+export const ANSI_ESCAPE_SEQUENCE_REGEX = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");

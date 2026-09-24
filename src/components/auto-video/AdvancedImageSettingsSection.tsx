@@ -92,18 +92,18 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
         onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
         aria-expanded={showAdvancedImageSettings}
         className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS, "cursor-pointer hover:bg-slate-800/40 rounded-2xl")}>
-        <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS}>
+        <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS)}>
           <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS, "bg-blue-500/15 text-blue-400")}>
-            <Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} />
+            <Sliders className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS)} />
           </span>
-          <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TEXT_WRAP_CLASS}>
-            <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TITLE_CLASS}>{T.advancedConfig}</span>
-            <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_HINT_CLASS} title={T.advancedConfigTooltip}>
+          <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_TEXT_WRAP_CLASS)}>
+            <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_TITLE_CLASS)}>{T.advancedConfig}</span>
+            <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_HINT_CLASS)} title={T.advancedConfigTooltip}>
               {T.advancedConfigHint}
             </span>
           </span>
         </span>
-        <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_WRAP_CLASS}>
+        <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_WRAP_CLASS)}>
           <ChevronDown className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_OPEN_CLASS)} />
         </span>
       </Button>

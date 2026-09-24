@@ -2131,7 +2131,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           continuityContextJson,
           clipDurationSeconds,
           CINEMATIC_DIALOGUE_DIRECTIVES.FOLLOW_SOURCE,
-          isVi ? "Vietnamese" : "English",
+            isVi ? "Vietnamese" : "English",
           videoPromptsRequestId,
         );
       };

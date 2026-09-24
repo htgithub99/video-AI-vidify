@@ -89,6 +89,11 @@ export const EXTERNAL_URLS = {
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",
   ELEVENLABS_PROJECTS: "https://elevenlabs.io/api/v1/projects",
+  WIKIMEDIA_COMMONS: "https://commons.wikimedia.org",
+  GOOGLE_IMAGE_SEARCH: "https://www.google.com/search?tbm=isch&safe=active&hl=en&q=",
+  BING_IMAGE_SEARCH: "https://www.bing.com/images/search?safeSearch=Strict&q=",
+  GOOGLE_HOME: "https://www.google.com/",
+  LOCALHOST: "http://127.0.0.1",
 } as const;
 
 export const ALIGN_CONFIG = {

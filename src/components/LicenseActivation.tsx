@@ -5,6 +5,7 @@ import { SecurityMessages, SecurityConstants, LicenseStatus, getClientEnvironmen
 import _ from "lodash";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { Button } from "./ui/Button";
 
 interface ToastMessageProps {
   type: "error" | "success";
@@ -26,21 +27,21 @@ const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-      className={`bg-slate-900 shadow-2xl ${shadowColor} p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden`}>
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${accentColor}`} />
-      {isError ? <AlertCircle className={`w-4.5 h-4.5 ${textColor} shrink-0 mt-0.5 ml-1`} /> : <Check className={`w-4.5 h-4.5 ${textColor} shrink-0 mt-0.5 ml-1 animate-pulse`} />}
+      className={cn("bg-slate-900 shadow-2xl p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden", shadowColor)}>
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", accentColor)} />
+      {isError ? <AlertCircle className={cn("w-4.5 h-4.5 shrink-0 mt-0.5 ml-1", textColor)} /> : <Check className={cn("w-4.5 h-4.5 shrink-0 mt-0.5 ml-1 animate-pulse", textColor)} />}
       <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
-        <span className={`text-[10px] uppercase font-mono font-bold ${textColor} tracking-wider`}>{title}</span>
+        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider", textColor)}>{title}</span>
         <p className={cn("leading-snug text-slate-300 font-medium")}>{message}</p>
       </div>
-      <button
+      <Button variant="unstyled"
         type={SecurityConstants.BUTTON_TYPE_BUTTON}
         onClick={onClose}
         className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto transition-colors")}>
         <X className={cn("w-3.5 h-3.5")} />
-      </button>
-      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${bgBarColor}`}>
-        <div className={`h-full ${accentColor} animate-shrinkWidth`} />
+      </Button>
+      <div className={cn("absolute bottom-0 left-0 right-0 h-0.5", bgBarColor)}>
+        <div className={cn("h-full animate-shrinkWidth", accentColor)} />
       </div>
     </motion.div>
   );
@@ -141,7 +142,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
                 />
               </div>
 
-              <button
+              <Button variant="unstyled"
                 type={SecurityConstants.BUTTON_TYPE_SUBMIT}
                 title={SecurityMessages.ACTIVATE_BUTTON}
                 disabled={_.some([isActivating, _.isEmpty(_.trim(inputKey))])}
@@ -157,7 +158,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
                 ) : (
                   SecurityMessages.ACTIVATE_BUTTON
                 )}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

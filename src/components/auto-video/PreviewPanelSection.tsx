@@ -115,7 +115,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
       )}
 
       {activeCreatedProject && canRegenerate && (
-        <div className={cn("grid gap-2 pt-1", showVoiceRegeneration ? "grid-cols-3" : "grid-cols-2")}>
+        <div className={cn("grid gap-2 pt-1", { "grid-cols-3": showVoiceRegeneration, "grid-cols-2": !showVoiceRegeneration })}>
           {showVoiceRegeneration && (
             <Button
               size={REFACTOR_CONSTANTS.SIZE_MD}

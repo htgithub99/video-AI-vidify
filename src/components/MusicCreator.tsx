@@ -52,6 +52,11 @@ import {
   SUNO_AUTOMATION_PATTERNS,
   SUNO_AUTOMATION_TEXTS,
   VIETNAMESE_MUSIC_TITLE_RESTORATIONS,
+  REFACTOR_CONSTANTS,
+  AUDIO_FORMATS,
+  COPY_KEYS,
+  MUSIC_VIEW_MODES,
+  SUNO_VOCAL_GENDERS,
 } from "../constants";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
@@ -306,50 +311,50 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({
   onToggleAiConfig,
   isLoading,
 }) => (
-  <div className="glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0">
-        <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400">
-          <Music2 className="w-5 h-5" />
+  <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
+    <div className={cn("flex items-center gap-3 min-w-0")}>
+      <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
+        <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
+          <Music2 className={cn("w-5 h-5")} />
         </div>
       </div>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans">
+      <div className={cn("min-w-0")}>
+        <div className={cn("flex items-center gap-2 flex-wrap")}>
+          <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>
             {texts.HEADER_TITLE}
           </h1>
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs">
-            <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+          <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
+            <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
             {texts.HEADER_BADGE}
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 mt-0.5">
+        <p className={cn("text-[11px] text-slate-400 mt-0.5")}>
           {texts.HEADER_DESC}
         </p>
       </div>
     </div>
 
-    <div className="flex items-center gap-2 self-start sm:self-auto">
+    <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
       <Tooltip content={texts.AI_CONFIG_TOOLTIP} align="end">
-        <Button
+        <Button variant="unstyled"
           type="button"
-          variant="unstyled"
           onClick={onToggleAiConfig}
           disabled={isLoading}
           className={cn(
             "group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none",
-            isAiConfigOpen
-              ? "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10"
-              : "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300",
+            {
+              "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
+              "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
+            },
           )}>
-          <SlidersHorizontal className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform" />
-          <span className="inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+          <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
+          <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>
             {texts.AI_CONFIG_TITLE}
           </span>
           {isAiConfigOpen ? (
-            <ChevronUp className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors" />
+            <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} />
           ) : (
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors" />
+            <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />
           )}
         </Button>
       </Tooltip>
@@ -382,42 +387,41 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   const displayTitle = toSentenceCase(song.title);
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800/80">
-        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-mono text-xs sm:text-sm font-black shrink-0 select-none shadow-2xs">
+    <div className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md")}>
+      <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800/80")}>
+        <div className={cn("flex items-center gap-2.5 min-w-0 flex-wrap")}>
+          <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-mono text-xs sm:text-sm font-black shrink-0 select-none shadow-2xs")}>
             #{index + 1}
           </span>
-          <h3 className="text-sm sm:text-base font-black !text-[#0f172a] dark:!text-slate-100 truncate max-w-[200px] sm:max-w-md" title={displayTitle}>
+          <h3 className={cn("text-sm sm:text-base font-black !text-[#0f172a] dark:!text-slate-100 truncate max-w-[200px] sm:max-w-md")} title={displayTitle}>
             {displayTitle}
           </h3>
-          <Button
-            variant="unstyled"
+          <Button variant="unstyled"
             type="button"
             onClick={() => handleCopy(displayTitle, `title-${index}`, texts.COPY_TITLE_SUCCESS)}
-            className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+            className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
             title={copiedKey === `title-${index}` ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
             {copiedKey === `title-${index}` ? (
-              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
+              <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} />
             ) : (
-              <Copy className="w-3.5 h-3.5 shrink-0" />
+              <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
             )}
           </Button>
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className={cn("flex items-center gap-1.5 flex-wrap")}>
           {song.genre && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800/60 !text-[#0369a1] dark:!text-sky-300 select-none">
+            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800/60 !text-[#0369a1] dark:!text-sky-300 select-none")}>
               {song.genre}
             </span>
           )}
           {song.tempoBpm > 0 && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 !text-[#9a3412] dark:!text-amber-300 inline-flex items-center gap-1 select-none">
-              <Clock className="w-3 h-3 !text-[#c2410c] dark:!text-amber-400 shrink-0" />
+            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 !text-[#9a3412] dark:!text-amber-300 inline-flex items-center gap-1 select-none")}>
+              <Clock className={cn("w-3 h-3 !text-[#c2410c] dark:!text-amber-400 shrink-0")} />
               <span>{song.tempoBpm} {texts.BPM_UNIT}</span>
             </span>
           )}
           {song.mood && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 !text-[#065f46] dark:!text-emerald-300 select-none">
+            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 !text-[#065f46] dark:!text-emerald-300 select-none")}>
               {song.mood}
             </span>
           )}
@@ -425,26 +429,25 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
       </div>
 
       {song.lyrics && (
-        <div className="space-y-1.5 pt-0.5">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-            <span className="flex items-center gap-1.5 font-mono text-[10px] text-pink-600 dark:text-pink-400 uppercase tracking-wider font-bold">
-              <FileText className="w-3 h-3" />
+        <div className={cn("space-y-1.5 pt-0.5")}>
+          <div className={cn("flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300")}>
+            <span className={cn("flex items-center gap-1.5 font-mono text-[10px] text-pink-600 dark:text-pink-400 uppercase tracking-wider font-bold")}>
+              <FileText className={cn("w-3 h-3")} />
               {texts.LYRICS_TITLE}
             </span>
-            <Button
-              variant="unstyled"
+            <Button variant="unstyled"
               type="button"
               onClick={() => handleCopy(song.lyrics, `lyrics-${index}`, texts.COPY_LYRICS_SUCCESS)}
-              className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+              className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
               title={copiedKey === `lyrics-${index}` ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
               {copiedKey === `lyrics-${index}` ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} />
               ) : (
-                <Copy className="w-3.5 h-3.5 shrink-0" />
+                <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
               )}
             </Button>
           </div>
-          <pre className="p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner">
+          <pre className={cn("p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner")}>
             {song.lyrics}
           </pre>
         </div>
@@ -496,16 +499,15 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
     const key = `seo-${optionIndex}-${field}`;
     const isCopied = copiedKey === key;
     return (
-      <Button
-        variant="unstyled"
+      <Button variant="unstyled"
         type="button"
         onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)}
-        className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none"
+        className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
         title={isCopied ? texts.COPIED_LABEL : (titleText || texts.COPY_FIELD_BTN)}>
         {isCopied ? (
-          <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
+          <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} />
         ) : (
-          <Copy className="w-3.5 h-3.5 shrink-0" />
+          <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
         )}
       </Button>
     );
@@ -518,16 +520,16 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
       : "grid-cols-1";
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-fuchsia-500 shrink-0" />
-          <h3 className="text-sm sm:text-base font-extrabold !text-[#0f172a] dark:!text-slate-100">{texts.PLAYLIST_SEO_TITLE}</h3>
+    <div className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md")}>
+      <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-3")}>
+        <div className={cn("flex items-center gap-2")}>
+          <Sparkles className={cn("w-4 h-4 text-fuchsia-500 shrink-0")} />
+          <h3 className={cn("text-sm sm:text-base font-extrabold !text-[#0f172a] dark:!text-slate-100")}>{texts.PLAYLIST_SEO_TITLE}</h3>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono font-bold !text-[#a21caf] dark:!text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg shadow-2xs">{texts.SEO_OPTIONS_COUNT_BADGE}</span>
-          <Button variant="unstyled" type="button" onClick={handleExportText} disabled={_.isEmpty(seoOptions)} title={texts.SEO_EXPORT_TXT_TOOLTIP} className="h-8 px-3 rounded-lg inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 border border-fuchsia-400/40 shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
-            <Download className="w-3.5 h-3.5" />
+        <div className={cn("flex items-center gap-2")}>
+          <span className={cn("text-[11px] font-mono font-bold !text-[#a21caf] dark:!text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg shadow-2xs")}>{texts.SEO_OPTIONS_COUNT_BADGE}</span>
+          <Button variant="unstyled" type="button" onClick={handleExportText} disabled={_.isEmpty(seoOptions)} title={texts.SEO_EXPORT_TXT_TOOLTIP} className={cn("h-8 px-3 rounded-lg inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 border border-fuchsia-400/40 shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer")}>
+            <Download className={cn("w-3.5 h-3.5")} />
             <span>{texts.SEO_EXPORT_TXT_BTN}</span>
           </Button>
         </div>
@@ -539,89 +541,88 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
           return (
             <div
               key={sIdx}
-              className="p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 !text-[#a21caf] dark:!text-fuchsia-300 font-mono text-xs font-black shadow-2xs">
+              className={cn("p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between")}>
+              <div className={cn("flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5")}>
+                <div className={cn("flex items-center gap-2 min-w-0")}>
+                  <span className={cn("inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 !text-[#a21caf] dark:!text-fuchsia-300 font-mono text-xs font-black shadow-2xs")}>
                     {texts.formatOptionLabel(sIdx + 1)}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 !text-[#047857] dark:!text-emerald-300 font-mono text-xs font-black shadow-2xs">
-                    <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 !text-[#047857] dark:!text-emerald-300 font-mono text-xs font-black shadow-2xs")}>
+                    <Sparkles className={cn("w-3 h-3 text-emerald-600 dark:text-emerald-400")} />
                     <span>{texts.formatScoreLabel(opt.seoScore)}</span>
                   </span>
                 </div>
 
-                <Button
-                  variant="unstyled"
+                <Button variant="unstyled"
                   type="button"
                   onClick={() => handleCopyFullOption(opt, sIdx)}
-                  className="btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer"
+                  className={cn("btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer")}
                   title={copiedKey === `seo-all-${sIdx}` ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}>
                   {copiedKey === `seo-all-${sIdx}` ? (
-                    <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                    <Check className={cn("w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0")} />
                   ) : (
-                    <Copy className="w-4 h-4 shrink-0" />
+                    <Copy className={cn("w-4 h-4 shrink-0")} />
                   )}
                 </Button>
               </div>
 
-              <div className="space-y-2.5 flex-1 flex flex-col justify-between">
-                <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <FileText className="w-3 h-3 text-purple-500" />
+              <div className={cn("space-y-2.5 flex-1 flex flex-col justify-between")}>
+                <div className={cn("space-y-2.5")}>
+                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center justify-between gap-2")}>
+                      <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
+                        <FileText className={cn("w-3 h-3 text-purple-500")} />
                         <span>{texts.SEO_FIELD_TITLE}</span>
                       </span>
                       <CopyFieldButton text={opt.title} field="title" optionIndex={sIdx} />
                     </div>
-                    <h4 className="text-xs sm:text-[13px] font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words">
+                    <h4 className={cn("text-xs sm:text-[13px] font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words")}>
                       {opt.title}
                     </h4>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <SlidersHorizontal className="w-3 h-3 text-sky-500" />
+                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center justify-between gap-2")}>
+                      <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
+                        <SlidersHorizontal className={cn("w-3 h-3 text-sky-500")} />
                         <span>{texts.SEO_FIELD_DESCRIPTION}</span>
                       </span>
                       <CopyFieldButton text={opt.description} field="description" optionIndex={sIdx} />
                     </div>
-                    <p className="text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-32 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-pre-line break-words">
+                    <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-32 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-pre-line break-words")}>
                       {opt.description}
                     </p>
                   </div>
 
                   {!_.isEmpty(trackOrder) && (
-                    <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <Music2 className="w-3 h-3 text-fuchsia-500" />
+                    <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                      <div className={cn("flex items-center justify-between gap-2")}>
+                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
+                          <Music2 className={cn("w-3 h-3 text-fuchsia-500")} />
                           <span>{texts.SEO_TRACK_ORDER}</span>
                         </span>
                         <CopyFieldButton text={trackOrder} field="track-order" optionIndex={sIdx} />
                       </div>
-                      <p className="text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words">
+                      <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words")}>
                         {trackOrder}
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1">
-                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <span className="font-bold text-purple-600 dark:text-purple-400">{texts.HASH_SYMBOL}</span>
+                <div className={cn("grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1")}>
+                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
+                    <div className={cn("space-y-2")}>
+                      <div className={cn("flex items-center justify-between gap-2")}>
+                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
+                          <span className={cn("font-bold text-purple-600 dark:text-purple-400")}>{texts.HASH_SYMBOL}</span>
                           <span>{texts.HASHTAGS_LABEL} ({opt.hashtags.length})</span>
                         </span>
                         <CopyFieldButton text={opt.hashtags.join(" ")} field="hashtags" optionIndex={sIdx} />
                       </div>
-                      <div className="flex flex-wrap gap-x-2.5 gap-y-2 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <div className={cn("flex flex-wrap gap-x-2.5 gap-y-2 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden")}>
                         {_.map(opt.hashtags, (tag, i) => (
-                          <span key={i} className="text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 select-all hover:underline cursor-pointer">
+                          <span key={i} className={cn("text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 select-all hover:underline cursor-pointer")}>
                             {tag}
                           </span>
                         ))}
@@ -629,16 +630,16 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <Search className="w-3 h-3 text-emerald-500" />
+                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
+                    <div className={cn("space-y-2")}>
+                      <div className={cn("flex items-center justify-between gap-2")}>
+                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
+                          <Search className={cn("w-3 h-3 text-emerald-500")} />
                           <span>{texts.TAGS_LABEL} ({opt.tags.length})</span>
                         </span>
                         <CopyFieldButton text={opt.tags.join(", ")} field="tags" optionIndex={sIdx} />
                       </div>
-                      <p className="text-[10px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words select-all">
+                      <p className={cn("text-[10px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words select-all")}>
                         {opt.tags.join(", ")}
                       </p>
                     </div>
@@ -1471,8 +1472,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const isFormValid = true;
 
   return (
-    <div className="creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar">
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80">
+    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
         <MusicCreatorHeader
           texts={texts}
           isAiConfigOpen={isAiConfigOpen}
@@ -1481,7 +1482,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         />
 
         {isAiConfigOpen && (
-          <div className="glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4">
+          <div className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
             <ChatPlanningSettingsBlock
               provider={provider}
               model={model}
@@ -1496,58 +1497,56 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          <div className="lg:col-span-2 flex flex-col gap-5 min-w-0 h-full">
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0">
-              <div className="flex items-center justify-between relative z-10 flex-wrap gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
+        <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
+          <div className={cn("lg:col-span-2 flex flex-col gap-5 min-w-0 h-full")}>
+            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0")}>
+              <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
+                <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>
                     {texts.STEP_01}
                   </span>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+                    <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
                     <span>{texts.STYLE_LABEL}</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono">
+                    <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>
                       {texts.STYLE_BADGE}
                     </span>
                   </h3>
                 </div>
 
                 {!_.isEmpty(_.trim(styleDraft)) && (
-                  <div className="flex items-center gap-1.5">
-                    <Button
+                  <div className={cn("flex items-center gap-1.5")}>
+                    <Button variant="unstyled"
                       type="button"
-                      variant="unstyled"
                       onClick={handleSaveStyle}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
-                      <Save className="w-3 h-3 shrink-0" />
-                      <span className="inline-flex items-center leading-none">{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                      className={cn("h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
+                      <Save className={cn("w-3 h-3 shrink-0")} />
+                      <span className={cn("inline-flex items-center leading-none")}>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                     </Button>
-                    <Button
+                    <Button variant="unstyled"
                       type="button"
-                      variant="unstyled"
                       onClick={handleCancelStyleEdit}
                       disabled={isLoading}
-                      className="h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none">
-                      <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
+                      className={cn("h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
+                      <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
                     </Button>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 relative z-10">
-                <div className="sm:col-span-4">
+              <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2 relative z-10")}>
+                <div className={cn("sm:col-span-4")}>
                   <input
                     type="text"
                     value={styleName}
                     onChange={(event) => setStyleName(event.target.value)}
                     placeholder={texts.STYLE_NAME_PLACEHOLDER}
                     disabled={isLoading}
-                    className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80"
+                    className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")}
                   />
                 </div>
-                <div className="sm:col-span-8">
+                <div className={cn("sm:col-span-8")}>
                   <input
                     type="text"
                     value={styleDraft}
@@ -1557,32 +1556,26 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     }}
                     placeholder={texts.STYLE_PLACEHOLDER}
                     disabled={isLoading}
-                    className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                    className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-0.5 relative z-10">
-                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-                  <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <div className={cn("space-y-1.5 pt-0.5 relative z-10")}>
+                <div className={cn("flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
+                  <Flame className={cn("w-3.5 h-3.5 text-amber-400")} />
                   <span>{texts.STYLE_YOUR_STYLES}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5">
+                <div className={cn("flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5")}>
                   {_.map(savedStyles, (savedStyle, styleIndex) => {
                     const isSelected = _.isEqual(style, savedStyle.content);
                     return (
                       <div
                         key={`${styleIndex}-${savedStyle.title}`}
-                        className={cn(
-                          "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
-                          isSelected
-                            ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]"
-                            : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90",
-                        )}>
+                        className={cn("group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]", { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !(isSelected) })}>
                         <Tooltip content={savedStyle.content} align="start">
-                          <Button
+                          <Button variant="unstyled"
                             type="button"
-                            variant="unstyled"
                             onClick={() => {
                               const shouldClear = _.isEqual(style, savedStyle.content);
                               setStyle(shouldClear ? "" : savedStyle.content);
@@ -1591,90 +1584,62 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               setStyleName("");
                             }}
                             disabled={isLoading}
-                            className="text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full"
+                            className={cn("text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full")}
                             title={savedStyle.content}>
                             <span
-                              className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
-                                isSelected
-                                  ? "bg-white ring-2 ring-white/40 shadow-xs"
-                                  : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400",
-                              )}
+                              className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-all", { "bg-white ring-2 ring-white/40 shadow-xs": isSelected, "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400": !(isSelected) })}
                             />
                             <span
-                              className={cn(
-                                "truncate font-black text-[11px] leading-none transition-colors",
-                                isSelected
-                                  ? "!text-white"
-                                  : "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white",
-                              )}>
+                              className={cn("truncate font-black text-[11px] leading-none transition-colors", { "!text-white": isSelected, "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white": !(isSelected) })}>
                               {savedStyle.title}
                             </span>
                           </Button>
                         </Tooltip>
 
-                        <div className="flex items-center gap-1 ml-1.5 shrink-0 self-center">
-                          <Tooltip content={texts.COPY_STYLE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
-                            <Button
+                        <div className={cn("flex items-center gap-1 ml-1.5 shrink-0 self-center")}>
+                          <Tooltip content={texts.COPY_STYLE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                            <Button variant="unstyled"
                               type="button"
-                              variant="unstyled"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCopyStyle(savedStyle, styleIndex);
                               }}
                               disabled={isLoading}
                               title={texts.COPY_STYLE_BTN}
-                              className={cn(
-                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
-                                isSelected
-                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
-                                  : "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300",
-                              )}>
+                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !(isSelected) })}>
                               {copiedStyleIndex === styleIndex ? (
-                                <Check className={cn("w-2.5 h-2.5 shrink-0", isSelected ? "text-emerald-300" : "text-emerald-500")} />
+                                <Check className={cn("w-2.5 h-2.5 shrink-0", { "text-emerald-300": isSelected, "text-emerald-500": !isSelected })} />
                               ) : (
-                                <Copy className="w-2.5 h-2.5 shrink-0" />
+                                <Copy className={cn("w-2.5 h-2.5 shrink-0")} />
                               )}
                             </Button>
                           </Tooltip>
 
-                          <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
-                            <Button
+                          <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                            <Button variant="unstyled"
                               type="button"
-                              variant="unstyled"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditStyle(styleIndex);
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_UPDATE_BTN}
-                              className={cn(
-                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
-                                isSelected
-                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
-                                  : "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300",
-                              )}>
-                              <Pencil className="w-2.5 h-2.5 shrink-0" />
+                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !(isSelected) })}>
+                              <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
                             </Button>
                           </Tooltip>
 
-                          <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
-                            <Button
+                          <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                            <Button variant="unstyled"
                               type="button"
-                              variant="unstyled"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setStyleToDelete(savedStyle);
                               }}
                               disabled={isLoading}
                               title={texts.STYLE_DELETE_BTN}
-                              className={cn(
-                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
-                                isSelected
-                                  ? "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white"
-                                  : "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400",
-                              )}>
-                              <Trash2 className="w-2.5 h-2.5 shrink-0" />
+                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected, "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !(isSelected) })}>
+                              <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
                             </Button>
                           </Tooltip>
                         </div>
@@ -1682,59 +1647,57 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     );
                   })}
                   {_.isEmpty(savedStyles) && (
-                    <span className="text-[11px] text-slate-500 italic py-1">
+                    <span className={cn("text-[11px] text-slate-500 italic py-1")}>
                       {texts.STYLE_EMPTY_HINT}
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2.5 relative z-10 border-t border-slate-800/60 pt-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Disc3 className="w-3.5 h-3.5 text-purple-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
+              <div className={cn("space-y-2.5 relative z-10 border-t border-slate-800/60 pt-3")}>
+                <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
+                  <div className={cn("flex items-center gap-2 min-w-0")}>
+                    <Disc3 className={cn("w-3.5 h-3.5 text-purple-400")} />
+                    <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
                       <span>{texts.SUNO_INSPO_LABEL}</span>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono">
+                      <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>
                         {texts.SUNO_INSPO_BADGE}
                       </span>
                     </span>
                   </div>
                   {!_.isEmpty(_.trim(sunoInspoDraft)) && (
-                    <div className="flex items-center gap-1.5">
-                      <Button
+                    <div className={cn("flex items-center gap-1.5")}>
+                      <Button variant="unstyled"
                         type="button"
-                        variant="unstyled"
                         onClick={handleSaveInspo}
                         disabled={isLoading || isCreatingSuno}
-                        className="h-7.5 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
-                        <Save className="w-3 h-3 shrink-0" />
-                        <span className="inline-flex items-center leading-none">{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                        className={cn("h-7.5 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
+                        <Save className={cn("w-3 h-3 shrink-0")} />
+                        <span className={cn("inline-flex items-center leading-none")}>{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                       </Button>
-                      <Button
+                      <Button variant="unstyled"
                         type="button"
-                        variant="unstyled"
                         onClick={handleCancelInspoEdit}
                         disabled={isLoading || isCreatingSuno}
-                        className="h-7.5 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none">
-                        <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
+                        className={cn("h-7.5 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
+                        <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
                       </Button>
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                  <div className="sm:col-span-4">
+                <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2")}>
+                  <div className={cn("sm:col-span-4")}>
                     <input
                       type="text"
                       value={inspoName}
                       onChange={(event) => setInspoName(event.target.value)}
                       disabled={isLoading || isCreatingSuno}
                       placeholder={texts.INSPO_NAME_PLACEHOLDER}
-                      className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80"
+                      className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")}
                     />
                   </div>
-                  <div className="sm:col-span-8">
+                  <div className={cn("sm:col-span-8")}>
                     <input
                       type="text"
                       value={sunoInspoDraft}
@@ -1744,33 +1707,27 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       }}
                       disabled={isLoading || isCreatingSuno}
                       placeholder={texts.SUNO_INSPO_PLACEHOLDER}
-                      className="w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20"
+                      className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
                     />
                   </div>
                 </div>
 
                 {!_.isEmpty(savedInspos) && (
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <div className={cn("space-y-1.5 pt-0.5")}>
+                    <div className={cn("flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
+                      <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
                       <span>{texts.INSPO_YOUR_INSPOS}</span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5">
+                    <div className={cn("flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5")}>
                       {_.map(savedInspos, (item, index) => {
                         const isSelected = _.isEqual(sunoInspo, item.content);
                         return (
                           <div
                             key={`${item.title}-${index}`}
-                            className={cn(
-                              "group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]",
-                              isSelected
-                                ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]"
-                                : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90",
-                            )}>
+                            className={cn("group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]", { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !(isSelected) })}>
                             <Tooltip content={item.content} align="start">
-                              <Button
+                              <Button variant="unstyled"
                                 type="button"
-                                variant="unstyled"
                                 onClick={() => {
                                   const shouldClear = _.isEqual(sunoInspo, item.content);
                                   setSunoInspo(shouldClear ? "" : item.content);
@@ -1779,33 +1736,22 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   setInspoName("");
                                 }}
                                 disabled={isLoading || isCreatingSuno}
-                                className="text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 leading-none h-full"
+                                className={cn("text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 leading-none h-full")}
                                 title={item.content}>
                                 <span
-                                  className={cn(
-                                    "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
-                                    isSelected
-                                      ? "bg-white ring-2 ring-white/40 shadow-xs"
-                                      : "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400",
-                                  )}
+                                  className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-all", { "bg-white ring-2 ring-white/40 shadow-xs": isSelected, "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400": !(isSelected) })}
                                 />
                                 <span
-                                  className={cn(
-                                    "truncate font-black text-[11px] leading-none transition-colors",
-                                    isSelected
-                                      ? "!text-white"
-                                      : "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white",
-                                  )}>
+                                  className={cn("truncate font-black text-[11px] leading-none transition-colors", { "!text-white": isSelected, "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white": !(isSelected) })}>
                                   {item.title}
                                 </span>
                               </Button>
                             </Tooltip>
 
-                            <div className="flex items-center gap-1 ml-1.5 shrink-0 self-center">
-                              <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
-                                <Button
+                            <div className={cn("flex items-center gap-1 ml-1.5 shrink-0 self-center")}>
+                              <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                                <Button variant="unstyled"
                                   type="button"
-                                  variant="unstyled"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setEditingInspoIndex(index);
@@ -1815,33 +1761,22 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   }}
                                   disabled={isLoading || isCreatingSuno}
                                   title={texts.STYLE_UPDATE_BTN}
-                                  className={cn(
-                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
-                                isSelected
-                                  ? "bg-white/20 hover:bg-white/30 border border-white/30 text-white"
-                                  : "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300",
-                              )}>
-                                  <Pencil className="w-2.5 h-2.5 shrink-0" />
+                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !(isSelected) })}>
+                                  <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
                                 </Button>
                               </Tooltip>
 
-                              <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className="w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center">
-                                <Button
+                              <Tooltip content={texts.STYLE_DELETE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                                <Button variant="unstyled"
                                   type="button"
-                                  variant="unstyled"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setInspoToDelete(item);
                                   }}
                                   disabled={isLoading || isCreatingSuno}
                                   title={texts.STYLE_DELETE_BTN}
-                                  className={cn(
-                                "btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0",
-                                isSelected
-                                  ? "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white"
-                                  : "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400",
-                              )}>
-                                  <Trash2 className="w-2.5 h-2.5 shrink-0" />
+                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected, "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !(isSelected) })}>
+                                  <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
                                 </Button>
                               </Tooltip>
                             </div>
@@ -1854,87 +1789,80 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               </div>
             </div>
 
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col">
-              <div className="flex items-center justify-between relative z-10 shrink-0">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20">
+            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col")}>
+              <div className={cn("flex items-center justify-between relative z-10 shrink-0")}>
+                <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>
                     {texts.STEP_02}
                   </span>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-purple-400" />
+                  <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+                    <FileText className={cn("w-3.5 h-3.5 text-purple-400")} />
                     <span>{texts.REFERENCE_LABEL}</span>
                   </h3>
                 </div>
 
-                <Button
+                <Button variant="unstyled"
                   type="button"
-                  variant="unstyled"
                   onClick={handleFillSampleReferences}
                   disabled={isLoading}
-                  className="text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs leading-none !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white">
-                  <Sparkles className="w-3 h-3 shrink-0" />
-                  <span className="inline-flex items-center leading-none">{texts.QUICK_FILL_LABEL}</span>
+                  className={cn("text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs leading-none !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
+                  <Sparkles className={cn("w-3 h-3 shrink-0")} />
+                  <span className={cn("inline-flex items-center leading-none")}>{texts.QUICK_FILL_LABEL}</span>
                 </Button>
               </div>
 
-              <div className="relative z-10 flex-1 flex flex-col min-h-0">
+              <div className={cn("relative z-10 flex-1 flex flex-col min-h-0")}>
                 <textarea
                   rows={4}
                   value={referenceSongs}
                   onChange={(e) => setReferenceSongs(e.target.value)}
                   placeholder={texts.REFERENCE_PLACEHOLDER}
                   disabled={isLoading}
-                  className="w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar"
+                  className={cn("w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar")}
                 />
               </div>
             </div>
 
           </div>
 
-          <div className="lg:col-span-1 flex flex-col gap-5 min-w-0 h-full">
-            <div className="glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0">
-                    <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
-                      <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+          <div className={cn("lg:col-span-1 flex flex-col gap-5 min-w-0 h-full")}>
+            <div className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
+              <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
+                <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                  <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0")}>
+                    <div className={cn("w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center")}>
+                      <SlidersHorizontal className={cn("w-4 h-4 text-amber-400")} />
                     </div>
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
+                    <h2 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
                       {texts.STUDIO_CONFIG_TITLE}
                     </h2>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal">
+                <span className={cn("px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal")}>
                   {texts.STUDIO_CONFIG_BADGE}
                 </span>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+              <div className={cn("space-y-2")}>
+                <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block")}>
                   {texts.COUNT_LABEL}
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className={cn("grid grid-cols-3 gap-2")}>
                   {_.map(MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS, (count) => {
                     const isSelected = _.isEqual(outputCount, count);
                     const isRecommended = _.isEqual(count, MUSIC_CREATOR_CONSTANTS.RECOMMENDED_SONG_COUNT);
                     return (
-                      <Button
+                      <Button variant="unstyled"
                         key={count}
                         type="button"
-                        variant="unstyled"
                         onClick={() => setOutputCount(count)}
                         disabled={isLoading}
-                        className={cn(
-                          "relative h-9 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer shadow-xs select-none",
-                          isSelected
-                            ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]"
-                            : "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90",
-                        )}>
+                        className={cn("relative h-9 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer shadow-xs select-none", { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !(isSelected) })}>
                         <span>{texts.formatSongCount(count)}</span>
                         {isRecommended && !isSelected && (
-                          <span className="absolute -top-1 px-1 rounded text-[7px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <span className={cn("absolute -top-1 px-1 rounded text-[7px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30")}>
                             {texts.RECOMMENDED_BADGE}
                           </span>
                         )}
@@ -1944,96 +1872,86 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-955/70 border border-slate-800/80 space-y-1.5 text-[11px] font-mono text-slate-400">
-                <div className="flex items-center justify-between">
+              <div className={cn("p-3 rounded-xl bg-slate-955/70 border border-slate-800/80 space-y-1.5 text-[11px] font-mono text-slate-400")}>
+                <div className={cn("flex items-center justify-between")}>
                   <span>{texts.COUNT_LABEL}:</span>
-                  <span className="font-bold text-slate-200">{outputCount} {texts.SONG_UNIT}</span>
+                  <span className={cn("font-bold text-slate-200")}>{outputCount} {texts.SONG_UNIT}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className={cn("flex items-center justify-between")}>
                   <span>{texts.ENGINE_LABEL}:</span>
-                  <span className="font-bold text-purple-300">{texts.HEADER_BADGE}</span>
+                  <span className={cn("font-bold text-purple-300")}>{texts.HEADER_BADGE}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className={cn("flex items-center justify-between")}>
                   <span>{texts.MODEL_LABEL}:</span>
-                  <span className="font-bold text-slate-200 truncate max-w-[130px]">{model}</span>
+                  <span className={cn("font-bold text-slate-200 truncate max-w-[130px]")}>{model}</span>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-2">
-                  <Button
+              <div className={cn("space-y-2 pt-1")}>
+                <div className={cn("flex items-center gap-2")}>
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleGenerate}
                     disabled={!isFormValid || isLoading || isStopping || isGeneratingVideoBackground}
-                    className={cn(
-                      "h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none",
-                      isLoading
-                        ? "flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse"
-                        : isFormValid
-                          ? "w-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer"
-                          : "w-full bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none",
-                    )}>
+                    className={cn("h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none", { "flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": isLoading, "w-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !(isLoading) && isFormValid, "w-full bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !(isLoading) && !(isFormValid) })}>
                     {isLoading ? (
                       <>
-                        <Sparkles className="w-4 h-4 animate-spin text-white shrink-0" />
-                        <span className="truncate inline-flex items-center leading-none">{texts.BLOCK_LYRICS_LOADING}</span>
+                        <Sparkles className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
+                        <span className={cn("truncate inline-flex items-center leading-none")}>{texts.BLOCK_LYRICS_LOADING}</span>
                       </>
                     ) : (
                       <>
-                        <WandSparkles className="w-4 h-4 shrink-0" />
-                        <span className="inline-flex items-center leading-none">{texts.formatGenerateBtn(outputCount)}</span>
+                        <WandSparkles className={cn("w-4 h-4 shrink-0")} />
+                        <span className={cn("inline-flex items-center leading-none")}>{texts.formatGenerateBtn(outputCount)}</span>
                       </>
                     )}
                   </Button>
 
                   {(isLoading || isStopping) && (
-                    <Button
+                    <Button variant="unstyled"
                       type="button"
-                      variant="unstyled"
                       onClick={handleCancelGeneration}
                       disabled={isStopping}
-                      className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60 shadow-md transition-all active:scale-95 shrink-0 leading-none">
-                      <X className="w-4 h-4 shrink-0" />
-                      <span className="inline-flex items-center leading-none">{isStopping ? texts.STOPPING_BTN : texts.STOP_BTN}</span>
+                      className={cn("h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60 shadow-md transition-all active:scale-95 shrink-0 leading-none")}>
+                      <X className={cn("w-4 h-4 shrink-0")} />
+                      <span className={cn("inline-flex items-center leading-none")}>{isStopping ? texts.STOPPING_BTN : texts.STOP_BTN}</span>
                     </Button>
                   )}
                 </div>
 
                 {generationError && (
-                  <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words">
-                    <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
+                  <div role="alert" className={cn("rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words")}>
+                    <AlertTriangle className={cn("mr-1.5 inline h-3.5 w-3.5")} />
                     {generationError}
                   </div>
                 )}
 
                 {!isLoading && _.isEmpty(songs) && (
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleTrySampleTemplate}
-                    className="w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors inline-flex items-center justify-center gap-1 leading-none">
-                    <Sparkles className="w-3 h-3 shrink-0" />
-                    <span className="inline-flex items-center leading-none">{texts.TRY_SAMPLE_BTN}</span>
+                    className={cn("w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors inline-flex items-center justify-center gap-1 leading-none")}>
+                    <Sparkles className={cn("w-3 h-3 shrink-0")} />
+                    <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>
                   </Button>
                 )}
               </div>
             </div>
 
-            <div className="glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl">
-              <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-fuchsia-400" />
+            <div className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
+              <div className={cn("flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3")}>
+                <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+                  <ImageIcon className={cn("w-3.5 h-3.5 text-fuchsia-400")} />
                   {texts.THUMBNAIL_TITLE}
                 </h3>
-                <span className="text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full">{texts.THUMBNAIL_RATIO_BADGE}</span>
+                <span className={cn("text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full")}>{texts.THUMBNAIL_RATIO_BADGE}</span>
               </div>
 
-              <input ref={thumbnailFileInputRef} type="file" accept="image/*" onChange={handleThumbnailReferenceChange} className="hidden" />
+              <input ref={thumbnailFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} className={cn("hidden")} />
 
-              <div className="grid grid-cols-2 gap-2.5 items-start">
+              <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                 {thumbnailReference ? (
-                  <div className="relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center">
+                  <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center")}>
                     <img
                       src={thumbnailReference}
                       alt={texts.THUMBNAIL_REFERENCE_ALT}
@@ -2043,39 +1961,37 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         event.stopPropagation();
                         setPreviewThumbnail(thumbnailReference);
                       }}
-                      className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
+                      className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
-                      <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_REFERENCE_BADGE}</span>
-                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_RATIO_OVERLAY}</span>
+                    <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
+                      <span className={cn("text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_REFERENCE_BADGE}</span>
+                      <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_OVERLAY}</span>
                     </div>
-                    <Button
-                      variant="unstyled"
+                    <Button variant="unstyled"
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         thumbnailFileInputRef.current?.click();
                       }}
                       title={texts.CHANGE_IMAGE_BTN}
-                      className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center">
-                      <Upload className="w-3.5 h-3.5 shrink-0" />
+                      className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center")}>
+                      <Upload className={cn("w-3.5 h-3.5 shrink-0")} />
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    variant="unstyled"
+                  <Button variant="unstyled"
                     type="button"
                     onClick={() => thumbnailFileInputRef.current?.click()}
                     disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
-                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
-                    <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
-                    <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
+                    className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center")}>
+                    <Upload className={cn("w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors")} />
+                    <span className={cn("text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight")}>{texts.THUMBNAIL_UPLOAD}</span>
+                    <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
                   </Button>
                 )}
 
                 {generatedThumbnail && !isGeneratingThumbnail ? (
-                  <div className="relative group block min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center">
+                  <div className={cn("relative group block min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
                     <img
                       src={generatedThumbnail}
                       alt={texts.THUMBNAIL_RESULT_ALT}
@@ -2085,55 +2001,54 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         event.stopPropagation();
                         setPreviewThumbnail(generatedThumbnail);
                       }}
-                      className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
+                      className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
-                      <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_AI_BADGE}</span>
-                      <span className="text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_RATIO_HD}</span>
+                    <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
+                      <span className={cn("text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_AI_BADGE}</span>
+                      <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_HD}</span>
                     </div>
                   </div>
                 ) : isGeneratingThumbnail ? (
-                  <div className="min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-purple-600 p-0.5 shadow-xs">
-                      <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[6px] flex items-center justify-center">
-                        <Sparkles className="w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400 animate-spin" />
+                  <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner")}>
+                    <div className={cn("w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-purple-600 p-0.5 shadow-xs")}>
+                      <div className={cn("w-full h-full bg-white dark:bg-slate-900 rounded-[6px] flex items-center justify-center")}>
+                        <Sparkles className={cn("w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400 animate-spin")} />
                       </div>
                     </div>
-                    <p className="text-[10px] font-black tracking-tight !text-[#86198f] dark:!text-fuchsia-300 leading-tight">
+                    <p className={cn("text-[10px] font-black tracking-tight !text-[#86198f] dark:!text-fuchsia-300 leading-tight")}>
                       {texts.THUMBNAIL_GENERATING}
                     </p>
-                    <p className="text-[8px] font-medium !text-slate-500 dark:!text-slate-400">
+                    <p className={cn("text-[8px] font-medium !text-slate-500 dark:!text-slate-400")}>
                       {texts.THUMBNAIL_MODEL_TAG}
                     </p>
                   </div>
                 ) : (
-                  <div className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500">
-                    <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-500" />
-                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight">
+                  <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500")}>
+                    <Sparkles className={cn("w-4 h-4 text-slate-600 dark:text-slate-500")} />
+                    <span className={cn("text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight")}>
                       {texts.THUMBNAIL_AI_TITLE}
                     </span>
-                    <span className="text-[8px] font-mono text-slate-500">
+                    <span className={cn("text-[8px] font-mono text-slate-500")}>
                       {texts.THUMBNAIL_NOT_CREATED}
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold text-slate-300">{texts.COVER_IMAGE_NOTE_LABEL}</span>
-                  <Button
+              <div className={cn("space-y-1")}>
+                <div className={cn("flex items-center justify-between gap-2")}>
+                  <span className={cn("text-[11px] font-semibold text-slate-300")}>{texts.COVER_IMAGE_NOTE_LABEL}</span>
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={() => { void handleNormalizeImageNote("cover"); }}
                     disabled={_.isEmpty(_.trim(thumbnailDescription)) || isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed")}
                     title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                   >
                     {isNormalizingThumbnailNote ? (
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-400" />
+                      <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-400")} />
                     ) : (
-                      <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                      <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />
                     )}
                   </Button>
                 </div>
@@ -2143,48 +2058,36 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   onChange={(event) => setThumbnailDescription(event.target.value)}
                   disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
                   placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER}
-                  className="w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar"
+                  className={cn("w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar")}
                 />
               </div>
 
               {!_.isEmpty(songs) && (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
+                <div className={cn("grid grid-cols-2 gap-2")}>
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleRegenerateThumbnail}
                     disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className={cn(
-                      "h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none",
-                      isGeneratingThumbnail
-                        ? "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait"
-                        : "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95",
-                    )}>
+                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait": isGeneratingThumbnail, "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95": !(isGeneratingThumbnail) })}>
                     {isGeneratingThumbnail ? (
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400" />
+                      <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
                     ) : (
-                      <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                      <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />
                     )}
-                    <span className="inline-flex items-center leading-none">
+                    <span className={cn("inline-flex items-center leading-none")}>
                       {isGeneratingThumbnail
                         ? texts.THUMBNAIL_CREATING_SHORT
                         : (generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN)}
                     </span>
                   </Button>
 
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleDownloadThumbnail}
                     disabled={!generatedThumbnail || isGeneratingThumbnail}
-                    className={cn(
-                      "h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none",
-                      !generatedThumbnail || isGeneratingThumbnail
-                        ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04] !text-[#94a3b8] dark:!text-slate-500 cursor-not-allowed shadow-none"
-                        : "border-slate-300 hover:border-purple-400 dark:border-slate-700 dark:hover:border-purple-500 bg-white hover:bg-purple-50/50 dark:bg-slate-800 dark:hover:bg-slate-700 !text-[#0f172a] hover:!text-purple-700 dark:!text-slate-100 dark:hover:!text-white cursor-pointer active:scale-95",
-                    )}>
-                    <Download className={cn("w-3.5 h-3.5 shrink-0", !generatedThumbnail || isGeneratingThumbnail ? "text-[#94a3b8] dark:text-slate-500" : "text-purple-600 dark:text-purple-400")} />
-                    <span className="inline-flex items-center leading-none">{texts.THUMBNAIL_DOWNLOAD}</span>
+                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04] !text-[#94a3b8] dark:!text-slate-500 cursor-not-allowed shadow-none": !generatedThumbnail || isGeneratingThumbnail, "border-slate-300 hover:border-purple-400 dark:border-slate-700 dark:hover:border-purple-500 bg-white hover:bg-purple-50/50 dark:bg-slate-800 dark:hover:bg-slate-700 !text-[#0f172a] hover:!text-purple-700 dark:!text-slate-100 dark:hover:!text-white cursor-pointer active:scale-95": !(generatedThumbnail || isGeneratingThumbnail) })}>
+                    <Download className={cn("w-3.5 h-3.5 shrink-0", { "text-[#94a3b8] dark:text-slate-500": !generatedThumbnail || isGeneratingThumbnail, "text-purple-600 dark:text-purple-400": Boolean(generatedThumbnail && !isGeneratingThumbnail) })} />
+                    <span className={cn("inline-flex items-center leading-none")}>{texts.THUMBNAIL_DOWNLOAD}</span>
                   </Button>
                 </div>
               )}
@@ -2201,14 +2104,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
 
                   <label
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none",
-                      isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground
-                        ? "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60"
-                        : showVideoTrackList
-                          ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs"
-                          : "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer"
-                    )}
+                    className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none", { "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60": isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground, "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs": !(isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground) && showVideoTrackList, "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer": !(isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground) && !(showVideoTrackList) })}
                   >
                     <input
                       type="checkbox"
@@ -2237,23 +2133,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
                     <div className={cn("flex items-center justify-center gap-2 pt-1")}>
                       <div
-                        className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
-                          !isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks)
-                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                            : "bg-slate-900 text-slate-400 border-slate-800"
-                        )}
+                        className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border", { "bg-emerald-500/10 text-emerald-300 border-emerald-500/20": !isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks), "bg-slate-900 text-slate-400 border-slate-800": !(isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks)) })}
                       >
                         {!isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <Disc3 className={cn("w-3 h-3 text-slate-500")} />}
                         <span>Tải nhạc Suno</span>
                       </div>
                       <div
-                        className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
-                          !_.isEmpty(videoBackgroundReference)
-                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                            : "bg-slate-900 text-slate-400 border-slate-800"
-                        )}
+                        className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border", { "bg-emerald-500/10 text-emerald-300 border-emerald-500/20": !_.isEmpty(videoBackgroundReference), "bg-slate-900 text-slate-400 border-slate-800": !(_.isEmpty(videoBackgroundReference)) })}
                       >
                         {!_.isEmpty(videoBackgroundReference) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <ImageIcon className={cn("w-3 h-3 text-slate-500")} />}
                         <span>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
@@ -2262,7 +2148,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
                 ) : (
                   <div className={cn("space-y-3")}>
-                    <input ref={videoBackgroundFileInputRef} type="file" accept="image/*" onChange={handleVideoBackgroundReferenceChange} className="hidden" />
+                    <input ref={videoBackgroundFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} className={cn("hidden")} />
                     <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                       {videoBackgroundReference ? (
                         <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md")}>
@@ -2270,15 +2156,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5")}>
                             <span className={cn("text-[9px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded")}>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                           </div>
-                          <Button type="button" variant="unstyled" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} title={texts.CHANGE_IMAGE_BTN} className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center">
-                            <Upload className="w-3.5 h-3.5" />
+                          <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} title={texts.CHANGE_IMAGE_BTN} className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center")}>
+                            <Upload className={cn("w-3.5 h-3.5")} />
                           </Button>
                         </div>
                       ) : (
-                        <Button type="button" variant="unstyled" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer">
-                          <Upload className="w-4 h-4 text-slate-400" />
-                          <span className="text-[10px] font-bold text-slate-300">{texts.THUMBNAIL_UPLOAD}</span>
-                          <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
+                        <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer")}>
+                          <Upload className={cn("w-4 h-4 text-slate-400")} />
+                          <span className={cn("text-[10px] font-bold text-slate-300")}>{texts.THUMBNAIL_UPLOAD}</span>
+                          <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
                         </Button>
                       )}
                     {(generatedVideoBackground || isGeneratingVideoBackground) && (
@@ -2289,7 +2175,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             alt={texts.VIDEO_BACKGROUND_ALT}
                             title={isGeneratingVideoBackground ? undefined : texts.CLICK_TO_ZOOM}
                             onClick={isGeneratingVideoBackground ? undefined : () => setPreviewThumbnail(generatedVideoBackground)}
-                            className={cn("absolute inset-0 w-full h-full object-contain", isGeneratingVideoBackground ? "opacity-35" : "cursor-zoom-in")}
+                            className={cn("absolute inset-0 w-full h-full object-contain", { "opacity-35": isGeneratingVideoBackground, "cursor-zoom-in": !isGeneratingVideoBackground })}
                           />
                         )}
                         {isGeneratingVideoBackground ? (
@@ -2307,27 +2193,26 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     )}
                     {!generatedVideoBackground && !isGeneratingVideoBackground && (
                       <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500")}>
-                        <Sparkles className="w-4 h-4 text-slate-500" />
-                        <span className="text-[10px] font-semibold text-slate-400">{texts.VIDEO_BACKGROUND_TITLE}</span>
-                        <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_NOT_CREATED}</span>
+                        <Sparkles className={cn("w-4 h-4 text-slate-500")} />
+                        <span className={cn("text-[10px] font-semibold text-slate-400")}>{texts.VIDEO_BACKGROUND_TITLE}</span>
+                        <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_NOT_CREATED}</span>
                       </div>
                     )}
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-slate-300">{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
-                        <Button
+                    <div className={cn("space-y-1")}>
+                      <div className={cn("flex items-center justify-between gap-2")}>
+                        <span className={cn("text-[11px] font-semibold text-slate-300")}>{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
+                        <Button variant="unstyled"
                           type="button"
-                          variant="unstyled"
                           onClick={() => { void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO); }}
                           disabled={_.isEmpty(_.trim(videoBackgroundDescription)) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
-                          className="btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                          className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed")}
                           title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                         >
                           {isNormalizingVideoBackgroundNote ? (
-                            <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-400" />
+                            <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-400")} />
                           ) : (
-                            <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                            <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />
                           )}
                         </Button>
                       </div>
@@ -2341,23 +2226,21 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       />
                     </div>
                     <div className={cn("grid grid-cols-2 gap-2")}>
-                      <Button
+                      <Button variant="unstyled"
                         type="button"
-                        variant="unstyled"
                         onClick={handleGenerateVideoBackground}
                         disabled={_.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
                         className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
                       >
                         {isGeneratingVideoBackground ? (
-                          <Sparkles className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-300" />
+                          <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-300")} />
                         ) : (
-                          <WandSparkles className="w-3.5 h-3.5 shrink-0" />
+                          <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />
                         )}
                         <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
                       </Button>
-                      <Button
+                      <Button variant="unstyled"
                         type="button"
-                        variant="unstyled"
                         onClick={handleDownloadVideoBackground}
                         disabled={_.isEmpty(generatedVideoBackground) || isGeneratingVideoBackground}
                         className={cn("h-9 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed")}
@@ -2373,336 +2256,312 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0">
-                <Music2 className="w-4 h-4" />
+        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full space-y-4")}>
+          <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5")}>
+            <div className={cn("flex items-center gap-2.5 min-w-0")}>
+              <div className={cn("w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0")}>
+                <Music2 className={cn("w-4 h-4")} />
               </div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-extrabold text-slate-100 uppercase tracking-tight">
+              <div className={cn("flex items-center gap-2")}>
+                <h2 className={cn("text-sm sm:text-base font-extrabold text-slate-100 uppercase tracking-tight")}>
                   {texts.RESULTS_TITLE}
                 </h2>
                 {!_.isEmpty(songs) && (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300">
+                  <span className={cn("text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300")}>
                     {songs.length} {texts.SONG_UNIT}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end">
+            <div className={cn("flex items-center gap-2 flex-wrap justify-between sm:justify-end")}>
               {!_.isEmpty(songs) && (
-                <div className="flex items-center p-1 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner">
-                  <Button
+                <div className={cn("flex items-center p-1 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner")}>
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={() => setViewMode("lyrics")}
-                    className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
-                      viewMode === "lyrics"
-                        ? "bg-purple-600 !text-white shadow-sm"
-                        : "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100",
-                    )}>
-                    <Music2 className="w-3 h-3 shrink-0" />
-                    <span className="inline-flex items-center leading-none">{texts.TAB_LYRICS}</span>
+                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-purple-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.LYRICS, "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.LYRICS) })}>
+                    <Music2 className={cn("w-3 h-3 shrink-0")} />
+                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_LYRICS}</span>
                   </Button>
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={() => setViewMode("seo")}
-                    className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
-                      viewMode === "seo"
-                        ? "bg-fuchsia-600 !text-white shadow-sm"
-                        : "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100",
-                    )}>
-                    <Sparkles className="w-3 h-3 shrink-0" />
-                    <span className="inline-flex items-center leading-none">{texts.TAB_SEO}</span>
+                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-fuchsia-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SEO, "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SEO) })}>
+                    <Sparkles className={cn("w-3 h-3 shrink-0")} />
+                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SEO}</span>
                   </Button>
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={() => setViewMode("split")}
-                    className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none",
-                      viewMode === "split"
-                        ? "bg-indigo-600 !text-white shadow-sm"
-                        : "!text-slate-700 hover:!text-indigo-700 dark:!text-slate-400 dark:hover:!text-slate-100",
-                    )}>
-                    <Columns className="w-3 h-3 shrink-0" />
-                    <span className="inline-flex items-center leading-none">{texts.TAB_SPLIT}</span>
+                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-indigo-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SPLIT, "!text-slate-700 hover:!text-indigo-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SPLIT) })}>
+                    <Columns className={cn("w-3 h-3 shrink-0")} />
+                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SPLIT}</span>
                   </Button>
                 </div>
               )}
 
               {!_.isEmpty(songs) && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
+                <div className={cn("flex items-center gap-2 shrink-0")}>
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleGenerate}
                     disabled={isLoading || isRegeneratingSeo || isCreatingSuno || isGeneratingVideoBackground}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}
                     title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
                     {isLoading ? (
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300 animate-spin" />
+                      <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300 animate-spin")} />
                     ) : (
-                      <WandSparkles className="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300" />
+                      <WandSparkles className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300")} />
                     )}
-                    <span className="inline-flex items-center leading-none">{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
+                    <span className={cn("inline-flex items-center leading-none")}>{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
                   </Button>
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleRegenerateSeo}
                     disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none"
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}
                     title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
                     {isRegeneratingSeo ? (
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300 animate-spin" />
+                      <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300 animate-spin")} />
                     ) : (
-                      <WandSparkles className="w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300" />
+                      <WandSparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300")} />
                     )}
-                    <span className="inline-flex items-center leading-none">{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
+                    <span className={cn("inline-flex items-center leading-none")}>{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
                   </Button>
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleCreateSunoTest}
                     disabled={isCreatingSuno}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-100 hover:bg-cyan-200/80 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none">
-                    {isCreatingSunoTest ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
-                    <span className="inline-flex items-center leading-none">{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-100 hover:bg-cyan-200/80 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}>
+                    {isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
+                    <span className={cn("inline-flex items-center leading-none")}>{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
                   </Button>
-                  <Button
+                  <Button variant="unstyled"
                     type="button"
-                    variant="unstyled"
                     onClick={handleCreateSunoMusic}
                     disabled={isCreatingSuno}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none">
-                    {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
-                    <span className="inline-flex items-center leading-none">{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none")}>
+                    {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
+                    <span className={cn("inline-flex items-center leading-none")}>{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
                   </Button>
                   {isCreatingSuno && (
-                    <Button
+                    <Button variant="unstyled"
                       type="button"
-                      variant="unstyled"
                       onClick={handleCancelSunoMusic}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 leading-none">
-                      <X className="w-3.5 h-3.5 shrink-0" />
-                      <span className="inline-flex items-center leading-none">{texts.SUNO_CANCEL_BTN}</span>
+                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 leading-none")}>
+                      <X className={cn("w-3.5 h-3.5 shrink-0")} />
+                      <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_CANCEL_BTN}</span>
                     </Button>
                   )}
-                  <Button
-                    variant="unstyled"
+                  <Button variant="unstyled"
                     type="button"
-                    onClick={viewMode === "seo" ? handleCopyAllSeo : handleCopyAllLyrics}
-                    className="btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
+                    onClick={viewMode === MUSIC_VIEW_MODES.SEO ? handleCopyAllSeo : handleCopyAllLyrics}
+                    className={cn("btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
                     title={texts.COPY_ALL_BTN}>
-                    <Copy className="w-4 h-4 shrink-0" />
+                    <Copy className={cn("w-4 h-4 shrink-0")} />
                   </Button>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[240px] flex-1">
-              <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
+          <div className={cn("flex flex-wrap items-center gap-2")}>
+            <div className={cn("relative min-w-[240px] flex-1")}>
+              <Link2 className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400")} />
               <input
                 type="url"
                 value={downloadPlaylistUrl}
                 onChange={(event) => setDownloadPlaylistUrl(event.target.value)}
                 placeholder={texts.SUNO_DOWNLOAD_PLAYLIST_PLACEHOLDER}
                 disabled={isDownloadingSuno}
-                className="h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60"
+                className={cn("h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60")}
               />
             </div>
-            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
+            <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
-                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", sunoEvaluateTracks ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
-                  <Sparkles className="w-3 h-3 shrink-0" /><span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_ON}</span>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", { "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs": sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": !sunoEvaluateTracks })}>
+                  <Sparkles className={cn("w-3 h-3 shrink-0")} /><span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_ON}</span>
                 </Button>
               </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
-                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", !sunoEvaluateTracks ? "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>
-                  <span className="inline-flex items-center leading-none">{texts.SUNO_EVALUATE_OFF}</span>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs": !sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": sunoEvaluateTracks })}>
+                  <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_OFF}</span>
                 </Button>
               </Tooltip>
             </div>
-            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border">
+            <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
               {(["mp3", "wav"] as SunoDownloadFormat[]).map((format) => (
-                <Tooltip key={format} content={format === "mp3" ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align="center">
-                  <Button variant="unstyled" type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", sunoDownloadFormat === format ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs" : "text-slate-400 hover:text-slate-200 border border-transparent")}>{format}</Button>
+                <Tooltip key={format} content={format === AUDIO_FORMATS.MP3 ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align="center">
+                  <Button variant="unstyled" type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs": sunoDownloadFormat === format, "text-slate-400 hover:text-slate-200 border border-transparent": sunoDownloadFormat !== format })}>{format}</Button>
                 </Tooltip>
               ))}
             </div>
-            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
-              {isDownloadingSuno ? <Disc3 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-200" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
-              <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
+            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", { "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30": isDownloadingSuno, "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed": !isDownloadingSuno })}>
+              {isDownloadingSuno ? <Disc3 className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-amber-200")} /> : <Download className={cn("w-3.5 h-3.5 shrink-0")} />}
+              <span className={cn("inline-flex items-center leading-none")}>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>
             {isDownloadingSuno && (
-              <Button variant="unstyled" type="button" onClick={handleCancelSunoDownload} className="h-9 px-3 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-600 hover:bg-rose-500 text-white inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 select-none">
-                <X className="w-3.5 h-3.5 shrink-0" />
-                <span className="inline-flex items-center leading-none">{texts.SUNO_DOWNLOAD_CANCEL_BTN}</span>
+              <Button variant="unstyled" type="button" onClick={handleCancelSunoDownload} className={cn("h-9 px-3 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-600 hover:bg-rose-500 text-white inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 select-none")}>
+                <X className={cn("w-3.5 h-3.5 shrink-0")} />
+                <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_DOWNLOAD_CANCEL_BTN}</span>
               </Button>
             )}
             <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align="center">
-              <Button variant="unstyled" type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none">
-                {isCopiedPlaylistUrl ? <Check className="w-4 h-4 shrink-0 text-emerald-400" /> : <Copy className="w-4 h-4 shrink-0" />}
+              <Button variant="unstyled" type="button" onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none")}>
+                {isCopiedPlaylistUrl ? <Check className={cn("w-4 h-4 shrink-0 text-emerald-400")} /> : <Copy className={cn("w-4 h-4 shrink-0")} />}
               </Button>
             </Tooltip>
-            <Button variant="unstyled" type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
-              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-              <span className="inline-flex items-center leading-none">{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+            <Button variant="unstyled" type="button" onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, "noopener,noreferrer")} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs")}>
+              <ExternalLink className={cn("w-3.5 h-3.5 shrink-0 text-amber-400")} />
+              <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
             </Button>
-            <Button variant="unstyled" type="button" onClick={() => window.open(sunoTestPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SUNO_AUTOMATION_CONFIG.OPENER_POLICY)} disabled={_.isEmpty(sunoTestPlaylistUrl)} className="h-9 px-3 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-200 hover:text-white border border-cyan-600/40 hover:border-cyan-400/60 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs">
-              <ExternalLink className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-              <span className="inline-flex items-center leading-none">{texts.SUNO_TEST_OPEN_BTN}</span>
+            <Button variant="unstyled" type="button" onClick={() => window.open(sunoTestPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SUNO_AUTOMATION_CONFIG.OPENER_POLICY)} disabled={_.isEmpty(sunoTestPlaylistUrl)} className={cn("h-9 px-3 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-200 hover:text-white border border-cyan-600/40 hover:border-cyan-400/60 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs")}>
+              <ExternalLink className={cn("w-3.5 h-3.5 shrink-0 text-cyan-400")} />
+              <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_TEST_OPEN_BTN}</span>
             </Button>
           </div>
 
           {sunoDownloadError && (
-            <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words">
-              <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
+            <div role="alert" className={cn("rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words")}>
+              <AlertTriangle className={cn("mr-1.5 inline h-3.5 w-3.5")} />
               {sunoDownloadError}
             </div>
           )}
 
           {styleAnalysis && !isLoading && (
-            <details className="rounded-2xl border border-slate-800/90 bg-slate-900/80 backdrop-blur-md shadow-xl overflow-hidden group transition-all">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-slate-900/90 via-slate-850 to-slate-900/90 hover:bg-slate-800/80 transition-colors border-b border-transparent group-open:border-slate-800/80 select-none">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+            <details className={cn("rounded-2xl border border-slate-800/90 bg-slate-900/80 backdrop-blur-md shadow-xl overflow-hidden group transition-all")}>
+              <summary className={cn("flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-slate-900/90 via-slate-850 to-slate-900/90 hover:bg-slate-800/80 transition-colors border-b border-transparent group-open:border-slate-800/80 select-none")}>
+                <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                  <div className={cn("w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0")}>
+                    <Sparkles className={cn("h-3.5 w-3.5 text-amber-400")} />
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-xs sm:text-sm text-slate-100 tracking-tight">{texts.DNA_ANALYSIS_TITLE}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-2xs">
+                  <div className={cn("flex items-center gap-2 flex-wrap")}>
+                    <span className={cn("font-bold text-xs sm:text-sm text-slate-100 tracking-tight")}>{texts.DNA_ANALYSIS_TITLE}</span>
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-2xs")}>
                       {styleAnalysis.market.confidence}% {texts.RECOMMENDED_BADGE || "Khớp"}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-slate-400 group-hover:text-slate-200">
-                  <ChevronDown className="h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
+                <div className={cn("flex items-center gap-1 text-xs text-slate-400 group-hover:text-slate-200")}>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 group-open:rotate-180")} />
                 </div>
               </summary>
 
-              <div className="p-4 sm:p-5 space-y-4 text-left">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-indigo-400 shrink-0" />
+              <div className={cn("p-4 sm:p-5 space-y-4 text-left")}>
+                <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
+                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
+                      <Globe className={cn("w-3 h-3 text-indigo-400 shrink-0")} />
                       <span>{texts.MARKET_LABEL.replace(":", "")}</span>
                     </span>
-                    <p className="text-xs font-semibold text-slate-100 leading-snug">
+                    <p className={cn("text-xs font-semibold text-slate-100 leading-snug")}>
                       {[styleAnalysis.market.country, styleAnalysis.market.region, styleAnalysis.market.language].filter(Boolean).join(" • ")}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Users className="w-3 h-3 text-violet-400 shrink-0" />
+                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
+                      <Users className={cn("w-3 h-3 text-violet-400 shrink-0")} />
                       <span>{texts.AUDIENCE_LABEL.replace(":", "")}</span>
                     </span>
-                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                      <span className="text-xs font-semibold text-slate-100 leading-snug">{styleAnalysis.market.audienceAge}</span>
-                      <span className="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded shadow-2xs">
+                    <div className={cn("flex items-center justify-between gap-1.5 flex-wrap")}>
+                      <span className={cn("text-xs font-semibold text-slate-100 leading-snug")}>{styleAnalysis.market.audienceAge}</span>
+                      <span className={cn("text-[10px] font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded shadow-2xs")}>
                         {styleAnalysis.market.confidence}%
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Music2 className="w-3 h-3 text-purple-400 shrink-0" />
+                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
+                      <Music2 className={cn("w-3 h-3 text-purple-400 shrink-0")} />
                       <span>{texts.GENRE_LABEL.replace(":", "")}</span>
                     </span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md shadow-2xs">
+                    <div className={cn("flex items-center gap-1.5 flex-wrap")}>
+                      <span className={cn("text-[11px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md shadow-2xs")}>
                         {styleAnalysis.genre.primary}
                       </span>
                       {styleAnalysis.genre.secondary.slice(0, 2).map((sec, idx) => (
-                        <span key={idx} className="text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700/60">
+                        <span key={idx} className={cn("text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700/60")}>
                           {sec}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs">
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
+                      <Clock className={cn("w-3 h-3 text-amber-400 shrink-0")} />
                       <span>{texts.ERA_LABEL.replace(":", "")}</span>
                     </span>
-                    <p className="text-xs font-semibold text-slate-100 leading-snug">
+                    <p className={cn("text-xs font-semibold text-slate-100 leading-snug")}>
                       {styleAnalysis.era.songwritingEra} / {styleAnalysis.era.productionEra}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-indigo-300 font-mono font-bold text-[11px] uppercase tracking-wider">
-                      <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />
+                <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-3")}>
+                  <div className={cn("p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-indigo-300 font-mono font-bold text-[11px] uppercase tracking-wider")}>
+                      <SlidersHorizontal className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.CREATIVE_ROLE_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-xs text-slate-200 leading-relaxed font-normal">
+                    <p className={cn("text-xs text-slate-200 leading-relaxed font-normal")}>
                       {styleAnalysis.creativeProfile.role}
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-purple-300 font-mono font-bold text-[11px] uppercase tracking-wider">
-                      <Music2 className="w-3.5 h-3.5 shrink-0" />
+                  <div className={cn("p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-purple-300 font-mono font-bold text-[11px] uppercase tracking-wider")}>
+                      <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.MUSIC_DNA_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-xs text-slate-200 leading-relaxed font-normal">
+                    <p className={cn("text-xs text-slate-200 leading-relaxed font-normal")}>
                       {[styleAnalysis.musicalDna.rhythm, styleAnalysis.musicalDna.tempoRange, styleAnalysis.musicalDna.vocalCharacter].filter(Boolean).join(" • ")}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
-                      <Check className="w-3.5 h-3.5 shrink-0" />
+                <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-3")}>
+                  <div className={cn("p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-emerald-400 font-bold text-xs")}>
+                      <Check className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.PRESERVE_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-[11px] text-slate-200 leading-relaxed">
+                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>
                       {styleAnalysis.mustPreserve.join("; ")}
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
-                      <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                  <div className={cn("p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-amber-400 font-bold text-xs")}>
+                      <RefreshCw className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.MUST_VARY_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-[11px] text-slate-200 leading-relaxed">
+                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>
                       {styleAnalysis.mustVary.join("; ")}
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <div className={cn("p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-rose-400 font-bold text-xs")}>
+                      <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.MUST_NOT_COPY_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-[11px] text-slate-200 leading-relaxed">
+                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>
                       {styleAnalysis.mustNotCopy.join("; ")}
                     </p>
                   </div>
                 </div>
 
                 {!_.isEmpty(styleAnalysis.uncertainties) && (
-                  <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1 shadow-2xs">
-                    <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[11px]">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <div className={cn("p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1 shadow-2xs")}>
+                    <div className={cn("flex items-center gap-1.5 text-slate-400 font-bold text-[11px]")}>
+                      <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.UNCERTAINTIES_LABEL.replace(":", "")}</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                    <p className={cn("text-[11px] text-slate-300 leading-relaxed")}>
                       {formatStyleAnalysisItems(styleAnalysis.uncertainties)}
                     </p>
                   </div>
@@ -2750,8 +2609,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <span>{texts.SUNO_EXCLUDE_STYLES_LABEL}</span>
                         </div>
                         {sunoSettings.excludeStyles && (
-                          <Button
-                            variant="unstyled"
+                          <Button variant="unstyled"
                             type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(sunoSettings.excludeStyles);
@@ -2762,9 +2620,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             className={cn(
                               "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none",
                             )}
-                            title={copiedKey === "excludeStyles" ? texts.COPIED_LABEL : texts.SUNO_COPY_EXCLUDE_STYLES_BTN}
+                            title={copiedKey === COPY_KEYS.EXCLUDE_STYLES ? texts.COPIED_LABEL : texts.SUNO_COPY_EXCLUDE_STYLES_BTN}
                           >
-                            {copiedKey === "excludeStyles" ? (
+                            {copiedKey === COPY_KEYS.EXCLUDE_STYLES ? (
                               <Check className={cn("w-3.5 h-3.5 text-emerald-400 shrink-0")} />
                             ) : (
                               <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
@@ -2807,7 +2665,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       {[
                         {
                           label: texts.SUNO_VOCAL_GENDER_LABEL,
-                          value: sunoSettings.vocalGender === "male" ? texts.SUNO_MALE_VALUE : sunoSettings.vocalGender === "female" ? texts.SUNO_FEMALE_VALUE : texts.SUNO_AUTO_VALUE,
+                          value: sunoSettings.vocalGender === SUNO_VOCAL_GENDERS.MALE ? texts.SUNO_MALE_VALUE : sunoSettings.vocalGender === SUNO_VOCAL_GENDERS.FEMALE ? texts.SUNO_FEMALE_VALUE : texts.SUNO_AUTO_VALUE,
                           reason: sunoSettingsAnalysis?.parameterRationale.vocalGender,
                           analysis: sunoSettingsAnalysis?.parameterAnalysis?.vocalGender,
                           badgeClass: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/25",
@@ -2912,70 +2770,69 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             </details>
           )}
 
-          {isLoading || (isRegeneratingSeo && viewMode === "seo") ? (
-            <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-              <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg", isRegeneratingSeo ? "bg-fuchsia-500/15 border-fuchsia-500/30 shadow-fuchsia-500/20" : "bg-purple-500/15 border-purple-500/30 shadow-purple-500/20")}>
-                {isRegeneratingSeo ? <Search className="w-7 h-7 text-fuchsia-400 animate-pulse" /> : <Disc3 className="w-7 h-7 text-purple-400 animate-spin" />}
+          {isLoading || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
+            <div className={cn("py-16 flex flex-col items-center justify-center text-center space-y-4")}>
+              <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg", { "bg-fuchsia-500/15 border-fuchsia-500/30 shadow-fuchsia-500/20": isRegeneratingSeo, "bg-purple-500/15 border-purple-500/30 shadow-purple-500/20": !isRegeneratingSeo })}>
+                {isRegeneratingSeo ? <Search className={cn("w-7 h-7 text-fuchsia-400 animate-pulse")} /> : <Disc3 className={cn("w-7 h-7 text-purple-400 animate-spin")} />}
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-extrabold text-slate-200">
+              <div className={cn("space-y-1")}>
+                <p className={cn("text-sm font-extrabold text-slate-200")}>
                   {isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING}
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className={cn("text-xs text-slate-400")}>
                   {isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : `${texts.HEADER_BADGE} • ${outputCount} ${texts.SONG_UNIT}`}
                 </p>
               </div>
             </div>
           ) : _.isEmpty(songs) ? (
-            <div className="py-14 flex flex-col items-center justify-center text-center space-y-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-500 shadow-inner">
-                <Music2 className="w-7 h-7 text-purple-400/80" />
+            <div className={cn("py-14 flex flex-col items-center justify-center text-center space-y-3.5")}>
+              <div className={cn("w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-500 shadow-inner")}>
+                <Music2 className={cn("w-7 h-7 text-purple-400/80")} />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="text-sm font-extrabold text-slate-200">
+              <div className={cn("space-y-1 max-w-sm")}>
+                <h3 className={cn("text-sm font-extrabold text-slate-200")}>
                   {texts.BLOCK_LYRICS_EMPTY_TITLE}
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className={cn("text-xs text-slate-400 leading-relaxed")}>
                   {texts.BLOCK_LYRICS_EMPTY_DESC}
                 </p>
               </div>
-              <Button
+              <Button variant="unstyled"
                 type="button"
-                variant="unstyled"
                 onClick={handleTrySampleTemplate}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span className="inline-flex items-center leading-none">{texts.TRY_SAMPLE_BTN}</span>
+                className={cn("px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs")}>
+                <Sparkles className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+                <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>
               </Button>
             </div>
           ) : (
             <div>
               {!_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl) && (
-                <div className="relative mb-5 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-slate-900/95 via-amber-955/20 to-slate-900/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-xl shadow-black/40 transition-all hover:border-amber-500/40">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md shadow-orange-500/20 shrink-0">
-                        <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400">
-                          <Disc3 className="w-5 h-5 animate-spin [animation-duration:8s]" />
+                <div className={cn("relative mb-5 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-slate-900/95 via-amber-955/20 to-slate-900/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-xl shadow-black/40 transition-all hover:border-amber-500/40")}>
+                  <div className={cn("pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent")} />
+                  <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-3.5")}>
+                    <div className={cn("flex items-center gap-3 min-w-0")}>
+                      <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md shadow-orange-500/20 shrink-0")}>
+                        <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400")}>
+                          <Disc3 className={cn("w-5 h-5 animate-spin [animation-duration:8s]")} />
                         </div>
                       </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-slate-100 text-sm sm:text-base tracking-tight">
+                      <div className={cn("min-w-0 space-y-0.5")}>
+                        <div className={cn("flex items-center gap-2 flex-wrap")}>
+                          <span className={cn("font-black text-slate-100 text-sm sm:text-base tracking-tight")}>
                             {texts.SUNO_PLAYLIST_LABEL}
                           </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-xs")}>
+                            <span className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse")} />
                             {texts.SUNO_PLAYLIST_STATUS_READY}
                           </span>
                           {!_.isEmpty(sunoTrackIds) && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-xs">
+                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-xs")}>
                               {texts.formatTrackCount(sunoTrackIds.length)}
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400 leading-normal truncate max-w-md sm:max-w-xl">
+                        <p className={cn("text-[11px] text-slate-400 leading-normal truncate max-w-md sm:max-w-xl")}>
                           {texts.SUNO_PLAYLIST_SUBTITLE}
                         </p>
                       </div>
@@ -2984,52 +2841,41 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
                 </div>
               )}
-              {viewMode === "lyrics" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1">
+              {viewMode === MUSIC_VIEW_MODES.LYRICS && (
+                <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1")}>
                   {_.map(songs, (song, idx) => (
                     <SongCard key={song.songId || idx} song={song} index={idx} texts={texts} />
                   ))}
                 </div>
               )}
 
-              {viewMode === "seo" && (
+              {viewMode === MUSIC_VIEW_MODES.SEO && (
                 <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} />
               )}
 
-              {viewMode === "split" && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 custom-scrollbar">
+              {viewMode === MUSIC_VIEW_MODES.SPLIT && (
+                <div className={cn("space-y-4")}>
+                  <div className={cn("flex items-center gap-1.5 overflow-x-auto pb-2 custom-scrollbar")}>
                     {_.map(songs, (song, idx) => {
                       const isSelected = selectedSeoSongIndex === idx;
                       return (
-                        <Button
+                        <Button variant="unstyled"
                           key={idx}
                           type="button"
-                          variant="unstyled"
                           onClick={() => setSelectedSeoSongIndex(idx)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0 inline-flex items-center justify-center gap-1.5 group select-none shadow-2xs leading-none",
-                            isSelected
-                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 !text-white border-indigo-400 shadow-sm shadow-indigo-600/20"
-                              : "bg-white/80 dark:bg-slate-955/90 border-slate-200/90 dark:border-slate-800 !text-[#1e293b] hover:!text-[#4338ca] dark:!text-slate-300 dark:hover:!text-white hover:border-indigo-400/60 dark:hover:border-indigo-500/40 hover:bg-indigo-50/70 dark:hover:bg-slate-900/90",
-                          )}>
+                          className={cn("px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0 inline-flex items-center justify-center gap-1.5 group select-none shadow-2xs leading-none", { "bg-gradient-to-r from-indigo-600 to-purple-600 !text-white border-indigo-400 shadow-sm shadow-indigo-600/20": isSelected, "bg-white/80 dark:bg-slate-955/90 border-slate-200/90 dark:border-slate-800 !text-[#1e293b] hover:!text-[#4338ca] dark:!text-slate-300 dark:hover:!text-white hover:border-indigo-400/60 dark:hover:border-indigo-500/40 hover:bg-indigo-50/70 dark:hover:bg-slate-900/90": !(isSelected) })}>
                           <span
-                            className={cn(
-                              "font-mono font-black inline-flex items-center leading-none",
-                              isSelected
-                                ? "!text-indigo-100"
-                                : "!text-indigo-600 group-hover:!text-indigo-800 dark:!text-indigo-400 dark:group-hover:!text-indigo-300",
-                            )}>
+                            className={cn("font-mono font-black inline-flex items-center leading-none", { "!text-indigo-100": isSelected, "!text-indigo-600 group-hover:!text-indigo-800 dark:!text-indigo-400 dark:group-hover:!text-indigo-300": !(isSelected) })}>
                             {texts.formatTrackBadge(idx + 1)}
                           </span>
-                          <span className="inline-flex items-center leading-none">{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
+                          <span className={cn("inline-flex items-center leading-none")}>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>
                       );
                     })}
                   </div>
 
                   {songs[selectedSeoSongIndex] && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                    <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4 items-start")}>
                       <SongCard
                         song={songs[selectedSeoSongIndex]}
                         index={selectedSeoSongIndex}
@@ -3052,36 +2898,36 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         onClose={() => setStyleToDelete(null)}
         maxWidth="max-w-md"
         title={
-          <span className="inline-flex items-center gap-2 leading-none text-slate-900 dark:text-slate-100">
-            <Trash2 className="w-4 h-4 text-rose-500 shrink-0 self-center -translate-y-[1px]" />
-            <span className="leading-none text-sm font-extrabold">{texts.STYLE_DELETE_BTN}</span>
+          <span className={cn("inline-flex items-center gap-2 leading-none text-slate-900 dark:text-slate-100")}>
+            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0 self-center -translate-y-[1px]")} />
+            <span className={cn("leading-none text-sm font-extrabold")}>{texts.STYLE_DELETE_BTN}</span>
           </span>
         }>
-        <div className="space-y-4 text-left">
-          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+        <div className={cn("space-y-4 text-left")}>
+          <p className={cn("text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed")}>
             {texts.STYLE_DELETE_CONFIRM}{" "}
-            <span className="font-extrabold !text-[#1e1b4b] dark:!text-white">“{styleToDelete?.title}”</span>?
+            <span className={cn("font-extrabold !text-[#1e1b4b] dark:!text-white")}>“{styleToDelete?.title}”</span>?
           </p>
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+          <div className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2")}>
+            <AlertTriangle className={cn("w-4 h-4 text-rose-500 shrink-0")} />
             <span>{texts.CANNOT_BE_UNDONE}</span>
           </div>
-          <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setStyleToDelete(null)}
-              className="h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none">
-              <span className="inline-flex items-center leading-none">{texts.CANCEL_BTN}</span>
+              className={cn("h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none")}>
+              <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
             </Button>
             <Button
               type="button"
               variant="danger"
               size="sm"
               onClick={confirmDeleteStyle}
-              className="h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none">
-              <span className="inline-flex items-center leading-none">{texts.STYLE_DELETE_BTN}</span>
+              className={cn("h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none")}>
+              <span className={cn("inline-flex items-center leading-none")}>{texts.STYLE_DELETE_BTN}</span>
             </Button>
           </div>
         </div>
@@ -3091,9 +2937,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         onClose={() => setInspoToDelete(null)}
         maxWidth="max-w-md"
         title={texts.INSPO_DELETE_CONFIRM}>
-        <div className="space-y-4 text-left">
-          <p className="text-sm text-slate-300">{texts.INSPO_DELETE_CONFIRM} <span className="font-extrabold text-white">“{inspoToDelete?.title}”</span>?</p>
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+        <div className={cn("space-y-4 text-left")}>
+          <p className={cn("text-sm text-slate-300")}>{texts.INSPO_DELETE_CONFIRM} <span className={cn("font-extrabold text-white")}>“{inspoToDelete?.title}”</span>?</p>
+          <div className={cn("flex justify-end gap-2.5 pt-3 border-t border-slate-800")}>
             <Button type="button" variant="outline" size="sm" onClick={() => setInspoToDelete(null)}>{texts.CANCEL_BTN}</Button>
             <Button type="button" variant="danger" size="sm" onClick={confirmDeleteInspo}>{texts.STYLE_DELETE_BTN}</Button>
           </div>

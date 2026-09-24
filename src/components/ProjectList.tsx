@@ -162,8 +162,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
             {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
           </p>
         </div>
-        <Button
-          variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+        <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
           onClick={handleOpenCreateTarget}
           className={cn("flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-2xl font-bold shadow-md shadow-rose-600/20")}>
           <Plus className={cn("w-4 h-4")} />
@@ -173,36 +172,21 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
       <div className={cn("flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between glass-card p-4 rounded-2xl")}>
         <div className={cn("flex flex-wrap items-center gap-2 w-full sm:w-auto")}>
-          <button
+          <Button variant="unstyled"
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
-            className={cn(
-              "px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
-                ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850",
-            )}>
+            className={cn("px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center", { "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30": _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL), "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850": !(_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)) })}>
             {localT.allLangs}
-          </button>
-          <button
+          </Button>
+          <Button variant="unstyled"
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
-            className={cn(
-              "px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
-                ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850",
-            )}>
+            className={cn("px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center", { "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30": _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI), "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850": !(_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)) })}>
             {localT.viBtn}
-          </button>
-          <button
+          </Button>
+          <Button variant="unstyled"
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
-            className={cn(
-              "px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center",
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
-                ? "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30"
-                : "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850",
-            )}>
+            className={cn("px-4 py-2 h-10 text-xs font-bold rounded-xl transition-colors cursor-pointer select-none border flex items-center justify-center", { "bg-rose-600 border-rose-500 text-white shadow-sm shadow-rose-600/30": _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN), "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850": !(_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)) })}>
             {localT.enBtn}
-          </button>
+          </Button>
 
           {availableGenres.length > 2 && (
             <select
@@ -303,7 +287,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                           <div className={cn("flex items-center gap-4")}>
                             <div className={cn("w-6 shrink-0 flex items-center justify-center")}>
                               {hasChildren && (
-                                <button
+                                <Button variant="unstyled"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setExpandedParentIds((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
@@ -314,7 +298,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                                   ) : (
                                     <ChevronRight className={cn("w-4 h-4 text-slate-400")} />
                                   )}
-                                </button>
+                                </Button>
                               )}
                             </div>
                             <div
@@ -386,8 +370,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
 
                         <td className={cn("py-4 px-6 text-right")} onClick={(e) => e.stopPropagation()}>
                           <div className={cn("flex items-center justify-end gap-2")}>
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
                               size={REFACTOR_CONSTANTS.SIZE_XS}
                               isLoading={openingProjectId === project.id}
                               onClick={() => handleOpenProject(project)}
@@ -397,16 +380,14 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                               <ChevronRight className={cn("w-3 h-3")} />
                             </Button>
 
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                               onClick={() => handleOpenEditTarget(project)}
                               className={cn("p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 rounded-xl")}
                               title={t.editProject}>
                               <Edit3 className={cn("w-3.5 h-3.5")} />
                             </Button>
 
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                               onClick={() => setProjectToDelete(project)}
                               className={cn("p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl")}
                               title={t.delete}>
@@ -442,16 +423,14 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                                       </div>
                                     </div>
                                     <div className={cn("flex items-center gap-2")} onClick={(e) => e.stopPropagation()}>
-                                      <Button
-                                        variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
                                         size={REFACTOR_CONSTANTS.SIZE_XS}
                                         isLoading={openingProjectId === child.id}
                                         onClick={() => handleOpenProject(child)}
                                         className={cn("text-[9px] font-bold py-1 px-3 rounded-xl shadow-sm")}>
                                         {t.Open}
                                       </Button>
-                                      <Button
-                                        variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                                         onClick={() => setProjectToDelete(child)}
                                         className={cn("p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl")}
                                         title={t.delete}>
@@ -479,31 +458,19 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
                 {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
               </div>
               <div className={cn("flex items-center gap-2")}>
-                <Button
-                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                   onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)}
                   disabled={_.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-bold rounded-xl transition-all",
-                    _.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)
-                      ? "text-slate-600 cursor-not-allowed"
-                      : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white",
-                  )}>
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", { "text-slate-600 cursor-not-allowed": _.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE), "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white": !(_.isEqual(safeCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)) })}>
                   {t.Previous}
                 </Button>
                 <div className={cn("text-xs text-slate-300 font-bold font-mono px-3 py-1 rounded-xl bg-slate-900 border border-slate-800")}>
                   {safeCurrentPage} / {totalPages}
                 </div>
-                <Button
-                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                   onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)}
                   disabled={_.isEqual(safeCurrentPage, totalPages)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-bold rounded-xl transition-all",
-                    _.isEqual(safeCurrentPage, totalPages)
-                      ? "text-slate-600 cursor-not-allowed"
-                      : "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white",
-                  )}>
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all", { "text-slate-600 cursor-not-allowed": _.isEqual(safeCurrentPage, totalPages), "text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-white": !(_.isEqual(safeCurrentPage, totalPages)) })}>
                   {t.Next}
                 </Button>
               </div>
@@ -521,7 +488,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
         title={
           <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span className="uppercase font-extrabold tracking-wider">{t.Confirm_Deletion}</span>
+            <span className={cn("uppercase font-extrabold tracking-wider")}>{t.Confirm_Deletion}</span>
           </div>
         }>
         <div className={cn("space-y-4")}>
@@ -531,8 +498,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
           </p>
           <div className={cn("p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-bold leading-relaxed")}>{t.This_action_cannot_be_und}</div>
           <div className={cn("flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800")}>
-            <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
               disabled={isLoadingAction}
               onClick={() => setProjectToDelete(null)}
               className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
@@ -552,7 +518,7 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
         title={
           <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
             <Video className={cn("w-4 h-4 text-rose-500")} />
-            <span className="uppercase font-extrabold tracking-wider">{editingId ? t.Edit_Project : t.newProject}</span>
+            <span className={cn("uppercase font-extrabold tracking-wider")}>{editingId ? t.Edit_Project : t.newProject}</span>
           </div>
         }>
         <form onSubmit={handleSubmit} className={cn("space-y-4")}>
@@ -591,15 +557,13 @@ export default function ProjectList({ currentLang, projects, isLoading = false, 
           </div>
 
           <div className={cn("flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
-            <Button
-              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
               onClick={() => setShowModal(false)}
               className={cn("px-4 py-2 text-xs font-bold rounded-xl")}>
               {t.cancel}
             </Button>
-            <Button
-              type={REFACTOR_CONSTANTS.BUTTON_TYPE_SUBMIT}
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_SUBMIT}
               variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
               isLoading={isLoadingAction}
               className={cn("px-5 py-2 text-xs font-bold rounded-xl")}>

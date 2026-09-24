@@ -1744,7 +1744,7 @@ let activeFlowVideoGenerationCount = SecurityConstants.ZERO;
 
 const isSharedChromeRunning = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`http://127.0.0.1:${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}/json/version`, {
+    const response = await fetch(`${EXTERNAL_URLS.LOCALHOST}:${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}/json/version`, {
       signal: AbortSignal.timeout(1500),
     });
     return response.ok;
@@ -1801,7 +1801,6 @@ export async function closeActiveBrowser() {
   activeBrowserHeadless = undefined;
 }
 
-/** Close an app-owned Chrome after the last task page is gone. Never terminate an attached user browser. */
 export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false): Promise<boolean> {
   if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {

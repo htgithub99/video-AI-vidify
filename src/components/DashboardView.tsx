@@ -38,7 +38,7 @@ const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit
   return (
     <div className={cn("space-y-2")}>
       <div className={cn("flex justify-between items-center text-xs font-bold gap-2")}>
-        <span className={`${colorClass} flex items-center gap-1.5 truncate`} title={label}>
+        <span className={cn(colorClass, "flex items-center gap-1.5 truncate")} title={label}>
           {icon} <span className={cn("truncate")}>{label}</span>
         </span>
         <span className={cn("text-slate-400 font-mono text-[11px] shrink-0")}>
@@ -48,7 +48,7 @@ const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit
         </span>
       </div>
       <div className={cn("h-2 bg-slate-955/80 border border-slate-800/80 rounded-full overflow-hidden p-0.5")}>
-        <div className={`h-full ${bgBarClass} rounded-full transition-all duration-500 shadow-sm`} style={{ width: `${percent}%` }} />
+        <div className={cn("h-full rounded-full transition-all duration-500 shadow-sm", bgBarClass)} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

@@ -136,11 +136,10 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
                 {_.map(items, (tag, i) => (
                   <span
                     key={i}
-                    className={
-                      isHashtag
-                        ? "bg-slate-955/60 border border-slate-800 text-rose-400 font-mono text-[10px] px-2 py-1 rounded-lg"
-                        : "bg-slate-955/60 border border-slate-800 text-slate-300 font-sans text-[10px] px-2 py-1 rounded-lg"
-                    }>
+                    className={cn("bg-slate-955/60 border border-slate-800 text-[10px] px-2 py-1 rounded-lg", {
+                      "text-rose-400 font-mono": isHashtag,
+                      "text-slate-300 font-sans": !isHashtag,
+                    })}>
                     {isHashtag ? `#${tag.replace(/^#+/, REFACTOR_CONSTANTS.VD_EMPTY_STRING)}` : tag}
                   </span>
                 ))}

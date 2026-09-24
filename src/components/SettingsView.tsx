@@ -60,9 +60,9 @@ const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) =
       </span>
       <span className={cn("text-[10px] text-slate-500 font-mono truncate")}>{hiddenPwdText}</span>
     </div>
-    <button onClick={onRemove} className={cn("btn-icon-tiny text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors p-1.5 rounded-lg shrink-0")}>
+    <Button variant="unstyled" onClick={onRemove} className={cn("btn-icon-tiny text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors p-1.5 rounded-lg shrink-0")}>
       <X className={cn("w-3.5 h-3.5")} />
-    </button>
+    </Button>
   </div>
 );
 
@@ -259,8 +259,7 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
           </div>
 
           <div className={cn("pt-4 mt-4 border-t border-slate-800/80 flex justify-end")}>
-            <Button
-              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
+            <Button variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleSaveKeys}
               disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))}
               title={texts.SAVE_BTN_TOOLTIP}
@@ -320,8 +319,7 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
                 onChange={(e) => setNewRecovery(e.target.value)}
                 className={cn("h-10 bg-slate-955/90 border border-slate-800 rounded-xl px-3 text-xs text-slate-200 outline-none focus:border-blue-500/80 flex-1")}
               />
-              <Button
-                variant="primary"
+              <Button variant="primary"
                 onClick={handleAddAccount}
                 disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))}
                 title={texts.ADD_BTN_TOOLTIP}

@@ -45,9 +45,8 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
               {typeof title === "string" ? title.toUpperCase() : title}
             </h2>
           )}
-          <Button
+          <Button variant="unstyled"
             type="button"
-            variant="unstyled"
             onClick={onClose}
             aria-label="Close"
             className={cn(MODAL_CLASS_NAME.CLOSE_BUTTON, "btn-icon-tiny !w-8 !h-8 !min-w-[32px] !min-h-[32px] !max-w-[32px] !max-h-[32px] !p-0 aspect-square rounded-lg")}>

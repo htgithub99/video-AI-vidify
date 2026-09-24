@@ -41,7 +41,7 @@ const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCol
   const Icon = item.icon;
 
   return (
-    <button
+    <Button variant="unstyled"
       onClick={() => onSelect(item.id)}
       disabled={isDisabled}
       data-active={isSelected}
@@ -62,7 +62,7 @@ const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCol
         <Icon className={cn("w-4 h-4")} />
       </div>
       {!isCollapsed && <span className={cn("text-xs font-bold tracking-wide truncate")}>{item.label}</span>}
-    </button>
+    </Button>
   );
 };
 
@@ -133,18 +133,15 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
 
   const sidebarContent = (
     <aside
-      className={cn(
-        "app-sidebar bg-slate-955 text-slate-200 flex flex-col justify-between transition-[width] duration-200 h-full min-h-full self-stretch select-none z-20 shrink-0",
-        isCollapsed ? "w-18" : "w-60",
-      )}>
+      className={cn("app-sidebar bg-slate-955 text-slate-200 flex flex-col justify-between transition-[width] duration-200 h-full min-h-full self-stretch select-none z-20 shrink-0", { "w-18": isCollapsed, "w-60": !(isCollapsed) })}>
       <div className={cn("p-3 flex flex-col items-center justify-center relative shrink-0")}>
         {onCloseMobile && (
-          <button
+          <Button variant="unstyled"
             onClick={onCloseMobile}
             className={cn("btn-icon-tiny lg:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border-none transition-colors")}
             title={texts.CLOSE_MENU}>
             <X className={cn("w-4 h-4")} />
-          </button>
+          </Button>
         )}
 
         <div className={cn("relative flex items-center justify-center w-full")}>
@@ -181,8 +178,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       </nav>
 
       <div className={cn("app-sidebar-footer hidden lg:block p-3 bg-slate-955 shrink-0 mt-auto")}>
-        <Button
-          variant="ghost"
+        <Button variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={cn(

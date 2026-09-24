@@ -118,7 +118,7 @@ export default function ChatPlanningSettingsBlock({
         </div>
 
         <div className={cn("header-badge flex items-center gap-2 text-[11px] font-mono font-bold text-slate-300 bg-slate-955/80 border border-slate-800/80 px-3 py-1 rounded-full shrink-0")}>
-          <span className={cn("w-2 h-2 rounded-full", isApiOnly ? "bg-slate-600" : "bg-violet-400 animate-pulse")} />
+          <span className={cn("w-2 h-2 rounded-full", { "bg-slate-600": isApiOnly, "bg-violet-400 animate-pulse": !isApiOnly })} />
           <span className={cn("font-semibold text-slate-300")}>{badgeSummary}</span>
         </div>
       </div>

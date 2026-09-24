@@ -105,18 +105,7 @@ export const Tooltip: React.FC<ITooltipProps & { align?: "start" | "center" | "e
             )}>
             {content}
             <div
-              className={cn(
-                "absolute w-2.5 h-2.5 bg-slate-900 border border-slate-700/80 rotate-45 transform",
-                _.isEqual(position, TOOLTIP_CONFIG.POS_TOP)
-                  ? "bottom-[-5px] border-t-0 border-l-0"
-                  : _.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM)
-                    ? "top-[-5px] border-b-0 border-r-0"
-                    : _.isEqual(position, TOOLTIP_CONFIG.POS_LEFT)
-                      ? "right-[-5px] border-b-0 border-l-0"
-                      : "left-[-5px] border-t-0 border-r-0",
-                isVertical && (_.isEqual(align, TOOLTIP_CONFIG.ALIGN_START) ? "left-4" : _.isEqual(align, TOOLTIP_CONFIG.ALIGN_END) ? "right-4" : "left-1/2 -translate-x-1/2"),
-                isHorizontal && "top-1/2 -translate-y-1/2",
-              )}
+              className={cn("absolute w-2.5 h-2.5 bg-slate-900 border border-slate-700/80 rotate-45 transform", { "bottom-[-5px] border-t-0 border-l-0": _.isEqual(position, TOOLTIP_CONFIG.POS_TOP), "top-[-5px] border-b-0 border-r-0": !_.isEqual(position, TOOLTIP_CONFIG.POS_TOP) && _.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM), "right-[-5px] border-b-0 border-l-0": !_.isEqual(position, TOOLTIP_CONFIG.POS_TOP) && !_.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM) && _.isEqual(position, TOOLTIP_CONFIG.POS_LEFT), "left-[-5px] border-t-0 border-r-0": !_.isEqual(position, TOOLTIP_CONFIG.POS_TOP) && !_.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM) && !_.isEqual(position, TOOLTIP_CONFIG.POS_LEFT), "left-4": isVertical && _.isEqual(align, TOOLTIP_CONFIG.ALIGN_START), "right-4": isVertical && _.isEqual(align, TOOLTIP_CONFIG.ALIGN_END), "left-1/2 -translate-x-1/2": isVertical && !_.isEqual(align, TOOLTIP_CONFIG.ALIGN_START) && !_.isEqual(align, TOOLTIP_CONFIG.ALIGN_END), "top-1/2 -translate-y-1/2": isHorizontal })}
             />
           </div>,
           document.body,

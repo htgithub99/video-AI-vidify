@@ -2,6 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { logger } from "../../lib/logger.js";
+import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 
 const logPath = path.join(process.env.LOCALAPPDATA || os.tmpdir(), "VideoAI-Vidify", "logs", "music-workflow.jsonl");
 const safeKeys = new Set([
@@ -14,7 +15,7 @@ const safeKeys = new Set([
 ]);
 
 const sanitizeText = (value: unknown): string => String(value ?? "")
-  .replace(/\x1b\[[0-9;]*m/g, "")
+  .replace(ANSI_ESCAPE_SEQUENCE_REGEX, "")
   .split(/\r?\n/, 1)[0]
   .replace(/(?:Bearer\s+|api[_-]?key[=:]\s*|token[=:]\s*)[^\s,;]+/gi, "[redacted]")
   .replace(/https?:\/\/[^\s]+/gi, "[url]")

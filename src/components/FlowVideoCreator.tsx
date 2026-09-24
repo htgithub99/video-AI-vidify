@@ -14,7 +14,7 @@ import {
   Play,
 } from "lucide-react";
 import { toast } from "sonner";
-import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG } from "../constants";
+import { API_ROUTES, FLOW_BUSY_STATES, FLOW_CLIP_STATUSES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_TEXTS, LANGUAGE_CODES } from "../constants";
 import { Lang } from "../lib/lang";
 import {
   AiPlanningChatModel,
@@ -60,9 +60,9 @@ interface PersistedState {
 
 const LOCAL_STORAGE_KEY = "flow-video-creator-state-v1";
 
-const readSavedState = () => jsonUtils.getItem<PersistedState>(LOCAL_STORAGE_KEY, {});
+const loadPersistedFlowVideoState = () => jsonUtils.getItem<PersistedState>(LOCAL_STORAGE_KEY, {});
 
-const getClipTitle = (clip: Clip): string => {
+const resolveClipTitle = (clip: Clip): string => {
   if (clip.title?.trim()) return clip.title.trim();
   const phrase = clip.prompt.trim().split(/[.!?;,\n]/, 1)[0].trim();
   return phrase.split(/\s+/).slice(0, 8).join(" ") || "Video chưa đặt tên";
@@ -96,7 +96,8 @@ export default function FlowVideoCreator({
   projects: VideoProject[];
   selectedProjectId: string | null;
 }) {
-  const [saved] = useState(readSavedState);
+  const flowTexts = FLOW_VIDEO_TEXTS[currentLang === LANGUAGE_CODES.VI ? LANGUAGE_CODES.VI : LANGUAGE_CODES.EN];
+  const [saved] = useState(loadPersistedFlowVideoState);
   const [projectId, setProjectId] = useState<string>(saved.projectId || "");
   const [request, setRequest] = useState<string>(saved.request || "");
   const [folderPath, setFolderPath] = useState<string>(saved.folderPath || "");
@@ -122,7 +123,7 @@ export default function FlowVideoCreator({
   const [clipToDelete, setClipToDelete] = useState<Clip | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
 
-  const isVi = currentLang === "vi";
+  const isVi = currentLang === LANGUAGE_CODES.VI;
 
   useEffect(() => {
     jsonUtils.setItem(
@@ -166,10 +167,10 @@ export default function FlowVideoCreator({
         headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || (isVi ? "Không thể chọn thư mục." : "Unable to select folder."));
+      if (!response.ok) throw new Error(data.error || flowTexts.SELECT_FOLDER_ERROR);
       if (data.folderPath) setFolderPath(data.folderPath);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (isVi ? "Không thể chọn thư mục." : "Unable to select folder."));
+      toast.error(error instanceof Error ? error.message : flowTexts.SELECT_FOLDER_ERROR);
     }
   };
 
@@ -181,16 +182,16 @@ export default function FlowVideoCreator({
     });
     const data = await response.json();
     if (!response.ok || data.success === false) {
-      throw new Error(data.error || data.warning || (isVi ? "Yêu cầu thất bại." : "Request failed."));
+      throw new Error(data.error || data.warning || flowTexts.REQUEST_FAILED);
     }
     return data;
   };
 
   const plan = async () => {
     if (!request.trim()) {
-      return toast.error(isVi ? "Vui lòng nhập yêu cầu tạo video." : "Please enter your video request.");
+      return toast.error(flowTexts.REQUEST_REQUIRED);
     }
-    setBusy("planning");
+    setBusy(FLOW_BUSY_STATES.PLANNING);
     try {
       const data = await post(API_ROUTES.PIPELINE_PLAN_FLOW_VIDEO_PROMPTS, {
         request: request.trim(),
@@ -206,9 +207,9 @@ export default function FlowVideoCreator({
           status: "waiting",
         })),
       );
-      toast.success(isVi ? `Đã viết ${generatedVideos.length} prompt.` : `Generated ${generatedVideos.length} prompts.`);
+      toast.success(flowTexts.PLAN_SUCCESS(generatedVideos.length));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (isVi ? "Không thể viết prompt." : "Failed to plan prompts."));
+      toast.error(error instanceof Error ? error.message : flowTexts.PLAN_FAILED);
     } finally {
       setBusy(null);
     }
@@ -216,28 +217,28 @@ export default function FlowVideoCreator({
 
   const generate = async () => {
     if (!projectId) {
-      return toast.error(isVi ? "Chọn hoặc tạo dự án trước khi tạo video." : "Please select or create a project first.");
+      return toast.error(flowTexts.PROJECT_REQUIRED);
     }
     if (!folderPath) {
-      return toast.error(isVi ? "Chọn thư mục lưu video." : "Please select destination folder.");
+      return toast.error(flowTexts.FOLDER_REQUIRED);
     }
-    const pending = clips.filter((clip) => clip.status !== "done");
+    const pending = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE);
     const unsaved = clips.filter((clip) => clip.url && !clip.savedPath);
     if (!pending.length && !unsaved.length) return;
 
-    setBusy("generating");
+    setBusy(FLOW_BUSY_STATES.GENERATING);
     try {
       for (const clip of unsaved) {
         try {
           const saved = await post(API_ROUTES.PIPELINE_SAVE_FLOW_VIDEOS, { projectId, folderPath, sceneIds: [clip.id] });
           setClips((before) => before.map((item) => item.id === clip.id ? { ...item, savedPath: saved.savedPaths?.[0], error: undefined } : item));
         } catch (error) {
-          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, error: error instanceof Error ? error.message : "Không thể lưu video." } : item));
+          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, error: error instanceof Error ? error.message : flowTexts.SAVE_VIDEO_FAILED } : item));
         }
       }
       if (!pending.length) return;
       const response = await fetch(`${API_ROUTES.PROJECTS}/${encodeURIComponent(projectId)}`);
-      if (!response.ok) throw new Error(isVi ? "Không thể tải dự án." : "Failed to load project.");
+      if (!response.ok) throw new Error(flowTexts.LOAD_PROJECT_FAILED);
       const project: VideoProject = await response.json();
       const existing = project.storyboard || [];
       const scenes: StoryboardScene[] = pending.map((clip) => ({
@@ -249,7 +250,7 @@ export default function FlowVideoCreator({
         script: clip.prompt,
         subtitle: "",
         prompt: clip.prompt,
-        assetName: getClipTitle(clip),
+        assetName: resolveClipTitle(clip),
         cameraMotion: "",
         assetType: GenerateType.Video,
       }));
@@ -277,19 +278,15 @@ export default function FlowVideoCreator({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nextProject),
       });
-      if (!save.ok) throw new Error(isVi ? "Không thể lưu prompt vào dự án." : "Failed to save prompts into project.");
+      if (!save.ok) throw new Error(flowTexts.SAVE_PROMPTS_FAILED);
 
       let flowProjectId = project.visualConfig?.flowProjectId;
       for (let offset = 0; offset < pending.length; offset += FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) {
         const batch = pending.slice(offset, offset + FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH);
-        setProgress(
-          isVi
-            ? `Đang tạo ${offset + 1}–${Math.min(offset + batch.length, pending.length)}/${pending.length}`
-            : `Generating ${offset + 1}–${Math.min(offset + batch.length, pending.length)}/${pending.length}`,
-        );
+        setProgress(flowTexts.BATCH_PROGRESS(offset + 1, Math.min(offset + batch.length, pending.length), pending.length));
         setClips((before) =>
           before.map((clip) =>
-            batch.some((item) => item.id === clip.id) ? { ...clip, status: "generating" } : clip,
+            batch.some((item) => item.id === clip.id) ? { ...clip, status: FLOW_CLIP_STATUSES.GENERATING } : clip,
           ),
         );
 
@@ -314,8 +311,8 @@ export default function FlowVideoCreator({
                   item.id === clip.id
                     ? {
                         ...item,
-                        status: "failed",
-                        error: generated?.warning || result.warning || (isVi ? "Flow không tạo được video." : "Flow failed to generate video."),
+                        status: FLOW_CLIP_STATUSES.FAILED,
+                error: generated?.warning || result.warning || flowTexts.FLOW_GENERATION_FAILED,
                       }
                     : item,
                 ),
@@ -354,7 +351,7 @@ export default function FlowVideoCreator({
                 });
                 savedPath = savedRes.savedPaths?.[0];
               } catch (error) {
-                saveError = error instanceof Error ? error.message : (isVi ? "Không thể lưu vào thư mục." : "Failed to save into chosen folder.");
+                saveError = error instanceof Error ? error.message : flowTexts.SAVE_FOLDER_FAILED;
               }
             }
 
@@ -365,7 +362,7 @@ export default function FlowVideoCreator({
                       ...item,
                       url,
                       savedPath,
-                      status: url ? "done" : "failed",
+                      status: url ? FLOW_CLIP_STATUSES.DONE : FLOW_CLIP_STATUSES.FAILED,
                       error:
                         saveError ||
                         (url
@@ -384,17 +381,17 @@ export default function FlowVideoCreator({
               batch.some((clip) => clip.id === item.id)
                 ? {
                     ...item,
-                    status: "failed",
-                    error: error instanceof Error ? error.message : (isVi ? "Lỗi Flow" : "Flow Error"),
+                    status: FLOW_CLIP_STATUSES.FAILED,
+                    error: error instanceof Error ? error.message : flowTexts.FLOW_ERROR,
                   }
                 : item,
             ),
           );
         }
       }
-      toast.success(isVi ? "Đã xử lý xong danh sách video." : "Batch video processing completed.");
+      toast.success(flowTexts.BATCH_COMPLETE);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (isVi ? "Không thể tạo video." : "Failed to create videos."));
+      toast.error(error instanceof Error ? error.message : flowTexts.CREATE_FAILED);
     } finally {
       setBusy(null);
       setProgress("");
@@ -404,7 +401,7 @@ export default function FlowVideoCreator({
   const handleCopyPrompt = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedPromptId(id);
-    toast.success(isVi ? "Đã chép prompt." : "Prompt copied.");
+    toast.success(flowTexts.PROMPT_COPIED);
     setTimeout(() => setCopiedPromptId(null), 2000);
   };
 
@@ -413,7 +410,7 @@ export default function FlowVideoCreator({
     const allText = clips.map((c, i) => `${i + 1}. ${c.prompt}`).join("\n\n");
     navigator.clipboard.writeText(allText);
     setIsCopiedAll(true);
-    toast.success(isVi ? `Đã chép ${clips.length} prompt.` : `Copied ${clips.length} prompts.`);
+    toast.success(flowTexts.PROMPTS_COPIED(clips.length));
     setTimeout(() => setIsCopiedAll(false), 2000);
   };
 
@@ -430,37 +427,37 @@ export default function FlowVideoCreator({
     if (!clipToDelete) return;
     setClips((prev) => prev.filter((c) => c.id !== clipToDelete.id));
     setClipToDelete(null);
-    toast.success(isVi ? "Đã xóa prompt." : "Prompt deleted.");
+    toast.success(flowTexts.PROMPT_DELETED);
   };
 
   const confirmClearAllPrompts = () => {
     setClips([]);
     setShowClearAllModal(false);
-    toast.info(isVi ? "Đã xóa toàn bộ danh sách prompt." : "Cleared all prompts.");
+    toast.info(flowTexts.PROMPTS_CLEARED);
   };
 
-  const readyClipsCount = clips.filter((clip) => clip.status !== "done").length;
+  const readyClipsCount = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE).length;
   const unsavedVideosCount = clips.filter((clip) => clip.url && !clip.savedPath).length;
   const completedVideosCount = clips.filter((clip) => clip.url).length;
 
   return (
-    <div className="creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar">
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full border border-slate-800/80">
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-rose-500 flex items-center justify-center shadow-lg shadow-purple-500/30 text-white shrink-0">
-              <Film className="w-5 h-5" />
+    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
+        <div className={cn("flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-800/80")}>
+          <div className={cn("flex items-center gap-3.5")}>
+            <div className={cn("w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-rose-500 flex items-center justify-center shadow-lg shadow-purple-500/30 text-white shrink-0")}>
+              <Film className={cn("w-5 h-5")} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-tight text-white">
-                  {isVi ? "Tạo video bằng Flow" : "Create Videos with Flow"}
+              <div className={cn("flex items-center gap-2")}>
+                <h1 className={cn("text-lg font-bold tracking-tight text-white")}>
+                  {flowTexts.VIDEO_CREATOR_TITLE}
                 </h1>
-                <span className="text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300">
+                <span className={cn("text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300")}>
                   AI Flow
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={cn("text-xs text-slate-400 mt-0.5")}>
                 {isVi
                   ? "AI viết prompt từ yêu cầu, Flow tạo video và lưu vào thư mục bạn chọn."
                   : "AI writes prompts from your concept, Flow renders and auto-saves to your chosen folder."}
@@ -468,23 +465,16 @@ export default function FlowVideoCreator({
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="unstyled"
+          <Button variant="unstyled" type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className={cn(
-              "h-9 px-3 rounded-xl border text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer select-none",
-              showSettings
-                ? "border-purple-500/60 bg-purple-500/20 text-purple-300"
-                : "border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white",
-            )}
+            className={cn("h-9 px-3 rounded-xl border text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer select-none", { "border-purple-500/60 bg-purple-500/20 text-purple-300": showSettings, "border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white": !(showSettings) })}
           >
-            <Settings2 className="w-4 h-4 text-purple-400" />
-            <span>{isVi ? "Cấu hình phòng chat AI" : "AI Settings"}</span>
+            <Settings2 className={cn("w-4 h-4 text-purple-400")} />
+            <span>{flowTexts.AI_SETTINGS}</span>
           </Button>
         </div>
         {showSettings && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-purple-500/30 shadow-inner">
+          <div className={cn("p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-purple-500/30 shadow-inner")}>
             <ChatPlanningSettingsBlock
               provider={provider}
               model={model}
@@ -498,138 +488,112 @@ export default function FlowVideoCreator({
             />
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          <div className="lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl">
-            <div className="space-y-3.5 flex-1 flex flex-col">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch")}>
+          <div className={cn("lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl")}>
+            <div className={cn("space-y-3.5 flex-1 flex flex-col")}>
+              <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-2.5")}>
+                <div className={cn("flex items-center gap-2")}>
+                  <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
                     01
                   </span>
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">
-                    <WandSparkles className="w-3.5 h-3.5 text-purple-400" />
-                    {isVi ? "Yêu cầu tạo video" : "Prompt Request"}
+                  <h2 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+                    <WandSparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
+                    {flowTexts.REQUEST_LABEL}
                   </h2>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-                  <Sparkles className="w-3 h-3 text-purple-400" />
-                  <span>{isVi ? "Gợi ý mẫu" : "Quick Samples"}</span>
+              <div className={cn("space-y-1.5")}>
+                <div className={cn("flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
+                  <Sparkles className={cn("w-3 h-3 text-purple-400")} />
+                    <span>{flowTexts.QUICK_SAMPLES}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className={cn("flex flex-wrap gap-1.5")}>
                   {SAMPLE_PROMPTS.map((sample) => (
-                    <button
+                    <Button variant="unstyled"
                       key={sample.title}
                       type="button"
                       disabled={!!busy}
                       onClick={() => setRequest(sample.text)}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium border border-purple-500/20 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                      className={cn("px-2.5 py-1 rounded-lg text-[11px] font-medium border border-purple-500/20 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-white transition-all cursor-pointer disabled:opacity-50")}
                     >
                       {sample.title}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
-              <div className="flex-1 min-h-[130px] flex flex-col">
+              <div className={cn("flex-1 min-h-[130px] flex flex-col")}>
                 <textarea
                   value={request}
                   onChange={(event) => setRequest(event.target.value)}
                   disabled={!!busy}
-                  placeholder={
-                    isVi
-                      ? "Ví dụ: Tạo 20 video phong cảnh đồng quê, hoàng hôn và mưa chiều làm nền cho video nhạc bolero..."
-                      : "E.g.: Create 20 countryside landscape videos with sunset and gentle rain..."
-                  }
-                  className="w-full flex-1 min-h-[130px] rounded-xl border border-slate-800 bg-slate-955/90 p-3 text-xs text-slate-100 placeholder:text-slate-500 outline-none resize-y focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 transition-all custom-scrollbar leading-relaxed"
+                  placeholder={flowTexts.REQUEST_PLACEHOLDER}
+                  className={cn("w-full flex-1 min-h-[130px] rounded-xl border border-slate-800 bg-slate-955/90 p-3 text-xs text-slate-100 placeholder:text-slate-500 outline-none resize-y focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 transition-all custom-scrollbar leading-relaxed")}
                 />
               </div>
-              <Button
-                type="button"
-                variant="unstyled"
+              <Button variant="unstyled" type="button"
                 disabled={!!busy || !request.trim()}
                 onClick={plan}
-                className={cn(
-                  "w-full h-10 px-4 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-md select-none cursor-pointer leading-none",
-                  busy === "planning"
-                    ? "bg-purple-600/50 text-purple-200 border border-purple-400/30 cursor-wait"
-                    : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-400/30 shadow-purple-600/20 active:scale-98",
-                )}
+                className={cn("w-full h-10 px-4 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-md select-none cursor-pointer leading-none", { "bg-purple-600/50 text-purple-200 border border-purple-400/30 cursor-wait": busy === FLOW_BUSY_STATES.PLANNING, "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-400/30 shadow-purple-600/20 active:scale-98": !(busy === FLOW_BUSY_STATES.PLANNING) })}
               >
-                {busy === "planning" ? (
+                {busy === FLOW_BUSY_STATES.PLANNING ? (
                   <>
-                    <Sparkles className="w-4 h-4 animate-spin shrink-0 text-fuchsia-300" />
-                    <span>{isVi ? "Đang viết prompt…" : "Writing prompts…"}</span>
+                    <Sparkles className={cn("w-4 h-4 animate-spin shrink-0 text-fuchsia-300")} />
+                    <span>{flowTexts.WRITING_PROMPTS}</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 shrink-0" />
-                    <span>{isVi ? "AI viết prompt" : "AI Write Prompts"}</span>
+                    <Sparkles className={cn("w-4 h-4 shrink-0")} />
+                    <span>{flowTexts.WRITE_PROMPTS}</span>
                   </>
                 )}
               </Button>
             </div>
-            <div className="pt-3 border-t border-slate-800/80 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <FolderCheck className="w-4 h-4 text-rose-400" />
-                  <span className="text-xs font-bold text-slate-200">{isVi ? "Cấu hình Flow" : "Flow Settings"}</span>
+            <div className={cn("pt-3 border-t border-slate-800/80 space-y-3")}>
+              <div className={cn("flex items-center justify-between gap-2")}>
+                <div className={cn("flex items-center gap-2")}>
+                  <FolderCheck className={cn("w-4 h-4 text-rose-400")} />
+                  <span className={cn("text-xs font-bold text-slate-200")}>{flowTexts.FLOW_SETTINGS}</span>
                 </div>
                 {folderPath && (
-                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> {isVi ? "Đã chọn thư mục" : "Selected"}
+                  <span className={cn("text-[10px] font-mono text-emerald-400 flex items-center gap-1")}>
+                    <Check className={cn("w-3 h-3")} /> {flowTexts.SELECTED}
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2.5")}>
                 <div
                   onClick={!busy ? chooseFolder : undefined}
-                  className={cn(
-                    "sm:col-span-7 flex items-center justify-between gap-2 rounded-xl border p-2.5 bg-slate-955/90 transition-all",
-                    folderPath
-                      ? "border-purple-500/40 hover:border-purple-500"
-                      : "border-dashed border-slate-700 hover:border-purple-500/60",
-                    busy ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-                  )}
+                  className={cn("sm:col-span-7 flex items-center justify-between gap-2 rounded-xl border p-2.5 bg-slate-955/90 transition-all", { "border-purple-500/40 hover:border-purple-500": folderPath, "border-dashed border-slate-700 hover:border-purple-500/60": !(folderPath) }, { "opacity-50 cursor-not-allowed": busy, "cursor-pointer": !(busy) })}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FolderOpen className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span className="text-xs font-medium text-slate-200 truncate">
-                      {folderPath || (isVi ? "Chọn thư mục lưu..." : "Select folder...")}
+                  <div className={cn("flex items-center gap-2 min-w-0")}>
+                    <FolderOpen className={cn("w-4 h-4 text-purple-400 shrink-0")} />
+                    <span className={cn("text-xs font-medium text-slate-200 truncate")}>
+                    {folderPath || flowTexts.SELECT_FOLDER}
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-purple-300 shrink-0">
-                    {folderPath ? (isVi ? "Đổi" : "Change") : (isVi ? "Chọn" : "Browse")}
+                  <span className={cn("text-[11px] font-semibold text-purple-300 shrink-0")}>
+                    {folderPath ? flowTexts.CHANGE : flowTexts.BROWSE}
                   </span>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="unstyled"
+                <Button variant="unstyled" type="button"
                   disabled={!!busy || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
                   onClick={generate}
-                  className={cn(
-                    "sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none",
-                    (!readyClipsCount && !unsavedVideosCount) || !folderPath
-                      ? "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none"
-                      : busy === "generating"
-                        ? "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse"
-                        : "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98",
-                  )}
+                  className={cn("sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none", { "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !unsavedVideosCount) || !folderPath, "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING, "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING) })}
                 >
-                  {busy === "generating" ? (
+                  {busy === FLOW_BUSY_STATES.GENERATING ? (
                     <>
-                      <Sparkles className="w-4 h-4 animate-spin shrink-0 text-white" />
-                      <span className="truncate">{progress || (isVi ? "Đang tạo…" : "Rendering…")}</span>
+                      <Sparkles className={cn("w-4 h-4 animate-spin shrink-0 text-white")} />
+                      <span className={cn("truncate")}>{progress || flowTexts.RENDERING}</span>
                     </>
                   ) : (
                     <>
-                      <Video className="w-4 h-4 shrink-0" />
-                      <span className="truncate">
-                        {isVi
-                          ? readyClipsCount ? `Tạo ${readyClipsCount} video bằng Flow` : `Lưu ${unsavedVideosCount} video còn thiếu`
-                          : readyClipsCount ? `Create ${readyClipsCount} Videos` : `Save ${unsavedVideosCount} Remaining Videos`}
+                      <Video className={cn("w-4 h-4 shrink-0")} />
+                      <span className={cn("truncate")}>
+                        {readyClipsCount
+                          ? flowTexts.CREATE_VIDEOS(readyClipsCount)
+                          : flowTexts.SAVE_REMAINING_VIDEOS(unsavedVideosCount)}
                       </span>
                     </>
                   )}
@@ -637,101 +601,84 @@ export default function FlowVideoCreator({
               </div>
             </div>
           </div>
-          <div className="lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl h-full">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
+          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl h-full")}>
+            <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3")}>
+              <div className={cn("flex items-center gap-2")}>
+                <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
                   02
                 </span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono">
-                  {isVi ? "Danh sách prompt AI đã viết" : "AI Prompt List"} ({clips.length})
+                <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono")}>
+                  {flowTexts.PROMPT_LIST} ({clips.length})
                 </h3>
               </div>
 
               {clips.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant="unstyled"
+                <div className={cn("flex items-center gap-1.5")}>
+                  <Button variant="unstyled" type="button"
                     onClick={handleCopyAllPrompts}
-                    className="w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95"
-                    title={isVi ? "Sao chép toàn bộ" : "Copy all"}
+                    className={cn("w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
+                    title={flowTexts.COPY_ALL}
                   >
-                    {isCopiedAll ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    {isCopiedAll ? <Check className={cn("w-4 h-4 text-emerald-400")} /> : <Copy className={cn("w-4 h-4")} />}
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="unstyled"
+                  <Button variant="unstyled" type="button"
                     onClick={handleClearAllPrompts}
                     disabled={!!busy}
-                    className="w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30"
-                    title={isVi ? "Xóa hết" : "Clear all"}
+                    className={cn("w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30")}
+                    title={flowTexts.CLEAR_ALL}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className={cn("w-4 h-4")} />
                   </Button>
                 </div>
               )}
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className={cn("flex-1 flex flex-col min-h-0")}>
               {!clips.length ? (
-                <div className="flex-1 flex items-center justify-center text-center py-8 text-slate-500">
-                  <p className="text-xs font-medium">
-                    {isVi ? "Nhập yêu cầu rồi bấm AI viết prompt." : "Enter concept and click AI Write Prompts."}
+                <div className={cn("flex-1 flex items-center justify-center text-center py-8 text-slate-500")}>
+                  <p className={cn("text-xs font-medium")}>
+                    {flowTexts.ENTER_REQUEST}
                   </p>
                 </div>
               ) : (
-                <div className="flex-1 space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                <div className={cn("flex-1 space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1")}>
                   {clips.map((clip, index) => (
                     <div
                       key={clip.id}
-                      className={cn(
-                        "group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40",
-                        clip.status === "done"
-                          ? "border-emerald-500/30"
-                          : clip.status === "failed"
-                            ? "border-rose-500/30"
-                            : clip.status === "generating"
-                              ? "border-purple-500/60 ring-1 ring-purple-500/20"
-                              : "border-slate-800/80",
-                      )}
+                      className={cn("group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40", { "border-emerald-500/30": clip.status === FLOW_CLIP_STATUSES.DONE, "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED, "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING, "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING) })}
                     >
-                      <span className="w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                      <span className={cn("w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5")}>
                         {index + 1}
                       </span>
 
                       <p
-                        className="flex-1 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2"
+                        className={cn("flex-1 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2")}
                         title={clip.prompt}
                       >
                         {clip.prompt}
                       </p>
 
-                      <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                        <Button
-                          type="button"
-                          variant="unstyled"
+                      <div className={cn("flex items-center gap-1 shrink-0 pt-0.5")}>
+                        <Button variant="unstyled" type="button"
                           onClick={() => handleCopyPrompt(clip.id, clip.prompt)}
-                          className="w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90"
-                          title={isVi ? "Sao chép" : "Copy"}
+                          className={cn("w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90")}
+                          title={flowTexts.COPY}
                         >
                           {copiedPromptId === clip.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className={cn("w-3.5 h-3.5 text-emerald-400")} />
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className={cn("w-3.5 h-3.5")} />
                           )}
                         </Button>
 
-                        <Button
-                          type="button"
-                          variant="unstyled"
+                        <Button variant="unstyled" type="button"
                           disabled={!!busy}
                           onClick={() => handleDeleteClip(clip)}
-                          className="w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30"
-                          title={isVi ? "Xóa" : "Delete"}
+                          className={cn("w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30")}
+                          title={flowTexts.DELETE}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className={cn("w-3.5 h-3.5")} />
                         </Button>
                       </div>
                     </div>
@@ -741,111 +688,97 @@ export default function FlowVideoCreator({
             </div>
           </div>
         </div>
-        <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-            <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">
+        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full")}>
+          <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3")}>
+            <div className={cn("flex items-center gap-2.5")}>
+              <span className={cn("w-6 h-6 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-bold text-xs")}>
                 03
               </span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2">
-                <Film className="w-4 h-4 text-rose-400" />
-                {isVi ? "Video đã tạo" : "Rendered Videos"}
+              <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2")}>
+                <Film className={cn("w-4 h-4 text-rose-400")} />
+                {flowTexts.RENDERED_VIDEOS}
               </h3>
-              <span className="text-[10px] font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono">
-                {completedVideosCount} / {clips.length} {isVi ? "hoàn thành" : "ready"}
+              <span className={cn("text-[10px] font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono")}>
+                {completedVideosCount} / {clips.length} {flowTexts.READY}
               </span>
             </div>
 
           </div>
 
           {!clips.length ? (
-            <div className="text-center py-10 space-y-2 text-slate-500">
-              <div className="w-10 h-10 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto">
-                <Video className="w-5 h-5 text-slate-500" />
+            <div className={cn("text-center py-10 space-y-2 text-slate-500")}>
+              <div className={cn("w-10 h-10 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto")}>
+                <Video className={cn("w-5 h-5 text-slate-500")} />
               </div>
-              <p className="text-xs font-medium">
-                {isVi ? "Chưa có video." : "No videos yet."}
+              <p className={cn("text-xs font-medium")}>
+                {flowTexts.NO_VIDEOS}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4")}>
               {clips.map((clip) => {
-                const isDone = clip.status === "done";
-                const isGenerating = clip.status === "generating";
-                const isFailed = clip.status === "failed";
+                const isDone = clip.status === FLOW_CLIP_STATUSES.DONE;
+                const isGenerating = clip.status === FLOW_CLIP_STATUSES.GENERATING;
+                const isFailed = clip.status === FLOW_CLIP_STATUSES.FAILED;
 
                 return (
                   <div
                     key={clip.id}
-                    className={cn(
-                      "group rounded-2xl border bg-slate-955 overflow-hidden transition-all shadow-md flex flex-col justify-between hover:shadow-xl",
-                      isDone
-                        ? "border-purple-500/30 hover:border-purple-500/60"
-                        : isFailed
-                          ? "border-rose-500/30"
-                          : isGenerating
-                            ? "border-purple-500/60 ring-1 ring-purple-500/20 animate-pulse"
-                            : "border-slate-800",
-                    )}
+                    className={cn("group rounded-2xl border bg-slate-955 overflow-hidden transition-all shadow-md flex flex-col justify-between hover:shadow-xl", { "border-purple-500/30 hover:border-purple-500/60": isDone, "border-rose-500/30": !(isDone) && isFailed, "border-purple-500/60 ring-1 ring-purple-500/20 animate-pulse": !(isDone) && !(isFailed) && isGenerating, "border-slate-800": !(isDone) && !(isFailed) && !(isGenerating) })}
                   >
-                    <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+                    <div className={cn("relative aspect-video bg-black flex items-center justify-center overflow-hidden")}>
                       {clip.url ? (
                         <div
                           onClick={() => setPreviewVideoUrl(clip.url || null)}
-                          className="relative w-full h-full cursor-pointer group/video flex items-center justify-center"
-                          title={isVi ? "Bấm để xem video" : "Click to view video"}
+                          className={cn("relative w-full h-full cursor-pointer group/video flex items-center justify-center")}
+                          title={flowTexts.VIEW_VIDEO}
                         >
                           <video
                             src={clip.url}
                             preload="metadata"
-                            className="w-full h-full object-contain pointer-events-none"
+                            className={cn("w-full h-full object-contain pointer-events-none")}
                           />
-                          <div className="absolute inset-0 bg-black/25 group-hover/video:bg-black/10 transition-colors flex items-center justify-center">
-                            <div className="w-10 h-10 rounded-full bg-black/60 group-hover/video:bg-purple-600/90 text-white flex items-center justify-center shadow-lg backdrop-blur-xs transition-all transform group-hover/video:scale-110 border border-white/20">
-                              <Play className="w-4 h-4 fill-current ml-0.5" />
+                          <div className={cn("absolute inset-0 bg-black/25 group-hover/video:bg-black/10 transition-colors flex items-center justify-center")}>
+                            <div className={cn("w-10 h-10 rounded-full bg-black/60 group-hover/video:bg-purple-600/90 text-white flex items-center justify-center shadow-lg backdrop-blur-xs transition-all transform group-hover/video:scale-110 border border-white/20")}>
+                              <Play className={cn("w-4 h-4 fill-current ml-0.5")} />
                             </div>
                           </div>
                         </div>
                       ) : isGenerating ? (
-                        <div className="flex flex-col items-center justify-center gap-2 p-3 text-center">
-                          <div className="relative flex items-center justify-center">
-                            <div className="absolute inset-0 rounded-full bg-purple-500/30 blur-md animate-pulse" />
-                            <Sparkles className="w-7 h-7 text-purple-400 animate-spin relative z-10" />
+                        <div className={cn("flex flex-col items-center justify-center gap-2 p-3 text-center")}>
+                          <div className={cn("relative flex items-center justify-center")}>
+                            <div className={cn("absolute inset-0 rounded-full bg-purple-500/30 blur-md animate-pulse")} />
+                            <Sparkles className={cn("w-7 h-7 text-purple-400 animate-spin relative z-10")} />
                           </div>
-                          <span className="text-xs font-semibold text-purple-300 tracking-wide">
-                            {isVi ? "Đang tạo…" : "Generating…"}
+                          <span className={cn("text-xs font-semibold text-purple-300 tracking-wide")}>
+                            {flowTexts.GENERATING}
                           </span>
                         </div>
                       ) : isFailed ? (
-                        <div className="flex flex-col items-center gap-1 p-3 text-center">
-                          <AlertTriangle className="w-5 h-5 text-rose-400" />
-                          <span className="text-[10px] font-semibold text-rose-300">
-                            {isVi ? "Lỗi tạo video" : "Failed"}
+                        <div className={cn("flex flex-col items-center gap-1 p-3 text-center")}>
+                          <AlertTriangle className={cn("w-5 h-5 text-rose-400")} />
+                          <span className={cn("text-[10px] font-semibold text-rose-300")}>
+                            {flowTexts.FAILED}
                           </span>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center gap-1 p-3 text-center text-slate-600">
-                          <Film className="w-6 h-6 text-slate-700" />
-                          <span className="text-[10px] font-mono text-slate-500">
-                            {isVi ? "Chờ tạo" : "Waiting"}
+                        <div className={cn("flex flex-col items-center gap-1 p-3 text-center text-slate-600")}>
+                          <Film className={cn("w-6 h-6 text-slate-700")} />
+                          <span className={cn("text-[10px] font-mono text-slate-500")}>
+                            {flowTexts.WAITING}
                           </span>
                         </div>
                       )}
                       {(isDone || isFailed) && (
-                        <div className="absolute bottom-2 left-2 pointer-events-none">
+                        <div className={cn("absolute bottom-2 left-2 pointer-events-none")}>
                           <span
-                            className={cn(
-                              "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded backdrop-blur-md flex items-center gap-1",
-                              isDone
-                                ? "bg-emerald-500/80 text-white"
-                                : "bg-rose-500/80 text-white",
-                            )}
+                            className={cn("text-[9px] font-mono font-bold px-1.5 py-0.5 rounded backdrop-blur-md flex items-center gap-1", { "bg-emerald-500/80 text-white": isDone, "bg-rose-500/80 text-white": !(isDone) })}
                           >
-                            {isDone && <Check className="w-2.5 h-2.5" />}
-                            {isFailed && <AlertTriangle className="w-2.5 h-2.5" />}
+                            {isDone && <Check className={cn("w-2.5 h-2.5")} />}
+                            {isFailed && <AlertTriangle className={cn("w-2.5 h-2.5")} />}
                             {isDone
-                              ? isVi ? "Đã tạo" : "Done"
-                              : isVi ? "Lỗi" : "Failed"}
+                              ? flowTexts.DONE
+                              : flowTexts.FAILED}
                           </span>
                         </div>
                       )}
@@ -859,9 +792,9 @@ export default function FlowVideoCreator({
                         if (clip.url) setPreviewVideoUrl(clip.url);
                       }}
                     >
-                      <p className="text-xs font-semibold text-slate-200 truncate" title={getClipTitle(clip)}>{getClipTitle(clip)}</p>
-                      <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2 break-words mt-1" title={clip.prompt}>{clip.prompt}</p>
-                      {clip.error && <p className="text-[10px] text-rose-400 truncate mt-1" title={clip.error}>{clip.error}</p>}
+                      <p className={cn("text-xs font-semibold text-slate-200 truncate")} title={resolveClipTitle(clip)}>{resolveClipTitle(clip)}</p>
+                      <p className={cn("text-[10px] text-slate-400 leading-relaxed line-clamp-2 break-words mt-1")} title={clip.prompt}>{clip.prompt}</p>
+                      {clip.error && <p className={cn("text-[10px] text-rose-400 truncate mt-1")} title={clip.error}>{clip.error}</p>}
                     </div>
                   </div>
                 );
@@ -874,119 +807,110 @@ export default function FlowVideoCreator({
         <Modal
           isOpen={Boolean(previewVideoUrl)}
           onClose={() => setPreviewVideoUrl(null)}
-          title={isVi ? "Xem trước Video" : "Video Preview"}
+          title={flowTexts.PREVIEW}
           maxWidth="xl"
         >
-          <div className="space-y-4 p-2">
-            <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
+          <div className={cn("space-y-4 p-2")}>
+            <div className={cn("aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center")}>
               <video
                 src={previewVideoUrl}
                 controls
                 autoPlay
-                className="w-full h-full object-contain"
+                className={cn("w-full h-full object-contain")}
               />
             </div>
-            <div className="flex items-center justify-end">
-              <Button
-                type="button"
+            <div className={cn("flex items-center justify-end")}>
+              <Button type="button"
                 variant="secondary"
                 onClick={() => setPreviewVideoUrl(null)}
               >
-                {isVi ? "Đóng" : "Close"}
+                {flowTexts.CLOSE}
               </Button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Modal Xác Nhận Xóa 1 Prompt */}
       <Modal
         isOpen={Boolean(clipToDelete)}
         onClose={() => setClipToDelete(null)}
         maxWidth="md"
         title={
-          <span className="inline-flex items-center gap-2 text-slate-100">
-            <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
-            <span className="text-sm font-bold">{isVi ? "Xác nhận xóa prompt" : "Delete Prompt"}</span>
+          <span className={cn("inline-flex items-center gap-2 text-slate-100")}>
+            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0")} />
+            <span className={cn("text-sm font-bold")}>{flowTexts.CONFIRM_DELETE}</span>
           </span>
         }
       >
-        <div className="space-y-4 text-left p-1">
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            {isVi ? "Bạn có chắc chắn muốn xóa prompt này không?" : "Are you sure you want to delete this prompt?"}
+        <div className={cn("space-y-4 text-left p-1")}>
+          <p className={cn("text-xs sm:text-sm text-slate-300 leading-relaxed")}>
+            {flowTexts.CONFIRM_DELETE_BODY}
           </p>
           {clipToDelete && (
-            <div className="p-3 rounded-xl bg-slate-955 border border-slate-800 text-xs text-slate-300 italic line-clamp-3 leading-relaxed">
+            <div className={cn("p-3 rounded-xl bg-slate-955 border border-slate-800 text-xs text-slate-300 italic line-clamp-3 leading-relaxed")}>
               "{clipToDelete.prompt}"
             </div>
           )}
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{isVi ? "Hành động này không thể hoàn tác." : "This action cannot be undone."}</span>
+          <div className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2")}>
+            <AlertTriangle className={cn("w-4 h-4 text-rose-400 shrink-0")} />
+            <span>{flowTexts.IRREVERSIBLE}</span>
           </div>
-          <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-800">
-            <Button
-              type="button"
+          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-800")}>
+            <Button type="button"
               variant="secondary"
               size="sm"
               onClick={() => setClipToDelete(null)}
-              className="h-9 px-4 rounded-xl text-xs font-semibold"
+              className={cn("h-9 px-4 rounded-xl text-xs font-semibold")}
             >
-              {isVi ? "Hủy" : "Cancel"}
+              {flowTexts.CANCEL}
             </Button>
-            <Button
-              type="button"
+            <Button type="button"
               variant="danger"
               size="sm"
               onClick={confirmDeleteClip}
-              className="h-9 px-5 rounded-xl text-xs font-bold shadow-md shadow-rose-600/20"
+              className={cn("h-9 px-5 rounded-xl text-xs font-bold shadow-md shadow-rose-600/20")}
             >
-              {isVi ? "Xóa" : "Delete"}
+              {flowTexts.DELETE}
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Modal Xác Nhận Xóa Toàn Bộ Prompt */}
       <Modal
         isOpen={showClearAllModal}
         onClose={() => setShowClearAllModal(false)}
         maxWidth="md"
         title={
-          <span className="inline-flex items-center gap-2 text-slate-100">
-            <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
-            <span className="text-sm font-bold">{isVi ? "Xóa toàn bộ prompt" : "Clear All Prompts"}</span>
+          <span className={cn("inline-flex items-center gap-2 text-slate-100")}>
+            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0")} />
+            <span className={cn("text-sm font-bold")}>{flowTexts.CLEAR_ALL}</span>
           </span>
         }
       >
-        <div className="space-y-4 text-left p-1">
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            {isVi
-              ? `Bạn có chắc chắn muốn xóa toàn bộ ${clips.length} prompt kịch bản đã tạo không?`
-              : `Are you sure you want to clear all ${clips.length} generated prompts?`}
+        <div className={cn("space-y-4 text-left p-1")}>
+          <p className={cn("text-xs sm:text-sm text-slate-300 leading-relaxed")}>
+            {flowTexts.CLEAR_ALL_CONFIRM(clips.length)}
           </p>
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{isVi ? "Hành động này không thể hoàn tác." : "This action cannot be undone."}</span>
+          <div className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2")}>
+            <AlertTriangle className={cn("w-4 h-4 text-rose-400 shrink-0")} />
+            <span>{flowTexts.IRREVERSIBLE}</span>
           </div>
-          <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-800">
-            <Button
-              type="button"
+          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-800")}>
+            <Button type="button"
               variant="secondary"
               size="sm"
               onClick={() => setShowClearAllModal(false)}
-              className="h-9 px-4 rounded-xl text-xs font-semibold"
+              className={cn("h-9 px-4 rounded-xl text-xs font-semibold")}
             >
-              {isVi ? "Hủy" : "Cancel"}
+              {flowTexts.CANCEL}
             </Button>
-            <Button
-              type="button"
+            <Button type="button"
               variant="danger"
               size="sm"
               onClick={confirmClearAllPrompts}
-              className="h-9 px-5 rounded-xl text-xs font-bold shadow-md shadow-rose-600/20"
+              className={cn("h-9 px-5 rounded-xl text-xs font-bold shadow-md shadow-rose-600/20")}
             >
-              {isVi ? "Xóa toàn bộ" : "Clear All"}
+              {flowTexts.CLEAR_PROMPTS}
             </Button>
           </div>
         </div>
