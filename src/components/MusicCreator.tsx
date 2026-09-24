@@ -993,7 +993,6 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setPlaylistSeoOptions(generatedPlaylistSeo);
       setGeneratedThumbnail("");
       setGeneratedVideoBackground("");
-      setVideoBackgroundDescription("");
       setShowVideoTrackList(true);
       setPreviewThumbnail(null);
       void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
@@ -2238,19 +2237,28 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
                 ) : (
                   <div className={cn("space-y-3")}>
-                    {generatedVideoBackground && !isGeneratingVideoBackground && (
+                    {(generatedVideoBackground || isGeneratingVideoBackground) && (
                       <div className={cn("relative group w-full aspect-video rounded-xl border border-cyan-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
-                        <img
-                          src={generatedVideoBackground}
-                          alt={texts.VIDEO_BACKGROUND_ALT}
-                          title={texts.CLICK_TO_ZOOM}
-                          onClick={() => setPreviewThumbnail(generatedVideoBackground)}
-                          className={cn("w-full h-full object-contain cursor-zoom-in")}
-                        />
-                        <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
-                          <span className={cn("text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>16:9 HD</span>
-                          <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.CLICK_TO_ZOOM}</span>
-                        </div>
+                        {generatedVideoBackground && (
+                          <img
+                            src={generatedVideoBackground}
+                            alt={texts.VIDEO_BACKGROUND_ALT}
+                            title={isGeneratingVideoBackground ? undefined : texts.CLICK_TO_ZOOM}
+                            onClick={isGeneratingVideoBackground ? undefined : () => setPreviewThumbnail(generatedVideoBackground)}
+                            className={cn("w-full h-full object-contain", isGeneratingVideoBackground ? "opacity-35" : "cursor-zoom-in")}
+                          />
+                        )}
+                        {isGeneratingVideoBackground ? (
+                          <div role="status" aria-live="polite" className={cn("absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/45 text-cyan-200")}>
+                            <Sparkles className={cn("w-7 h-7 animate-spin")} />
+                            <span className={cn("text-xs font-bold")}>{texts.VIDEO_BACKGROUND_CREATING}</span>
+                          </div>
+                        ) : (
+                          <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
+                            <span className={cn("text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>16:9 HD</span>
+                            <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.CLICK_TO_ZOOM}</span>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="space-y-1">
