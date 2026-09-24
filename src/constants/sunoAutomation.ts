@@ -367,6 +367,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   DOWNLOAD_FOLDER_INVALID_ERR: "Thư mục lưu nhạc không hợp lệ.",
   DOWNLOAD_TRACKS_REQUIRED_ERR: "Không có bài hát Suno để tải xuống.",
   DOWNLOAD_TRACK_FAILED_ERR: "Không thể tải bài hát Suno.",
+  WAV_SOURCE_UNAVAILABLE_ERR: "Nguồn WAV gốc từ Suno đang lỗi HTTP 502. Đã giữ các file WAV tải xong; hãy thử lại sau. Ứng dụng không dùng MP3 thay thế.",
   AUDIO_DURATION_INVALID_ERR: "Không thể đọc chính xác thời lượng bài hát đã tải.",
   CURATED_DOWNLOAD_COUNT_MISMATCH_ERR: "Số bài Tuyển chọn tải về không khớp số bài đầu vào.",
   CURATED_EVALUATION_COUNT_MISMATCH_ERR: "Số bài được chọn thẩm âm không khớp với số bài yêu cầu.",

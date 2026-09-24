@@ -6,6 +6,7 @@ import fs from "fs";
 import { spawn } from "child_process";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
+import ffmpeg from "fluent-ffmpeg";
 import { getDataDirectory } from "../utils/paths.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { logger } from "../../lib/logger.js";
@@ -57,6 +58,7 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
 
 export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal, runId?: string, resume?: {
   existingPaths?: Record<string, string>;
+  sourceWavPaths?: Record<string, string>;
   onTrackDownloaded?: (songId: string, filePath: string) => Promise<void>;
 }): Promise<string[]> => {
   signal?.throwIfAborted();
@@ -83,19 +85,45 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
     }
     await writeMusicDiagnostic("audio_track_started", { runId, songId: track.songId, songIndex: index + 1, trackCount: validTracks.length, format });
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
+    const sourceWavPath = resume?.sourceWavPaths?.[track.songId];
+    if (sourceWavPath) {
+      signal?.throwIfAborted();
+      try {
+        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV) await fs.promises.copyFile(sourceWavPath, filePath);
+        else await new Promise<void>((resolve, reject) => {
+          ffmpeg(sourceWavPath).noVideo().audioCodec("libmp3lame").audioBitrate("256k").format("mp3")
+            .on("end", () => resolve()).on("error", reject).save(filePath);
+        });
+      } catch (error) {
+        await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+        throw error;
+      }
+      await resume?.onTrackDownloaded?.(track.songId, filePath);
+      downloadedPaths.push(filePath);
+      await writeMusicDiagnostic("audio_track_exported_from_cache", { runId, songId: track.songId, songIndex: index + 1, format });
+      continue;
+    }
     const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
+    const temporaryWavPath = format === SUNO_AUTOMATION_CONFIG.FORMAT_MP3 ? `${filePath}.source.wav.tmp` : filePath;
     let downloaded = false;
     let lastError: unknown;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS && !downloaded; attempt += 1) {
       signal?.throwIfAborted();
       try {
-        const timeoutSignal = AbortSignal.timeout(format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV ? SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS : SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS);
-        const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, format), {
-          headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(format) },
+        const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
+        const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), {
+          headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(SUNO_AUTOMATION_CONFIG.FORMAT_WAV) },
           signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
         });
         if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
-        await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
+        await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(temporaryWavPath));
+        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_MP3) {
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg(temporaryWavPath).noVideo().audioCodec("libmp3lame").audioBitrate("256k").format("mp3")
+              .on("end", () => resolve()).on("error", reject).save(filePath);
+          });
+          await fs.promises.rm(temporaryWavPath, { force: true });
+        }
         await resume?.onTrackDownloaded?.(track.songId, filePath);
         downloadedPaths.push(filePath);
         downloaded = true;
@@ -104,7 +132,9 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         lastError = error;
         await writeMusicDiagnostic("audio_track_attempt_failed", { runId, songId: track.songId, songIndex: index + 1, attempt: attempt + 1, format, ...musicErrorDetails(error) });
         await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+        if (temporaryWavPath !== filePath) await fs.promises.rm(temporaryWavPath, { force: true }).catch(() => undefined);
         signal?.throwIfAborted();
+        if (_.includes(_.toString(_.get(error, "message", error)), "suno_download_http_502")) break;
         if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
           await new Promise((resolve) => setTimeout(resolve, SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt)));
         }
@@ -112,6 +142,7 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
     }
     if (!downloaded) {
       await writeMusicDiagnostic("audio_track_failed", { runId, songId: track.songId, songIndex: index + 1, format, ...musicErrorDetails(lastError) });
+      if (_.includes(_.toString(_.get(lastError, "message", lastError)), "suno_download_http_502")) throw new Error(SUNO_AUTOMATION_TEXTS.WAV_SOURCE_UNAVAILABLE_ERR);
       throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadTrackWithCauseErr(track.title, lastError));
     }
   }

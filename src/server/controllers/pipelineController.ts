@@ -11,7 +11,7 @@ import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
-import { createMusicDownloadCheckpointKey, deleteMusicDownloadCheckpoint, deleteMusicEvaluationAudio, readMusicDownloadCheckpoint, readMusicEvaluationAudio, writeMusicDownloadCheckpoint, writeMusicEvaluationAudio, type MusicDownloadCheckpoint, type MusicDownloadSelection } from "../services/musicDownloadCheckpointService.js";
+import { createMusicDownloadCheckpointKey, deleteMusicDownloadCheckpoint, deleteMusicEvaluationAudio, readMusicDownloadCheckpoint, readMusicEvaluationAudio, readMusicEvaluationWav, writeMusicDownloadCheckpoint, writeMusicEvaluationAudio, writeMusicEvaluationWav, type MusicDownloadCheckpoint, type MusicDownloadSelection } from "../services/musicDownloadCheckpointService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
@@ -1363,6 +1363,19 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   }
 });
 
+const createSunoEvaluationPreview = async (wavPath: string): Promise<Buffer> => {
+  const previewPath = path.join(os.tmpdir(), `vidify-evaluation-${randomUUID()}.mp3`);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(wavPath).noVideo().audioCodec("libmp3lame").audioBitrate("96k").format("mp3")
+        .on("end", () => resolve()).on("error", reject).save(previewPath);
+    });
+    return await fs.promises.readFile(previewPath);
+  } finally {
+    await fs.promises.rm(previewPath, { force: true }).catch(() => undefined);
+  }
+};
+
 const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, signal?: AbortSignal): Promise<Map<string, Buffer>> => {
   const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
   const audioBySongId = new Map<string, Buffer>();
@@ -1370,7 +1383,8 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
     signal?.throwIfAborted();
     const downloaded = await Promise.all(_.map(idChunk, async (songId) => {
       const cachedAudio = await readMusicEvaluationAudio(cacheKey, songId);
-      if (cachedAudio) {
+      const cachedWav = await readMusicEvaluationWav(cacheKey, songId);
+      if (cachedAudio && cachedWav) {
         await writeSunoCuratedLog("evaluation_audio_cache_hit", { songId, bytes: cachedAudio.length });
         return [songId, cachedAudio] as const;
       }
@@ -1378,17 +1392,23 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
       for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS; attempt += 1) {
         signal?.throwIfAborted();
         try {
-          const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_TIMEOUT_MS);
-          const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_MP3), {
-            signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
-          });
-          if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
-          const audio = Buffer.from(await response.arrayBuffer());
-          await writeMusicEvaluationAudio(cacheKey, songId, audio);
+          let wavPath = cachedWav;
+          if (!wavPath) {
+            const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
+            const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), {
+              signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
+            });
+            if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
+            wavPath = await writeMusicEvaluationWav(cacheKey, songId, Buffer.from(await response.arrayBuffer()));
+            await writeSunoCuratedLog("evaluation_wav_cached", { songId });
+          }
+          const audio = cachedAudio && cachedWav ? cachedAudio : await createSunoEvaluationPreview(wavPath);
+          if (!cachedAudio || !cachedWav) await writeMusicEvaluationAudio(cacheKey, songId, audio);
           return [songId, audio] as const;
         } catch (error) {
           lastError = error;
           signal?.throwIfAborted();
+          if (_.includes(_.toString(_.get(error, "message", error)), "suno_download_http_502")) break;
           if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
             await delayAsync(SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt));
           }
@@ -1397,6 +1417,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
       const cause = _.toString(_.get(lastError, "message", lastError));
       logger.error(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId} cause=${cause}`);
       await writeSunoCuratedLog("evaluation_audio_download_failed", { songId, cause });
+      if (_.includes(cause, "suno_download_http_502")) throw createAppError(SUNO_AUTOMATION_TEXTS.WAV_SOURCE_UNAVAILABLE_ERR);
       throw createAppError(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}: ${cause}`);
     }));
     _.forEach(downloaded, ([songId, buffer]) => audioBySongId.set(songId, buffer));
@@ -1632,6 +1653,16 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         }
       }
       await writeMusicDownloadCheckpoint(checkpoint);
+      const sourceWavPaths: Record<string, string> = {};
+      for (const track of checkpoint.selectedTracks) {
+        let wavPath = await readMusicEvaluationWav(checkpoint.key, track.songId);
+        if (!wavPath) {
+          await downloadSunoEvaluationAudio([track.songId], checkpoint.key, planningRun?.signal || downloadAbortController.signal);
+          wavPath = await readMusicEvaluationWav(checkpoint.key, track.songId);
+        }
+        if (wavPath) sourceWavPaths[track.songId] = wavPath;
+        else throw createAppError(`Không thể phục hồi WAV gốc cho bài ${track.title}.`);
+      }
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_DOWNLOAD_STARTED, {
         evaluationRunId, trackCount: checkpoint.selectedTracks.length, format: downloadFormat,
         resumedCount: Object.keys(checkpoint.downloadedPaths).length,
@@ -1640,6 +1671,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         checkpoint.selectedTracks, downloadFolder, downloadFormat, planningRun?.signal || downloadAbortController.signal, evaluationRunId,
         {
           existingPaths: checkpoint.downloadedPaths,
+          sourceWavPaths,
           onTrackDownloaded: async (songId, filePath) => {
             checkpoint.downloadedPaths[songId] = filePath;
             await writeMusicDownloadCheckpoint(checkpoint);
@@ -1661,6 +1693,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         evaluationRunId, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true,
       });
       await deleteMusicDownloadCheckpoint(checkpoint.key);
+      await deleteMusicEvaluationAudio(checkpoint.key).catch(() => undefined);
       return res.json({ success: true, downloadedPaths, curatedTracks, downloadedTracks: curatedTracks });
     };
     if (shouldEvaluateTracks) {
@@ -1673,7 +1706,6 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       }
       const savedCheckpoint = await readMusicDownloadCheckpoint(checkpointKey, candidateIds);
       if (savedCheckpoint) {
-        await deleteMusicEvaluationAudio(checkpointKey).catch(() => undefined);
         planningRun = beginChatPlanningRun(evaluationRunId, Date.now(), SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID, AiPlanningFallbackProvider.GeminiChat);
         await writeSunoCuratedLog("evaluation_checkpoint_resumed", { evaluationRunId, trackCount: savedCheckpoint.selectedTracks.length, downloadedCount: Object.keys(savedCheckpoint.downloadedPaths).length });
         return await finishCuratedDownload(savedCheckpoint);
@@ -1767,11 +1799,10 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       });
       await closeEvaluationRooms();
       const checkpoint: MusicDownloadCheckpoint = {
-        version: 1, key: checkpointKey, candidateIds, selectedTracks: selectedTracksForDownload as MusicDownloadSelection[],
-        folderPath: downloadFolder, format: downloadFormat, downloadedPaths: {}, updatedAt: Date.now(),
+        version: 2, key: checkpointKey, candidateIds, selectedTracks: selectedTracksForDownload as MusicDownloadSelection[],
+        folderPath: downloadFolder, format: downloadFormat, downloadedPaths: {}, sourceWavRequired: true, updatedAt: Date.now(),
       };
       await writeMusicDownloadCheckpoint(checkpoint);
-      await deleteMusicEvaluationAudio(checkpointKey).catch(() => undefined);
       await writeSunoCuratedLog("evaluation_checkpoint_saved", { evaluationRunId, selectedTrackCount: selectedTracksForDownload.length });
       return await finishCuratedDownload(checkpoint);
     }
