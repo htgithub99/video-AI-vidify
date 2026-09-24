@@ -528,6 +528,7 @@ const generateMusicThumbnailAsset = async (input: {
   showTrackList?: boolean;
   planningProvider?: AiPlanningFallbackProvider;
   planningModel?: AiPlanningChatModel;
+  signal?: AbortSignal;
 }): Promise<{ thumbnail: string | null; warning?: string }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
   const imageBrief = input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
@@ -550,7 +551,7 @@ const generateMusicThumbnailAsset = async (input: {
       chromeHeadless: input.chromeHeadless,
       artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
       requestId: promptRequestId,
-      signal: planningRun.signal,
+      signal: input.signal ? AbortSignal.any([planningRun.signal, input.signal]) : planningRun.signal,
       closeRoomOnComplete: false,
     });
     const parsed = jsonUtils.safeParse(response.text, null);
@@ -560,6 +561,7 @@ const generateMusicThumbnailAsset = async (input: {
     }
     await writeMusicDiagnostic("music_image_prompt_completed", { runId: promptRequestId, promptChars: prompt.length });
   } catch (error) {
+    input.signal?.throwIfAborted();
     await writeMusicDiagnostic("music_image_prompt_failed", { runId: promptRequestId, ...musicErrorDetails(error) });
     return { thumbnail: null, warning: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
   } finally {
@@ -573,6 +575,7 @@ const generateMusicThumbnailAsset = async (input: {
   let transientErrorCount = 0;
   const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
+    input.signal?.throwIfAborted();
     try {
       logger.info(`[MusicThumbnail] start attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
       const result = await generateImageWithPlaywright({
@@ -592,6 +595,7 @@ const generateMusicThumbnailAsset = async (input: {
           referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
         },
       });
+      input.signal?.throwIfAborted();
       if (!result.success) {
         lastWarning = result.warning || lastWarning;
         await writeMusicDiagnostic("music_image_generation_failed", { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
@@ -621,6 +625,7 @@ const generateMusicThumbnailAsset = async (input: {
       lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
       logger.warn(`[MusicThumbnail] Gemini returned no image attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} warning=${lastWarning}`);
     } catch (error) {
+      input.signal?.throwIfAborted();
       logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
       lastWarning = _.toString(_.get(error, "message", lastWarning));
       logger.error(`[MusicThumbnail] failed attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} reason=${lastWarning}`);
@@ -1342,6 +1347,9 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, warning: MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR });
   }
   activeMusicPlanRuns += 1;
+  const imageRunId = _.trim(_.toString(req.body?.imageRunId)) || randomUUID();
+  const imageRun = beginChatPlanningRun(imageRunId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE);
+  req.once("aborted", imageRun.cancel);
   try {
     const result = await generateMusicThumbnailAsset({
       songs,
@@ -1355,11 +1363,17 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
       showTrackList: req.body?.showTrackList !== false,
       planningProvider: req.body?.aiExecution?.provider,
       planningModel: req.body?.aiExecution?.model,
+      signal: imageRun.signal,
     });
+    imageRun.signal.throwIfAborted();
     if (_.isEmpty(result.thumbnail)) return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, warning: result.warning });
     await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
     return res.json({ success: true, thumbnail: result.thumbnail });
+  } catch (error) {
+    if (imageRun.signal.aborted) return res.status(499).json({ success: false, warning: MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR });
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, warning: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) });
   } finally {
+    imageRun.complete();
     activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
     if (_.isEqual(activeMusicPlanRuns, 0)) await closeChatBrowserIfIdle();
   }

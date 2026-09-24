@@ -674,6 +674,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const musicRunIdRef = useRef<string | null>(null);
   const musicResumeRef = useRef<{ signature: string; runId: string } | null>(null);
   const musicAbortControllerRef = useRef<AbortController | null>(null);
+  const thumbnailAbortControllerRef = useRef<AbortController | null>(null);
+  const thumbnailRunIdRef = useRef<string | null>(null);
+  const thumbnailStoppedRef = useRef(false);
+  const videoBackgroundAbortControllerRef = useRef<AbortController | null>(null);
+  const videoBackgroundRunIdRef = useRef<string | null>(null);
   const musicStoppedByUserRef = useRef(false);
   const sunoAbortControllerRef = useRef<AbortController | null>(null);
   const sunoPendingPlaylistRef = useRef<{ songIds: string[]; playlistName: string; testOnly: boolean } | null>(null);
@@ -929,6 +934,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleGenerate = async () => {
     if (isLoading || isStopping || isGeneratingVideoBackground) return;
     musicStoppedByUserRef.current = false;
+    thumbnailStoppedRef.current = false;
     setGenerationError("");
     const trimmedStyle = _.trim(style);
     const referenceSource = _.trim(referenceSongs);
@@ -1009,7 +1015,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       sunoPendingPlaylistRef.current = null;
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
       if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
-      void (async () => {
+      if (thumbnailStoppedRef.current) {
+        setIsGeneratingThumbnail(false);
+      } else void (async () => {
+        const imageAbortController = new AbortController();
+        const imageRunId = `music-cover-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        thumbnailAbortControllerRef.current = imageAbortController;
+        thumbnailRunIdRef.current = imageRunId;
         try {
           const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
             method: HTTP_METHODS.POST,
@@ -1024,9 +1036,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               thumbnailReferenceName,
               chromeHeadless,
               aiExecution: { provider, model },
+              imageRunId,
             }),
+            signal: imageAbortController.signal,
           });
           const thumbnailResult = await thumbnailResponse.json();
+          imageAbortController.signal.throwIfAborted();
           const imageUrl = _.toString(thumbnailResult.thumbnail);
           if (!thumbnailResponse.ok || !thumbnailResult.success || _.isEmpty(imageUrl)) {
             throw new Error(thumbnailResult.warning || texts.THUMBNAIL_GENERATE_ERROR);
@@ -1035,9 +1050,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
           toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
         } catch (error: any) {
-          toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
+          if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
         } finally {
-          setIsGeneratingThumbnail(false);
+          if (thumbnailAbortControllerRef.current === imageAbortController) {
+            thumbnailAbortControllerRef.current = null;
+            thumbnailRunIdRef.current = null;
+            setIsGeneratingThumbnail(false);
+          }
         }
       })();
     } catch (err: any) {
@@ -1395,6 +1414,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleRegenerateThumbnail = async () => {
     if (_.isEmpty(songs) || isGeneratingThumbnail || isNormalizingThumbnailNote) return;
+    thumbnailStoppedRef.current = false;
+    const imageAbortController = new AbortController();
+    const imageRunId = `music-cover-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    thumbnailAbortControllerRef.current = imageAbortController;
+    thumbnailRunIdRef.current = imageRunId;
     setIsGeneratingThumbnail(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
@@ -1410,23 +1434,62 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           thumbnailReferenceName,
           chromeHeadless,
           aiExecution: { provider, model },
+          imageRunId,
         }),
+        signal: imageAbortController.signal,
       });
       const result = await response.json();
+      imageAbortController.signal.throwIfAborted();
       const imageUrl = _.toString(result.thumbnail);
       if (!response.ok || !result.success || _.isEmpty(imageUrl)) throw new Error(result.warning || texts.THUMBNAIL_GENERATE_ERROR);
       setGeneratedThumbnail(imageUrl);
       await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
       toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
     } catch (error: any) {
-      toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
+      if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
     } finally {
-      setIsGeneratingThumbnail(false);
+      if (thumbnailAbortControllerRef.current === imageAbortController) {
+        thumbnailAbortControllerRef.current = null;
+        thumbnailRunIdRef.current = null;
+        setIsGeneratingThumbnail(false);
+      }
     }
+  };
+
+  const cancelMusicImageRun = (runId: string | null) => {
+    if (!runId) return;
+    void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
+      method: HTTP_METHODS.POST,
+      headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+      body: jsonUtils.safeStringify({ pipelineRunId: runId }),
+    }).catch(() => undefined);
+  };
+
+  const handleStopThumbnail = () => {
+    thumbnailStoppedRef.current = true;
+    thumbnailAbortControllerRef.current?.abort();
+    cancelMusicImageRun(thumbnailRunIdRef.current);
+    thumbnailAbortControllerRef.current = null;
+    thumbnailRunIdRef.current = null;
+    setIsGeneratingThumbnail(false);
+    toast.info(texts.THUMBNAIL_STOPPED);
+  };
+
+  const handleStopVideoBackground = () => {
+    videoBackgroundAbortControllerRef.current?.abort();
+    cancelMusicImageRun(videoBackgroundRunIdRef.current);
+    videoBackgroundAbortControllerRef.current = null;
+    videoBackgroundRunIdRef.current = null;
+    setIsGeneratingVideoBackground(false);
+    toast.info(texts.VIDEO_BACKGROUND_STOPPED);
   };
 
   const handleGenerateVideoBackground = async () => {
     if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote) return;
+    const imageAbortController = new AbortController();
+    const imageRunId = `music-background-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    videoBackgroundAbortControllerRef.current = imageAbortController;
+    videoBackgroundRunIdRef.current = imageRunId;
     setIsGeneratingVideoBackground(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
@@ -1442,18 +1505,25 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           aiExecution: { provider, model },
           assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
           showTrackList: showVideoTrackList,
+          imageRunId,
         }),
+        signal: imageAbortController.signal,
       });
       const result = await response.json();
+      imageAbortController.signal.throwIfAborted();
       const imageUrl = _.toString(result.thumbnail);
       if (!response.ok || !result.success || _.isEmpty(imageUrl)) throw new Error(result.warning || texts.VIDEO_BACKGROUND_ERROR);
       setGeneratedVideoBackground(imageUrl);
       await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, imageUrl);
       toast.success(texts.VIDEO_BACKGROUND_SUCCESS);
     } catch (error: any) {
-      toast.error(_.toString(error?.message || texts.VIDEO_BACKGROUND_ERROR));
+      if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.VIDEO_BACKGROUND_ERROR));
     } finally {
-      setIsGeneratingVideoBackground(false);
+      if (videoBackgroundAbortControllerRef.current === imageAbortController) {
+        videoBackgroundAbortControllerRef.current = null;
+        videoBackgroundRunIdRef.current = null;
+        setIsGeneratingVideoBackground(false);
+      }
     }
   };
 
@@ -2007,6 +2077,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span className={cn("text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_AI_BADGE}</span>
                       <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_HD}</span>
                     </div>
+                    <Button variant="unstyled" type="button" onClick={handleDownloadThumbnail} title={texts.THUMBNAIL_DOWNLOAD} aria-label={texts.THUMBNAIL_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
+                      <Download className={cn("w-3.5 h-3.5")} />
+                    </Button>
                   </div>
                 ) : isGeneratingThumbnail ? (
                   <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner")}>
@@ -2068,7 +2141,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     type="button"
                     onClick={handleRegenerateThumbnail}
                     disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait": isGeneratingThumbnail, "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95": !(isGeneratingThumbnail) })}>
+                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait": isGeneratingThumbnail, "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95 col-span-2": !isGeneratingThumbnail })}>
                     {isGeneratingThumbnail ? (
                       <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
                     ) : (
@@ -2081,14 +2154,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </span>
                   </Button>
 
-                  <Button variant="unstyled"
-                    type="button"
-                    onClick={handleDownloadThumbnail}
-                    disabled={!generatedThumbnail || isGeneratingThumbnail}
-                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.04] !text-[#94a3b8] dark:!text-slate-500 cursor-not-allowed shadow-none": !generatedThumbnail || isGeneratingThumbnail, "border-slate-300 hover:border-purple-400 dark:border-slate-700 dark:hover:border-purple-500 bg-white hover:bg-purple-50/50 dark:bg-slate-800 dark:hover:bg-slate-700 !text-[#0f172a] hover:!text-purple-700 dark:!text-slate-100 dark:hover:!text-white cursor-pointer active:scale-95": !(generatedThumbnail || isGeneratingThumbnail) })}>
-                    <Download className={cn("w-3.5 h-3.5 shrink-0", { "text-[#94a3b8] dark:text-slate-500": !generatedThumbnail || isGeneratingThumbnail, "text-purple-600 dark:text-purple-400": Boolean(generatedThumbnail && !isGeneratingThumbnail) })} />
-                    <span className={cn("inline-flex items-center leading-none")}>{texts.THUMBNAIL_DOWNLOAD}</span>
-                  </Button>
+                  {isGeneratingThumbnail ? (
+                    <Button variant="unstyled" type="button" onClick={handleStopThumbnail} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
+                      <X className={cn("w-3.5 h-3.5")} />
+                      <span>{texts.THUMBNAIL_STOP}</span>
+                    </Button>
+                  ) : null}
                 </div>
               )}
 
@@ -2189,6 +2260,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.CLICK_TO_ZOOM}</span>
                           </div>
                         )}
+                        {generatedVideoBackground && !isGeneratingVideoBackground && (
+                          <Button variant="unstyled" type="button" onClick={handleDownloadVideoBackground} title={texts.VIDEO_BACKGROUND_DOWNLOAD} aria-label={texts.VIDEO_BACKGROUND_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
+                            <Download className={cn("w-3.5 h-3.5")} />
+                          </Button>
+                        )}
                       </div>
                     )}
                     {!generatedVideoBackground && !isGeneratingVideoBackground && (
@@ -2230,7 +2306,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         type="button"
                         onClick={handleGenerateVideoBackground}
                         disabled={_.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
-                        className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
+                        className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait", { "col-span-2": !isGeneratingVideoBackground })}
                       >
                         {isGeneratingVideoBackground ? (
                           <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-300")} />
@@ -2239,15 +2315,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         )}
                         <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
                       </Button>
-                      <Button variant="unstyled"
-                        type="button"
-                        onClick={handleDownloadVideoBackground}
-                        disabled={_.isEmpty(generatedVideoBackground) || isGeneratingVideoBackground}
-                        className={cn("h-9 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed")}
-                      >
-                        <Download className={cn("w-3.5 h-3.5")} />
-                        <span>{texts.VIDEO_BACKGROUND_DOWNLOAD}</span>
-                      </Button>
+                      {isGeneratingVideoBackground ? (
+                        <Button variant="unstyled" type="button" onClick={handleStopVideoBackground} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
+                          <X className={cn("w-3.5 h-3.5")} />
+                          <span>{texts.VIDEO_BACKGROUND_STOP}</span>
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 )}
