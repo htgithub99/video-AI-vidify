@@ -280,6 +280,7 @@ interface PersistedMusicCreatorState {
   sunoSettingsAnalysis?: SunoSettingsAnalysis;
   downloadedMusicTracks?: DownloadedMusicTrack[];
   videoBackgroundDescription?: string;
+  videoBackgroundReferenceName?: string;
   showVideoTrackList?: boolean;
 }
 
@@ -735,19 +736,23 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [sunoSettingsAnalysis, setSunoSettingsAnalysis] = useState<SunoSettingsAnalysis | undefined>(initialState.sunoSettingsAnalysis);
   const [downloadedMusicTracks, setDownloadedMusicTracks] = useState<DownloadedMusicTrack[]>(initialState.downloadedMusicTracks || []);
   const [videoBackgroundDescription, setVideoBackgroundDescription] = useState(initialState.videoBackgroundDescription || "");
+  const [videoBackgroundReference, setVideoBackgroundReference] = useState("");
+  const [videoBackgroundReferenceName, setVideoBackgroundReferenceName] = useState(initialState.videoBackgroundReferenceName || "");
   const [showVideoTrackList, setShowVideoTrackList] = useState(initialState.showVideoTrackList ?? true);
   const [generatedVideoBackground, setGeneratedVideoBackground] = useState("");
   const [isGeneratingVideoBackground, setIsGeneratingVideoBackground] = useState(false);
   const [isNormalizingVideoBackgroundNote, setIsNormalizingVideoBackgroundNote] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoBackgroundFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    void Promise.all([readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND)])
-      .then(([reference, generated, videoBackground]) => {
+    void Promise.all([readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND), readMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND_REFERENCE)])
+      .then(([reference, generated, videoBackground, videoReference]) => {
         if (reference) setThumbnailReference(reference);
         if (generated) setGeneratedThumbnail(generated);
         if (videoBackground) setGeneratedVideoBackground(videoBackground);
+        if (videoReference) setVideoBackgroundReference(videoReference);
       })
       .catch(() => undefined);
   }, []);
@@ -788,6 +793,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           sunoSettingsAnalysis,
           downloadedMusicTracks,
           videoBackgroundDescription,
+          videoBackgroundReferenceName,
           showVideoTrackList,
         } satisfies PersistedMusicCreatorState,
       );
@@ -797,7 +803,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs,
     styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex,
     sunoPlaylistUrl, sunoTestPlaylistUrl, sunoTestTrackIds, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
-    sunoInspo, sunoSettings, sunoSettingsAnalysis, downloadedMusicTracks, videoBackgroundDescription, showVideoTrackList,
+    sunoInspo, sunoSettings, sunoSettingsAnalysis, downloadedMusicTracks, videoBackgroundDescription, videoBackgroundReferenceName, showVideoTrackList,
   ]);
 
   const persistStyles = (nextStyles: SavedMusicStyle[]) => {
@@ -1321,6 +1327,25 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     reader.readAsDataURL(file);
   };
 
+  const handleVideoBackgroundReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith(SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)) {
+      toast.error(texts.THUMBNAIL_IMAGE_INVALID);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const reference = _.toString(reader.result);
+      setVideoBackgroundReference(reference);
+      setVideoBackgroundReferenceName(file.name);
+      setGeneratedVideoBackground("");
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND_REFERENCE, reference).catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, "").catch(() => undefined);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDownloadThumbnail = async () => {
     if (_.isEmpty(generatedThumbnail)) return;
     const extension = generatedThumbnail.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
@@ -1346,8 +1371,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           note,
           assetPurpose,
-          thumbnailReference,
-          thumbnailReferenceName,
+          thumbnailReference: isVideoBackground ? undefined : thumbnailReference,
+          thumbnailReferenceName: isVideoBackground ? undefined : thumbnailReferenceName,
+          videoBackgroundReference: isVideoBackground ? videoBackgroundReference : undefined,
+          videoBackgroundReferenceName: isVideoBackground ? videoBackgroundReferenceName : undefined,
           showTrackList: showVideoTrackList,
           chromeHeadless,
         }),
@@ -1398,7 +1425,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleGenerateVideoBackground = async () => {
-    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote) return;
+    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote) return;
     setIsGeneratingVideoBackground(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
@@ -1408,8 +1435,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           songs: downloadedMusicTracks,
           style,
           videoBackgroundDescription,
-          thumbnailReference,
-          thumbnailReferenceName,
+          videoBackgroundReference,
+          videoBackgroundReferenceName,
           chromeHeadless,
           aiExecution: { provider, model },
           assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
@@ -2004,9 +2031,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
               <input ref={thumbnailFileInputRef} type="file" accept="image/*" onChange={handleThumbnailReferenceChange} className="hidden" />
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5 items-start">
                 {thumbnailReference ? (
-                  <div className="relative w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center">
+                  <div className="relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center">
                     <img
                       src={thumbnailReference}
                       alt={texts.THUMBNAIL_REFERENCE_ALT}
@@ -2016,7 +2043,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         event.stopPropagation();
                         setPreviewThumbnail(thumbnailReference);
                       }}
-                      className="w-full h-full object-contain cursor-zoom-in"
+                      className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
                       <span className="text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_REFERENCE_BADGE}</span>
@@ -2040,7 +2067,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     type="button"
                     onClick={() => thumbnailFileInputRef.current?.click()}
                     disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
-                    className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
+                    className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center">
                     <Upload className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors" />
                     <span className="text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight">{texts.THUMBNAIL_UPLOAD}</span>
                     <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
@@ -2048,7 +2075,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 )}
 
                 {generatedThumbnail && !isGeneratingThumbnail ? (
-                  <div className="relative group block w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center">
+                  <div className="relative group block min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center">
                     <img
                       src={generatedThumbnail}
                       alt={texts.THUMBNAIL_RESULT_ALT}
@@ -2058,7 +2085,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         event.stopPropagation();
                         setPreviewThumbnail(generatedThumbnail);
                       }}
-                      className="w-full h-full object-contain cursor-zoom-in"
+                      className="absolute inset-0 w-full h-full object-contain cursor-zoom-in"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5">
                       <span className="text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs">{texts.THUMBNAIL_AI_BADGE}</span>
@@ -2066,7 +2093,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </div>
                   </div>
                 ) : isGeneratingThumbnail ? (
-                  <div className="w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner">
+                  <div className="min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-purple-600 p-0.5 shadow-xs">
                       <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[6px] flex items-center justify-center">
                         <Sparkles className="w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400 animate-spin" />
@@ -2080,7 +2107,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     </p>
                   </div>
                 ) : (
-                  <div className="relative w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500">
+                  <div className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500">
                     <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-500" />
                     <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight">
                       {texts.THUMBNAIL_AI_TITLE}
@@ -2176,7 +2203,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <label
                     className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none",
-                      isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground
+                      isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground
                         ? "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60"
                         : showVideoTrackList
                           ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs"
@@ -2187,26 +2214,24 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       type="checkbox"
                       checked={showVideoTrackList}
                       onChange={(event) => setShowVideoTrackList(event.target.checked)}
-                      disabled={isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) || isGeneratingVideoBackground}
+                      disabled={isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground}
                       className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")}
                     />
                     <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
                   </label>
                 </div>
 
-                {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || _.isEmpty(thumbnailReference) ? (
+                {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) ? (
                   <div className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
                     <div className={cn("w-9 h-9 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto shadow-xs")}>
                       <Lock className={cn("w-4 h-4 text-slate-400")} />
                     </div>
                     <div className={cn("space-y-1")}>
                       <p className={cn("text-xs font-bold text-slate-300")}>
-                        {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) ? texts.VIDEO_BACKGROUND_LOCKED : texts.VIDEO_BACKGROUND_REFERENCE_REQUIRED}
+                        {texts.VIDEO_BACKGROUND_LOCKED}
                       </p>
                       <p className={cn("text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto")}>
-                        {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks)
-                          ? "Cần tải file nhạc từ danh sách Suno để lấy thông tin bài hát và thời lượng cho khung hình video."
-                          : "Vui lòng tải lên một ảnh mẫu ở mục Ảnh bìa phía trên để AI tạo phong cách tương đồng."}
+                        Cần tải file nhạc từ danh sách Suno để lấy thông tin bài hát và thời lượng cho khung hình video.
                       </p>
                     </div>
 
@@ -2225,27 +2250,46 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <div
                         className={cn(
                           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border",
-                          !_.isEmpty(thumbnailReference)
+                          !_.isEmpty(videoBackgroundReference)
                             ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
                             : "bg-slate-900 text-slate-400 border-slate-800"
                         )}
                       >
-                        {!_.isEmpty(thumbnailReference) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <ImageIcon className={cn("w-3 h-3 text-slate-500")} />}
-                        <span>Ảnh bìa mẫu</span>
+                        {!_.isEmpty(videoBackgroundReference) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <ImageIcon className={cn("w-3 h-3 text-slate-500")} />}
+                        <span>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className={cn("space-y-3")}>
+                    <input ref={videoBackgroundFileInputRef} type="file" accept="image/*" onChange={handleVideoBackgroundReferenceChange} className="hidden" />
+                    <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
+                      {videoBackgroundReference ? (
+                        <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md")}>
+                          <img src={videoBackgroundReference} alt={texts.VIDEO_BACKGROUND_REFERENCE_ALT} title={texts.CLICK_TO_ZOOM} onClick={() => setPreviewThumbnail(videoBackgroundReference)} className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")} />
+                          <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5")}>
+                            <span className={cn("text-[9px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded")}>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
+                          </div>
+                          <Button type="button" variant="unstyled" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} title={texts.CHANGE_IMAGE_BTN} className="btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center">
+                            <Upload className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button type="button" variant="unstyled" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} className="relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer">
+                          <Upload className="w-4 h-4 text-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-300">{texts.THUMBNAIL_UPLOAD}</span>
+                          <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_SAMPLE_RATIO}</span>
+                        </Button>
+                      )}
                     {(generatedVideoBackground || isGeneratingVideoBackground) && (
-                      <div className={cn("relative group w-full aspect-video rounded-xl border border-cyan-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
+                      <div className={cn("relative group min-w-0 w-full aspect-video rounded-xl border border-cyan-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
                         {generatedVideoBackground && (
                           <img
                             src={generatedVideoBackground}
                             alt={texts.VIDEO_BACKGROUND_ALT}
                             title={isGeneratingVideoBackground ? undefined : texts.CLICK_TO_ZOOM}
                             onClick={isGeneratingVideoBackground ? undefined : () => setPreviewThumbnail(generatedVideoBackground)}
-                            className={cn("w-full h-full object-contain", isGeneratingVideoBackground ? "opacity-35" : "cursor-zoom-in")}
+                            className={cn("absolute inset-0 w-full h-full object-contain", isGeneratingVideoBackground ? "opacity-35" : "cursor-zoom-in")}
                           />
                         )}
                         {isGeneratingVideoBackground ? (
@@ -2261,6 +2305,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         )}
                       </div>
                     )}
+                    {!generatedVideoBackground && !isGeneratingVideoBackground && (
+                      <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500")}>
+                        <Sparkles className="w-4 h-4 text-slate-500" />
+                        <span className="text-[10px] font-semibold text-slate-400">{texts.VIDEO_BACKGROUND_TITLE}</span>
+                        <span className="text-[8px] font-mono text-slate-500">{texts.THUMBNAIL_NOT_CREATED}</span>
+                      </div>
+                    )}
+                    </div>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-semibold text-slate-300">{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
@@ -2293,7 +2345,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         type="button"
                         variant="unstyled"
                         onClick={handleGenerateVideoBackground}
-                        disabled={isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                        disabled={_.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
                         className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait")}
                       >
                         {isGeneratingVideoBackground ? (

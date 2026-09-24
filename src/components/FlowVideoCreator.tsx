@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import {
   Film,
   FolderOpen,
-    Settings2,
+  Settings2,
   Sparkles,
   WandSparkles,
   Copy,
   Check,
   Trash2,
-  Maximize2,
   AlertTriangle,
   FolderCheck,
   Video,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG } from "../constants";
@@ -39,6 +39,7 @@ import { jsonUtils } from "../lib/json";
 
 type Clip = {
   id: string;
+  title?: string;
   prompt: string;
   url?: string;
   savedPath?: string;
@@ -60,6 +61,12 @@ interface PersistedState {
 const LOCAL_STORAGE_KEY = "flow-video-creator-state-v1";
 
 const readSavedState = () => jsonUtils.getItem<PersistedState>(LOCAL_STORAGE_KEY, {});
+
+const getClipTitle = (clip: Clip): string => {
+  if (clip.title?.trim()) return clip.title.trim();
+  const phrase = clip.prompt.trim().split(/[.!?;,\n]/, 1)[0].trim();
+  return phrase.split(/\s+/).slice(0, 8).join(" ") || "Video chưa đặt tên";
+};
 
 const SAMPLE_PROMPTS = [
   {
@@ -190,15 +197,16 @@ export default function FlowVideoCreator({
         projectId: projectId || undefined,
         execution: { provider, model, mode: executionMode, chromeHeadless },
       });
-      const generatedPrompts: string[] = data.prompts || [];
+      const generatedVideos: { title: string; prompt: string }[] = data.videos || [];
       setClips(
-        generatedPrompts.map((prompt: string, index: number) => ({
+        generatedVideos.map(({ title, prompt }, index: number) => ({
           id: `flowclip-${Date.now()}-${index + 1}`,
+          title,
           prompt,
           status: "waiting",
         })),
       );
-      toast.success(isVi ? `Đã viết ${generatedPrompts.length} prompt.` : `Generated ${generatedPrompts.length} prompts.`);
+      toast.success(isVi ? `Đã viết ${generatedVideos.length} prompt.` : `Generated ${generatedVideos.length} prompts.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : (isVi ? "Không thể viết prompt." : "Failed to plan prompts."));
     } finally {
@@ -241,6 +249,7 @@ export default function FlowVideoCreator({
         script: clip.prompt,
         subtitle: "",
         prompt: clip.prompt,
+        assetName: getClipTitle(clip),
         cameraMotion: "",
         assetType: GenerateType.Video,
       }));
@@ -692,7 +701,10 @@ export default function FlowVideoCreator({
                         {index + 1}
                       </span>
 
-                      <p className="flex-1 text-xs text-slate-200 leading-relaxed font-sans select-text break-words">
+                      <p
+                        className="flex-1 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2"
+                        title={clip.prompt}
+                      >
                         {clip.prompt}
                       </p>
 
@@ -757,7 +769,7 @@ export default function FlowVideoCreator({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {clips.map((clip, index) => {
+              {clips.map((clip) => {
                 const isDone = clip.status === "done";
                 const isGenerating = clip.status === "generating";
                 const isFailed = clip.status === "failed";
@@ -778,23 +790,22 @@ export default function FlowVideoCreator({
                   >
                     <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
                       {clip.url ? (
-                        <>
+                        <div
+                          onClick={() => setPreviewVideoUrl(clip.url || null)}
+                          className="relative w-full h-full cursor-pointer group/video flex items-center justify-center"
+                          title={isVi ? "Bấm để xem video" : "Click to view video"}
+                        >
                           <video
                             src={clip.url}
-                            controls
                             preload="metadata"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain pointer-events-none"
                           />
-                          <Button
-                            type="button"
-                            variant="unstyled"
-                            onClick={() => setPreviewVideoUrl(clip.url || null)}
-                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-black text-white/90 hover:text-white backdrop-blur-xs border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            title={isVi ? "Phóng to" : "Zoom"}
-                          >
-                            <Maximize2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
+                          <div className="absolute inset-0 bg-black/25 group-hover/video:bg-black/10 transition-colors flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-black/60 group-hover/video:bg-purple-600/90 text-white flex items-center justify-center shadow-lg backdrop-blur-xs transition-all transform group-hover/video:scale-110 border border-white/20">
+                              <Play className="w-4 h-4 fill-current ml-0.5" />
+                            </div>
+                          </div>
+                        </div>
                       ) : isGenerating ? (
                         <div className="flex flex-col items-center justify-center gap-2 p-3 text-center">
                           <div className="relative flex items-center justify-center">
@@ -839,28 +850,18 @@ export default function FlowVideoCreator({
                         </div>
                       )}
                     </div>
-                    <div className="p-2.5 bg-slate-900/60 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-200">
-                          Video {index + 1}
-                        </p>
-                        {(clip.error || clip.savedPath || isDone || isFailed) && (
-                          <p
-                            className={cn(
-                              "text-[10px] truncate",
-                              clip.error ? "text-rose-400" : isDone ? "text-emerald-400" : "text-slate-400",
-                            )}
-                            title={clip.error || clip.savedPath}
-                          >
-                            {clip.error ||
-                              clip.savedPath ||
-                              (isDone
-                                ? isVi ? "Đã tạo thành công" : "Done"
-                                : isVi ? "Lỗi tạo video" : "Failed")}
-                          </p>
-                        )}
-                      </div>
-
+                    <div
+                      className={cn(
+                        "p-2.5 bg-slate-900/60 border-t border-slate-800/80 min-w-0",
+                        clip.url && "cursor-pointer hover:bg-slate-900/90 transition-colors"
+                      )}
+                      onClick={() => {
+                        if (clip.url) setPreviewVideoUrl(clip.url);
+                      }}
+                    >
+                      <p className="text-xs font-semibold text-slate-200 truncate" title={getClipTitle(clip)}>{getClipTitle(clip)}</p>
+                      <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2 break-words mt-1" title={clip.prompt}>{clip.prompt}</p>
+                      {clip.error && <p className="text-[10px] text-rose-400 truncate mt-1" title={clip.error}>{clip.error}</p>}
                     </div>
                   </div>
                 );

@@ -143,6 +143,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   MUSIC_MEDIA_DB_NAME: "music_creator_media",
   MUSIC_MEDIA_STORE_NAME: "assets",
   MEDIA_KEY_REFERENCE: "reference",
+  MEDIA_KEY_VIDEO_BACKGROUND_REFERENCE: "video-background-reference",
   MEDIA_KEY_GENERATED: "generated",
   MEDIA_KEY_VIDEO_BACKGROUND: "video-background",
   MUSIC_IMAGE_PURPOSE_VIDEO: "video-background",

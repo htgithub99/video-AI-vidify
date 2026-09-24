@@ -1268,7 +1268,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   const purpose = _.isEqual(req.body?.assetPurpose, SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO)
     ? SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
     : "cover";
-  const reference = _.toString(req.body?.thumbnailReference);
+  const reference = _.toString(purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? req.body?.videoBackgroundReference : req.body?.thumbnailReference);
   const referenceMatch = reference.match(SUNO_AUTOMATION_PATTERNS.DATA_URL_BASE64);
   if (_.isEmpty(note) || note.length > SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_MAX_CHARACTERS || (reference && (!referenceMatch || !_.startsWith(referenceMatch[1], SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)))) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.IMAGE_NOTE_NORMALIZE_ERROR });
@@ -1280,7 +1280,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   activeMusicPlanRuns += 1;
   try {
     const attachments = referenceMatch ? [{
-      name: _.toString(req.body?.thumbnailReferenceName || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
+      name: _.toString((purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? req.body?.videoBackgroundReferenceName : req.body?.thumbnailReferenceName) || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
       mimeType: referenceMatch[1],
       buffer: Buffer.from(referenceMatch[2], "base64"),
     }] : [];
@@ -1337,7 +1337,7 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   const sourceContext = _.trim(_.toString(req.body?.sourceContext));
   const isVideoBackground = _.isEqual(req.body?.assetPurpose, SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO);
   const description = _.trim(_.toString(isVideoBackground ? req.body?.videoBackgroundDescription : req.body?.thumbnailDescription));
-  const reference = _.toString(req.body?.thumbnailReference);
+  const reference = _.toString(isVideoBackground ? req.body?.videoBackgroundReference : req.body?.thumbnailReference);
   if (_.isEmpty(songs) && _.isEmpty(style) && _.isEmpty(sourceContext) && _.isEmpty(description) && _.isEmpty(reference)) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, warning: MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR });
   }
@@ -1349,7 +1349,7 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
       sourceContext,
       description,
       reference,
-      referenceName: _.toString(req.body?.thumbnailReferenceName || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
+      referenceName: _.toString((isVideoBackground ? req.body?.videoBackgroundReferenceName : req.body?.thumbnailReferenceName) || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
       chromeHeadless: req.body?.chromeHeadless !== false,
       assetPurpose: _.toString(req.body?.assetPurpose),
       showTrackList: req.body?.showTrackList !== false,
@@ -4819,7 +4819,7 @@ router.post("/plan-flow-video-prompts", requireLicense(FeatureType.VIDEO), async
   const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
   const requestId = `flow_video_prompts_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const artifactType = "flow-video-prompts";
-  const prompt = `Write exactly ${count} distinct English text-to-video prompts for Google Flow based on this Vietnamese user request: ${JSON.stringify(request)}. Each prompt must describe one standalone cinematic visual clip with concrete setting, subject, motion, camera, lighting and atmosphere. No captions, logos, watermarks, spoken dialogue or music. Return ONLY one valid JSON object with exactly these fields: "requestId": ${JSON.stringify(requestId)}, "artifactType": ${JSON.stringify(artifactType)}, "prompts": an array of exactly ${count} nonempty strings. Copy requestId and artifactType exactly as given. No markdown or explanation.`;
+  const prompt = `Write exactly ${count} distinct video concepts for Google Flow based on this Vietnamese user request: ${JSON.stringify(request)}. Return ONLY one valid JSON object with "requestId": ${JSON.stringify(requestId)}, "artifactType": ${JSON.stringify(artifactType)}, and "videos": an array of exactly ${count} objects. Each object has "title": a concise, distinct Vietnamese video title of 3 to 8 words describing the scene, and "prompt": one detailed English text-to-video prompt with concrete setting, subject, motion, camera, lighting and atmosphere. No captions, logos, watermarks, spoken dialogue or music in the video prompts. Copy requestId and artifactType exactly. No markdown or explanation.`;
   try {
     let raw: string;
     if (execution.mode === AiPlanningExecutionMode.ApiOnly) {
@@ -4840,9 +4840,9 @@ router.post("/plan-flow-video-prompts", requireLicense(FeatureType.VIDEO), async
     }
     const parsed = safeParseJSON(raw, { prompts: [] });
     if (execution.mode !== AiPlanningExecutionMode.ApiOnly && (parsed.requestId !== requestId || parsed.artifactType !== artifactType)) throw new Error("Phòng chat trả kết quả không khớp yêu cầu. Hãy thử lại.");
-    const prompts = _.map(_.get(parsed, "prompts", []), (item) => _.trim(_.toString(item)));
-    if (prompts.length !== count || _.some(prompts, _.isEmpty)) throw new Error("AI chưa trả đủ prompt video. Hãy thử lại.");
-    return res.json({ success: true, prompts });
+    const videos = _.map(_.get(parsed, "videos", []), (item) => ({ title: _.trim(_.toString(item?.title)), prompt: _.trim(_.toString(item?.prompt)) }));
+    if (videos.length !== count || _.some(videos, (video) => !video.title || !video.prompt)) throw new Error("AI chưa trả đủ tên và prompt video. Hãy thử lại.");
+    return res.json({ success: true, videos });
   } catch (error) {
     return res.status(503).json({ success: false, error: error instanceof Error ? error.message : "Không thể viết prompt video." });
   }
@@ -4863,7 +4863,8 @@ router.post("/save-flow-videos", requireLicense(FeatureType.VIDEO), async (req: 
       const scene = _.find(project.storyboard, { id: sceneId });
       const source = resolveLocalProjectAssetPath(_.toString(scene?.assetUrl));
       if (!source) return res.status(400).json({ success: false, error: `Video ${index + 1} chưa sẵn sàng để lưu.` });
-      const stem = `flow-video-${sceneId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+      const title = _.trim(_.toString(scene?.assetName)).replace(/[<>:"/\\|?*]/g, "").split("").filter((character) => character.charCodeAt(0) >= 32).join("").replace(/[. ]+$/g, "").slice(0, 90);
+      const stem = title || `flow-video-${sceneId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
       let destination = path.join(folderPath, `${stem}.mp4`);
       for (let suffix = 2; await fs.promises.access(destination).then(() => true).catch(() => false); suffix++) destination = path.join(folderPath, `${stem}-${suffix}.mp4`);
       await fs.promises.copyFile(source, destination);
