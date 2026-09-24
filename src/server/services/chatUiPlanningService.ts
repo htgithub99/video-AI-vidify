@@ -14,6 +14,7 @@ import {
 import { delayAsync } from "../../lib/shared-utils.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
+import { assessChatComposerContent } from "./chatComposerValidation.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { jsonUtils } from "../../lib/json.js";
 import { closeAppBrowserAfterTask, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
@@ -528,7 +529,12 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
     .locator(responseSelector)
     .evaluateAll(
       (elements, identityConfig) =>
-        elements.filter((element) => !elements.some((other) => other !== element && element.contains(other))).map((element, index) => {
+        elements.filter((element) => {
+          if (elements.some((other) => other !== element && element.contains(other))) return false;
+          if (!(element instanceof HTMLElement)) return false;
+          const style = window.getComputedStyle(element);
+          return style.visibility !== "hidden" && style.display !== "none" && element.getClientRects().length > 0;
+        }).map((element, index) => {
           const identityElement = element.closest(identityConfig.selector) || element;
           const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || "";
           const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || "";
@@ -596,6 +602,12 @@ const waitForStableResponse = async (
   while (Date.now() < absoluteDeadline) {
     throwIfPlanningCancelled(signal);
     await throwIfGrokRateLimited(page, busySelector);
+    const visibleAlerts = await page.locator('[role="alert"]').filter({ visible: true }).allTextContents().catch(() => []);
+    const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
+    if (providerErrorAlert) {
+      await writeMusicDiagnostic("chat_provider_alert", { runId: requestId ? createHash("sha256").update(requestId).digest("hex").slice(0, 12) : undefined, stage: artifactType, alertChars: providerErrorAlert.length });
+      throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
+    }
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, "text");
@@ -818,28 +830,26 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
   if (!uploaded) throw new Error(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX} ${_.toString(_.get(lastUploadError, "message", ""))}`.trim());
 };
 
-const getComposerText = async (input: Locator): Promise<string> => {
-  try {
-    const val = await input.inputValue();
-    return _.trim(val);
-  } catch {
-    try {
-      const text = await input.textContent();
-      return _.trim(text || "");
-    } catch {
-      return "";
-    }
-  }
+const getComposerReadings = async (input: Locator): Promise<string[]> => {
+  const value = await input.inputValue().catch(() => "");
+  const visibleText = await input.innerText().catch(() => "");
+  const domText = await input.textContent().catch(() => "");
+  return [value, visibleText, domText];
 };
 
-const waitForSendButtonReady = async (sendButton: Locator, timeoutMs: number, signal?: AbortSignal): Promise<boolean> => {
+const getComposerText = async (input: Locator): Promise<string> =>
+  _.trim(_.maxBy(await getComposerReadings(input), (text) => text.length) || "");
+
+const waitForSendButtonReady = async (sendButtons: Locator[], timeoutMs: number, signal?: AbortSignal): Promise<Locator | null> => {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     throwIfPlanningCancelled(signal);
-    if ((await sendButton.count()) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) return true;
+    for (const sendButton of sendButtons) {
+      if ((await sendButton.count().catch(() => 0)) > 0 && (await sendButton.isVisible().catch(() => false)) && (await sendButton.isEnabled().catch(() => false))) return sendButton;
+    }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
-  return false;
+  return null;
 };
 
 const waitForSubmissionConfirmation = async (
@@ -959,10 +969,12 @@ const submitPrompt = async (
   };
   {
     await throwIfGrokRateLimited(page, busySelector);
-    await page.locator(busySelector).filter({ visible: true }).first().waitFor({
-      state: "hidden",
-      timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_IDLE_WAIT_TIMEOUT_MS,
-    }).catch(() => { throw new Error("chat_room_previous_response_still_running"); });
+    try {
+      await waitForRoomIdle(page, busySelector, responseSelector, signal);
+    } catch (error) {
+      await writeMusicDiagnostic("chat_room_idle_failed", { runId: diagnosticRunId, stage: artifactType, ...musicErrorDetails(error) });
+      throw error;
+    }
     initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
     initialCount = initialResponseSnapshots.length;
     if (!_.isEmpty(attachments)) {
@@ -977,35 +989,40 @@ const submitPrompt = async (
       }
     }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
-    await input.fill(`${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+    const submittedPrompt = `${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`;
+    await input.fill(submittedPrompt);
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
     await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+    const composerAssessment = assessChatComposerContent(
+      submittedPrompt,
+      CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE,
+      requestId,
+      await getComposerReadings(input),
+    );
+    if (!composerAssessment.valid) {
+      await writeMusicDiagnostic("chat_composer_mismatch", { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
+      throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
+    }
     {
       const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
       const semanticSendButton = page
         .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN })
         .filter({ visible: true })
         .last();
-      const sendButton = (await semanticSendButton.isVisible().catch(() => false)) && (await semanticSendButton.isEnabled().catch(() => false))
-        ? semanticSendButton
-        : configuredSendButton;
-      const sendButtonReady = await waitForSendButtonReady(
-        sendButton,
+      const sendButton = await waitForSendButtonReady(
+        [configuredSendButton, semanticSendButton],
         _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS,
         signal,
       );
-      await writeMusicDiagnostic("chat_send_button_checked", { runId: diagnosticRunId, stage: artifactType, status: sendButtonReady ? "ready" : "unavailable", attachmentCount: attachments.length });
-      if (sendButtonReady) {
+      await writeMusicDiagnostic("chat_send_button_checked", { runId: diagnosticRunId, stage: artifactType, status: sendButton ? "ready" : "unavailable", attachmentCount: attachments.length });
+      if (sendButton) {
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
         markPendingSubmission();
         await sendButton.click();
       }
-      else if (_.isEmpty(attachments)) {
-        markPendingSubmission();
-        await input.focus();
-        await input.press("Enter");
-      }
-      else throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+      else throw new Error(_.isEmpty(attachments)
+        ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR
+        : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
       submissionConfirmed = await waitForSubmissionConfirmation(
         input,
         page,
@@ -1070,6 +1087,24 @@ const clickChatModelOption = async (page: Page, modelLabel: RegExp): Promise<boo
     await page.waitForTimeout(100);
   }
   return false;
+};
+
+const waitForRoomIdle = async (page: Page, busySelector: string, responseSelector: string, signal?: AbortSignal): Promise<void> => {
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_IDLE_WAIT_TIMEOUT_MS;
+  let previousResponse = "";
+  let stablePolls = 0;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(signal);
+    await throwIfGrokRateLimited(page, busySelector);
+    const busy = await page.locator(busySelector).filter({ visible: true }).count().then((count) => count > 0);
+    const snapshots = await getChatResponseSnapshots(page, responseSelector);
+    const latestResponse = _.trim(_.last(snapshots)?.text || "");
+    stablePolls = !busy && _.isEqual(latestResponse, previousResponse) ? stablePolls + 1 : 0;
+    previousResponse = latestResponse;
+    if (stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_IDLE_STABLE_POLLS) return;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
+  }
+  throw new Error("chat_room_previous_response_still_running");
 };
 
 const waitForSelectedModelLabel = async (page: Page, buttonSelector: string, modelLabel: RegExp): Promise<boolean> => {

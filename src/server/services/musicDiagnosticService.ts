@@ -10,6 +10,7 @@ const safeKeys = new Set([
   "issueCount", "elapsedMs", "format", "status", "createdCount", "recoveredCount",
   "chunk", "chunkCount", "code", "errorName", "errorMessage", "retryable", "checkpoint",
   "stablePolls", "candidateChars", "responseCount", "busy", "identityMatch",
+  "expectedChars", "actualChars", "promptChars", "bytes", "purpose",
 ]);
 
 const sanitizeText = (value: unknown): string => String(value ?? "")

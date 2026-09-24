@@ -269,6 +269,7 @@ interface PersistedMusicCreatorState {
   selectedSeoSongIndex?: number;
   sunoPlaylistUrl?: string;
   sunoTestPlaylistUrl?: string;
+  sunoTestTrackIds?: string[];
   downloadPlaylistUrl?: string;
   sunoTrackIds?: string[];
   curatedDownloadedTracks?: CuratedDownloadedTrack[];
@@ -680,6 +681,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [generationError, setGenerationError] = useState("");
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
@@ -714,6 +716,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [isCreatingSunoTest, setIsCreatingSunoTest] = useState(false);
   const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || "");
+  const [sunoTestTrackIds, setSunoTestTrackIds] = useState<string[]>(initialState.sunoTestTrackIds || []);
   const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
   const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || "");
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
@@ -774,6 +777,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           selectedSeoSongIndex,
           sunoPlaylistUrl,
           sunoTestPlaylistUrl,
+          sunoTestTrackIds,
           downloadPlaylistUrl,
           sunoTrackIds,
           curatedDownloadedTracks,
@@ -792,7 +796,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   }, [
     style, outputCount, referenceSongs, provider, model, executionMode, chromeHeadless, isAiConfigOpen, songs,
     styleAnalysis, playlistSeoOptions, thumbnailDescription, thumbnailReferenceName, viewMode, selectedSeoSongIndex,
-    sunoPlaylistUrl, sunoTestPlaylistUrl, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
+    sunoPlaylistUrl, sunoTestPlaylistUrl, sunoTestTrackIds, downloadPlaylistUrl, sunoTrackIds, curatedDownloadedTracks, sunoDownloadFormat, sunoEvaluateTracks,
     sunoInspo, sunoSettings, sunoSettingsAnalysis, downloadedMusicTracks, videoBackgroundDescription, showVideoTrackList,
   ]);
 
@@ -916,6 +920,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleGenerate = async () => {
+    if (isLoading || isStopping) return;
     musicStoppedByUserRef.current = false;
     setGenerationError("");
     const trimmedStyle = _.trim(style);
@@ -1004,6 +1009,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               thumbnailReference,
               thumbnailReferenceName,
               chromeHeadless,
+              aiExecution: { provider, model },
             }),
           });
           const thumbnailResult = await thumbnailResponse.json();
@@ -1075,20 +1081,31 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     }
   };
 
-  const handleCancelGeneration = () => {
-    if (!isLoading) return;
+  const handleCancelGeneration = async () => {
+    if (!isLoading || isStopping) return;
+    setIsStopping(true);
     musicStoppedByUserRef.current = true;
     musicResumeRef.current = null;
     const runId = musicRunIdRef.current;
     musicAbortControllerRef.current?.abort();
-    if (runId) {
-      void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true, roomProvider: provider, roomProjectId: runId }),
-      }).catch(() => undefined);
+    try {
+      if (runId) {
+        const response = await fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
+          method: HTTP_METHODS.POST,
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+          body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true, roomProvider: provider, roomProjectId: runId }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || texts.STOP_BROWSER_CLOSE_ERROR);
+      }
+      toast.info(texts.STOPPED_TOAST);
+    } catch (error) {
+      const message = _.toString(_.get(error, "message", texts.STOP_BROWSER_CLOSE_ERROR));
+      setGenerationError(message);
+      toast.error(message);
+    } finally {
+      setIsStopping(false);
     }
-    toast.info(texts.STOPPED_TOAST);
   };
 
   const createSunoMusic = async (testOnly: boolean) => {
@@ -1099,6 +1116,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     setIsCreatingSunoTest(testOnly);
     if (testOnly) {
       setSunoTestPlaylistUrl("");
+      setSunoTestTrackIds([]);
     } else {
       setSunoPlaylistUrl("");
       setDownloadPlaylistUrl("");
@@ -1135,6 +1153,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const createdPlaylistUrl = _.toString(result.playlistUrl);
       if (testOnly) {
         setSunoTestPlaylistUrl(createdPlaylistUrl);
+        setSunoTestTrackIds(createdSongIds);
         toast.success(texts.SUNO_TEST_CREATE_SUCCESS);
       } else {
         setSunoPlaylistUrl(createdPlaylistUrl);
@@ -1175,9 +1194,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleDownloadSunoMusic = async () => {
     const requestedPlaylistUrl = _.trim(downloadPlaylistUrl);
-    const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl;
+    const isTestPlaylistDownload = !requestedPlaylistUrl && !sunoPlaylistUrl && Boolean(sunoTestPlaylistUrl);
+    const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl || sunoTestPlaylistUrl;
     if (_.isEmpty(activePlaylistUrl) || isDownloadingSuno) return;
-    if (sunoEvaluateTracks && provider !== AiPlanningFallbackProvider.GeminiChat) {
+    if (sunoEvaluateTracks && !isTestPlaylistDownload && provider !== AiPlanningFallbackProvider.GeminiChat) {
       setSunoDownloadError(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
       toast.error(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
       return;
@@ -1196,7 +1216,10 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const folderResult = await folderResponse.json();
       const folderPath = _.trim(_.toString(folderResult.folderPath));
       if (!folderResponse.ok || !folderResult.success || _.isEmpty(folderPath)) return;
-      const tracks = requestedPlaylistUrl ? [] : _.map(sunoTrackIds, (songId, index) => {
+      const tracks = isTestPlaylistDownload ? _.take(sunoTestTrackIds, 1).map((songId) => ({
+        songId,
+        title: `1. ${songs[0]?.title || texts.SUNO_TRACK_LABEL} - 1`,
+      })) : requestedPlaylistUrl ? [] : _.map(sunoTrackIds, (songId, index) => {
         const songIndex = Math.floor(index / 2);
         const songNumber = songIndex + 1;
         const variantSuffix = ` - ${(index % 2) + 1}`;
@@ -1210,12 +1233,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           folderPath,
           tracks,
+          maxTracks: isTestPlaylistDownload ? 1 : undefined,
           playlistUrl: activePlaylistUrl,
           songTitles: _.map(songs, "title"),
           format: sunoDownloadFormat,
-          evaluateTracks: sunoEvaluateTracks,
+          evaluateTracks: isTestPlaylistDownload ? false : sunoEvaluateTracks,
           style,
-          aiExecution: sunoEvaluateTracks
+          aiExecution: sunoEvaluateTracks && !isTestPlaylistDownload
             ? {
               mode: AiPlanningExecutionMode.RoomOnly,
               provider: AiPlanningFallbackProvider.GeminiChat,
@@ -1231,7 +1255,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
       const downloadedTracks = _.castArray(result.downloadedTracks || []) as DownloadedMusicTrack[];
       if (!_.isEmpty(downloadedTracks)) setDownloadedMusicTracks(downloadedTracks);
-      if (sunoEvaluateTracks) {
+      if (sunoEvaluateTracks && !isTestPlaylistDownload) {
         const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
         if (_.size(curatedTracks) === _.size(songs)) {
           setCuratedDownloadedTracks(curatedTracks);
@@ -1350,6 +1374,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           thumbnailReference,
           thumbnailReferenceName,
           chromeHeadless,
+          aiExecution: { provider, model },
         }),
       });
       const result = await response.json();
@@ -1379,6 +1404,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           thumbnailReference,
           thumbnailReferenceName,
           chromeHeadless,
+          aiExecution: { provider, model },
           assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
           showTrackList: showVideoTrackList,
         }),
@@ -1905,7 +1931,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     type="button"
                     variant="unstyled"
                     onClick={handleGenerate}
-                    disabled={!isFormValid || isLoading}
+                    disabled={!isFormValid || isLoading || isStopping}
                     className={cn(
                       "h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none",
                       isLoading
@@ -1927,14 +1953,15 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     )}
                   </Button>
 
-                  {isLoading && (
+                  {(isLoading || isStopping) && (
                     <Button
                       type="button"
                       variant="unstyled"
                       onClick={handleCancelGeneration}
-                      className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 shrink-0 leading-none">
+                      disabled={isStopping}
+                      className="h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60 shadow-md transition-all active:scale-95 shrink-0 leading-none">
                       <X className="w-4 h-4 shrink-0" />
-                      <span className="inline-flex items-center leading-none">{texts.STOP_BTN}</span>
+                      <span className="inline-flex items-center leading-none">{isStopping ? texts.STOPPING_BTN : texts.STOP_BTN}</span>
                     </Button>
                   )}
                 </div>
@@ -2443,7 +2470,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 </Tooltip>
               ))}
             </div>
-            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
+            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", isDownloadingSuno ? "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30" : "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed")}>
               {isDownloadingSuno ? <Disc3 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-200" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
               <span className="inline-flex items-center leading-none">{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>

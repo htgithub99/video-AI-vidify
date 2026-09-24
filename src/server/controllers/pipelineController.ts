@@ -478,6 +478,7 @@ interface MusicPlanRequestPayload {
 }
 
 let activeMusicPlanRuns = 0;
+const activeMusicPlanCleanup = new Map<string, Promise<void>>();
 const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]> }>();
 
 const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
@@ -524,11 +525,48 @@ const generateMusicThumbnailAsset = async (input: {
   chromeHeadless: boolean;
   assetPurpose?: string;
   showTrackList?: boolean;
+  planningProvider?: AiPlanningFallbackProvider;
+  planningModel?: AiPlanningChatModel;
 }): Promise<{ thumbnail: string | null; warning?: string }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-  const prompt = input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
+  const imageBrief = input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
     ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false)
     : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext);
+  const promptRequestId = `music-image-prompt-${randomUUID()}`;
+  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat], input.planningProvider)
+    ? input.planningProvider!
+    : AiPlanningFallbackProvider.GeminiChat;
+  const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
+  let prompt = "";
+  try {
+    await writeMusicDiagnostic("music_image_prompt_started", { runId: promptRequestId, purpose: input.assetPurpose || "cover", provider: planningProvider, model: input.planningModel });
+    const response = await generatePlanningWithChatUi({
+      provider: planningProvider,
+      model: input.planningModel,
+      prompt: SUNO_AUTOMATION_TEXTS.buildMusicImagePromptPlanningPrompt(imageBrief, input.assetPurpose || "cover", promptRequestId),
+      projectId: promptRequestId,
+      workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE,
+      chromeHeadless: input.chromeHeadless,
+      artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
+      requestId: promptRequestId,
+      signal: planningRun.signal,
+      closeRoomOnComplete: false,
+    });
+    const parsed = jsonUtils.safeParse(response.text, null);
+    prompt = _.trim(_.toString(parsed?.imagePrompt));
+    if (parsed?.artifactType !== SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT || parsed?.requestId !== promptRequestId || prompt.length < 100 || prompt.length > 4000) {
+      throw new Error("AI chưa trả về prompt tạo ảnh hợp lệ. Vui lòng thử lại.");
+    }
+    await writeMusicDiagnostic("music_image_prompt_completed", { runId: promptRequestId, promptChars: prompt.length });
+  } catch (error) {
+    await writeMusicDiagnostic("music_image_prompt_failed", { runId: promptRequestId, ...musicErrorDetails(error) });
+    return { thumbnail: null, warning: _.toString(_.get(error, "message", MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
+  } finally {
+    planningRun.complete();
+    await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
+  }
+  let transientErrorCount = 0;
+  const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
     try {
       logger.info(`[MusicThumbnail] start attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} songs=${input.songs.length} hasReference=${!_.isEmpty(input.reference)}`);
@@ -551,12 +589,20 @@ const generateMusicThumbnailAsset = async (input: {
       });
       if (!result.success) {
         lastWarning = result.warning || lastWarning;
+        await writeMusicDiagnostic("music_image_generation_failed", { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
+        if (transientImageError.test(lastWarning)) {
+          transientErrorCount += 1;
+          if (transientErrorCount < 2) continue;
+          break;
+        }
+        if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning) || _.includes(lastWarning, GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.split(":")[0])) break;
         continue;
       }
       const encodedImage = _.toString(result.base64);
       if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES) {
         lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
         logger.warn(`[MusicThumbnail] Gemini returned invalid image attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} bytes=${encodedImage.length}`);
+        await writeMusicDiagnostic("music_image_invalid_result", { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
         continue;
       }
       const mimeType = _.startsWith(encodedImage, SUNO_AUTOMATION_CONFIG.JPEG_HEADER_SIGNATURE)
@@ -573,6 +619,13 @@ const generateMusicThumbnailAsset = async (input: {
       logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
       lastWarning = _.toString(_.get(error, "message", lastWarning));
       logger.error(`[MusicThumbnail] failed attempt=${attempt + 1}/${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS} reason=${lastWarning}`);
+      await writeMusicDiagnostic("music_image_generation_failed", { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
+      if (transientImageError.test(lastWarning)) {
+        transientErrorCount += 1;
+        if (transientErrorCount < 2) continue;
+        break;
+      }
+      if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
     }
   }
   logger.error(`[MusicThumbnail] exhausted attempts warning=${lastWarning}`);
@@ -826,6 +879,9 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     ? existingCheckpoint
     : { signature: checkpointSignature, updatedAt: checkpointNow, styleAnalysis: null as any, batches: new Map<number, any[]>() };
   musicPlanCheckpoints.set(requestId, checkpoint);
+  let finishMusicPlanCleanup: () => void = _.noop;
+  const cleanupFinished = new Promise<void>((resolve) => { finishMusicPlanCleanup = resolve; });
+  activeMusicPlanCleanup.set(requestId, cleanupFinished);
   activeMusicPlanRuns += 1;
   let currentStage: string = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
   const planStartedAt = Date.now();
@@ -853,7 +909,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
     // Never let a previous run's conversation contaminate the first analysis request.
     // Retries within this run intentionally reuse the room so the correction prompt has context.
-    await closeChatPlanningRoom({ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE }).catch(() => undefined);
+    await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
     let styleAnalysisParsed: any = checkpoint.styleAnalysis;
     let styleAnalysisIssues: string[] = [];
     let analysisRoomWasReloaded = false;
@@ -895,7 +951,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION;
     await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage, songCount: requestedSongCount });
     let responseProvider = provider;
-    const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix = "", workerId = `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-batch-${startIndex}`): Promise<any[] | null> => {
+    const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix = "", workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[] | null> => {
       let batchParsed: any = null;
       let batchIssues: string[] = [];
       let roomWasReloaded = false;
@@ -934,7 +990,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       }
       return null;
     };
-    const composeAdaptiveBatch = async (startIndex: number, batchCount: number, requestSuffix = "", workerId: string = `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-batch-${startIndex}`): Promise<any[]> => {
+    const composeAdaptiveBatch = async (startIndex: number, batchCount: number, requestSuffix = "", workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[]> => {
       const isMinimumBatch = batchCount <= _.last(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES)!;
       const attempts = isMinimumBatch ? SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS : 1;
       const composedSongs = await composeSongBatch(startIndex, batchCount, attempts, requestSuffix, workerId);
@@ -946,7 +1002,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const fallbackSongs: any[] = [];
       for (let offset = 0; offset < batchCount; offset += fallbackBatchSize) {
         const fallbackCount = Math.min(fallbackBatchSize, batchCount - offset);
-        fallbackSongs.push(...await composeAdaptiveBatch(startIndex + offset, fallbackCount, `${requestSuffix}_fallback_${fallbackBatchSize}_${offset + 1}`, `${workerId}-fallback-${offset + 1}`));
+        fallbackSongs.push(...await composeAdaptiveBatch(startIndex + offset, fallbackCount, `${requestSuffix}_fallback_${fallbackBatchSize}_${offset + 1}`, workerId));
       }
       return fallbackSongs;
     };
@@ -954,7 +1010,6 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const compositionBatches = _.range(1, requestedSongCount + 1, initialBatchSize).map((startIndex) => ({
       startIndex,
       batchCount: Math.min(initialBatchSize, requestedSongCount - startIndex + 1),
-      workerId: `${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}-batch-${startIndex}`,
     }));
     for (const batch of compositionBatches) {
       const savedSongs = checkpoint.batches.get(batch.startIndex);
@@ -965,48 +1020,38 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       _.forEach(savedSongs, (song) => completedSongTitles.add(_.toLower(_.deburr(_.trim(_.toString(song.title))))));
     }
     const pendingCompositionBatches = compositionBatches.filter((batch) => !checkpoint.batches.has(batch.startIndex));
-    const closeCompositionRooms = async (): Promise<void> => {
-      await Promise.allSettled(_.map(compositionBatches, (batch) => closeChatPlanningRoom({ provider, projectId, workerId: batch.workerId })));
-    };
-    await closeChatPlanningRoom({ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE }).catch(() => undefined);
-    await closeCompositionRooms();
     const composedBatchResults: any[][] = compositionBatches.map((batch) => checkpoint.batches.get(batch.startIndex) || []);
     let nextBatchIndex = 0;
     let compositionFailure: unknown;
-    try {
-      const roomPreparations = _.map(_.take(pendingCompositionBatches, SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY), (batch) => prepareChatPlanningRoom({
-          provider,
-          model: execution.model,
-          prompt: "",
-          projectId,
-          workerId: batch.workerId,
-          chromeHeadless: execution.chromeHeadless !== false,
-          signal: planningRun.signal,
-        }));
-      const runCompositionWorker = async (workerIndex: number): Promise<void> => {
-        await roomPreparations[workerIndex];
-        while (nextBatchIndex < pendingCompositionBatches.length && !compositionFailure) {
-          const batch = pendingCompositionBatches[nextBatchIndex++];
-          const batchIndex = compositionBatches.findIndex((item) => item.startIndex === batch.startIndex);
-          try {
-            await writeMusicDiagnostic("plan_batch_started", { runId: requestId, stage: currentStage, batch: batch.startIndex, batchSize: batch.batchCount, workerId: batch.workerId });
-            composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, "", batch.workerId);
-            await writeMusicDiagnostic("plan_batch_completed", { runId: requestId, stage: currentStage, batch: batch.startIndex, songCount: composedBatchResults[batchIndex].length });
-            checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
-            checkpoint.updatedAt = Date.now();
-          } catch (error) {
-            await writeMusicDiagnostic("plan_batch_failed", { runId: requestId, stage: currentStage, batch: batch.startIndex, ...musicErrorDetails(error) });
-            compositionFailure ||= error instanceof Error ? error : new Error(_.toString(error));
-          } finally {
-            await closeChatPlanningRoom({ provider, projectId, workerId: batch.workerId }).catch(() => undefined);
-          }
+    const roomPreparations = _.map(_.range(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length)), (workerIndex) => prepareChatPlanningRoom({
+      provider,
+      model: execution.model,
+      prompt: "",
+      projectId,
+      workerId: workerIndex === 0 ? SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE,
+      chromeHeadless: execution.chromeHeadless !== false,
+      signal: planningRun.signal,
+    }));
+    const runCompositionWorker = async (workerIndex: number): Promise<void> => {
+      await roomPreparations[workerIndex];
+      const workerId = workerIndex === 0 ? SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE;
+      while (nextBatchIndex < pendingCompositionBatches.length && !compositionFailure) {
+        const batch = pendingCompositionBatches[nextBatchIndex++];
+        const batchIndex = compositionBatches.findIndex((item) => item.startIndex === batch.startIndex);
+        try {
+          await writeMusicDiagnostic("plan_batch_started", { runId: requestId, stage: currentStage, batch: batch.startIndex, batchSize: batch.batchCount, workerId });
+          composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, "", workerId);
+          await writeMusicDiagnostic("plan_batch_completed", { runId: requestId, stage: currentStage, batch: batch.startIndex, songCount: composedBatchResults[batchIndex].length });
+          checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
+          checkpoint.updatedAt = Date.now();
+        } catch (error) {
+          await writeMusicDiagnostic("plan_batch_failed", { runId: requestId, stage: currentStage, batch: batch.startIndex, ...musicErrorDetails(error) });
+          compositionFailure ||= error instanceof Error ? error : new Error(_.toString(error));
         }
-      };
-      await Promise.all(_.times(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length), (workerIndex) => runCompositionWorker(workerIndex)));
-      if (compositionFailure) throw compositionFailure;
-    } finally {
-      await closeCompositionRooms();
-    }
+      }
+    };
+    await Promise.all(_.times(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length), (workerIndex) => runCompositionWorker(workerIndex)));
+    if (compositionFailure) throw compositionFailure;
     songs.push(..._.flatten(composedBatchResults));
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const rankingRequestId = `${requestId}_song_ranking`;
@@ -1070,7 +1115,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const generatePlaylistSeo = async (): Promise<any> => {
       let parsed: any = null;
       let seoIssues: string[] = [];
-      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
+      for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_SEO_RESPONSE_ATTEMPTS; attempt += 1) {
         const prompt = attempt === 0
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, creativeStyle, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, rankedSongs)
           : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(rankedSongs, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId, seoIssues);
@@ -1078,12 +1123,14 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, seoRequestId);
           responseProvider = response.provider;
           parsed = jsonUtils.safeParse(response.text, null);
+          await writeMusicDiagnostic("plan_seo_response", { runId: requestId, attempt: attempt + 1, responseChars: response.text.length, parsed: Boolean(parsed) });
         } catch (error) {
-          if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+          if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_SEO_RESPONSE_ATTEMPTS - 1) throw error;
           logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL, attempt + 2, _.toString(_.get(error, "message", error))));
           parsed = null;
         }
         seoIssues = getMusicPlaylistSeoContractIssues(parsed);
+        if (!_.isEmpty(seoIssues)) await writeMusicDiagnostic("plan_seo_contract_failed", { runId: requestId, attempt: attempt + 1, issues: seoIssues });
         if (!_.isEmpty(seoIssues)) logger.warn(`[MusicPlan] SEO contract attempt=${attempt + 1} issues=${seoIssues.join(" | ")}`);
         if (validateMusicPlaylistSeoContract(parsed, rankedSongs)) return parsed;
       }
@@ -1129,12 +1176,20 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       error: `${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED} (${currentStage}: ${cause})`,
     });
   } finally {
-    await closeChatPlanningRoomsForProject({
-      provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
-      projectId,
-    }).catch(() => undefined);
-    activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
-    if (_.isEqual(activeMusicPlanRuns, 0)) scheduleGlobalBrowserCleanup();
+    try {
+      await closeChatPlanningRoomsForProject({
+        provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
+        projectId,
+      });
+      if (req.aborted) await closeChatBrowserIfIdle();
+    } catch (cleanupError) {
+      await writeMusicDiagnostic("plan_cleanup_failed", { runId: requestId, ...musicErrorDetails(cleanupError) });
+    } finally {
+      activeMusicPlanRuns = Math.max(0, activeMusicPlanRuns - 1);
+      if (_.isEqual(activeMusicPlanRuns, 0)) scheduleGlobalBrowserCleanup();
+      if (activeMusicPlanCleanup.get(requestId) === cleanupFinished) activeMusicPlanCleanup.delete(requestId);
+      finishMusicPlanCleanup();
+    }
   }
 });
 
@@ -1285,6 +1340,8 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
       chromeHeadless: req.body?.chromeHeadless !== false,
       assetPurpose: _.toString(req.body?.assetPurpose),
       showTrackList: req.body?.showTrackList !== false,
+      planningProvider: req.body?.aiExecution?.provider,
+      planningModel: req.body?.aiExecution?.model,
     });
     if (_.isEmpty(result.thumbnail)) return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, warning: result.warning });
     await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
@@ -1536,6 +1593,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         return { songId, title: SUNO_AUTOMATION_TEXTS.formatSongVariantTitle(songNumber, title, (index % 2) + 1) };
       });
     }
+    if (req.body?.maxTracks === 1 && !shouldEvaluateTracks) tracks = _.take(tracks, 1);
     if (shouldEvaluateTracks) {
       if (
         !_.isEqual(evaluationMode, AiPlanningExecutionMode.RoomOnly) ||
@@ -7078,7 +7136,12 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   }
   if (!_.isEmpty(renderJobId)) cleanupTasks.push(renderQueueService.cancelJob(renderJobId));
   await Promise.allSettled(cleanupTasks);
-  if (closeMusicRooms) await closeChatBrowserIfIdle();
+  if (closeMusicRooms) {
+    await activeMusicPlanCleanup.get(pipelineRunId);
+    const browserClosed = await closeChatBrowserIfIdle();
+    await writeMusicDiagnostic("plan_cancel_cleanup", { runId: pipelineRunId, provider: roomProvider, status: browserClosed ? "browser_closed" : "browser_still_in_use" });
+    return res.json({ success: browserClosed, browserClosed });
+  }
   return res.json({ success: true });
 });
 

@@ -102,7 +102,9 @@ assert.match(chatPlanning, /if \(_\.isEqual\(request\.provider, AiPlanningFallba
 assert.doesNotMatch(chatPlanning, /if \(!submissionConfirmed && _\.isEmpty\(attachments\) && sendButtonReady\)/);
 assert.match(controller, /size < batchCount/);
 assert.match(controller, /const initialBatchSize = _\.first\(MUSIC_CREATOR_CONSTANTS\.OUTPUT_BATCH_SIZES\)/);
-assert.match(controller, /closeChatPlanningRoom\(\{ provider, projectId, workerId: SUNO_AUTOMATION_CONFIG\.MUSIC_PLAN_WORKER_TYPE \}\)/);
+assert.match(controller, /closeChatPlanningRoomsForProject\(\{ provider, projectId \}\)/);
+assert.match(controller, /workerId: workerIndex === 0 \? SUNO_AUTOMATION_CONFIG\.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG\.MUSIC_SECOND_ROOM_WORKER_TYPE/);
+assert.doesNotMatch(controller, /music-creator-batch-|closeCompositionRooms/);
 assert.doesNotMatch(controller, /storeMusicSourceInRoom\(batch\.workerId\)/);
 assert.match(controller, /styleAnalysis: styleAnalysisParsed/);
 assert.match(controller, /const \{ parsed: playlistSeoParsed, warning: seoWarning \} = await generatePlaylistSeo\(\)/);
