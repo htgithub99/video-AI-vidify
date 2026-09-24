@@ -566,6 +566,10 @@ const generateMusicThumbnailAsset = async (input: {
     planningRun.complete();
     await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
   }
+  await writeMusicDiagnostic("music_image_generation_requirements", {
+    runId: promptRequestId, purpose: input.assetPurpose || "cover", originalNoteChars: _.trim(input.description).length,
+    plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference),
+  });
   let transientErrorCount = 0;
   const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
