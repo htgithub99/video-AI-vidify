@@ -922,8 +922,6 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const analysisRequestId = `${requestId}_style_analysis`;
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
-    // Never let a previous run's conversation contaminate the first analysis request.
-    // Retries within this run intentionally reuse the room so the correction prompt has context.
     await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
     let styleAnalysisParsed: any = checkpoint.styleAnalysis;
     let styleAnalysisIssues: string[] = [];
@@ -4812,6 +4810,70 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
 const activeVideoSubmissionKeys = new Set<string>();
 const activeVideoProjectKeys = new Set<string>();
 const completedVideoSubmissionResults = new Map<string, unknown>();
+
+router.post("/plan-flow-video-prompts", requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
+  const request = _.trim(_.toString(req.body?.request));
+  const count = _.toInteger(request.match(/(?:^|\s)(\d{1,2})\s*(?:video|clip|đoạn\s+video)\b/i)?.[1]);
+  if (!request || count < 1 || count > 50) return res.status(400).json({ success: false, error: "Hãy ghi số video (1–50) trong yêu cầu, ví dụ: Tạo 20 video nền nhạc bolero." });
+  const execution = req.body?.execution || {};
+  const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
+  const requestId = `flow_video_prompts_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const artifactType = "flow-video-prompts";
+  const prompt = `Write exactly ${count} distinct English text-to-video prompts for Google Flow based on this Vietnamese user request: ${JSON.stringify(request)}. Each prompt must describe one standalone cinematic visual clip with concrete setting, subject, motion, camera, lighting and atmosphere. No captions, logos, watermarks, spoken dialogue or music. Return ONLY one valid JSON object with exactly these fields: "requestId": ${JSON.stringify(requestId)}, "artifactType": ${JSON.stringify(artifactType)}, "prompts": an array of exactly ${count} nonempty strings. Copy requestId and artifactType exactly as given. No markdown or explanation.`;
+  try {
+    let raw: string;
+    if (execution.mode === AiPlanningExecutionMode.ApiOnly) {
+      raw = _.toString((await generateContentWithRetry({ contents: prompt, config: { responseMimeType: CONTENT_TYPES.JSON } })).text);
+    } else {
+      const projectId = _.toString(req.body?.projectId || requestId);
+      const run = beginChatPlanningRun(requestId, Date.now(), "flow-video-prompts", provider);
+      req.once("aborted", run.cancel);
+      res.once("finish", run.complete);
+      try {
+        const response = await generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId: "flow-video-prompts", chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId, signal: run.signal, closeRoomOnComplete: true });
+        raw = response.text;
+      } finally {
+        run.complete();
+        await closeChatPlanningRoom({ provider, projectId, workerId: "flow-video-prompts" });
+        await closeChatBrowserIfIdle();
+      }
+    }
+    const parsed = safeParseJSON(raw, { prompts: [] });
+    if (execution.mode !== AiPlanningExecutionMode.ApiOnly && (parsed.requestId !== requestId || parsed.artifactType !== artifactType)) throw new Error("Phòng chat trả kết quả không khớp yêu cầu. Hãy thử lại.");
+    const prompts = _.map(_.get(parsed, "prompts", []), (item) => _.trim(_.toString(item)));
+    if (prompts.length !== count || _.some(prompts, _.isEmpty)) throw new Error("AI chưa trả đủ prompt video. Hãy thử lại.");
+    return res.json({ success: true, prompts });
+  } catch (error) {
+    return res.status(503).json({ success: false, error: error instanceof Error ? error.message : "Không thể viết prompt video." });
+  }
+});
+
+router.post("/save-flow-videos", requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
+  try {
+    const projectId = path.basename(_.toString(req.body?.projectId));
+    const folderPath = path.resolve(_.trim(_.toString(req.body?.folderPath)));
+    const requestedIds = _.uniq(_.map(_.castArray(req.body?.sceneIds || []), (id) => path.basename(_.toString(id))));
+    if (!projectId || !requestedIds.length || requestedIds.length > 50 || !req.body?.folderPath) return res.status(400).json({ success: false, error: "Thiếu dự án, video hoặc thư mục lưu." });
+    const folderStats = await fs.promises.stat(folderPath);
+    if (!folderStats.isDirectory()) return res.status(400).json({ success: false, error: "Vị trí lưu không phải thư mục." });
+    const project = await getProjectDetailFromDb(projectId);
+    if (!project) return res.status(404).json({ success: false, error: "Không tìm thấy dự án." });
+    const savedPaths: string[] = [];
+    for (const [index, sceneId] of requestedIds.entries()) {
+      const scene = _.find(project.storyboard, { id: sceneId });
+      const source = resolveLocalProjectAssetPath(_.toString(scene?.assetUrl));
+      if (!source) return res.status(400).json({ success: false, error: `Video ${index + 1} chưa sẵn sàng để lưu.` });
+      const stem = `flow-video-${sceneId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+      let destination = path.join(folderPath, `${stem}.mp4`);
+      for (let suffix = 2; await fs.promises.access(destination).then(() => true).catch(() => false); suffix++) destination = path.join(folderPath, `${stem}-${suffix}.mp4`);
+      await fs.promises.copyFile(source, destination);
+      savedPaths.push(destination);
+    }
+    return res.json({ success: true, savedPaths });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error instanceof Error ? error.message : "Không thể lưu video." });
+  }
+});
 
 router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req: Request, res: Response) => {
   let activeVideoProjectKey = "";

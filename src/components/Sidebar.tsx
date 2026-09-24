@@ -73,7 +73,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
 
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.isEqual(activeTab, AppTab.MUSIC_CREATOR);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.VIDEO_CREATOR], activeTab as AppTab);
 
   const menuItems: MenuItemConfig[] = [
     {
@@ -106,6 +106,12 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       id: AppTab.MUSIC_CREATOR,
       label: texts.MUSIC_CREATOR,
       icon: Music2,
+      requiresProject: false,
+    },
+    {
+      id: AppTab.VIDEO_CREATOR,
+      label: texts.VIDEO_CREATOR,
+      icon: Video,
       requiresProject: false,
     },
     {
