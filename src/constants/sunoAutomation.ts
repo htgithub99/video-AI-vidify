@@ -22,7 +22,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   GENERATE_RESPONSE_TIMEOUT_MS: 30_000,
   CREATE_ATTEMPTS_PER_PROMPT: 2,
   MUSIC_ROOM_RESPONSE_ATTEMPTS: 5,
-  MUSIC_SEO_RESPONSE_ATTEMPTS: 2,
+  MUSIC_SEO_RESPONSE_ATTEMPTS: 3,
   MUSIC_PLAN_CHECKPOINT_TTL_MS: 60 * 60_000,
   MUSIC_THUMBNAIL_ATTEMPTS: 5,
   MUSIC_IMAGE_NOTE_ATTEMPTS: 3,
@@ -556,8 +556,23 @@ Write explanations in natural Vietnamese with full Unicode diacritics. Required 
   buildSunoSettingsCorrectionPrompt: (style: string, styleAnalysis: unknown, songs: unknown[], sunoSettingsRequestId: string, sunoInspo: string): string =>
     `CORRECTION: Re-evaluate only the Suno Advanced/More Options settings and return the exact complete JSON contract requested previously for artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS}" and requestId "${sunoSettingsRequestId}". Do not change songs, lyrics, Styles or Music DNA. Apply the approved Music DNA role and map genre plus complete-song evidence to every value. Follow Suno's documented meanings: Weirdness has 50 as normal; Style Influence is Loose-to-Strong adherence to existing Styles; Variety adjusts/updates style prompts and 0 preserves exact tag control; Audio Influence requires a real compatible audio/Voice/inspiration source; Max Mode is primarily for longer-than-two-minute songs, close Covers/style transfer and full-track vocal/style consistency at greater cost; Vocal Gender guides male/female output; Exclude Styles may precisely exclude conflicting genres, instruments or vocal styles; Personalize requires intentional My Taste use; duration stays auto. Do not use generic defaults or unexplained 50/50 values. Include every productionAssessment and parameterRationale field and all nine parameterAnalysis items. Each analysis item requires specific Vietnamese evidence naming both genre/Music DNA and complete-song support, expectedEffect, too-low/too-high risk, interactions and integer confidence 0-100 based on evidence completeness. Audio/Inspo is ${_.isEmpty(_.trim(sunoInspo)) ? "not selected" : `selected: ${sunoInspo}`}. Global guidance: ${style}\nApproved Music DNA: ${jsonUtils.safeStringify(styleAnalysis)}\nComplete song summary: ${jsonUtils.safeStringify(_.map(songs, (song) => _.pick(song as Record<string, unknown>, ["songId", "title", "genre", "mood", "tempoBpm", "structure", "originalityNotes"])))}`,
 
-  buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number, songs: unknown[] = []): string =>
-    `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list supplied below and the selected style, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
+  buildMusicPlaylistSeoPrompt: (songCount: number, style: string, requestId: string, requiredCount: number, songs: unknown[] = []): string => {
+    const exampleTitles = ["Nhạc Trữ Tình Đêm Mưa", "Bolero Nhớ Một Người Xưa", "Khúc Tình Ca Bên Dòng Sông", "Giai Điệu Quê Nhà Chiều Muộn", "Những Bài Ca Cho Đêm Yên"];
+    const exampleDescriptions = ["🌧️ Tiếng đàn ngân lên giữa một đêm nhiều kỷ niệm.", "🎵 Những giai điệu bolero gợi lại chuyện tình đã xa.", "🌿 Lời ca dịu dàng đưa người nghe về bên dòng sông cũ.", "🌅 Âm nhạc quê nhà làm chiều muộn thêm ấm áp.", "✨ Những bài hát nhẹ nhàng đồng hành cùng phút nghỉ ngơi."];
+    const exampleHashtags = ["#nhactrutinh", "#nhacbolero", "#nhacviet", "#tinhca", "#nhacdem", "#giaidieu", "#loica", "#nghenhac", "#playlistnhac", "#amnhac"];
+    const exampleTags = ["nhac tru tinh", "nhac bolero", "nhac viet", "tinh ca", "nhac dem", "giai dieu", "loi ca", "nghe nhac", "playlist nhac", "am nhac", "nhac nhe", "nhac que huong"];
+    const example = {
+      artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO,
+      requestId,
+      seoOptions: _.times(requiredCount, (index) => ({
+        title: exampleTitles[index % exampleTitles.length],
+        description: exampleDescriptions[index % exampleDescriptions.length],
+        hashtags: exampleHashtags,
+        tags: exampleTags,
+        seoScore: 85 + index,
+      })),
+    };
+    return `Return raw JSON only. Act as an excellent Vietnamese music curator and creative YouTube SEO copywriter. Study the complete ${songCount}-song list supplied below and the selected style, then freely create exactly ${requiredCount} genuinely different, content-faithful ways to present the WHOLE playlist. Apply current YouTube SEO best practices with natural language; do not follow a rigid title formula.
 
 SONGS IN PLAYLIST:
 ${jsonUtils.safeStringify(songs)}
@@ -578,7 +593,9 @@ Keep only these practical SEO basics:
 - Never apply the ASCII/no-diacritics rule for hashtags and tags to title or description.
 - Give an honest integer seoScore from 0 to 100 based on clarity, search relevance, playlist fidelity and click appeal.
 
-Before returning JSON, silently verify every title and description still contains Vietnamese diacritics, every description begins with its only emoji, and only hashtags/tags are ASCII. Each option must include title, description, hashtags, tags and seoScore. Required JSON shape: {"artifactType":"${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}","requestId":"${requestId}","seoOptions":[{"title":"Nhạc Trữ Tình Đêm Mưa","description":"🌧️ Tiếng đàn ngân lên giữa một đêm nhiều kỷ niệm.","hashtags":["#nhactrutinh"],"tags":["nhac tru tinh"],"seoScore":90}]}`,
+Before returning JSON, silently verify every title and description still contains Vietnamese diacritics, every description begins with its only emoji, and only hashtags/tags are ASCII. Each option must include title, description, hashtags, tags and seoScore. The following JSON is a COMPLETE STRUCTURAL EXAMPLE with exactly ${requiredCount} options, 10 hashtags and 12 tags per option. Replace every example title, description, hashtag, tag and score with original values grounded in the actual song list; do not copy its generic content. Return the same complete structure with artifactType and requestId unchanged:
+${jsonUtils.safeStringify(example)}`;
+  },
 
   buildMusicPlaylistSeoCorrectionPrompt: (songs: unknown[], style: string, requiredCount: number, seoRequestId: string, issues: string[] = []): string =>
     `CORRECTION: The previous SEO JSON failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Return raw JSON only. Re-read the complete ${songs.length}-song list below and selected style "${style}". Create exactly ${requiredCount} fresh, freely written SEO options for the whole playlist. FIELD RULES MUST NOT BE MIXED: (1) title uses Vietnamese WITH full Unicode diacritics, Title Case, under 100 characters; (2) description starts with exactly one emoji plus one space, followed by concise Vietnamese WITH full diacritics and has no other emoji; (3) ONLY hashtags are unaccented ASCII, exactly 10 unique values; (4) ONLY tags are unaccented ASCII, exactly 12 unique values. Never strip accents from title or description because hashtags/tags are ASCII. Keep claims grounded, but make titles intriguing with suitable surprise, curiosity or mild shock. Avoid rigid formulas, keyword stuffing and fake hype. Include integer seoScore 0-100. Preserve artifactType "${SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO}" and requestId "${seoRequestId}".\nSONGS IN PLAYLIST:\n${jsonUtils.safeStringify(songs)}`,

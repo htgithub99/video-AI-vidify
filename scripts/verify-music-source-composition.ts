@@ -9,6 +9,19 @@ const sunoAutomation = fs.readFileSync("src/server/services/sunoAutomationServic
 const chatPlanning = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const geminiMediaErrors = (await import("../src/constants/config.ts")).GEMINI_MEDIA_ERRORS;
 const { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } = await import("../src/constants/sunoAutomation.ts");
+const seoPromptExample = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(10, "Bolero", "seo-example", 5);
+const seoExample = JSON.parse(seoPromptExample.slice(seoPromptExample.lastIndexOf("\n") + 1));
+assert.equal(seoExample.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO);
+assert.equal(seoExample.requestId, "seo-example");
+assert.equal(seoExample.seoOptions.length, 5);
+for (const option of seoExample.seoOptions) {
+  assert.equal(option.hashtags.length, 10);
+  assert.equal(option.tags.length, 12);
+  assert.equal(new Set(option.hashtags).size, 10);
+  assert.equal(new Set(option.tags).size, 12);
+  assert.ok(option.hashtags.every((value: string) => /^#[A-Za-z0-9_]+$/.test(value)));
+  assert.ok(option.tags.every((value: string) => /^[a-z0-9 ]+$/i.test(value)));
+}
 const imageNotePrompt = SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt(
   "Giữ nguyên text, đổi bố cục.",
   SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,

@@ -841,6 +841,8 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
   if (!_.isArray(parsed?.seoOptions) || options.length !== MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT) {
     issues.push(SUNO_AUTOMATION_TEXTS.formatSeoOptionsCountIssue(MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT));
   }
+  const normalizedTitles = _.map(options, (option) => _.toLower(_.trim(_.toString(option?.title))));
+  if (_.uniq(normalizedTitles).length !== normalizedTitles.length) issues.push("SEO titles are duplicated");
   _.forEach(options, (option, index) => {
     const label = `SEO option ${index + 1}`;
     const title = _.trim(_.toString(option?.title));
@@ -848,12 +850,20 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
     const hashtags = _.castArray(option?.hashtags || []);
     const tags = _.castArray(option?.tags || []);
     if (!_.inRange(_.size(title), 15, 100)) issues.push(SUNO_AUTOMATION_TEXTS.formatTitleLengthIssue(label));
+    const titleWords = title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES).filter((word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
+    if (!_.every(titleWords, (word) => {
+      const firstLetter = word.match(SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER)?.[0] || "";
+      return firstLetter === firstLetter.toLocaleUpperCase(SUNO_AUTOMATION_CONFIG.LOCALE_VI);
+    })) issues.push(`${label}: title must capitalize every word`);
+    if (SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) || SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title)) issues.push(`${label}: title has disallowed punctuation or claim`);
     const hasVietnameseDiacritics = (value: string): boolean => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(value);
     if (!hasVietnameseDiacritics(title)) issues.push(SUNO_AUTOMATION_TEXTS.formatTitleDiacriticsIssue(label));
     if (!hasVietnameseDiacritics(description)) issues.push(SUNO_AUTOMATION_TEXTS.formatDescriptionDiacriticsIssue(label));
     if (_.size(description.match(/\p{Extended_Pictographic}/gu) || []) !== 1 || !/^\s*\p{Extended_Pictographic}\uFE0F?\s+/u.test(description)) issues.push(SUNO_AUTOMATION_TEXTS.formatDescriptionEmojiIssue(label));
     if (hashtags.length !== 10) issues.push(SUNO_AUTOMATION_TEXTS.formatHashtagsCountIssue(label));
+    if (!_.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.ASCII_HASHTAG_VALIDATION.test(_.toString(value))) || _.uniq(_.map(hashtags, (value) => _.toLower(_.toString(value)))).length !== hashtags.length) issues.push(`${label}: hashtags must be unique ASCII values`);
     if (tags.length !== 12) issues.push(SUNO_AUTOMATION_TEXTS.formatTagsCountIssue(label));
+    if (!_.every(tags, (value) => /^[a-z0-9 ]+$/i.test(_.toString(value)) && !_.isEmpty(_.trim(_.toString(value)))) || _.uniq(_.map(tags, (value) => _.toLower(_.toString(value)))).length !== tags.length) issues.push(`${label}: tags must be unique unaccented words without punctuation`);
     if (!_.isInteger(_.toNumber(option?.seoScore))) issues.push(SUNO_AUTOMATION_TEXTS.formatSeoScoreIntegerIssue(label));
   });
   if (!validateMusicPlaylistSeoContract(parsed, [])) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_SEO_CHECKS_FAILED_ISSUE);
@@ -1130,11 +1140,11 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           parsed = null;
         }
         seoIssues = getMusicPlaylistSeoContractIssues(parsed);
-        if (!_.isEmpty(seoIssues)) await writeMusicDiagnostic("plan_seo_contract_failed", { runId: requestId, attempt: attempt + 1, issues: seoIssues });
+        if (!_.isEmpty(seoIssues)) await writeMusicDiagnostic("plan_seo_contract_failed", { runId: requestId, attempt: attempt + 1, issues: seoIssues.join(" | ") });
         if (!_.isEmpty(seoIssues)) logger.warn(`[MusicPlan] SEO contract attempt=${attempt + 1} issues=${seoIssues.join(" | ")}`);
         if (validateMusicPlaylistSeoContract(parsed, rankedSongs)) return parsed;
       }
-      throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+      throw createAppError(`SEO chưa đạt định dạng yêu cầu: ${seoIssues.join("; ")}`);
     };
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL;
     await writeMusicDiagnostic("plan_stage_started", { runId: requestId, stage: currentStage });
