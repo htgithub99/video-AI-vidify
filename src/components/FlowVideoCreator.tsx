@@ -731,8 +731,8 @@ export default function FlowVideoCreator({
               </div>
             </div>
           </div>
-          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl h-full")}>
-            <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3")}>
+          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl h-full min-h-[380px] lg:min-h-0")}>
+            <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3 shrink-0")}>
               <div className={cn("flex items-center gap-2")}>
                 <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
                   02
@@ -764,19 +764,19 @@ export default function FlowVideoCreator({
               )}
             </div>
 
-            <div className={cn("flex-1 flex flex-col min-h-0")}>
+            <div className={cn("flex-1 min-h-0 relative")}>
               {!clips.length ? (
-                <div className={cn("flex-1 flex items-center justify-center text-center py-8 text-slate-500")}>
+                <div className={cn("absolute inset-0 flex items-center justify-center text-center py-8 text-slate-500")}>
                   <p className={cn("text-xs font-medium")}>
                     {flowTexts.ENTER_REQUEST}
                   </p>
                 </div>
               ) : (
-                <div className={cn("flex-1 space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1")}>
+                <div className={cn("absolute inset-0 space-y-2 overflow-y-auto custom-scrollbar pr-1.5 pb-1")}>
                   {clips.map((clip, index) => (
                     <div
                       key={clip.id}
-                      className={cn("group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40", { "border-emerald-500/30": clip.status === FLOW_CLIP_STATUSES.DONE, "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED, "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING, "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING) })}
+                      className={cn("group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40 shrink-0", { "border-emerald-500/30": clip.status === FLOW_CLIP_STATUSES.DONE, "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED, "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING, "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING) })}
                     >
                       <span className={cn("w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5")}>
                         {index + 1}
