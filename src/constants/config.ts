@@ -851,6 +851,9 @@ export const PROVIDER_REFERENCE_UPLOAD_CONFIG = {
   UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   POST_ACTION_DELAY_MS: 600,
   PROVIDER_PANEL_DELAY_MS: 800,
+  FLOW_ATTACHMENT_PENDING_SELECTOR: '[data-testid*="attachment" i] [role="progressbar"], [data-test-id*="attachment" i] [role="progressbar"], [data-testid*="attachment" i][aria-busy="true"], [data-test-id*="attachment" i][aria-busy="true"], .attachment-container [role="progressbar"], .image-preview [role="progressbar"]',
+  FLOW_REFERENCE_READY_TIMEOUT_MS: 60000,
+  FLOW_REFERENCE_STABLE_POLLS: 3,
 } as const;
 
 export const PROVIDER_REFERENCE_UPLOAD_MESSAGES = {

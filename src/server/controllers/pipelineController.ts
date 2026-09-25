@@ -4937,6 +4937,7 @@ router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req:
         referenceImages: _.compact(_.castArray(item?.referenceImages || [])),
         referenceImageNames: _.compact(_.castArray(item?.referenceImageNames || [])),
         referenceCharacterNames: _.compact(_.castArray(item?.referenceCharacterNames || [])),
+        requireReferenceReady: item?.requireReferenceReady === true,
       })),
       FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH,
     );

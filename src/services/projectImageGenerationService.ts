@@ -10,6 +10,7 @@ export interface ProjectImageItem {
   idempotencyKey?: string;
   referenceImages?: string[];
   referenceImageNames?: string[];
+  requireReferenceReady?: boolean;
   continuityKey?: string;
 }
 export interface ProjectImageResult {

@@ -80,7 +80,7 @@ const resolveClipTitle = (clip: Clip): string => {
 const SAMPLE_PROMPTS = [
   {
     title: "Bolero trữ tình",
-    text: "Tạo 10 video phong cảnh đồng quê Việt Nam, cánh đồng lúa vàng, sông quê chiều tà, hoàng hôn buông xuống và mưa rào nhẹ nhàng làm nền cho video nhạc bolero trữ tình",
+    text: "Tạo 10 video đa dạng theo phong cách MV nhạc Bolero hải ngoại hoài niệm, lãng mạn và sang trọng, với nhân vật trung tâm là người phụ nữ Việt Nam trưởng thành khoảng 20–30 tuổi, cực kỳ xinh đẹp, quyến rũ, duyên dáng và có thần thái điện ảnh, mặc áo dài lụa pastel mềm mại, thanh lịch, tôn lên vẻ đẹp nữ tính một cách tinh tế. Bối cảnh mang cảm giác Việt Nam xưa và ký ức xa quê: phố Sài Gòn về đêm, mưa nhẹ, ánh đèn vàng, đường phố ướt, không gian vắng lặng, hoài niệm, cô đơn và lãng mạn, phù hợp làm hình nền cho nhạc Bolero hải ngoại.",
   },
   {
     title: "Lo-fi Chillout",
@@ -152,6 +152,7 @@ export default function FlowVideoCreator({
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [characterImages, setCharacterImages] = useState<FlowVideoCharacterImage[]>([]);
   const [characterImagesLoaded, setCharacterImagesLoaded] = useState(false);
+  const [isReadingCharacterImages, setIsReadingCharacterImages] = useState(false);
 
   const isVi = currentLang === LANGUAGE_CODES.VI;
 
@@ -234,6 +235,7 @@ export default function FlowVideoCreator({
       || file.size > FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_FILE_BYTES)) {
       return toast.error(flowTexts.CHARACTER_IMAGE_INVALID);
     }
+    setIsReadingCharacterImages(true);
     try {
       const images = await Promise.all(acceptedFiles.map((file, index) => new Promise<FlowVideoCharacterImage>((resolve, reject) => {
         const reader = new FileReader();
@@ -253,6 +255,8 @@ export default function FlowVideoCreator({
       }
     } catch {
       toast.error(flowTexts.CHARACTER_IMAGE_READ_FAILED);
+    } finally {
+      setIsReadingCharacterImages(false);
     }
   };
 
@@ -322,7 +326,7 @@ export default function FlowVideoCreator({
     if (!folderPath) {
       return toast.error(flowTexts.FOLDER_REQUIRED);
     }
-    if (!characterImagesLoaded) return;
+    if (!characterImagesLoaded || isReadingCharacterImages) return;
     const pending = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE);
     const unsaved = clips.filter((clip) => clip.url && !clip.savedPath);
     if (!pending.length && !unsaved.length) return;
@@ -402,6 +406,7 @@ export default function FlowVideoCreator({
               generateType: GenerateType.Video,
               referenceImages: characterImages.map((image) => image.dataUrl),
               referenceImageNames: characterImages.map((image) => image.name),
+              requireReferenceReady: characterImages.length > 0,
             })),
             { ...nextProject.visualConfig, flowProjectId, generateCount: 1 },
             { localProjectId: projectId, flowProjectId },
@@ -416,10 +421,10 @@ export default function FlowVideoCreator({
                 before.map((item) =>
                   item.id === clip.id
                     ? {
-                        ...item,
-                        status: FLOW_CLIP_STATUSES.FAILED,
-                error: generated?.warning || result.warning || flowTexts.FLOW_GENERATION_FAILED,
-                      }
+                      ...item,
+                      status: FLOW_CLIP_STATUSES.FAILED,
+                      error: generated?.warning || result.warning || flowTexts.FLOW_GENERATION_FAILED,
+                    }
                     : item,
                 ),
               );
@@ -465,18 +470,18 @@ export default function FlowVideoCreator({
               before.map((item) =>
                 item.id === clip.id
                   ? {
-                      ...item,
-                      url,
-                      savedPath,
-                      status: url ? FLOW_CLIP_STATUSES.DONE : FLOW_CLIP_STATUSES.FAILED,
-                      error:
-                        saveError ||
-                        (url
-                          ? undefined
-                          : isVi
-                            ? "Video đã tạo nhưng chưa tải về được. Bấm Tạo video để thử lại."
-                            : "Video created but download pending. Click Generate to retry."),
-                    }
+                    ...item,
+                    url,
+                    savedPath,
+                    status: url ? FLOW_CLIP_STATUSES.DONE : FLOW_CLIP_STATUSES.FAILED,
+                    error:
+                      saveError ||
+                      (url
+                        ? undefined
+                        : isVi
+                          ? "Video đã tạo nhưng chưa tải về được. Bấm Tạo video để thử lại."
+                          : "Video created but download pending. Click Generate to retry."),
+                  }
                   : item,
               ),
             );
@@ -486,10 +491,10 @@ export default function FlowVideoCreator({
             before.map((item) =>
               batch.some((clip) => clip.id === item.id)
                 ? {
-                    ...item,
-                    status: FLOW_CLIP_STATUSES.FAILED,
-                    error: error instanceof Error ? error.message : flowTexts.FLOW_ERROR,
-                  }
+                  ...item,
+                  status: FLOW_CLIP_STATUSES.FAILED,
+                  error: error instanceof Error ? error.message : flowTexts.FLOW_ERROR,
+                }
                 : item,
             ),
           );
@@ -614,7 +619,7 @@ export default function FlowVideoCreator({
               <div className={cn("space-y-1.5")}>
                 <div className={cn("flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
                   <Sparkles className={cn("w-3 h-3 text-purple-400")} />
-                    <span>{flowTexts.QUICK_SAMPLES}</span>
+                  <span>{flowTexts.QUICK_SAMPLES}</span>
                 </div>
                 <div className={cn("flex flex-wrap gap-1.5")}>
                   {SAMPLE_PROMPTS.map((sample) => (
@@ -680,7 +685,7 @@ export default function FlowVideoCreator({
 
               <FlowVideoCharacterImages
                 images={characterImages}
-                disabled={!!busy || !projectId || !characterImagesLoaded}
+                disabled={!!busy || !projectId || !characterImagesLoaded || isReadingCharacterImages}
                 texts={flowTexts}
                 onAdd={addCharacterImages}
                 onRemove={(id) => setCharacterImages((current) => current.filter((image) => image.id !== id))}
@@ -694,7 +699,7 @@ export default function FlowVideoCreator({
                   <div className={cn("flex items-center gap-2 min-w-0")}>
                     <FolderOpen className={cn("w-4 h-4 text-purple-400 shrink-0")} />
                     <span className={cn("text-xs font-medium text-slate-200 truncate")}>
-                    {folderPath || flowTexts.SELECT_FOLDER}
+                      {folderPath || flowTexts.SELECT_FOLDER}
                     </span>
                   </div>
                   <span className={cn("text-[11px] font-semibold text-purple-300 shrink-0")}>
@@ -703,7 +708,7 @@ export default function FlowVideoCreator({
                 </div>
 
                 <Button variant="unstyled" type="button"
-                  disabled={!!busy || !characterImagesLoaded || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
+                  disabled={!!busy || !characterImagesLoaded || isReadingCharacterImages || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
                   onClick={generate}
                   className={cn("sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none", { "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !unsavedVideosCount) || !folderPath, "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING, "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING) })}
                 >
