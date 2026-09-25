@@ -2155,7 +2155,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </Button>
 
                   {isGeneratingThumbnail ? (
-                    <Button variant="unstyled" type="button" onClick={handleStopThumbnail} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
+                    <Button variant="unstyled" type="button" onClick={handleStopThumbnail} title={texts.THUMBNAIL_STOP_TOOLTIP} aria-label={texts.THUMBNAIL_STOP_TOOLTIP} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
                       <X className={cn("w-3.5 h-3.5")} />
                       <span>{texts.THUMBNAIL_STOP}</span>
                     </Button>
@@ -2316,7 +2316,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
                       </Button>
                       {isGeneratingVideoBackground ? (
-                        <Button variant="unstyled" type="button" onClick={handleStopVideoBackground} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
+                        <Button variant="unstyled" type="button" onClick={handleStopVideoBackground} title={texts.VIDEO_BACKGROUND_STOP_TOOLTIP} aria-label={texts.VIDEO_BACKGROUND_STOP_TOOLTIP} className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
                           <X className={cn("w-3.5 h-3.5")} />
                           <span>{texts.VIDEO_BACKGROUND_STOP}</span>
                         </Button>
