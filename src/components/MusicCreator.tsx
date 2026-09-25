@@ -933,7 +933,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleGenerate = async () => {
-    if (isLoading || isStopping || isGeneratingVideoBackground) return;
+    if (isBusy) return;
     musicStoppedByUserRef.current = false;
     thumbnailStoppedRef.current = false;
     setGenerationError("");
@@ -1086,7 +1086,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleRegenerateSeo = async () => {
     const activeStyle = _.trim(style);
-    if (_.isEmpty(songs) || isRegeneratingSeo) return;
+    if (_.isEmpty(songs) || isBusy) return;
     setViewMode("seo");
     setIsRegeneratingSeo(true);
     const runId = `${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}seo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -1143,7 +1143,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const createSunoMusic = async (testOnly: boolean) => {
-    if (_.isEmpty(songs) || isCreatingSuno) return;
+    if (_.isEmpty(songs) || isBusy) return;
     const abortController = new AbortController();
     sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
@@ -1227,6 +1227,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleDownloadSunoMusic = async () => {
+    if (isBusy) return;
     const requestedPlaylistUrl = _.trim(downloadPlaylistUrl);
     const isTestPlaylistDownload = !requestedPlaylistUrl && !sunoPlaylistUrl && Boolean(sunoTestPlaylistUrl);
     const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl || sunoTestPlaylistUrl;
@@ -1380,6 +1381,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleNormalizeImageNote = async (assetPurpose: "cover" | "video-background") => {
+    if (isBusy) return;
     const isVideoBackground = assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO;
     const note = isVideoBackground ? videoBackgroundDescription : thumbnailDescription;
     if (_.isEmpty(_.trim(note))) return;
@@ -1414,7 +1416,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleRegenerateThumbnail = async () => {
-    if (_.isEmpty(songs) || isGeneratingThumbnail || isNormalizingThumbnailNote) return;
+    if (_.isEmpty(songs) || isBusy) return;
     thumbnailStoppedRef.current = false;
     const imageAbortController = new AbortController();
     const imageRunId = `music-cover-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1486,7 +1488,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleGenerateVideoBackground = async () => {
-    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote) return;
+    if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isBusy) return;
     const imageAbortController = new AbortController();
     const imageRunId = `music-background-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     videoBackgroundAbortControllerRef.current = imageAbortController;
@@ -1541,19 +1543,22 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const isFormValid = true;
+  const isBusy = isLoading || isStopping || isRegeneratingSeo || isCreatingSuno || isDownloadingSuno
+    || isGeneratingThumbnail || isNormalizingThumbnailNote || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote;
+  const isTrackListUnavailable = isBusy || _.isEmpty(downloadedMusicTracks);
 
   return (
-    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
+    <div aria-busy={isBusy} className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
       <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
         <MusicCreatorHeader
           texts={texts}
           isAiConfigOpen={isAiConfigOpen}
           onToggleAiConfig={() => setIsAiConfigOpen(!isAiConfigOpen)}
-          isLoading={isLoading}
+          isLoading={isBusy}
         />
 
         {isAiConfigOpen && (
-          <div className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
+          <fieldset disabled={isBusy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
             <ChatPlanningSettingsBlock
               provider={provider}
               model={model}
@@ -1565,7 +1570,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               onChromeHeadlessChange={setChromeHeadless}
               currentLang={currentLang}
             />
-          </div>
+          </fieldset>
         )}
 
         <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
@@ -1590,7 +1595,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <Button variant="unstyled"
                       type="button"
                       onClick={handleSaveStyle}
-                      disabled={isLoading}
+                      disabled={isBusy}
                       className={cn("h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
                       <Save className={cn("w-3 h-3 shrink-0")} />
                       <span className={cn("inline-flex items-center leading-none")}>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
@@ -1598,7 +1603,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     <Button variant="unstyled"
                       type="button"
                       onClick={handleCancelStyleEdit}
-                      disabled={isLoading}
+                      disabled={isBusy}
                       className={cn("h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
                       <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
                     </Button>
@@ -1613,7 +1618,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                     value={styleName}
                     onChange={(event) => setStyleName(event.target.value)}
                     placeholder={texts.STYLE_NAME_PLACEHOLDER}
-                    disabled={isLoading}
+                    disabled={isBusy}
                     className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")}
                   />
                 </div>
@@ -1626,7 +1631,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       if (editingStyleIndex === null) setStyle(e.target.value);
                     }}
                     placeholder={texts.STYLE_PLACEHOLDER}
-                    disabled={isLoading}
+                    disabled={isBusy}
                     className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
                   />
                 </div>
@@ -1654,7 +1659,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                               setStyleDraft("");
                               setStyleName("");
                             }}
-                            disabled={isLoading}
+                            disabled={isBusy}
                             className={cn("text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full")}
                             title={savedStyle.content}>
                             <span
@@ -1675,7 +1680,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 e.stopPropagation();
                                 handleCopyStyle(savedStyle, styleIndex);
                               }}
-                              disabled={isLoading}
+                              disabled={isBusy}
                               title={texts.COPY_STYLE_BTN}
                               className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !(isSelected) })}>
                               {copiedStyleIndex === styleIndex ? (
@@ -1693,7 +1698,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 e.stopPropagation();
                                 handleEditStyle(styleIndex);
                               }}
-                              disabled={isLoading}
+                              disabled={isBusy}
                               title={texts.STYLE_UPDATE_BTN}
                               className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !(isSelected) })}>
                               <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
@@ -1707,7 +1712,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 e.stopPropagation();
                                 setStyleToDelete(savedStyle);
                               }}
-                              disabled={isLoading}
+                              disabled={isBusy}
                               title={texts.STYLE_DELETE_BTN}
                               className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected, "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !(isSelected) })}>
                               <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
@@ -1741,7 +1746,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <Button variant="unstyled"
                         type="button"
                         onClick={handleSaveInspo}
-                        disabled={isLoading || isCreatingSuno}
+                        disabled={isBusy}
                         className={cn("h-7.5 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
                         <Save className={cn("w-3 h-3 shrink-0")} />
                         <span className={cn("inline-flex items-center leading-none")}>{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
@@ -1749,7 +1754,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <Button variant="unstyled"
                         type="button"
                         onClick={handleCancelInspoEdit}
-                        disabled={isLoading || isCreatingSuno}
+                        disabled={isBusy}
                         className={cn("h-7.5 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
                         <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
                       </Button>
@@ -1763,7 +1768,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       type="text"
                       value={inspoName}
                       onChange={(event) => setInspoName(event.target.value)}
-                      disabled={isLoading || isCreatingSuno}
+                      disabled={isBusy}
                       placeholder={texts.INSPO_NAME_PLACEHOLDER}
                       className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")}
                     />
@@ -1776,7 +1781,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         setSunoInspoDraft(event.target.value);
                         if (editingInspoIndex === null) setSunoInspo(event.target.value);
                       }}
-                      disabled={isLoading || isCreatingSuno}
+                      disabled={isBusy}
                       placeholder={texts.SUNO_INSPO_PLACEHOLDER}
                       className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
                     />
@@ -1806,7 +1811,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   setSunoInspoDraft("");
                                   setInspoName("");
                                 }}
-                                disabled={isLoading || isCreatingSuno}
+                                disabled={isBusy}
                                 className={cn("text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 leading-none h-full")}
                                 title={item.content}>
                                 <span
@@ -1832,6 +1837,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                   }}
                                   title={texts.INSPO_COPY_NAME_BTN}
                                   aria-label={texts.INSPO_COPY_NAME_BTN}
+                                  disabled={isBusy}
                                   className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !isSelected })}>
                                   {copiedInspoIndex === index ? (
                                     <Check className={cn("w-2.5 h-2.5 shrink-0", { "text-emerald-300": isSelected, "text-emerald-500": !isSelected })} />
@@ -1851,7 +1857,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                     setSunoInspo(item.content);
                                     setSunoInspoDraft(item.content);
                                   }}
-                                  disabled={isLoading || isCreatingSuno}
+                                  disabled={isBusy}
                                   title={texts.STYLE_UPDATE_BTN}
                                   className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !(isSelected) })}>
                                   <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
@@ -1865,7 +1871,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                     e.stopPropagation();
                                     setInspoToDelete(item);
                                   }}
-                                  disabled={isLoading || isCreatingSuno}
+                                  disabled={isBusy}
                                   title={texts.STYLE_DELETE_BTN}
                                   className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected, "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !(isSelected) })}>
                                   <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
@@ -1896,7 +1902,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 <Button variant="unstyled"
                   type="button"
                   onClick={handleFillSampleReferences}
-                  disabled={isLoading}
+                  disabled={isBusy}
                   className={cn("text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs leading-none !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white")}>
                   <Sparkles className={cn("w-3 h-3 shrink-0")} />
                   <span className={cn("inline-flex items-center leading-none")}>{texts.QUICK_FILL_LABEL}</span>
@@ -1909,7 +1915,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   value={referenceSongs}
                   onChange={(e) => setReferenceSongs(e.target.value)}
                   placeholder={texts.REFERENCE_PLACEHOLDER}
-                  disabled={isLoading}
+                  disabled={isBusy}
                   className={cn("w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar")}
                 />
               </div>
@@ -1950,7 +1956,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         key={count}
                         type="button"
                         onClick={() => setOutputCount(count)}
-                        disabled={isLoading}
+                        disabled={isBusy}
                         className={cn("relative h-9 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer shadow-xs select-none", { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !(isSelected) })}>
                         <span>{texts.formatSongCount(count)}</span>
                         {isRecommended && !isSelected && (
@@ -1984,7 +1990,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleGenerate}
-                    disabled={!isFormValid || isLoading || isStopping || isGeneratingVideoBackground}
+                    disabled={!isFormValid || isBusy}
                     className={cn("h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none", { "flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": isLoading, "w-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !(isLoading) && isFormValid, "w-full bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !(isLoading) && !(isFormValid) })}>
                     {isLoading ? (
                       <>
@@ -2022,6 +2028,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleTrySampleTemplate}
+                    disabled={isBusy}
                     className={cn("w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors inline-flex items-center justify-center gap-1 leading-none")}>
                     <Sparkles className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>
@@ -2039,7 +2046,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 <span className={cn("text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full")}>{texts.THUMBNAIL_RATIO_BADGE}</span>
               </div>
 
-              <input ref={thumbnailFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} className={cn("hidden")} />
+              <input ref={thumbnailFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} disabled={isBusy} className={cn("hidden")} />
 
               <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                 {thumbnailReference ? (
@@ -2066,6 +2073,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         thumbnailFileInputRef.current?.click();
                       }}
                       title={texts.CHANGE_IMAGE_BTN}
+                      disabled={isBusy}
                       className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center")}>
                       <Upload className={cn("w-3.5 h-3.5 shrink-0")} />
                     </Button>
@@ -2074,7 +2082,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={() => thumbnailFileInputRef.current?.click()}
-                    disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
+                    disabled={isBusy}
                     className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center")}>
                     <Upload className={cn("w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors")} />
                     <span className={cn("text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight")}>{texts.THUMBNAIL_UPLOAD}</span>
@@ -2099,7 +2107,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <span className={cn("text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_AI_BADGE}</span>
                       <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_HD}</span>
                     </div>
-                    <Button variant="unstyled" type="button" onClick={handleDownloadThumbnail} title={texts.THUMBNAIL_DOWNLOAD} aria-label={texts.THUMBNAIL_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
+                    <Button variant="unstyled" type="button" onClick={handleDownloadThumbnail} disabled={isBusy} title={texts.THUMBNAIL_DOWNLOAD} aria-label={texts.THUMBNAIL_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
                       <Download className={cn("w-3.5 h-3.5")} />
                     </Button>
                   </div>
@@ -2136,7 +2144,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={() => { void handleNormalizeImageNote("cover"); }}
-                    disabled={_.isEmpty(_.trim(thumbnailDescription)) || isGeneratingThumbnail || isNormalizingThumbnailNote}
+                    disabled={isBusy || _.isEmpty(_.trim(thumbnailDescription))}
                     className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed")}
                     title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                   >
@@ -2151,7 +2159,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   rows={4}
                   value={thumbnailDescription}
                   onChange={(event) => setThumbnailDescription(event.target.value)}
-                  disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
+                  disabled={isBusy}
                   placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER}
                   className={cn("w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar")}
                 />
@@ -2162,7 +2170,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleRegenerateThumbnail}
-                    disabled={isGeneratingThumbnail || isNormalizingThumbnailNote}
+                    disabled={isBusy}
                     className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", { "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait": isGeneratingThumbnail, "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95 col-span-2": !isGeneratingThumbnail })}>
                     {isGeneratingThumbnail ? (
                       <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400")} />
@@ -2197,13 +2205,13 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
 
                   <label
-                    className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none", { "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60": isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground, "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs": !(isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground) && showVideoTrackList, "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer": !(isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground) && !(showVideoTrackList) })}
+                    className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none", { "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60": isTrackListUnavailable, "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs": !isTrackListUnavailable && showVideoTrackList, "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer": !isTrackListUnavailable && !showVideoTrackList })}
                   >
                     <input
                       type="checkbox"
                       checked={showVideoTrackList}
                       onChange={(event) => setShowVideoTrackList(event.target.checked)}
-                      disabled={isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) || isGeneratingVideoBackground}
+                      disabled={isTrackListUnavailable}
                       className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")}
                     />
                     <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
@@ -2241,7 +2249,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   </div>
                 ) : (
                   <div className={cn("space-y-3")}>
-                    <input ref={videoBackgroundFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} className={cn("hidden")} />
+              <input ref={videoBackgroundFileInputRef} type="file" accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} disabled={isBusy} className={cn("hidden")} />
                     <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                       {videoBackgroundReference ? (
                         <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md")}>
@@ -2249,12 +2257,12 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5")}>
                             <span className={cn("text-[9px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded")}>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                           </div>
-                          <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} title={texts.CHANGE_IMAGE_BTN} className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center")}>
+                          <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isBusy} title={texts.CHANGE_IMAGE_BTN} className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center")}>
                             <Upload className={cn("w-3.5 h-3.5")} />
                           </Button>
                         </div>
                       ) : (
-                        <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isGeneratingVideoBackground} className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer")}>
+                        <Button variant="unstyled" type="button" onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isBusy} className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer")}>
                           <Upload className={cn("w-4 h-4 text-slate-400")} />
                           <span className={cn("text-[10px] font-bold text-slate-300")}>{texts.THUMBNAIL_UPLOAD}</span>
                           <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
@@ -2283,7 +2291,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                           </div>
                         )}
                         {generatedVideoBackground && !isGeneratingVideoBackground && (
-                          <Button variant="unstyled" type="button" onClick={handleDownloadVideoBackground} title={texts.VIDEO_BACKGROUND_DOWNLOAD} aria-label={texts.VIDEO_BACKGROUND_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
+                          <Button variant="unstyled" type="button" onClick={handleDownloadVideoBackground} disabled={isBusy} title={texts.VIDEO_BACKGROUND_DOWNLOAD} aria-label={texts.VIDEO_BACKGROUND_DOWNLOAD} className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
                             <Download className={cn("w-3.5 h-3.5")} />
                           </Button>
                         )}
@@ -2303,7 +2311,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         <Button variant="unstyled"
                           type="button"
                           onClick={() => { void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO); }}
-                          disabled={_.isEmpty(_.trim(videoBackgroundDescription)) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                          disabled={isBusy || _.isEmpty(_.trim(videoBackgroundDescription))}
                           className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed")}
                           title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}
                         >
@@ -2318,7 +2326,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         rows={3}
                         value={videoBackgroundDescription}
                         onChange={(event) => setVideoBackgroundDescription(event.target.value)}
-                        disabled={isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                        disabled={isBusy}
                         placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER}
                         className={cn("w-full min-h-[78px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-cyan-500/80 custom-scrollbar")}
                       />
@@ -2327,7 +2335,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                       <Button variant="unstyled"
                         type="button"
                         onClick={handleGenerateVideoBackground}
-                        disabled={_.isEmpty(videoBackgroundReference) || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote}
+                        disabled={isBusy || _.isEmpty(videoBackgroundReference)}
                         className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait", { "col-span-2": !isGeneratingVideoBackground })}
                       >
                         {isGeneratingVideoBackground ? (
@@ -2375,6 +2383,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={() => setViewMode("lyrics")}
+                    disabled={isBusy}
                     className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-purple-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.LYRICS, "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.LYRICS) })}>
                     <Music2 className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_LYRICS}</span>
@@ -2382,6 +2391,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={() => setViewMode("seo")}
+                    disabled={isBusy}
                     className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-fuchsia-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SEO, "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SEO) })}>
                     <Sparkles className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SEO}</span>
@@ -2389,6 +2399,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={() => setViewMode("split")}
+                    disabled={isBusy}
                     className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-indigo-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SPLIT, "!text-slate-700 hover:!text-indigo-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SPLIT) })}>
                     <Columns className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SPLIT}</span>
@@ -2401,7 +2412,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleGenerate}
-                    disabled={isLoading || isRegeneratingSeo || isCreatingSuno || isGeneratingVideoBackground}
+                    disabled={isBusy}
                     className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}
                     title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
                     {isLoading ? (
@@ -2414,7 +2425,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleRegenerateSeo}
-                    disabled={isLoading || isRegeneratingSeo || isCreatingSuno}
+                    disabled={isBusy}
                     className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}
                     title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
                     {isRegeneratingSeo ? (
@@ -2427,7 +2438,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleCreateSunoTest}
-                    disabled={isCreatingSuno}
+                    disabled={isBusy}
                     className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-100 hover:bg-cyan-200/80 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}>
                     {isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
                     <span className={cn("inline-flex items-center leading-none")}>{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
@@ -2435,7 +2446,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={handleCreateSunoMusic}
-                    disabled={isCreatingSuno}
+                    disabled={isBusy}
                     className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none")}>
                     {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
                     <span className={cn("inline-flex items-center leading-none")}>{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
@@ -2452,6 +2463,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                   <Button variant="unstyled"
                     type="button"
                     onClick={viewMode === MUSIC_VIEW_MODES.SEO ? handleCopyAllSeo : handleCopyAllLyrics}
+                    disabled={isBusy}
                     className={cn("btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
                     title={texts.COPY_ALL_BTN}>
                     <Copy className={cn("w-4 h-4 shrink-0")} />
@@ -2469,18 +2481,18 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                 value={downloadPlaylistUrl}
                 onChange={(event) => setDownloadPlaylistUrl(event.target.value)}
                 placeholder={texts.SUNO_DOWNLOAD_PLAYLIST_PLACEHOLDER}
-                disabled={isDownloadingSuno}
+                disabled={isBusy}
                 className={cn("h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60")}
               />
             </div>
             <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align="center">
-                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", { "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs": sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": !sunoEvaluateTracks })}>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(true)} disabled={isBusy} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", { "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs": sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": !sunoEvaluateTracks })}>
                   <Sparkles className={cn("w-3 h-3 shrink-0")} /><span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_ON}</span>
                 </Button>
               </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align="center">
-                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs": !sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": sunoEvaluateTracks })}>
+                <Button variant="unstyled" type="button" onClick={() => setSunoEvaluateTracks(false)} disabled={isBusy} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs": !sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": sunoEvaluateTracks })}>
                   <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_OFF}</span>
                 </Button>
               </Tooltip>
@@ -2488,11 +2500,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
               {(["mp3", "wav"] as SunoDownloadFormat[]).map((format) => (
                 <Tooltip key={format} content={format === AUDIO_FORMATS.MP3 ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align="center">
-                  <Button variant="unstyled" type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isDownloadingSuno} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs": sunoDownloadFormat === format, "text-slate-400 hover:text-slate-200 border border-transparent": sunoDownloadFormat !== format })}>{format}</Button>
+                  <Button variant="unstyled" type="button" onClick={() => setSunoDownloadFormat(format)} disabled={isBusy} className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs": sunoDownloadFormat === format, "text-slate-400 hover:text-slate-200 border border-transparent": sunoDownloadFormat !== format })}>{format}</Button>
                 </Tooltip>
               ))}
             </div>
-            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isDownloadingSuno || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", { "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30": isDownloadingSuno, "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed": !isDownloadingSuno })}>
+            <Button variant="unstyled" type="button" onClick={handleDownloadSunoMusic} disabled={isBusy || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)} className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", { "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30": isDownloadingSuno, "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed": !isDownloadingSuno })}>
               {isDownloadingSuno ? <Disc3 className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-amber-200")} /> : <Download className={cn("w-3.5 h-3.5 shrink-0")} />}
               <span className={cn("inline-flex items-center leading-none")}>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>
@@ -2801,7 +2813,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                                 aria-checked={item.enabled}
                                 aria-label={item.label}
                                 title={`${item.label}: ${item.enabled ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE}`}
-                                disabled={isLoading || isCreatingSuno}
+                                disabled={isBusy}
                                 onClick={() => setSunoSettings((current) => current ? { ...current, [item.settingKey]: !current[item.settingKey] } : current)}
                                 className={cn(
                                   "toggle-switch select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:opacity-40 disabled:cursor-not-allowed",
@@ -2925,6 +2937,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               <Button variant="unstyled"
                 type="button"
                 onClick={handleTrySampleTemplate}
+                disabled={isBusy}
                 className={cn("px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs")}>
                 <Sparkles className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
                 <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>

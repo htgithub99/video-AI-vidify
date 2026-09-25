@@ -288,6 +288,13 @@ button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-i
   transition: transform 0.2s ease-out, background-color 0.2s ease !important;
 }
 
+.creation-workspace button:disabled,
+.creation-workspace input:disabled,
+.creation-workspace textarea:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
 .toast-close-btn,
 [data-close-button] {
   min-height: unset !important;
