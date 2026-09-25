@@ -3,6 +3,7 @@ import { CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_ROOM_STAGE, FREE_AI_PROVIDER_
 import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from "lodash";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { resolveApiKeys } from "./apiKeyResolver.js";
 import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
@@ -141,7 +142,7 @@ export const generateContentWithRetry = async (
     const roomPayload = createRoomRequestPayload(params.contents);
     if (_.isEmpty(roomPayload.prompt)) throw createAppError("Room-only AI execution received no textual task instruction for the selected room.");
     const schemaContract = params.config?.responseJsonSchema && params.config?.includeRoomSchemaContract !== false
-      ? `\n\n[REQUIRED RESPONSE CONTRACT]\nReturn only valid JSON matching this JSON Schema exactly:\n${JSON.stringify(params.config.responseJsonSchema)}`
+      ? `\n\n[REQUIRED RESPONSE CONTRACT]\nReturn only valid JSON matching this JSON Schema exactly:\n${stringifyJson(params.config.responseJsonSchema)}`
       : "";
     let roomResponse: Awaited<ReturnType<typeof generatePlanningWithChatUi>> | undefined;
     let lastRoomError: unknown;

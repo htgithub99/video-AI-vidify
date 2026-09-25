@@ -8,10 +8,11 @@ import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/prof
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
-import { createMusicDownloadCheckpointKey, deleteMusicDownloadCheckpoint, deleteMusicEvaluationAudio, readMusicDownloadCheckpoint, readMusicEvaluationAudio, readMusicEvaluationWav, writeMusicDownloadCheckpoint, writeMusicEvaluationAudio, writeMusicEvaluationWav, type MusicDownloadCheckpoint, type MusicDownloadSelection } from "../services/musicDownloadCheckpointService.js";
+import { createMusicDownloadCheckpointKey, createMusicEvaluationAudioCacheKey, deleteMusicDownloadCheckpoint, deleteMusicEvaluationAudio, readMusicDownloadCheckpoint, readMusicEvaluationAudio, readMusicEvaluationWav, writeMusicDownloadCheckpoint, writeMusicEvaluationAudio, writeMusicEvaluationWav, type MusicDownloadCheckpoint, type MusicDownloadSelection } from "../services/musicDownloadCheckpointService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
@@ -1392,14 +1393,15 @@ const createSunoEvaluationPreview = async (wavPath: string): Promise<Buffer> => 
   }
 };
 
-const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, signal?: AbortSignal): Promise<Map<string, Buffer>> => {
+const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, signal?: AbortSignal, preparePreview = true): Promise<Map<string, Buffer>> => {
   const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
   const audioBySongId = new Map<string, Buffer>();
   for (const idChunk of _.chunk(_.uniq(songIds), SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY)) {
     signal?.throwIfAborted();
     const downloaded = await Promise.all(_.map(idChunk, async (songId) => {
-      const cachedAudio = await readMusicEvaluationAudio(cacheKey, songId);
+      const cachedAudio = preparePreview ? await readMusicEvaluationAudio(cacheKey, songId) : null;
       const cachedWav = await readMusicEvaluationWav(cacheKey, songId);
+      if (cachedWav && !preparePreview) return [songId, null] as const;
       if (cachedAudio && cachedWav) {
         await writeSunoCuratedLog("evaluation_audio_cache_hit", { songId, bytes: cachedAudio.length });
         return [songId, cachedAudio] as const;
@@ -1418,6 +1420,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
             wavPath = await writeMusicEvaluationWav(cacheKey, songId, Buffer.from(await response.arrayBuffer()));
             await writeSunoCuratedLog("evaluation_wav_cached", { songId });
           }
+          if (!preparePreview) return [songId, null] as const;
           const audio = cachedAudio && cachedWav ? cachedAudio : await createSunoEvaluationPreview(wavPath);
           if (!cachedAudio || !cachedWav) await writeMusicEvaluationAudio(cacheKey, songId, audio);
           return [songId, audio] as const;
@@ -1436,7 +1439,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
       if (_.includes(cause, "suno_download_http_502")) throw createAppError(SUNO_AUTOMATION_TEXTS.WAV_SOURCE_UNAVAILABLE_ERR);
       throw createAppError(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR} trackId=${songId}: ${cause}`);
     }));
-    _.forEach(downloaded, ([songId, buffer]) => audioBySongId.set(songId, buffer));
+    _.forEach(downloaded, ([songId, buffer]) => { if (buffer) audioBySongId.set(songId, buffer); });
   }
   return audioBySongId;
 };
@@ -1648,10 +1651,28 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         return { songId, title: SUNO_AUTOMATION_TEXTS.formatSongVariantTitle(songNumber, title, (index % 2) + 1) };
       });
     }
-    if (req.body?.maxTracks === 1 && !shouldEvaluateTracks) tracks = _.take(tracks, 1);
     const candidateIds = _.map(tracks, "songId");
+    if (_.isEmpty(candidateIds) || _.some(candidateIds, (songId) => _.isEmpty(songId))) {
+      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACKS_REQUIRED_ERR);
+    }
+    if (req.body?.maxTracks !== 1 && candidateIds.length % SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT !== 0) {
+      throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
+    }
+    const audioCacheKey = createMusicEvaluationAudioCacheKey(_.toString(req.body?.playlistUrl), candidateIds);
+    if (!shouldEvaluateTracks) {
+      tracks = req.body?.maxTracks === 1
+        ? _.take(tracks, 1)
+        : _.flatMap(_.chunk(tracks, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT), (pair) => _.take(pair, 1));
+    }
     const downloadFormat = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
-    const downloadFolder = path.resolve(_.trim(_.toString(req.body?.folderPath)));
+    const requestedFolder = _.trim(_.toString(req.body?.folderPath));
+    if (!_.includes([SUNO_AUTOMATION_CONFIG.FORMAT_MP3, SUNO_AUTOMATION_CONFIG.FORMAT_WAV], downloadFormat)) {
+      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+    }
+    if (_.isEmpty(requestedFolder) || !path.isAbsolute(requestedFolder) || !(await fs.promises.stat(requestedFolder).catch(() => null))?.isDirectory()) {
+      throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
+    }
+    const downloadFolder = path.resolve(requestedFolder);
     const checkpointKey = createMusicDownloadCheckpointKey(
       _.toString(req.body?.playlistUrl), candidateIds, _.toString(req.body?.style), _.toString(req.body?.aiExecution?.model),
     );
@@ -1671,10 +1692,11 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       await writeMusicDownloadCheckpoint(checkpoint);
       const sourceWavPaths: Record<string, string> = {};
       for (const track of checkpoint.selectedTracks) {
-        let wavPath = await readMusicEvaluationWav(checkpoint.key, track.songId);
+        let wavPath = await readMusicEvaluationWav(audioCacheKey, track.songId);
+        if (!wavPath) wavPath = await readMusicEvaluationWav(checkpoint.key, track.songId);
         if (!wavPath) {
-          await downloadSunoEvaluationAudio([track.songId], checkpoint.key, planningRun?.signal || downloadAbortController.signal);
-          wavPath = await readMusicEvaluationWav(checkpoint.key, track.songId);
+          await downloadSunoEvaluationAudio([track.songId], audioCacheKey, planningRun?.signal || downloadAbortController.signal);
+          wavPath = await readMusicEvaluationWav(audioCacheKey, track.songId);
         }
         if (wavPath) sourceWavPaths[track.songId] = wavPath;
         else throw createAppError(`Không thể phục hồi WAV gốc cho bài ${track.title}.`);
@@ -1709,6 +1731,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         evaluationRunId, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true,
       });
       await deleteMusicDownloadCheckpoint(checkpoint.key);
+      await deleteMusicEvaluationAudio(audioCacheKey).catch(() => undefined);
       await deleteMusicEvaluationAudio(checkpoint.key).catch(() => undefined);
       return res.json({ success: true, downloadedPaths, curatedTracks, downloadedTracks: curatedTracks });
     };
@@ -1747,7 +1770,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
           candidates: _.map(pair, "songId"),
         })));
       await writeSunoCuratedLog("evaluation_audio_preparation_started", { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: tracks.length });
-      const evaluationAudio = await downloadSunoEvaluationAudio(_.flatMap(groupsByChunk, (groups) => _.flatMap(groups, "candidates")), checkpointKey, planningRun.signal);
+      const evaluationAudio = await downloadSunoEvaluationAudio(_.flatMap(groupsByChunk, (groups) => _.flatMap(groups, "candidates")), audioCacheKey, planningRun.signal);
       await writeSunoCuratedLog("evaluation_audio_ready", { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: evaluationAudio.size });
       const roomPreparations = _.map(evaluationWorkerIds, (workerId) => prepareChatPlanningRoom({
         provider: AiPlanningFallbackProvider.GeminiChat,
@@ -1823,7 +1846,20 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       return await finishCuratedDownload(checkpoint);
     }
     const format = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
-    const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal, evaluationRunId);
+    let sourceWavPaths: Record<string, string> | undefined;
+    if (req.body?.maxTracks !== 1) {
+      await downloadSunoEvaluationAudio(candidateIds, audioCacheKey, downloadAbortController.signal, false);
+      sourceWavPaths = {};
+      for (const track of tracks) {
+        const wavPath = await readMusicEvaluationWav(audioCacheKey, track.songId);
+        if (!wavPath) throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR);
+        sourceWavPaths[track.songId] = wavPath;
+      }
+    }
+    const downloadedPaths = await downloadSunoTracksToFolder(
+      tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal, evaluationRunId,
+      sourceWavPaths ? { sourceWavPaths } : undefined,
+    );
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, trackCount: downloadedPaths.length, format, success: true });
     return res.json({ success: true, downloadedPaths, downloadedTracks: tracks });
   } catch (error) {
@@ -4833,7 +4869,7 @@ router.post("/plan-flow-video-prompts", requireLicense(FeatureType.VIDEO), async
   const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
   const requestId = `flow_video_prompts_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const artifactType = "flow-video-prompts";
-  const prompt = `Write exactly ${count} distinct video concepts for Google Flow based on this Vietnamese user request: ${JSON.stringify(request)}. Return ONLY one valid JSON object with "requestId": ${JSON.stringify(requestId)}, "artifactType": ${JSON.stringify(artifactType)}, and "videos": an array of exactly ${count} objects. Each object has "title": a concise, distinct Vietnamese video title of 3 to 8 words describing the scene, and "prompt": one detailed English text-to-video prompt with concrete setting, subject, motion, camera, lighting and atmosphere. No captions, logos, watermarks, spoken dialogue or music in the video prompts. Copy requestId and artifactType exactly. No markdown or explanation.`;
+  const prompt = `Write exactly ${count} distinct video concepts for Google Flow based on this Vietnamese user request: ${stringifyJson(request)}. Return ONLY one valid JSON object with "requestId": ${stringifyJson(requestId)}, "artifactType": ${stringifyJson(artifactType)}, and "videos": an array of exactly ${count} objects. Each object has "title": a concise, distinct Vietnamese video title of 3 to 8 words describing the scene, and "prompt": one detailed English text-to-video prompt with concrete setting, subject, motion, camera, lighting and atmosphere. No captions, logos, watermarks, spoken dialogue or music in the video prompts. Copy requestId and artifactType exactly. No markdown or explanation.`;
   try {
     let raw: string;
     if (execution.mode === AiPlanningExecutionMode.ApiOnly) {

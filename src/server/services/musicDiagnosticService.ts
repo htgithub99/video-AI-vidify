@@ -3,6 +3,7 @@ import os from "os";
 import path from "path";
 import { logger } from "../../lib/logger.js";
 import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 
 const logPath = path.join(process.env.LOCALAPPDATA || os.tmpdir(), "VideoAI-Vidify", "logs", "music-workflow.jsonl");
 const safeKeys = new Set([
@@ -38,7 +39,7 @@ export const writeMusicDiagnostic = async (event: string, details: Record<string
         : typeof value === "number" || typeof value === "boolean" ? value : undefined;
     }
     await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.promises.appendFile(logPath, `${JSON.stringify({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}\n`, "utf8");
+    await fs.promises.appendFile(logPath, `${stringifyJson({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}\n`, "utf8");
   } catch (error) {
     logger.warn(`[MusicDiagnostics] log write failed: ${musicErrorDetails(error).errorMessage}`);
   }

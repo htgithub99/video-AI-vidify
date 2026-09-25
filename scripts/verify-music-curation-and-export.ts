@@ -29,7 +29,7 @@ assert.match(constants, /formatPlaylistApiUrl/);
 assert.match(service, /playlist_clips/);
 assert.match(service, /if \(!_\.isEmpty\(songIds\)\) return songIds/);
 assert.match(controller, /Promise\.allSettled\(_\.map\(groupsByChunk/);
-assert.match(controller, /downloadSunoEvaluationAudio\(_\.flatMap\(groupsByChunk, \(groups\) => _\.flatMap\(groups, "candidates"\)\), checkpointKey, planningRun\.signal\)/);
+assert.match(controller, /downloadSunoEvaluationAudio\(_\.flatMap\(groupsByChunk, \(groups\) => _\.flatMap\(groups, "candidates"\)\), audioCacheKey, planningRun\.signal\)/);
 assert.match(controller, /readMusicEvaluationAudio\(cacheKey, songId\)/);
 assert.match(controller, /writeMusicEvaluationAudio\(cacheKey, songId, audio\)/);
 assert.doesNotMatch(controller, /readMusicEvaluationSourceMp3|writeMusicEvaluationSourceMp3|wavConvertedFromMp3Count/);

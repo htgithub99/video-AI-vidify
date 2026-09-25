@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import _ from "lodash";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 
 const canonicalizeSignatureValue = (value: unknown): unknown => {
   if (_.isArray(value)) return _.map(value, canonicalizeSignatureValue);
@@ -8,4 +9,4 @@ const canonicalizeSignatureValue = (value: unknown): unknown => {
 };
 
 export const createCinematicScriptSourceSignature = (source: Record<string, unknown>): string =>
-  createHash("sha256").update(JSON.stringify(canonicalizeSignatureValue(source))).digest("hex");
+  createHash("sha256").update(stringifyJson(canonicalizeSignatureValue(source))).digest("hex");

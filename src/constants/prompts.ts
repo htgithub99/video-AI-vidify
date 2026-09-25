@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { AspectRatio, GenerateType } from "../types.js";
 import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy, VideoGenre } from "./enums.js";
@@ -1140,10 +1141,10 @@ export const getVisualPromptQaRepairPrompt = (prompt: string, qaIssues: string[]
   `You are the senior visual director responsible for replacing a failed ${purpose} generation prompt. Return a complete standalone replacement prompt authored entirely by you, never a patch, suffix, template instruction, explanation, or fragment for application code to concatenate. Preserve the approved story event, character identities, visual style, composition intent, text policy and aspect-ratio intent. Correct only the observed material QA defects. The replacement must remain directly usable by the image generator and must not introduce new story facts, characters, branding, readable text, collage layout, or unrelated visual elements.
 
 OBSERVED QA DEFECTS:
-${JSON.stringify(qaIssues)}
+${stringifyJson(qaIssues)}
 
 AUTHORITATIVE SCENE CONTEXT:
-${JSON.stringify(sceneContext)}
+${stringifyJson(sceneContext)}
 
 FAILED PROMPT TO REPLACE COMPLETELY:
 ${prompt}

@@ -2,6 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { createHash } from "crypto";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 
 export interface MusicDownloadSelection {
   songId: string;
@@ -31,14 +32,17 @@ const hasMp3Header = (audio: Buffer): boolean =>
   audio.toString("ascii", 0, 3) === "ID3" || (audio[0] === 0xff && (audio[1] & 0xe0) === 0xe0);
 
 export const createMusicDownloadCheckpointKey = (playlistUrl: string, candidateIds: string[], style: string, model: string): string =>
-  createHash("sha256").update(JSON.stringify({ playlistUrl: playlistUrl.trim(), candidateIds, style: style.trim(), model })).digest("hex");
+  createHash("sha256").update(stringifyJson({ playlistUrl: playlistUrl.trim(), candidateIds, style: style.trim(), model })).digest("hex");
+
+export const createMusicEvaluationAudioCacheKey = (playlistUrl: string, candidateIds: string[]): string =>
+  createHash("sha256").update(stringifyJson({ playlistUrl: playlistUrl.trim(), candidateIds })).digest("hex");
 
 const checkpointPath = (key: string): string => path.join(checkpointDirectory, `${key}.json`);
 
 export const readMusicDownloadCheckpoint = async (key: string, candidateIds: string[]): Promise<MusicDownloadCheckpoint | null> => {
   try {
     const parsed = JSON.parse(await fs.promises.readFile(checkpointPath(key), "utf8")) as MusicDownloadCheckpoint;
-    if (parsed.version !== 2 || parsed.key !== key || parsed.sourceWavRequired !== true || JSON.stringify(parsed.candidateIds) !== JSON.stringify(candidateIds)) return null;
+    if (parsed.version !== 2 || parsed.key !== key || parsed.sourceWavRequired !== true || stringifyJson(parsed.candidateIds) !== stringifyJson(candidateIds)) return null;
     if (!Array.isArray(parsed.selectedTracks) || parsed.selectedTracks.length !== candidateIds.length / 2) return null;
     const pairs = Array.from({ length: candidateIds.length / 2 }, (_, index) => candidateIds.slice(index * 2, index * 2 + 2));
     if (pairs.some((pair) => pair.length !== 2 || !parsed.selectedTracks.some((track) => pair.includes(track.songId)))) return null;
@@ -53,7 +57,7 @@ export const writeMusicDownloadCheckpoint = async (checkpoint: MusicDownloadChec
   await fs.promises.mkdir(checkpointDirectory, { recursive: true });
   const destination = checkpointPath(checkpoint.key);
   const temporary = `${destination}.${process.pid}.tmp`;
-  await fs.promises.writeFile(temporary, JSON.stringify({ ...checkpoint, updatedAt: Date.now() }), "utf8");
+  await fs.promises.writeFile(temporary, stringifyJson({ ...checkpoint, updatedAt: Date.now() }), "utf8");
   await fs.promises.rename(temporary, destination);
 };
 

@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config.js";
 import { CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG, CINEMATIC_POLICY_CONFIG, resolveCinematicClipDuration } from "./cinematicConstants.js";
 import { THUMBNAIL_LAYOUT_LIBRARY_PROMPT, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_LIBRARY_PROMPT } from "./thumbnail.js";
@@ -76,7 +77,7 @@ ${originalInput}`;
 
 export const getCinematicFilmPackageRepairPrompt = (originalPrompt: string, issues: string[]): string => `${originalPrompt}
 
-The response was incomplete: ${JSON.stringify(issues)}. Return the complete valid JSON again, keeping the same creative direction.`;
+The response was incomplete: ${stringifyJson(issues)}. Return the complete valid JSON again, keeping the same creative direction.`;
 
 export const getCinematicVideoPlanningPrompt = (
   chunkJson: string,
@@ -256,7 +257,7 @@ Return valid raw JSON only:
 {"violatesPolicy":true,"repairedPrompt":"complete standalone replacement prompt","risks":[],"rationale":""}
 
 [THUMBNAIL]
-${JSON.stringify(thumbnail)}
+${stringifyJson(thumbnail)}
 
 [REJECTED PROMPT]
 ${prompt}`;
@@ -273,7 +274,7 @@ Return valid raw JSON only:
 {"violatesPolicy":true,"repairedPrompt":"complete standalone replacement prompt","risks":[],"rationale":""}
 
 [SCENE]
-${JSON.stringify(scene)}
+${stringifyJson(scene)}
 
 [REJECTED PROMPT]
 ${prompt}`;
@@ -287,7 +288,7 @@ ${CINEMATIC_CREATIVE_INPUT_RULE}
 Preserve the character's approved identity, age, body type, face, hair, clothing, colors, accessories and signature props. Keep the character clearly adult unless the approved context explicitly requires otherwise. Remove or replace only wording that could trigger a provider safety, third-party-content, copyrighted-character, celebrity-likeness or real-person restriction. Do not add a different character, franchise, actor, logo, watermark, readable text, collage or unrelated story. The result must be directly usable by Google Flow Characters and should describe one subject with clear anatomy, both hands and feet visible, neutral studio lighting and a clean background.
 
 AUTHORITATIVE CHARACTER CONTEXT:
-${JSON.stringify(character)}
+${stringifyJson(character)}
 
 REJECTED CHARACTER PROMPT:
 ${prompt}
@@ -339,10 +340,10 @@ For combat, retain the most readable preparation, committed attack, exact contac
 First compare each screenplay beat with the observed media contribution. When the observation shows a different event, repeated action, broken identity, impossible anatomy or a continuity reset, omit the clip unless a clearly observed portion still advances the approved beat. A transcript mismatch is only a warning; judge whether the visible beat is usable. Return exactly one decision for every sceneId in input order, with no missing, duplicate or unknown sceneId. For an omitted scene, set takeDecision to omit and segments to an empty array. For a retained scene, use only exact library segment IDs and boundaries. Explain the whole-film reason concisely. Return only the complete raw JSON object required by the response schema, without Markdown or commentary.
 
 [WHOLE-FILM STORY METADATA]
-${JSON.stringify(sceneMetadata)}
+${stringifyJson(sceneMetadata)}
 
 [PER-CLIP MEDIA OBSERVATIONS]
-${JSON.stringify(perClipDecisions)}`;
+${stringifyJson(perClipDecisions)}`;
 
 export const getCinematicFinalVideoQualityPrompt = (
   script: string,
@@ -380,8 +381,8 @@ export const getCinematicVideoPromptRepairPrompt = (
 ): string => `${getCinematicVeoDirectorProfile(resolveCinematicClipDuration(_.get(sceneContext, "duration")))}
 ${CINEMATIC_CREATIVE_INPUT_RULE}
 
-Fix: ${JSON.stringify(issues)}
-Scene: ${JSON.stringify(sceneContext || {})}
+Fix: ${stringifyJson(issues)}
+Scene: ${stringifyJson(sceneContext || {})}
 Previous prompt: ${prompt}
 
 Return valid raw JSON only: {"violatesPolicy":true,"repairedPrompt":"complete corrected prompt","risks":[],"rationale":""}`;

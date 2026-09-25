@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { stringifyJson } from "../lib/jsonStringify.js";
 import {
   CINEMATIC_POLICY_CONFIG,
   CINEMATIC_POLICY_REQUIRED_FIELDS,
@@ -31,7 +32,7 @@ export const createCinematicPlanningBatches = <T>(items: T[]): T[][] => {
   let currentBatch: T[] = [];
   let currentInputCharacters: number = CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_CONTAINER_CHARACTERS;
   _.forEach(items, (item) => {
-    const itemInputCharacters = _.size(JSON.stringify(item));
+    const itemInputCharacters = _.size(stringifyJson(item));
     const separatorCharacters = _.isEmpty(currentBatch) ? 0 : CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_JSON_SEPARATOR_CHARACTERS;
     const exceedsSceneLimit = _.gte(currentBatch.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE);
     const exceedsInputLimit =

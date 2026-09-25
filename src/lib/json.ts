@@ -2,6 +2,7 @@ import { appError } from "./logger";
 import _ from "lodash";
 import { JSON_UTILS_CONFIG } from "../constants/config";
 import { storageUtils } from "./storage";
+import { stringifyJson } from "./jsonStringify";
 
 export const jsonUtils = {
   safeParse: <T = unknown>(str: string | null | undefined, fallback: T): T => {
@@ -21,7 +22,7 @@ export const jsonUtils = {
     fallback: string = JSON_UTILS_CONFIG.EMPTY_FALLBACK,
   ): string => {
     try {
-      return JSON.stringify(obj, replacer as never, space);
+      return stringifyJson(obj, replacer, space);
     } catch (error) {
       appError(JSON_UTILS_CONFIG.STRINGIFY_ERROR_EVENT, error);
       return fallback;

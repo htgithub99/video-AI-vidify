@@ -14,6 +14,7 @@ import {
   Play,
 } from "lucide-react";
 import { toast } from "sonner";
+import { stringifyJson } from "../lib/jsonStringify";
 import { API_ROUTES, FLOW_BUSY_STATES, FLOW_CLIP_STATUSES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_TEXTS, LANGUAGE_CODES } from "../constants";
 import { Lang } from "../lib/lang";
 import {
@@ -178,7 +179,7 @@ export default function FlowVideoCreator({
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: stringifyJson(body),
     });
     const data = await response.json();
     if (!response.ok || data.success === false) {
@@ -276,7 +277,7 @@ export default function FlowVideoCreator({
       const save = await fetch(`${API_ROUTES.PROJECTS}/${encodeURIComponent(projectId)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextProject),
+        body: stringifyJson(nextProject),
       });
       if (!save.ok) throw new Error(flowTexts.SAVE_PROMPTS_FAILED);
 
