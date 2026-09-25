@@ -253,8 +253,39 @@ html.light .advanced-config-icon {
 
 button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not(
     [data-close-button]
-  ) {
+  ):not(.toggle-switch):not([role="switch"]) {
   min-height: 40px !important;
+}
+
+.toggle-switch,
+[role="switch"].toggle-switch {
+  min-height: 24px !important;
+  max-height: 24px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 24px !important;
+  width: 44px !important;
+  padding: 2px !important;
+  box-sizing: border-box !important;
+  border-radius: 9999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.toggle-switch-thumb {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  border-radius: 9999px !important;
+  pointer-events: none !important;
+  display: inline-block !important;
+  transition: transform 0.2s ease-out, background-color 0.2s ease !important;
 }
 
 .toast-close-btn,

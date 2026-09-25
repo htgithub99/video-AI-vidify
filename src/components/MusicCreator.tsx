@@ -665,6 +665,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
   const [copiedStyleIndex, setCopiedStyleIndex] = useState<number | null>(null);
+  const [copiedInspoIndex, setCopiedInspoIndex] = useState<number | null>(null);
   const [outputCount, setOutputCount] = useState<number>(initialState.outputCount || MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
   const [referenceSongs, setReferenceSongs] = useState(initialState.referenceSongs || "");
   const [provider, setProvider] = useState<AiPlanningFallbackProvider>(initialState.provider || AiPlanningFallbackProvider.ChatGptUi);
@@ -1819,6 +1820,27 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                             </Tooltip>
 
                             <div className={cn("flex items-center gap-1 ml-1.5 shrink-0 self-center")}>
+                              <Tooltip content={texts.INSPO_COPY_NAME_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                                <Button variant="unstyled"
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await navigator.clipboard.writeText(item.title);
+                                    setCopiedInspoIndex(index);
+                                    toast.success(texts.INSPO_COPY_NAME_SUCCESS);
+                                    window.setTimeout(() => setCopiedInspoIndex(null), 2000);
+                                  }}
+                                  title={texts.INSPO_COPY_NAME_BTN}
+                                  aria-label={texts.INSPO_COPY_NAME_BTN}
+                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", { "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected, "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !isSelected })}>
+                                  {copiedInspoIndex === index ? (
+                                    <Check className={cn("w-2.5 h-2.5 shrink-0", { "text-emerald-300": isSelected, "text-emerald-500": !isSelected })} />
+                                  ) : (
+                                    <Copy className={cn("w-2.5 h-2.5 shrink-0")} />
+                                  )}
+                                </Button>
+                              </Tooltip>
+
                               <Tooltip content={texts.STYLE_UPDATE_BTN} align="center" className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
                                 <Button variant="unstyled"
                                   type="button"
@@ -2753,6 +2775,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         {
                           label: texts.SUNO_MAX_MODE_LABEL,
                           value: sunoSettings.maxMode ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
+                          settingKey: "maxMode" as const,
+                          enabled: sunoSettings.maxMode,
                           reason: sunoSettingsAnalysis?.parameterRationale.maxMode,
                           analysis: sunoSettingsAnalysis?.parameterAnalysis?.maxMode,
                           badgeClass: sunoSettings.maxMode ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
@@ -2760,6 +2784,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         {
                           label: texts.SUNO_PERSONALIZE_LABEL,
                           value: sunoSettings.personalize ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
+                          settingKey: "personalize" as const,
+                          enabled: sunoSettings.personalize,
                           reason: sunoSettingsAnalysis?.parameterRationale.personalize,
                           analysis: sunoSettingsAnalysis?.parameterAnalysis?.personalize,
                           badgeClass: sunoSettings.personalize ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/25" : "text-slate-400 bg-slate-800/60 border-slate-700/40",
@@ -2768,7 +2794,33 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         <div key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between min-w-0")}>
                           <div className={cn("flex items-start justify-between gap-1.5")}>
                             <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 shrink-0")}>{item.label}</span>
-                            <span className={cn("text-[11px] font-bold border px-2 py-0.5 rounded-md shrink-0", item.badgeClass)}>{item.value}</span>
+                            {"settingKey" in item && item.settingKey ? (
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={item.enabled}
+                                aria-label={item.label}
+                                title={`${item.label}: ${item.enabled ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE}`}
+                                disabled={isLoading || isCreatingSuno}
+                                onClick={() => setSunoSettings((current) => current ? { ...current, [item.settingKey]: !current[item.settingKey] } : current)}
+                                className={cn(
+                                  "toggle-switch select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:opacity-40 disabled:cursor-not-allowed",
+                                  item.enabled
+                                    ? "!bg-emerald-500 border border-emerald-400/60 shadow-sm shadow-emerald-500/30"
+                                    : "!bg-slate-800 border border-slate-700/80 hover:border-slate-600"
+                                )}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={cn(
+                                    "toggle-switch-thumb shadow-md",
+                                    item.enabled ? "translate-x-[20px] bg-white" : "translate-x-0 !bg-slate-300"
+                                  )}
+                                />
+                              </button>
+                            ) : (
+                              <span className={cn("text-[11px] font-bold border px-2 py-0.5 rounded-md shrink-0", item.badgeClass)}>{item.value}</span>
+                            )}
                           </div>
                           {item.reason && (
                             <div className={cn("space-y-0.5 min-w-0")}>
