@@ -9,6 +9,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
+import { resolveFlowVideoPlanningModel } from "../../services/flowVideoPlanningModel.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { beginChatPlanningRun, cancelChatPlanningRun, clearChatPlanningRooms, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom } from "../services/chatUiPlanningService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
@@ -4880,7 +4881,7 @@ router.post("/plan-flow-video-prompts", requireLicense(FeatureType.VIDEO), async
       req.once("aborted", run.cancel);
       res.once("finish", run.complete);
       try {
-        const response = await generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId: "flow-video-prompts", chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId, signal: run.signal, closeRoomOnComplete: true });
+        const response = await generatePlanningWithChatUi({ provider, model: resolveFlowVideoPlanningModel(provider, execution.model), prompt, projectId, workerId: "flow-video-prompts", chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId, signal: run.signal, closeRoomOnComplete: true });
         raw = response.text;
       } finally {
         run.complete();

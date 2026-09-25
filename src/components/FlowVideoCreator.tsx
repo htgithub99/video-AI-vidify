@@ -37,6 +37,13 @@ import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
+import { resolveFlowVideoPlanningModel } from "../services/flowVideoPlanningModel";
+import { normalizeVideoModelSettings } from "../services/videoModelCapabilityService";
+import FlowVideoProductionSettings, { FlowVideoProductionConfig } from "./flow-video/FlowVideoProductionSettings";
+import { FLOW_VIDEO_MODEL_OPTIONS } from "../constants/flowVideoSettings";
+import { FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG } from "../constants/flowVideoSettings";
+import FlowVideoCharacterImages, { FlowVideoCharacterImage } from "./flow-video/FlowVideoCharacterImages";
+import { getVideoModelCapabilities } from "../services/videoModelCapabilityService";
 
 type Clip = {
   id: string;
@@ -57,6 +64,7 @@ interface PersistedState {
   model?: AiPlanningChatModel;
   executionMode?: AiPlanningExecutionMode;
   chromeHeadless?: boolean;
+  productionConfig?: FlowVideoProductionConfig;
 }
 
 const LOCAL_STORAGE_KEY = "flow-video-creator-state-v1";
@@ -107,7 +115,7 @@ export default function FlowVideoCreator({
     saved.provider || AiPlanningFallbackProvider.ChatGptUi,
   );
   const [model, setModel] = useState<AiPlanningChatModel>(
-    saved.model || AiPlanningChatModel.ChatGptAuto,
+    resolveFlowVideoPlanningModel(saved.provider || AiPlanningFallbackProvider.ChatGptUi, saved.model),
   );
   const [executionMode, setExecutionMode] = useState<AiPlanningExecutionMode>(
     saved.executionMode || AiPlanningExecutionMode.RoomOnly,
@@ -115,6 +123,25 @@ export default function FlowVideoCreator({
   const [chromeHeadless, setChromeHeadless] = useState<boolean>(
     saved.chromeHeadless ?? true,
   );
+  const [productionConfig, setProductionConfig] = useState<FlowVideoProductionConfig>(() => {
+    const projectVisual = projects.find((project) => project.id === (saved.projectId || selectedProjectId))?.visualConfig;
+    const stored = saved.productionConfig;
+    const requestedEngine = stored?.engine || projectVisual?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
+    const engine = FLOW_VIDEO_MODEL_OPTIONS.some((option) => option.value === requestedEngine)
+      ? requestedEngine : ImageGeneratorEngine.Veo3;
+    const normalized = normalizeVideoModelSettings(engine, {
+      duration: stored?.duration || projectVisual?.videoDuration,
+      resolution: stored?.resolution || projectVisual?.videoResolution,
+      aspectRatio: stored?.aspectRatio || projectVisual?.aspectRatio as AspectRatio,
+    });
+    return {
+      engine,
+      duration: normalized.duration,
+      resolution: normalized.resolution,
+      aspectRatio: normalized.aspectRatio,
+      chromeHeadless: stored?.chromeHeadless ?? projectVisual?.chromeHeadless ?? true,
+    };
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState<"planning" | "generating" | null>(null);
   const [progress, setProgress] = useState("");
@@ -123,6 +150,8 @@ export default function FlowVideoCreator({
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [clipToDelete, setClipToDelete] = useState<Clip | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [characterImages, setCharacterImages] = useState<FlowVideoCharacterImage[]>([]);
+  const [characterImagesLoaded, setCharacterImagesLoaded] = useState(false);
 
   const isVi = currentLang === LANGUAGE_CODES.VI;
 
@@ -138,6 +167,7 @@ export default function FlowVideoCreator({
         model,
         executionMode,
         chromeHeadless,
+        productionConfig,
       },
     );
   }, [
@@ -149,6 +179,7 @@ export default function FlowVideoCreator({
     model,
     executionMode,
     chromeHeadless,
+    productionConfig,
   ]);
 
   useEffect(() => {
@@ -160,6 +191,70 @@ export default function FlowVideoCreator({
       setProjectId(selected?.projectKind === "container" ? film?.id || "" : selected?.id || film?.id || "");
     }
   }, [selectedProjectId, projectId, projects]);
+
+  useEffect(() => {
+    let active = true;
+    setCharacterImagesLoaded(false);
+    setCharacterImages([]);
+    if (!projectId) return;
+    void jsonUtils.getAsyncItem<FlowVideoCharacterImage[]>(
+      FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.STORAGE_KEY(projectId),
+      [],
+    ).then((stored) => {
+      if (!active) return;
+      setCharacterImages(Array.isArray(stored) ? stored.slice(0, FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES) : []);
+      setCharacterImagesLoaded(true);
+    });
+    return () => { active = false; };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId || !characterImagesLoaded) return;
+    void jsonUtils.setAsyncItem(FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.STORAGE_KEY(projectId), characterImages);
+  }, [projectId, characterImages, characterImagesLoaded]);
+
+  useEffect(() => {
+    if (!characterImagesLoaded || !characterImages.length || getVideoModelCapabilities(productionConfig.engine).supportsReferences) return;
+    setProductionConfig((current) => {
+      const engine = ImageGeneratorEngine.Veo3;
+      const normalized = normalizeVideoModelSettings(engine, current, true);
+      return { ...current, engine, duration: normalized.duration, resolution: normalized.resolution, aspectRatio: normalized.aspectRatio };
+    });
+  }, [characterImagesLoaded, characterImages.length, productionConfig.engine]);
+
+  const addCharacterImages = async (files: FileList) => {
+    const selectedFiles = Array.from(files);
+    const availableSlots = FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES - characterImages.length;
+    if (selectedFiles.length > availableSlots) {
+      toast.error(flowTexts.CHARACTER_IMAGES_LIMIT(FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES));
+    }
+    const acceptedFiles = selectedFiles.slice(0, availableSlots);
+    if (acceptedFiles.some((file) =>
+      !FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.ACCEPTED_TYPES.includes(file.type as typeof FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.ACCEPTED_TYPES[number])
+      || file.size > FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_FILE_BYTES)) {
+      return toast.error(flowTexts.CHARACTER_IMAGE_INVALID);
+    }
+    try {
+      const images = await Promise.all(acceptedFiles.map((file, index) => new Promise<FlowVideoCharacterImage>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ id: `${Date.now()}-${index}`, name: file.name, dataUrl: String(reader.result) });
+        reader.onerror = () => reject(new Error(flowTexts.CHARACTER_IMAGE_READ_FAILED));
+        reader.readAsDataURL(file);
+      })));
+      if (!images.length) return;
+      setCharacterImages((current) => current.concat(images).slice(0, FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES));
+      if (!getVideoModelCapabilities(productionConfig.engine).supportsReferences) {
+        setProductionConfig((current) => {
+          const engine = ImageGeneratorEngine.Veo3;
+          const normalized = normalizeVideoModelSettings(engine, current, true);
+          return { ...current, engine, duration: normalized.duration, resolution: normalized.resolution, aspectRatio: normalized.aspectRatio };
+        });
+        toast.info(flowTexts.CHARACTER_MODEL_ADJUSTED);
+      }
+    } catch {
+      toast.error(flowTexts.CHARACTER_IMAGE_READ_FAILED);
+    }
+  };
 
   const chooseFolder = async () => {
     try {
@@ -192,6 +287,8 @@ export default function FlowVideoCreator({
     if (!request.trim()) {
       return toast.error(flowTexts.REQUEST_REQUIRED);
     }
+    const previousClips = clips;
+    setClips([]);
     setBusy(FLOW_BUSY_STATES.PLANNING);
     try {
       const data = await post(API_ROUTES.PIPELINE_PLAN_FLOW_VIDEO_PROMPTS, {
@@ -200,6 +297,7 @@ export default function FlowVideoCreator({
         execution: { provider, model, mode: executionMode, chromeHeadless },
       });
       const generatedVideos: { title: string; prompt: string }[] = data.videos || [];
+      if (!generatedVideos.length) throw new Error(flowTexts.PLAN_FAILED);
       setClips(
         generatedVideos.map(({ title, prompt }, index: number) => ({
           id: `flowclip-${Date.now()}-${index + 1}`,
@@ -210,6 +308,7 @@ export default function FlowVideoCreator({
       );
       toast.success(flowTexts.PLAN_SUCCESS(generatedVideos.length));
     } catch (error) {
+      setClips(previousClips);
       toast.error(error instanceof Error ? error.message : flowTexts.PLAN_FAILED);
     } finally {
       setBusy(null);
@@ -223,9 +322,12 @@ export default function FlowVideoCreator({
     if (!folderPath) {
       return toast.error(flowTexts.FOLDER_REQUIRED);
     }
+    if (!characterImagesLoaded) return;
     const pending = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE);
     const unsaved = clips.filter((clip) => clip.url && !clip.savedPath);
     if (!pending.length && !unsaved.length) return;
+
+    const clipDurationSeconds = Number.parseInt(productionConfig.duration, 10);
 
     setBusy(FLOW_BUSY_STATES.GENERATING);
     try {
@@ -246,8 +348,8 @@ export default function FlowVideoCreator({
         id: clip.id,
         chapterId: "flow-video-clips",
         startTime: "00:00:00",
-        endTime: "00:00:08",
-        duration: 8,
+        endTime: `00:00:${String(clipDurationSeconds).padStart(2, "0")}`,
+        duration: clipDurationSeconds,
         script: clip.prompt,
         subtitle: "",
         prompt: clip.prompt,
@@ -265,11 +367,12 @@ export default function FlowVideoCreator({
         visualConfig: {
           ...project.visualConfig,
           generationMode: ImageGenerationMode.LabsFlow,
-          imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+          imageGeneratorEngine: productionConfig.engine,
           generateType: GenerateType.Video,
-          aspectRatio: project.visualConfig?.aspectRatio || AspectRatio.SixteenNine,
-          videoDuration: project.visualConfig?.videoDuration || FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION,
-          videoResolution: project.visualConfig?.videoResolution || FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_RESOLUTION,
+          aspectRatio: productionConfig.aspectRatio,
+          videoDuration: productionConfig.duration,
+          videoResolution: productionConfig.resolution,
+          chromeHeadless: productionConfig.chromeHeadless,
         },
         updatedAt: new Date().toISOString(),
       };
@@ -297,6 +400,8 @@ export default function FlowVideoCreator({
               sceneId: clip.id,
               prompt: clip.prompt,
               generateType: GenerateType.Video,
+              referenceImages: characterImages.map((image) => image.dataUrl),
+              referenceImageNames: characterImages.map((image) => image.name),
             })),
             { ...nextProject.visualConfig, flowProjectId, generateCount: 1 },
             { localProjectId: projectId, flowProjectId },
@@ -481,7 +586,10 @@ export default function FlowVideoCreator({
               model={model}
               executionMode={executionMode}
               chromeHeadless={chromeHeadless}
-              onProviderChange={setProvider}
+              onProviderChange={(nextProvider) => {
+                setModel((currentModel) => resolveFlowVideoPlanningModel(nextProvider, currentModel));
+                setProvider(nextProvider);
+              }}
               onModelChange={setModel}
               onExecutionModeChange={setExecutionMode}
               onChromeHeadlessChange={setChromeHeadless}
@@ -562,6 +670,22 @@ export default function FlowVideoCreator({
                 )}
               </div>
 
+              <FlowVideoProductionSettings
+                config={productionConfig}
+                onChange={setProductionConfig}
+                disabled={!!busy}
+                texts={flowTexts}
+                hasCharacterImages={characterImages.length > 0}
+              />
+
+              <FlowVideoCharacterImages
+                images={characterImages}
+                disabled={!!busy || !projectId || !characterImagesLoaded}
+                texts={flowTexts}
+                onAdd={addCharacterImages}
+                onRemove={(id) => setCharacterImages((current) => current.filter((image) => image.id !== id))}
+              />
+
               <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2.5")}>
                 <div
                   onClick={!busy ? chooseFolder : undefined}
@@ -579,7 +703,7 @@ export default function FlowVideoCreator({
                 </div>
 
                 <Button variant="unstyled" type="button"
-                  disabled={!!busy || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
+                  disabled={!!busy || !characterImagesLoaded || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
                   onClick={generate}
                   className={cn("sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none", { "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !unsavedVideosCount) || !folderPath, "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING, "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING) })}
                 >
