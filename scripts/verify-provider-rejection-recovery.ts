@@ -95,11 +95,11 @@ assert.match(imageGeneratorSource, /await throwIfFlowMediaCardRejected\(page, me
 assert.match(imageGeneratorSource, /const hasCompletionSignal = Boolean/);
 assert.match(imageGeneratorSource, /state\?\.thumbnailReady && hasCompletionSignal/);
 assert.match(imageGeneratorSource, /if \(state\?\.videoReady\) return resultContainer/);
-assert.match(imageGeneratorSource, /const projectMediaUrls = await collectFlowVideoUrls\(page, mediaId\)/);
+assert.match(imageGeneratorSource, /const projectMediaUrls = downloadedVideo \? \[\] : await collectFlowVideoUrls\(page, mediaId\)/);
 assert.match(imageGeneratorSource, /DOWNLOADABLE_URL_PATTERN\.source/);
 assert.match(
   imageGeneratorSource,
-  /const mediaCard = await waitForFlowMediaCardReady\(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_READY_TIMEOUT_MS\)[\s\S]*const projectMediaUrls = await collectFlowVideoUrls\(page, mediaId\)[\s\S]*const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)/,
+  /options\.sourceUrl[\s\S]*downloadValidatedVideo\(browserInstance\.context, \[options\.sourceUrl\][\s\S]*const directMediaUrl = createFlowMediaRedirectUrl\(mediaId\)[\s\S]*downloadFlowVideoFromEditor\(page, flowProjectId, mediaId/,
 );
 assert.match(imageGeneratorSource, /FLOW_VIDEO_MEDIA_CONFIG\.RECOVERY_REDIRECT_TIMEOUT_MS/);
 assert.match(imageGeneratorSource, /getOrLaunchGlobalBrowser\(options\.chromeHeadless, true\)/);

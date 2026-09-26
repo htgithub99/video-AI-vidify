@@ -562,6 +562,7 @@ export interface StoryboardScene {
   assetError?: string;
   remoteVideoMediaId?: string;
   remoteVideoMediaIds?: string[];
+  remoteVideoSourceUrl?: string;
   remoteVideoExpectedCount?: number;
   remoteVideoDownloadPending?: boolean;
   dependencyHash?: string;

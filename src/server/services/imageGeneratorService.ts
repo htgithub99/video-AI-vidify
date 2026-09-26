@@ -947,8 +947,9 @@ const collectNewFlowGeneratedMedia = async (
     const mediaId = normalizeFlowMediaId(
       _.toString(candidate.editId || extractFlowMediaIdFromUrl(candidate.videoSrc || "") || extractFlowMediaIdFromUrl(candidate.thumbnailSrc || "")),
     );
-    if (_.isEmpty(mediaId) || _.isEqual(mediaId, currentProjectId) || _.includes(oldEditIds, mediaId)) return;
-    candidatesByMediaId.set(mediaId, { ...candidatesByMediaId.get(mediaId), ...candidate, editId: mediaId, evidence: "dom", discoveryOrder });
+    if (_.isEqual(mediaId, currentProjectId) || (_.isEmpty(mediaId) && _.isEmpty(candidate.videoSrc) && _.isEmpty(candidate.thumbnailSrc)) || _.includes(oldEditIds, mediaId)) return;
+    const candidateKey = mediaId || _.toString(candidate.videoSrc || candidate.thumbnailSrc);
+    candidatesByMediaId.set(candidateKey, { ...candidatesByMediaId.get(candidateKey), ...candidate, editId: mediaId || undefined, evidence: "dom", discoveryOrder });
   });
   _.forEach(responseUrls, (responseUrl) => {
     if (!isReliableFlowVideoResponseUrl(responseUrl)) return;
@@ -996,9 +997,54 @@ const waitForFlowGeneratedMediaBatch = async (
   return { media, rejected: false, timedOut: true };
 };
 
+const resolveFlowGeneratedMediaDetails = async (page: Page, media: FlowGeneratedMediaCandidate[], flowProjectId: string): Promise<FlowGeneratedMediaCandidate[]> => {
+  const projectUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}`;
+  const resolved: FlowGeneratedMediaCandidate[] = [];
+  for (const candidate of media) {
+    const existingId = normalizeFlowMediaId(_.toString(candidate.editId || extractFlowMediaIdFromUrl(candidate.videoSrc || "")));
+    if (existingId) {
+      resolved.push(candidate);
+      continue;
+    }
+    const source = _.toString(candidate.videoSrc || candidate.thumbnailSrc);
+    const cardIndex = await page.evaluate(({ selector, targetSource }) =>
+      Array.from(document.querySelectorAll(selector)).findIndex((card) =>
+        Array.from(card.querySelectorAll("video, img, source")).some((element) =>
+          (element as HTMLVideoElement).currentSrc === targetSource || element.getAttribute("src") === targetSource,
+        ),
+      ), { selector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SELECTOR, targetSource: source });
+    if (cardIndex < 0) {
+      resolved.push(candidate);
+      continue;
+    }
+    try {
+      const card = page.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SELECTOR).nth(cardIndex);
+      await card.hover().catch(() => undefined);
+      await card.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR).first()
+        .waitFor({ state: "attached", timeout: FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS }).catch(() => undefined);
+      const videoSrc = await card.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR).first()
+        .evaluate((video: HTMLVideoElement) => video.currentSrc || video.getAttribute("src") || "").catch(() => "");
+      await card.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_OPEN_SELECTOR).click();
+      await page.waitForURL(FLOW_VIDEO_MEDIA_CONFIG.EDITOR_URL_PATTERN, { timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS });
+      const editId = extractFlowMediaIdFromUrl(page.url());
+      const promptText = await page.locator(FLOW_VIDEO_MEDIA_CONFIG.EDITOR_PROMPT_SELECTOR).first()
+        .textContent({ timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS }).catch(() => null);
+      resolved.push({ ...candidate, editId, videoSrc: videoSrc || candidate.videoSrc, promptText: promptText || candidate.promptText });
+    } catch {
+      resolved.push(candidate);
+    } finally {
+      await page.goto(projectUrl, { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS }).catch(() => undefined);
+      await page.locator(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SELECTOR).first()
+        .waitFor({ state: "visible", timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS }).catch(() => undefined);
+    }
+  }
+  return resolved;
+};
+
 export interface FlowVideoRecoveryOptions {
   flowProjectId: string;
   mediaId: string;
+  sourceUrl?: string;
   expectedDuration?: string;
   chromeHeadless?: boolean;
   retainBrowserSession?: boolean;
@@ -1027,9 +1073,12 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
 
     const expectedDurationSeconds = parseConfiguredVideoDuration(options.expectedDuration);
     let downloadedVideo: FlowDownloadedVideo | null = null;
-    const mediaCard = await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
+    if (options.sourceUrl && FLOW_VIDEO_MEDIA_CONFIG.HTML_VIDEO_URL_PATTERN.test(options.sourceUrl)) {
+      downloadedVideo = await downloadValidatedVideo(browserInstance.context, [options.sourceUrl], expectedDurationSeconds).catch(() => null);
+    }
+    const mediaCard = downloadedVideo ? null : await waitForFlowMediaCardReady(page, mediaId, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS).catch(() => null);
     if (mediaCard) downloadedVideo = await downloadFlowVideoFromCard(page, mediaCard, [], expectedDurationSeconds, mediaId);
-    const projectMediaUrls = await collectFlowVideoUrls(page, mediaId);
+    const projectMediaUrls = downloadedVideo ? [] : await collectFlowVideoUrls(page, mediaId);
     if (!downloadedVideo) downloadedVideo = await downloadValidatedVideo(browserInstance.context, projectMediaUrls, expectedDurationSeconds).catch(() => null);
     if (!downloadedVideo) {
       const directMediaUrl = createFlowMediaRedirectUrl(mediaId);
@@ -1040,7 +1089,8 @@ export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions
         FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_REDIRECT_TIMEOUT_MS,
       ).catch(() => null);
     }
-    if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.STALE_MEDIA_ERROR);
+    if (!downloadedVideo) downloadedVideo = await downloadFlowVideoFromEditor(page, flowProjectId, mediaId, expectedDurationSeconds);
+    if (!downloadedVideo) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR);
     return {
       success: true,
       base64: downloadedVideo.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64),
@@ -1128,6 +1178,37 @@ const downloadValidatedVideo = async (
     } catch (error) {}
   }
   throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
+};
+
+const downloadFlowVideoFromEditor = async (
+  page: Page,
+  flowProjectId: string,
+  mediaId: string,
+  expectedDurationSeconds: number,
+): Promise<FlowDownloadedVideo | null> => {
+  const projectUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${flowProjectId}`;
+  try {
+    await page.goto(`${projectUrl}/edit/${mediaId}`, { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS });
+    await page.locator(FLOW_VIDEO_MEDIA_CONFIG.EDITOR_PROMPT_SELECTOR).first()
+      .waitFor({ state: "visible", timeout: FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_READY_TIMEOUT_MS });
+    const downloadPromise = page.waitForEvent("download", { timeout: FLOW_VIDEO_MEDIA_CONFIG.EDITOR_DOWNLOAD_TIMEOUT_MS }).catch(() => null);
+    await page.locator(FLOW_VIDEO_MEDIA_CONFIG.EDITOR_DOWNLOAD_BUTTON_SELECTOR).first().click();
+    await page.locator(FLOW_VIDEO_MEDIA_CONFIG.EDITOR_DOWNLOAD_MENU_ITEM_SELECTOR)
+      .filter({ hasText: FLOW_VIDEO_MEDIA_CONFIG.EDITOR_ORIGINAL_DOWNLOAD_PATTERN }).first().click();
+    const download = await downloadPromise;
+    if (!download) return null;
+    const downloadedPath = await download.path();
+    if (!downloadedPath) return null;
+    const buffer = await fs.promises.readFile(downloadedPath);
+    await inspectGeneratedVideoBuffer(buffer, expectedDurationSeconds);
+    return { buffer, mimeType: "video/mp4", mediaUrl: download.url() };
+  } catch {
+    return null;
+  } finally {
+    if (!isFlowProjectPageUrl(page.url(), flowProjectId) || _.includes(page.url(), "/edit/")) {
+      await page.goto(projectUrl, { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOAD_TIMEOUT_MS }).catch(() => undefined);
+    }
+  }
 };
 
 const approveFlowVideoCreditPrompt = async (page: Page, submitButton: Locator, timeoutMs: number = 15000): Promise<boolean> => {
@@ -1588,6 +1669,7 @@ export interface ImageGeneratorResult {
   newProjectId?: string;
   remoteMediaId?: string;
   remoteMediaIds?: string[];
+  remoteVideoSourceUrl?: string;
   remoteMediaCreated?: boolean;
 }
 
@@ -2652,6 +2734,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   let lastGenerationError = BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR;
   let remoteVideoMediaId: string | undefined;
   let remoteVideoMediaIds: string[] = [];
+  let remoteVideoSourceUrl: string | undefined;
   let success = false;
   let attempts = 0;
   const maxAttempts = SecurityConstants.DEFAULT_AMOUNT;
@@ -2997,9 +3080,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             oldVideoGenerationFailureCount,
             flowResponseUrls,
           );
+          const resolvedMedia = await resolveFlowGeneratedMediaDetails(activePage, generatedBatch.media, currentProjectId);
           remoteVideoMediaIds = _.uniq(
             _.compact(
-              _.map(generatedBatch.media, (generatedMedia) =>
+              _.map(resolvedMedia, (generatedMedia) =>
                 normalizeFlowMediaId(
                   _.toString(
                     generatedMedia.editId ||
@@ -3015,10 +3099,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           if (generatedBatch.timedOut || _.lt(_.size(remoteVideoMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
             throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR);
           }
-          for (const targetMediaId of remoteVideoMediaIds) {
-            await waitForFlowMediaCardReady(activePage, targetMediaId);
+          const sourceUrl = _.toString(_.find(resolvedMedia, (candidate) => FLOW_VIDEO_MEDIA_CONFIG.HTML_VIDEO_URL_PATTERN.test(_.toString(candidate.videoSrc)))?.videoSrc);
+          if (sourceUrl) remoteVideoSourceUrl = sourceUrl;
+          if (remoteVideoSourceUrl && browserInstance) {
+            const downloaded = await downloadValidatedVideo(browserInstance.context, [remoteVideoSourceUrl], parseConfiguredVideoDuration(normalizedModelSettings.duration)).catch(() => null);
+            if (downloaded) finalBase64s = [downloaded.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64)];
           }
-          finalBase64 = SecurityConstants.EMPTY_STRING;
+          if (!finalBase64s.length && browserInstance && remoteVideoMediaId) {
+            const downloaded = await downloadFlowVideoFromEditor(activePage, currentProjectId, remoteVideoMediaId, parseConfiguredVideoDuration(normalizedModelSettings.duration));
+            if (downloaded) finalBase64s = [downloaded.buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64)];
+          }
+          finalBase64 = _.head(finalBase64s) || SecurityConstants.EMPTY_STRING;
         } else {
           const base64Data = await activePage.waitForFunction(
             ([oldIdsList, getImgIdStr, jpegMimeType]) => {
@@ -3115,6 +3206,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
         remoteMediaId: remoteVideoMediaId,
         remoteMediaIds: remoteVideoMediaIds,
+        remoteVideoSourceUrl,
         remoteMediaCreated: !_.isEmpty(remoteVideoMediaIds) || !_.isEmpty(remoteVideoMediaId),
       };
     }
@@ -3134,6 +3226,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
     remoteMediaId: generationWasRejected && _.isEmpty(remoteVideoMediaIds) ? undefined : remoteVideoMediaId,
     remoteMediaIds: generationWasRejected && _.isEmpty(remoteVideoMediaIds) ? [] : remoteVideoMediaIds,
+    remoteVideoSourceUrl,
     remoteMediaCreated: !_.isEmpty(remoteVideoMediaIds) || (!generationWasRejected && !_.isEmpty(remoteVideoMediaId)),
   };
 }
@@ -3348,7 +3441,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
     };
     activePage.on("response", flowResponseListener);
 
-    for (const [itemIndex, item] of items.entries()) {
+    const item = items[0];
       let input = await locateFlowPromptInput(activePage, 15_000);
       if (!input) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
       if (!(await replaceFlowPromptInput(activePage, input, item.prompt))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
@@ -3370,22 +3463,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       await smoothMouseMove(activePage, submitButton);
       await submitButton.click();
       await approveFlowVideoCreditPrompt(activePage, submitButton);
-      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SENT_PROMPT_ROOM(_.add(itemIndex, SecurityConstants.DEFAULT_AMOUNT), items.length, item.sceneId));
-
-      if (_.lt(itemIndex, _.subtract(items.length, SecurityConstants.DEFAULT_AMOUNT))) {
-        const composerDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.NEXT_PROMPT_READY_TIMEOUT_MS);
-        let composerReady = false;
-        while (_.lt(Date.now(), composerDeadline)) {
-          const nextInput = await locateFlowPromptInput(activePage, FLOW_DIRECT_VIDEO_CONFIG.PROMPT_ACTION_TIMEOUT_MS);
-          if (nextInput && !isFlowPromptValueApplied(await readFlowPromptInput(nextInput), item.prompt)) {
-            composerReady = true;
-            break;
-          }
-          await activePage.waitForTimeout(500);
-        }
-        if (!composerReady) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
-      }
-    }
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SENT_PROMPT_ROOM(SecurityConstants.DEFAULT_AMOUNT, items.length, item.sceneId));
 
     const generatedBatch = await waitForFlowGeneratedMediaBatch(
       activePage,
@@ -3396,12 +3474,13 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       flowResponseUrls,
       items.length,
     );
-    const assignments = assignFlowVideoBatchMediaIds(items, generatedBatch.media);
+    const resolvedMedia = await resolveFlowGeneratedMediaDetails(activePage, generatedBatch.media, currentProjectId);
+    const assignments = assignFlowVideoBatchMediaIds(items, resolvedMedia);
     const results: FlowVideoPromptBatchResult[] = [];
     for (const { sceneId, mediaId } of assignments) {
-      const candidate = _.find(generatedBatch.media, (item) => _.isEqual(getFlowBatchCandidateMediaId(item), mediaId));
+      const candidate = _.find(resolvedMedia, (item) => _.isEqual(getFlowBatchCandidateMediaId(item), mediaId));
       const htmlVideoUrl = _.trim(_.toString(candidate?.videoSrc));
-      let downloadedVideo = htmlVideoUrl
+      let downloadedVideo = htmlVideoUrl && FLOW_VIDEO_MEDIA_CONFIG.HTML_VIDEO_URL_PATTERN.test(htmlVideoUrl)
         ? await downloadValidatedVideo(browserInstance.context, [htmlVideoUrl], parseConfiguredVideoDuration(normalizedModelSettings.duration)).catch(() => null)
         : null;
       if (!downloadedVideo && mediaId) {
@@ -3409,6 +3488,9 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
         if (mediaCard) {
           downloadedVideo = await downloadFlowVideoFromCard(activePage, mediaCard, oldVideoSources, parseConfiguredVideoDuration(normalizedModelSettings.duration), mediaId);
         }
+      }
+      if (!downloadedVideo && mediaId) {
+        downloadedVideo = await downloadFlowVideoFromEditor(activePage, currentProjectId, mediaId, parseConfiguredVideoDuration(normalizedModelSettings.duration));
       }
       results.push({
         sceneId,
@@ -3425,7 +3507,8 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
         newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
         remoteMediaId: mediaId,
         remoteMediaIds: _.compact([mediaId]),
-        remoteMediaCreated: !_.isEmpty(mediaId),
+        remoteVideoSourceUrl: FLOW_VIDEO_MEDIA_CONFIG.HTML_VIDEO_URL_PATTERN.test(htmlVideoUrl) ? htmlVideoUrl : undefined,
+        remoteMediaCreated: !generatedBatch.rejected || !_.isEmpty(generatedBatch.media),
       });
     }
     return results;
@@ -3437,6 +3520,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
       base64: null,
       fallbackUrl: SecurityConstants.EMPTY_STRING,
       warning,
+      remoteMediaCreated: true,
       newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
     }));
   } finally {

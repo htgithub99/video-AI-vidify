@@ -231,7 +231,8 @@ assert.equal(
 );
 assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
 assert.equal(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT, 1);
-assert.equal(FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, 2);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, 1);
+assert.equal(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT, 2);
 assert.deepEqual(
   assignFlowVideoBatchMediaIds(
     [
@@ -312,7 +313,7 @@ const cinematicPipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.
 assert.match(flowAutomationSource, /replaceFlowPromptInput/);
 assert.match(flowAutomationSource, /normalizeFlowPromptValue/);
 assert.match(flowAutomationSource, /waitForFlowPromptApplied/);
-assert.match(flowAutomationSource, /expected=.*observed=/);
+assert.match(flowAutomationSource, /resolveFlowGeneratedMediaDetails/);
 assert.match(flowAutomationSource, /flow-submit-disabled-after-prompt/);
 assert.match(flowAutomationSource, /FLOW_DIRECT_VIDEO_CONFIG\.SETTINGS_PANEL/);
 assert.match(flowAutomationSource, /FLOW_DIRECT_VIDEO_CONFIG\.CONFIG_BUTTON_SELECTOR/);
@@ -342,7 +343,7 @@ assert.match(flowAutomationSource, /isReliableFlowVideoResponseUrl/);
 assert.match(flowAutomationSource, /confirmedDomMedia/);
 assert.match(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]*ATTACHMENT_PREVIEW/);
 assert.doesNotMatch(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]{0,900}promptCharacterCount/);
-assert.match(flowAutomationSource, /for \(const targetMediaId of remoteVideoMediaIds\)/);
+assert.match(flowAutomationSource, /HTML_VIDEO_URL_PATTERN\.test\(htmlVideoUrl\)/);
 assert.doesNotMatch(flowAutomationSource, /collectFlowVideoUrls\(page\)/);
 const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const projectControllerSource = fs.readFileSync("src/server/controllers/projectController.ts", "utf8");
@@ -362,8 +363,14 @@ assert.match(projectControllerSource, /sceneIdByContentHash/);
 assert.match(projectControllerSource, /remoteVideoMediaId: undefined/);
 assert.match(projectControllerSource, /assetUrls = _\.uniq\(\[assetUrl, \.\.\.assetUrls\]\)/);
 assert.match(cinematicPipelineSource, /const recoverPendingFlowDownloads = async/);
-assert.match(cinematicPipelineSource, /submitProjectFlowVideoBatch/);
-assert.match(cinematicPipelineSource, /_\.chunk\(scenesToProcess, FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH\)/);
-assert.match(cinematicPipelineSource, /cùng 1 Room; mỗi prompt tạo 1 video/);
+assert.doesNotMatch(cinematicPipelineSource, /submitProjectFlowVideoBatch/);
+assert.match(cinematicPipelineSource, /await finishVideoScene\(scene\)/);
+assert.match(cinematicPipelineSource, /attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT/);
+assert.match(cinematicPipelineSource, /if \(!hasSceneAsset\(scene\)\) break/);
+const flowCreatorSource = fs.readFileSync("src/components/FlowVideoCreator.tsx", "utf8");
+assert.match(flowCreatorSource, /for \(let attempt = 0; attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT; attempt\+\+\)/);
+assert.match(flowCreatorSource, /generated\?\.remoteMediaCreated !== false/);
+assert.doesNotMatch(flowCreatorSource, /const batch: Clip\[\]/);
+assert.match(pipelineControllerSource, /_\.size\(requestedItems\) !== FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH/);
 assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
-process.stdout.write(JSON.stringify({ passed: true, promptsPerBatch: 2, roomsPerBatch: 1, videosPerPrompt: 1, creativeQaBlockers: 0 }));
+process.stdout.write(JSON.stringify({ passed: true, promptsPerGeneration: FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, retryCount: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT, videosPerPrompt: 1, creativeQaBlockers: 0 }));

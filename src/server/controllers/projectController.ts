@@ -397,6 +397,7 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
         assetError: FLOW_VIDEO_MEDIA_CONFIG.DUPLICATE_MEDIA_ERROR,
         remoteVideoMediaId: undefined,
         remoteVideoMediaIds: undefined,
+        remoteVideoSourceUrl: undefined,
         remoteVideoExpectedCount: undefined,
         remoteVideoDownloadPending: false,
         cinematicTakeDecision: undefined,

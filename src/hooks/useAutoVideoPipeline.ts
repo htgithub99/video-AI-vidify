@@ -85,7 +85,6 @@ import {
   recoverProjectFlowVideo,
   resolveSceneGenerateType,
   selectVideoSceneIds,
-  submitProjectFlowVideoBatch,
   type ProjectImageResult,
 } from "../services/projectImageGenerationService";
 import { resolveVisualConfig } from "../services/autoVideoConfigResolver";
@@ -2237,6 +2236,7 @@ export function useAutoVideoPipeline(
             liveScene.assetError = persistedScene.assetError;
             liveScene.remoteVideoMediaId = persistedScene.remoteVideoMediaId;
             liveScene.remoteVideoMediaIds = _.clone(persistedScene.remoteVideoMediaIds);
+            liveScene.remoteVideoSourceUrl = persistedScene.remoteVideoSourceUrl;
             liveScene.remoteVideoExpectedCount = persistedScene.remoteVideoExpectedCount;
             liveScene.remoteVideoDownloadPending = persistedScene.remoteVideoDownloadPending;
           });
@@ -2256,18 +2256,27 @@ export function useAutoVideoPipeline(
           throwIfCancelled();
           const recoveryStartTemplate = config.language === ProjectLanguage.VI ? FLOW_VIDEO_MEDIA_CONFIG.VI_RECOVERY_START : FLOW_VIDEO_MEDIA_CONFIG.EN_RECOVERY_START;
           appendLog(recoveryStartTemplate.replace(SecurityConstants.PLACEHOLDER_0, pendingScene.id));
-          const recoveredVideo = await recoverProjectFlowVideo(
-            {
-              projectId: voiceUpdatedProj.id,
-              sceneId: pendingScene.id,
-              mediaIds: !_.isEmpty(pendingScene.remoteVideoMediaIds) ? pendingScene.remoteVideoMediaIds : [pendingScene.remoteVideoMediaId!],
-              expectedOutputCount: _.defaultTo(
-                pendingScene.remoteVideoExpectedCount,
-                !_.isEmpty(pendingScene.remoteVideoMediaIds) ? FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT : SecurityConstants.DEFAULT_AMOUNT,
-              ),
-            },
-            requestSignal,
-          );
+          let recoveredVideo: Awaited<ReturnType<typeof recoverProjectFlowVideo>> | undefined;
+          for (let attempt = SecurityConstants.ZERO; attempt < FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_ATTEMPTS; attempt += SecurityConstants.DEFAULT_AMOUNT) {
+            throwIfCancelled();
+            recoveredVideo = await recoverProjectFlowVideo(
+              {
+                projectId: voiceUpdatedProj.id,
+                sceneId: pendingScene.id,
+                mediaIds: !_.isEmpty(pendingScene.remoteVideoMediaIds) ? pendingScene.remoteVideoMediaIds : [pendingScene.remoteVideoMediaId!],
+                expectedOutputCount: _.defaultTo(
+                  pendingScene.remoteVideoExpectedCount,
+                  !_.isEmpty(pendingScene.remoteVideoMediaIds) ? FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT : SecurityConstants.DEFAULT_AMOUNT,
+                ),
+              },
+              requestSignal,
+            );
+            if (recoveredVideo.success || recoveredVideo.remoteMediaCreated === false) break;
+            if (attempt < FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_ATTEMPTS - SecurityConstants.DEFAULT_AMOUNT) {
+              await new Promise((resolve) => setTimeout(resolve, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_RETRY_DELAY_MS));
+            }
+          }
+          if (!recoveredVideo) continue;
           if (recoveredVideo.success && recoveredVideo.fallbackUrl) {
             pendingScene.assetUrl = recoveredVideo.fallbackUrl;
             pendingScene.assetUrls = recoveredVideo.fallbackUrls;
@@ -2284,6 +2293,7 @@ export function useAutoVideoPipeline(
             if (isProviderGenerationRejection(pendingScene.assetError) || isStaleFlowVideoRecoveryError(pendingScene.assetError)) {
               pendingScene.remoteVideoMediaId = undefined;
               pendingScene.remoteVideoMediaIds = undefined;
+              pendingScene.remoteVideoSourceUrl = undefined;
               pendingScene.remoteVideoDownloadPending = false;
             }
           }
@@ -2486,6 +2496,7 @@ export function useAutoVideoPipeline(
                 sc.assetStatus = SceneAssetStatus.Generated;
                 if (!_.isEmpty(imageResult.remoteMediaId)) sc.remoteVideoMediaId = imageResult.remoteMediaId;
                 if (!_.isEmpty(imageResult.remoteMediaIds)) sc.remoteVideoMediaIds = imageResult.remoteMediaIds;
+                if (imageResult.remoteVideoSourceUrl) sc.remoteVideoSourceUrl = imageResult.remoteVideoSourceUrl;
                 sc.remoteVideoDownloadPending = false;
                 appendAssetRevision(sc, sc.assetUrl, SceneAssetStatus.Generated);
                 sc.assetError = undefined;
@@ -2508,6 +2519,7 @@ export function useAutoVideoPipeline(
                   const hasCompleteRemoteBatch = _.gte(_.size(imageResult.remoteMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT);
                   sc.remoteVideoMediaId = imageResult.remoteMediaId;
                   sc.remoteVideoMediaIds = imageResult.remoteMediaIds;
+                  sc.remoteVideoSourceUrl = imageResult.remoteVideoSourceUrl;
                   sc.remoteVideoExpectedCount = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT;
                   sc.remoteVideoDownloadPending = hasCompleteRemoteBatch;
                   sc.assetStatus = SceneAssetStatus.Failed;
@@ -2621,35 +2633,9 @@ export function useAutoVideoPipeline(
 
         const usesStrictSequentialVideoQueue = Boolean(isCinematicEpisodeGenre(config.genre) || _.isEqual(executionVisualConfig.generateType, GenerateType.Video));
 
-        const repairRejectedVideoScene = async (rejectedScene: StoryboardScene): Promise<boolean> => {
-          const currentPrompt = cinematicPreflightPrompts.get(rejectedScene.id) || _.toString(rejectedScene.generationPrompt);
-          const repairMessage =
-            config.language === ProjectLanguage.VI
-              ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_VIDEO_PROMPT_REPAIRING
-              : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_VIDEO_PROMPT_REPAIRING;
-          appendLog(
-            repairMessage
-              .replace(SecurityConstants.PLACEHOLDER_0, rejectedScene.id)
-              .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.subtract(PIPELINE_GUARANTEE_CONFIG.MEDIA_ATTEMPTS, SecurityConstants.DEFAULT_AMOUNT))),
-          );
-          const repairedPrompt = await requestAiRewrittenVideoPrompt(rejectedScene, currentPrompt, []);
-          if (_.isEmpty(_.trim(repairedPrompt)) || _.isEqual(_.trim(repairedPrompt), _.trim(currentPrompt))) return false;
-          rejectedScene.prompt = repairedPrompt;
-          rejectedScene.generationPrompt = repairedPrompt;
-          rejectedScene.dependencyHash = createSceneDependencyHash(rejectedScene, visualDependencies);
-          rejectedScene.assetStatus = SceneAssetStatus.Retrying;
-          rejectedScene.assetError = undefined;
-          cinematicPreflightPrompts.set(rejectedScene.id, repairedPrompt);
-          const retryMessage =
-            config.language === ProjectLanguage.VI ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_VIDEO_PROMPT_RETRYING : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_VIDEO_PROMPT_RETRYING;
-          appendLog(retryMessage.replace(SecurityConstants.PLACEHOLDER_0, rejectedScene.id));
-          await persistImageCheckpoint();
-          return true;
-        };
-
         const runCinematicVideoQueue = async (scenesToProcess: StoryboardScene[]): Promise<void> => {
-          const finishVideoScene = async (scene: StoryboardScene, firstAttempt: number): Promise<void> => {
-            for (let attempt = firstAttempt; attempt < PIPELINE_GUARANTEE_CONFIG.MEDIA_ATTEMPTS; attempt += SecurityConstants.DEFAULT_AMOUNT) {
+          const finishVideoScene = async (scene: StoryboardScene): Promise<void> => {
+            for (let attempt = SecurityConstants.ZERO; attempt <= FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT; attempt += SecurityConstants.DEFAULT_AMOUNT) {
               if (_.gt(attempt, SecurityConstants.ZERO)) {
                 const retryMessage =
                   config.language === ProjectLanguage.VI
@@ -2659,7 +2645,7 @@ export function useAutoVideoPipeline(
                   retryMessage
                     .replace(SecurityConstants.PLACEHOLDER_0, scene.id)
                     .replace(SecurityConstants.PLACEHOLDER_1, _.toString(attempt))
-                    .replace(SecurityConstants.PLACEHOLDER_2, _.toString(_.subtract(PIPELINE_GUARANTEE_CONFIG.MEDIA_ATTEMPTS, SecurityConstants.DEFAULT_AMOUNT))),
+                    .replace(SecurityConstants.PLACEHOLDER_2, _.toString(FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT)),
                 );
               }
               await runSceneGeneration([scene], _.gt(attempt, SecurityConstants.ZERO));
@@ -2671,100 +2657,13 @@ export function useAutoVideoPipeline(
                 appendLog(waitingMessage.replace(SecurityConstants.PLACEHOLDER_0, scene.id));
                 await recoverPendingFlowDownloads();
               }
-              if (hasSceneAsset(scene) || scene.remoteVideoDownloadPending) break;
-            }
-
-            if (!hasSceneAsset(scene) && !scene.remoteVideoDownloadPending && isProviderGenerationRejection(scene.assetError)) {
-              for (
-                let repairAttempt = SecurityConstants.ZERO;
-                repairAttempt < CINEMATIC_GENERATION_RECOVERY_CONFIG.VIDEO_POLICY_REPAIR_ATTEMPTS;
-                repairAttempt += SecurityConstants.DEFAULT_AMOUNT
-              ) {
-                if (!(await repairRejectedVideoScene(scene))) break;
-                await runSceneGeneration([scene], true);
-                if (scene.remoteVideoDownloadPending) {
-                  const waitingMessage =
-                    config.language === ProjectLanguage.VI
-                      ? CINEMATIC_GENERATION_RECOVERY_CONFIG.VI_VIDEO_SCENE_WAITING
-                      : CINEMATIC_GENERATION_RECOVERY_CONFIG.EN_VIDEO_SCENE_WAITING;
-                  appendLog(waitingMessage.replace(SecurityConstants.PLACEHOLDER_0, scene.id));
-                  await recoverPendingFlowDownloads();
-                }
-                if (hasSceneAsset(scene) || scene.remoteVideoDownloadPending) break;
-              }
+              if (hasSceneAsset(scene) || scene.remoteVideoDownloadPending || isNonRetryableFlowVideoError(scene.assetError)) break;
             }
           };
-
-          const usesTwoPromptFlowBatch = Boolean(
-            isCinematicPipeline &&
-            _.isEqual(executionVisualConfig.generationMode, ImageGenerationMode.LabsFlow) &&
-            _.isEqual(executionVisualConfig.generateType, GenerateType.Video),
-          );
-          if (!usesTwoPromptFlowBatch) {
-            for (const scene of scenesToProcess) {
-              throwIfCancelled();
-              await finishVideoScene(scene, SecurityConstants.ZERO);
-              if (!hasSceneAsset(scene)) break;
-            }
-            return;
-          }
-
-          const promptBatches = _.chunk(scenesToProcess, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH);
-          for (const [batchIndex, sceneBatch] of promptBatches.entries()) {
+          for (const scene of scenesToProcess) {
             throwIfCancelled();
-            const batchItems = _.map(sceneBatch, (scene) => {
-              const generatedRequestContext = createSceneRequestContext(scene, GenerateType.Video);
-              const requestContext = { ...generatedRequestContext, prompt: cinematicPreflightPrompts.get(scene.id) || generatedRequestContext.prompt };
-              scene.generationPrompt = requestContext.prompt;
-              return {
-                sceneId: scene.id,
-                idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR),
-                prompt: requestContext.prompt,
-                referenceImages: requestContext.referenceImages,
-                referenceImageNames: requestContext.referenceImageNames,
-                referenceCharacterNames: requestContext.referenceCharacterNames,
-                generateType: GenerateType.Video,
-              };
-            });
-            appendLog(
-              PF.formatGoogleFlowBatch(
-                _.add(batchIndex, SecurityConstants.DEFAULT_AMOUNT),
-                promptBatches.length,
-                batchItems.length,
-              ),
-            );
-            const batchResponse = await submitProjectFlowVideoBatch(batchItems, visualConfigPayload, sandboxConfigPayload, requestSignal);
-            if (!_.isEmpty(batchResponse.newProjectId) && !_.isEqual(sandboxConfigPayload.flowProjectId, batchResponse.newProjectId)) {
-              sandboxConfigPayload.flowProjectId = batchResponse.newProjectId;
-              voiceUpdatedProj.visualConfig.flowProjectId = batchResponse.newProjectId;
-            }
-            const resultsBySceneId = _.keyBy(batchResponse.results, "sceneId");
-            for (const scene of sceneBatch) {
-              const result = resultsBySceneId[scene.id];
-              const mediaIds = _.uniq(_.compact(result?.remoteMediaIds || [result?.remoteMediaId]));
-              if (result?.success && !_.isEmpty(mediaIds)) {
-                scene.remoteVideoMediaId = _.head(mediaIds);
-                scene.remoteVideoMediaIds = mediaIds;
-                scene.remoteVideoExpectedCount = FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT;
-                scene.remoteVideoDownloadPending = true;
-                scene.assetStatus = SceneAssetStatus.Generating;
-                scene.assetError = FLOW_VIDEO_MEDIA_CONFIG.REMOTE_DOWNLOAD_PENDING_ERROR;
-              } else {
-                scene.assetStatus = SceneAssetStatus.Failed;
-                scene.assetError = _.toString(result?.warning || batchResponse.warning || FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR);
-              }
-            }
-            await persistImageCheckpoint();
-            await recoverPendingFlowDownloads();
-
-            for (const scene of sceneBatch) {
-              if (!hasSceneAsset(scene) && isNonRetryableFlowVideoError(scene.assetError)) {
-                throw new Error(PF.formatGoogleFlowStopped(scene.assetError || ""));
-              }
-              if (!hasSceneAsset(scene)) await finishVideoScene(scene, SecurityConstants.DEFAULT_AMOUNT);
-            }
-
-            if (_.some(sceneBatch, (scene) => !hasSceneAsset(scene))) break;
+            await finishVideoScene(scene);
+            if (!hasSceneAsset(scene)) break;
           }
         };
 
@@ -3186,7 +3085,7 @@ export function useAutoVideoPipeline(
         }
 
         const unresolvedSourceScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
-        if (!_.isEmpty(unresolvedSourceScenes) && !cancellationRef.current) {
+        if (!usesStrictSequentialVideoQueue && !_.isEmpty(unresolvedSourceScenes) && !cancellationRef.current) {
           if (!isCinematicEpisodeGenre(config.genre)) {
             _.forEach(unresolvedSourceScenes, (scene) => {
               scene.assetStrategy = "ai_generated";

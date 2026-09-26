@@ -4804,6 +4804,7 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
         flowProjectId,
         mediaId,
         expectedDuration: _.toString(project?.visualConfig?.videoDuration),
+        sourceUrl: scene.remoteVideoSourceUrl,
         chromeHeadless: project?.visualConfig?.chromeHeadless,
         retainBrowserSession: true,
       });
@@ -4824,6 +4825,7 @@ router.post("/recover-flow-video", requireLicense(FeatureType.VIDEO), async (req
       if (shouldRegenerate) {
         scene.remoteVideoMediaId = undefined;
         scene.remoteVideoMediaIds = undefined;
+        scene.remoteVideoSourceUrl = undefined;
       }
       await saveProjectDetailToDb(project);
       return res.json({
@@ -4930,18 +4932,15 @@ router.post("/save-flow-videos", requireLicense(FeatureType.VIDEO), async (req: 
 router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req: Request, res: Response) => {
   let activeVideoProjectKey = "";
   try {
-    const requestedItems = _.take(
-      _.map(_.castArray(req.body?.items || []), (item) => ({
+    const requestedItems = _.map(_.castArray(req.body?.items || []), (item) => ({
         sceneId: path.basename(_.toString(item?.sceneId)),
         prompt: _.toString(item?.prompt),
         referenceImages: _.compact(_.castArray(item?.referenceImages || [])),
         referenceImageNames: _.compact(_.castArray(item?.referenceImageNames || [])),
         referenceCharacterNames: _.compact(_.castArray(item?.referenceCharacterNames || [])),
         requireReferenceReady: item?.requireReferenceReady === true,
-      })),
-      FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH,
-    );
-    if (_.isEmpty(requestedItems) || _.some(requestedItems, (item) => _.isEmpty(item.sceneId) || _.isEmpty(_.trim(item.prompt)))) {
+      }));
+    if (_.size(requestedItems) !== FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH || _.some(requestedItems, (item) => _.isEmpty(item.sceneId) || _.isEmpty(_.trim(item.prompt)))) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
     }
 
@@ -5006,6 +5005,7 @@ router.post("/generate-flow-video-batch", requireBatchVisualLicense, async (req:
         }
         scene.remoteVideoMediaId = _.head(mediaIds);
         scene.remoteVideoMediaIds = mediaIds;
+        scene.remoteVideoSourceUrl = result.remoteVideoSourceUrl;
         scene.remoteVideoExpectedCount = FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT;
       } else {
         scene.assetStatus = SceneAssetStatus.Failed;
@@ -5158,6 +5158,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
           flowProjectId: persistedFlowProjectId,
           mediaId,
           expectedDuration: _.toString(visualConfig?.videoDuration),
+          sourceUrl: persistedScene.remoteVideoSourceUrl,
           chromeHeadless: visualConfig?.chromeHeadless,
           retainBrowserSession: true,
         });
@@ -5174,6 +5175,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
         if (recoveryWasRejected && _.isEmpty(fallbackUrls)) {
           persistedScene.remoteVideoMediaId = undefined;
           persistedScene.remoteVideoMediaIds = undefined;
+          persistedScene.remoteVideoSourceUrl = undefined;
           persistedScene.remoteVideoDownloadPending = false;
         } else {
           persistedScene.remoteVideoDownloadPending = true;
@@ -5247,6 +5249,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
         const hasCompleteRemoteBatch = _.gte(_.size(generatedRemoteMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT);
         generatedScene.remoteVideoMediaId = generatedRemoteMediaId;
         generatedScene.remoteVideoMediaIds = generatedRemoteMediaIds;
+        generatedScene.remoteVideoSourceUrl = result.remoteVideoSourceUrl;
         generatedScene.remoteVideoExpectedCount = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT;
         generatedScene.remoteVideoDownloadPending =
           hasCompleteRemoteBatch && (_.isEmpty(result.base64s) || _.lt(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT));
@@ -5276,6 +5279,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
           flowProjectId: generatedFlowProjectId,
           mediaId,
           expectedDuration: _.toString(visualConfig?.videoDuration),
+          sourceUrl: result.remoteVideoSourceUrl,
           chromeHeadless: visualConfig?.chromeHeadless,
           retainBrowserSession: !_.isEmpty(localProjectId),
         });
@@ -5305,6 +5309,7 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
         if (rejectedScene) {
           rejectedScene.remoteVideoMediaId = undefined;
           rejectedScene.remoteVideoMediaIds = undefined;
+          rejectedScene.remoteVideoSourceUrl = undefined;
           rejectedScene.remoteVideoDownloadPending = false;
           rejectedScene.assetError = generatedRecoveryWarning;
           await saveProjectDetailToDb(localProject);

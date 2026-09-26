@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { stringifyJson } from "../lib/jsonStringify";
-import { API_ROUTES, FLOW_BUSY_STATES, FLOW_CLIP_STATUSES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_TEXTS, LANGUAGE_CODES } from "../constants";
+import { API_ROUTES, FLOW_BUSY_STATES, FLOW_CLIP_STATUSES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_MEDIA_CONFIG, FLOW_VIDEO_TEXTS, LANGUAGE_CODES } from "../constants";
 import { Lang } from "../lib/lang";
 import {
   AiPlanningChatModel,
@@ -31,6 +31,7 @@ import {
 import {
   submitProjectFlowVideoBatch,
   recoverProjectFlowVideo,
+  isPersistedProjectVideoUrl,
 } from "../services/projectImageGenerationService";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock";
 import { Button } from "./ui/Button";
@@ -51,6 +52,7 @@ type Clip = {
   prompt: string;
   url?: string;
   savedPath?: string;
+  remoteMediaIds?: string[];
   status: "waiting" | "generating" | "done" | "failed";
   error?: string;
 };
@@ -327,27 +329,29 @@ export default function FlowVideoCreator({
       return toast.error(flowTexts.FOLDER_REQUIRED);
     }
     if (!characterImagesLoaded || isReadingCharacterImages) return;
-    const pending = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE);
-    const unsaved = clips.filter((clip) => clip.url && !clip.savedPath);
-    if (!pending.length && !unsaved.length) return;
+    if (clips.every((clip) => clip.savedPath)) return;
 
     const clipDurationSeconds = Number.parseInt(productionConfig.duration, 10);
 
     setBusy(FLOW_BUSY_STATES.GENERATING);
     try {
-      for (const clip of unsaved) {
-        try {
-          const saved = await post(API_ROUTES.PIPELINE_SAVE_FLOW_VIDEOS, { projectId, folderPath, sceneIds: [clip.id] });
-          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, savedPath: saved.savedPaths?.[0], error: undefined } : item));
-        } catch (error) {
-          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, error: error instanceof Error ? error.message : flowTexts.SAVE_VIDEO_FAILED } : item));
-        }
-      }
-      if (!pending.length) return;
       const response = await fetch(`${API_ROUTES.PROJECTS}/${encodeURIComponent(projectId)}`);
       if (!response.ok) throw new Error(flowTexts.LOAD_PROJECT_FAILED);
       const project: VideoProject = await response.json();
       const existing = project.storyboard || [];
+      const workClips = clips.map((clip) => {
+        if (clip.savedPath) return clip;
+        const scene = existing.find((item) => item.id === clip.id && item.prompt === clip.prompt);
+        const url = clip.url || (isPersistedProjectVideoUrl(scene?.assetUrl) ? scene?.assetUrl : undefined);
+        const remoteMediaIds = clip.remoteMediaIds?.length
+          ? clip.remoteMediaIds
+          : scene?.remoteVideoDownloadPending
+            ? scene.remoteVideoMediaIds?.length ? scene.remoteVideoMediaIds : scene.remoteVideoMediaId ? [scene.remoteVideoMediaId] : []
+            : [];
+        return { ...clip, url, remoteMediaIds };
+      });
+      setClips(workClips);
+      const pending = workClips.filter((clip) => !clip.savedPath && !clip.url && !clip.remoteMediaIds?.length);
       const scenes: StoryboardScene[] = pending.map((clip) => ({
         id: clip.id,
         chapterId: "flow-video-clips",
@@ -381,123 +385,77 @@ export default function FlowVideoCreator({
         updatedAt: new Date().toISOString(),
       };
 
-      const save = await fetch(`${API_ROUTES.PROJECTS}/${encodeURIComponent(projectId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: stringifyJson(nextProject),
-      });
-      if (!save.ok) throw new Error(flowTexts.SAVE_PROMPTS_FAILED);
+      if (pending.length) {
+        const save = await fetch(`${API_ROUTES.PROJECTS}/${encodeURIComponent(projectId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: stringifyJson(nextProject),
+        });
+        if (!save.ok) throw new Error(flowTexts.SAVE_PROMPTS_FAILED);
+      }
 
       let flowProjectId = project.visualConfig?.flowProjectId;
-      for (let offset = 0; offset < pending.length; offset += FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) {
-        const batch = pending.slice(offset, offset + FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH);
-        setProgress(flowTexts.BATCH_PROGRESS(offset + 1, Math.min(offset + batch.length, pending.length), pending.length));
-        setClips((before) =>
-          before.map((clip) =>
-            batch.some((item) => item.id === clip.id) ? { ...clip, status: FLOW_CLIP_STATUSES.GENERATING } : clip,
-          ),
-        );
-
+      for (let index = 0; index < workClips.length; index++) {
+        const clip = workClips[index];
+        if (clip.savedPath) continue;
+        setProgress(flowTexts.BATCH_PROGRESS(index + 1, index + 1, workClips.length));
+        setClips((before) => before.map((item) => item.id === clip.id ? { ...item, status: FLOW_CLIP_STATUSES.GENERATING, error: undefined } : item));
         try {
-          const result = await submitProjectFlowVideoBatch(
-            batch.map((clip) => ({
-              sceneId: clip.id,
-              prompt: clip.prompt,
-              generateType: GenerateType.Video,
-              referenceImages: characterImages.map((image) => image.dataUrl),
-              referenceImageNames: characterImages.map((image) => image.name),
-              requireReferenceReady: characterImages.length > 0,
-            })),
-            { ...nextProject.visualConfig, flowProjectId, generateCount: 1 },
-            { localProjectId: projectId, flowProjectId },
-          );
-
-          if (result.newProjectId) flowProjectId = result.newProjectId;
-
-          for (const clip of batch) {
-            const generated = result.results.find((item) => item.sceneId === clip.id);
-            if (!generated?.success) {
-              setClips((before) =>
-                before.map((item) =>
-                  item.id === clip.id
-                    ? {
-                      ...item,
-                      status: FLOW_CLIP_STATUSES.FAILED,
-                      error: generated?.warning || result.warning || flowTexts.FLOW_GENERATION_FAILED,
-                    }
-                    : item,
-                ),
-              );
-              continue;
-            }
-
-            const mediaIds = generated.remoteMediaIds?.length
-              ? generated.remoteMediaIds
-              : generated.remoteMediaId
-                ? [generated.remoteMediaId]
-                : [];
-            let url = generated.fallbackUrl;
-
-            if (!url && mediaIds.length) {
-              for (let attempt = 0; attempt < 4 && !url; attempt++) {
-                const recovered = await recoverProjectFlowVideo({
-                  projectId,
+          let url = clip.url;
+          let mediaIds = clip.remoteMediaIds || [];
+          if (!url && !mediaIds.length) {
+            for (let attempt = 0; attempt <= FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT; attempt++) {
+              const result = await submitProjectFlowVideoBatch(
+                [{
                   sceneId: clip.id,
-                  mediaIds,
-                  expectedOutputCount: 1,
-                });
-                if (recovered.success) url = recovered.fallbackUrl;
-                else if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 3000));
-              }
+                  prompt: clip.prompt,
+                  generateType: GenerateType.Video,
+                  referenceImages: characterImages.map((image) => image.dataUrl),
+                  referenceImageNames: characterImages.map((image) => image.name),
+                  requireReferenceReady: characterImages.length > 0,
+                }],
+                { ...nextProject.visualConfig, flowProjectId, generateCount: FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT },
+                { localProjectId: projectId, flowProjectId },
+              );
+              if (result.newProjectId) flowProjectId = result.newProjectId;
+              const generated = result.results.find((item) => item.sceneId === clip.id);
+              mediaIds = generated?.remoteMediaIds?.length
+                ? generated.remoteMediaIds
+                : generated?.remoteMediaId ? [generated.remoteMediaId] : [];
+              url = generated?.fallbackUrl;
+              if (generated?.success || mediaIds.length) break;
+              const message = generated?.warning || result.warning || flowTexts.FLOW_GENERATION_FAILED;
+              if (generated?.remoteMediaCreated !== false || attempt === FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT) throw new Error(message);
             }
-
-            let savedPath: string | undefined;
-            let saveError: string | undefined;
-            if (url) {
-              try {
-                const savedRes = await post(API_ROUTES.PIPELINE_SAVE_FLOW_VIDEOS, {
-                  projectId,
-                  folderPath,
-                  sceneIds: [clip.id],
-                });
-                savedPath = savedRes.savedPaths?.[0];
-              } catch (error) {
-                saveError = error instanceof Error ? error.message : flowTexts.SAVE_FOLDER_FAILED;
-              }
-            }
-
-            setClips((before) =>
-              before.map((item) =>
-                item.id === clip.id
-                  ? {
-                    ...item,
-                    url,
-                    savedPath,
-                    status: url ? FLOW_CLIP_STATUSES.DONE : FLOW_CLIP_STATUSES.FAILED,
-                    error:
-                      saveError ||
-                      (url
-                        ? undefined
-                        : isVi
-                          ? "Video đã tạo nhưng chưa tải về được. Bấm Tạo video để thử lại."
-                          : "Video created but download pending. Click Generate to retry."),
-                  }
-                  : item,
-              ),
-            );
+            workClips[index] = { ...clip, url, remoteMediaIds: mediaIds };
+            setClips((before) => before.map((item) => item.id === clip.id ? { ...item, url, remoteMediaIds: mediaIds } : item));
           }
+          if (!url && mediaIds.length) {
+            for (let attempt = 0; attempt < FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_ATTEMPTS && !url; attempt++) {
+              const recovered = await recoverProjectFlowVideo({ projectId, sceneId: clip.id, mediaIds, expectedOutputCount: 1 });
+              if (recovered.success) url = recovered.fallbackUrl;
+              else if (recovered.remoteMediaCreated === false) {
+                mediaIds = [];
+                setClips((before) => before.map((item) => item.id === clip.id ? { ...item, remoteMediaIds: [] } : item));
+                break;
+              } else if (attempt < FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_ATTEMPTS - 1) {
+                await new Promise((resolve) => setTimeout(resolve, FLOW_VIDEO_MEDIA_CONFIG.RECOVERY_RETRY_DELAY_MS));
+              }
+            }
+          }
+          if (!url) throw new Error(flowTexts.VIDEO_DOWNLOAD_PENDING);
+          workClips[index] = { ...workClips[index], url, remoteMediaIds: mediaIds };
+          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, url, remoteMediaIds: mediaIds } : item));
+          const saved = await post(API_ROUTES.PIPELINE_SAVE_FLOW_VIDEOS, { projectId, folderPath, sceneIds: [clip.id] });
+          const savedPath: string | undefined = saved.savedPaths?.[0];
+          if (!savedPath) throw new Error(flowTexts.SAVE_VIDEO_FAILED);
+          workClips[index] = { ...workClips[index], savedPath, status: FLOW_CLIP_STATUSES.DONE, error: undefined };
+          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, url, savedPath, status: FLOW_CLIP_STATUSES.DONE, error: undefined } : item));
         } catch (error) {
-          setClips((before) =>
-            before.map((item) =>
-              batch.some((clip) => clip.id === item.id)
-                ? {
-                  ...item,
-                  status: FLOW_CLIP_STATUSES.FAILED,
-                  error: error instanceof Error ? error.message : flowTexts.FLOW_ERROR,
-                }
-                : item,
-            ),
-          );
+          const message = error instanceof Error ? error.message : flowTexts.FLOW_ERROR;
+          setClips((before) => before.map((item) => item.id === clip.id ? { ...item, status: FLOW_CLIP_STATUSES.FAILED, error: message } : item));
+          toast.error(message);
+          return;
         }
       }
       toast.success(flowTexts.BATCH_COMPLETE);
@@ -547,7 +505,8 @@ export default function FlowVideoCreator({
     toast.info(flowTexts.PROMPTS_CLEARED);
   };
 
-  const readyClipsCount = clips.filter((clip) => clip.status !== FLOW_CLIP_STATUSES.DONE).length;
+  const readyClipsCount = clips.filter((clip) => !clip.savedPath && !clip.url && !clip.remoteMediaIds?.length).length;
+  const recoverableVideosCount = clips.filter((clip) => !clip.savedPath && !clip.url && !!clip.remoteMediaIds?.length).length;
   const unsavedVideosCount = clips.filter((clip) => clip.url && !clip.savedPath).length;
   const completedVideosCount = clips.filter((clip) => clip.url).length;
 
@@ -708,9 +667,9 @@ export default function FlowVideoCreator({
                 </div>
 
                 <Button variant="unstyled" type="button"
-                  disabled={!!busy || !characterImagesLoaded || isReadingCharacterImages || (!readyClipsCount && !unsavedVideosCount) || !folderPath}
+                  disabled={!!busy || !characterImagesLoaded || isReadingCharacterImages || (!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath}
                   onClick={generate}
-                  className={cn("sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none", { "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !unsavedVideosCount) || !folderPath, "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING, "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING) })}
+                  className={cn("sm:col-span-5 h-full min-h-[42px] px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 transition-all shadow-lg select-none leading-none", { "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath, "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING, "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING) })}
                 >
                   {busy === FLOW_BUSY_STATES.GENERATING ? (
                     <>
@@ -721,9 +680,11 @@ export default function FlowVideoCreator({
                     <>
                       <Video className={cn("w-4 h-4 shrink-0")} />
                       <span className={cn("truncate")}>
-                        {readyClipsCount
-                          ? flowTexts.CREATE_VIDEOS(readyClipsCount)
-                          : flowTexts.SAVE_REMAINING_VIDEOS(unsavedVideosCount)}
+                        {recoverableVideosCount
+                          ? flowTexts.RESUME_VIDEOS(recoverableVideosCount)
+                          : unsavedVideosCount
+                            ? flowTexts.SAVE_REMAINING_VIDEOS(unsavedVideosCount)
+                            : flowTexts.CREATE_VIDEOS(readyClipsCount)}
                       </span>
                     </>
                   )}
@@ -731,7 +692,7 @@ export default function FlowVideoCreator({
               </div>
             </div>
           </div>
-          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl h-full min-h-[380px] lg:min-h-0")}>
+          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl lg:h-0 lg:min-h-full min-h-[420px] overflow-hidden")}>
             <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3 shrink-0")}>
               <div className={cn("flex items-center gap-2")}>
                 <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
@@ -764,26 +725,26 @@ export default function FlowVideoCreator({
               )}
             </div>
 
-            <div className={cn("flex-1 min-h-0 relative")}>
+            <div className={cn("flex-1 min-h-0 flex flex-col overflow-hidden")}>
               {!clips.length ? (
-                <div className={cn("absolute inset-0 flex items-center justify-center text-center py-8 text-slate-500")}>
+                <div className={cn("flex-1 flex items-center justify-center text-center py-8 text-slate-500")}>
                   <p className={cn("text-xs font-medium")}>
                     {flowTexts.ENTER_REQUEST}
                   </p>
                 </div>
               ) : (
-                <div className={cn("absolute inset-0 space-y-2 overflow-y-auto custom-scrollbar pr-1.5 pb-1")}>
+                <div className={cn("flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-2 pr-1.5 pb-1")}>
                   {clips.map((clip, index) => (
                     <div
                       key={clip.id}
-                      className={cn("group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40 shrink-0", { "border-emerald-500/30": clip.status === FLOW_CLIP_STATUSES.DONE, "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED, "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING, "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING) })}
+                      className={cn("group flex items-start gap-2.5 rounded-xl border px-3 py-2.5 bg-slate-955/70 hover:bg-slate-950/90 transition-all hover:border-purple-500/40 shrink-0 w-full min-w-0", { "border-emerald-500/30": clip.status === FLOW_CLIP_STATUSES.DONE, "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED, "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING, "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING) })}
                     >
                       <span className={cn("w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5")}>
                         {index + 1}
                       </span>
 
                       <p
-                        className={cn("flex-1 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2")}
+                        className={cn("flex-1 min-w-0 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2")}
                         title={clip.prompt}
                       >
                         {clip.prompt}

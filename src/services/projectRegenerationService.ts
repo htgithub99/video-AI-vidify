@@ -16,6 +16,7 @@ export const clearSceneGeneratedAsset = (scene: StoryboardScene): StoryboardScen
   dependencyHash: undefined,
   remoteVideoMediaId: undefined,
   remoteVideoMediaIds: undefined,
+  remoteVideoSourceUrl: undefined,
   remoteVideoExpectedCount: undefined,
   remoteVideoDownloadPending: undefined,
   qaStatus: undefined,

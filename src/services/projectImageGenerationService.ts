@@ -23,6 +23,7 @@ export interface ProjectImageResult {
   newProjectId?: string;
   remoteMediaId?: string;
   remoteMediaIds?: string[];
+  remoteVideoSourceUrl?: string;
   remoteMediaCreated?: boolean;
   fallbackUrls?: string[];
 }
@@ -120,6 +121,7 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
     newProjectId: _.get(response.data, "newProjectId"),
     remoteMediaId: _.get(response.data, "remoteMediaId"),
     remoteMediaIds: _.castArray(_.get(response.data, "remoteMediaIds") || []).filter(Boolean),
+    remoteVideoSourceUrl: _.get(response.data, "remoteVideoSourceUrl"),
     remoteMediaCreated: Boolean(_.get(response.data, "remoteMediaCreated")),
     fallbackUrls: _.castArray(_.get(response.data, "fallbackUrls") || []).filter(Boolean),
   };
@@ -168,7 +170,7 @@ export const recoverProjectFlowVideo = async (request: FlowVideoRecoveryRequest,
     assetType: GenerateType.Video,
     remoteMediaId: _.head(remoteMediaIds),
     remoteMediaIds,
-    remoteMediaCreated: true,
+    remoteMediaCreated: _.get(response.data, "remoteMediaCreated", true),
   };
 };
 

@@ -53,6 +53,7 @@ export const inheritApprovedSceneAsset = (scene: StoryboardScene, previous?: Sto
           assetError: previous.assetError,
           remoteVideoMediaId: previous.remoteVideoMediaId,
           remoteVideoMediaIds: previous.remoteVideoMediaIds,
+          remoteVideoSourceUrl: previous.remoteVideoSourceUrl,
           remoteVideoExpectedCount: previous.remoteVideoExpectedCount,
           remoteVideoDownloadPending: true,
         }
