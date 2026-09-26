@@ -280,15 +280,13 @@ export const SUNO_AUTOMATION_SELECTORS = {
     '[role="radio"]:has-text("Male")',
   ] as const,
   INSPO_BUTTON: [
-    'button:has-text("Inspo")',
-    '[role="button"]:has-text("Inspo")',
+    'button[aria-label="Add inspiration from a playlist"]',
   ] as const,
   INSPO_SEARCH_INPUT: [
-    '[role="dialog"] input[placeholder*="Search" i]',
-    '[role="dialog"] input[type="search"]',
-    'input[placeholder*="Search" i]',
+    '[role="dialog"] input[placeholder="Search"]',
   ] as const,
-  INSPO_SELECTED_CONTROL: 'button, [role="button"]',
+  INSPO_APPLIED_CONDITION: 'button[aria-label="Change condition type from Inspo"]',
+  INSPO_APPLIED_TRACK: 'button[aria-label^="Remove "]',
   LYRICS_INPUT: [
     'textarea[placeholder*="lyrics" i]',
     '[contenteditable="true"][aria-label*="lyrics" i]',

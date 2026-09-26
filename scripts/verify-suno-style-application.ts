@@ -30,6 +30,13 @@ assert.doesNotMatch(source, /_\.every\(\[aiSettings\.weirdness, aiSettings\.styl
 assert.doesNotMatch(source, /if \(!\(await labelLocator\.isVisible\(\)\.catch\(\(\) => false\)\)\) return/);
 assert.doesNotMatch(source, /if \(excludeInput\) await fillEditable/);
 assert.equal((source.match(/await selectInspoPlaylist\(page, inspo\)/g) || []).length, 1);
+assert.match(source, /await verifySunoAccount\(page\);[\s\S]*await ensureAdvancedMode\(page\);[\s\S]*await selectInspoPlaylist\(page, inspo\);[\s\S]*await configureAdvancedOnce\(page, style, aiSettings, hasInspo\)/);
+assert.match(source, /if \(hasInspo\) \{\s*await audioInfluenceControl\.waitFor/);
+assert.match(constants, /button\[aria-label="Add inspiration from a playlist"\]/);
+assert.doesNotMatch(constants, /'input\[placeholder\*="Search" i\]'/);
+assert.match(source, /INSPO_APPLIED_CONDITION/);
+assert.match(source, /INSPO_APPLIED_TRACK/);
+assert.match(constants, /\[role="dialog"\] input\[placeholder="Search"\]/);
 
 const browser = await chromium.launch({ headless: true });
 try {
@@ -46,27 +53,47 @@ try {
 
   const inspoName = "BOLERO_HAI_NGOAI";
   await page.setContent(`
-    <button id="inspo-button" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <input placeholder="Search clips">
+    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">+ Inspo</button>
     <div id="inspo-dialog" role="dialog" hidden>
-      <input placeholder="Search playlists" oninput="setTimeout(() => {
+      <input placeholder="Search" oninput="setTimeout(() => {
         const row = document.querySelector('#inspo-result');
         row.hidden = false;
       }, 1500)">
       <div id="inspo-result" class="cursor-pointer" hidden onclick="
-        document.querySelector('#inspo-button').textContent = '${inspoName}';
+        document.querySelector('#inspo-button').remove();
+        document.querySelector('#selected-inspo').hidden = false;
         document.querySelector('#inspo-dialog').hidden = true;
       "><span>${inspoName}</span></div>
     </div>
+    <div id="selected-inspo" hidden><button aria-label="Change condition type from Inspo">Inspo</button><button aria-label="Remove selected track">Remove</button></div>
   `);
   await selectInspoPlaylist(page, inspoName);
-  assert.equal(await page.locator("#inspo-button").textContent(), inspoName);
+  assert.equal(await page.locator('#selected-inspo button[aria-label^="Remove "]').count(), 1);
+  assert.equal(await page.locator('input[placeholder="Search clips"]').inputValue(), "");
 
   await page.setContent(`
-    <button id="inspo-button" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
     <div id="inspo-dialog" role="dialog" hidden>
-      <input placeholder="Search playlists">
+      <input placeholder="Search">
       <div class="cursor-pointer" onclick="document.querySelector('#inspo-dialog').hidden = true"><span>${inspoName}</span></div>
     </div>
+  `);
+  await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
+  assert.equal(await page.locator("#inspo-button").textContent(), "Inspo");
+
+  await page.setContent(`
+    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <div id="inspo-dialog" role="dialog" hidden>
+      <input placeholder="Search">
+      <button type="button">${inspoName}</button>
+    </div>
+  `);
+  await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
+
+  await page.setContent(`
+    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <div id="inspo-dialog" role="dialog" hidden><input placeholder="Search"></div>
   `);
   await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
 

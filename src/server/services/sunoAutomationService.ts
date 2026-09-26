@@ -421,7 +421,7 @@ const applySunoSetting = async (page: Page, label: string, action: () => Promise
   throw lastError;
 };
 
-export const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings): Promise<void> => {
+export const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings, hasInspo = false): Promise<void> => {
   if (!aiSettings || !_.every([aiSettings.weirdness, aiSettings.styleInfluence, aiSettings.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101))) {
     throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
   }
@@ -430,6 +430,10 @@ export const configureAdvancedOnce = async (page: Page, style: string, aiSetting
   await applySunoSetting(page, "Weirdness", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings.weirdness));
   await applySunoSetting(page, "Style Influence", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings.styleInfluence));
   const audioInfluenceControl = page.getByRole("slider", { name: SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL }).first();
+  if (hasInspo) {
+    await audioInfluenceControl.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS })
+      .catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr("Audio Influence")); });
+  }
   if (await audioInfluenceControl.isVisible().catch(() => false)) {
     if (!_.isInteger(aiSettings.audioInfluence) || !_.inRange(aiSettings.audioInfluence!, 0, 101)) throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
     await applySunoSetting(page, "Audio Influence", () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL, aiSettings.audioInfluence));
@@ -467,13 +471,6 @@ export const configureAdvancedOnce = async (page: Page, style: string, aiSetting
 export const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => {
   const targetName = _.trim(inspo);
   if (_.isEmpty(targetName)) return;
-  const isSelected = async (): Promise<boolean> => page.evaluate(
-    ({ name, selector }) => Array.from(document.querySelectorAll(selector)).some((control) =>
-      control.getClientRects().length > 0 && !control.closest('[role="dialog"]') && control.textContent?.includes(name),
-    ),
-    { name: targetName, selector: SUNO_AUTOMATION_SELECTORS.INSPO_SELECTED_CONTROL },
-  );
-  if (await isSelected()) return;
   const inspoButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_BUTTON, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
   if (!inspoButton) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_BUTTON_NOT_FOUND_ERR);
   await inspoButton.click();
@@ -481,20 +478,22 @@ export const selectInspoPlaylist = async (page: Page, inspo: string): Promise<vo
   const searchInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_SEARCH_INPUT, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
   if (!searchInput) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_SEARCH_NOT_FOUND_ERR);
   await fillEditable(searchInput, targetName);
-  const exactResult = page.getByText(targetName, { exact: true }).first();
+  const inspoDialog = searchInput.locator('xpath=ancestor::*[@role="dialog"][1]');
+  const exactResult = inspoDialog.getByText(targetName, { exact: true }).first();
   await exactResult.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS })
     .catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName)); });
   const playlistRow = exactResult.locator(SUNO_AUTOMATION_CONFIG.XPATH_CURSOR_POINTER_DIV);
   if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
   else await exactResult.click();
-  await searchInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_HIDDEN, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
-  await page.waitForFunction(
-    ({ name, selector }) => Array.from(document.querySelectorAll(selector)).some((control) =>
-      control.getClientRects().length > 0 && !control.closest('[role="dialog"]') && control.textContent?.includes(name),
-    ),
-    { name: targetName, selector: SUNO_AUTOMATION_SELECTORS.INSPO_SELECTED_CONTROL },
-    { timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS },
-  ).catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName)); });
+  await page.waitForFunction(({ conditionSelector, trackSelector }) => {
+    const condition = document.querySelector(conditionSelector);
+    return !!condition && condition.getClientRects().length > 0 &&
+      Array.from(document.querySelectorAll(trackSelector)).some((track) => track.getClientRects().length > 0);
+  }, {
+    conditionSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_CONDITION,
+    trackSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_TRACK,
+  }, { timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS })
+    .catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName)); });
 };
 
 const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]> => {
@@ -681,8 +680,9 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       stage = "configure_generation";
       await writeMusicDiagnostic("suno_stage_started", { runId, stage });
       await ensureAdvancedMode(page);
-      await configureAdvancedOnce(page, style, aiSettings);
-      if (!_.isEmpty(_.trim(inspo))) await selectInspoPlaylist(page, inspo);
+      const hasInspo = !_.isEmpty(_.trim(inspo));
+      if (hasInspo) await selectInspoPlaylist(page, inspo);
+      await configureAdvancedOnce(page, style, aiSettings, hasInspo);
       const activeGenerations: ActiveSunoGeneration[] = [];
       for (const [songIndex, song] of songs.entries()) {
         stage = "generate_song";
