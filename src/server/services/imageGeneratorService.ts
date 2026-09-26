@@ -3442,28 +3442,28 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
     activePage.on("response", flowResponseListener);
 
     const item = items[0];
-      let input = await locateFlowPromptInput(activePage, 15_000);
-      if (!input) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
-      if (!(await replaceFlowPromptInput(activePage, input, item.prompt))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
-      if (!_.isEmpty(item.referenceCharacterNames)) await attachFlowCharactersByName(activePage, item.referenceCharacterNames!);
-      else await uploadProviderCharacterReferences(activePage, item.referenceImages, "flow", item.referenceImageNames, item.requireReferenceReady);
-      input = await locateFlowPromptInput(activePage, FLOW_CHARACTER_CONFIG.ATTACHMENT_VERIFY_TIMEOUT_MS);
-      if (!input || !isFlowPromptValueApplied(await readFlowPromptInput(input), item.prompt)) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+    let input = await locateFlowPromptInput(activePage, 15_000);
+    if (!input) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
+    if (!(await replaceFlowPromptInput(activePage, input, item.prompt))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+    if (!_.isEmpty(item.referenceCharacterNames)) await attachFlowCharactersByName(activePage, item.referenceCharacterNames!);
+    else await uploadProviderCharacterReferences(activePage, item.referenceImages, "flow", item.referenceImageNames, item.requireReferenceReady);
+    input = await locateFlowPromptInput(activePage, FLOW_CHARACTER_CONFIG.ATTACHMENT_VERIFY_TIMEOUT_MS);
+    if (!input || !isFlowPromptValueApplied(await readFlowPromptInput(input), item.prompt)) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
 
-      const namedSubmitButton = activePage.getByRole("button", { name: PLAYWRIGHT_SUBMIT_TEXT_REGEX }).last();
-      const iconSubmitButton = activePage
-        .locator("button")
-        .filter({ has: activePage.locator("i, mat-icon").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }) })
-        .last();
-      const submitButton = (await namedSubmitButton.isVisible().catch(() => false)) ? namedSubmitButton : iconSubmitButton;
-      const submitReadyDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS);
-      while (_.lt(Date.now(), submitReadyDeadline) && !(await submitButton.isEnabled().catch(() => false))) await activePage.waitForTimeout(500);
-      if (!(await submitButton.isEnabled().catch(() => false))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
-      await submitButton.scrollIntoViewIfNeeded();
-      await smoothMouseMove(activePage, submitButton);
-      await submitButton.click();
-      await approveFlowVideoCreditPrompt(activePage, submitButton);
-      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SENT_PROMPT_ROOM(SecurityConstants.DEFAULT_AMOUNT, items.length, item.sceneId));
+    const namedSubmitButton = activePage.getByRole("button", { name: PLAYWRIGHT_SUBMIT_TEXT_REGEX }).last();
+    const iconSubmitButton = activePage
+      .locator("button")
+      .filter({ has: activePage.locator("i, mat-icon").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }) })
+      .last();
+    const submitButton = (await namedSubmitButton.isVisible().catch(() => false)) ? namedSubmitButton : iconSubmitButton;
+    const submitReadyDeadline = _.add(Date.now(), FLOW_DIRECT_VIDEO_CONFIG.CONFIG_VERIFY_TIMEOUT_MS);
+    while (_.lt(Date.now(), submitReadyDeadline) && !(await submitButton.isEnabled().catch(() => false))) await activePage.waitForTimeout(500);
+    if (!(await submitButton.isEnabled().catch(() => false))) throw createAppError(FLOW_DIRECT_VIDEO_CONFIG.PROMPT_NOT_READY_ERROR);
+    await submitButton.scrollIntoViewIfNeeded();
+    await smoothMouseMove(activePage, submitButton);
+    await submitButton.click();
+    await approveFlowVideoCreditPrompt(activePage, submitButton);
+    appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SENT_PROMPT_ROOM(SecurityConstants.DEFAULT_AMOUNT, items.length, item.sceneId));
 
     const generatedBatch = await waitForFlowGeneratedMediaBatch(
       activePage,

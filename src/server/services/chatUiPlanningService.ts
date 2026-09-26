@@ -55,6 +55,7 @@ interface ChatPlanningRequest {
   artifactType?: string;
   requestId?: string;
   closeRoomOnComplete?: boolean;
+  allowDefaultGeminiModel?: boolean;
 }
 
 export interface ChatPlanningRoomIdentity {
@@ -1134,7 +1135,7 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
   throw new Error(CHAT_UI_AUTOMATION_MESSAGES.SELECTED_MODEL_UNAVAILABLE);
 };
 
-const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined): Promise<void> => {
+const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined, allowDefaultModel = false): Promise<void> => {
   if (!model) return;
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
@@ -1145,6 +1146,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   if (!modelButton) {
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_PICKER_NOT_FOUND);
     await writeMusicDiagnostic("chat_model_selection_failed", { provider: AiPlanningFallbackProvider.GeminiChat, model, stage: "model_picker", code: "picker_not_found" });
+    if (allowDefaultModel) return;
     throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_PICKER_NOT_FOUND);
   }
   const currentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
@@ -1164,6 +1166,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
     await page.keyboard.press("Escape").catch(() => undefined);
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
     await writeMusicDiagnostic("chat_model_selection_failed", { provider: AiPlanningFallbackProvider.GeminiChat, model, code: "model_unavailable" });
+    if (allowDefaultModel) return;
     throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
   }
   await page.keyboard.press("Escape").catch(() => undefined);
@@ -1175,6 +1178,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
       await page.keyboard.press("Escape").catch(() => undefined);
       appWarn(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_BASE_MODEL_UNAVAILABLE);
       await writeMusicDiagnostic("chat_model_selection_failed", { provider: AiPlanningFallbackProvider.GeminiChat, model, code: "base_model_unavailable" });
+      if (allowDefaultModel) return;
       throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_BASE_MODEL_UNAVAILABLE);
     }
   }
@@ -1193,6 +1197,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   await page.keyboard.press("Escape").catch(() => undefined);
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_THINKING_UNAVAILABLE);
   await writeMusicDiagnostic("chat_model_selection_failed", { provider: AiPlanningFallbackProvider.GeminiChat, model, code: "thinking_level_unavailable" });
+  if (allowDefaultModel) return;
   throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_THINKING_UNAVAILABLE);
 };
 
@@ -1329,7 +1334,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
   await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-  await selectGeminiChatModel(room, request.model);
+  await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
   const response = await submitPrompt(
     room,
     getPlanningRoomKey(request),
@@ -1355,7 +1360,7 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
     await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
-    await selectGeminiChatModel(room, request.model);
+    await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {

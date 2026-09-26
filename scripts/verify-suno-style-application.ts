@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { findSunoStyleInput } from "../src/server/services/sunoAutomationService.js";
+import { findSunoStyleInput, selectInspoPlaylist } from "../src/server/services/sunoAutomationService.js";
 
 const source = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
 const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
@@ -29,6 +29,7 @@ assert.match(source, /formatConditionalSettingUnavailableLog\("Audio Influence"\
 assert.doesNotMatch(source, /_\.every\(\[aiSettings\.weirdness, aiSettings\.styleInfluence, aiSettings\.audioInfluence, aiSettings\.variety\]/);
 assert.doesNotMatch(source, /if \(!\(await labelLocator\.isVisible\(\)\.catch\(\(\) => false\)\)\) return/);
 assert.doesNotMatch(source, /if \(excludeInput\) await fillEditable/);
+assert.equal((source.match(/await selectInspoPlaylist\(page, inspo\)/g) || []).length, 1);
 
 const browser = await chromium.launch({ headless: true });
 try {
@@ -42,6 +43,36 @@ try {
   await styleInput.fill("authentic vietnamese bolero, 76 bpm");
   assert.equal(await page.locator('textarea[placeholder="Add a style"]').inputValue(), "authentic vietnamese bolero, 76 bpm");
   assert.equal(await page.locator('textarea[placeholder="Exclude styles"]').inputValue(), "wrong existing exclusion");
+
+  const inspoName = "BOLERO_HAI_NGOAI";
+  await page.setContent(`
+    <button id="inspo-button" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <div id="inspo-dialog" role="dialog" hidden>
+      <input placeholder="Search playlists" oninput="setTimeout(() => {
+        const row = document.querySelector('#inspo-result');
+        row.hidden = false;
+      }, 1500)">
+      <div id="inspo-result" class="cursor-pointer" hidden onclick="
+        document.querySelector('#inspo-button').textContent = '${inspoName}';
+        document.querySelector('#inspo-dialog').hidden = true;
+      "><span>${inspoName}</span></div>
+    </div>
+  `);
+  await selectInspoPlaylist(page, inspoName);
+  assert.equal(await page.locator("#inspo-button").textContent(), inspoName);
+
+  await page.setContent(`
+    <button id="inspo-button" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
+    <div id="inspo-dialog" role="dialog" hidden>
+      <input placeholder="Search playlists">
+      <div class="cursor-pointer" onclick="document.querySelector('#inspo-dialog').hidden = true"><span>${inspoName}</span></div>
+    </div>
+  `);
+  await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
+
+  await page.setContent('<button type="button">Create</button>');
+  await selectInspoPlaylist(page, "");
+  assert.equal(await page.getByRole("button", { name: "Create" }).count(), 1);
 } finally {
   await browser.close();
 }

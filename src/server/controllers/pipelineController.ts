@@ -1524,6 +1524,7 @@ const selectProfessionalSunoTracks = async (
           artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
           requestId,
           closeRoomOnComplete: false,
+          allowDefaultGeminiModel: true,
         });
         const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         if (!_.isEqual(evaluation.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION) || !_.isEqual(normalizeCinematicArtifactIdentity(evaluation.requestId), normalizeCinematicArtifactIdentity(requestId))) {
@@ -1781,6 +1782,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         workerId,
         chromeHeadless: false,
         signal: planningRun.signal,
+        allowDefaultGeminiModel: true,
       }));
       const evaluationResults = await Promise.allSettled(_.map(groupsByChunk, async (groups, chunkIndex) => {
         await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, {

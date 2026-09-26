@@ -464,43 +464,37 @@ export const configureAdvancedOnce = async (page: Page, style: string, aiSetting
   });
 };
 
-const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => {
+export const selectInspoPlaylist = async (page: Page, inspo: string): Promise<void> => {
   const targetName = _.trim(inspo);
   if (_.isEmpty(targetName)) return;
-  const inspoButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_BUTTON);
-  if (!inspoButton) {
-    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
-    return;
-  }
+  const isSelected = async (): Promise<boolean> => page.evaluate(
+    ({ name, selector }) => Array.from(document.querySelectorAll(selector)).some((control) =>
+      control.getClientRects().length > 0 && !control.closest('[role="dialog"]') && control.textContent?.includes(name),
+    ),
+    { name: targetName, selector: SUNO_AUTOMATION_SELECTORS.INSPO_SELECTED_CONTROL },
+  );
+  if (await isSelected()) return;
+  const inspoButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_BUTTON, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
+  if (!inspoButton) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_BUTTON_NOT_FOUND_ERR);
   await inspoButton.click();
 
-  const searchInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_SEARCH_INPUT);
-  if (!searchInput) {
-    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
-    await page.keyboard.press("Escape").catch(() => undefined);
-    return;
-  }
+  const searchInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.INSPO_SEARCH_INPUT, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
+  if (!searchInput) throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_SEARCH_NOT_FOUND_ERR);
   await fillEditable(searchInput, targetName);
-  await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.INSPO_SEARCH_WAIT_MS);
-
-  const exactResult = page.getByText(targetName, { exact: true });
-  const resultCount = await exactResult.count().catch(() => 0);
-  let selected = false;
-  for (let index = 0; index < resultCount; index += 1) {
-    const candidate = exactResult.nth(index);
-    if (!(await candidate.isVisible().catch(() => false))) continue;
-    const playlistRow = candidate.locator(SUNO_AUTOMATION_CONFIG.XPATH_CURSOR_POINTER_DIV);
-    if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
-    else await candidate.click();
-    selected = true;
-    break;
-  }
-  if (!selected) {
-    logger.warn(SUNO_AUTOMATION_TEXTS.INSPO_SKIPPED_WARN, targetName);
-    await page.keyboard.press("Escape").catch(() => undefined);
-    return;
-  }
+  const exactResult = page.getByText(targetName, { exact: true }).first();
+  await exactResult.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS })
+    .catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName)); });
+  const playlistRow = exactResult.locator(SUNO_AUTOMATION_CONFIG.XPATH_CURSOR_POINTER_DIV);
+  if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
+  else await exactResult.click();
   await searchInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_HIDDEN, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS });
+  await page.waitForFunction(
+    ({ name, selector }) => Array.from(document.querySelectorAll(selector)).some((control) =>
+      control.getClientRects().length > 0 && !control.closest('[role="dialog"]') && control.textContent?.includes(name),
+    ),
+    { name: targetName, selector: SUNO_AUTOMATION_SELECTORS.INSPO_SELECTED_CONTROL },
+    { timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS },
+  ).catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName)); });
 };
 
 const createOneSong = async (page: Page, song: SunoSongInput): Promise<string[]> => {
@@ -687,8 +681,8 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       stage = "configure_generation";
       await writeMusicDiagnostic("suno_stage_started", { runId, stage });
       await ensureAdvancedMode(page);
-      await selectInspoPlaylist(page, inspo);
       await configureAdvancedOnce(page, style, aiSettings);
+      if (!_.isEmpty(_.trim(inspo))) await selectInspoPlaylist(page, inspo);
       const activeGenerations: ActiveSunoGeneration[] = [];
       for (const [songIndex, song] of songs.entries()) {
         stage = "generate_song";

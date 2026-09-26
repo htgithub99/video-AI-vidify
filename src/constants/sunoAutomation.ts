@@ -43,8 +43,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   SONG_PAGE_READY_TIMEOUT_MS: 30_000,
   PLAYLIST_OPTION_TIMEOUT_MS: 10_000,
   PLAYLIST_VERIFY_WAIT_MS: 4000,
-  INSPO_SEARCH_WAIT_MS: 1000,
-  INSPO_SELECT_WAIT_MS: 500,
+  INSPO_RESULT_TIMEOUT_MS: 10_000,
 
   APP_SUBDIR: "VideoAI-Vidify",
   STATUS_PENDING: "pending",
@@ -289,6 +288,7 @@ export const SUNO_AUTOMATION_SELECTORS = {
     '[role="dialog"] input[type="search"]',
     'input[placeholder*="Search" i]',
   ] as const,
+  INSPO_SELECTED_CONTROL: 'button, [role="button"]',
   LYRICS_INPUT: [
     'textarea[placeholder*="lyrics" i]',
     '[contenteditable="true"][aria-label*="lyrics" i]',
@@ -348,7 +348,7 @@ export const SUNO_AUTOMATION_TEXTS = {
   SUNO_SETTINGS_REQUIRED_ERR: "Thiếu cấu hình Suno do AI phân tích. Vui lòng sáng tác lại để AI đánh giá trước khi tạo nhạc.",
   INSPO_BUTTON_NOT_FOUND_ERR: "Không tìm thấy nút Inspo của Suno.",
   INSPO_SEARCH_NOT_FOUND_ERR: "Không tìm thấy ô tìm kiếm playlist Inspo.",
-  INSPO_SKIPPED_WARN: "Bỏ qua playlist Inspo không còn khả dụng: {0}",
+  INSPO_NOT_APPLIED_ERR: (name: string) => `Suno chưa chọn playlist Inspo "${name}"; đã dừng trước khi tạo nhạc.`,
   PLAYLIST_URL_NOT_FOUND_ERR: "Đã tạo nhạc nhưng chưa lấy được URL playlist từ Suno.",
   PLAYLIST_MENU_NOT_FOUND_ERR: "Đã tạo nhạc nhưng không mở được menu playlist trên giao diện Suno hiện tại.",
   PLAYLIST_CREATE_BUTTON_NOT_FOUND_ERR: "Đã tạo nhạc nhưng không tìm thấy nút tạo playlist trên giao diện Suno hiện tại.",
