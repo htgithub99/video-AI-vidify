@@ -2,16 +2,17 @@ import { useEffect, useState } from "react";
 import {
   Film,
   FolderOpen,
-  Settings2,
   Sparkles,
-  WandSparkles,
   Copy,
   Check,
   Trash2,
   AlertTriangle,
-  FolderCheck,
   Video,
   Play,
+  Flame,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { stringifyJson } from "../lib/jsonStringify";
@@ -514,20 +515,23 @@ export default function FlowVideoCreator({
     <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
       <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
         <div className={cn("flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-800/80")}>
-          <div className={cn("flex items-center gap-3.5")}>
-            <div className={cn("w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-rose-500 flex items-center justify-center shadow-lg shadow-purple-500/30 text-white shrink-0")}>
-              <Film className={cn("w-5 h-5")} />
+          <div className={cn("flex items-center gap-3 min-w-0")}>
+            <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
+              <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
+                <Film className={cn("w-5 h-5")} />
+              </div>
             </div>
-            <div>
-              <div className={cn("flex items-center gap-2")}>
-                <h1 className={cn("text-lg font-bold tracking-tight text-white")}>
+            <div className={cn("min-w-0")}>
+              <div className={cn("flex items-center gap-2 flex-wrap")}>
+                <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>
                   {flowTexts.VIDEO_CREATOR_TITLE}
                 </h1>
-                <span className={cn("text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300")}>
+                <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
+                  <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
                   AI Flow
                 </span>
               </div>
-              <p className={cn("text-xs text-slate-400 mt-0.5")}>
+              <p className={cn("text-[11px] text-slate-400 mt-0.5")}>
                 {isVi
                   ? "AI viết prompt từ yêu cầu, Flow tạo video và lưu vào thư mục bạn chọn."
                   : "AI writes prompts from your concept, Flow renders and auto-saves to your chosen folder."}
@@ -535,13 +539,31 @@ export default function FlowVideoCreator({
             </div>
           </div>
 
-          <Button variant="unstyled" type="button"
-            onClick={() => setShowSettings(!showSettings)}
-            className={cn("h-9 px-3 rounded-xl border text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer select-none", { "border-purple-500/60 bg-purple-500/20 text-purple-300": showSettings, "border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white": !(showSettings) })}
-          >
-            <Settings2 className={cn("w-4 h-4 text-purple-400")} />
-            <span>{flowTexts.AI_SETTINGS}</span>
-          </Button>
+          <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
+            <Button
+              variant="unstyled"
+              type="button"
+              onClick={() => setShowSettings(!showSettings)}
+              disabled={!!busy}
+              className={cn(
+                "group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none select-none",
+                {
+                  "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": showSettings,
+                  "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !showSettings,
+                }
+              )}
+            >
+              <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
+              <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>
+                {flowTexts.AI_SETTINGS}
+              </span>
+              {showSettings ? (
+                <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} />
+              ) : (
+                <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />
+              )}
+            </Button>
+          </div>
         </div>
         {showSettings && (
           <div className={cn("p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-purple-500/30 shadow-inner")}>
@@ -565,33 +587,43 @@ export default function FlowVideoCreator({
           <div className={cn("lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl")}>
             <div className={cn("space-y-3.5 flex-1 flex flex-col")}>
               <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-2.5")}>
-                <div className={cn("flex items-center gap-2")}>
-                  <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
+                <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>
                     01
                   </span>
                   <h2 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
-                    <WandSparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
-                    {flowTexts.REQUEST_LABEL}
+                    <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
+                    <span>{flowTexts.REQUEST_LABEL}</span>
                   </h2>
                 </div>
               </div>
               <div className={cn("space-y-1.5")}>
-                <div className={cn("flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
-                  <Sparkles className={cn("w-3 h-3 text-purple-400")} />
+                <div className={cn("flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
+                  <Flame className={cn("w-3.5 h-3.5 text-amber-400")} />
                   <span>{flowTexts.QUICK_SAMPLES}</span>
                 </div>
                 <div className={cn("flex flex-wrap gap-1.5")}>
-                  {SAMPLE_PROMPTS.map((sample) => (
-                    <Button variant="unstyled"
-                      key={sample.title}
-                      type="button"
-                      disabled={!!busy}
-                      onClick={() => setRequest(sample.text)}
-                      className={cn("px-2.5 py-1 rounded-lg text-[11px] font-medium border border-purple-500/20 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-white transition-all cursor-pointer disabled:opacity-50")}
-                    >
-                      {sample.title}
-                    </Button>
-                  ))}
+                  {SAMPLE_PROMPTS.map((sample) => {
+                    const isSelected = request === sample.text;
+                    return (
+                      <Button
+                        variant="unstyled"
+                        key={sample.title}
+                        type="button"
+                        disabled={!!busy}
+                        onClick={() => setRequest(sample.text)}
+                        className={cn(
+                          "relative h-8 px-3 rounded-xl border font-bold text-xs inline-flex items-center justify-center transition-all cursor-pointer shadow-xs select-none",
+                          {
+                            "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
+                            "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !isSelected,
+                          }
+                        )}
+                      >
+                        <span>{sample.title}</span>
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
               <div className={cn("flex-1 min-h-[130px] flex flex-col")}>
@@ -624,8 +656,10 @@ export default function FlowVideoCreator({
             <div className={cn("pt-3 border-t border-slate-800/80 space-y-3")}>
               <div className={cn("flex items-center justify-between gap-2")}>
                 <div className={cn("flex items-center gap-2")}>
-                  <FolderCheck className={cn("w-4 h-4 text-rose-400")} />
-                  <span className={cn("text-xs font-bold text-slate-200")}>{flowTexts.FLOW_SETTINGS}</span>
+                  <SlidersHorizontal className={cn("w-3.5 h-3.5 text-amber-400")} />
+                  <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono")}>
+                    {flowTexts.FLOW_SETTINGS}
+                  </span>
                 </div>
                 {folderPath && (
                   <span className={cn("text-[10px] font-mono text-emerald-400 flex items-center gap-1")}>
@@ -694,12 +728,16 @@ export default function FlowVideoCreator({
           </div>
           <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl lg:h-0 lg:min-h-full min-h-[420px] overflow-hidden")}>
             <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3 shrink-0")}>
-              <div className={cn("flex items-center gap-2")}>
-                <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs")}>
+              <div className={cn("flex items-center gap-2.5 min-w-0")}>
+                <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>
                   02
                 </span>
-                <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono")}>
-                  {flowTexts.PROMPT_LIST} ({clips.length})
+                <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+                  <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
+                  <span>{flowTexts.PROMPT_LIST}</span>
+                  <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>
+                    {clips.length}
+                  </span>
                 </h3>
               </div>
 
@@ -707,19 +745,19 @@ export default function FlowVideoCreator({
                 <div className={cn("flex items-center gap-1.5")}>
                   <Button variant="unstyled" type="button"
                     onClick={handleCopyAllPrompts}
-                    className={cn("w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
-                    title={flowTexts.COPY_ALL}
+                    className={cn("btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
+                    title={isCopiedAll ? (isVi ? "Đã sao chép" : "Copied") : flowTexts.COPY_ALL}
                   >
-                    {isCopiedAll ? <Check className={cn("w-4 h-4 text-emerald-400")} /> : <Copy className={cn("w-4 h-4")} />}
+                    {isCopiedAll ? <Check className={cn("w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0")} /> : <Copy className={cn("w-4 h-4")} />}
                   </Button>
 
                   <Button variant="unstyled" type="button"
                     onClick={handleClearAllPrompts}
                     disabled={!!busy}
-                    className={cn("w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30")}
+                    className={cn("btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30")}
                     title={flowTexts.CLEAR_ALL}
                   >
-                    <Trash2 className={cn("w-4 h-4")} />
+                    <Trash2 className={cn("w-4 h-4 shrink-0")} />
                   </Button>
                 </div>
               )}
@@ -753,23 +791,23 @@ export default function FlowVideoCreator({
                       <div className={cn("flex items-center gap-1 shrink-0 pt-0.5")}>
                         <Button variant="unstyled" type="button"
                           onClick={() => handleCopyPrompt(clip.id, clip.prompt)}
-                          className={cn("w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90")}
-                          title={flowTexts.COPY}
+                          className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90")}
+                          title={copiedPromptId === clip.id ? (isVi ? "Đã sao chép" : "Copied") : flowTexts.COPY}
                         >
                           {copiedPromptId === clip.id ? (
-                            <Check className={cn("w-3.5 h-3.5 text-emerald-400")} />
+                            <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} />
                           ) : (
-                            <Copy className={cn("w-3.5 h-3.5")} />
+                            <Copy className={cn("w-3.5 h-3.5 shrink-0")} />
                           )}
                         </Button>
 
                         <Button variant="unstyled" type="button"
                           disabled={!!busy}
                           onClick={() => handleDeleteClip(clip)}
-                          className={cn("w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30")}
+                          className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30")}
                           title={flowTexts.DELETE}
                         >
-                          <Trash2 className={cn("w-3.5 h-3.5")} />
+                          <Trash2 className={cn("w-3.5 h-3.5 shrink-0")} />
                         </Button>
                       </div>
                     </div>
@@ -782,18 +820,17 @@ export default function FlowVideoCreator({
         <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full")}>
           <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3")}>
             <div className={cn("flex items-center gap-2.5")}>
-              <span className={cn("w-6 h-6 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-bold text-xs")}>
+              <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20")}>
                 03
               </span>
               <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2")}>
-                <Film className={cn("w-4 h-4 text-rose-400")} />
-                {flowTexts.RENDERED_VIDEOS}
+                <Film className={cn("w-3.5 h-3.5 text-rose-400")} />
+                <span>{flowTexts.RENDERED_VIDEOS}</span>
               </h3>
               <span className={cn("text-[10px] font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono")}>
                 {completedVideosCount} / {clips.length} {flowTexts.READY}
               </span>
             </div>
-
           </div>
 
           {!clips.length ? (

@@ -26,7 +26,7 @@ export const FLOW_VIDEO_TEXTS = {
     PROMPT_DELETED: "Đã xóa prompt.",
     PROMPTS_CLEARED: "Đã xóa toàn bộ danh sách prompt.",
     VIDEO_CREATOR_TITLE: "Tạo video bằng Flow",
-    AI_SETTINGS: "Cấu hình phòng chat AI",
+    AI_SETTINGS: "Cài đặt AI",
     REQUEST_LABEL: "Yêu cầu tạo video",
     REQUEST_PLACEHOLDER: "Ví dụ: Tạo 20 video phong cảnh đồng quê, hoàng hôn và mưa chiều làm nền cho video nhạc bolero...",
     QUICK_SAMPLES: "Gợi ý mẫu",
