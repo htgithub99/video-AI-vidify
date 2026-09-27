@@ -198,6 +198,7 @@ export const SUNO_AUTOMATION_PATTERNS = {
   AUDIO_INFLUENCE_LABEL: /Audio Influence/i,
   VARIETY_LABEL: /Variety/i,
   PLAYLIST_API: /studio-api-prod\.suno\.com\/api\/playlist\//i,
+  PLAYLIST_CREATE_API: /studio-api-prod\.suno\.com\/api\/playlist\/create\/(?:\?|$)/i,
   SECTION_DURATION: /Duration/i,
   SECTION_MAX_MODE: /Max Mode/i,
   SECTION_PERSONALIZE: /Personalize/i,

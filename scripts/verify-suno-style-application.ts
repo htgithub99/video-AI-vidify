@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
 import { findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
+import { SUNO_AUTOMATION_PATTERNS } from "../src/constants/sunoAutomation.js";
 
 const source = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
 const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
@@ -31,6 +32,11 @@ assert.doesNotMatch(source, /if \(!\(await labelLocator\.isVisible\(\)\.catch\(\
 assert.doesNotMatch(source, /if \(excludeInput\) await fillEditable/);
 assert.equal((source.match(/await selectInspoPlaylist\(page, inspo\)/g) || []).length, 1);
 assert.match(source, /await verifySunoAccount\(page\);[\s\S]*await ensureAdvancedMode\(page\);[\s\S]*await selectInspoPlaylist\(page, inspo\);[\s\S]*await configureAdvancedOnce\(page, style, aiSettings, hasInspo\)/);
+assert.ok(SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test("https://studio-api-prod.suno.com/api/playlist/create/"));
+assert.ok(!SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test("https://studio-api-prod.suno.com/api/playlist/update_clips/"));
+assert.match(source, /suno_playlist_create_response/);
+assert.match(source, /getByRole\("link", \{ name: playlistName, exact: true \}\)/);
+assert.match(source, /_\.intersection\(uniqueSongIds, await collectSongIds\(page\)\)/);
 assert.match(source, /if \(hasInspo\) \{\s*await audioInfluenceControl\.waitFor/);
 assert.match(constants, /button\[aria-label="Add inspiration from a playlist"\]/);
 assert.doesNotMatch(constants, /'input\[placeholder\*="Search" i\]'/);
