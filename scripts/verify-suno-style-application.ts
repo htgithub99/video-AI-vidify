@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { findSunoStyleInput, selectInspoPlaylist } from "../src/server/services/sunoAutomationService.js";
+import { findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
 
 const source = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
 const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
@@ -41,6 +41,10 @@ assert.match(constants, /\[role="dialog"\] input\[placeholder="Search"\]/);
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
+  await page.setContent('<nav>Home Explore Create Studio Library musicaivietnam</nav><button>Simple</button><button>Advanced</button><main>Sounds v6-mini Audio Voice Image</main>');
+  await verifySunoAccount(page);
+  await page.setContent('<nav>Home Explore Create Studio Library another-workspace</nav><button>Simple</button><button>Advanced</button>');
+  await assert.rejects(verifySunoAccount(page), /chưa đăng nhập đúng workspace Suno/);
   await page.setContent(`
     <textarea placeholder="Exclude styles">wrong existing exclusion</textarea>
     <section><div><h3>Styles</h3><div><textarea placeholder="Add a style">wrong existing music style</textarea></div></div></section>

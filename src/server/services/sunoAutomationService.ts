@@ -310,19 +310,19 @@ const collectSongIds = async (page: Page): Promise<string[]> => {
   return _.uniq(_.compact(_.map(hrefs, (href) => href.match(SUNO_AUTOMATION_PATTERNS.SONG_URL)?.[1])));
 };
 
-const verifySunoAccount = async (page: Page): Promise<void> => {
-  const advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED);
+export const verifySunoAccount = async (page: Page): Promise<void> => {
+  let advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED);
   if (!advancedControl) {
     await page.locator(SUNO_AUTOMATION_SELECTORS.ADVANCED.join(", ")).first()
       .waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS })
       .catch(() => undefined);
+    advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED);
   }
   const bodyText = await page.locator(SUNO_AUTOMATION_SELECTORS.BODY).innerText().catch(() => "");
   const hasExpectedWorkspace = SUNO_AUTOMATION_PATTERNS.EXPECTED_SUNO_PROFILE.test(bodyText);
   const hasCreateWorkspace = SUNO_AUTOMATION_PATTERNS.BODY_CREATE.test(bodyText)
     && SUNO_AUTOMATION_PATTERNS.BODY_LIBRARY_STUDIO.test(bodyText);
-  const hasCreationForm = SUNO_AUTOMATION_PATTERNS.ADVANCED_TEXT.test(bodyText) && SUNO_AUTOMATION_PATTERNS.CREATION_FORM_KEYWORDS.test(bodyText);
-  const hasSignedInWorkspace = hasExpectedWorkspace && hasCreateWorkspace && hasCreationForm;
+  const hasSignedInWorkspace = hasExpectedWorkspace && hasCreateWorkspace && Boolean(advancedControl);
   if (hasSignedInWorkspace) return;
   const diagnostic = bodyText.replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, " ").trim().slice(0, 240);
   throw new Error(`${SUNO_AUTOMATION_TEXTS.formatProfileNotSignedInErr(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL)} ${SUNO_AUTOMATION_TEXTS.formatDiagnosticDisplay(diagnostic || SUNO_AUTOMATION_TEXTS.EMPTY_DIAGNOSTIC)}`);
