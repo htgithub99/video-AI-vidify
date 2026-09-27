@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
+import { recordWorkflowActivity } from "../services/workflowActivity";
+import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock";
 import { Tooltip } from "./ui/Tooltip";
 import { Modal } from "./ui/Modal";
@@ -939,6 +941,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleCopyAllLyrics = () => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCopy);
     if (_.isEmpty(songs)) return;
     const allContent = _.map(songs, (song) => song.lyrics).join("\n\n----------------------------------------\n\n");
     navigator.clipboard.writeText(allContent);
@@ -946,6 +949,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleCopyAllSeo = () => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCopy);
     if (_.isEmpty(displayedSeoOptions)) return;
     const allContent = _.map(displayedSeoOptions, (opt, idx) =>
       `[${texts.formatOptionLabel(idx + 1)}] (${texts.formatScoreLabel(opt.seoScore)})\n${texts.SEO_FIELD_TITLE}: ${opt.title}\n${texts.SEO_FIELD_DESCRIPTION}: ${opt.description}\n${texts.HASHTAGS_LABEL}: ${opt.hashtags.join(" ")}\n${texts.TAGS_LABEL}: ${opt.tags.join(", ")}`,
@@ -956,6 +960,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleGenerate = async () => {
     if (isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanStart, outputCount);
     musicStoppedByUserRef.current = false;
     thumbnailStoppedRef.current = false;
     setGenerationError("");
@@ -1037,6 +1042,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       musicResumeRef.current = null;
       sunoPendingPlaylistRef.current = null;
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanDone, generatedSongs.length);
       if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
       if (thumbnailStoppedRef.current) {
         setIsGeneratingThumbnail(false);
@@ -1073,7 +1079,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           setGeneratedThumbnail(imageUrl);
           await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
           toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverDone);
         } catch (error: any) {
+          if (!imageAbortController.signal.aborted) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverFail);
           if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
         } finally {
           if (thumbnailAbortControllerRef.current === imageAbortController) {
@@ -1084,6 +1092,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         }
       })();
     } catch (err: any) {
+      if (!musicStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanFail);
       setSongs(previousSongs);
       setStyleAnalysis(previousStyleAnalysis);
       setSunoSettings(previousSunoSettings);
@@ -1110,6 +1119,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleRegenerateSeo = async () => {
     const activeStyle = _.trim(style);
     if (_.isEmpty(songs) || isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSeoStart);
     setViewMode("seo");
     setIsRegeneratingSeo(true);
     const runId = `${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}seo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -1133,7 +1143,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setPlaylistSeoOptions(regeneratedOptions);
       setSelectedSeoSongIndex(0);
       toast.success(texts.SEO_REGENERATE_SUCCESS);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSeoDone);
     } catch (error: any) {
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSeoFail);
       toast.error(_.toString(error?.message || texts.SEO_REGENERATE_ERROR));
     } finally {
       setIsRegeneratingSeo(false);
@@ -1144,6 +1156,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     if (!isLoading || isStopping) return;
     setIsStopping(true);
     musicStoppedByUserRef.current = true;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanStop);
     musicResumeRef.current = null;
     const runId = musicRunIdRef.current;
     musicAbortControllerRef.current?.abort();
@@ -1169,6 +1182,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const createSunoMusic = async (testOnly: boolean) => {
     if (_.isEmpty(songs) || isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, testOnly ? WORKFLOW_ACTIVITY_EVENT.musicTestStart : WORKFLOW_ACTIVITY_EVENT.musicSunoStart, testOnly ? 1 : songs.length);
     const abortController = new AbortController();
     sunoAbortControllerRef.current = abortController;
     setIsCreatingSuno(true);
@@ -1216,13 +1230,16 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         setSunoTestPlaylistUrl(createdPlaylistUrl);
         setSunoTestTrackIds(createdSongIds);
         toast.success(texts.SUNO_TEST_CREATE_SUCCESS);
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicTestDone);
       } else {
         setSunoPlaylistUrl(createdPlaylistUrl);
         setDownloadPlaylistUrl(createdPlaylistUrl);
         setSunoTrackIds(createdSongIds);
         toast.success(texts.SUNO_CREATE_SUCCESS);
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSunoDone);
       }
     } catch (error: any) {
+      if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, testOnly ? WORKFLOW_ACTIVITY_EVENT.musicTestFail : WORKFLOW_ACTIVITY_EVENT.musicSunoFail);
       if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
     } finally {
       sunoAbortControllerRef.current = null;
@@ -1237,6 +1254,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleCancelSunoMusic = () => {
     if (!isCreatingSuno) return;
     sunoAbortControllerRef.current?.abort();
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSunoStop);
     void fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CANCEL, {
       method: HTTP_METHODS.POST,
       headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
@@ -1259,6 +1277,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     const isTestPlaylistDownload = !requestedPlaylistUrl && !sunoPlaylistUrl && Boolean(sunoTestPlaylistUrl);
     const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl || sunoTestPlaylistUrl;
     if (_.isEmpty(activePlaylistUrl) || isDownloadingSuno) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadStart);
     if (sunoEvaluateTracks && !isTestPlaylistDownload && provider !== AiPlanningFallbackProvider.GeminiChat) {
       setSunoDownloadError(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
       toast.error(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
@@ -1326,7 +1345,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         }
       }
       toast.success(texts.SUNO_DOWNLOAD_SUCCESS.replace("{count}", _.toString(_.size(result.downloadedPaths))).replace("{folder}", folderPath));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadDone, _.size(result.downloadedPaths));
     } catch (error: any) {
+      if (!sunoDownloadStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadFail);
       if (!sunoDownloadStoppedByUserRef.current) {
         const message = _.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR);
         setSunoDownloadError(message);
@@ -1342,6 +1363,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const handleCancelSunoDownload = () => {
     if (!isDownloadingSuno) return;
     sunoDownloadStoppedByUserRef.current = true;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadStop);
     sunoDownloadAbortControllerRef.current?.abort();
     const runId = sunoDownloadRunIdRef.current;
     if (runId) {
@@ -1442,6 +1464,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleRegenerateThumbnail = async () => {
     if (_.isEmpty(songs) || isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStart);
     thumbnailStoppedRef.current = false;
     const imageAbortController = new AbortController();
     const imageRunId = `music-cover-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1474,7 +1497,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setGeneratedThumbnail(imageUrl);
       await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
       toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverDone);
     } catch (error: any) {
+      if (!imageAbortController.signal.aborted) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverFail);
       if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
     } finally {
       if (thumbnailAbortControllerRef.current === imageAbortController) {
@@ -1495,6 +1520,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleStopThumbnail = () => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStop);
     thumbnailStoppedRef.current = true;
     thumbnailAbortControllerRef.current?.abort();
     cancelMusicImageRun(thumbnailRunIdRef.current);
@@ -1505,6 +1531,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleStopVideoBackground = () => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicBackgroundStop);
     videoBackgroundAbortControllerRef.current?.abort();
     cancelMusicImageRun(videoBackgroundRunIdRef.current);
     videoBackgroundAbortControllerRef.current = null;
@@ -1515,6 +1542,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
 
   const handleGenerateVideoBackground = async () => {
     if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicBackgroundStart);
     const imageAbortController = new AbortController();
     const imageRunId = `music-background-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     videoBackgroundAbortControllerRef.current = imageAbortController;
@@ -1546,7 +1574,9 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       setGeneratedVideoBackground(imageUrl);
       await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, imageUrl);
       toast.success(texts.VIDEO_BACKGROUND_SUCCESS);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicBackgroundDone);
     } catch (error: any) {
+      if (!imageAbortController.signal.aborted) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicBackgroundFail);
       if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.VIDEO_BACKGROUND_ERROR));
     } finally {
       if (videoBackgroundAbortControllerRef.current === imageAbortController) {

@@ -15,6 +15,8 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
+import { recordWorkflowActivity } from "../services/workflowActivity";
+import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 import { stringifyJson } from "../lib/jsonStringify";
 import { API_ROUTES, FLOW_BUSY_STATES, FLOW_CLIP_STATUSES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_MEDIA_CONFIG, FLOW_VIDEO_TEXTS, LANGUAGE_CODES } from "../constants";
 import { Lang } from "../lib/lang";
@@ -248,6 +250,7 @@ export default function FlowVideoCreator({
       })));
       if (!images.length) return;
       setCharacterImages((current) => current.concat(images).slice(0, FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowReference, images.length);
       if (!getVideoModelCapabilities(productionConfig.engine).supportsReferences) {
         setProductionConfig((current) => {
           const engine = ImageGeneratorEngine.Veo3;
@@ -271,7 +274,10 @@ export default function FlowVideoCreator({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || flowTexts.SELECT_FOLDER_ERROR);
-      if (data.folderPath) setFolderPath(data.folderPath);
+      if (data.folderPath) {
+        setFolderPath(data.folderPath);
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowFolder);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : flowTexts.SELECT_FOLDER_ERROR);
     }
@@ -295,6 +301,7 @@ export default function FlowVideoCreator({
       return toast.error(flowTexts.REQUEST_REQUIRED);
     }
     const previousClips = clips;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanStart);
     setClips([]);
     setBusy(FLOW_BUSY_STATES.PLANNING);
     try {
@@ -314,7 +321,9 @@ export default function FlowVideoCreator({
         })),
       );
       toast.success(flowTexts.PLAN_SUCCESS(generatedVideos.length));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanDone, generatedVideos.length);
     } catch (error) {
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanFail);
       setClips(previousClips);
       toast.error(error instanceof Error ? error.message : flowTexts.PLAN_FAILED);
     } finally {
@@ -331,6 +340,7 @@ export default function FlowVideoCreator({
     }
     if (!characterImagesLoaded || isReadingCharacterImages) return;
     if (clips.every((clip) => clip.savedPath)) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateStart, clips.filter((clip) => !clip.savedPath).length);
 
     const clipDurationSeconds = Number.parseInt(productionConfig.duration, 10);
 
@@ -399,6 +409,7 @@ export default function FlowVideoCreator({
       for (let index = 0; index < workClips.length; index++) {
         const clip = workClips[index];
         if (clip.savedPath) continue;
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipStart, index + 1);
         setProgress(flowTexts.BATCH_PROGRESS(index + 1, index + 1, workClips.length));
         setClips((before) => before.map((item) => item.id === clip.id ? { ...item, status: FLOW_CLIP_STATUSES.GENERATING, error: undefined } : item));
         try {
@@ -452,7 +463,10 @@ export default function FlowVideoCreator({
           if (!savedPath) throw new Error(flowTexts.SAVE_VIDEO_FAILED);
           workClips[index] = { ...workClips[index], savedPath, status: FLOW_CLIP_STATUSES.DONE, error: undefined };
           setClips((before) => before.map((item) => item.id === clip.id ? { ...item, url, savedPath, status: FLOW_CLIP_STATUSES.DONE, error: undefined } : item));
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipDone, index + 1);
         } catch (error) {
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipFail, index + 1);
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail);
           const message = error instanceof Error ? error.message : flowTexts.FLOW_ERROR;
           setClips((before) => before.map((item) => item.id === clip.id ? { ...item, status: FLOW_CLIP_STATUSES.FAILED, error: message } : item));
           toast.error(message);
@@ -460,7 +474,9 @@ export default function FlowVideoCreator({
         }
       }
       toast.success(flowTexts.BATCH_COMPLETE);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateDone);
     } catch (error) {
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail);
       toast.error(error instanceof Error ? error.message : flowTexts.CREATE_FAILED);
     } finally {
       setBusy(null);
@@ -472,6 +488,7 @@ export default function FlowVideoCreator({
     navigator.clipboard.writeText(text);
     setCopiedPromptId(id);
     toast.success(flowTexts.PROMPT_COPIED);
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy);
     setTimeout(() => setCopiedPromptId(null), 2000);
   };
 
@@ -481,6 +498,7 @@ export default function FlowVideoCreator({
     navigator.clipboard.writeText(allText);
     setIsCopiedAll(true);
     toast.success(flowTexts.PROMPTS_COPIED(clips.length));
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy, clips.length);
     setTimeout(() => setIsCopiedAll(false), 2000);
   };
 
@@ -498,9 +516,11 @@ export default function FlowVideoCreator({
     setClips((prev) => prev.filter((c) => c.id !== clipToDelete.id));
     setClipToDelete(null);
     toast.success(flowTexts.PROMPT_DELETED);
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowDelete);
   };
 
   const confirmClearAllPrompts = () => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowDelete, clips.length);
     setClips([]);
     setShowClearAllModal(false);
     toast.info(flowTexts.PROMPTS_CLEARED);

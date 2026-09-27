@@ -1,7 +1,9 @@
 import { FC, ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
-import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown, Zap, Bot, AlertTriangle } from "lucide-react";
+import { Video, Image as ImageIcon, Mic, Sun, Moon, LogOut, Sparkles, Trash2, ChevronDown, Zap, Bot, AlertTriangle, ClipboardList } from "lucide-react";
+import WorkflowActivityDialog from "./WorkflowActivityDialog";
+import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_TEXT } from "../constants/workflowActivity";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
 import { UIConstants, SecurityConstants } from "../constants/security";
@@ -64,6 +66,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
   const [isClearing, setIsClearing] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<{ provider: AiPlanningFallbackProvider; name: string; label: string } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -174,6 +177,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
         </div>
 
         <div className={cn("flex items-center justify-end gap-1.5 sm:gap-2 shrink-0")}>
+          <Button variant="unstyled" type="button" onClick={() => setIsActivityOpen(true)} title={WORKFLOW_ACTIVITY_TEXT[isVietnamese ? WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.vi : WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.en].title} aria-label={WORKFLOW_ACTIVITY_TEXT[isVietnamese ? WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.vi : WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.en].title} className={cn("header-control-item w-8 min-w-[32px] p-0 rounded-xl flex items-center justify-center bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white")}><ClipboardList className={cn("w-4 h-4")} /></Button>
           <div className={cn("header-control-item hidden xl:flex items-center gap-2 px-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20")}>
             <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]")} />
             <span className={cn("text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider")}>{t.Live_Sync}</span>
@@ -309,6 +313,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
         </div>
       </div>
 
+      <WorkflowActivityDialog isOpen={isActivityOpen} onClose={() => setIsActivityOpen(false)} language={isVietnamese ? WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.vi : WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.en} />
       <Modal
         isOpen={!_.isNull(confirmAction)}
         onClose={() => {
