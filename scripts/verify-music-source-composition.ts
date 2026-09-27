@@ -9,6 +9,20 @@ const sunoAutomation = fs.readFileSync("src/server/services/sunoAutomationServic
 const chatPlanning = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const geminiMediaErrors = (await import("../src/constants/config.ts")).GEMINI_MEDIA_ERRORS;
 const { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } = await import("../src/constants/sunoAutomation.ts");
+const listenerMarket = { market: { country: "Canada", region: "Quebec", language: "French", dialect: "Quebec French", audienceAge: "adults", lyricalCharacterAge: "adults", contentSuitability: "general", confidence: 90 } };
+const marketPrompts = [
+  SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(2, 1, 2, "French folk", listenerMarket, "songs-test", "songs"),
+  SUNO_AUTOMATION_TEXTS.buildMusicRankingPrompt(2, "ranking-test", [], listenerMarket),
+  SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(2, "French folk", "seo-test", 5, [], listenerMarket),
+  SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt("French folk", [{ title: "Pluie", candidates: ["take-a", "take-b"] }], "{}", listenerMarket),
+  SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt([{ title: "Pluie" }], "French folk", "", false, "", listenerMarket),
+  SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt([{ title: "Pluie" }], "French folk", "", false, true, listenerMarket),
+  SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt("Keep the title", SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO, false, true, "note-test", listenerMarket),
+];
+for (const prompt of marketPrompts) {
+  assert.match(prompt, /"language":"French"/);
+  assert.match(prompt, /"region":"Quebec"/);
+}
 const seoPromptExample = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(10, "Bolero", "seo-example", 5);
 const seoExample = JSON.parse(seoPromptExample.slice(seoPromptExample.lastIndexOf("\n") + 1));
 assert.equal(seoExample.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO);
@@ -81,7 +95,8 @@ assert.match(chatPlanning, /await attachRoomFiles\(page, attachments\);[\s\S]*aw
 assert.match(chatPlanning, /responseSnapshots\.length > initialResponseSnapshots\.length/);
 assert.doesNotMatch(component, /if \(headingIndex < 0\) return description/);
 assert.match(component, /const existingTimestamps = _\.findIndex\(lines/);
-assert.match(component, /return _\.compact\(\[_\.trim\(base\), timestampLines\]\)\.join\("\\n\\n"\)/);
+assert.match(component, /while \(afterTimestamps < lines\.length && MUSIC_CREATOR_REGEXES\.TIMESTAMP_LINE\.test\(lines\[afterTimestamps\]\)\)/);
+assert.match(component, /_\.trim\(lines\.slice\(afterTimestamps\)\.join\("\\n"\)\)/);
 assert.match(component, /formatPlaylistTimestamp\(track\.startSeconds\)/);
 assert.match(component, /restoreSeoTimestampTitles\(option\.description, songs\)/);
 assert.match(constants, /CHAPTER_TIMESTAMP_LINE/);

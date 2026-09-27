@@ -229,8 +229,14 @@ const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedD
   if (headingIndex < 0) {
     const lines = description.split("\n");
     const existingTimestamps = _.findIndex(lines, (line) => MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(line));
-    const base = existingTimestamps < 0 ? description : lines.slice(0, existingTimestamps).join("\n");
-    return _.compact([_.trim(base), timestampLines]).join("\n\n");
+    if (existingTimestamps < 0) return _.compact([_.trim(description), timestampLines]).join("\n\n");
+    let afterTimestamps = existingTimestamps;
+    while (afterTimestamps < lines.length && MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(lines[afterTimestamps])) afterTimestamps += 1;
+    return _.compact([
+      _.trim(lines.slice(0, existingTimestamps).join("\n")),
+      timestampLines,
+      _.trim(lines.slice(afterTimestamps).join("\n")),
+    ]).join("\n\n");
   }
   const beforeTracklist = description.slice(0, headingIndex + heading.length);
   const afterHeading = description.slice(headingIndex + heading.length);

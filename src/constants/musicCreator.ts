@@ -1,4 +1,3 @@
-/** Shared runtime values for the Music Creator UI and pipeline. */
 export const MUSIC_CREATOR_RUNTIME = {
   ABORT_ERROR_NAME: "AbortError",
   SEO_SECTION_SEPARATOR: "\n\n",
@@ -9,7 +8,7 @@ export const MUSIC_CREATOR_RUNTIME = {
 } as const;
 
 export const MUSIC_CREATOR_REGEXES = {
-  TIMESTAMP_LINE: /^\s*(?:\d{1,2}:)?\d{1,2}:\d{2}\s+\S.*$/,
+  TIMESTAMP_LINE: /^(\s*(?:\d{1,2}:)?\d{1,2}:\d{2})\s+\S.*$/,
   NUMBERED_LINE: /^\s*\d+[.)]\s+/,
   EMOJI: /\p{Extended_Pictographic}/gu,
   EMOJI_PREFIX: /^\s*\p{Extended_Pictographic}\uFE0F?\s+/u,

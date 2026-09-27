@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
+import { MUSIC_CREATOR_REGEXES } from "../src/constants/musicCreator.ts";
 
 const controller = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
@@ -12,6 +13,8 @@ const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf
 
 assert.equal(SUNO_AUTOMATION_TEXTS.formatPlaylistTitle("Tiếng Mưa", 5), "Tiếng Mưa (5)");
 assert.equal(SUNO_AUTOMATION_TEXTS.formatPlaylistTitle("Rain Song", 5), "Rain Song (5)");
+assert.equal("01:23 Rain Song".match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE)?.[1], "01:23");
+assert.equal("1:02:03 Tiếng Mưa".match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE)?.[1], "1:02:03");
 
 // Curated mode may download only after every AI selection and score validates.
 assert.match(controller, /if \(shouldEvaluateTracks\)[\s\S]*selectProfessionalSunoTracks/);
