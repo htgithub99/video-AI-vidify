@@ -51,6 +51,7 @@ import {
   SUNO_AUTOMATION_CONFIG,
   SUNO_AUTOMATION_PATTERNS,
   SUNO_AUTOMATION_TEXTS,
+  formatSunoPlaylistName,
   VIETNAMESE_MUSIC_TITLE_RESTORATIONS,
   REFACTOR_CONSTANTS,
   AUDIO_FORMATS,
@@ -706,7 +707,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const videoBackgroundRunIdRef = useRef<string | null>(null);
   const musicStoppedByUserRef = useRef(false);
   const sunoAbortControllerRef = useRef<AbortController | null>(null);
-  const sunoPendingPlaylistRef = useRef<{ songIds: string[]; playlistName: string; testOnly: boolean } | null>(null);
+  const sunoPendingPlaylistRef = useRef<{ songIds: string[]; playlistName: string; sourceTitle: string; testOnly: boolean } | null>(null);
   const sunoDownloadAbortControllerRef = useRef<AbortController | null>(null);
   const sunoDownloadStoppedByUserRef = useRef(false);
   const sunoDownloadRunIdRef = useRef<string | null>(null);
@@ -1181,9 +1182,11 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
     }
     try {
       const requestedSongs = testOnly ? _.take(songs, 1) : songs;
-      const playlistName = testOnly ? texts.formatSunoTestPlaylistName(requestedSongs[0]?.title) : playlistSeoOptions[0]?.title || "";
+      const sourceTitle = testOnly ? requestedSongs[0]?.title : playlistSeoOptions[0]?.title || requestedSongs[0]?.title;
       const pending = sunoPendingPlaylistRef.current;
-      const resumeSongIds = pending?.playlistName === playlistName && pending.testOnly === testOnly ? pending.songIds : [];
+      const canResume = pending?.sourceTitle === sourceTitle && pending.testOnly === testOnly;
+      const playlistName = canResume ? pending.playlistName : formatSunoPlaylistName(sourceTitle, testOnly, crypto.randomUUID().split("-").slice(0, 2).join("").toUpperCase());
+      const resumeSongIds = canResume ? pending.songIds : [];
       if (_.isEmpty(resumeSongIds) && !testOnly) setSunoTrackIds([]);
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
@@ -1202,7 +1205,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
       const result = await response.json();
       const createdSongIds = _.map(_.castArray(result.createdSongIds || []), _.toString);
       if (!response.ok && !_.isEmpty(createdSongIds)) {
-        sunoPendingPlaylistRef.current = { songIds: createdSongIds, playlistName, testOnly };
+        sunoPendingPlaylistRef.current = { songIds: createdSongIds, playlistName, sourceTitle, testOnly };
         if (!testOnly) setSunoTrackIds(createdSongIds);
       }
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);

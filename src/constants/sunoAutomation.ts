@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { jsonUtils } from "../lib/json.js";
+import { MULTIPLE_SPACES_REGEX, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX } from "./regexes.js";
 
 const musicMarketContext = (styleAnalysis: unknown): string => {
   const market = _.get(styleAnalysis, "market", {});
@@ -60,6 +61,9 @@ export const SUNO_AUTOMATION_CONFIG = {
   OPTION_OFF: "Off",
 
   DEFAULT_COLLECTION_TITLE: "Playlist",
+  PLAYLIST_NAME_MAX_LENGTH: 39,
+  PLAYLIST_NAME_SUFFIX: " | VOL",
+  PLAYLIST_TEST_PREFIX: "TEST - ",
   DEFAULT_REFERENCE_THUMBNAIL_NAME: "thumbnail-reference.png",
   REFERENCE_SOURCE_CHUNK_DIVIDER: "\n\n--- REFERENCE SOURCE ---\n\n",
   SECTION_DIVIDER: "\n\n----------------------------------------\n\n",
@@ -186,6 +190,27 @@ export const SUNO_AUTOMATION_CONFIG = {
   DEFAULT_TRACK_LABEL: "Track",
   THUMBNAIL_SOURCE_CONTEXT_MAX_CHARACTERS: 800,
 } as const;
+
+export const normalizeSunoPlaylistName = (value: string, maxLength: number = SUNO_AUTOMATION_CONFIG.PLAYLIST_NAME_MAX_LENGTH): string =>
+  _.toString(value).replace(VIETNAMESE_D_LETTER_REGEX, "D").normalize("NFD")
+    .replace(VIETNAMESE_ACCENT_MARKS_REGEX, "")
+    .replace(MULTIPLE_SPACES_REGEX, " ")
+    .trim()
+    .toUpperCase()
+    .slice(0, maxLength)
+    .trimEnd();
+
+export const formatSunoPlaylistName = (title: string, testOnly = false, uniqueId = ""): string => {
+  const prefix = testOnly ? SUNO_AUTOMATION_CONFIG.PLAYLIST_TEST_PREFIX : "";
+  const suffix = `${testOnly ? "" : SUNO_AUTOMATION_CONFIG.PLAYLIST_NAME_SUFFIX}${uniqueId ? `-${uniqueId}` : ""}`;
+  const maxTitleLength = SUNO_AUTOMATION_CONFIG.PLAYLIST_NAME_MAX_LENGTH - prefix.length - suffix.length;
+  const normalizedTitle = normalizeSunoPlaylistName(_.trim(title) || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE, Number.MAX_SAFE_INTEGER);
+  const clippedTitle = normalizedTitle.slice(0, maxTitleLength).trimEnd();
+  const lastSpace = clippedTitle.lastIndexOf(" ");
+  const displayTitle = normalizedTitle.length > maxTitleLength && lastSpace > maxTitleLength / 2
+    ? clippedTitle.slice(0, lastSpace) : clippedTitle;
+  return `${prefix}${displayTitle}${suffix}`;
+};
 
 export const SUNO_AUTOMATION_PATTERNS = {
   EXPECTED_SUNO_PROFILE: /musicaivietnam|Toàn\s+Leo/i,

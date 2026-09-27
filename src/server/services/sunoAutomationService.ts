@@ -16,6 +16,8 @@ import {
   SUNO_AUTOMATION_PATTERNS,
   SUNO_AUTOMATION_SELECTORS,
   SUNO_AUTOMATION_TEXTS,
+  formatSunoPlaylistName,
+  normalizeSunoPlaylistName,
 } from "../../constants/sunoAutomation.js";
 
 export interface SunoSongInput {
@@ -724,9 +726,9 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
     }
     stage = "create_playlist";
     await writeMusicDiagnostic("suno_stage_started", { runId, stage, createdCount: createdSongIds.length });
-    const playlistName = (_.trim(requestedPlaylistName).slice(0, 120) || (!_.isEmpty(songs)
-      ? SUNO_AUTOMATION_TEXTS.formatPlaylistTitle(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE), songs.length)
-      : SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE));
+    const playlistName = normalizeSunoPlaylistName(requestedPlaylistName) || formatSunoPlaylistName(
+      _.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE),
+    );
     let playlistUrl: string;
     try {
       playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName, runId);
