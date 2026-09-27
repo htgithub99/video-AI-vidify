@@ -1120,6 +1120,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs,
           style: activeStyle,
+          referenceSource: referenceSongs,
           styleAnalysis,
           projectId: runId,
           requestId: runId,

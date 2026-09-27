@@ -1117,8 +1117,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       let seoIssues: string[] = [];
       for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_SEO_RESPONSE_ATTEMPTS; attempt += 1) {
         const prompt = attempt === 0
-          ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, creativeStyle, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, rankedSongs, styleAnalysisParsed)
-          : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(rankedSongs, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId, seoIssues, styleAnalysisParsed);
+          ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(requestedSongCount, creativeStyle, seoRequestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, rankedSongs, styleAnalysisParsed, referenceSource)
+          : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(rankedSongs, creativeStyle, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, seoRequestId, seoIssues, styleAnalysisParsed, referenceSource);
         try {
           const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, seoRequestId);
           responseProvider = response.provider;
@@ -1196,6 +1196,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
 router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Response) => {
   const songs = _.castArray(req.body?.songs || []);
   const style = _.trim(_.toString(req.body?.style));
+  const referenceSource = _.trim(_.toString(req.body?.referenceSource));
   const styleAnalysis = req.body?.styleAnalysis;
   const execution = req.body?.aiExecution || {};
   const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
@@ -1213,8 +1214,8 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
     let seoIssues: string[] = [];
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
       const prompt = attempt === 0
-        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, styleAnalysis)
-        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId, seoIssues, styleAnalysis);
+        ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, styleAnalysis, referenceSource)
+        : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId, seoIssues, styleAnalysis, referenceSource);
       try {
         const response = await generatePlanningWithChatUi({
           provider,

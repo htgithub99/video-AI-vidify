@@ -21,6 +21,18 @@ for (const market of [
   }
 }
 
+const reference = "YouTube title: Nhạc Bolero Xưa Hải Ngoại Nghe Là Nhớ\nTranscript: nhạc trữ tình";
+const seoWithReference = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(1, "Bolero", "source-test", 5, [{ title: "Bên Hiên Đợi Người" }], null, reference);
+const seoCorrectionWithReference = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt([], "Bolero", 5, "source-test", [], null, reference);
+const seoRegenerationWithReference = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt([{ title: "Bên Hiên Đợi Người" }], "Bolero", "source-test", 5, null, reference);
+for (const prompt of [seoWithReference, seoCorrectionWithReference, seoRegenerationWithReference]) {
+  assert.match(prompt, /Nhạc Bolero Xưa Hải Ngoại Nghe Là Nhớ/);
+  assert.match(prompt, /60-99 characters/);
+  assert.match(prompt, /option 1|Option 1/i);
+  assert.match(prompt, /options 2-5|Options 2-5/i);
+}
+assert.match(SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(1, "Pop", "no-source", 5), /No reference source was supplied/);
+
 assert.match(constants, /SELECTED MUSIC STYLE/);
 assert.match(constants, /Make a real music listener feel the atmosphere immediately and want to press play/);
 assert.match(constants, /Stay completely honest to the actual song titles, lyrics, genre, mood/);
@@ -46,7 +58,9 @@ assert.match(source, /buildMusicPlaylistSeoPrompt\(requestedSongCount, creativeS
 assert.match(source, /buildMusicPlaylistSeoCorrectionPrompt\(rankedSongs, creativeStyle/);
 assert.match(source, /ROUTER_PATHS\.MUSIC_SEO_REGENERATE/);
 assert.match(source, /buildMusicPlaylistSeoRegenerationPrompt\(songs, style \|\|/);
-assert.match(source, /buildMusicPlaylistSeoCorrectionPrompt\(songs, style[\s\S]*requestId, seoIssues, styleAnalysis\)/);
+assert.match(source, /buildMusicPlaylistSeoCorrectionPrompt\(songs, style[\s\S]*requestId, seoIssues, styleAnalysis, referenceSource\)/);
+assert.match(component, /referenceSource: referenceSongs/);
+assert.match(source, /buildMusicPlaylistSeoPrompt\(requestedSongCount[\s\S]*styleAnalysisParsed, referenceSource\)/);
 assert.match(source, /\[MusicSeoRegenerate\] contract attempt=/);
 assert.match(source, /if \(!isRetryableMusicRoomError\(error\) \|\| attempt >= SUNO_AUTOMATION_CONFIG\.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1\) throw error/);
 assert.match(source, /_.isEqual\(hashtags\.length, 10\)/);
