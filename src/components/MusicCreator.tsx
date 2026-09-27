@@ -57,6 +57,8 @@ import {
   COPY_KEYS,
   MUSIC_VIEW_MODES,
   SUNO_VOCAL_GENDERS,
+  MUSIC_CREATOR_RUNTIME,
+  MUSIC_CREATOR_REGEXES,
 } from "../constants";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
@@ -224,15 +226,20 @@ const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedD
   const heading = SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST;
   const headingIndex = description.indexOf(heading);
   const timestampLines = _.map(tracks, (track) => `${formatPlaylistTimestamp(track.startSeconds)} ${track.title}`).join("\n");
-  if (headingIndex < 0) return _.compact([_.trim(description), timestampLines]).join("\n\n");
+  if (headingIndex < 0) {
+    const lines = description.split("\n");
+    const existingTimestamps = _.findIndex(lines, (line) => MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(line));
+    const base = existingTimestamps < 0 ? description : lines.slice(0, existingTimestamps).join("\n");
+    return _.compact([_.trim(base), timestampLines]).join("\n\n");
+  }
   const beforeTracklist = description.slice(0, headingIndex + heading.length);
   const afterHeading = description.slice(headingIndex + heading.length);
   const remainingLines = afterHeading.split("\n");
   let lineIndex = 0;
   while (lineIndex < remainingLines.length && (
     _.isEmpty(_.trim(remainingLines[lineIndex])) ||
-    /^\s*\d+[.)]\s+/.test(remainingLines[lineIndex]) ||
-    /^\s*(?:\d{1,2}:)?\d{1,2}:\d{2}\s+\S/.test(remainingLines[lineIndex])
+    MUSIC_CREATOR_REGEXES.NUMBERED_LINE.test(remainingLines[lineIndex]) ||
+    MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(remainingLines[lineIndex])
   )) lineIndex += 1;
   const suffix = remainingLines.slice(lineIndex).join("\n").trim();
   return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
@@ -241,7 +248,7 @@ const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedD
 const restoreSeoTimestampTitles = (description: string, songs: Array<{ title: string }>): string => {
   let songIndex = 0;
   return _.map(description.split("\n"), (line) => {
-    const match = line.match(SUNO_AUTOMATION_PATTERNS.CHAPTER_TIMESTAMP_LINE);
+    const match = line.match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE);
     if (!match) return line;
     const title = _.trim(songs[songIndex]?.title);
     songIndex += 1;
@@ -251,7 +258,7 @@ const restoreSeoTimestampTitles = (description: string, songs: Array<{ title: st
 
 const getSeoTrackOrder = (description: string): string =>
   _.compact(_.map(description.split("\n"), (line) => {
-    const match = line.match(SUNO_AUTOMATION_PATTERNS.CHAPTER_TIMESTAMP_LINE);
+    const match = line.match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE);
     return match ? _.trim(line.slice(match[1].length)) : "";
   })).join(" / ");
 
@@ -265,6 +272,7 @@ interface PersistedMusicCreatorState {
   chromeHeadless?: boolean;
   isAiConfigOpen?: boolean;
   songs?: GeneratedSong[];
+  songTitleSchemaVersion?: number;
   styleAnalysis?: MusicStyleAnalysis;
   playlistSeoOptions?: SongSeoOption[];
   seoSchemaVersion?: number;
@@ -289,8 +297,18 @@ interface PersistedMusicCreatorState {
   showVideoTrackList?: boolean;
 }
 
-const readMusicCreatorState = (): PersistedMusicCreatorState =>
-  jsonUtils.getItem<PersistedMusicCreatorState>(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY, {});
+const readMusicCreatorState = (): PersistedMusicCreatorState => {
+  const state = jsonUtils.getItem<PersistedMusicCreatorState>(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY, {});
+  if (state.songTitleSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION) return state;
+  return {
+    ...state,
+    songs: _.map(state.songs || [], (song) => ({
+      ...song,
+      title: VIETNAMESE_MUSIC_TITLE_RESTORATIONS[_.toLower(_.trim(song.title))] || song.title,
+    })),
+    songTitleSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION,
+  };
+};
 
 interface MusicCreatorProps {
   currentLang?: "vi" | "en";
@@ -693,18 +711,14 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   const [generationError, setGenerationError] = useState("");
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
-  useEffect(() => {
-    const restoredSongs = _.map(songs, (song) => ({
-      ...song,
-      title: VIETNAMESE_MUSIC_TITLE_RESTORATIONS[_.toLower(_.trim(song.title))] || song.title,
-    }));
-    if (!_.isEqual(restoredSongs, songs)) setSongs(restoredSongs);
-  }, [songs]);
   const [styleAnalysis, setStyleAnalysis] = useState<MusicStyleAnalysis | undefined>(initialState.styleAnalysis);
   const [playlistSeoOptions, setPlaylistSeoOptions] = useState<SongSeoOption[]>(
     initialState.seoSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION ? initialState.playlistSeoOptions || [] : [],
   );
   const [curatedDownloadedTracks, setCuratedDownloadedTracks] = useState<CuratedDownloadedTrack[]>(initialState.curatedDownloadedTracks || []);
+  const displayedSeoOptions = _.isEqual(curatedDownloadedTracks.length, songs.length) && !_.isEmpty(curatedDownloadedTracks)
+    ? _.map(playlistSeoOptions, (option) => ({ ...option, description: replaceSeoTracklistWithTimestamps(option.description, curatedDownloadedTracks) }))
+    : playlistSeoOptions;
   useEffect(() => {
     if (_.isEmpty(songs) || _.isEmpty(playlistSeoOptions)) return;
     if (_.isEqual(curatedDownloadedTracks.length, songs.length)) return;
@@ -780,6 +794,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           chromeHeadless,
           isAiConfigOpen,
           songs,
+          songTitleSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION,
           styleAnalysis,
           playlistSeoOptions,
           seoSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SEO_SCHEMA_VERSION,
@@ -924,8 +939,8 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
   };
 
   const handleCopyAllSeo = () => {
-    if (_.isEmpty(playlistSeoOptions)) return;
-    const allContent = _.map(playlistSeoOptions, (opt, idx) =>
+    if (_.isEmpty(displayedSeoOptions)) return;
+    const allContent = _.map(displayedSeoOptions, (opt, idx) =>
       `[${texts.formatOptionLabel(idx + 1)}] (${texts.formatScoreLabel(opt.seoScore)})\n${texts.SEO_FIELD_TITLE}: ${opt.title}\n${texts.SEO_FIELD_DESCRIPTION}: ${opt.description}\n${texts.HASHTAGS_LABEL}: ${opt.hashtags.join(" ")}\n${texts.TAGS_LABEL}: ${opt.tags.join(", ")}`,
     ).join("\n----------------------------------------\n\n");
     navigator.clipboard.writeText(allContent);
@@ -1030,6 +1045,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
             body: jsonUtils.safeStringify({
               songs: generatedSongs,
               style: trimmedStyle,
+              styleAnalysis: generatedStyleAnalysis,
               sourceContext: referenceSource,
               playlistSeoOptions: generatedPlaylistSeo,
               thumbnailDescription,
@@ -1097,6 +1113,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs,
           style: activeStyle,
+          styleAnalysis,
           projectId: runId,
           requestId: runId,
           aiExecution: { provider, model, executionMode, chromeHeadless },
@@ -1196,7 +1213,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         toast.success(texts.SUNO_CREATE_SUCCESS);
       }
     } catch (error: any) {
-      if (error?.name !== "AbortError") toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
+      if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
     } finally {
       sunoAbortControllerRef.current = null;
       setIsCreatingSuno(false);
@@ -1274,6 +1291,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
           format: sunoDownloadFormat,
           evaluateTracks: isTestPlaylistDownload ? false : sunoEvaluateTracks,
           style,
+          styleAnalysis,
           aiExecution: sunoEvaluateTracks && !isTestPlaylistDownload
             ? {
               mode: AiPlanningExecutionMode.RoomOnly,
@@ -1294,10 +1312,6 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         const curatedTracks = _.castArray(result.curatedTracks || []) as CuratedDownloadedTrack[];
         if (_.size(curatedTracks) === _.size(songs)) {
           setCuratedDownloadedTracks(curatedTracks);
-          setPlaylistSeoOptions((currentOptions) => _.map(currentOptions, (option) => ({
-            ...option,
-            description: replaceSeoTracklistWithTimestamps(option.description, curatedTracks),
-          })));
           setSelectedSeoSongIndex(0);
         }
       }
@@ -1394,6 +1408,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           note,
           assetPurpose,
+          styleAnalysis,
           thumbnailReference: isVideoBackground ? undefined : thumbnailReference,
           thumbnailReferenceName: isVideoBackground ? undefined : thumbnailReferenceName,
           videoBackgroundReference: isVideoBackground ? videoBackgroundReference : undefined,
@@ -1430,6 +1445,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs,
           style,
+          styleAnalysis,
           sourceContext: referenceSongs,
           playlistSeoOptions,
           thumbnailDescription,
@@ -1501,6 +1517,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         body: jsonUtils.safeStringify({
           songs: downloadedMusicTracks,
           style,
+          styleAnalysis,
           videoBackgroundDescription,
           videoBackgroundReference,
           videoBackgroundReferenceName,
@@ -2988,7 +3005,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
               )}
 
               {viewMode === MUSIC_VIEW_MODES.SEO && (
-                <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} />
+                <PlaylistSeoCard seoOptions={displayedSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} />
               )}
 
               {viewMode === MUSIC_VIEW_MODES.SPLIT && (
@@ -3019,7 +3036,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
                         index={selectedSeoSongIndex}
                         texts={texts}
                       />
-                      <PlaylistSeoCard seoOptions={playlistSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} columns={1} />
+                      <PlaylistSeoCard seoOptions={displayedSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} columns={1} />
                     </div>
                   )}
                 </div>

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
 
 const controller = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
@@ -8,6 +9,9 @@ const routes = fs.readFileSync("src/constants/apiRoutes.ts", "utf8");
 const service = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
 const chatService = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
 const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf8");
+
+assert.equal(SUNO_AUTOMATION_TEXTS.formatPlaylistTitle("Tiếng Mưa", 5), "Tiếng Mưa (5)");
+assert.equal(SUNO_AUTOMATION_TEXTS.formatPlaylistTitle("Rain Song", 5), "Rain Song (5)");
 
 // Curated mode may download only after every AI selection and score validates.
 assert.match(controller, /if \(shouldEvaluateTracks\)[\s\S]*selectProfessionalSunoTracks/);
@@ -49,7 +53,9 @@ assert.match(controller, /readMediaDurationSeconds/);
 assert.match(controller, /startSeconds: cumulativeSeconds/);
 assert.match(controller, /curatedTracks/);
 assert.match(component, /replaceSeoTracklistWithTimestamps/);
-assert.match(component, /replaceSeoTracklistWithTimestamps\(option\.description, curatedTracks\)/);
+assert.match(component, /replaceSeoTracklistWithTimestamps\(option\.description, curatedDownloadedTracks\)/);
+assert.match(component, /seoOptions=\{displayedSeoOptions\}/);
+assert.doesNotMatch(component, /setPlaylistSeoOptions\(\(currentOptions\) => _\.map\(currentOptions/);
 assert.match(component, /setCuratedDownloadedTracks\(curatedTracks\)/);
 assert.match(component, /if \(_\.isEqual\(curatedDownloadedTracks\.length, songs\.length\)\) return/);
 assert.match(controller, /AUDIO_DURATION_INVALID_ERR/);
@@ -93,7 +99,7 @@ assert.match(component, /setDownloadPlaylistUrl\(createdPlaylistUrl\)/);
 assert.doesNotMatch(service, /if \(!_\.isEmpty\(missingIds\)\) throw new Error/);
 assert.match(service, /logger\.warn\(SUNO_AUTOMATION_TEXTS\.formatPlaylistMissingTracksErr/);
 assert.match(controller, /req\.body\?\.playlistName/);
-assert.match(constants, /`TUYỂN TẬP \$\{songCount\} CA KHÚC - \$\{firstSongTitle\.toLocaleUpperCase\("vi-VN"\)\}`/);
-assert.match(service, /playlistName[\s\S]*toLocaleUpperCase\("vi-VN"\)/);
+assert.match(constants, /`\$\{firstSongTitle\} \(\$\{songCount\}\)`/);
+assert.doesNotMatch(service, /playlistName[\s\S]*toLocaleUpperCase\("vi-VN"\)/);
 
 process.stdout.write("Music curation gates, concurrent chunks, stable order, SEO TXT export, and Save As dialogs are present.\n");
