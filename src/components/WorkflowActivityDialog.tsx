@@ -146,7 +146,7 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
           )}
         </div>
       }
-      maxWidth="max-w-2xl"
+      maxWidth={WORKFLOW_ACTIVITY_CONFIG.MODAL_MAX_WIDTH}
     >
       <div className={cn("space-y-4")}>
         <div className={cn("flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-100/80 dark:bg-[#181324]/80 border border-slate-200/80 dark:border-purple-500/20 backdrop-blur-sm")}>

@@ -1,4 +1,5 @@
 export const WORKFLOW_ACTIVITY_CONFIG = {
+  MODAL_MAX_WIDTH: "max-w-5xl",
   STORAGE_KEY: "vidify-workflow-activity-v1",
   MAX_ENTRIES: 300,
   EMPTY_STORAGE: "[]",
@@ -30,7 +31,7 @@ export const WORKFLOW_ACTIVITY_EVENT = {
 export const WORKFLOW_ACTIVITY_TEXT = {
   vi: {
     title: "Nhật ký hoạt động", all: "Tất cả", music: "Sáng tác nhạc", flow: "Tạo video Flow",
-    empty: "Chưa có hoạt động nào.", emptySub: "Các thao tác tạo nhạc và dựng video Flow sẽ được ghi nhận tại đây.",
+    empty: "Chưa có nhật ký", emptySub: "Nhật ký tạo nhạc và video Flow sẽ hiển thị tại đây.",
     copy: "Sao chép", copyAll: "Sao chép tất cả", clear: "Xóa nhật ký", copied: "Đã sao chép nhật ký", copyFailed: "Không thể sao chép nhật ký",
     eventsCount: "hoạt động",
     events: {
@@ -51,7 +52,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
   },
   en: {
     title: "Activity log", all: "All", music: "Music creation", flow: "Flow video",
-    empty: "No activity yet.", emptySub: "Music creation and Flow video tasks will appear here automatically.",
+    empty: "No activity yet", emptySub: "Music and Flow video activity will appear here.",
     copy: "Copy", copyAll: "Copy all", clear: "Clear log", copied: "Log copied", copyFailed: "Could not copy log",
     eventsCount: "activities",
     events: {
