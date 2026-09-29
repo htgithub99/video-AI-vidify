@@ -213,6 +213,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_CONVERSATION_ACTION_SELECTOR: 'button[aria-label*="option" i], button[aria-label*="more" i], button[data-testid*="menu"]',
   GROK_SIDEBAR_OPEN_SELECTOR: 'button[aria-label*="Open sidebar" i], button[aria-label*="Mở thanh bên" i], button[aria-label*="menu" i]',
   GROK_SIDEBAR_READY_SELECTOR: 'button:has-text("History"), button:has-text("Lịch sử"), a[href^="/c/"], a[href^="/chat/"]',
+  GROK_DELETE_ALL_PATTERN: /(?:delete all|clear (?:all )?history|delete (?:all )?conversations|xóa tất cả|xoá tất cả|xóa lịch sử|xoá lịch sử)/i,
   CHATGPT_CONVERSATION_ITEM_SELECTOR: 'nav a[href^="/c/"], aside a[href^="/c/"], a[data-testid^="history-item-"], li:has(a[href^="/c/"])',
   CHATGPT_CONVERSATION_ACTION_SELECTOR: 'button[data-testid="conversation-options"], button[data-testid*="history-item"][data-testid*="option"], button[aria-label*="conversation options" i], button[aria-label*="chat options" i], button[aria-label*="option" i], button[aria-label*="more" i]',
   CHATGPT_SIDEBAR_OPEN_SELECTOR: 'button[data-testid="open-sidebar-button"], button[aria-label*="Open sidebar" i], button[aria-label*="Mở thanh bên" i]',

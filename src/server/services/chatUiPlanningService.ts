@@ -377,6 +377,7 @@ const deleteAllChatGptConversations = async (page: Page, detectedConversationCou
 
   const deleteAllButton = settingsDialog
     .getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CHATS_PATTERN })
+    .or(settingsDialog.locator('button').filter({ hasText: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CHATS_PATTERN }))
     .filter({ visible: true })
     .last();
   await deleteAllButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
@@ -397,6 +398,19 @@ const deleteAllChatGptConversations = async (page: Page, detectedConversationCou
   await confirmButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
   await confirmationDialog.waitFor({ state: "hidden", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.ChatGptUi));
+  return detectedConversationCount;
+};
+
+const deleteAllGrokConversations = async (page: Page, detectedConversationCount: number): Promise<number> => {
+  const bulkButton = page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }).or(page.getByRole("menuitem", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN })).filter({ visible: true }).last();
+  await bulkButton.waitFor({ state: "visible", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  await bulkButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+  const confirmation = page.getByRole("dialog").or(page.getByRole("alertdialog")).filter({ has: page.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }) }).filter({ visible: true }).last();
+  if (await confirmation.isVisible().catch(() => false)) {
+    await confirmation.getByRole("button", { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }).filter({ visible: true }).last().click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
+    await confirmation.waitFor({ state: "hidden", timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  }
+  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.GrokChat));
   return detectedConversationCount;
 };
 
@@ -437,6 +451,7 @@ const deleteProviderConversationHistory = async (page: Page, provider: AiPlannin
   const initialConversationCount = await page.locator(selectors.item).count();
   appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_CONVERSATIONS_FOUND(provider, initialConversationCount));
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return _.isEqual(initialConversationCount, 0) ? 0 : deleteAllGeminiActivity(page, initialConversationCount);
+  if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return _.isEqual(initialConversationCount, 0) ? 0 : deleteAllGrokConversations(page, initialConversationCount);
   let deletedCount = 0;
   for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_MAX_CONVERSATIONS; attempt++) {
     const items = page.locator(selectors.item);
@@ -476,7 +491,7 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     const browser = await getOrLaunchGlobalBrowser(true, true);
     cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
-    return { closedRoomCount: pages.length, deletedConversationCount, deletedAll: _.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi) };
+    return { closedRoomCount: pages.length, deletedConversationCount, deletedAll: _.includes([AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat], provider) };
   } catch (error) {
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ERROR(provider, _.toString(_.get(error, "message", error))));
     throw error;
