@@ -11,6 +11,15 @@ export const WORKFLOW_ACTIVITY_CONFIG = {
   LOCALES: { vi: "vi-VN", en: "en-US" },
   LANGUAGES: { vi: "vi", en: "en" },
   AREAS: { all: "all", music: "music", flow: "flow" },
+  STATUS_FILTER_KEYS: { all: "all", success: "success", error: "error" },
+  STATUS_TYPE_KEYS: { success: "success", fail: "fail", running: "running", stop: "stop", info: "info" },
+  TIME_FORMAT_OPTIONS: { hour: "2-digit", minute: "2-digit", second: "2-digit" } as const,
+  A11Y: {
+    ROLE_GROUP: "group",
+    ROLE_LOG: "log",
+    ARIA_LIVE_POLITE: "polite",
+  },
+  BUTTON_VARIANT_UNSTYLED: "unstyled",
 } as const;
 
 export const WORKFLOW_ACTIVITY_EVENT = {
@@ -34,6 +43,18 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     empty: "Chưa có nhật ký", emptySub: "Nhật ký tạo nhạc và video Flow sẽ hiển thị tại đây.",
     copy: "Sao chép", copyAll: "Sao chép tất cả", clear: "Xóa nhật ký", copied: "Đã sao chép nhật ký", copyFailed: "Không thể sao chép nhật ký",
     eventsCount: "hoạt động",
+    statuses: {
+      success: "Thành công",
+      error: "Thất bại",
+      running: "Đang xử lý",
+      stopped: "Đã dừng",
+      info: "Thông tin",
+    },
+    statusFilter: {
+      all: "Tất cả",
+      success: "Thành công",
+      error: "Lỗi",
+    },
     events: {
       musicPlanStart: "Đang sáng tác nhạc", musicPlanDone: "Đã hoàn tất sáng tác nhạc", musicPlanFail: "Sáng tác nhạc chưa thành công", musicPlanStop: "Đã dừng sáng tác nhạc",
       musicSeoStart: "Đang làm mới nội dung SEO", musicSeoDone: "Đã làm mới nội dung SEO", musicSeoFail: "Chưa thể làm mới nội dung SEO",
@@ -55,6 +76,18 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     empty: "No activity yet", emptySub: "Music and Flow video activity will appear here.",
     copy: "Copy", copyAll: "Copy all", clear: "Clear log", copied: "Log copied", copyFailed: "Could not copy log",
     eventsCount: "activities",
+    statuses: {
+      success: "Success",
+      error: "Failed",
+      running: "In Progress",
+      stopped: "Stopped",
+      info: "Info",
+    },
+    statusFilter: {
+      all: "All Status",
+      success: "Success",
+      error: "Errors",
+    },
     events: {
       musicPlanStart: "Creating music", musicPlanDone: "Music creation completed", musicPlanFail: "Music creation did not complete", musicPlanStop: "Music creation stopped",
       musicSeoStart: "Refreshing SEO content", musicSeoDone: "SEO content refreshed", musicSeoFail: "SEO content could not be refreshed",
