@@ -1239,7 +1239,7 @@ export default function MusicCreator({ currentLang = "vi" }: MusicCreatorProps) 
         recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSunoDone);
       }
     } catch (error: any) {
-      if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, testOnly ? WORKFLOW_ACTIVITY_EVENT.musicTestFail : WORKFLOW_ACTIVITY_EVENT.musicSunoFail);
+      if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, testOnly ? WORKFLOW_ACTIVITY_EVENT.musicTestFail : WORKFLOW_ACTIVITY_EVENT.musicSunoFail, undefined, _.toString(error?.message || texts.SUNO_CREATE_ERROR));
       if (error?.name !== MUSIC_CREATOR_RUNTIME.ABORT_ERROR_NAME) toast.error(_.toString(error?.message || texts.SUNO_CREATE_ERROR));
     } finally {
       sunoAbortControllerRef.current = null;

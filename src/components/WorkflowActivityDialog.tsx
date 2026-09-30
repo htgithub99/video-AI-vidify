@@ -288,6 +288,7 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
                         <p className={cn("text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 break-words leading-relaxed")}>
                           {t.events[entry.event]}
                         </p>
+                        {entry.detail && <p className={cn("text-[11px] text-rose-400/90 break-words leading-relaxed")}>{entry.detail}</p>}
                         {entry.count !== undefined && (
                           <span className={cn("inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20")}>
                             {WORKFLOW_ACTIVITY_CONFIG.COUNT_PREFIX}{entry.count}

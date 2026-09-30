@@ -2,7 +2,7 @@ import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/
 
 export type WorkflowArea = typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.music | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.flow;
 export type WorkflowEvent = typeof WORKFLOW_ACTIVITY_EVENT[keyof typeof WORKFLOW_ACTIVITY_EVENT];
-export interface WorkflowActivity { id: number; at: number; area: WorkflowArea; event: WorkflowEvent; count?: number; }
+export interface WorkflowActivity { id: number; at: number; area: WorkflowArea; event: WorkflowEvent; count?: number; detail?: string; }
 
 const readActivities = (): WorkflowActivity[] => {
   try {
@@ -15,7 +15,7 @@ const readActivities = (): WorkflowActivity[] => {
       && (item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.music || item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.flow)
       && Object.prototype.hasOwnProperty.call(WORKFLOW_ACTIVITY_EVENT, item.event)
       && (item.count === undefined || (Number.isSafeInteger(item.count) && item.count >= 0)),
-    ).slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES).map(({ id, at, area, event, count }) => ({ id, at, area, event, count }));
+    ).slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES).map(({ id, at, area, event, count, detail }) => ({ id, at, area, event, count, detail: typeof detail === "string" ? detail.slice(0, 240) : undefined }));
   } catch {
     return [];
   }
@@ -34,8 +34,8 @@ export const subscribeWorkflowActivity = (listener: () => void) => {
 };
 export const getWorkflowActivities = () => activities;
 export const clearWorkflowActivities = () => { activities = []; persist(); emit(); };
-export const recordWorkflowActivity = (area: WorkflowArea, event: WorkflowEvent, count?: number) => {
-  activities = [{ id: nextId++, at: Date.now(), area, event, count: Number.isSafeInteger(count) && count! >= 0 ? count : undefined }, ...activities].slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES);
+export const recordWorkflowActivity = (area: WorkflowArea, event: WorkflowEvent, count?: number, detail?: string) => {
+  activities = [{ id: nextId++, at: Date.now(), area, event, count: Number.isSafeInteger(count) && count! >= 0 ? count : undefined, detail: detail?.slice(0, 240) }, ...activities].slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES);
   persist();
   emit();
 };

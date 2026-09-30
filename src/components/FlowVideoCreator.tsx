@@ -323,7 +323,7 @@ export default function FlowVideoCreator({
       toast.success(flowTexts.PLAN_SUCCESS(generatedVideos.length));
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanDone, generatedVideos.length);
     } catch (error) {
-      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanFail);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowPlanFail, undefined, error instanceof Error ? error.message : flowTexts.PLAN_FAILED);
       setClips(previousClips);
       toast.error(error instanceof Error ? error.message : flowTexts.PLAN_FAILED);
     } finally {
@@ -465,9 +465,9 @@ export default function FlowVideoCreator({
           setClips((before) => before.map((item) => item.id === clip.id ? { ...item, url, savedPath, status: FLOW_CLIP_STATUSES.DONE, error: undefined } : item));
           recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipDone, index + 1);
         } catch (error) {
-          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipFail, index + 1);
-          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail);
           const message = error instanceof Error ? error.message : flowTexts.FLOW_ERROR;
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowClipFail, index + 1, message);
+          recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail, undefined, message);
           setClips((before) => before.map((item) => item.id === clip.id ? { ...item, status: FLOW_CLIP_STATUSES.FAILED, error: message } : item));
           toast.error(message);
           return;
@@ -476,7 +476,7 @@ export default function FlowVideoCreator({
       toast.success(flowTexts.BATCH_COMPLETE);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateDone);
     } catch (error) {
-      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowGenerateFail, undefined, error instanceof Error ? error.message : flowTexts.CREATE_FAILED);
       toast.error(error instanceof Error ? error.message : flowTexts.CREATE_FAILED);
     } finally {
       setBusy(null);
