@@ -570,6 +570,11 @@ const addSongIdsByPlaylistId = async (
   playlistId: string,
   songIds: string[],
 ): Promise<void> => {
+  const uniqueSongIds = _.uniq(_.compact(songIds));
+  if (_.isEmpty(uniqueSongIds)) return;
+  let lastStatus = 0;
+  let lastBody = "";
+  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_ATTEMPTS; attempt += 1) {
   const response = await page.request.post(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}/api/playlist/update_clips/`, {
     headers: {
       authorization: requestHeaders.authorization,
@@ -580,11 +585,23 @@ const addSongIdsByPlaylistId = async (
     data: {
       playlist_id: playlistId,
       update_type: SUNO_AUTOMATION_SELECTORS.UPDATE_TYPE_ADD,
-      metadata: { clip_ids: songIds },
+      metadata: { clip_ids: uniqueSongIds },
       recommendation_metadata: {},
     },
   });
-  if (!response.ok()) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_BATCH_ADD_FAILED_ERR);
+    lastStatus = response.status();
+    lastBody = await response.text().catch(() => "");
+    if (response.ok()) return;
+    if (!SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_RETRY_STATUS_CODES.includes(lastStatus as 429 | 500 | 502 | 503 | 504)) break;
+    await page.waitForTimeout(500 * (attempt + 1));
+  }
+  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_ADD_RESPONSE, {
+    playlistId,
+    songCount: uniqueSongIds.length,
+    code: String(lastStatus),
+    body: _.truncate(lastBody, { length: 500 }),
+  });
+  throw new Error(SUNO_AUTOMATION_TEXTS.formatPlaylistBatchAddFailedErr(lastStatus));
 };
 
 const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: string, runId: string): Promise<string> => {
@@ -596,10 +613,12 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   });
   const songMenu = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.MORE_MENU_BUTTON, SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS);
   if (!songMenu) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
-  await songMenu.click();
+  await songMenu.scrollIntoViewIfNeeded().catch(() => undefined);
+  await songMenu.click({ force: true });
   const addButton = page.getByText(SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST_TEXT, { exact: true }).last();
   await addButton.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
-  await addButton.click();
+  await addButton.scrollIntoViewIfNeeded().catch(() => undefined);
+  await addButton.click({ force: true });
 
   const nameInput = page.getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER).first();
   await nameInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
@@ -610,7 +629,8 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
     SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(response.url())
     && response.request().method() === SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST,
   { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
-  await create.click();
+  await create.scrollIntoViewIfNeeded().catch(() => undefined);
+  await create.click({ force: true });
   const mutationResponse = await playlistMutation;
   const mutationPayload = mutationResponse.ok() ? await mutationResponse.json().catch(() => null) : null;
   await writeMusicDiagnostic("suno_playlist_create_response", { runId, stage: "create_playlist", code: String(mutationResponse.status()), status: mutationResponse.ok() ? "ok" : "failed", parsed: Boolean(mutationPayload) });

@@ -50,6 +50,8 @@ export const SUNO_AUTOMATION_CONFIG = {
   SONG_PAGE_READY_TIMEOUT_MS: 30_000,
   PLAYLIST_OPTION_TIMEOUT_MS: 10_000,
   PLAYLIST_VERIFY_WAIT_MS: 4000,
+  PLAYLIST_ADD_ATTEMPTS: 3,
+  PLAYLIST_ADD_RETRY_STATUS_CODES: [429, 500, 502, 503, 504] as const,
   INSPO_RESULT_TIMEOUT_MS: 10_000,
 
   APP_SUBDIR: "VideoAI-Vidify",
@@ -124,6 +126,7 @@ export const SUNO_AUTOMATION_CONFIG = {
   EVENT_REQUEST_COMPLETED: "request_completed",
   EVENT_REQUEST_FAILED: "request_failed",
   EVENT_ABORTED: "aborted",
+  EVENT_PLAYLIST_ADD_RESPONSE: "suno_playlist_add_response",
   SUNO_CDP_URL: "http://127.0.0.1:9444",
   HEADER_BROWSER_TOKEN: "browser-token",
   HEADER_DEVICE_ID: "device-id",
@@ -436,6 +439,8 @@ export const SUNO_AUTOMATION_TEXTS = {
     `Suno chỉ trả ${actual}/${expected} track cho prompt "${title}"; đã dừng để không tạo playlist thiếu bài.`,
   formatPlaylistMissingTracksErr: (missing: number, expected: number) =>
     `Playlist Suno vẫn thiếu ${missing}/${expected} track sau khi hệ thống đã tự thêm lại.`,
+  formatPlaylistBatchAddFailedErr: (status: number) =>
+    `Suno không chấp nhận thêm toàn bộ bài hát vào playlist mới. (HTTP ${status})`,
   formatPlaylistTitle: (firstSongTitle: string, songCount: number) =>
     `${firstSongTitle} (${songCount})`,
   TRACK_EVALUATION_ROOM_REQUIRED_ERR: "Thẩm âm bài hát bằng AI yêu cầu cấu hình phòng Gemini.",

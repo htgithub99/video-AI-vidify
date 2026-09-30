@@ -11,7 +11,7 @@ const safeKeys = new Set([
   "songIndex", "songId", "songCount", "trackCount", "selectedCount", "attachmentCount", "responseChars",
   "issueCount", "elapsedMs", "format", "status", "createdCount", "recoveredCount",
   "chunk", "chunkCount", "code", "errorName", "errorMessage", "retryable", "checkpoint",
-  "stablePolls", "candidateChars", "responseCount", "busy", "identityMatch",
+  "stablePolls", "candidateChars", "responseCount", "busy", "identityMatch", "playlistId", "body",
   "expectedChars", "actualChars", "promptChars", "bytes", "purpose", "issues", "parsed",
 ]);
 
