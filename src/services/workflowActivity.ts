@@ -1,6 +1,9 @@
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 
-export type WorkflowArea = typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.music | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.flow;
+export type WorkflowArea =
+  | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.music
+  | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer
+  | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.flow;
 export type WorkflowEvent = typeof WORKFLOW_ACTIVITY_EVENT[keyof typeof WORKFLOW_ACTIVITY_EVENT];
 export interface WorkflowActivity { id: number; at: number; area: WorkflowArea; event: WorkflowEvent; count?: number; detail?: string; }
 
@@ -12,10 +15,28 @@ const readActivities = (): WorkflowActivity[] => {
       item !== null && typeof item === "object"
       && Number.isSafeInteger(item.id) && item.id > 0
       && Number.isSafeInteger(item.at) && item.at > 0
-      && (item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.music || item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.flow)
+      && (item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.music || item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer || item.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.flow)
       && Object.prototype.hasOwnProperty.call(WORKFLOW_ACTIVITY_EVENT, item.event)
       && (item.count === undefined || (Number.isSafeInteger(item.count) && item.count >= 0)),
-    ).slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES).map(({ id, at, area, event, count, detail }) => ({ id, at, area, event, count, detail: typeof detail === "string" ? detail.slice(0, 240) : undefined }));
+    ).slice(0, WORKFLOW_ACTIVITY_CONFIG.MAX_ENTRIES).map(({ id, at, area, event, count, detail }) => {
+      let resolvedArea = area;
+      if (([
+        WORKFLOW_ACTIVITY_EVENT.musicMixerStart,
+        WORKFLOW_ACTIVITY_EVENT.musicMixerDone,
+        WORKFLOW_ACTIVITY_EVENT.musicMixerFail,
+        WORKFLOW_ACTIVITY_EVENT.musicMixerStop,
+      ] as WorkflowEvent[]).includes(event)) {
+        resolvedArea = WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer;
+      }
+      return {
+        id,
+        at,
+        area: resolvedArea,
+        event,
+        count,
+        detail: typeof detail === "string" ? detail.slice(0, 240) : undefined,
+      };
+    });
   } catch {
     return [];
   }

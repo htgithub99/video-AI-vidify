@@ -37,6 +37,11 @@ export const MUSIC_MIXER_SERVER = {
   SEO_ORDER_LABEL: "[Thứ tự nhạc]:",
   SEO_HASHTAGS_LABEL: "[HASHTAGS]:",
   SEO_TAGS_LABEL: "[TAGS / KEYWORDS]:",
+  LOG_MIX_START: (folderCount: number, songCount: number) => `Trộn ${folderCount} folder, ${songCount} bài mỗi folder`,
+  LOG_MIX_DONE: "Đã hoàn tất đánh giá, sắp xếp và tạo SEO",
+  PATH_PREFIX: "Path:",
+  EMPTY_MIX_NAME_PREFIX: "Mix_",
+  DEFAULT_FOLDER_NAME: "Folder",
 } as const;
 
 export const buildMusicMixerAnalyzePrompt = (tracks: Array<{ index: number; title: string }>, requestId: string): string =>

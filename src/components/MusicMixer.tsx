@@ -227,7 +227,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_SOURCE, { method: "POST" });
       const selection = await response.json();
       if (!selection.success) return;
-      const folder = String(selection.folderPath).split(/[\\/]/).filter(Boolean).pop() || "Folder";
+      const folder = String(selection.folderPath).split(/[\\/]/).filter(Boolean).pop() || MUSIC_MIXER_SERVER.DEFAULT_FOLDER_NAME;
       const collected: Track[] = selection.files.map((item: { name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }) => ({ file: new File([], item.name, { type: item.type }), path: `${folder}/${item.relativePath.replaceAll("\\", "/")}`, folder, folderPath: selection.folderPath, sourcePath: item.sourcePath, sourceUrl: item.url, size: item.size }));
       addTracks(collected);
     } catch { setError(text.DROP_ERROR); }
@@ -303,12 +303,12 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     const abortController = new AbortController();
     abortRef.current = abortController;
     projectIdRef.current = `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${crypto.randomUUID()}`;
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, `Trộn ${resultCount} folder, ${songsPerResult} bài mỗi folder`);
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, MUSIC_MIXER_SERVER.LOG_MIX_START(resultCount, songsPerResult));
     try {
       let source = trackOrder === "name" ? [...tracks].sort((a, b) => a.file.name.localeCompare(b.file.name)) : shuffle(tracks);
       if (trackOrder === "featured" && source.some((track) => !track.sourcePath)) throw new Error(text.PICK_FOLDER_AGAIN);
       const folders: ResultFolder[] = Array.from({ length: resultCount }, (_, index) => ({
-        name: `Mix_${String(index + 1).padStart(2, "0")}`,
+        name: `${MUSIC_MIXER_SERVER.EMPTY_MIX_NAME_PREFIX}${String(index + 1).padStart(2, "0")}`,
         tracks: [],
       }));
       folderProjectIdsRef.current = folders.map((folder) => `${projectIdRef.current}-${folder.name}`);
@@ -339,15 +339,15 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
         return { ...folder, tracks: orderedTracks, seo: createSeo({ ...folder, tracks: orderedTracks }), seoOptions: seoPayload.playlistSeoOptions || [] };
       }));
       setResults(foldersWithSeo);
-      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicMixerDone, folders.length, "Đã hoàn tất đánh giá, sắp xếp và tạo SEO");
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDone, folders.length, MUSIC_MIXER_SERVER.LOG_MIX_DONE);
       setError("");
       toast.success(`${text.RESULTS_TITLE}: ${folders.length} ${text.FOLDER_UNIT}`);
     } catch (err: any) {
-      if (abortController.signal.aborted) { recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicMixerStop); return; }
+      if (abortController.signal.aborted) { recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStop); return; }
       const message = err?.message || text.DROP_ERROR;
       setError(message);
       toast.error(message);
-      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicMixerFail, undefined, message);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerFail, undefined, message);
     } finally {
       setBusy(false);
       abortRef.current = null;
@@ -359,7 +359,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     if (!controller) return;
     controller.abort();
     setBusy(false);
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicMixerStop);
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStop);
     abortRef.current = null;
     const projectId = projectIdRef.current;
     projectIdRef.current = null;

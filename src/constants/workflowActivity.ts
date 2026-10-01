@@ -10,7 +10,7 @@ export const WORKFLOW_ACTIVITY_CONFIG = {
   EVENT_SUFFIX: { done: "Done", fail: "Fail", stop: "Stop", start: "Start" },
   LOCALES: { vi: "vi-VN", en: "en-US" },
   LANGUAGES: { vi: "vi", en: "en" },
-  AREAS: { all: "all", music: "music", flow: "flow" },
+  AREAS: { all: "all", music: "music", mixer: "mixer", flow: "flow" },
   STATUS_FILTER_KEYS: { all: "all", success: "success", error: "error" },
   STATUS_TYPE_KEYS: { success: "success", fail: "fail", running: "running", stop: "stop", info: "info" },
   TIME_FORMAT_OPTIONS: { hour: "2-digit", minute: "2-digit", second: "2-digit" } as const,
@@ -40,8 +40,8 @@ export const WORKFLOW_ACTIVITY_EVENT = {
 
 export const WORKFLOW_ACTIVITY_TEXT = {
   vi: {
-    title: "Nhật ký hoạt động", all: "Tất cả", music: "Sáng tác nhạc", flow: "Tạo video Flow",
-    empty: "Chưa có nhật ký", emptySub: "Nhật ký tạo nhạc và video Flow sẽ hiển thị tại đây.",
+    title: "Nhật ký hoạt động", all: "Tất cả", music: "Sáng tác nhạc", mixer: "Trộn nhạc", flow: "Tạo video Flow",
+    empty: "Chưa có nhật ký", emptySub: "Nhật ký sáng tác nhạc, trộn nhạc và video Flow sẽ hiển thị tại đây.",
     copy: "Sao chép", copyAll: "Sao chép tất cả", clear: "Xóa nhật ký", copied: "Đã sao chép nhật ký", copyFailed: "Không thể sao chép nhật ký",
     eventsCount: "hoạt động",
     statuses: {
@@ -56,6 +56,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
       success: "Thành công",
       error: "Lỗi",
     },
+    statusFilterAriaLabel: "Lọc theo trạng thái",
     events: {
       musicPlanStart: "Đang sáng tác nhạc", musicPlanDone: "Đã hoàn tất sáng tác nhạc", musicPlanFail: "Sáng tác nhạc chưa thành công", musicPlanStop: "Đã dừng sáng tác nhạc",
       musicMixerStart: "Đang trộn nhạc", musicMixerDone: "Đã hoàn tất trộn nhạc", musicMixerFail: "Trộn nhạc chưa thành công", musicMixerStop: "Đã dừng trộn nhạc",
@@ -74,8 +75,8 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     },
   },
   en: {
-    title: "Activity log", all: "All", music: "Music creation", flow: "Flow video",
-    empty: "No activity yet", emptySub: "Music and Flow video activity will appear here.",
+    title: "Activity log", all: "All", music: "Music creation", mixer: "Music mixer", flow: "Flow video",
+    empty: "No activity yet", emptySub: "Music creation, music mixer and Flow video activity will appear here.",
     copy: "Copy", copyAll: "Copy all", clear: "Clear log", copied: "Log copied", copyFailed: "Could not copy log",
     eventsCount: "activities",
     statuses: {
@@ -90,6 +91,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
       success: "Success",
       error: "Errors",
     },
+    statusFilterAriaLabel: "Filter by status",
     events: {
       musicPlanStart: "Creating music", musicPlanDone: "Music creation completed", musicPlanFail: "Music creation did not complete", musicPlanStop: "Music creation stopped",
       musicMixerStart: "Mixing music", musicMixerDone: "Music mixing completed", musicMixerFail: "Music mixing failed", musicMixerStop: "Music mixing stopped",
