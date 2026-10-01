@@ -3,6 +3,7 @@ import type { Locator, Page } from "playwright";
 import { chromium } from "playwright-extra";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { spawn } from "child_process";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
@@ -613,12 +614,25 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
   });
   const songMenu = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.MORE_MENU_BUTTON, SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS);
   if (!songMenu) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
-  await songMenu.scrollIntoViewIfNeeded().catch(() => undefined);
-  await songMenu.click({ force: true });
-  const addButton = page.getByText(SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST_TEXT, { exact: true }).last();
-  await addButton.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
-  await addButton.scrollIntoViewIfNeeded().catch(() => undefined);
-  await addButton.click({ force: true });
+  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_MENU_CLICK, { runId, stage: "open_song_menu" });
+  await songMenu.click();
+  const addOptions = page.getByText(SUNO_AUTOMATION_SELECTORS.ADD_TO_PLAYLIST_TEXT, { exact: true });
+  let addButton: Locator | null = null;
+  const addDeadline = Date.now() + SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS;
+  do {
+    for (let index = 0, count = await addOptions.count(); index < count; index += 1) {
+      const option = addOptions.nth(index);
+      if (await option.isVisible().catch(() => false)) {
+        addButton = option;
+        break;
+      }
+    }
+    if (addButton || Date.now() >= addDeadline) break;
+    await page.waitForTimeout(250);
+  } while (true);
+  if (!addButton) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
+  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_MENU_CLICK, { runId, stage: "add_to_playlist" });
+  await addButton.click();
 
   const nameInput = page.getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER).first();
   await nameInput.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
@@ -629,8 +643,8 @@ const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: s
     SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(response.url())
     && response.request().method() === SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST,
   { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS });
-  await create.scrollIntoViewIfNeeded().catch(() => undefined);
-  await create.click({ force: true });
+  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_MENU_CLICK, { runId, stage: "create_playlist_button" });
+  await create.click();
   const mutationResponse = await playlistMutation;
   const mutationPayload = mutationResponse.ok() ? await mutationResponse.json().catch(() => null) : null;
   await writeMusicDiagnostic("suno_playlist_create_response", { runId, stage: "create_playlist", code: String(mutationResponse.status()), status: mutationResponse.ok() ? "ok" : "failed", parsed: Boolean(mutationPayload) });
@@ -754,6 +768,11 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName, runId);
       await writeMusicDiagnostic("suno_playlist_completed", { runId, stage, createdCount: _.uniq(createdSongIds).length });
     } catch (error) {
+      await fs.promises.writeFile(
+        path.join(process.env.LOCALAPPDATA || os.tmpdir(), "VideoAI-Vidify", "logs", `${SUNO_AUTOMATION_CONFIG.PLAYLIST_FAILURE_HTML_PREFIX}${runId}.html`),
+        await page.content().catch(() => ""),
+        "utf8",
+      ).catch(() => undefined);
       await writeMusicDiagnostic("suno_playlist_failed", { runId, stage, createdCount: createdSongIds.length, ...musicErrorDetails(error) });
       if (createdSongIds.length && error instanceof Error) Object.assign(error, { createdSongIds: _.uniq(createdSongIds) });
       throw error;
@@ -780,9 +799,20 @@ export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<strin
     const response = await fetch(SUNO_AUTOMATION_CONFIG.formatPlaylistApiUrl(playlistId)).catch(() => null);
     if (response?.ok) {
       const payload = await response.json().catch(() => null);
-      const songIds = _.uniq(_.compact(_.map(_.castArray(_.get(payload, "playlist_clips", [])), (item) =>
-        _.trim(_.toString(_.get(item, "clip.id"))),
-      )));
+      const clipRows = [
+        ..._.castArray(_.get(payload, "playlist_clips", [])),
+        ..._.castArray(_.get(payload, "playlist.playlist_clips", [])),
+        ..._.castArray(_.get(payload, "playlist.clips", [])),
+        ..._.castArray(_.get(payload, "clips", [])),
+      ];
+      const songIds = _.uniq(_.compact(clipRows.flatMap((item: any) => [
+        _.get(item, "clip.id"), _.get(item, "clip_id"), _.get(item, "id"), _.get(item, "clip.clip_id"),
+      ]).map((id) => _.trim(_.toString(id)))));
+      await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_API_RESPONSE, {
+        playlistId,
+        status: response.status,
+        trackCount: songIds.length,
+      });
       if (!_.isEmpty(songIds)) return songIds;
     }
   }

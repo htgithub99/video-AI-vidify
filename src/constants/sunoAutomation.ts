@@ -127,6 +127,9 @@ export const SUNO_AUTOMATION_CONFIG = {
   EVENT_REQUEST_FAILED: "request_failed",
   EVENT_ABORTED: "aborted",
   EVENT_PLAYLIST_ADD_RESPONSE: "suno_playlist_add_response",
+  EVENT_PLAYLIST_MENU_CLICK: "suno_playlist_menu_click",
+  EVENT_PLAYLIST_API_RESPONSE: "suno_playlist_api_response",
+  PLAYLIST_FAILURE_HTML_PREFIX: "suno-playlist-failure-",
   SUNO_CDP_URL: "http://127.0.0.1:9444",
   HEADER_BROWSER_TOKEN: "browser-token",
   HEADER_DEVICE_ID: "device-id",
@@ -337,6 +340,7 @@ export const SUNO_AUTOMATION_SELECTORS = {
   ] as const,
 
   MORE_MENU_BUTTON: [
+    'button[aria-label="More actions"]',
     'button[aria-label="More options"]',
     'button[aria-label="More menu contents"]',
     'button[aria-label*="More" i]',
