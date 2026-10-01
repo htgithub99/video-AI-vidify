@@ -52,6 +52,7 @@ import { storageUtils } from "./lib/storage";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
 import MusicCreator from "./components/MusicCreator.tsx";
+import MusicMixer from "./components/MusicMixer.tsx";
 import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
@@ -689,6 +690,12 @@ export default function App() {
           {_.isEqual(activeTab, AppTab.MUSIC_CREATOR) && (
             <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
               <MusicCreator currentLang={currentLang} />
+            </div>
+          )}
+
+          {_.isEqual(activeTab, AppTab.MUSIC_MIXER) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+              <MusicMixer currentLang={currentLang} />
             </div>
           )}
 

@@ -529,6 +529,9 @@ export const ROUTER_PATHS = {
   MUSIC_SUNO_DOWNLOAD: "/music-suno-download",
   MUSIC_SUNO_LOGIN: "/music-suno-login",
   SAVE_FILE: "/save-file",
+  SELECT_FILE: "/select-file",
+  SELECT_FOLDER: "/select-folder",
+  EXPORT_ZIP: "/export-zip",
 } as const;
 
 export const MUSIC_CREATOR_CONSTANTS = {

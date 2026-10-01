@@ -1,0 +1,46 @@
+export const MUSIC_MIXER_SERVER = {
+  SETTINGS_STORAGE_KEY: "music-mixer-settings",
+  ROUTE_SELECT_SOURCE: "/music-mixer/select-source",
+  ROUTE_SOURCE: "/music-mixer/source/:token/:index",
+  ROUTE_SOURCE_FILE: "/music-mixer/source-file",
+  ROUTE_ANALYZE: "/music-mixer/rank",
+  ROUTE_SEO: "/music-mixer/seo",
+  ROUTE_CANCEL: "/music-mixer/cancel",
+  SOURCE_URL_PREFIX: "/api/pipeline/music-mixer/source",
+  PICKER_SCRIPT: "python_scripts/capcut_ultra_tool.py",
+  PICKER_COMMAND: "select-folder",
+  ERROR_TRACK_COUNT: "Số lượng bài hát không hợp lệ.",
+  ERROR_SOURCE_MISSING: "Không tìm thấy file nguồn. Vui lòng chọn lại folder.",
+  ERROR_RANKING_RESPONSE: "AI trả về kết quả đánh giá không hợp lệ.",
+  ERROR_PLAYLIST: "Danh sách bài hát không hợp lệ.",
+  ERROR_SEO_RESPONSE: "AI trả về kết quả SEO không hợp lệ.",
+  ANALYZE_ARTIFACT: "music-mixer-ranking",
+  SEO_ARTIFACT: "music-mixer-seo",
+  ANALYZE_RUN_PREFIX: "music-mixer-rank-",
+  SEO_RUN_PREFIX: "music-mixer-seo-",
+  MAX_ATTACHMENTS_PER_ROOM_REQUEST: 10,
+  DATABASE_NAME: "music-mixer-storage",
+  DATABASE_VERSION: 2,
+  RESULTS_STORE_KEY: "current",
+  ZIP_SAVE_ERROR: "Không thể lưu file ZIP.",
+  SOURCE_READ_ERROR: "Không thể đọc file nhạc nguồn.",
+  DEFAULT_SEO_TITLE_SUFFIX: "Relaxing Music Mix",
+  DEFAULT_SEO_DESCRIPTION_PREFIX: "A curated music mix featuring",
+  DEFAULT_SEO_DESCRIPTION_SUFFIX: "Listen for relaxing background music, focus, study and sleep.",
+  DEFAULT_SEO_TAGS: ["relaxing music", "background music", "focus music", "study music", "sleep music", "music mix"],
+  SEO_FILE_HEADER: "SEO CHO TOÀN BỘ DANH SÁCH NHẠC",
+  SEO_PLAYLIST_URL_LABEL: "[URL PLAYLIST]:",
+  SEO_SAMPLE_LABEL: "Mẫu",
+  SEO_SCORE_LABEL: "Điểm",
+  SEO_TITLE_LABEL: "[Tiêu đề]:",
+  SEO_DESCRIPTION_LABEL: "[Mô tả]:",
+  SEO_ORDER_LABEL: "[Thứ tự nhạc]:",
+  SEO_HASHTAGS_LABEL: "[HASHTAGS]:",
+  SEO_TAGS_LABEL: "[TAGS / KEYWORDS]:",
+} as const;
+
+export const buildMusicMixerAnalyzePrompt = (tracks: Array<{ index: number; title: string }>, requestId: string): string =>
+  `Evaluate every supplied audio track without removing any track. Score production quality, musical appeal, clarity, completeness, and opening impact from 0 to 100. Return ONLY one valid JSON object with "artifactType":${JSON.stringify(MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT)}, "requestId":${JSON.stringify(requestId)}, "scores":[{"index":1,"score":85}]. Copy artifactType and requestId exactly. Include every supplied index exactly once. Do not return SEO, titles, descriptions, hashtags, tags, explanations, or markdown. Track list: ${JSON.stringify(tracks)}`;
+
+export const buildMusicMixerSeoPrompt = (titles: string[], requestId: string): string =>
+  `Create exactly five distinct, high-quality YouTube playlist SEO options for a music mix. Use the supplied track titles as the playlist identity and infer only broad, safe mood or listening context from the titles. Do not use generic titles such as Track Collection, Audio List, Complete Audio Track List, or a single track title. Each option must include a compelling natural title, a rich 2 to 4 sentence description that starts with one suitable emoji, 8 to 15 relevant hashtags, 10 to 20 comma-separated keyword tags, and seoScore from 0 to 100. Do not include file extensions, numbering, timestamps, invented artists, exact genres, instruments, vocals, or durations. Do not include a track list in the description; the application adds the accurate timestamped track list separately. Return ONLY one valid JSON object with "artifactType":${JSON.stringify(MUSIC_MIXER_SERVER.SEO_ARTIFACT)}, "requestId":${JSON.stringify(requestId)}, "seoOptions":[{"title":"...","description":"🎧 ...","hashtags":["#..."],"tags":["..."],"seoScore":80}]. Copy artifactType and requestId exactly. Track titles: ${JSON.stringify(titles)}`;

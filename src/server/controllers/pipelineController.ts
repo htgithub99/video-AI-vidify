@@ -194,6 +194,7 @@ import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createApp
 import { SecurityMessages } from "../../constants/security.js";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_TEXTS } from "../../constants/sunoAutomation.js";
 import { MUSIC_CREATOR_REGEXES } from "../../constants/musicCreator.js";
+import { MUSIC_MIXER_SERVER, buildMusicMixerAnalyzePrompt, buildMusicMixerSeoPrompt } from "../../constants/musicMixer.js";
 
 import {
   generateImageWithPlaywright,
@@ -6511,7 +6512,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/select-file", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.SELECT_FILE, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
@@ -6527,7 +6528,7 @@ router.post("/select-file", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/select-folder", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.SELECT_FOLDER, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
@@ -6541,6 +6542,104 @@ router.post("/select-folder", async (req: Request, res: Response) => {
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });
+});
+
+const musicMixerSources = new Map<string, string[]>();
+router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Response) => {
+  execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT), MUSIC_MIXER_SERVER.PICKER_COMMAND], { windowsHide: true }, async (error, stdout) => {
+    const folderPath = stdout.trim();
+    if (error || !folderPath) return res.json({ success: false });
+    const audioPattern = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
+    const files: string[] = [];
+    const scan = async (directory: string): Promise<void> => {
+      for (const entry of await fs.promises.readdir(directory, { withFileTypes: true })) {
+        const fullPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) await scan(fullPath);
+        else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
+      }
+    };
+    try {
+      await scan(folderPath);
+      const token = randomUUID();
+      musicMixerSources.set(token, files);
+      return res.json({ success: true, folderPath, files: await Promise.all(files.map(async (filePath, index) => ({ name: path.basename(filePath), relativePath: path.relative(folderPath, filePath), sourcePath: filePath, size: (await fs.promises.stat(filePath)).size, type: path.extname(filePath).toLowerCase() === ".wav" ? "audio/wav" : "audio/mpeg", index, url: `${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}/${token}/${index}` }))) });
+    } catch { return res.status(500).json({ success: false }); }
+  });
+});
+router.get(MUSIC_MIXER_SERVER.ROUTE_SOURCE, (req: Request, res: Response) => {
+  const files = musicMixerSources.get(req.params.token);
+  const index = Number(req.params.index);
+  if (!files || !Number.isInteger(index) || index < 0 || index >= files.length) return res.sendStatus(404);
+  return res.sendFile(files[index]);
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_SOURCE_FILE, async (req: Request, res: Response) => {
+  const sourcePath = req.body?.sourcePath;
+  if (typeof sourcePath !== "string" || !/\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i.test(sourcePath)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
+  try {
+    if (!(await fs.promises.stat(sourcePath)).isFile()) throw new Error();
+    return res.sendFile(path.resolve(sourcePath));
+  } catch {
+    return res.status(404).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
+  }
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response) => {
+  const items = Array.isArray(req.body?.tracks) ? req.body.tracks : [];
+  if (!items.length || items.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_TRACK_COUNT });
+  const availableFiles = await Promise.all(items.map(async (item: any) => { try { return (await fs.promises.stat(item.sourcePath)).isFile(); } catch { return false; } }));
+  if (availableFiles.some((available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
+  try {
+    const rankingId = typeof req.body?.projectId === "string" && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${randomUUID()}`;
+    const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
+    for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
+      const requestId = `${rankingId}-${chunkIndex + 1}`;
+      const offset = chunkIndex * MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST;
+      const attachments = chunk.map((item: any, index: number) => ({ name: `${offset + index + 1}_${path.basename(item.sourcePath)}`, mimeType: path.extname(item.sourcePath).toLowerCase() === ".wav" ? "audio/wav" : "audio/mpeg", path: item.sourcePath }));
+      const prompt = buildMusicMixerAnalyzePrompt(chunk.map((item: any, index: number) => ({ index: offset + index + 1, title: item.title })), requestId);
+      const result = await generatePlanningWithChatUi({
+        provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat,
+        model: req.body?.model,
+        prompt,
+        projectId: rankingId,
+        chromeHeadless: req.body?.chromeHeadless === true,
+        attachments,
+        artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT,
+        requestId,
+        closeRoomOnComplete: false,
+        allowDefaultGeminiModel: true,
+      });
+      const parsed = JSON.parse(result.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+      const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT
+        && parsed.requestId === requestId
+        && Array.isArray(parsed.scores)
+        && parsed.scores.length === chunk.length
+        && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
+      if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
+      const durations = await Promise.all(chunk.map((item: any) => readMediaDurationSeconds(item.sourcePath)));
+      scores.push(...parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 })));
+    }
+    return res.json({ success: true, scores, roomId: rankingId });
+  } catch (error) { return res.status(500).json({ success: false, error: String(error) }); }
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_CANCEL, async (req: Request, res: Response) => {
+  const projectId = typeof req.body?.projectId === "string" ? req.body.projectId : "";
+  if (!projectId) return res.status(400).json({ success: false });
+  const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds.filter((value: unknown): value is string => typeof value === "string") : [projectId];
+  await Promise.all(projectIds.map((id) => closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: id }).catch(() => undefined)));
+  return res.json({ success: true });
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) => {
+  const titles = Array.isArray(req.body?.titles) ? req.body.titles.map((value: unknown) => String(value).trim()).filter(Boolean) : [];
+  if (!titles.length || titles.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_PLAYLIST });
+  const execution = req.body?.aiExecution || {};
+  const projectId = typeof req.body?.roomId === "string" && req.body.roomId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.roomId : `${MUSIC_MIXER_SERVER.SEO_RUN_PREFIX}${randomUUID()}`;
+  const requestId = `${projectId}-seo`;
+  const prompt = buildMusicMixerSeoPrompt(titles, requestId);
+  try {
+    const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
+    const parsed = JSON.parse(response.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+    if (parsed.artifactType !== MUSIC_MIXER_SERVER.SEO_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.seoOptions) || parsed.seoOptions.length !== 5) throw new Error(MUSIC_MIXER_SERVER.ERROR_SEO_RESPONSE);
+    return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
+  } catch (error) { return res.status(500).json({ success: false, error: String(error) }); }
 });
 
 router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {
@@ -6567,7 +6666,7 @@ router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/export-zip", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
   try {
     const { projectId } = req.body;
     if (!projectId) {
