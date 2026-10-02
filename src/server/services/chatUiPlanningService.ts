@@ -621,7 +621,7 @@ const waitForStableResponse = async (
     const visibleAlerts = await page.locator('[role="alert"]').filter({ visible: true }).allTextContents().catch(() => []);
     const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
     if (providerErrorAlert) {
-      await writeMusicDiagnostic("chat_provider_alert", { runId: requestId ? createHash("sha256").update(requestId).digest("hex").slice(0, 12) : undefined, stage: artifactType, alertChars: providerErrorAlert.length });
+      await writeMusicDiagnostic("chat_provider_alert", { runId: requestId ? createHash("sha256").update(requestId).digest("hex").slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
       throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
     }
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
@@ -702,6 +702,7 @@ const waitForStableResponse = async (
         if (!isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
           if (CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText)) {
+            await writeMusicDiagnostic("chat_provider_response_error", { stage: artifactType, errorMessage: latestText });
             throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
           }
           throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
@@ -1489,7 +1490,8 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_UNSUPPORTED);
     let lastError: unknown;
-    for (let recoveryAttempt = 0; recoveryAttempt <= CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS; recoveryAttempt++) {
+    const maxRecoveryAttempts = request.artifactType === "music-mixer-ranking" ? 3 : CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
+    for (let recoveryAttempt = 0; recoveryAttempt <= maxRecoveryAttempts; recoveryAttempt++) {
       try {
         await writeMusicDiagnostic("chat_attempt_started", { ...diagnosticBase, attempt: recoveryAttempt + 1 });
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
@@ -1503,21 +1505,22 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
         lastError = error;
         throwIfPlanningCancelled(request.signal);
         const errorMessage = _.toString(_.get(error, "message", error));
-        if (_.isEqual(errorMessage, CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR)) {
-          const providerErrorCount = (providerErrorCounts.get(roomKey) || 0) + 1;
-          providerErrorCounts.set(roomKey, providerErrorCount);
-          if (providerErrorCount >= 2) {
-            providerErrorCounts.delete(roomKey);
-            try {
-              await reloadChatPlanningRoom(request);
-              appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_ROOM_RELOADED(providerNames[request.provider]));
-            } catch (reloadError) {
-              await writeMusicDiagnostic("chat_room_reload_failed", { ...diagnosticBase, ...musicErrorDetails(reloadError) });
-              appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_ROOM_RELOAD_FAILED(providerNames[request.provider], _.toString(_.get(reloadError, "message", reloadError))));
-              throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_FAILED_ERROR, { cause: reloadError });
-            }
-            throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_ROOM_RELOAD_ERROR);
+        const isRetryableMusicResponseError = request.artifactType === "music-mixer-ranking"
+          && (errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR
+            || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
+        if (isRetryableMusicResponseError) {
+          if (recoveryAttempt < 2) {
+            await writeMusicDiagnostic("chat_provider_retry_same_room", { ...diagnosticBase, attempt: recoveryAttempt + 2 });
+            await delayAsync(1500);
+            continue;
           }
+          if (recoveryAttempt === 2) {
+            await writeMusicDiagnostic("chat_provider_room_reload", { ...diagnosticBase, attempt: recoveryAttempt + 2 });
+            await reloadChatPlanningRoom(request);
+            await delayAsync(2000);
+            continue;
+          }
+          throw error;
         }
         const canRecoverClosedRoom =
           CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) && recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;

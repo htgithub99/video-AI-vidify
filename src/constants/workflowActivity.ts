@@ -24,7 +24,7 @@ export const WORKFLOW_ACTIVITY_CONFIG = {
 
 export const WORKFLOW_ACTIVITY_EVENT = {
   musicPlanStart: "musicPlanStart", musicPlanDone: "musicPlanDone", musicPlanFail: "musicPlanFail", musicPlanStop: "musicPlanStop",
-  musicMixerStart: "musicMixerStart", musicMixerDone: "musicMixerDone", musicMixerFail: "musicMixerFail", musicMixerStop: "musicMixerStop",
+  musicMixerStart: "musicMixerStart", musicMixerDone: "musicMixerDone", musicMixerFail: "musicMixerFail", musicMixerStop: "musicMixerStop", musicMixerDownloadStart: "musicMixerDownloadStart", musicMixerDownloadDone: "musicMixerDownloadDone", musicMixerDownloadFail: "musicMixerDownloadFail",
   musicSeoStart: "musicSeoStart", musicSeoDone: "musicSeoDone", musicSeoFail: "musicSeoFail",
   musicSunoStart: "musicSunoStart", musicSunoDone: "musicSunoDone", musicSunoFail: "musicSunoFail", musicSunoStop: "musicSunoStop",
   musicTestStart: "musicTestStart", musicTestDone: "musicTestDone", musicTestFail: "musicTestFail",
@@ -59,7 +59,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     statusFilterAriaLabel: "Lọc theo trạng thái",
     events: {
       musicPlanStart: "Đang sáng tác nhạc", musicPlanDone: "Đã hoàn tất sáng tác nhạc", musicPlanFail: "Sáng tác nhạc chưa thành công", musicPlanStop: "Đã dừng sáng tác nhạc",
-      musicMixerStart: "Đang trộn nhạc", musicMixerDone: "Đã hoàn tất trộn nhạc", musicMixerFail: "Trộn nhạc chưa thành công", musicMixerStop: "Đã dừng trộn nhạc",
+      musicMixerStart: "Đang trộn nhạc", musicMixerDone: "Đã hoàn tất trộn nhạc", musicMixerFail: "Trộn nhạc chưa thành công", musicMixerStop: "Đã dừng trộn nhạc", musicMixerDownloadStart: "Đang tải file ZIP trộn nhạc", musicMixerDownloadDone: "Đã tải file ZIP trộn nhạc", musicMixerDownloadFail: "Tải file ZIP trộn nhạc chưa thành công",
       musicSeoStart: "Đang làm mới nội dung SEO", musicSeoDone: "Đã làm mới nội dung SEO", musicSeoFail: "Chưa thể làm mới nội dung SEO",
       musicSunoStart: "Đang tạo nhạc trên Suno", musicSunoDone: "Đã tạo nhạc trên Suno", musicSunoFail: "Tạo nhạc trên Suno chưa thành công", musicSunoStop: "Đã dừng tạo nhạc trên Suno",
       musicTestStart: "Đang tạo bài thử trên Suno", musicTestDone: "Đã tạo bài thử trên Suno", musicTestFail: "Tạo bài thử trên Suno chưa thành công",
@@ -94,7 +94,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     statusFilterAriaLabel: "Filter by status",
     events: {
       musicPlanStart: "Creating music", musicPlanDone: "Music creation completed", musicPlanFail: "Music creation did not complete", musicPlanStop: "Music creation stopped",
-      musicMixerStart: "Mixing music", musicMixerDone: "Music mixing completed", musicMixerFail: "Music mixing failed", musicMixerStop: "Music mixing stopped",
+      musicMixerStart: "Mixing music", musicMixerDone: "Music mixing completed", musicMixerFail: "Music mixing failed", musicMixerStop: "Music mixing stopped", musicMixerDownloadStart: "Downloading music mixer ZIP", musicMixerDownloadDone: "Music mixer ZIP downloaded", musicMixerDownloadFail: "Music mixer ZIP download failed",
       musicSeoStart: "Refreshing SEO content", musicSeoDone: "SEO content refreshed", musicSeoFail: "SEO content could not be refreshed",
       musicSunoStart: "Creating music on Suno", musicSunoDone: "Music created on Suno", musicSunoFail: "Suno music creation did not complete", musicSunoStop: "Suno music creation stopped",
       musicTestStart: "Creating a Suno test song", musicTestDone: "Suno test song created", musicTestFail: "Suno test song did not complete",

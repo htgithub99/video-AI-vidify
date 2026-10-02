@@ -18,10 +18,12 @@ import {
   ChevronDown,
   ChevronUp,
   Square,
+  CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
+import { Modal } from "./ui/Modal";
 import { Lang } from "../lib/lang.js";
 import { MUSIC_MIXER_TEXTS } from "../constants/texts";
 import { cn } from "../lib/utils";
@@ -53,10 +55,20 @@ const getDisplayFolderName = (folderName: string, folderPath?: string) => {
   return parts[0] || folderName;
 };
 
-const saveZip = async (blob: Blob, name: string) => {
-  const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(blob); });
-  const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, { method: "POST", headers: { "Content-Type": "application/json" }, body: jsonUtils.safeStringify({ suggestedName: name, dataUrl }) });
-  const result = await response.json();
+const selectZipDestination = async (name: string): Promise<string | null> => {
+  const destinationResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_ZIP_DESTINATION, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ suggestedName: name }),
+  });
+  const destination = await destinationResponse.json();
+  if (!destinationResponse.ok || !destination.success) throw new Error(destination.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
+  return destination.cancelled ? null : destination.token;
+};
+
+const saveZip = async (blob: Blob, token: string) => {
+  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_WRITE_ZIP, {
+    method: "POST", headers: { "Content-Type": "application/zip", "X-Music-Mixer-Zip-Token": token }, body: blob,
+  });
+  const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
 };
 
@@ -86,8 +98,65 @@ const formatSeoText = (folder: ResultFolder) => {
   let elapsed = 0;
   const timeline = folder.tracks.map((track) => { const stamp = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`; elapsed += track.durationSeconds || 0; return `${stamp} ${cleanTrackTitle(track.file.name)}`; });
   const options = folder.seoOptions?.length ? folder.seoOptions : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: "AI" }];
-  return `SEO CHO TOÀN BỘ DANH SÁCH NHẠC\n\n[URL PLAYLIST]:\n\n${options.map((option, index) => `=== Mẫu ${index + 1} (Điểm ${option.seoScore || "AI"}) ===\n\n[Tiêu đề]:\n${option.title || ""}\n\n[Mô tả]:\n${option.description || ""}\n\n${timeline.join("\n")}\n\n[Thứ tự nhạc]:\n${orderedTracks.join(" / ")}\n\n[HASHTAGS]:\n${(option.hashtags || []).join(" ")}\n\n[TAGS / KEYWORDS]:\n${(option.tags || []).join(", ")}`).join("\n\n----------------------------------------\n\n")}`;
+  return `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}\n\n${MUSIC_MIXER_SERVER.SEO_PLAYLIST_URL_LABEL}\n\n${options.map((option, index) => `${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}${index + 1} (${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL} ${option.seoScore || "AI"}) ===\n\n${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}\n${option.title || ""}\n\n${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}\n${option.description || ""}\n\n${timeline.join("\n")}\n\n${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}\n${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}\n\n${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}\n${(option.hashtags || []).join(" ")}\n\n${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}\n${(option.tags || []).join(", ")}`).join(`\n\n${MUSIC_MIXER_SERVER.SEO_DIVIDER}\n\n`)}`;
 };
+
+const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) => {
+  const payload = {
+    token,
+    folders: resultFolders.map((folder) => {
+      const seo = folder.seo || createSeo(folder);
+      return {
+        name: folder.name,
+        files: folder.tracks.map((track, index) => ({
+          sourcePath: track.sourcePath,
+          zipPath: `${folder.name}/${numberedName(track.file, index)}`,
+        })),
+        texts: [
+          { zipPath: `${folder.name}/${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`, content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
+          { zipPath: `${folder.name}/${MUSIC_MIXER_SERVER.SEO_TXT_FILENAME}`, content: formatSeoText(folder) },
+        ],
+      };
+    }),
+  };
+
+  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
+};
+
+const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder) => {
+  const seo = folder.seo || createSeo(folder);
+  const payload = {
+    token,
+    folders: [
+      {
+        name: folder.name,
+        files: folder.tracks.map((track, index) => ({
+          sourcePath: track.sourcePath,
+          zipPath: numberedName(track.file, index),
+        })),
+        texts: [
+          { zipPath: MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
+          { zipPath: MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, content: formatSeoText(folder) },
+        ],
+      },
+    ],
+  };
+
+  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
+};
+
 
 const shuffle = <T,>(items: T[]): T[] => {
   const output = [...items];
@@ -148,6 +217,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const [seoChromeHeadless, setSeoChromeHeadless] = useState(false);
   const [trackOrder, setTrackOrder] = useState<"random" | "featured" | "name">("featured");
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
+  const [pendingFolders, setPendingFolders] = useState<Array<{ folderPath: string; files: Array<{ name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }> }>>([]);
+  const [selectedPendingFolders, setSelectedPendingFolders] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const projectIdRef = useRef<string | null>(null);
@@ -190,6 +261,17 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     request.onsuccess = () => request.result.transaction("results", "readwrite").objectStore("results").put({ id: MUSIC_MIXER_SERVER.RESULTS_STORE_KEY, value: results });
   }, [results]);
 
+  useEffect(() => {
+    if (!tracks.length || !results.length) return;
+    const currentKeys = new Set(tracks.map((track) => `${track.sourcePath || track.path}:${track.file.name}`));
+    const resultKeys = results.flatMap((folder) => folder.tracks).map((track) => `${track.sourcePath || track.path}:${track.file.name}`);
+    if (resultKeys.some((key) => !currentKeys.has(key))) {
+      setResults([]);
+      const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
+      request.onsuccess = () => request.result.transaction("results", "readwrite").objectStore("results").delete(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
+    }
+  }, [tracks, results]);
+
   const groups = useMemo(() => {
     const map = new Map<string, Track[]>();
     tracks.forEach((track) => { const key = track.folderPath || track.folder; map.set(key, [...(map.get(key) || []), track]); });
@@ -227,11 +309,20 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_SOURCE, { method: "POST" });
       const selection = await response.json();
       if (!selection.success) return;
-      const folder = String(selection.folderPath).split(/[\\/]/).filter(Boolean).pop() || MUSIC_MIXER_SERVER.DEFAULT_FOLDER_NAME;
-      const collected: Track[] = selection.files.map((item: { name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }) => ({ file: new File([], item.name, { type: item.type }), path: `${folder}/${item.relativePath.replaceAll("\\", "/")}`, folder, folderPath: selection.folderPath, sourcePath: item.sourcePath, sourceUrl: item.url, size: item.size }));
-      addTracks(collected);
+      setPendingFolders(selection.folders || []);
+      setSelectedPendingFolders((selection.folders || []).map((source: { folderPath: string }) => source.folderPath));
     } catch { setError(text.DROP_ERROR); }
     finally { setIsSelectingFolder(false); }
+  };
+
+  const confirmPendingFolders = () => {
+    const collected: Track[] = pendingFolders.filter((source) => selectedPendingFolders.includes(source.folderPath)).flatMap((source) => {
+        const folder = source.folderPath.split(/[\\/]/).filter(Boolean).pop() || MUSIC_MIXER_SERVER.DEFAULT_FOLDER_NAME;
+        return source.files.map((item) => ({ file: new File([], item.name, { type: item.type }), path: `${folder}/${item.relativePath.replaceAll("\\", "/")}`, folder, folderPath: source.folderPath, sourcePath: item.sourcePath, sourceUrl: item.url, size: item.size }));
+      });
+    addTracks(collected);
+    setPendingFolders([]);
+    setSelectedPendingFolders([]);
   };
 
   const handleRemoveFolder = (folderName: string) => {
@@ -325,7 +416,11 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
           folder.tracks.push(candidate);
         }
       }
-      const foldersWithSeo: ResultFolder[] = await Promise.all(folders.map(async (folder) => {
+      const foldersWithSeo: ResultFolder[] = [];
+      const maxConcurrentFolders = folders.length;
+      for (let batchStart = 0; batchStart < folders.length; batchStart += maxConcurrentFolders) {
+        const batch = folders.slice(batchStart, batchStart + maxConcurrentFolders);
+        const batchResults = await Promise.all(batch.map(async (folder) => {
         if (!folder.tracks.every((track) => track.sourcePath)) return { ...folder, seo: createSeo(folder), seoOptions: [] };
         const folderProjectId = `${projectIdRef.current}-${folder.name}`;
         const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { method: "POST", signal: abortController.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: folderProjectId, tracks: folder.tracks.map((track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }) });
@@ -337,7 +432,9 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
         const seoPayload = await seoResponse.json();
         if (!seoResponse.ok || !seoPayload.success) throw new Error(seoPayload.error || text.RANK_ERROR);
         return { ...folder, tracks: orderedTracks, seo: createSeo({ ...folder, tracks: orderedTracks }), seoOptions: seoPayload.playlistSeoOptions || [] };
-      }));
+        }));
+        foldersWithSeo.push(...batchResults);
+      }
       setResults(foldersWithSeo);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDone, folders.length, MUSIC_MIXER_SERVER.LOG_MIX_DONE);
       setError("");
@@ -368,19 +465,29 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
 
   const downloadAll = async () => {
     if (_.isEmpty(results)) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadStart, results.length);
     setIsDownloading(true);
-    setDownloadingFolder("all");
+    setDownloadingFolder(MUSIC_MIXER_SERVER.ALL_DOWNLOAD_TARGET);
     setError("");
     try {
-      const zip = new JSZip();
-      for (const folder of results) for (const [index, track] of folder.tracks.entries()) zip.folder(folder.name)!.file(numberedName(track.file, index), await ensureTrackFile(track));
-      results.forEach((folder) => { const seo = folder.seo || createSeo(folder); zip.folder(folder.name)!.file("SEO.json", JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file("SEO.txt", formatSeoText(folder)); });
-      const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
-      await saveZip(blob, `music-mixes-${Date.now()}.zip`);
+      const destinationToken = await selectZipDestination(`${MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME_PREFIX}${Date.now()}${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`);
+      if (!destinationToken) return;
+      const allHaveSourcePath = results.every((folder) => folder.tracks.every((track) => Boolean(track.sourcePath)));
+      if (allHaveSourcePath) {
+        await buildZipDirectly(destinationToken, results);
+      } else {
+        const zip = new JSZip();
+        for (const folder of results) for (const [index, track] of folder.tracks.entries()) zip.folder(folder.name)!.file(numberedName(track.file, index), await ensureTrackFile(track));
+        results.forEach((folder) => { const seo = folder.seo || createSeo(folder); zip.folder(folder.name)!.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder)); });
+        const blob = await zip.generateAsync({ type: "blob", compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
+        await saveZip(blob, destinationToken);
+      }
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, results.length);
       toast.success(text.ZIP_SUCCESS);
-    } catch {
+    } catch (error: any) {
       setError(text.ZIP_ERROR);
-      toast.error(text.ZIP_ERROR);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadFail, undefined, error?.message || text.ZIP_ERROR);
+      toast.error(`${text.ZIP_ERROR} ${error?.message || ""}`.trim());
     } finally {
       setIsDownloading(false);
       setDownloadingFolder(null);
@@ -388,18 +495,28 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   };
 
   const downloadFolder = async (folder: ResultFolder) => {
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadStart, 1, folder.name);
     setIsDownloading(true);
     setDownloadingFolder(folder.name);
     try {
-      const zip = new JSZip();
-      for (const [index, track] of folder.tracks.entries()) zip.file(numberedName(track.file, index), await ensureTrackFile(track));
-      const seo = folder.seo || createSeo(folder); zip.file("SEO.json", JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file("SEO.txt", formatSeoText(folder));
-      const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
-      await saveZip(blob, `${folder.name}.zip`);
+      const destinationToken = await selectZipDestination(`${folder.name}${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`);
+      if (!destinationToken) return;
+      const allHaveSourcePath = folder.tracks.every((track) => Boolean(track.sourcePath));
+      if (allHaveSourcePath) {
+        await buildSingleFolderZipDirectly(destinationToken, folder);
+      } else {
+        const zip = new JSZip();
+        for (const [index, track] of folder.tracks.entries()) zip.file(numberedName(track.file, index), await ensureTrackFile(track));
+        const seo = folder.seo || createSeo(folder); zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
+        const blob = await zip.generateAsync({ type: "blob", compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
+        await saveZip(blob, destinationToken);
+      }
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, 1, folder.name);
       toast.success(`${text.ZIP_SUCCESS} (${folder.name})`);
-    } catch {
+    } catch (error: any) {
       setError(text.ZIP_ERROR);
-      toast.error(text.ZIP_ERROR);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadFail, undefined, `${folder.name}: ${error?.message || text.ZIP_ERROR}`);
+      toast.error(`${text.ZIP_ERROR} ${error?.message || ""}`.trim());
     } finally {
       setIsDownloading(false);
       setDownloadingFolder(null);
@@ -1142,6 +1259,237 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
           )}
         </div>
       </div>
+      <Modal
+        isOpen={pendingFolders.length > 0}
+        onClose={() => {
+          setPendingFolders([]);
+          setSelectedPendingFolders([]);
+        }}
+        title={
+          <div className={cn("flex items-center gap-2")}>
+            <div
+              className={cn(
+                "w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0",
+              )}
+            >
+              <FolderPlus className={cn("w-3.5 h-3.5")} />
+            </div>
+            <span className={cn("font-bold text-sm tracking-wide")}>
+              {text.PENDING_FOLDERS_TITLE}
+            </span>
+            {pendingFolders.length > 0 && (
+              <span
+                className={cn(
+                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40",
+                )}
+              >
+                {pendingFolders.length}
+              </span>
+            )}
+          </div>
+        }
+        maxWidth="max-w-lg"
+      >
+        <div className={cn("space-y-3")}>
+          <div className={cn("flex items-center justify-between gap-3 text-xs")}>
+            <span className={cn("text-slate-400 text-xs")}>
+              {text.PENDING_FOLDERS_DESC}
+            </span>
+            <Button
+              variant="unstyled"
+              type="button"
+              onClick={() => {
+                const isAllSelected =
+                  pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length;
+                if (isAllSelected) {
+                  setSelectedPendingFolders([]);
+                } else {
+                  setSelectedPendingFolders(pendingFolders.map((f) => f.folderPath));
+                }
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border select-none shrink-0",
+                {
+                  "bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25":
+                    pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length,
+                  "bg-slate-800 text-slate-300 border-slate-700/60 hover:bg-slate-750 hover:text-white":
+                    !(pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length),
+                },
+              )}
+            >
+              {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? (
+                <CheckSquare className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+              ) : (
+                <Square className={cn("w-3.5 h-3.5 text-slate-400 shrink-0")} />
+              )}
+              <span>
+                {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length
+                  ? text.PENDING_FOLDERS_DESELECT_ALL
+                  : text.PENDING_FOLDERS_SELECT_ALL}
+              </span>
+            </Button>
+          </div>
+
+          <div
+            className={cn(
+              "max-h-72 overflow-y-auto space-y-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800/90 custom-scrollbar",
+            )}
+          >
+            {pendingFolders.map((source) => {
+              const isSelected = selectedPendingFolders.includes(source.folderPath);
+              const name =
+                source.folderPath.split(/[\\/]/).filter(Boolean).pop() || source.folderPath;
+              const hasFiles = source.files.length > 0;
+
+              return (
+                <div
+                  key={source.folderPath}
+                  onClick={() =>
+                    setSelectedPendingFolders((current) =>
+                      isSelected
+                        ? current.filter((path) => path !== source.folderPath)
+                        : [...current, source.folderPath],
+                    )
+                  }
+                  className={cn(
+                    "group flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg border transition-all duration-150 cursor-pointer select-none",
+                    {
+                      "bg-gradient-to-r from-purple-950/40 via-slate-900/95 to-slate-900/95 border-purple-500/50 shadow-xs ring-1 ring-purple-500/20":
+                        isSelected,
+                      "bg-slate-955/60 border-slate-800/70 hover:border-slate-700 hover:bg-slate-850/60":
+                        !isSelected,
+                    },
+                  )}
+                >
+                  <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
+                    <div
+                      className={cn(
+                        "w-4 h-4 flex items-center justify-center shrink-0 transition-colors",
+                      )}
+                    >
+                      {isSelected ? (
+                        <CheckSquare className={cn("w-4 h-4 text-purple-400")} />
+                      ) : (
+                        <Square className={cn("w-4 h-4 text-slate-500 group-hover:text-slate-400")} />
+                      )}
+                    </div>
+
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-colors",
+                        {
+                          "bg-purple-500/20 text-purple-300 border-purple-500/40": isSelected,
+                          "bg-slate-800 text-slate-400 border-slate-700/60": !isSelected,
+                        },
+                      )}
+                    >
+                      <FolderOpen className={cn("w-3.5 h-3.5")} />
+                    </div>
+
+                    <div className={cn("min-w-0 flex-1")}>
+                      <p
+                        className={cn(
+                          "text-xs font-semibold truncate transition-colors",
+                          {
+                            "text-purple-200": isSelected,
+                            "text-slate-200 group-hover:text-white": !isSelected,
+                          },
+                        )}
+                      >
+                        {name}
+                      </p>
+                      <p
+                        className={cn(
+                          "text-[10px] font-mono text-slate-500 truncate leading-tight",
+                        )}
+                        title={source.folderPath}
+                      >
+                        {source.folderPath}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={cn("shrink-0")}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-mono font-semibold border",
+                        {
+                          "bg-purple-500/20 text-purple-300 border-purple-500/35":
+                            hasFiles && isSelected,
+                          "bg-slate-800 text-slate-400 border-slate-700/60":
+                            hasFiles && !isSelected,
+                          "bg-rose-500/10 text-rose-400 border-rose-500/30": !hasFiles,
+                        },
+                      )}
+                    >
+                      <Music2 className={cn("w-3 h-3 shrink-0")} />
+                      <span>
+                        {hasFiles
+                          ? `${source.files.length} ${text.PENDING_FOLDERS_TOTAL_TRACKS}`
+                          : text.PENDING_FOLDERS_EMPTY_FOLDER}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            className={cn(
+              "flex items-center justify-between gap-3 pt-2.5 border-t border-slate-800/90 text-xs",
+            )}
+          >
+            <div className={cn("text-slate-400 text-xs")}>
+              <span>{text.PENDING_FOLDERS_SELECTED}: </span>
+              <strong className={cn("text-purple-300 font-bold")}>
+                {selectedPendingFolders.length}/{pendingFolders.length}
+              </strong>
+              <span> {text.PENDING_FOLDERS_FOUND} (</span>
+              <strong className={cn("text-slate-200 font-bold")}>
+                {pendingFolders
+                  .filter((f) => selectedPendingFolders.includes(f.folderPath))
+                  .reduce((sum, f) => sum + f.files.length, 0)}
+              </strong>
+              <span> {text.PENDING_FOLDERS_TOTAL_TRACKS})</span>
+            </div>
+
+            <div className={cn("flex items-center gap-2 shrink-0")}>
+              <Button
+                variant="unstyled"
+                type="button"
+                onClick={() => {
+                  setPendingFolders([]);
+                  setSelectedPendingFolders([]);
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors cursor-pointer",
+                )}
+              >
+                {text.PENDING_FOLDERS_CANCEL}
+              </Button>
+              <Button
+                variant="unstyled"
+                type="button"
+                onClick={confirmPendingFolders}
+                disabled={!selectedPendingFolders.length}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:brightness-110 shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all cursor-pointer",
+                  {
+                    "opacity-40 cursor-not-allowed shadow-none": !selectedPendingFolders.length,
+                  },
+                )}
+              >
+                <FolderPlus className={cn("w-3.5 h-3.5")} />
+                <span>
+                  {text.PENDING_FOLDERS_CONFIRM}
+                  {selectedPendingFolders.length > 0 && ` (${selectedPendingFolders.length})`}
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

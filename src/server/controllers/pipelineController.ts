@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import fs from "fs";
+import { pipeline as streamPipeline } from "stream/promises";
 import path from "path";
 import _ from "lodash";
 import { renderQueueService } from "../services/renderQueueService.js";
@@ -6545,24 +6546,37 @@ router.post(ROUTER_PATHS.SELECT_FOLDER, async (req: Request, res: Response) => {
 });
 
 const musicMixerSources = new Map<string, string[]>();
+const musicMixerAllowedSources = new Set<string>();
+const MUSIC_MIXER_SOURCE_TTL_MS = 30 * 60 * 1000;
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Response) => {
-  execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT), MUSIC_MIXER_SERVER.PICKER_COMMAND], { windowsHide: true }, async (error, stdout) => {
-    const folderPath = stdout.trim();
-    if (error || !folderPath) return res.json({ success: false });
+  execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT)], { windowsHide: true }, async (error, stdout) => {
+    if (error || !stdout.trim()) return res.json({ success: false });
     const audioPattern = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
-    const files: string[] = [];
-    const scan = async (directory: string): Promise<void> => {
+    const scan = async (directory: string, files: string[]): Promise<void> => {
       for (const entry of await fs.promises.readdir(directory, { withFileTypes: true })) {
         const fullPath = path.join(directory, entry.name);
-        if (entry.isDirectory()) await scan(fullPath);
+        if (entry.isDirectory()) await scan(fullPath, files);
         else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
       }
     };
     try {
-      await scan(folderPath);
-      const token = randomUUID();
-      musicMixerSources.set(token, files);
-      return res.json({ success: true, folderPath, files: await Promise.all(files.map(async (filePath, index) => ({ name: path.basename(filePath), relativePath: path.relative(folderPath, filePath), sourcePath: filePath, size: (await fs.promises.stat(filePath)).size, type: path.extname(filePath).toLowerCase() === ".wav" ? "audio/wav" : "audio/mpeg", index, url: `${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}/${token}/${index}` }))) });
+      const selectedPaths = JSON.parse(stdout.trim());
+      if (!Array.isArray(selectedPaths) || !selectedPaths.every((folderPath) => typeof folderPath === "string")) throw new Error(MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING);
+      const folderPaths = (await Promise.all(selectedPaths.map(async (folderPath: string) => {
+        const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+        const children = entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(folderPath, entry.name));
+        return children.length ? children : [folderPath];
+      }))).flat();
+      const folders = (await Promise.all(folderPaths.map(async (folderPath: string) => {
+        const files: string[] = [];
+        await scan(folderPath, files);
+        const token = randomUUID();
+        musicMixerSources.set(token, files);
+        files.forEach((filePath) => musicMixerAllowedSources.add(path.resolve(filePath)));
+        setTimeout(() => { musicMixerSources.delete(token); files.forEach((filePath) => musicMixerAllowedSources.delete(path.resolve(filePath))); }, MUSIC_MIXER_SOURCE_TTL_MS).unref();
+        return { folderPath, files: await Promise.all(files.map(async (filePath, index) => ({ name: path.basename(filePath), relativePath: path.relative(folderPath, filePath), sourcePath: filePath, size: (await fs.promises.stat(filePath)).size, type: path.extname(filePath).toLowerCase() === ".wav" ? "audio/wav" : "audio/mpeg", index, url: `${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}/${token}/${index}` }))) };
+      }))).filter((folder) => folder.files.length > 0);
+      return res.json({ success: true, folders });
     } catch { return res.status(500).json({ success: false }); }
   });
 });
@@ -6587,8 +6601,8 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
   if (!items.length || items.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_TRACK_COUNT });
   const availableFiles = await Promise.all(items.map(async (item: any) => { try { return (await fs.promises.stat(item.sourcePath)).isFile(); } catch { return false; } }));
   if (availableFiles.some((available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
+  const rankingId = typeof req.body?.projectId === "string" && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${randomUUID()}`;
   try {
-    const rankingId = typeof req.body?.projectId === "string" && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${randomUUID()}`;
     const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
     for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
       const requestId = `${rankingId}-${chunkIndex + 1}`;
@@ -6618,7 +6632,10 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
       scores.push(...parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 })));
     }
     return res.json({ success: true, scores, roomId: rankingId });
-  } catch (error) { return res.status(500).json({ success: false, error: String(error) }); }
+  } catch (error) {
+    await closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: rankingId }).catch(() => undefined);
+    return res.status(500).json({ success: false, error: String(error) });
+  }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_CANCEL, async (req: Request, res: Response) => {
   const projectId = typeof req.body?.projectId === "string" ? req.body.projectId : "";
@@ -6640,6 +6657,90 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
     if (parsed.artifactType !== MUSIC_MIXER_SERVER.SEO_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.seoOptions) || parsed.seoOptions.length !== 5) throw new Error(MUSIC_MIXER_SERVER.ERROR_SEO_RESPONSE);
     return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
   } catch (error) { return res.status(500).json({ success: false, error: String(error) }); }
+});
+
+const musicMixerZipDestinations = new Map<string, string>();
+router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_ZIP_DESTINATION, (req: Request, res: Response) => {
+  const name = path.basename(String(req.body?.suggestedName || MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME));
+  execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), "select-save-file", name, MUSIC_MIXER_SERVER.ZIP_EXTENSION], { windowsHide: true }, (error, stdout) => {
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    const target = stdout.trim(); if (!target) return res.json({ success: true, cancelled: true });
+    const token = randomUUID(); musicMixerZipDestinations.set(token, target); setTimeout(() => musicMixerZipDestinations.delete(token), 900000).unref();
+    return res.json({ success: true, token });
+  });
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Response) => {
+  const token = typeof req.body?.token === "string" ? req.body.token : "";
+  const target = musicMixerZipDestinations.get(token);
+  if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
+  musicMixerZipDestinations.delete(token);
+
+  const folders = Array.isArray(req.body?.folders) ? req.body.folders : [];
+  if (!folders.length) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_NO_FOLDERS_ZIP });
+
+  const tempManifestDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "music-mixer-manifest-"));
+  const tempManifestPath = path.join(tempManifestDir, "manifest.json");
+
+  try {
+    const manifest = {
+      targetZipPath: target,
+      folders: folders.map((folder: any) => ({
+        name: String(folder.name || ""),
+        files: Array.isArray(folder.files)
+          ? folder.files.map((file: any) => ({
+              sourcePath: String(file.sourcePath || ""),
+              zipPath: String(file.zipPath || ""),
+            }))
+          : [],
+        texts: Array.isArray(folder.texts)
+          ? folder.texts.map((textItem: any) => ({
+              content: String(textItem.content || ""),
+              zipPath: String(textItem.zipPath || ""),
+            }))
+          : [],
+      })),
+    };
+
+    await fs.promises.writeFile(tempManifestPath, JSON.stringify(manifest), "utf-8");
+
+    const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
+      execFile(
+        getPythonCommand(),
+        [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath],
+        { windowsHide: true },
+        (error, stdout, stderr) => {
+          if (error) {
+            return resolve({ success: false, error: error.message || stderr || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
+          }
+          try {
+            const parsed = JSON.parse(stdout.trim());
+            return resolve(parsed);
+          } catch {
+            return resolve({ success: true, path: target });
+          }
+        },
+      );
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
+    }
+
+    return res.json({ success: true, filePath: target });
+  } catch (error) {
+    logger.error("Failed to build music mixer ZIP", error);
+    return res.status(500).json({ success: false, error: error instanceof Error ? error.message : MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
+  } finally {
+    await fs.promises.rm(tempManifestDir, { recursive: true, force: true }).catch(() => undefined);
+  }
+});
+
+router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Response) => {
+  const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || ""; const target = musicMixerZipDestinations.get(token);
+  if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
+  musicMixerZipDestinations.delete(token); const temp = `${target}.${randomUUID()}.partial`;
+  try { await streamPipeline(req, fs.createWriteStream(temp, { flags: "wx" })); const stat = await fs.promises.stat(temp); if (stat.size < 22) throw new Error(MUSIC_MIXER_SERVER.ERROR_ZIP_EMPTY); await fs.promises.rm(target, { force: true }); await fs.promises.rename(temp, target); return res.json({ success: true }); }
+  catch (error) { await fs.promises.rm(temp, { force: true }).catch(() => undefined); return res.status(500).json({ success: false, error: error instanceof Error ? error.message : MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR }); }
 });
 
 router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {

@@ -99,6 +99,8 @@ WRITE_MODE = 'w'
 CMD_SELECT_FILE = "select-file"
 CMD_SELECT_FOLDER = "select-folder"
 CMD_SAVE_FILE = "save-file"
+CMD_SELECT_SAVE_FILE = "select-save-file"
+CMD_SELECT_SAVE_FILE = "select-save-file"
 DIALOG_FILE_TITLE = "Chọn file draft_content.json"
 DIALOG_FOLDER_TITLE = "Chọn thư mục"
 JSON_FILE_TYPES_LABEL = "JSON files"
@@ -122,6 +124,31 @@ def save_file_dialog(source_path, suggested_name, extension):
     root.destroy()
     if target_path:
         shutil.copyfile(source_path, target_path)
+        print(os.path.normpath(target_path), end="")
+
+def select_save_file_dialog(suggested_name, extension):
+    import tkinter as tk
+    from tkinter import filedialog
+    root = tk.Tk(); root.withdraw(); root.attributes('-topmost', True)
+    target_path = filedialog.asksaveasfilename(title="Lưu tệp", initialfile=suggested_name, defaultextension=extension, filetypes=[("ZIP files", "*.zip"), (ALL_EXT, ALL_EXT)])
+    root.destroy()
+    if target_path: print(os.path.normpath(target_path), end="")
+
+def select_save_file_dialog(suggested_name, extension):
+    import tkinter as tk
+    from tkinter import filedialog
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    normalized_extension = extension if extension.startswith('.') else '.' + extension
+    target_path = filedialog.asksaveasfilename(
+        title="Lưu tệp",
+        initialfile=suggested_name,
+        defaultextension=normalized_extension,
+        filetypes=[(f"{normalized_extension.upper()} files", f"*{normalized_extension}"), (ALL_EXT, ALL_EXT)]
+    )
+    root.destroy()
+    if target_path:
         print(os.path.normpath(target_path), end="")
 
 OPT_SYNC_IMAGE_TO_AUDIO = 'sync_image_to_audio'
@@ -1659,6 +1686,13 @@ if __name__ == "__main__":
             logging.info(ERR_CLI_USAGE)
             sys.exit(1)
         save_file_dialog(sys.argv[2], sys.argv[3], sys.argv[4])
+        sys.exit(0)
+    elif cmd_arg == CMD_SELECT_SAVE_FILE:
+        select_save_file_dialog(sys.argv[2], sys.argv[3]); sys.exit(0)
+    elif cmd_arg == CMD_SELECT_SAVE_FILE:
+        if len(sys.argv) < 4:
+            sys.exit(1)
+        select_save_file_dialog(sys.argv[2], sys.argv[3])
         sys.exit(0)
         
     if len(sys.argv) < 3:
