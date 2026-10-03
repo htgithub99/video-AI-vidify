@@ -17,7 +17,6 @@ import {
   Layers,
   Crop,
   Crosshair,
-  Loader2,
   Play,
   Pause,
   FolderDown,
@@ -100,6 +99,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
+  const [downloadingClipId, setDownloadingClipId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState<boolean>(false);
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
@@ -350,6 +350,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
       toast.error(text.ERR_PROCESS);
       return;
     }
+    setDownloadingClipId(clip.id);
     const cleanTitle = _.replace(clip.title || `clip_${clip.index}`, SHORTS_REGEX.CLEAN_TITLE, "_");
     const suggestedName = `short_${clip.index}_${cleanTitle}${SHORTS_CONSTANTS.EXT_MP4}`;
 
@@ -384,6 +385,8 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
       toast.success(text.SAVE_SUCCESS);
     } catch (err: any) {
       toast.error(`${text.SAVE_ERROR} ${err?.message || ""}`.trim());
+    } finally {
+      setDownloadingClipId(null);
     }
   };
 
@@ -551,95 +554,111 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
                 )}
               </div>
 
-              {hasSource ? (
-                <div className={cn("relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shadow-2xl group/source w-full min-h-[200px]")}>
-                  <video
-                    ref={sourceVideoRef}
-                    key={sourceVideoPath}
-                    src={
-                      sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.BLOB) || sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.HTTP)
-                        ? sourceVideoPath
-                        : `${API_ROUTES.SHORTS_STREAM_SOURCE}?path=${encodeURIComponent(sourceVideoPath)}`
-                    }
-                    controls
-                    preload="metadata"
-                    playsInline
-                    onPlay={() => setActivePlayingId(SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID)}
-                    onPause={() => {
-                      if (activePlayingId === SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID) setActivePlayingId(null);
-                    }}
-                    className={cn("w-full max-h-[320px] object-contain rounded-2xl bg-black")}
-                  />
-                  <div className={cn("absolute top-3 left-3 px-3 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md border border-purple-500/30 text-slate-200 text-xs font-semibold flex items-center gap-1.5 shadow-lg max-w-[70%]")}>
-                    <Film className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
-                    <span className="truncate">{sourceMetadata?.fileName || sourceVideoPath}</span>
+              <div className={cn("relative w-full aspect-video max-h-[340px] min-h-[220px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center shadow-2xl group/source")}>
+                {hasSource ? (
+                  <>
+                    <video
+                      ref={sourceVideoRef}
+                      key={sourceVideoPath}
+                      src={
+                        sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.BLOB) || sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.HTTP)
+                          ? sourceVideoPath
+                          : `${API_ROUTES.SHORTS_STREAM_SOURCE}?path=${encodeURIComponent(sourceVideoPath)}`
+                      }
+                      controls
+                      preload="metadata"
+                      playsInline
+                      onPlay={() => setActivePlayingId(SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID)}
+                      onPause={() => {
+                        if (activePlayingId === SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID) setActivePlayingId(null);
+                      }}
+                      className={cn("w-full h-full object-contain rounded-2xl bg-black")}
+                    />
+                    <div className={cn("absolute top-3 left-3 px-3 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md border border-purple-500/30 text-slate-200 text-xs font-semibold flex items-center gap-1.5 shadow-lg max-w-[70%]")}>
+                      <Film className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+                      <span className="truncate">{sourceMetadata?.fileName || sourceVideoPath}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    onClick={handleSelectVideoFile}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={cn("w-full h-full border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center text-center cursor-pointer group", {
+                      "border-purple-500 bg-purple-500/10 scale-[1.01]": isDragOver,
+                      "border-slate-700/80 bg-slate-950/40 hover:border-purple-500/60 hover:bg-purple-500/5": !isDragOver,
+                      "opacity-60 cursor-not-allowed": isProcessing,
+                    })}
+                  >
+                    <div className={cn("w-12 h-12 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-md")}>
+                      <Upload className={cn("w-6 h-6 text-purple-400 group-hover:text-purple-300")} />
+                    </div>
+                    <div className={cn("space-y-1")}>
+                      <p className={cn("text-sm font-medium text-slate-200")}>{text.SOURCE_DROP_TITLE}</p>
+                      <p className={cn("text-xs text-slate-400")}>{text.SOURCE_DROP_HINT}</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div
-                  onClick={handleSelectVideoFile}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={cn("border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center text-center cursor-pointer group flex-1 min-h-[180px]", {
-                    "border-purple-500 bg-purple-500/10 scale-[1.01]": isDragOver,
-                    "border-slate-700/80 bg-slate-950/40 hover:border-purple-500/60 hover:bg-purple-500/5": !isDragOver,
-                    "opacity-60 cursor-not-allowed": isProcessing,
-                  })}
-                >
-                  <div className={cn("w-12 h-12 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-md")}>
-                    <Upload className={cn("w-6 h-6 text-purple-400 group-hover:text-purple-300")} />
-                  </div>
-                  <div className={cn("space-y-1")}>
-                    <p className={cn("text-sm font-medium text-slate-200")}>{text.SOURCE_DROP_TITLE}</p>
-                    <p className={cn("text-xs text-slate-400")}>{text.SOURCE_DROP_HINT}</p>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {sourceMetadata && (
-                <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1")}>
-                  <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
-                    <Clock className={cn("w-4 h-4 text-purple-400 shrink-0")} />
-                    <div className={cn("min-w-0")}>
-                      <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_DURATION}</div>
-                      <div className={cn("text-xs font-bold text-slate-200 truncate")}>
-                        {formatDuration(sourceMetadata.duration)}
+              <div className={cn("min-h-[58px] w-full transition-all")}>
+                {sourceMetadata ? (
+                  <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-in fade-in duration-200")}>
+                    <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
+                      <Clock className={cn("w-4 h-4 text-purple-400 shrink-0")} />
+                      <div className={cn("min-w-0")}>
+                        <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_DURATION}</div>
+                        <div className={cn("text-xs font-bold text-slate-200 truncate")}>
+                          {formatDuration(sourceMetadata.duration)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
+                      <Monitor className={cn("w-4 h-4 text-blue-400 shrink-0")} />
+                      <div className={cn("min-w-0")}>
+                        <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_RESOLUTION}</div>
+                        <div className={cn("text-xs font-bold text-slate-200 truncate")}>
+                          {sourceMetadata.width}x{sourceMetadata.height}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
+                      <HardDrive className={cn("w-4 h-4 text-amber-400 shrink-0")} />
+                      <div className={cn("min-w-0")}>
+                        <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_FILESIZE}</div>
+                        <div className={cn("text-xs font-bold text-slate-200 truncate")}>
+                          {formatFileSize(sourceMetadata.fileSizeBytes)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
+                      <FileVideo className={cn("w-4 h-4 text-pink-400 shrink-0")} />
+                      <div className={cn("min-w-0")}>
+                        <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_FPS}</div>
+                        <div className={cn("text-xs font-bold text-slate-200 truncate")}>
+                          {sourceMetadata.fps} FPS
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
-                    <Monitor className={cn("w-4 h-4 text-blue-400 shrink-0")} />
-                    <div className={cn("min-w-0")}>
-                      <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_RESOLUTION}</div>
-                      <div className={cn("text-xs font-bold text-slate-200 truncate")}>
-                        {sourceMetadata.width}x{sourceMetadata.height}
+                ) : hasSource ? (
+                  <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1")}>
+                    {_.map(_.range(4), (idx) => (
+                      <div key={idx} className={cn("bg-slate-950/40 border border-slate-800/50 rounded-xl p-2.5 flex items-center gap-2 animate-pulse h-[52px]")}>
+                        <div className={cn("w-4 h-4 rounded bg-slate-800/80 shrink-0")} />
+                        <div className={cn("space-y-1.5 flex-1 min-w-0")}>
+                          <div className={cn("h-2 w-12 bg-slate-800/80 rounded")} />
+                          <div className={cn("h-2.5 w-16 bg-slate-800/60 rounded")} />
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-
-                  <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
-                    <HardDrive className={cn("w-4 h-4 text-amber-400 shrink-0")} />
-                    <div className={cn("min-w-0")}>
-                      <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_FILESIZE}</div>
-                      <div className={cn("text-xs font-bold text-slate-200 truncate")}>
-                        {formatFileSize(sourceMetadata.fileSizeBytes)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={cn("bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2")}>
-                    <FileVideo className={cn("w-4 h-4 text-pink-400 shrink-0")} />
-                    <div className={cn("min-w-0")}>
-                      <div className={cn("text-[10px] text-slate-400 font-mono uppercase")}>{text.METADATA_FPS}</div>
-                      <div className={cn("text-xs font-bold text-slate-200 truncate")}>
-                        {sourceMetadata.fps} FPS
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -852,7 +871,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
                   >
                     {isProcessing ? (
                       <>
-                        <Loader2 className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
+                        <Sparkles className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
                         <span className={cn("truncate inline-flex items-center leading-none")}>
                           {text.GENERATING_BTN}
                         </span>
@@ -917,7 +936,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
               >
                 {isExportingZip ? (
                   <>
-                    <Loader2 className={cn("w-3.5 h-3.5 animate-spin")} />
+                    <Sparkles className={cn("w-3.5 h-3.5 animate-spin")} />
                     <span>{text.DOWNLOADING_ZIP}</span>
                   </>
                 ) : (
@@ -933,7 +952,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
           {isProcessing ? (
             <div className={cn("py-16 flex flex-col items-center justify-center text-center space-y-4")}>
               <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg bg-purple-500/15 border-purple-500/30 shadow-purple-500/20")}>
-                <Loader2 className={cn("w-7 h-7 text-purple-400 animate-spin")} />
+                <Sparkles className={cn("w-7 h-7 text-purple-400 animate-spin")} />
               </div>
               <div className={cn("space-y-1")}>
                 <p className={cn("text-sm font-extrabold text-slate-200")}>
@@ -965,8 +984,10 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
                   key={clip.id}
                   clip={clip}
                   downloadText={text.DOWNLOAD_CLIP}
+                  downloadingText={text.SAVING_VIDEO || "Đang lưu..."}
                   viralSuffix={text.VIRAL_SCORE_SUFFIX}
                   isPlaying={activePlayingId === clip.id}
+                  isDownloading={downloadingClipId === clip.id}
                   onTogglePlay={(shouldPlay) => setActivePlayingId(shouldPlay ? clip.id : null)}
                   onDownload={handleDownloadSingleVideo}
                 />
@@ -982,11 +1003,13 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" }) => 
 const ShortsResultCardItem: FC<{
   clip: HighlightClipItem;
   downloadText: string;
+  downloadingText: string;
   viralSuffix: string;
   isPlaying: boolean;
+  isDownloading: boolean;
   onTogglePlay: (shouldPlay: boolean) => void;
   onDownload: (clip: HighlightClipItem) => void;
-}> = ({ clip, downloadText, viralSuffix, isPlaying, onTogglePlay, onDownload }) => {
+}> = ({ clip, downloadText, downloadingText, viralSuffix, isPlaying, isDownloading, onTogglePlay, onDownload }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(clip.duration || 0);
@@ -1117,10 +1140,22 @@ const ShortsResultCardItem: FC<{
           <Button
             size="sm"
             onClick={() => onDownload(clip)}
-            className={cn("bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:brightness-110 text-white font-bold text-xs px-3 py-1.5 h-auto flex items-center gap-1 rounded-xl shadow-md cursor-pointer transition-all active:scale-95")}
+            disabled={isDownloading}
+            className={cn(
+              "bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:brightness-110 text-white font-bold text-xs px-3 py-1.5 h-auto flex items-center gap-1.5 rounded-xl shadow-md cursor-pointer transition-all active:scale-95 disabled:opacity-75 disabled:cursor-wait",
+            )}
           >
-            <Download className={cn("w-3.5 h-3.5")} />
-            <span>{downloadText}</span>
+            {isDownloading ? (
+              <>
+                <Sparkles className={cn("w-3.5 h-3.5 animate-spin text-white shrink-0")} />
+                <span>{downloadingText}</span>
+              </>
+            ) : (
+              <>
+                <Download className={cn("w-3.5 h-3.5 shrink-0")} />
+                <span>{downloadText}</span>
+              </>
+            )}
           </Button>
         </div>
       </div>

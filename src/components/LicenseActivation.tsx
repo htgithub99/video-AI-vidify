@@ -1,6 +1,6 @@
 import React, { useState, useEffect, FC, FormEvent, useCallback, useMemo } from "react";
 import { useLicense } from "../contexts/LicenseContext";
-import { KeyRound, Loader2, AlertCircle, Check, X } from "lucide-react";
+import { KeyRound, Sparkles, AlertCircle, Check, X } from "lucide-react";
 import { SecurityMessages, SecurityConstants, LicenseStatus, getClientEnvironmentLicenseKey } from "../constants/security";
 import _ from "lodash";
 import { motion, AnimatePresence } from "framer-motion";
@@ -152,7 +152,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
                 )}>
                 {isActivating ? (
                   <span className={cn("inline-flex items-center gap-2 relative z-10")}>
-                    <Loader2 className={cn("w-4 h-4 animate-spin")} />
+                    <Sparkles className={cn("w-4 h-4 animate-spin")} />
                     <span className={cn("animate-pulse")}>{SecurityMessages.ACTIVATING_BUTTON}</span>
                   </span>
                 ) : (

@@ -9,7 +9,7 @@ import {
   DETECTOR_VIETNAMESE_REGEX,
 } from "../../constants";
 import _ from "lodash";
-import { Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 const getChildrenText = (node: React.ReactNode): string => {
   if (_.isNil(node)) return "";
@@ -52,7 +52,7 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = "primar
       {...props}>
       {isLoading ? (
         <span className={cn(BUTTON_CLASS_NAME.LOADING_CONTENT)}>
-          <Loader2 className={cn(BUTTON_CLASS_NAME.LOADING_SPINNER)} />
+          <Sparkles className={cn(BUTTON_CLASS_NAME.LOADING_SPINNER)} />
           <span className={cn(BUTTON_CLASS_NAME.LOADING_TEXT)}>{children}</span>
         </span>
       ) : (

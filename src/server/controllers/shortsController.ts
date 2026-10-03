@@ -63,7 +63,7 @@ const cleanPreviousShortsOutputs = async (): Promise<void> => {
     if (fs.existsSync(shortsDir)) {
       const files = await fs.promises.readdir(shortsDir);
       const videoFiles = _.filter(files, (file) =>
-        _.some([".mp4", ".jpg", ".jpeg", ".png", ".webp", ".webm"], (ext) => _.endsWith(_.toLower(file), ext))
+        _.some(SHORTS_CONSTANTS.DEFAULT_VIDEO_EXTENSIONS, (ext) => _.endsWith(_.toLower(file), ext))
       );
       for (const file of videoFiles) {
         const filePath = path.join(shortsDir, file);
@@ -77,7 +77,7 @@ const cleanPreviousShortsOutputs = async (): Promise<void> => {
     if (fs.existsSync(outputDir)) {
       const outputFiles = await fs.promises.readdir(outputDir);
       const oldZips = _.filter(outputFiles, (file) =>
-        _.startsWith(file, "shorts_export_") && _.endsWith(file, SHORTS_CONSTANTS.EXT_ZIP)
+        _.startsWith(file, SHORTS_CONSTANTS.EXPORT_ZIP_PREFIX) && _.endsWith(file, SHORTS_CONSTANTS.EXT_ZIP)
       );
       for (const zipFile of oldZips) {
         try {
@@ -157,6 +157,13 @@ export const generateShortsPipeline = async (req: Request, res: Response): Promi
       signal: abortController.signal,
     });
 
+    try {
+      if (req.body?.aiExecution?.provider) {
+        await closeChatPlanningRoomsForProject({ provider: req.body.aiExecution.provider, projectId: SHORTS_CONSTANTS.PROJECT_ID_PREFIX }).catch(() => undefined);
+      }
+      await closeChatBrowserIfIdle().catch(() => undefined);
+    } catch (_) {}
+
     if (abortController.signal.aborted) {
       res.status(499).json({ success: false, error: SHORTS_TEXTS.PROGRESS_MSG_CANCELLED });
       return;
@@ -212,7 +219,7 @@ export const generateShortsPipeline = async (req: Request, res: Response): Promi
       clips: renderedClips,
     });
   } catch (error: any) {
-    if (abortController.signal.aborted || error?.message === "PROCESS_ABORTED") {
+    if (abortController.signal.aborted || error?.message === SHORTS_CONSTANTS.PROCESS_ABORTED) {
       if (!res.headersSent) {
         res.status(499).json({ success: false, error: SHORTS_TEXTS.PROGRESS_MSG_CANCELLED });
       }
@@ -252,7 +259,7 @@ export const exportShortsZip = async (req: Request, res: Response): Promise<void
       compressionOptions: { level: SHORTS_CONSTANTS.ZIP_COMPRESSION_LEVEL },
     });
 
-    const zipFileName = `shorts_export_${Date.now()}${SHORTS_CONSTANTS.EXT_ZIP}`;
+    const zipFileName = `${SHORTS_CONSTANTS.EXPORT_ZIP_PREFIX}${Date.now()}${SHORTS_CONSTANTS.EXT_ZIP}`;
     const zipFilePath = path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, zipFileName);
     await fs.promises.mkdir(path.dirname(zipFilePath), { recursive: true });
     await fs.promises.writeFile(zipFilePath, zipBuffer);

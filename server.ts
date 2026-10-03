@@ -18,6 +18,7 @@ import { requestContext } from "./src/server/utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "./src/types.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { SecurityConstants } from "./src/constants/security.js";
+import { SHORTS_CONSTANTS } from "./src/constants/shorts.js";
 import { getResolvedLicenseKey } from "./src/server/services/apiKeyResolver.js";
 import { closeActiveBrowser } from "./src/server/services/imageGeneratorService.js";
 
@@ -161,8 +162,8 @@ app.use((req, _res, next) => {
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
-app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), "output", "shorts")));
-app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), "output")));
+app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER)));
+app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER)));
 app.use(API_ROUTES.LICENSE, licenseRouter);
 
 app.use(API_ROUTES.BASE_API, requireLicense(), mainRouter);

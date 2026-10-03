@@ -26,13 +26,13 @@ const runProcessWithSignal = (
 ): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      return reject(new Error("PROCESS_ABORTED"));
+      return reject(new Error(SHORTS_CONSTANTS.PROCESS_ABORTED));
     }
 
     let child: ChildProcess | null = execFile(cmd, args, { maxBuffer }, (err, stdout, stderr) => {
       if (err) {
         if (signal?.aborted) {
-          return reject(new Error("PROCESS_ABORTED"));
+          return reject(new Error(SHORTS_CONSTANTS.PROCESS_ABORTED));
         }
         return reject(err);
       }
@@ -89,7 +89,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
   const { sourceVideoPath, clip, aspectRatio, reframeMode, outputDirectory, signal } = params;
 
   if (signal?.aborted) {
-    throw new Error("PROCESS_ABORTED");
+    throw new Error(SHORTS_CONSTANTS.PROCESS_ABORTED);
   }
 
   if (!fs.existsSync(sourceVideoPath)) {
@@ -101,7 +101,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
 
   const safeTitle = _.slice(_.replace(_.toLower(clip.title || `clip_${clip.index}`), SHORTS_REGEX.CLEAN_TITLE, "_"), 0, 30);
   const outVideoName = `short_${clip.index}_${safeTitle}_${Date.now()}${SHORTS_CONSTANTS.EXT_MP4}`;
-  const outThumbName = `short_${clip.index}_${safeTitle}_${Date.now()}_thumb.jpg`;
+  const outThumbName = `short_${clip.index}_${safeTitle}_${Date.now()}${SHORTS_CONSTANTS.THUMB_SUFFIX}`;
 
   const outputVideoPath = path.join(outDir, outVideoName);
   const outputThumbPath = path.join(outDir, outThumbName);
@@ -134,7 +134,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
         await fs.promises.unlink(outputVideoPath);
       } catch (_) {}
     }
-    throw new Error("PROCESS_ABORTED");
+    throw new Error(SHORTS_CONSTANTS.PROCESS_ABORTED);
   }
 
   if (!fs.existsSync(outputVideoPath)) {

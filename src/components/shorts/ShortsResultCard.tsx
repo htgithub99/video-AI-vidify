@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import _ from "lodash";
-import { Download, Flame, Play, Pause } from "lucide-react";
+import { Download, Flame, Play, Pause, Sparkles } from "lucide-react";
 import { HighlightClipItem } from "../../types/shorts.js";
 import { SHORTS_CONSTANTS, SHORTS_REGEX, SHORTS_TEXTS, SHORTS_UI_CONSTANTS } from "../../constants/shorts.js";
 import { Button } from "../ui/Button.js";
@@ -9,6 +9,8 @@ import { cn } from "../../lib/utils.js";
 interface ShortsResultCardProps {
   clip: HighlightClipItem;
   isPlaying?: boolean;
+  isDownloading?: boolean;
+  downloadingText?: string;
   onTogglePlay?: (shouldPlay: boolean) => void;
   onDownload?: (clip: HighlightClipItem) => void;
 }
@@ -22,6 +24,8 @@ const formatSeconds = (sec: number): string => {
 export const ShortsResultCard: React.FC<ShortsResultCardProps> = ({
   clip,
   isPlaying = false,
+  isDownloading = false,
+  downloadingText = SHORTS_TEXTS.SAVING_VIDEO,
   onTogglePlay,
   onDownload,
 }) => {
@@ -162,10 +166,20 @@ export const ShortsResultCard: React.FC<ShortsResultCardProps> = ({
           <Button
             size="sm"
             onClick={handleDownload}
-            className={cn("bg-purple-600 hover:bg-purple-500 text-white text-xs px-2.5 py-1 h-auto flex items-center gap-1 rounded-lg shadow-sm")}
+            disabled={isDownloading}
+            className={cn("bg-purple-600 hover:bg-purple-500 text-white text-xs px-2.5 py-1 h-auto flex items-center gap-1 rounded-lg shadow-sm disabled:opacity-75 disabled:cursor-wait")}
           >
-            <Download className={cn("w-3 h-3")} />
-            <span>{SHORTS_TEXTS.DOWNLOAD_BUTTON}</span>
+            {isDownloading ? (
+              <>
+                <Sparkles className={cn("w-3 h-3 animate-spin")} />
+                <span>{downloadingText}</span>
+              </>
+            ) : (
+              <>
+                <Download className={cn("w-3 h-3")} />
+                <span>{SHORTS_TEXTS.DOWNLOAD_BUTTON}</span>
+              </>
+            )}
           </Button>
         </div>
       </div>

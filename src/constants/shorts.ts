@@ -49,6 +49,14 @@ export const SHORTS_CONSTANTS = {
   ARTIFACT_TYPE: "shorts-highlight",
   PROJECT_ID_PREFIX: "shorts-highlight",
   AUDIO_MIME_MPEG: "audio/mpeg",
+  MIME_JSON: "application/json",
+  PROCESS_ABORTED: "PROCESS_ABORTED",
+  AUDIO_PREFIX: "audio_",
+  THUMB_SUFFIX: "_thumb.jpg",
+  CLIP_ID_PREFIX: "short_clip_",
+  REQUEST_ID_PREFIX: "shorts-",
+  EXPORT_ZIP_PREFIX: "shorts_export_",
+  DEFAULT_VIDEO_EXTENSIONS: [".mp4", ".jpg", ".jpeg", ".png", ".webp", ".webm"],
 } as const;
 
 export const SHORTS_MIME_TYPES: Record<string, string> = {
@@ -107,6 +115,12 @@ export const SHORTS_PROMPTS = {
   DURATION_STANDARD: "standard (30 to 60 seconds for YouTube Shorts / Reels)",
   DURATION_LONG: "extended (60 to 90 seconds for deep highlight)",
   METADATA_HEADER: "Source Video Metadata:",
+  METADATA_FILENAME: (name: string) => `- Filename: ${name}`,
+  METADATA_DURATION: (sec: number) => `- Total Duration: ${sec.toFixed(1)} seconds`,
+  METADATA_RESOLUTION: (w: number, h: number) => `- Resolution: ${w}x${h}`,
+  METADATA_TARGET_LENGTH: (text: string) => `- Target Clip Length: ${text}`,
+  METADATA_REQUIRED_CLIPS: (count: number) => `- Required Clips Count: ${count} clips`,
+  METADATA_AUDIO_SUMMARY: (summary: string) => `- Audio Summary / Context: ${summary}`,
   REQUIREMENTS_HEADER: "Extraction Rules:\n1. Each segment must have valid startTime and endTime within 0 and the total video duration.\n2. Do not overlap timestamps excessively; distribute segments across diverse high-energy sections.\n3. Provide an engaging viral hook title, compelling reason for selection, and a realistic viralScore (between 80 and 99).",
   JSON_FORMAT_DIRECTIVE: (clipCount: number) =>
     `CRITICAL: Return ONLY a valid JSON Array containing exactly ${clipCount} items adhering to this JSON schema (no markdown explanations outside JSON):\n[\n  {\n    "startTime": 120.0,\n    "endTime": 165.0,\n    "title": "Explosive Chorus Climax",\n    "hookReason": "Highest vocal energy peak and powerful melodic drop",\n    "viralScore": 96\n  }\n]`,
@@ -176,6 +190,8 @@ export const SHORTS_TEXTS = {
   DOWNLOAD_BUTTON: "Tải MP4",
   DOWNLOAD_ALL_ZIP: "Tải Tất Cả Clips (ZIP)",
   DOWNLOADING_ZIP: "Đang nén file ZIP...",
+  DOWNLOADING_VIDEO: "Đang tải...",
+  SAVING_VIDEO: "Đang lưu video...",
   VIRAL_BADGE_SUFFIX: "% Viral",
   LOADING_VIDEO: "Đang tải video...",
   ERR_NO_VIDEO_SELECTED: "Vui lòng chọn hoặc tải lên file video dài hợp lệ!",

@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Sparkles, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { ShortsProgressStage, ShortsProgressState } from "../../types/shorts.js";
 import { SHORTS_TEXTS } from "../../constants/shorts.js";
 import { Button } from "../ui/Button.js";
@@ -29,7 +29,7 @@ export const ShortsProgressCard: React.FC<ShortsProgressCardProps> = ({
           ) : isCompleted ? (
             <CheckCircle2 className={cn("w-5 h-5 text-emerald-400")} />
           ) : (
-            <Loader2 className={cn("w-5 h-5 text-purple-400 animate-spin")} />
+            <Sparkles className={cn("w-5 h-5 text-purple-400 animate-spin")} />
           )}
           <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono")}>
             {isCompleted

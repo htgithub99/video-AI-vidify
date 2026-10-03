@@ -32,6 +32,7 @@ export function useShortsExtractor(lang: Lang = "vi") {
   });
   const [highlightClips, setHighlightClips] = useState<HighlightClipItem[]>([]);
   const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
+  const [downloadingClipId, setDownloadingClipId] = useState<string | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -170,6 +171,7 @@ export function useShortsExtractor(lang: Lang = "vi") {
         toast.error(text.ERR_PROCESS);
         return;
       }
+      setDownloadingClipId(clip.id);
       const cleanTitle = _.replace(clip.title || `clip_${clip.index}`, SHORTS_REGEX.CLEAN_TITLE, "_");
       const suggestedName = `short_${clip.index}_${cleanTitle}${SHORTS_CONSTANTS.EXT_MP4}`;
 
@@ -204,6 +206,8 @@ export function useShortsExtractor(lang: Lang = "vi") {
         toast.success(text.SAVE_SUCCESS);
       } catch (err: any) {
         toast.error(`${text.SAVE_ERROR} ${err?.message || ""}`.trim());
+      } finally {
+        setDownloadingClipId(null);
       }
     },
     [text],
@@ -270,6 +274,7 @@ export function useShortsExtractor(lang: Lang = "vi") {
     progressState,
     highlightClips,
     isExportingZip,
+    downloadingClipId,
     setAspectRatio,
     setReframeMode,
     setClipCount,

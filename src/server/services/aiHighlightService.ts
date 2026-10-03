@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { generateContentWithRetry } from "./geminiService.js";
-import { generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { generatePlanningWithChatUi, closeChatPlanningRoomsForProject, closeChatBrowserIfIdle } from "./chatUiPlanningService.js";
 import { AiTaskCapability } from "./taskRouterService.js";
 import { HighlightClipItem, ShortsDurationOption, ShortsSourceMetadata } from "../../types/shorts.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
@@ -45,12 +45,12 @@ const buildHighlightPrompt = (
       SHORTS_PROMPTS.TASK_INSTRUCTION(durationSec, clipCount),
       "",
       SHORTS_PROMPTS.METADATA_HEADER,
-      `- Filename: ${metadata.fileName}`,
-      `- Total Duration: ${durationSec.toFixed(1)} seconds`,
-      `- Resolution: ${metadata.width}x${metadata.height}`,
-      `- Target Clip Length: ${resolveTargetDurationText(durationMode)}`,
-      `- Required Clips Count: ${clipCount} clips`,
-      audioSummaryText ? `- Audio Summary / Context: ${audioSummaryText}` : "",
+      SHORTS_PROMPTS.METADATA_FILENAME(metadata.fileName),
+      SHORTS_PROMPTS.METADATA_DURATION(durationSec),
+      SHORTS_PROMPTS.METADATA_RESOLUTION(metadata.width, metadata.height),
+      SHORTS_PROMPTS.METADATA_TARGET_LENGTH(resolveTargetDurationText(durationMode)),
+      SHORTS_PROMPTS.METADATA_REQUIRED_CLIPS(clipCount),
+      audioSummaryText ? SHORTS_PROMPTS.METADATA_AUDIO_SUMMARY(audioSummaryText) : "",
       "",
       SHORTS_PROMPTS.REQUIREMENTS_HEADER,
       "",
@@ -74,7 +74,7 @@ const createHeuristicClips = (
     const startMins = Math.floor(start / 60);
     const startSecs = _.padStart(_.toString(Math.floor(start % 60)), 2, "0");
     return {
-      id: `short_clip_${Date.now()}_${idx + 1}`,
+      id: `${SHORTS_CONSTANTS.CLIP_ID_PREFIX}${Date.now()}_${idx + 1}`,
       index: idx + 1,
       startTime: parseFloat(start.toFixed(2)),
       endTime: parseFloat(end.toFixed(2)),
@@ -99,10 +99,10 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
 
   if (isRoomMode && aiExecution?.provider) {
     const projectId = aiExecution.projectId || `${SHORTS_CONSTANTS.PROJECT_ID_PREFIX}-${Date.now()}`;
-    const requestId = `shorts-${Date.now()}`;
+    const requestId = `${SHORTS_CONSTANTS.REQUEST_ID_PREFIX}${Date.now()}`;
     try {
       const attachments = audioPath && fs.existsSync(audioPath)
-        ? [{ name: `audio_${path.basename(audioPath)}`, mimeType: SHORTS_CONSTANTS.AUDIO_MIME_MPEG, path: audioPath }]
+        ? [{ name: `${SHORTS_CONSTANTS.AUDIO_PREFIX}${path.basename(audioPath)}`, mimeType: SHORTS_CONSTANTS.AUDIO_MIME_MPEG, path: audioPath }]
         : [];
 
       const result = await generatePlanningWithChatUi({
@@ -115,13 +115,16 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
         artifactType: SHORTS_CONSTANTS.ARTIFACT_TYPE,
         requestId,
         signal,
-        closeRoomOnComplete: false,
+        closeRoomOnComplete: true,
         allowDefaultGeminiModel: true,
       });
 
       const rawText = result?.text || "";
       const cleanedJson = _.trim(rawText.replace(SHORTS_REGEX.CODE_BLOCK_JSON, "").replace(SHORTS_REGEX.CODE_BLOCK, ""));
       const parsed = JSON.parse(cleanedJson);
+
+      await closeChatPlanningRoomsForProject({ provider: aiExecution.provider, projectId }).catch(() => undefined);
+      await closeChatBrowserIfIdle().catch(() => undefined);
 
       if (_.isArray(parsed) && !_.isEmpty(parsed)) {
         return _.map(_.take(parsed, clipCount), (item: any, idx: number): HighlightClipItem => {
@@ -131,7 +134,7 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
           const end = parseFloat((parsedEnd <= parsedStart || parsedEnd - parsedStart < 10 ? Math.min(durationSec, parsedStart + 45) : parsedEnd).toFixed(2));
 
           return {
-            id: `short_clip_${Date.now()}_${idx + 1}`,
+            id: `${SHORTS_CONSTANTS.CLIP_ID_PREFIX}${Date.now()}_${idx + 1}`,
             index: idx + 1,
             startTime: start,
             endTime: end,
@@ -145,6 +148,8 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
         });
       }
     } catch (chatError: any) {
+      await closeChatPlanningRoomsForProject({ provider: aiExecution.provider, projectId }).catch(() => undefined);
+      await closeChatBrowserIfIdle().catch(() => undefined);
       logger.warn(SHORTS_LOG_MESSAGES.CHAT_UI_WARN(chatError?.message || ""));
     }
   }
@@ -153,7 +158,7 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
     const response = await generateContentWithRetry({
       contents: prompt,
       task: { capability: AiTaskCapability.ScriptWriting },
-      config: { responseMimeType: "application/json" },
+      config: { responseMimeType: SHORTS_CONSTANTS.MIME_JSON },
     });
 
     const rawText = _.isString(response) ? response : response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || "";
@@ -171,7 +176,7 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
       const end = parseFloat((parsedEnd <= parsedStart || parsedEnd - parsedStart < 10 ? Math.min(durationSec, parsedStart + 45) : parsedEnd).toFixed(2));
 
       return {
-        id: `short_clip_${Date.now()}_${idx + 1}`,
+        id: `${SHORTS_CONSTANTS.CLIP_ID_PREFIX}${Date.now()}_${idx + 1}`,
         index: idx + 1,
         startTime: start,
         endTime: end,
