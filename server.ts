@@ -161,6 +161,8 @@ app.use((req, _res, next) => {
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
+app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), "output", "shorts")));
+app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), "output")));
 app.use(API_ROUTES.LICENSE, licenseRouter);
 
 app.use(API_ROUTES.BASE_API, requireLicense(), mainRouter);

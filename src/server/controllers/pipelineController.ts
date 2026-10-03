@@ -6549,24 +6549,38 @@ const musicMixerSources = new Map<string, string[]>();
 const musicMixerAllowedSources = new Set<string>();
 const MUSIC_MIXER_SOURCE_TTL_MS = 30 * 60 * 1000;
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Response) => {
-  execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT)], { windowsHide: true }, async (error, stdout) => {
-    if (error || !stdout.trim()) return res.json({ success: false });
+  execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT)], { windowsHide: true }, async (error, stdout, stderr) => {
+    if (error || !stdout.trim()) {
+      if (error) logger.error(MUSIC_MIXER_SERVER.LOG_SELECT_SOURCE_ERROR(error.message, stderr || ""));
+      return res.json({ success: false });
+    }
     const audioPattern = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
     const scan = async (directory: string, files: string[]): Promise<void> => {
-      for (const entry of await fs.promises.readdir(directory, { withFileTypes: true })) {
-        const fullPath = path.join(directory, entry.name);
-        if (entry.isDirectory()) await scan(fullPath, files);
-        else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
+      try {
+        for (const entry of await fs.promises.readdir(directory, { withFileTypes: true })) {
+          const fullPath = path.join(directory, entry.name);
+          if (entry.isDirectory()) await scan(fullPath, files);
+          else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
+        }
+      } catch (err: any) {
+        logger.error(MUSIC_MIXER_SERVER.LOG_SCAN_DIR_ERROR(directory, err?.message || ""));
       }
     };
     try {
       const selectedPaths = JSON.parse(stdout.trim());
       if (!Array.isArray(selectedPaths) || !selectedPaths.every((folderPath) => typeof folderPath === "string")) throw new Error(MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING);
-      const folderPaths = (await Promise.all(selectedPaths.map(async (folderPath: string) => {
+      const folderPaths: string[] = [];
+      for (const folderPath of selectedPaths) {
         const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
-        const children = entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(folderPath, entry.name));
-        return children.length ? children : [folderPath];
-      }))).flat();
+        const hasDirectAudio = entries.some((e) => e.isFile() && audioPattern.test(e.name));
+        const subDirs = entries.filter((e) => e.isDirectory()).map((e) => path.join(folderPath, e.name));
+        if (subDirs.length === 0) {
+          folderPaths.push(folderPath);
+        } else {
+          if (hasDirectAudio) folderPaths.push(folderPath);
+          folderPaths.push(...subDirs);
+        }
+      }
       const folders = (await Promise.all(folderPaths.map(async (folderPath: string) => {
         const files: string[] = [];
         await scan(folderPath, files);
@@ -6577,7 +6591,10 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
         return { folderPath, files: await Promise.all(files.map(async (filePath, index) => ({ name: path.basename(filePath), relativePath: path.relative(folderPath, filePath), sourcePath: filePath, size: (await fs.promises.stat(filePath)).size, type: path.extname(filePath).toLowerCase() === ".wav" ? "audio/wav" : "audio/mpeg", index, url: `${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}/${token}/${index}` }))) };
       }))).filter((folder) => folder.files.length > 0);
       return res.json({ success: true, folders });
-    } catch { return res.status(500).json({ success: false }); }
+    } catch (err: any) {
+      logger.error(MUSIC_MIXER_SERVER.LOG_PROCESS_FOLDERS_ERROR(err?.message || ""));
+      return res.status(500).json({ success: false });
+    }
   });
 });
 router.get(MUSIC_MIXER_SERVER.ROUTE_SOURCE, (req: Request, res: Response) => {
@@ -6642,6 +6659,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_CANCEL, async (req: Request, res: Response)
   if (!projectId) return res.status(400).json({ success: false });
   const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds.filter((value: unknown): value is string => typeof value === "string") : [projectId];
   await Promise.all(projectIds.map((id) => closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: id }).catch(() => undefined)));
+  await closeChatBrowserIfIdle().catch(() => undefined);
   return res.json({ success: true });
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) => {
@@ -6655,8 +6673,14 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
     const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
     const parsed = JSON.parse(response.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
     if (parsed.artifactType !== MUSIC_MIXER_SERVER.SEO_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.seoOptions) || parsed.seoOptions.length !== 5) throw new Error(MUSIC_MIXER_SERVER.ERROR_SEO_RESPONSE);
+    await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId }).catch(() => undefined);
+    await closeChatBrowserIfIdle().catch(() => undefined);
     return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
-  } catch (error) { return res.status(500).json({ success: false, error: String(error) }); }
+  } catch (error) {
+    await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId }).catch(() => undefined);
+    await closeChatBrowserIfIdle().catch(() => undefined);
+    return res.status(500).json({ success: false, error: String(error) });
+  }
 });
 
 const musicMixerZipDestinations = new Map<string, string>();

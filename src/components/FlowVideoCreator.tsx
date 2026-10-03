@@ -534,7 +534,7 @@ export default function FlowVideoCreator({
   return (
     <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
       <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
-        <div className={cn("flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-800/80")}>
+        <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
           <div className={cn("flex items-center gap-3 min-w-0")}>
             <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
               <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
@@ -586,7 +586,7 @@ export default function FlowVideoCreator({
           </div>
         </div>
         {showSettings && (
-          <div className={cn("p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-purple-500/30 shadow-inner")}>
+          <fieldset disabled={!!busy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
             <ChatPlanningSettingsBlock
               provider={provider}
               model={model}
@@ -601,7 +601,7 @@ export default function FlowVideoCreator({
               onChromeHeadlessChange={setChromeHeadless}
               currentLang={currentLang}
             />
-          </div>
+          </fieldset>
         )}
         <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch")}>
           <div className={cn("lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl")}>

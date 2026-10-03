@@ -1,24 +1,26 @@
 import express from "express";
 import { getAllProjects, getProjectById, createProject, updateProject, deleteProject } from "../controllers/projectController.js";
 import { getAllPresets, savePreset, deletePreset } from "../controllers/presetController.js";
+import { getVoices } from "../controllers/voiceController.js";
+import settingsRoutes from "./settingsRoutes.js";
+import shortsRoutes from "./shortsRoutes.js";
+import { SERVER_ROUTES } from "../../constants/apiRoutes.js";
 
 const router = express.Router();
 
-import { getVoices } from "../controllers/voiceController.js";
+router.get(SERVER_ROUTES.PROJECTS, getAllProjects);
+router.get(SERVER_ROUTES.PROJECTS_ID, getProjectById);
+router.post(SERVER_ROUTES.PROJECTS, createProject);
+router.put(SERVER_ROUTES.PROJECTS_ID, updateProject);
+router.delete(SERVER_ROUTES.PROJECTS_ID, deleteProject);
 
-router.get("/projects", getAllProjects);
-router.get("/projects/:id", getProjectById);
-router.post("/projects", createProject);
-router.put("/projects/:id", updateProject);
-router.delete("/projects/:id", deleteProject);
+router.get(SERVER_ROUTES.PRESETS, getAllPresets);
+router.post(SERVER_ROUTES.PRESETS, savePreset);
+router.delete(SERVER_ROUTES.PRESETS_ID, deletePreset);
 
-router.get("/presets", getAllPresets);
-router.post("/presets", savePreset);
-router.delete("/presets/:id", deletePreset);
+router.get(SERVER_ROUTES.VOICES, getVoices);
 
-router.get("/voices", getVoices);
-
-import settingsRoutes from "./settingsRoutes.js";
-router.use("/settings", settingsRoutes);
+router.use(SERVER_ROUTES.SETTINGS, settingsRoutes);
+router.use(SERVER_ROUTES.SHORTS, shortsRoutes);
 
 export default router;

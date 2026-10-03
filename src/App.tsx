@@ -54,6 +54,7 @@ import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
 import MusicCreator from "./components/MusicCreator.tsx";
 import MusicMixer from "./components/MusicMixer.tsx";
 import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
+import ShortsExtractor from "./components/ShortsExtractor.tsx";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 
@@ -702,6 +703,12 @@ export default function App() {
           {_.isEqual(activeTab, AppTab.VIDEO_CREATOR) && (
             <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
               <FlowVideoCreator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} />
+            </div>
+          )}
+
+          {_.isEqual(activeTab, AppTab.SHORTS_EXTRACTOR) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+              <ShortsExtractor currentLang={currentLang} />
             </div>
           )}
 

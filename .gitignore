@@ -94,3 +94,14 @@ package-lock.json
 templates/capcut/*.json
 templates/
 ultra_opts_*.json
+
+# Generated Output and Media files
+output/
+data/
+output/shorts/
+*.mp4
+*.m4a
+*.wav
+*.mp3
+*.zip
+

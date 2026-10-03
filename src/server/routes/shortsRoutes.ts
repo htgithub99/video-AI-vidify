@@ -1,0 +1,25 @@
+import express from "express";
+import {
+  inspectShortsVideo,
+  generateShortsPipeline,
+  exportShortsZip,
+  selectShortsSaveDestination,
+  saveSingleShortVideo,
+  buildShortsZipDirect,
+  streamSourceVideo,
+  cancelShortsPipeline,
+} from "../controllers/shortsController.js";
+import { SHORTS_API_PATHS } from "../../constants/apiRoutes.js";
+
+const router = express.Router();
+
+router.post(SHORTS_API_PATHS.METADATA, inspectShortsVideo);
+router.post(SHORTS_API_PATHS.GENERATE, generateShortsPipeline);
+router.post(SHORTS_API_PATHS.CANCEL, cancelShortsPipeline);
+router.post(SHORTS_API_PATHS.EXPORT_ZIP, exportShortsZip);
+router.post(SHORTS_API_PATHS.SELECT_SAVE_DESTINATION, selectShortsSaveDestination);
+router.post(SHORTS_API_PATHS.SAVE_VIDEO, saveSingleShortVideo);
+router.post(SHORTS_API_PATHS.BUILD_ZIP, buildShortsZipDirect);
+router.get(SHORTS_API_PATHS.STREAM_SOURCE, streamSourceVideo);
+
+export default router;

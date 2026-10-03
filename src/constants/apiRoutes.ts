@@ -73,7 +73,17 @@ export const API_ROUTES = {
   PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
   PIPELINE_FFMPEG_RENDER_CANCEL: "/api/pipeline/ffmpeg-render/cancel/",
   PIPELINE_DELETE_ASSET_FILE: "/api/pipeline/delete-asset-file",
+  SHORTS_GENERATE: "/api/shorts/generate",
+  SHORTS_METADATA: "/api/shorts/metadata",
+  SHORTS_CANCEL: "/api/shorts/cancel",
+  SHORTS_EXPORT_ZIP: "/api/shorts/export-zip",
+  SHORTS_SELECT_SAVE_DESTINATION: "/api/shorts/select-save-destination",
+  SHORTS_SAVE_VIDEO: "/api/shorts/save-video",
+  SHORTS_BUILD_ZIP: "/api/shorts/build-zip",
+  SHORTS_STREAM_SOURCE: "/api/shorts/stream-source",
 } as const;
+
+
 
 export const EXTERNAL_URLS = {
   GOOGLE_FONTS_MERIENDA: "https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap",
@@ -153,6 +163,37 @@ export const API_HEADERS = {
   CEREBRAS_API_KEY: "x-cerebras-api-key",
   GROQ_API_KEY: "x-groq-api-key",
   LICENSE_KEY: "x-license-key",
+} as const;
+
+export const SERVER_ROUTES = {
+  PROJECTS: "/projects",
+  PROJECTS_ID: "/projects/:id",
+  PRESETS: "/presets",
+  PRESETS_ID: "/presets/:id",
+  VOICES: "/voices",
+  SETTINGS: "/settings",
+  SHORTS: "/shorts",
+} as const;
+
+export const SHORTS_API_PATHS = {
+  BASE: "/shorts",
+  METADATA: "/metadata",
+  GENERATE: "/generate",
+  EXPORT_ZIP: "/export-zip",
+  CANCEL: "/cancel",
+  SELECT_SAVE_DESTINATION: "/select-save-destination",
+  SAVE_VIDEO: "/save-video",
+  BUILD_ZIP: "/build-zip",
+  STREAM_SOURCE: "/stream-source",
+} as const;
+
+
+
+export const SETTINGS_API_PATHS = {
+  GAS_CONFIG: "/gas-config",
+  API_KEYS: "/api-keys",
+  ACCOUNTS: "/accounts",
+  ACCOUNTS_STATUS: "/accounts/status",
 } as const;
 
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;

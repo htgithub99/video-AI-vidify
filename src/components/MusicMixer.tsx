@@ -75,12 +75,18 @@ const saveZip = async (blob: Blob, token: string) => {
 const createSeo = (folder: ResultFolder) => {
   const title = `${folder.name} - ${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`;
   let elapsed = 0;
-  const tracks = folder.tracks.map((track) => { const minutes = Math.floor(elapsed / 60); const seconds = Math.floor(elapsed % 60); const stamp = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`; elapsed += track.durationSeconds || 0; return `${stamp} ${cleanTrackTitle(track.file.name)}`; });
+  const tracks = _.map(folder.tracks, (track) => {
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = Math.floor(elapsed % 60);
+    const stamp = `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(seconds), 2, "0")}`;
+    elapsed += track.durationSeconds || 0;
+    return `${stamp} ${cleanTrackTitle(track.file.name)}`;
+  });
   return {
     title,
     description: `${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_PREFIX} ${folder.tracks.length} tracks. ${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_SUFFIX}`,
     tags: MUSIC_MIXER_SERVER.DEFAULT_SEO_TAGS,
-    chapters: tracks.map((name, index) => ({ position: index + 1, label: name })),
+    chapters: _.map(tracks, (name, index) => ({ position: index + 1, label: name })),
     tracks,
   };
 };
@@ -93,22 +99,39 @@ const ensureTrackFile = async (track: Track): Promise<File> => {
   const blob = await response.blob();
   return new File([blob], track.file.name, { type: blob.type || track.file.type });
 };
+const formatList = (val: unknown, sep = ", "): string => {
+  if (_.isArray(val)) return _.join(_.compact(val), sep);
+  return _.isString(val) ? val : "";
+};
+
 const formatSeoText = (folder: ResultFolder) => {
-  const orderedTracks = folder.tracks.map((track) => cleanTrackTitle(track.file.name));
+  const orderedTracks = _.map(folder.tracks, (track) => cleanTrackTitle(track.file.name));
   let elapsed = 0;
-  const timeline = folder.tracks.map((track) => { const stamp = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`; elapsed += track.durationSeconds || 0; return `${stamp} ${cleanTrackTitle(track.file.name)}`; });
-  const options = folder.seoOptions?.length ? folder.seoOptions : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: "AI" }];
-  return `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}\n\n${MUSIC_MIXER_SERVER.SEO_PLAYLIST_URL_LABEL}\n\n${options.map((option, index) => `${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}${index + 1} (${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL} ${option.seoScore || "AI"}) ===\n\n${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}\n${option.title || ""}\n\n${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}\n${option.description || ""}\n\n${timeline.join("\n")}\n\n${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}\n${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}\n\n${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}\n${(option.hashtags || []).join(" ")}\n\n${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}\n${(option.tags || []).join(", ")}`).join(`\n\n${MUSIC_MIXER_SERVER.SEO_DIVIDER}\n\n`)}`;
+  const timeline = _.map(folder.tracks, (track) => {
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = Math.floor(elapsed % 60);
+    const stamp = `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(seconds), 2, "0")}`;
+    elapsed += track.durationSeconds || 0;
+    return `${stamp} ${cleanTrackTitle(track.file.name)}`;
+  });
+  const options = !_.isEmpty(folder.seoOptions)
+    ? folder.seoOptions
+    : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: "AI" }];
+  return `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}\n\n${MUSIC_MIXER_SERVER.SEO_PLAYLIST_URL_LABEL}\n\n${_.map(
+    options,
+    (option, index) =>
+      `${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}${index + 1} (${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL} ${option?.seoScore || "AI"}) ===\n\n${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}\n${option?.title || ""}\n\n${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}\n${option?.description || ""}\n\n${timeline.join("\n")}\n\n${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}\n${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}\n\n${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}\n${formatList(option?.hashtags, " ")}\n\n${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}\n${formatList(option?.tags, ", ")}`,
+  ).join(`\n\n${MUSIC_MIXER_SERVER.SEO_DIVIDER}\n\n`)}`;
 };
 
 const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) => {
   const payload = {
     token,
-    folders: resultFolders.map((folder) => {
+    folders: _.map(resultFolders, (folder) => {
       const seo = folder.seo || createSeo(folder);
       return {
         name: folder.name,
-        files: folder.tracks.map((track, index) => ({
+        files: _.map(folder.tracks, (track, index) => ({
           sourcePath: track.sourcePath,
           zipPath: `${folder.name}/${numberedName(track.file, index)}`,
         })),
@@ -136,7 +159,7 @@ const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder)
     folders: [
       {
         name: folder.name,
-        files: folder.tracks.map((track, index) => ({
+        files: _.map(folder.tracks, (track, index) => ({
           sourcePath: track.sourcePath,
           zipPath: numberedName(track.file, index),
         })),
@@ -309,6 +332,10 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_SOURCE, { method: "POST" });
       const selection = await response.json();
       if (!selection.success) return;
+      if (!selection.folders || selection.folders.length === 0) {
+        toast.info(text.NO_AUDIO_FILES_FOUND);
+        return;
+      }
       setPendingFolders(selection.folders || []);
       setSelectedPendingFolders((selection.folders || []).map((source: { folderPath: string }) => source.folderPath));
     } catch { setError(text.DROP_ERROR); }
@@ -397,7 +424,6 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, MUSIC_MIXER_SERVER.LOG_MIX_START(resultCount, songsPerResult));
     try {
       let source = trackOrder === "name" ? [...tracks].sort((a, b) => a.file.name.localeCompare(b.file.name)) : shuffle(tracks);
-      if (trackOrder === "featured" && source.some((track) => !track.sourcePath)) throw new Error(text.PICK_FOLDER_AGAIN);
       const folders: ResultFolder[] = Array.from({ length: resultCount }, (_, index) => ({
         name: `${MUSIC_MIXER_SERVER.EMPTY_MIX_NAME_PREFIX}${String(index + 1).padStart(2, "0")}`,
         tracks: [],
@@ -448,6 +474,17 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     } finally {
       setBusy(false);
       abortRef.current = null;
+      const finishedProjectId = projectIdRef.current;
+      const finishedFolderProjectIds = [...folderProjectIdsRef.current];
+      projectIdRef.current = null;
+      folderProjectIdsRef.current = [];
+      if (finishedProjectId || finishedFolderProjectIds.length) {
+        void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectIds: finishedFolderProjectIds, projectId: finishedProjectId, provider: seoProvider }),
+        }).catch(() => undefined);
+      }
     }
   };
 
