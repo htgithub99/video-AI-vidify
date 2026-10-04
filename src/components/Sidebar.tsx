@@ -5,7 +5,7 @@ import { Lang } from "../lib/lang.js";
 import { SIDEBAR_TEXTS } from "../constants/texts";
 import { PlanType } from "../constants/security";
 import { AppTab } from "../constants/enums";
-import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, Music2, Shuffle, Scissors, LucideIcon, X } from "lucide-react";
+import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, Music2, Shuffle, Scissors, Film, LucideIcon, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useLicense } from "../contexts/LicenseContext";
 import _ from "lodash";
@@ -68,7 +68,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR], activeTab as AppTab);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT], activeTab as AppTab);
   const menuItems: MenuItemConfig[] = [
     {
       id: AppTab.DASHBOARD,
@@ -118,6 +118,12 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       id: AppTab.SHORTS_EXTRACTOR,
       label: texts.SHORTS_EXTRACTOR,
       icon: Scissors,
+      requiresProject: false,
+    },
+    {
+      id: AppTab.VIDEO_EXPORT,
+      label: texts.VIDEO_EXPORT,
+      icon: Film,
       requiresProject: false,
     },
     {

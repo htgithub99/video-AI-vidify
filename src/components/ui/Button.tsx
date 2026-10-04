@@ -1,3 +1,4 @@
+import { VIDEO_EXPORT_TEXT_NUMBER, VIDEO_EXPORT_TEXT_STRING } from "../../constants/videoExportText";
 import { SOURCE_TEXT_MD, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -7,7 +8,7 @@ import _ from "lodash";
 import { Sparkles } from "lucide-react";
 const getChildrenText = (node: React.ReactNode): string => {
   if (_.isNil(node)) return "";
-  if (typeof node === "string" || typeof node === "number") return _.toString(node);
+  if (typeof node === VIDEO_EXPORT_TEXT_STRING || typeof node === VIDEO_EXPORT_TEXT_NUMBER) return _.toString(node);
   if (_.isArray(node)) return _.trim(_.join(_.map(node, getChildrenText), " "));
   if (React.isValidElement(node)) {
     return getChildrenText(node.props.children);
@@ -15,9 +16,10 @@ const getChildrenText = (node: React.ReactNode): string => {
   return "";
 };
 export const Button: React.FC<IBaseButtonProps> = ({ children, variant = SOURCE_TEXT_PRIMARY, size = SOURCE_TEXT_MD, isLoading, className = "", disabled, ...props }) => {
-  const sizeStyles = variant === SOURCE_TEXT_UNSTYLED ? "" : BUTTON_SIZE_CLASS_NAME[size];
-  const variantStyles = _.defaultTo(BUTTON_VARIANT_CLASS_NAME[variant], BUTTON_VARIANT_CLASS_NAME.primary);
-  const finalBaseStyles = variant === SOURCE_TEXT_UNSTYLED ? "" : BUTTON_CLASS_NAME.BASE;
+  const isUnstyled = variant === SOURCE_TEXT_UNSTYLED;
+  const sizeStyles = isUnstyled ? "" : BUTTON_SIZE_CLASS_NAME[size];
+  const variantStyles = isUnstyled ? "" : _.defaultTo(BUTTON_VARIANT_CLASS_NAME[variant], BUTTON_VARIANT_CLASS_NAME.primary);
+  const finalBaseStyles = isUnstyled ? "" : BUTTON_CLASS_NAME.BASE;
   const cleanText = getChildrenText(children).trim();
   let computedTitle = props.title;
   if (!computedTitle && cleanText) {

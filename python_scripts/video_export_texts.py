@@ -1,0 +1,6 @@
+OUTPUT_ENCODING = "utf-8"
+RECONFIGURE_METHOD = "reconfigure"
+TOPMOST_ATTRIBUTE = "-topmost"
+FOLDER_PICKER_TITLE = "Chọn folder chứa nhạc và ảnh nền"
+FOLDER_PATH_KEY = "folderPath"
+MAIN_MODULE_NAME = "__main__"

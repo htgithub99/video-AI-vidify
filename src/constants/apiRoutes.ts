@@ -81,6 +81,15 @@ export const API_ROUTES = {
   SHORTS_SAVE_VIDEO: "/api/shorts/save-video",
   SHORTS_BUILD_ZIP: "/api/shorts/build-zip",
   SHORTS_STREAM_SOURCE: "/api/shorts/stream-source",
+  VIDEO_EXPORT_SELECT_SOURCE: "/api/video-export/select-source",
+  VIDEO_EXPORT_PREVIEW: "/api/video-export/preview",
+  VIDEO_EXPORT_RENDER: "/api/video-export/render",
+  VIDEO_EXPORT_STATUS: "/api/video-export/status/",
+  VIDEO_EXPORT_CANCEL: "/api/video-export/cancel",
+  VIDEO_EXPORT_SELECT_SAVE_DESTINATION: "/api/video-export/select-save-destination",
+  VIDEO_EXPORT_SAVE_VIDEO: "/api/video-export/save-video",
+  VIDEO_EXPORT_CAPCUT_CATALOG: "/api/video-export/capcut-catalog",
+  VIDEO_EXPORT_CAPCUT_PROJECT: "/api/video-export/capcut-project",
 } as const;
 export const EXTERNAL_URLS = {
   GOOGLE_FONTS_MERIENDA: "https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap",
@@ -165,6 +174,7 @@ export const SERVER_ROUTES = {
   VOICES: "/voices",
   SETTINGS: "/settings",
   SHORTS: "/shorts",
+  VIDEO_EXPORT: "/video-export",
 } as const;
 export const SHORTS_API_PATHS = {
   BASE: "/shorts",
@@ -176,6 +186,19 @@ export const SHORTS_API_PATHS = {
   SAVE_VIDEO: "/save-video",
   BUILD_ZIP: "/build-zip",
   STREAM_SOURCE: "/stream-source",
+} as const;
+export const VIDEO_EXPORT_API_PATHS = {
+  BASE: "/video-export",
+  SELECT_SOURCE: "/select-source",
+  MEDIA: "/media/:token/:kind/:index",
+  PREVIEW: "/preview",
+  RENDER: "/render",
+  STATUS: "/status/:jobId",
+  CANCEL: "/cancel",
+  SELECT_SAVE_DESTINATION: "/select-save-destination",
+  SAVE_VIDEO: "/save-video",
+  CAPCUT_CATALOG: "/capcut-catalog",
+  CAPCUT_PROJECT: "/capcut-project",
 } as const;
 export const SETTINGS_API_PATHS = {
   GAS_CONFIG: "/gas-config",

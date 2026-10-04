@@ -4,6 +4,7 @@ import { getAllPresets, savePreset, deletePreset } from "../controllers/presetCo
 import { getVoices } from "../controllers/voiceController.js";
 import settingsRoutes from "./settingsRoutes.js";
 import shortsRoutes from "./shortsRoutes.js";
+import videoExportRoutes from "./videoExportRoutes.js";
 import { SERVER_ROUTES } from "../../constants/apiRoutes.js";
 const router = express.Router();
 router.get(SERVER_ROUTES.PROJECTS, getAllProjects);
@@ -17,4 +18,5 @@ router.delete(SERVER_ROUTES.PRESETS_ID, deletePreset);
 router.get(SERVER_ROUTES.VOICES, getVoices);
 router.use(SERVER_ROUTES.SETTINGS, settingsRoutes);
 router.use(SERVER_ROUTES.SHORTS, shortsRoutes);
+router.use(SERVER_ROUTES.VIDEO_EXPORT, videoExportRoutes);
 export default router;

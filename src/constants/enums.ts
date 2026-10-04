@@ -179,6 +179,7 @@ export enum AppTab {
   MUSIC_MIXER = "music-mixer",
   VIDEO_CREATOR = "video-creator",
   SHORTS_EXTRACTOR = "shorts-extractor",
+  VIDEO_EXPORT = "video-export",
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }

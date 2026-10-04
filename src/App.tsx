@@ -24,6 +24,7 @@ import MusicCreator from "./components/MusicCreator.tsx";
 import MusicMixer from "./components/MusicMixer.tsx";
 import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
 import ShortsExtractor from "./components/ShortsExtractor.tsx";
+import VideoExporter from "./components/VideoExporter.tsx";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
   if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
@@ -575,6 +576,11 @@ export default function App() {
           {_.isEqual(activeTab, AppTab.SHORTS_EXTRACTOR) && (
             <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
               <ShortsExtractor currentLang={currentLang} />
+            </div>
+          )}
+          {_.isEqual(activeTab, AppTab.VIDEO_EXPORT) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+              <VideoExporter currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.SETTINGS) && (
