@@ -1,6 +1,6 @@
+import _ from "lodash";
 import { CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "./config";
 import { CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG } from "./cinematicConstants";
-
 const stringSchema = { type: "string" } as const;
 const numberScoreSchema = { type: "integer", minimum: 0, maximum: 100 } as const;
 const stringArraySchema = { type: "array", items: stringSchema } as const;
@@ -34,29 +34,7 @@ const characterTimelineStageSchema = {
 const cinematicCharacterSchema = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "id",
-    "name",
-    "narrativeRole",
-    "sourceIdentityEvidence",
-    "speciesPresentation",
-    "genderPresentation",
-    "ageRange",
-    "ethnicitySkinTone",
-    "bodyBuild",
-    "faceShape",
-    "eyes",
-    "nose",
-    "hair",
-    "signatureClothing",
-    "accessories",
-    "colorPalette",
-    "silhouette",
-    "description",
-    "prompt",
-    "referenceGenerationPrompt",
-    "timelineStages",
-  ],
+  required: ["id", "name", "narrativeRole", "sourceIdentityEvidence", "speciesPresentation", "genderPresentation", "ageRange", "ethnicitySkinTone", "bodyBuild", "faceShape", "eyes", "nose", "hair", "signatureClothing", "accessories", "colorPalette", "silhouette", "description", "prompt", "referenceGenerationPrompt", "timelineStages"],
   properties: {
     id: stringSchema,
     name: stringSchema,
@@ -81,14 +59,12 @@ const cinematicCharacterSchema = {
     timelineStages: { type: "array", minItems: 1, items: characterTimelineStageSchema },
   },
 } as const;
-
 const cinematicFilmPackageCharacterSchema = {
   type: "object",
   additionalProperties: false,
   required: ["id", "name", "description", "referenceGenerationPrompt"],
   properties: cinematicCharacterSchema.properties,
 } as const;
-
 const cinematicFilmPackageSceneSchema = {
   type: "object",
   additionalProperties: false,
@@ -104,7 +80,6 @@ const cinematicFilmPackageSceneSchema = {
     storyChange: stringSchema,
   },
 } as const;
-
 const cinematicFilmPackageIntroSchema = {
   type: "object",
   additionalProperties: false,
@@ -118,7 +93,6 @@ const cinematicFilmPackageIntroSchema = {
     characterIds: stringArraySchema,
   },
 } as const;
-
 const cinematicFilmPackageChapterSchema = {
   type: "object",
   additionalProperties: false,
@@ -129,7 +103,6 @@ const cinematicFilmPackageChapterSchema = {
     scriptSegment: stringSchema,
   },
 } as const;
-
 export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -152,7 +125,6 @@ export const CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA = {
     completionMarker: { type: "string", enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
   },
 } as const;
-
 export const createCinematicFilmPackageResponseSchema = (sceneCount: number) => ({
   ...CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA,
   properties: {
@@ -164,7 +136,6 @@ export const createCinematicFilmPackageResponseSchema = (sceneCount: number) => 
     },
   },
 });
-
 export const CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -183,20 +154,7 @@ const narrativeBeatTypeSchema = {
 const characterArcSchema = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "initialState",
-    "emotionalLack",
-    "externalGoal",
-    "internalNeed",
-    "temptation",
-    "firstCompromise",
-    "escalatingChoices",
-    "pointOfNoReturn",
-    "falseVictory",
-    "collapse",
-    "finalCost",
-    "realization",
-  ],
+  required: ["initialState", "emotionalLack", "externalGoal", "internalNeed", "temptation", "firstCompromise", "escalatingChoices", "pointOfNoReturn", "falseVictory", "collapse", "finalCost", "realization"],
   properties: {
     initialState: stringSchema,
     emotionalLack: stringSchema,
@@ -255,19 +213,7 @@ const narrativePlanSchema = {
 const chapterPlanSchema = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "id",
-    "title",
-    "description",
-    "purpose",
-    "requiredBeatIds",
-    "characterStartState",
-    "characterEndState",
-    "callbackSetupIds",
-    "callbackPayoffIds",
-    "forbiddenRepetition",
-    "handoffToNextChapter",
-  ],
+  required: ["id", "title", "description", "purpose", "requiredBeatIds", "characterStartState", "characterEndState", "callbackSetupIds", "callbackPayoffIds", "forbiddenRepetition", "handoffToNextChapter"],
   properties: {
     id: stringSchema,
     title: stringSchema,
@@ -282,23 +228,10 @@ const chapterPlanSchema = {
     handoffToNextChapter: stringSchema,
   },
 } as const;
-
 export const CONTENT_SAFETY_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "sensitiveTopic",
-    "trueCase",
-    "minorsInvolved",
-    "sexualExploitationRisk",
-    "victimExploitationRisk",
-    "privacyRisk",
-    "likenessRisk",
-    "copyrightRisk",
-    "requiredDisclosures",
-    "blockingErrors",
-    "warnings",
-  ],
+  required: ["sensitiveTopic", "trueCase", "minorsInvolved", "sexualExploitationRisk", "victimExploitationRisk", "privacyRisk", "likenessRisk", "copyrightRisk", "requiredDisclosures", "blockingErrors", "warnings"],
   properties: {
     sensitiveTopic: { type: "boolean" },
     trueCase: { type: "boolean" },
@@ -313,7 +246,6 @@ export const CONTENT_SAFETY_RESPONSE_SCHEMA = {
     warnings: stringArraySchema,
   },
 } as const;
-
 export const HOOK_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -349,28 +281,16 @@ export const HOOK_RESPONSE_SCHEMA = {
     },
   },
 } as const;
-
 export const CHAPTER_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["scriptSegment"],
   properties: { scriptSegment: stringSchema },
 } as const;
-
 export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "scriptSegment",
-    "continuityScore",
-    "repetitionScore",
-    "factualityScore",
-    "emotionalArcScore",
-    "conversationalScore",
-    "hookPayoffScore",
-    "warnings",
-    "suggestedPatches",
-  ],
+  required: ["scriptSegment", "continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore", "warnings", "suggestedPatches"],
   properties: {
     scriptSegment: stringSchema,
     continuityScore: numberScoreSchema,
@@ -383,7 +303,6 @@ export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
     suggestedPatches: stringArraySchema,
   },
 } as const;
-
 export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
   type: "object",
   required: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan", "factPack", "chapters"],
@@ -398,7 +317,6 @@ export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
     chapters: { type: "array", minItems: 3, items: chapterPlanSchema },
   },
 } as const;
-
 const visualQaProperties = {
   anatomy: numberScoreSchema,
   subjectCount: numberScoreSchema,
@@ -416,25 +334,11 @@ const visualQaProperties = {
   duplicatedSubjects: { type: "boolean" },
   warnings: stringArraySchema,
 } as const;
-export const VISUAL_QA_RESPONSE_SCHEMA = { type: "object", additionalProperties: false, required: Object.keys(visualQaProperties), properties: visualQaProperties } as const;
-
+export const VISUAL_QA_RESPONSE_SCHEMA = { type: "object", additionalProperties: false, required: _.keys(visualQaProperties), properties: visualQaProperties } as const;
 export const VISUAL_BIBLE_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "colorPalette",
-    "characterSpecs",
-    "landscapeSpecs",
-    "lightingMood",
-    "visualStyle",
-    "background",
-    "lineStyle",
-    "colorMode",
-    "shading",
-    "textPolicy",
-    "locations",
-    "props",
-  ],
+  required: ["colorPalette", "characterSpecs", "landscapeSpecs", "lightingMood", "visualStyle", "background", "lineStyle", "colorMode", "shading", "textPolicy", "locations", "props"],
   properties: {
     colorPalette: stringSchema,
     characterSpecs: stringSchema,
@@ -467,22 +371,10 @@ export const VISUAL_BIBLE_RESPONSE_SCHEMA = {
     },
   },
 } as const;
-
 export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "visualScore",
-    "cropScore",
-    "continuityScore",
-    "pacingScore",
-    "transitionVarietyScore",
-    "promiseAlignmentScore",
-    "audioMixScore",
-    "subtitleLegibilityScore",
-    "blockingErrors",
-    "warnings",
-  ],
+  required: ["visualScore", "cropScore", "continuityScore", "pacingScore", "transitionVarietyScore", "promiseAlignmentScore", "audioMixScore", "subtitleLegibilityScore", "blockingErrors", "warnings"],
   properties: {
     visualScore: numberScoreSchema,
     cropScore: numberScoreSchema,
@@ -496,7 +388,6 @@ export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = {
     warnings: stringArraySchema,
   },
 } as const;
-
 export const CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -507,22 +398,7 @@ export const CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: [
-          "sceneId",
-          "takeDecision",
-          "recommendedTransition",
-          "continuityScore",
-          "storyClarityScore",
-          "performanceScore",
-          "observedShotCount",
-          "segments",
-          "entryStateObserved",
-          "exitStateObserved",
-          "dominantAction",
-          "supportShotType",
-          "reason",
-          "warnings",
-        ],
+        required: ["sceneId", "takeDecision", "recommendedTransition", "continuityScore", "storyClarityScore", "performanceScore", "observedShotCount", "segments", "entryStateObserved", "exitStateObserved", "dominantAction", "supportShotType", "reason", "warnings"],
         properties: {
           sceneId: stringSchema,
           takeDecision: { type: "string", enum: ["use", "trim", "omit"] },
@@ -561,7 +437,6 @@ export const CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA = {
     },
   },
 } as const;
-
 export const VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,

@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
@@ -19,9 +20,9 @@ const authoredPrompt = "AI-authored prompt preserved byte-for-byte.\nSecond line
 const authoredScene = { ...incompleteAiScene, generationPrompt: authoredPrompt };
 assert.equal(createCinematicVideoPrompt(authoredScene, "compiler must ignore this", GenerateType.Video, 10), authoredPrompt);
 
-const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
-const promptSource = readFileSync(new URL("../src/constants/prompts.ts", import.meta.url), "utf8");
+const controllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
+const promptSource = resolveSourceTextConstants(readFileSync(new URL("../src/constants/prompts.ts", import.meta.url), "utf8"));
 assert.doesNotMatch(controllerSource, /generationPrompt:\s*createCinematicVideoPrompt/);
 assert.doesNotMatch(controllerSource, /repairCinematicStoryboardContract\(plannedScenes/);
 assert.doesNotMatch(pipelineSource, /realScenes\s*=\s*repairCinematicStoryboardContract/);

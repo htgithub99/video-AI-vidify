@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_SYMBOL_31 } from "../../constants/sourceText";
 import React from "react";
 import _ from "lodash";
 import { Check, FileText, Sparkles } from "lucide-react";
@@ -7,7 +8,6 @@ import { ProjectInputType } from "../../types";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
-
 interface ProjectInputSectionProps {
   inputType: ProjectInputType;
   setInputType: (type: ProjectInputType) => void;
@@ -15,11 +15,9 @@ interface ProjectInputSectionProps {
   setScriptContent: (val: string) => void;
   T: ReturnType<typeof getAutoVideoTexts>;
 }
-
 export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputType, setInputType, scriptContent, setScriptContent, T }) => {
   const wordCount = _.size(_.words(scriptContent));
   const charCount = _.size(scriptContent);
-
   const inputTypeCards = [
     {
       type: ProjectInputType.Script,
@@ -34,14 +32,11 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
       tooltip: T.inputTypeIdeaTooltip,
     },
   ] as const;
-
   return (
     <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between relative z-10")}>
         <div className={cn("flex items-center gap-2.5")}>
-          <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20")}>
-            {PIPELINE_STEPS.STEP_1}
-          </span>
+          <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20")}>{PIPELINE_STEPS.STEP_1}</span>
           <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} title={T.sec1TitleTooltip}>
             <FileText className={cn("w-3.5 h-3.5 text-amber-400")} /> {T.sec1Title}
           </h3>
@@ -50,13 +45,12 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
           <span>
             {wordCount} {T.lblWords}
           </span>
-          <span className={cn("text-slate-600")}>•</span>
+          <span className={cn("text-slate-600")}>{SOURCE_TEXT_SYMBOL_31}</span>
           <span>
             {charCount} {T.lblChars}
           </span>
         </div>
       </div>
-
       <div className={cn("grid grid-cols-2 gap-3 relative z-10")}>
         {_.map(inputTypeCards, ({ type, icon, label, tooltip }) => {
           const isSelected = _.isEqual(inputType, type);
@@ -66,7 +60,10 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
               onClick={() => setInputType(type)}
-              className={cn("p-2.5 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none", { "bg-amber-500/15 text-amber-300 font-extrabold shadow-sm ring-1 ring-amber-500/30 border-amber-500/40": isSelected, "bg-slate-955/80 border-slate-850 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900": !(isSelected) })}
+              className={cn("p-2.5 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[42px] max-h-[46px] select-none", {
+                "bg-amber-500/15 text-amber-300 font-extrabold shadow-sm ring-1 ring-amber-500/30 border-amber-500/40": isSelected,
+                "bg-slate-955/80 border-slate-850 text-slate-400 hover:text-slate-200 font-bold hover:bg-slate-900": !isSelected,
+              })}
               title={tooltip}>
               <div className={cn("flex items-center gap-2.5")}>
                 {icon}
@@ -77,16 +74,13 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
           );
         })}
       </div>
-
       <div className={cn("relative z-10")}>
         <textarea
           rows={5}
           value={scriptContent}
           onChange={(e) => setScriptContent(e.target.value)}
           placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea}
-          className={cn(
-            "w-full min-h-[140px] sm:min-h-[160px] max-h-[220px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/20",
-          )}
+          className={cn("w-full min-h-[140px] sm:min-h-[160px] max-h-[220px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/20")}
         />
       </div>
     </div>

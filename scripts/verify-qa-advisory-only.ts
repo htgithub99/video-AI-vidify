@@ -1,21 +1,22 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { CINEMATIC_CONFIG, PIPELINE_COMPLETION_CONFIG } from "../src/constants/config.ts";
 import { getFinalCompletionReadiness, getRenderReadiness } from "../src/services/pipelineCompletionPolicyService.ts";
 
-const pipelineController = fs.readFileSync(
+const pipelineController = resolveSourceTextConstants(fs.readFileSync(
   path.resolve("src/server/controllers/pipelineController.ts"),
   "utf8",
-);
-const autoPipeline = fs.readFileSync(
+));
+const autoPipeline = resolveSourceTextConstants(fs.readFileSync(
   path.resolve("src/hooks/useAutoVideoPipeline.ts"),
   "utf8",
-);
-const invalidation = fs.readFileSync(
+));
+const invalidation = resolveSourceTextConstants(fs.readFileSync(
   path.resolve("src/hooks/autoVideoPipelineUtils.ts"),
   "utf8",
-);
+));
 assert.doesNotMatch(pipelineController, /getScriptRepairPrompt|getStoryboardRepairPrompt/);
 assert.doesNotMatch(pipelineController, /getScriptEditorQaPrompt|getStoryboardDirectorQaPrompt/);
 assert.doesNotMatch(invalidation, /scriptQa\?\.passed|storyboardQa\?\.passed/);

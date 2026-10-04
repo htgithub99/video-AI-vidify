@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { createCharacterIdentityBlocks, createSceneGenerationContext } from "../src/services/sceneReferenceService.ts";
 import { CharacterConfig, StoryboardScene } from "../src/types.ts";
@@ -6,7 +7,7 @@ import { normalizeExtractedStyle } from "../src/services/styleReferenceService.t
 import fs from "node:fs";
 import path from "node:path";
 
-const autoPipelineSource = fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8");
+const autoPipelineSource = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8"));
 assert.doesNotMatch(autoPipelineSource, /response\.data\??\.urls/, "Character references read the wrong persistence field");
 
 const characters: CharacterConfig[] = [

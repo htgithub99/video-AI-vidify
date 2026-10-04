@@ -1,7 +1,7 @@
+import { SOURCE_TEXT_89504E470D0A1A0A, SOURCE_TEXT_BASE64, SOURCE_TEXT_HEX, SOURCE_TEXT_SYMBOL_16, SOURCE_TEXT_SYMBOL_4 } from "../../constants/sourceText";
 import _ from "lodash";
-
 const IMAGE_DIMENSION_CONFIG = {
-  PNG_SIGNATURE: "89504e470d0a1a0a",
+  PNG_SIGNATURE: SOURCE_TEXT_89504E470D0A1A0A,
   PNG_WIDTH_OFFSET: 16,
   PNG_HEIGHT_OFFSET: 20,
   JPEG_START_MARKER: 0xffd8,
@@ -12,20 +12,17 @@ const IMAGE_DIMENSION_CONFIG = {
   JPEG_WIDTH_OFFSET: 7,
   JPEG_START_OF_FRAME_MARKERS: new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]),
   MIN_SEGMENT_LENGTH: 2,
-  ASPECT_SEPARATOR: ":",
+  ASPECT_SEPARATOR: SOURCE_TEXT_SYMBOL_16,
   MAX_RELATIVE_ERROR: 0.08,
 } as const;
-
 export interface ImageDimensions {
   width: number;
   height: number;
 }
-
 const readPngDimensions = (buffer: Buffer): ImageDimensions | undefined => {
-  if (!_.startsWith(buffer.toString("hex", 0, 8), IMAGE_DIMENSION_CONFIG.PNG_SIGNATURE)) return undefined;
+  if (!_.startsWith(buffer.toString(SOURCE_TEXT_HEX, 0, 8), IMAGE_DIMENSION_CONFIG.PNG_SIGNATURE)) return undefined;
   return { width: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_WIDTH_OFFSET), height: buffer.readUInt32BE(IMAGE_DIMENSION_CONFIG.PNG_HEIGHT_OFFSET) };
 };
-
 const readJpegDimensions = (buffer: Buffer): ImageDimensions | undefined => {
   if (buffer.length < IMAGE_DIMENSION_CONFIG.JPEG_WIDTH_OFFSET || buffer.readUInt16BE(0) !== IMAGE_DIMENSION_CONFIG.JPEG_START_MARKER) return undefined;
   let offset: number = IMAGE_DIMENSION_CONFIG.JPEG_SCAN_START;
@@ -49,13 +46,11 @@ const readJpegDimensions = (buffer: Buffer): ImageDimensions | undefined => {
   }
   return undefined;
 };
-
 export const readBase64ImageDimensions = (base64: string): ImageDimensions | undefined => {
-  const encoded = _.last(_.split(base64, ",")) || "";
-  const buffer = Buffer.from(encoded, "base64");
+  const encoded = _.last(_.split(base64, SOURCE_TEXT_SYMBOL_4)) || "";
+  const buffer = Buffer.from(encoded, SOURCE_TEXT_BASE64);
   return readPngDimensions(buffer) || readJpegDimensions(buffer);
 };
-
 export const isImageAspectRatioCompatible = (base64: string, aspectRatio?: string): boolean => {
   const dimensions = readBase64ImageDimensions(base64);
   const ratioParts = _.map(_.split(aspectRatio || "", IMAGE_DIMENSION_CONFIG.ASPECT_SEPARATOR), _.toNumber);

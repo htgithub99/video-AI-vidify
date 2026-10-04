@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { resolveUsableHooks } from "../src/services/hookResilienceService.ts";
 import { acquirePipelineRunLease, releasePipelineRunLease } from "../src/services/pipelineRunLockService.ts";
@@ -166,16 +167,16 @@ assert(
   semanticSubtitleCues.some((cue) => cue.text.toLowerCase().startsWith("nhưng")),
   "subtitle did not preserve the semantic contrast boundary",
 );
-const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");
-const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8");
-const generationSettingsSource = fs.readFileSync("src/components/auto-video/GenerationSettingsSection.tsx", "utf8");
-const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const pipelineHookSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
-const autoVideoStateSource = fs.readFileSync("src/hooks/useAutoVideoState.ts", "utf8");
-const imageGeneratorSource = fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8");
-const chatPlanningSource = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
-const ffmpegRenderSource = fs.readFileSync("src/server/utils/ffmpegRender.ts", "utf8");
-const cinematicConstantsSource = fs.readFileSync("src/constants/cinematicConstants.ts", "utf8");
+const autoGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8"));
+const previewSource = resolveSourceTextConstants(fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8"));
+const generationSettingsSource = resolveSourceTextConstants(fs.readFileSync("src/components/auto-video/GenerationSettingsSection.tsx", "utf8"));
+const pipelineControllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const pipelineHookSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
+const autoVideoStateSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoState.ts", "utf8"));
+const imageGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
+const chatPlanningSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8"));
+const ffmpegRenderSource = resolveSourceTextConstants(fs.readFileSync("src/server/utils/ffmpegRender.ts", "utf8"));
+const cinematicConstantsSource = resolveSourceTextConstants(fs.readFileSync("src/constants/cinematicConstants.ts", "utf8"));
 assert(/const handleStartAutoGenerate[\s\S]*: Promise<void> =>/.test(autoGeneratorSource), "pipeline start promise is not exposed to regeneration");
 assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regeneration does not await the active pipeline");
 assert(/finally \{\s*setLoadingTarget\(null\)/.test(previewSource), "regeneration loading state can remain stuck");
@@ -245,8 +246,8 @@ assert(
   /const generatedBatch = await waitForFlowGeneratedMediaBatch/.test(imageGeneratorSource) &&
     /remoteVideoMediaIds = _\.uniq/.test(imageGeneratorSource) &&
     /_\.lt\(_\.size\(remoteVideoMediaIds\), FLOW_VIDEO_MEDIA_CONFIG\.EXPECTED_OUTPUT_COUNT\)/.test(imageGeneratorSource) &&
-    /for \(const targetMediaId of remoteVideoMediaIds\)/.test(imageGeneratorSource) &&
-    /await waitForFlowMediaCardReady\(activePage, targetMediaId\)/.test(imageGeneratorSource),
+    /await downloadValidatedVideo\(browserInstance\.context, \[remoteVideoSourceUrl\]/.test(imageGeneratorSource) &&
+    /await downloadFlowVideoFromEditor\(activePage, currentProjectId, remoteVideoMediaId/.test(imageGeneratorSource),
   "Flow did not wait for and preserve the complete configured media output before download",
 );
 assert(

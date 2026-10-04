@@ -14,8 +14,7 @@ export const USER_LOG_CONFIG = {
   MULTIPLE_SPACES_PATTERN: /\s{2,}/g,
   SELECTOR_PATTERN: /(?:input|button|form|iframe|div|span|label)[#.\[][^\s,>]+/gi,
   CODE_KEYWORD_PATTERN: /\b(?:const|let|var|function|async|await|return|import|export|typeof|instanceof|throw|catch|try|promise|null|undefined|NaN)\b/gi,
-  TECHNICAL_TERMS_PATTERN:
-    /\b(?:api|database|sqlite|json|function|class|stack|trace|exception|endpoint|request|response|payload|router|model|provider|token|task[_ -]?id|dom|selector|mutex|room|tab|gemini|cerebras|groq|ai33|gpt(?:-oss)?|qwen|playwright|puppeteer|ffmpeg|bytenode|obfuscator|webpack|vite|esbuild)\b/i,
+  TECHNICAL_TERMS_PATTERN: /\b(?:api|database|sqlite|json|function|class|stack|trace|exception|endpoint|request|response|payload|router|model|provider|token|task[_ -]?id|dom|selector|mutex|room|tab|gemini|cerebras|groq|ai33|gpt(?:-oss)?|qwen|playwright|puppeteer|ffmpeg|bytenode|obfuscator|webpack|vite|esbuild)\b/i,
   CONNECTION_ERROR_PATTERN: /\b(?:401|403|unauthorized|forbidden|invalid[_ -]?key|missing[_ -]?(?:api[_ -]?)?key|chưa có khóa|thiếu khóa|sai khóa)\b/i,
   CAPACITY_ERROR_PATTERN: /\b(?:429|quota|rate[_ -]?limit|too many requests|limit:\s*0|hết hạn mức|đạt giới hạn|vượt quá)\b/i,
   TRANSIENT_ERROR_PATTERN: /\b(?:timeout|timed out|network|fetch failed|econn|socket|service unavailable|500|502|503|504|kết nối thất bại)\b/i,
@@ -27,13 +26,10 @@ export const USER_LOG_CONFIG = {
   INTERNAL_ERROR_PATTERN: /(?:\b(?:error|failed|failure|rejected|invalid|cannot|unable)\b|lỗi|thất bại|không thể|chưa thể)/i,
   SCENE_ID_PATTERN: /\b(?:scene|sc)[_-]?(\d+)\b/i,
   SCENE_CODE_PATTERN: /\b(?:scene|sc)[_-]?0*(\d+)\b/gi,
-  SCENE_LIST_PATTERN:
-    /\b(?:scene|sc)[_-]?0*(\d+)(?:\s*(?:,\s*(?:và\s+|and\s+)?|\s+(?:và|and)\s+)(?:scene|sc)[_-]?0*(\d+))+\b/gi,
+  SCENE_LIST_PATTERN: /\b(?:scene|sc)[_-]?0*(\d+)(?:\s*(?:,\s*(?:và\s+|and\s+)?|\s+(?:và|and)\s+)(?:scene|sc)[_-]?0*(\d+))+\b/gi,
   ATTEMPT_FRACTION_PATTERN: /\((?:lần|attempt|lượt)\s*(\d+)\/\d+\)/gi,
-  INTERNAL_STAGE_PREFIX_PATTERN:
-    /(?:^|\s*)\[(?:đạo diễn phim|film direction|preflight|kiểm tra trước khi tạo)\]\s*(?:\[[^\]]+\]\s*)?/gi,
-  INTERNAL_WORKER_TAG_PATTERN:
-    /\[(?:prompt|storyboard|script|character|seo|thumbnail|video|tts|voice|align|render|worker)\]\s*/gi,
+  INTERNAL_STAGE_PREFIX_PATTERN: /(?:^|\s*)\[(?:đạo diễn phim|film direction|preflight|kiểm tra trước khi tạo)\]\s*(?:\[[^\]]+\]\s*)?/gi,
+  INTERNAL_WORKER_TAG_PATTERN: /\[(?:prompt|storyboard|script|character|seo|thumbnail|video|tts|voice|align|render|worker)\]\s*/gi,
   RETRY_NUMBER_PATTERN: /\b(?:lần|attempt|retry|lượt)\s*(\d+)\b/i,
   MAX_DISPLAY_SCENES_COUNT: 4,
   LANGUAGE_PREFIX_EN: "en",
@@ -66,8 +62,7 @@ export const USER_LOG_CONFIG = {
     PREFLIGHT_ADVISORY: /(?:preflight|kiểm tra trước khi tạo).*(?:giữ prompt|keeping the current prompt|góp ý|advisories)/i,
     PREFLIGHT_START: /(?:preflight|kiểm tra trước khi tạo).*(?:đang|reviewing|duyệt)/i,
     PREFLIGHT_PASSED: /(?:preflight|kiểm tra trước khi tạo).*(?:đạt yêu cầu|passed|sẵn sàng)/i,
-    INCOMPLETE_AI_OUTPUT:
-      /(?:chưa trả đủ|chưa đạt|còn thiếu|missing|required detail|invalid_(?:script|storyboard|plan)|characters?:missing|generationPrompt:|identityContinuity)/i,
+    INCOMPLETE_AI_OUTPUT: /(?:chưa trả đủ|chưa đạt|còn thiếu|missing|required detail|invalid_(?:script|storyboard|plan)|characters?:missing|generationPrompt:|identityContinuity)/i,
     CHARACTER_STAGE: /character pack|hồ sơ (?:nhận diện )?nhân vật|phân tích nhân vật|ảnh nhận diện.*nhân vật/i,
     STORYBOARD_STAGE: /storyboard|chia phân cảnh|phân tách phân cảnh|kịch bản phân cảnh/i,
     PROMPT_STAGE: /(?:prompt|câu lệnh|mô tả tạo video).*(?:cảnh|video)|(?:cảnh|video).*(?:prompt|câu lệnh)/i,
@@ -76,17 +71,12 @@ export const USER_LOG_CONFIG = {
     THUMBNAIL_STAGE: /thumbnail|ảnh bìa/i,
     VIDEO_STAGE: /(?:đang tạo|tạo).*\b(?:clip|video)\b|video.*(?:generating|processing)/i,
     RETRY: /\bretry\b|thử lại|đang bổ sung|lần\s*\d+\s*chưa đạt/i,
-    STOPPED_INCOMPLETE_TIME:
-      /(?:quy trình đã dừng|đã dừng quy trình|dừng sau)\s*(?:giây|0\s*giây)|(?:pipeline stopped after|stopped after)\s*(?:seconds|0\s*seconds)/i,
-    PIPELINE_STOPPED_ELAPSED:
-      /(?:quy trình đã dừng|đã dừng quy trình)\s+sau\s+(\d+)\s+giây|(?:the pipeline stopped|pipeline stopped)\s+after\s+(\d+)\s+seconds/i,
-    PIPELINE_CANCELLED_ELAPSED:
-      /(?:đã hủy quy trình|đã dừng quy trình)\s+sau\s+(\d+)\s+giây|(?:the pipeline was cancelled|pipeline cancelled)\s+after\s+(\d+)\s+seconds/i,
-    PIPELINE_COMPLETED_ELAPSED:
-      /(?:quy trình đã hoàn tất|hoàn tất quy trình)\s+trong\s+(\d+)\s+giây|(?:pipeline completed)\s+in\s+(\d+)\s+seconds/i,
+    STOPPED_INCOMPLETE_TIME: /(?:quy trình đã dừng|đã dừng quy trình|dừng sau)\s*(?:giây|0\s*giây)|(?:pipeline stopped after|stopped after)\s*(?:seconds|0\s*seconds)/i,
+    PIPELINE_STOPPED_ELAPSED: /(?:quy trình đã dừng|đã dừng quy trình)\s+sau\s+(\d+)\s+giây|(?:the pipeline stopped|pipeline stopped)\s+after\s+(\d+)\s+seconds/i,
+    PIPELINE_CANCELLED_ELAPSED: /(?:đã hủy quy trình|đã dừng quy trình)\s+sau\s+(\d+)\s+giây|(?:the pipeline was cancelled|pipeline cancelled)\s+after\s+(\d+)\s+seconds/i,
+    PIPELINE_COMPLETED_ELAPSED: /(?:quy trình đã hoàn tất|hoàn tất quy trình)\s+trong\s+(\d+)\s+giây|(?:pipeline completed)\s+in\s+(\d+)\s+seconds/i,
   },
 } as const;
-
 export const USER_LOG_MESSAGES = {
   vi: {
     PROCESSING: "Hệ thống đang tiến hành xử lý yêu cầu của bạn. Vui lòng chờ trong giây lát...",

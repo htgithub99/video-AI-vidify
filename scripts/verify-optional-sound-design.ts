@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import _ from "lodash";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { createRenderAudioTracks } from "../src/services/audioMixService.ts";
@@ -51,7 +52,7 @@ const rendererSource = fs.readFileSync("python_scripts/ffmpeg_render.py", "utf8"
 assert(!rendererSource.includes("tremolo=f={frequencies[3]}"), "legacy synthetic tremolo music bed remains enabled");
 assert(rendererSource.includes("anoisesrc=color={frequencies[3]}"), "genre soundscape texture is missing");
 assert(rendererSource.includes("visible_action"), "visible action does not drive automatic sound effects");
-const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert(/visibleAction:\s*_\.get\(sc, "visibleAction"\)/.test(pipelineSource), "visibleAction is not passed to the renderer");
 
 writeVerificationLog("Optional sound design assertions passed");

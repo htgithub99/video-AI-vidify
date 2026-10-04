@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs, { readFileSync } from "node:fs";
 import os from "node:os";
@@ -53,7 +54,7 @@ try {
   assert.equal(reversedReferenceFiles[0].name, referenceFiles[1].name);
   assert.equal(reversedReferenceFiles[1].name, referenceFiles[0].name);
 
-  const generatorSource = readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8");
+  const generatorSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8"));
   const flowAttachStart = generatorSource.indexOf("const attachFlowReferenceFiles");
   const flowAttachEnd = generatorSource.indexOf("const attachGrokReferenceFiles", flowAttachStart);
   const flowAttachSource = generatorSource.slice(flowAttachStart, flowAttachEnd);

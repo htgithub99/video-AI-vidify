@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import _ from "lodash";
@@ -295,10 +296,10 @@ assert.equal(targetedClipReset.renderedVideoUrl, undefined);
 assert.equal(targetedClipReset.thumbnails?.[0].imageUrl, "/assets/projects/targeted_project/thumbnails/thumb.jpg");
 assert.equal(targetedClipReset.visualConfig.characters?.[0].images?.[0], "/assets/projects/targeted_project/references/character/wukong.png");
 
-const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
-const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");
-const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8");
-const controllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
+const autoGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8"));
+const previewSource = resolveSourceTextConstants(fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8"));
+const controllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 assert.doesNotMatch(pipelineSource, /No valid take remains[\s\S]{0,300}realScenes\s*=\s*_\.filter/, "pipeline still deletes failed scenes before render");
 assert.match(pipelineSource, /getCinematicGeneratedTakeIssues/, "mandatory take gate is not connected");
 assert.match(pipelineSource, /qa_unavailable_no_evidence_for_regeneration/, "unavailable video QA still triggers unsupported regeneration");

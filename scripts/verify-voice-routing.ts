@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { applyVoiceSelection, resolveVoiceRouting } from "../src/lib/voiceRouting.ts";
@@ -15,13 +16,13 @@ assert.equal(resolveVoiceRouting({ provider: "vbee" }).finalVoiceId, "edge_vi-VN
 const presetRoute = resolveVoiceRouting({ provider: "AI33Pro", voiceId: "preset-vi-bac-female" });
 assert.equal(presetRoute.finalVoiceId, "edge_vi-VN-HoaiMyNeural");
 
-const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+const pipelineControllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 assert.match(pipelineControllerSource, /EXTERNAL_URLS\.AI33_TTS/);
 const voiceImplementationSource = [
   pipelineControllerSource,
-  fs.readFileSync("src/constants/apiRoutes.ts", "utf8"),
-  fs.readFileSync("src/constants/defaultConfigs.ts", "utf8"),
-  fs.readFileSync("src/lib/voiceRouting.ts", "utf8"),
+  resolveSourceTextConstants(fs.readFileSync("src/constants/apiRoutes.ts", "utf8")),
+  resolveSourceTextConstants(fs.readFileSync("src/constants/defaultConfigs.ts", "utf8")),
+  resolveSourceTextConstants(fs.readFileSync("src/lib/voiceRouting.ts", "utf8")),
 ].join("\n");
 assert.doesNotMatch(voiceImplementationSource, /freeTts|translate_tts|ttsfree|DEFAULT_AI33_TOKEN/i);
 

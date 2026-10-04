@@ -1,12 +1,10 @@
 import _ from "lodash";
 import { LICENSE_SECURITY_TEXTS, COMMON_ACTION_TEXTS } from "./texts";
-
 export enum LicenseStatus {
   ACTIVE = "ACTIVE",
   REVOKED = "REVOKED",
   EXPIRED = "EXPIRED",
 }
-
 export enum GasActions {
   GET_API_KEYS = "get_api_keys",
   GET_ACCOUNTS = "get_accounts",
@@ -16,12 +14,10 @@ export enum GasActions {
   VERIFY_KEY = "verify_key",
   UPDATE_USAGE = "update_usage",
 }
-
 export enum AccountStatus {
   ACTIVE = "Active",
   ERROR = "Error",
 }
-
 export enum PlanType {
   FREE = "FREE",
   PRO = "PRO",
@@ -29,20 +25,17 @@ export enum PlanType {
   PRO_MONTHLY = "PRO_MONTHLY",
   PRO_WEEKLY = "PRO_WEEKLY",
 }
-
 export enum FeatureType {
   VIDEO = "video",
   IMAGE = "image",
   VOICE = "voice",
 }
-
 const DECODE_KEY = "vidify_secret_key_2026";
 const XOR_MASK = 0x5a;
 const RADIX_HEX = 16;
 const BYTE_SIZE = 2;
 const BYTE_MASK = 0xff;
 const BYTE_WRAP = 256;
-
 const decodeSecret = (encodedHex: string): string => {
   try {
     let result = "";
@@ -60,15 +53,12 @@ const decodeSecret = (encodedHex: string): string => {
     return "";
   }
 };
-
 export const SecurityConstants = {
   get ADMIN_APP_KEY() {
     return decodeSecret("7a7d447f4671546d46716a4f604d744b6a492626262cf716e5");
   },
   get GAS_API_URL() {
-    return decodeSecret(
-      "444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1",
-    );
+    return decodeSecret("444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1");
   },
   LOCAL_STORAGE_LICENSE_KEY: "vidify_license_key",
   DEFAULT_LICENSE_KEY: "4DE63-66EB0-A241C-F9BA5-05341",
@@ -229,7 +219,6 @@ export const SecurityConstants = {
   PASSWORD_PROP: "password",
   RECOVERY_EMAIL_PROP: "recoveryEmail",
 };
-
 export const LocalizationConstants = {
   FEATURE_VIDEO: "Video",
   FEATURE_IMAGE: "Ảnh",
@@ -238,7 +227,6 @@ export const LocalizationConstants = {
   PLAN_PRO: "PRO",
   PLAN_FREE: "Miễn Phí",
 } as const;
-
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: LICENSE_SECURITY_TEXTS.vi.MISSING_LICENSE_KEY,
   INVALID_OR_REVOKED_LICENSE: LICENSE_SECURITY_TEXTS.vi.INVALID_OR_REVOKED_LICENSE,
@@ -309,7 +297,6 @@ export const SecurityMessages = {
   PLACEHOLDER_VIDEO_OUTPUT_DIR_SHORT: "Thư mục lưu video...",
   PLACEHOLDER_VIDEO_OUTPUT_DIR_TOOLTIP: "Đường dẫn thư mục lưu video hoàn chỉnh...",
 } as const;
-
 export const AutoLoginConstants = {
   URLS: {
     SIGN_IN_KEYWORD: "signin",
@@ -325,25 +312,10 @@ export const AutoLoginConstants = {
     VERIFY_IT_IS_YOU: "text=Verify it's you",
     ABOUT_SIGN_IN_BTN: 'a[href*="ServiceLogin"], a[data-g-label="sign-in"], a:has-text("Sign in"), a:has-text("Đăng nhập")',
     EMAIL_SELECTORS: ["input#identifierId", 'input[name="identifier"]', 'input[type="email"]', 'input[aria-label*="Email"]', 'input[aria-label*="email"]'],
-    PWD_SELECTORS: [
-      'input[name="Passwd"]',
-      'input[autocomplete="current-password"]',
-      'input[name="password"]',
-      'input[type="password"]:not([aria-hidden="true"]):not([name="hiddenPassword"])',
-      'input[aria-label*="password"]',
-      'input[aria-label*="Mật khẩu"]',
-    ],
+    PWD_SELECTORS: ['input[name="Passwd"]', 'input[autocomplete="current-password"]', 'input[name="password"]', 'input[type="password"]:not([aria-hidden="true"]):not([name="hiddenPassword"])', 'input[aria-label*="password"]', 'input[aria-label*="Mật khẩu"]'],
     EMAIL_NEXT_SELECTORS: ["#identifierNext button", "#identifierNext", 'form button:has-text("Next")', 'form button:has-text("Tiếp theo")', 'button[type="submit"]'],
     PWD_NEXT_SELECTORS: ["#passwordNext button", "#passwordNext", 'form button:has-text("Next")', 'form button:has-text("Tiếp theo")', 'button[type="submit"]'],
-    MANUAL_VERIFICATION_SELECTORS: [
-      'iframe[src*="recaptcha"]',
-      'input[name="ca"]',
-      "text=Verify it's you",
-      "text=Xác minh danh tính",
-      "text=Confirm it's you",
-      "text=Couldn't sign you in",
-      "text=Không thể đăng nhập",
-    ],
+    MANUAL_VERIFICATION_SELECTORS: ['iframe[src*="recaptcha"]', 'input[name="ca"]', "text=Verify it's you", "text=Xác minh danh tính", "text=Confirm it's you", "text=Couldn't sign you in", "text=Không thể đăng nhập"],
   },
   LOGS: {
     START_LOGIN: "Bắt đầu đăng nhập tài khoản: ",
@@ -413,7 +385,6 @@ export const AutoLoginConstants = {
     PASSWORD_NEXT_DELAY_MAX_MS: 1000,
   },
 } as const;
-
 export const ImageGenMessages = {
   LABS_NO_PROJECT: "[Google Labs] Không có projectId, đang truy cập để tạo dự án mới...",
   LABS_CREATED_PROJECT: "[Google Labs] Đã tạo dự án mới thành công: ",
@@ -432,9 +403,7 @@ export const ImageGenMessages = {
   CONFIG_CHANGED_FORCE_NEW_ROOM: "Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.",
   CHROME_MODE_CHANGED: "[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...",
 } as const;
-
 export const UIConstants = { INFINITY: "∞", LANG_VI: "VN", LANG_EN: "EN", MOUSE_DOWN_EVENT: "mousedown" } as const;
-
 export const getClientEnvironmentLicenseKey = (): string => {
   const metaEnv = typeof import.meta !== "undefined" ? (import.meta as any).env : undefined;
   const envKey = _.get(metaEnv, "VITE_LICENSE_KEY") || _.get(metaEnv, "VIDIFY_LICENSE_KEY") || _.get(metaEnv, "LICENSE_KEY");

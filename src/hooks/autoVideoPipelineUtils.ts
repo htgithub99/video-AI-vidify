@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_AUTO, SOURCE_TEXT_ID, SOURCE_TEXT_INPUT_CONTENT } from "../constants/sourceText";
 import _ from "lodash";
 import { ProjectKind, VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
@@ -7,7 +8,6 @@ import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
 import { resolveStylePreset } from "../constants/stylePresets";
-
 export interface CachedVoiceAudio {
   audioBase64: string;
   audioUrl: string;
@@ -27,71 +27,46 @@ export interface PipelineInvalidationState {
   regenerateSeo: boolean;
   regenerateThumbnails: boolean;
 }
-
 export interface GenerationCheckpointSceneProgress {
   completedSceneIds: string[];
   pendingSceneIds: string[];
   failedSceneIds: string[];
 }
-
-export const mergeContinuationLogs = (...logSources: Array<string[] | null | undefined>): string[] =>
-  _.uniq(_.flatMap(logSources, (source) => _.defaultTo(source, [])));
-
+export const mergeContinuationLogs = (...logSources: Array<string[] | null | undefined>): string[] => _.uniq(_.flatMap(logSources, (source) => _.defaultTo(source, [])));
 export const resolveCinematicContinuationStage = (project?: VideoProject | null): number => {
   if (_.isEmpty(_.trim(project?.scriptRewritten))) return CINEMATIC_PROGRESS_STAGE.SCRIPT;
   const scenes = _.defaultTo(project?.storyboard, []);
   if (_.isEmpty(scenes) || _.some(scenes, (scene) => _.isEmpty(_.trim(scene.generationPrompt)))) return CINEMATIC_PROGRESS_STAGE.PROMPT;
-  const missingCharacterReference = _.some(
-    project?.visualConfig?.characters,
-    (character) => !_.isEmpty(_.trim(character.referenceGenerationPrompt)) && _.isEmpty(character.images),
-  );
+  const missingCharacterReference = _.some(project?.visualConfig?.characters, (character) => !_.isEmpty(_.trim(character.referenceGenerationPrompt)) && _.isEmpty(character.images));
   const thumbnails = _.defaultTo(project?.thumbnails, []);
   const missingThumbnail = _.isEmpty(thumbnails) || _.some(thumbnails, (thumbnail) => _.isEmpty(_.trim(thumbnail.imageUrl)));
   if (missingCharacterReference || missingThumbnail) return CINEMATIC_PROGRESS_STAGE.THUMBNAIL;
   return CINEMATIC_PROGRESS_STAGE.VIDEO;
 };
-
 const INTERRUPTED_PIPELINE_STATUSES = [REFACTOR_CONSTANTS.STATUS_GENERATING, REFACTOR_CONSTANTS.STATUS_CANCELLED, REFACTOR_CONSTANTS.STATUS_PARTIAL];
 const ALIGNMENT_CONFIG = { EPSILON_SECONDS: 0.05 } as const;
-
-const hasStoredSceneAsset = (scene: StoryboardScene): boolean =>
-  !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls);
-
+const hasStoredSceneAsset = (scene: StoryboardScene): boolean => !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls);
 export const getGenerationCheckpointSceneProgress = (project: VideoProject): GenerationCheckpointSceneProgress => {
   const scenes = _.defaultTo(project.storyboard, []) as StoryboardScene[];
   const checkpoint = project.generationCheckpoint;
-  const reachedMediaStage =
-    _.some(scenes, hasStoredSceneAsset) ||
-    CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.phase)) ||
-    CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.lastSuccessfulPhase));
-  const completedScenes = _.filter(scenes, (scene) =>
-    reachedMediaStage ? hasStoredSceneAsset(scene) : !_.isEmpty(_.trim(scene.generationPrompt)),
-  );
-  const completedSceneIds = _.map(completedScenes, "id");
+  const reachedMediaStage = _.some(scenes, hasStoredSceneAsset) || CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.phase)) || CINEMATIC_CHECKPOINT_CONFIG.MEDIA_PHASE_PATTERN.test(_.toString(checkpoint?.lastSuccessfulPhase));
+  const completedScenes = _.filter(scenes, (scene) => (reachedMediaStage ? hasStoredSceneAsset(scene) : !_.isEmpty(_.trim(scene.generationPrompt))));
+  const completedSceneIds = _.map(completedScenes, SOURCE_TEXT_ID);
   const pendingSceneIds = _.map(
     _.reject(scenes, (scene) => _.includes(completedSceneIds, scene.id)),
-    "id",
+    SOURCE_TEXT_ID,
   );
   const failedSceneIds = _.map(
     _.filter(scenes, (scene) => !_.isEmpty(scene.assetError) && _.includes(pendingSceneIds, scene.id)),
-    "id",
+    SOURCE_TEXT_ID,
   );
   return { completedSceneIds, pendingSceneIds, failedSceneIds };
 };
-
-export const preserveInterruptedStoryboardCheckpoint = (
-  project: VideoProject | null,
-  config: PipelineConfig,
-  invalidationState: PipelineInvalidationState,
-): PipelineInvalidationState => {
+export const preserveInterruptedStoryboardCheckpoint = (project: VideoProject | null, config: PipelineConfig, invalidationState: PipelineInvalidationState): PipelineInvalidationState => {
   const hasReusableSceneAssets = !_.isEmpty(project?.storyboard) && _.every(project?.storyboard, (scene) => !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls));
-  const canResumeCheckpoint = _.every(
-    [config.resumeMode, !config.forceRegenerateScenes, !invalidationState.regenerateScript, hasReusableSceneAssets, _.includes(INTERRUPTED_PIPELINE_STATUSES, project?.status)],
-    Boolean,
-  );
+  const canResumeCheckpoint = _.every([config.resumeMode, !config.forceRegenerateScenes, !invalidationState.regenerateScript, hasReusableSceneAssets, _.includes(INTERRUPTED_PIPELINE_STATUSES, project?.status)], Boolean);
   return canResumeCheckpoint ? { ...invalidationState, regenerateStoryboard: false, regenerateSceneAssets: false } : invalidationState;
 };
-
 export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
   const audioUrl = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   let audioBase64 = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -106,25 +81,15 @@ export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<C
   }
   return { audioBase64, audioUrl, isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)) };
 };
-
 export interface ResolvedTargetProject {
   selectedAutoProject: VideoProject | null;
   existingTargetProject: VideoProject | null;
 }
-
-export const resolveTargetProject = (
-  projects: VideoProject[],
-  selectedProjectId: string | null | undefined,
-  activeProject: VideoProject | null,
-  projectName: string,
-  scriptContent: string,
-  cinematicMode = false,
-): ResolvedTargetProject => {
+export const resolveTargetProject = (projects: VideoProject[], selectedProjectId: string | null | undefined, activeProject: VideoProject | null, projectName: string, scriptContent: string, cinematicMode = false): ResolvedTargetProject => {
   const selectedProject = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
   const targetProjectKind = cinematicMode ? ProjectKind.Cinematic : ProjectKind.Auto;
   const targetChildSuffix = cinematicMode ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
-  const isTargetProject = (project: VideoProject | null | undefined): boolean =>
-    Boolean(project && (_.isEqual(project.projectKind, targetProjectKind) || _.endsWith(project.name, targetChildSuffix)));
+  const isTargetProject = (project: VideoProject | null | undefined): boolean => Boolean(project && (_.isEqual(project.projectKind, targetProjectKind) || _.endsWith(project.name, targetChildSuffix)));
   const selectedAutoProject = selectedProject
     ? selectedProject.parentId
       ? isTargetProject(selectedProject)
@@ -145,10 +110,7 @@ export const resolveTargetProject = (
       _.defaultTo(
         _.find(projects, (project) => isTargetProject(project) && !_.isEmpty(projectName) && _.isEqual(_.trim(project.name), _.trim(projectName))),
         _.defaultTo(
-          _.find(
-            projects,
-            (project) => isTargetProject(project) && !_.isEmpty(scriptContent) && _.isEqual(_.trim(_.get(project, "input.content", "")), _.trim(scriptContent)),
-          ),
+          _.find(projects, (project) => isTargetProject(project) && !_.isEmpty(scriptContent) && _.isEqual(_.trim(_.get(project, SOURCE_TEXT_INPUT_CONTENT, "")), _.trim(scriptContent))),
           null,
         ),
       ),
@@ -156,17 +118,8 @@ export const resolveTargetProject = (
   );
   return { selectedAutoProject, existingTargetProject };
 };
-
-export const getReferenceChangeState = (
-  project: VideoProject | null,
-  styleImages: string[],
-  sceneImages: string[],
-  thumbnailImages: string[],
-  characterImages: string[],
-  preserveEmptyValues = false,
-): ReferenceChangeState => {
-  const hasMeaningfulChange = (nextValues: string[], existingValues: string[] | undefined): boolean =>
-    !(preserveEmptyValues && _.isEmpty(nextValues)) && !_.isEqual(nextValues, _.defaultTo(existingValues, []));
+export const getReferenceChangeState = (project: VideoProject | null, styleImages: string[], sceneImages: string[], thumbnailImages: string[], characterImages: string[], preserveEmptyValues = false): ReferenceChangeState => {
+  const hasMeaningfulChange = (nextValues: string[], existingValues: string[] | undefined): boolean => !(preserveEmptyValues && _.isEmpty(nextValues)) && !_.isEqual(nextValues, _.defaultTo(existingValues, []));
   const styleChanged = hasMeaningfulChange(styleImages, project?.visualConfig?.styleReferenceImages);
   const sceneChanged = hasMeaningfulChange(sceneImages, project?.visualConfig?.sceneReferenceImages);
   const thumbnailChanged = hasMeaningfulChange(thumbnailImages, project?.visualConfig?.thumbnailReferenceImages);
@@ -178,7 +131,6 @@ export const getReferenceChangeState = (
     shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged,
   };
 };
-
 const buildComparisonConfigs = (config: PipelineConfig) => ({
   projectConfig: {
     genre: config.genre,
@@ -218,36 +170,18 @@ const buildComparisonConfigs = (config: PipelineConfig) => ({
     thumbnailImageFocusMode: config.thumbnailImageFocusMode,
   },
 });
-
 export const getPipelineInvalidationState = (project: VideoProject | null, config: PipelineConfig, references: ReferenceChangeState): PipelineInvalidationState => {
   if (!project) return { regenerateScript: true, regenerateStoryboard: true, regenerateVoice: true, regenerateSceneAssets: true, regenerateSeo: true, regenerateThumbnails: true };
-
   const { projectConfig: currentProjectConfig, voiceConfig: currentVoiceConfig, visualConfig: currentVisualConfig } = buildComparisonConfigs(config);
   const inputChanged = !_.isEqual(project.input?.type, config.inputType) || !_.isEqual(_.trim(project.input?.content), _.trim(config.scriptContent));
-  const scriptConfigChanged = !_.isEqual(
-    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
-    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
-  );
-  const storyboardConfigChanged = !_.isEqual(
-    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
-    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
-  );
-  const storyboardVisualConfigChanged = !_.isEqual(
-    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
-    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
-  );
-  const voiceConfigChanged = !_.isEqual(
-    _.pick(project.voiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
-    _.pick(currentVoiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
-  );
-  const visualConfigChanged = !_.isEqual(
-    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
-    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
-  );
+  const scriptConfigChanged = !_.isEqual(_.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS), _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS));
+  const storyboardConfigChanged = !_.isEqual(_.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS), _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS));
+  const storyboardVisualConfigChanged = !_.isEqual(_.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS), _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS));
+  const voiceConfigChanged = !_.isEqual(_.pick(project.voiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS), _.pick(currentVoiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS));
+  const visualConfigChanged = !_.isEqual(_.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS), _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS));
   const hasScript = !_.isEmpty(project.scriptRewritten),
     hasStoryboard = !_.isEmpty(project.storyboard),
     hasVoice = !_.isEmpty(project.voiceConfig?.audioUrl) || !_.isEmpty(project.voiceConfig?.audioBase64);
-
   if (config.resumeMode && !config.forceRegenerateScenes && !config.forceRegenerateVoice) {
     return {
       regenerateScript: !hasScript || !project.contentSafety?.allowed,
@@ -260,12 +194,10 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
   }
   const previousThumbnailStyle = resolveStylePreset(project.visualConfig?.thumbnailReferencePrompt || project.visualConfig?.style).positivePrompt;
   const requestedThumbnailStyle = resolveStylePreset(config.thumbnailStylePreset || config.stylePreset).positivePrompt;
-
   let regenerateScript = inputChanged || scriptConfigChanged || !project.contentSafety?.allowed || !hasScript;
   let regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || !hasStoryboard;
   let regenerateVoice = regenerateScript || voiceConfigChanged || !hasVoice;
   let regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
-
   if (config.forceRegenerateScenes) {
     if (hasScript) regenerateScript = false;
     if (hasStoryboard) regenerateStoryboard = false;
@@ -277,7 +209,6 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
     regenerateVoice = true;
     regenerateSceneAssets = false;
   }
-
   return {
     regenerateScript,
     regenerateStoryboard,
@@ -295,7 +226,6 @@ export const getPipelineInvalidationState = (project: VideoProject | null, confi
       !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle),
   };
 };
-
 export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean =>
   _.every(scenes, (scene, index) =>
     _.every([
@@ -309,8 +239,5 @@ export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNa
       hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio)),
     ]),
   );
-
-export const calculateSceneDuration = (scenes: StoryboardScene[]): number =>
-  _.sumBy(scenes, (scene) => _.max([0, (_.toNumber(scene.duration) || 0) - (_.toNumber(scene.sourceTrimStartSeconds) || 0) - (_.toNumber(scene.sourceTrimEndSeconds) || 0)]) || 0);
-export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = "auto"): string =>
-  _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);
+export const calculateSceneDuration = (scenes: StoryboardScene[]): number => _.sumBy(scenes, (scene) => _.max([0, (_.toNumber(scene.duration) || 0) - (_.toNumber(scene.sourceTrimStartSeconds) || 0) - (_.toNumber(scene.sourceTrimEndSeconds) || 0)]) || 0);
+export const getAutoVideoConfigStorageKey = (projectId?: string | null, scope: string = SOURCE_TEXT_AUTO): string => _.join(_.compact([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, scope, projectId]), REFACTOR_CONSTANTS.VD_UNDERSCORE);

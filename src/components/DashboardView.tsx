@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_AMBER, SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_BLUE, SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_EMERALD, SOURCE_TEXT_GHOST, SOURCE_TEXT_MD, SOURCE_TEXT_OUTLINE, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_TEXT_AMBER_400, SOURCE_TEXT_TEXT_BLUE_400, SOURCE_TEXT_TEXT_EMERALD_400, SOURCE_TEXT_XS } from "../constants/sourceText";
 import { cn } from "../lib/utils";
 import { FC, ReactNode } from "react";
 import { Video, Image as ImageIcon, Mic, Sparkles, FolderKanban, Play, ArrowRight, Activity, Zap } from "lucide-react";
@@ -10,7 +11,6 @@ import { QUOTA_TEXTS, UI_COMMON_TEXTS } from "../constants/texts";
 import { AppLanguage } from "../constants/enums";
 import { SecurityConstants, UIConstants } from "../constants/security";
 import _ from "lodash";
-
 interface DashboardViewProps {
   currentLang: Lang;
   projects: VideoProject[];
@@ -18,7 +18,6 @@ interface DashboardViewProps {
   onSelectProject: (id: string) => void;
   onNavigateToProjects: () => void;
 }
-
 interface QuotaProgressBarProps {
   icon: ReactNode;
   label: string;
@@ -30,11 +29,9 @@ interface QuotaProgressBarProps {
   bgBarClass: string;
   formatNumber?: boolean;
 }
-
 const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit, percent, isUnlimited, colorClass, bgBarClass, formatNumber = false }) => {
   const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
   const formattedLimit = isUnlimited ? UIConstants.INFINITY : formatNumber ? limit.toLocaleString() : limit;
-
   return (
     <div className={cn("space-y-2")}>
       <div className={cn("flex justify-between items-center text-xs font-bold gap-2")}>
@@ -43,7 +40,7 @@ const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit
         </span>
         <span className={cn("text-slate-400 font-mono text-[11px] shrink-0")}>
           <span className={cn("text-slate-100 font-extrabold")}>{formattedUsage}</span>
-          <span className={cn("text-slate-600 mx-1")}>/</span>
+          <span className={cn("text-slate-600 mx-1")}>{SOURCE_TEXT_SYMBOL}</span>
           {formattedLimit}
         </span>
       </div>
@@ -53,42 +50,31 @@ const QuotaProgressBar: FC<QuotaProgressBarProps> = ({ icon, label, usage, limit
     </div>
   );
 };
-
 export default function DashboardView({ currentLang, projects, isLoading = false, onSelectProject, onNavigateToProjects }: DashboardViewProps) {
   const { licenseInfo } = useLicense();
-
   if (!licenseInfo || isLoading) {
     return <DashboardSkeleton />;
   }
-
   const t = translations[currentLang];
   const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
   const langKey = isVietnamese ? UIConstants.LANG_VI : UIConstants.LANG_EN;
   const quotaText = _.get(QUOTA_TEXTS, langKey, QUOTA_TEXTS.VN);
   const commonTexts = _.get(UI_COMMON_TEXTS, currentLang, UI_COMMON_TEXTS.vi);
   const latestProject = _.last(projects) || null;
-
   const limitVideo = _.get(licenseInfo, SecurityConstants.LIMITS_VIDEO, SecurityConstants.ZERO);
   const limitImage = _.get(licenseInfo, SecurityConstants.LIMITS_IMAGE, SecurityConstants.ZERO);
   const limitVoice = _.get(licenseInfo, SecurityConstants.LIMITS_VOICE, SecurityConstants.ZERO);
   const isUnlimited = Boolean(_.get(licenseInfo, SecurityConstants.LIMITS_UNLIMITED, false));
-
   const usageVideo = _.get(licenseInfo, SecurityConstants.USAGE_VIDEO, SecurityConstants.ZERO);
   const usageImage = _.get(licenseInfo, SecurityConstants.USAGE_IMAGE, SecurityConstants.ZERO);
   const usageVoice = _.get(licenseInfo, SecurityConstants.USAGE_VOICE, SecurityConstants.ZERO);
-
   const calculatePercent = (used: number, limit: number): number => (isUnlimited ? 100 : _.clamp((used / (_.max([limit, 1]) as number)) * 100, 0, 100));
-
   const videoPercent = calculatePercent(usageVideo, limitVideo);
   const imagePercent = calculatePercent(usageImage, limitImage);
   const voicePercent = calculatePercent(usageVoice, limitVoice);
-
   return (
     <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 space-y-6 text-left")}>
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-rose-950/40 border border-slate-800/80 p-6 sm:p-8 backdrop-blur-md shadow-xl",
-        )}>
+      <div className={cn("relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-rose-950/40 border border-slate-800/80 p-6 sm:p-8 backdrop-blur-md shadow-xl")}>
         <div className={cn("absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none")} />
         <div className={cn("relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6")}>
           <div className={cn("space-y-2 min-w-0 flex-1")}>
@@ -106,14 +92,13 @@ export default function DashboardView({ currentLang, projects, isLoading = false
             </p>
           </div>
           <div className={cn("flex items-center gap-3 shrink-0")}>
-            <Button variant="primary" size="md" onClick={onNavigateToProjects} className={cn("rounded-2xl flex items-center gap-2")}>
+            <Button variant={SOURCE_TEXT_PRIMARY} size={SOURCE_TEXT_MD} onClick={onNavigateToProjects} className={cn("rounded-2xl flex items-center gap-2")}>
               <FolderKanban className={cn("w-4 h-4 shrink-0")} />
               <span className={cn("truncate")}>{t.dashboardGoToContent}</span>
             </Button>
           </div>
         </div>
       </div>
-
       <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-6")}>
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between")}>
           <div className={cn("flex items-center justify-between mb-4")}>
@@ -142,7 +127,6 @@ export default function DashboardView({ currentLang, projects, isLoading = false
             </div>
           </div>
         </div>
-
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between gap-4")}>
           <div className={cn("flex items-center justify-between")}>
             <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.MEDIA_QUOTA}>
@@ -151,29 +135,10 @@ export default function DashboardView({ currentLang, projects, isLoading = false
             <Activity className={cn("w-4 h-4 text-emerald-400 shrink-0")} />
           </div>
           <div className={cn("space-y-4 flex-1")}>
-            <QuotaProgressBar
-              icon={<Video className={cn("w-3.5 h-3.5 shrink-0")} />}
-              label={quotaText.VIDEO}
-              usage={usageVideo}
-              limit={limitVideo}
-              percent={videoPercent}
-              isUnlimited={isUnlimited}
-              colorClass="text-blue-400"
-              bgBarClass="bg-gradient-to-r from-blue-500 to-sky-400"
-            />
-            <QuotaProgressBar
-              icon={<ImageIcon className={cn("w-3.5 h-3.5 shrink-0")} />}
-              label={quotaText.IMAGE}
-              usage={usageImage}
-              limit={limitImage}
-              percent={imagePercent}
-              isUnlimited={isUnlimited}
-              colorClass="text-emerald-400"
-              bgBarClass="bg-gradient-to-r from-emerald-500 to-teal-400"
-            />
+            <QuotaProgressBar icon={<Video className={cn("w-3.5 h-3.5 shrink-0")} />} label={quotaText.VIDEO} usage={usageVideo} limit={limitVideo} percent={videoPercent} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_BLUE_400} bgBarClass={SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_BLUE} />
+            <QuotaProgressBar icon={<ImageIcon className={cn("w-3.5 h-3.5 shrink-0")} />} label={quotaText.IMAGE} usage={usageImage} limit={limitImage} percent={imagePercent} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_EMERALD_400} bgBarClass={SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_EMERALD} />
           </div>
         </div>
-
         <div className={cn("glass-card rounded-3xl p-6 shadow-md flex flex-col justify-between gap-4")}>
           <div className={cn("flex items-center justify-between")}>
             <h3 className={cn("text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono truncate")} title={quotaText.VOICE_QUOTA}>
@@ -181,23 +146,12 @@ export default function DashboardView({ currentLang, projects, isLoading = false
             </h3>
             <Mic className={cn("w-4 h-4 text-amber-400 shrink-0")} />
           </div>
-          <QuotaProgressBar
-            icon={<Mic className={cn("w-3.5 h-3.5 shrink-0")} />}
-            label={quotaText.CHARS}
-            usage={usageVoice}
-            limit={limitVoice}
-            percent={voicePercent}
-            isUnlimited={isUnlimited}
-            colorClass="text-amber-400"
-            bgBarClass="bg-gradient-to-r from-amber-500 to-orange-400"
-            formatNumber
-          />
+          <QuotaProgressBar icon={<Mic className={cn("w-3.5 h-3.5 shrink-0")} />} label={quotaText.CHARS} usage={usageVoice} limit={limitVoice} percent={voicePercent} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_AMBER_400} bgBarClass={SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_AMBER} formatNumber />
           <p className={cn("text-[10px] text-slate-500 font-mono mt-auto truncate")} title={quotaText.SYNC_MSG}>
             {quotaText.SYNC_MSG}
           </p>
         </div>
       </div>
-
       {latestProject ? (
         <div className={cn("glass-card rounded-3xl p-6 sm:p-8 shadow-md")}>
           <div className={cn("flex items-center justify-between mb-6 gap-2")}>
@@ -205,24 +159,15 @@ export default function DashboardView({ currentLang, projects, isLoading = false
               <FolderKanban className={cn("w-4 h-4 text-rose-500 shrink-0")} />
               <span className={cn("truncate")}>{t.dashboardLatestProject}</span>
             </h3>
-            <Button variant="ghost" size="xs" onClick={onNavigateToProjects} className={cn("text-rose-400 hover:text-rose-300 flex items-center gap-1 font-bold shrink-0")}>
+            <Button variant={SOURCE_TEXT_GHOST} size={SOURCE_TEXT_XS} onClick={onNavigateToProjects} className={cn("text-rose-400 hover:text-rose-300 flex items-center gap-1 font-bold shrink-0")}>
               <span className={cn("truncate")}>{commonTexts.VIEW_ALL}</span>
               <ArrowRight className={cn("w-3.5 h-3.5")} />
             </Button>
           </div>
-
           <div className={cn("flex flex-col sm:flex-row gap-6 items-start")}>
-            <div
-              className={cn(
-                "w-full sm:w-56 aspect-video bg-slate-950/90 border border-slate-800/80 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 relative group shadow-inner",
-              )}>
+            <div className={cn("w-full sm:w-56 aspect-video bg-slate-950/90 border border-slate-800/80 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 relative group shadow-inner")}>
               <Video className={cn("w-12 h-12 text-slate-700 group-hover:scale-110 transition-transform duration-300")} />
-              <div
-                className={cn(
-                  "absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-white shadow-sm border border-white/10 truncate max-w-[80px]",
-                )}>
-                {_.isEqual(latestProject.config?.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}
-              </div>
+              <div className={cn("absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-white shadow-sm border border-white/10 truncate max-w-[80px]")}>{_.isEqual(latestProject.config?.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}</div>
             </div>
             <div className={cn("flex-1 space-y-3 min-w-0 w-full")}>
               <div className={cn("min-w-0")}>
@@ -234,16 +179,11 @@ export default function DashboardView({ currentLang, projects, isLoading = false
                 </p>
               </div>
               <div className={cn("pt-2 flex flex-wrap gap-3")}>
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => onSelectProject(latestProject.id)}
-                  className={cn("rounded-2xl flex items-center gap-2")}
-                  title={t.dashboardOpenStudio}>
+                <Button variant={SOURCE_TEXT_PRIMARY} size={SOURCE_TEXT_MD} onClick={() => onSelectProject(latestProject.id)} className={cn("rounded-2xl flex items-center gap-2")} title={t.dashboardOpenStudio}>
                   <Play className={cn("w-4 h-4 fill-white shrink-0")} />
                   <span className={cn("truncate")}>{t.dashboardOpenStudio}</span>
                 </Button>
-                <Button variant="outline" size="md" onClick={onNavigateToProjects} className={cn("rounded-2xl truncate")}>
+                <Button variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_MD} onClick={onNavigateToProjects} className={cn("rounded-2xl truncate")}>
                   {t.dashboardGoToContent}
                 </Button>
               </div>
@@ -261,7 +201,7 @@ export default function DashboardView({ currentLang, projects, isLoading = false
           <p className={cn("text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed truncate")} title={t.dashboardWelcomeDesc}>
             {t.dashboardWelcomeDesc}
           </p>
-          <Button variant="primary" size="md" className={cn("mt-5 rounded-2xl")} onClick={onNavigateToProjects} title={t.dashboardGoToContent}>
+          <Button variant={SOURCE_TEXT_PRIMARY} size={SOURCE_TEXT_MD} className={cn("mt-5 rounded-2xl")} onClick={onNavigateToProjects} title={t.dashboardGoToContent}>
             <span className={cn("truncate")}>{t.dashboardGoToContent}</span>
           </Button>
         </div>

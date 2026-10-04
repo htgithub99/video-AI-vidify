@@ -1,11 +1,12 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
 import { findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
 import { SUNO_AUTOMATION_PATTERNS } from "../src/constants/sunoAutomation.js";
 
-const source = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
-const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
+const source = resolveSourceTextConstants(fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8"));
+const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
 
 assert.match(source, /const ensureSunoStyle = async/);
 assert.match(source, /const configureAdvancedOnce[\s\S]*await ensureSunoStyle\(page, style\)/);

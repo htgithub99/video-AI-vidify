@@ -1,9 +1,7 @@
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
 import { StoryboardQualityReport, StoryboardScene } from "../types.js";
-
 const normalizeCoverageText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value))), /[\p{L}\p{N}]+/gu), " ");
-
 export const calculateStoryboardScriptCoverage = (script: string, scenes: Array<Partial<Pick<StoryboardScene, "script" | "subtitle">>>): number => {
   const scriptTokens = _.words(normalizeCoverageText(script), /[^\s]+/g);
   if (_.isEmpty(scriptTokens)) return 1;
@@ -17,15 +15,12 @@ export const calculateStoryboardScriptCoverage = (script: string, scenes: Array<
   const matchedTokens = _.sumBy(_.toPairs(_.countBy(scriptTokens)), ([token, count]) => _.min([count, _.get(sceneTokenCounts, token, 0)]) || 0);
   return _.divide(matchedTokens, _.size(scriptTokens));
 };
-
 const normalizeScore = (input: unknown): number => _.clamp(_.toNumber(input), 0, 100);
-
 const getMinimumCinematicSceneWordCount = (sourceScript: string, expectedClipCount: number): number => {
   if (!_.isInteger(expectedClipCount) || expectedClipCount < 1) return 1;
   const averageWordsPerClip = _.size(_.words(sourceScript)) / expectedClipCount;
   return _.min([8, _.max([1, _.floor(averageWordsPerClip / 5)]) || 1]) || 1;
 };
-
 export const getUnderfilledCinematicSceneIds = (scenes: StoryboardScene[], sourceScript: string, expectedClipCount: number): string[] => {
   const minimumWordCount = getMinimumCinematicSceneWordCount(sourceScript, expectedClipCount);
   return _.map(
@@ -33,7 +28,6 @@ export const getUnderfilledCinematicSceneIds = (scenes: StoryboardScene[], sourc
     (scene) => _.toString(scene.id),
   );
 };
-
 export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityReport>): StoryboardQualityReport => {
   const report: StoryboardQualityReport = {
     continuityScore: normalizeScore(value.continuityScore),
@@ -53,13 +47,7 @@ export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityRepor
   report.passed = _.isEmpty(report.blockingErrors);
   return report;
 };
-
-export const applyDeterministicStoryboardCoverage = (
-  report: StoryboardQualityReport,
-  script: string,
-  scenes: Array<{ script?: string; subtitle?: string; duration?: number }>,
-  wordsPerMinute: number = SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE,
-): StoryboardQualityReport => {
+export const applyDeterministicStoryboardCoverage = (report: StoryboardQualityReport, script: string, scenes: Array<{ script?: string; subtitle?: string; duration?: number }>, wordsPerMinute: number = SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE): StoryboardQualityReport => {
   const scriptCoverageScore = _.round(calculateStoryboardScriptCoverage(script, scenes) * 100);
   const safeWordsPerMinute = _.gt(wordsPerMinute, 0) ? wordsPerMinute : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE;
   const scenePacingScores = _.map(scenes, (scene) => {
@@ -70,13 +58,7 @@ export const applyDeterministicStoryboardCoverage = (
     return _.round(_.clamp((maximumWords / sceneWordCount) * 100, 0, 100));
   });
   const pacingCoverageScore = _.min(scenePacingScores) || 0;
-  const warnings = _.uniq(
-    _.compact([
-      ...report.warnings,
-      scriptCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
-      pacingCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
-    ]),
-  );
+  const warnings = _.uniq(_.compact([...report.warnings, scriptCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "", pacingCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : ""]));
   return {
     ...report,
     scriptCoverageScore,

@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_GHOST, SOURCE_TEXT_SM, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
 import { FC, useState } from "react";
 import { cn } from "../lib/utils";
 import { Lang } from "../lib/lang.js";
@@ -8,7 +9,6 @@ import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRig
 import { Button } from "./ui/Button";
 import { useLicense } from "../contexts/LicenseContext";
 import _ from "lodash";
-
 interface SidebarProps {
   currentLang: Lang;
   activeTab: string;
@@ -20,7 +20,6 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
-
 interface MenuItemConfig {
   id: AppTab;
   label: string;
@@ -28,7 +27,6 @@ interface MenuItemConfig {
   requiresProject: boolean;
   hide?: boolean;
 }
-
 interface SidebarItemProps {
   item: MenuItemConfig;
   isSelected: boolean;
@@ -36,12 +34,11 @@ interface SidebarItemProps {
   isCollapsed: boolean;
   onSelect: (id: AppTab) => void;
 }
-
 const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCollapsed, onSelect }) => {
   const Icon = item.icon;
-
   return (
-    <Button variant="unstyled"
+    <Button
+      variant={SOURCE_TEXT_UNSTYLED}
       onClick={() => onSelect(item.id)}
       disabled={isDisabled}
       data-active={isSelected}
@@ -65,16 +62,13 @@ const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCol
     </Button>
   );
 };
-
 export default function Sidebar({ currentLang, activeTab, setActiveTab, selectedProjectId, activeProjectName, isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { licenseInfo } = useLicense();
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
-
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
   const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR], activeTab as AppTab);
-
   const menuItems: MenuItemConfig[] = [
     {
       id: AppTab.DASHBOARD,
@@ -134,28 +128,20 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       hide: _.isEqual(licenseInfo?.plan_type, PlanType.FREE),
     },
   ];
-
   const handleItemSelect = (id: AppTab) => {
     setActiveTab(id);
     if (onCloseMobile) onCloseMobile();
   };
-
   const projectTitle = selectedProjectId && activeProjectName ? activeProjectName : texts.AI_CREATOR;
   const projectSubtitle = selectedProjectId ? texts.ACTIVE_PROJECT : texts.NO_PROJECT_ACTIVE;
-
   const sidebarContent = (
-    <aside
-      className={cn("app-sidebar bg-slate-955 text-slate-200 flex flex-col justify-between transition-[width] duration-200 h-full min-h-full self-stretch select-none z-20 shrink-0", { "w-18": isCollapsed, "w-60": !(isCollapsed) })}>
+    <aside className={cn("app-sidebar bg-slate-955 text-slate-200 flex flex-col justify-between transition-[width] duration-200 h-full min-h-full self-stretch select-none z-20 shrink-0", { "w-18": isCollapsed, "w-60": !isCollapsed })}>
       <div className={cn("p-3 flex flex-col items-center justify-center relative shrink-0")}>
         {onCloseMobile && (
-          <Button variant="unstyled"
-            onClick={onCloseMobile}
-            className={cn("btn-icon-tiny lg:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border-none transition-colors")}
-            title={texts.CLOSE_MENU}>
+          <Button variant={SOURCE_TEXT_UNSTYLED} onClick={onCloseMobile} className={cn("btn-icon-tiny lg:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border-none transition-colors")} title={texts.CLOSE_MENU}>
             <X className={cn("w-4 h-4")} />
           </Button>
         )}
-
         <div className={cn("relative flex items-center justify-center w-full")}>
           {!isCollapsed ? (
             <div className={cn("app-sidebar-project flex items-center gap-3 p-3 rounded-2xl bg-slate-900/60 animate-fadeIn w-full shadow-sm")}>
@@ -178,7 +164,6 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
           )}
         </div>
       </div>
-
       <nav className={cn("flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar min-h-0 grow")}>
         {_.map(
           _.filter(menuItems, (item) => !item.hide),
@@ -188,25 +173,17 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
           },
         )}
       </nav>
-
       <div className={cn("app-sidebar-footer hidden lg:block p-3 bg-slate-955 shrink-0 mt-auto")}>
-        <Button variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn(
-            "w-full h-10 flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all font-bold bg-slate-900/40 shadow-none border-none",
-          )}>
+        <Button variant={SOURCE_TEXT_GHOST} size={SOURCE_TEXT_SM} onClick={() => setIsCollapsed(!isCollapsed)} className={cn("w-full h-10 flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all font-bold bg-slate-900/40 shadow-none border-none")}>
           {isCollapsed ? <ChevronRight className={cn("w-4 h-4")} /> : <ChevronLeft className={cn("w-4 h-4")} />}
           {!isCollapsed && <span className={cn("text-xs font-mono font-bold")}>{texts.COLLAPSE}</span>}
         </Button>
       </div>
     </aside>
   );
-
   return (
     <>
       <div className={cn("hidden lg:flex h-full min-h-full self-stretch shrink-0")}>{sidebarContent}</div>
-
       {isMobileOpen && (
         <div className={cn("lg:hidden fixed inset-0 z-50 flex")}>
           <div className={cn("fixed inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200")} onClick={onCloseMobile} />

@@ -1,3 +1,22 @@
+import {
+  SOURCE_TEMPLATE_DIALOGUE_SEGMENT_MISSING,
+  SOURCE_TEMPLATE_INVALID_TAKE_DECISION,
+  SOURCE_TEMPLATE_SEGMENTS_MISSING,
+  SOURCE_TEMPLATE_SEGMENT_BOUNDARY_MISMATCH,
+  SOURCE_TEMPLATE_SEGMENT_ID_MISMATCH,
+  SOURCE_TEXT_ALL_SCENES_OMITTED,
+  SOURCE_TEXT_DECISIONS,
+  SOURCE_TEXT_DECISION_COUNT_MISMATCH,
+  SOURCE_TEXT_DECISION_INVALID,
+  SOURCE_TEXT_DUPLICATE_SCENE_ID,
+  SOURCE_TEXT_OMIT,
+  SOURCE_TEXT_SCENEID,
+  SOURCE_TEXT_SCENE_ID_MISMATCH,
+  SOURCE_TEXT_SEGMENTID,
+  SOURCE_TEXT_TRIM,
+  SOURCE_TEXT_UNKNOWN_SCENE_ID,
+  SOURCE_TEXT_USE,
+} from "../../constants/sourceText";
 import { execFile } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -5,7 +24,6 @@ import _ from "lodash";
 import { jsonUtils } from "../../lib/json.js";
 import { CINEMATIC_EDIT_ANALYSIS_CONFIG } from "../../constants/config.js";
 import { getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
-
 export interface CinematicLibraryClipInput {
   sceneId: string;
   path: string;
@@ -16,7 +34,6 @@ export interface CinematicLibraryClipInput {
   expectedDialogue?: string;
   dialogueLanguage?: string;
 }
-
 interface CinematicLibrarySegment {
   segmentId: string;
   inSeconds: number;
@@ -28,7 +45,6 @@ interface CinematicLibrarySegment {
   containsDialogue: boolean;
   libraryScore?: number;
 }
-
 export interface CinematicLibraryDecision {
   sceneId: string;
   duration: number;
@@ -64,71 +80,61 @@ export interface CinematicLibraryDecision {
   selectedDuration?: number;
   analysisProvenance?: string[];
 }
-
 export interface CinematicEditorialValidationResult {
   valid: boolean;
   error?: string;
 }
-
 type EditorialDecisionInput = {
   sceneId?: unknown;
   takeDecision?: unknown;
   segments?: Array<{ segmentId?: unknown; inSeconds?: unknown; outSeconds?: unknown }>;
 };
-
 export const validateCinematicEditorialDecisions = (expected: CinematicLibraryDecision[], editorialDecisions: EditorialDecisionInput[]): CinematicEditorialValidationResult => {
-  const expectedByScene = _.keyBy(expected, "sceneId");
-  const expectedIds = _.map(expected, "sceneId");
+  const expectedByScene = _.keyBy(expected, SOURCE_TEXT_SCENEID);
+  const expectedIds = _.map(expected, SOURCE_TEXT_SCENEID);
   const returnedIds = _.map(editorialDecisions, (decision) => _.trim(_.toString(decision?.sceneId)));
-  if (_.size(editorialDecisions) !== _.size(expectedIds)) return { valid: false, error: "decision_count_mismatch" };
-  if (!_.isEmpty(editorialDecisions) && _.every(editorialDecisions, (decision) => _.isEqual(decision?.takeDecision, "omit"))) {
-    return { valid: false, error: "all_scenes_omitted" };
+  if (_.size(editorialDecisions) !== _.size(expectedIds)) return { valid: false, error: SOURCE_TEXT_DECISION_COUNT_MISMATCH };
+  if (!_.isEmpty(editorialDecisions) && _.every(editorialDecisions, (decision) => _.isEqual(decision?.takeDecision, SOURCE_TEXT_OMIT))) {
+    return { valid: false, error: SOURCE_TEXT_ALL_SCENES_OMITTED };
   }
-  if (_.size(_.uniq(returnedIds)) !== _.size(returnedIds)) return { valid: false, error: "duplicate_scene_id" };
-  if (!_.isEqual(_.sortBy(returnedIds), _.sortBy(expectedIds))) return { valid: false, error: "scene_id_mismatch" };
-
+  if (_.size(_.uniq(returnedIds)) !== _.size(returnedIds)) return { valid: false, error: SOURCE_TEXT_DUPLICATE_SCENE_ID };
+  if (!_.isEqual(_.sortBy(returnedIds), _.sortBy(expectedIds))) return { valid: false, error: SOURCE_TEXT_SCENE_ID_MISMATCH };
   for (const editorial of editorialDecisions) {
-    if (!editorial || !_.isObject(editorial)) return { valid: false, error: "decision_invalid" };
+    if (!editorial || !_.isObject(editorial)) return { valid: false, error: SOURCE_TEXT_DECISION_INVALID };
     const sceneId = _.trim(_.toString(editorial.sceneId));
     const library = expectedByScene[sceneId];
-    if (!library) return { valid: false, error: "unknown_scene_id" };
-    if (!_.includes(["use", "trim", "omit"], editorial.takeDecision)) return { valid: false, error: `invalid_take_decision:${sceneId}` };
+    if (!library) return { valid: false, error: SOURCE_TEXT_UNKNOWN_SCENE_ID };
+    if (!_.includes([SOURCE_TEXT_USE, SOURCE_TEXT_TRIM, SOURCE_TEXT_OMIT] as string[], editorial.takeDecision)) return { valid: false, error: SOURCE_TEMPLATE_INVALID_TAKE_DECISION(`${sceneId}`) };
     const segments = _.castArray(editorial.segments || []);
-    if (!_.isEqual(editorial.takeDecision, "omit") && _.isEmpty(segments)) return { valid: false, error: `segments_missing:${sceneId}` };
-    const candidatesById = _.keyBy(library.candidateSegments || library.segments, "segmentId");
+    if (!_.isEqual(editorial.takeDecision, SOURCE_TEXT_OMIT) && _.isEmpty(segments)) return { valid: false, error: SOURCE_TEMPLATE_SEGMENTS_MISSING(`${sceneId}`) };
+    const candidatesById = _.keyBy(library.candidateSegments || library.segments, SOURCE_TEXT_SEGMENTID);
     const protectedDialogueIds = _.map(
       _.filter(library.candidateSegments || library.segments, (segment) => segment.containsDialogue),
-      "segmentId",
+      SOURCE_TEXT_SEGMENTID,
     );
     const seenSegmentIds = new Set<string>();
     for (const segment of segments) {
       const segmentId = _.trim(_.toString(segment.segmentId));
       const candidate = candidatesById[segmentId];
-      if (!candidate || seenSegmentIds.has(segmentId)) return { valid: false, error: `segment_id_mismatch:${sceneId}` };
+      if (!candidate || seenSegmentIds.has(segmentId)) return { valid: false, error: SOURCE_TEMPLATE_SEGMENT_ID_MISMATCH(`${sceneId}`) };
       seenSegmentIds.add(segmentId);
       if (!_.isEqual(_.toNumber(segment.inSeconds), _.toNumber(candidate.inSeconds)) || !_.isEqual(_.toNumber(segment.outSeconds), _.toNumber(candidate.outSeconds))) {
-        return { valid: false, error: `segment_boundary_mismatch:${sceneId}` };
+        return { valid: false, error: SOURCE_TEMPLATE_SEGMENT_BOUNDARY_MISMATCH(`${sceneId}`) };
       }
     }
-    if (!_.isEqual(editorial.takeDecision, "omit") && !_.every(protectedDialogueIds, (segmentId) => seenSegmentIds.has(segmentId))) {
-      return { valid: false, error: `dialogue_segment_missing:${sceneId}` };
+    if (!_.isEqual(editorial.takeDecision, SOURCE_TEXT_OMIT) && !_.every(protectedDialogueIds, (segmentId) => seenSegmentIds.has(segmentId))) {
+      return { valid: false, error: SOURCE_TEMPLATE_DIALOGUE_SEGMENT_MISSING(`${sceneId}`) };
     }
   }
   return { valid: true };
 };
-
 export interface CinematicLibraryAnalysisResult {
   success: boolean;
   libraryAnalysisAvailable: boolean;
   decisions: CinematicLibraryDecision[];
   error?: string;
 }
-
-export const analyzeCinematicClipsWithLibraries = async (
-  clips: CinematicLibraryClipInput[],
-  ffmpegPath: string,
-  workingDirectory: string,
-): Promise<CinematicLibraryAnalysisResult> => {
+export const analyzeCinematicClipsWithLibraries = async (clips: CinematicLibraryClipInput[], ffmpegPath: string, workingDirectory: string): Promise<CinematicLibraryAnalysisResult> => {
   const requestPath = path.join(workingDirectory, CINEMATIC_EDIT_ANALYSIS_CONFIG.LIBRARY_REQUEST_FILE_NAME);
   const scriptPath = getStaticResourcePath(CINEMATIC_EDIT_ANALYSIS_CONFIG.LIBRARY_SCRIPT_PATH);
   const payload = {
@@ -148,7 +154,7 @@ export const analyzeCinematicClipsWithLibraries = async (
       },
       (error, stdout, stderr) => {
         const parsed = _.attempt(JSON.parse, _.trim(stdout));
-        if (!error && !_.isError(parsed) && _.isArray(_.get(parsed, "decisions"))) {
+        if (!error && !_.isError(parsed) && _.isArray(_.get(parsed, SOURCE_TEXT_DECISIONS))) {
           resolve(parsed as CinematicLibraryAnalysisResult);
           return;
         }

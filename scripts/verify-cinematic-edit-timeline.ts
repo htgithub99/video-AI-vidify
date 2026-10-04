@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { applyCinematicClipAnalysisDecisions, countCinematicTimelineShots, createCinematicEditTimeline, hasCinematicSceneDialogue } from "../src/services/cinematicEditTimelineService";
@@ -90,7 +91,7 @@ assert.deepEqual(
   [fallbackTimeline[0].sourceTrimStartSeconds, fallbackTimeline[0].sourceTrimEndSeconds, fallbackTimeline[0].duration],
   [1, 2, 7],
 );
-const pipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(pipelineSource, /expectedRenderDuration = nativeFilmAudio[\s\S]*_\.sumBy\(renderableScenes/);
 assert.match(pipelineSource, /storyboard: _\.cloneDeep\(realScenes\)/);
 process.stdout.write(JSON.stringify({ passed: true, timelineShots: timeline.length }));

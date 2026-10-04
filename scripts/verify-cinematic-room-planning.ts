@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import _ from "lodash";
@@ -303,7 +304,7 @@ const verifyPartialBatchSceneRecovery = () => {
 };
 
 const verifyPipelineControllerSourceInvariants = () => {
-  const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
+  const controllerSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8"));
   assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /AiPlanningExecutionMode\.RoomOnly\)\) return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
   assert.match(controllerSource, /return await requestApiPlan\(apiContents, expectedSceneIds\)[\s\S]*return requestChatUiPlan\(chatUiContents, expectedSceneIds\)/);
@@ -333,10 +334,10 @@ const verifyPipelineControllerSourceInvariants = () => {
 };
 
 const verifyPlanningRunIsolation = () => {
-  const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
-  const cinematicConstantsSource = readFileSync(new URL(TEST_CONSTANTS.CINEMATIC_CONSTANTS_PATH, import.meta.url), "utf8");
-  const imageGeneratorSource = readFileSync(new URL(TEST_CONSTANTS.IMAGE_GENERATOR_SERVICE_PATH, import.meta.url), "utf8");
-  const controllerSource = readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8");
+  const planningServiceSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8"));
+  const cinematicConstantsSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CINEMATIC_CONSTANTS_PATH, import.meta.url), "utf8"));
+  const imageGeneratorSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.IMAGE_GENERATOR_SERVICE_PATH, import.meta.url), "utf8"));
+  const controllerSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8"));
   assert.match(planningServiceSource, /activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>/);
   assert.match(planningServiceSource, /runControllers\.get\(workerId\)\?\.controller\.abort\(\)/);
   assert.match(planningServiceSource, /planningMutexes = new Map<string, SimpleMutex>/);
@@ -405,7 +406,7 @@ const verifyPlanningRunIsolation = () => {
   assert.match(imageGeneratorSource, /grokBrowserLaunchPromise: Promise<\{ context: BrowserContext; page: Page \}> \| null/);
   assert.match(imageGeneratorSource, /waitForVisibleGrokVerificationBeforeAutomation/);
   assert.match(imageGeneratorSource, /if \(chromeHeadless === false\) await waitForVisibleGrokVerificationBeforeAutomation\(\)/);
-  assert.match(imageGeneratorSource, /EXTERNAL_URLS\.GROK_CHAT,/);
+  assert.match(imageGeneratorSource, /EXTERNAL_URLS\.GROK_CHAT[,)]/);
   const grokLaunchSource = imageGeneratorSource.match(/const launchNativeGrokBrowser[\s\S]*?export const getOrLaunchGrokBrowser/)?.[0] || "";
   assert.doesNotMatch(grokLaunchSource, /EXTERNAL_URLS\.GROK_IMAGINE/);
   assert.match(grokLaunchSource, /waitForGrokChrome\(\)[\s\S]*waitForVisibleGrokVerificationBeforeAutomation\(\)[\s\S]*chromium\.connectOverCDP/);
@@ -427,8 +428,8 @@ const verifyCurrentGeminiModelPicker = () => {
 };
 
 const verifyProviderRoomCleanup = () => {
-  const planningServiceSource = readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8");
-  const headerSource = readFileSync(new URL(TEST_CONSTANTS.APP_HEADER_PATH, import.meta.url), "utf8");
+  const planningServiceSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8"));
+  const headerSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.APP_HEADER_PATH, import.meta.url), "utf8"));
   assert.match(planningServiceSource, /clearChatPlanningRooms/);
   assert.match(planningServiceSource, /deleteProviderConversationHistory/);
   assert.match(planningServiceSource, /CONVERSATION_DELETE_FALLBACK_PATTERN/);
@@ -469,7 +470,7 @@ const verifyProviderJsonVariants = () => {
 };
 
 const verifyCinematicPlanningCheckpointing = () => {
-  const pipelineSource = readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8");
+  const pipelineSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8"));
   assert.match(pipelineSource, /generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION/);
   assert.match(pipelineSource, /!hasSceneAsset\(scene\).*generationPromptProfileVersion/s);
   assert.match(pipelineSource, /planningBatches = createCinematicPlanningBatches\(scenesToPlan\)/);

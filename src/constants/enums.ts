@@ -4,7 +4,6 @@ export enum EXPORT_TYPES {
   ZIP = "zip",
   SRT = "srt",
 }
-
 export enum LogEvent {
   FAILED_LOAD_VOICES = "FAILED_LOAD_VOICES",
   BATCH_SCENE_FAILED = "BATCH_SCENE_FAILED",
@@ -34,8 +33,7 @@ export enum LogEvent {
   ERROR_READ_MERGED_AUDIO = "ERROR_READ_MERGED_AUDIO",
   ERROR_FFMPEG_MERGE = "ERROR_FFMPEG_MERGE",
   UNEXPECTED_ERROR_MERGE_AUDIO = "UNEXPECTED_ERROR_MERGE_AUDIO",
-  }
-
+}
 export enum ConsoleLogType {
   LOG = "log",
   INFO = "info",
@@ -45,7 +43,6 @@ export enum ConsoleLogType {
   SUCCESS = "success",
   PENDING = "pending",
 }
-
 export enum ErrorMessage {
   PROJECT_LOAD_ERROR = "Lỗi tải chi tiết dự án",
   FAILED_TO_FETCH = "Failed to fetch",
@@ -53,8 +50,7 @@ export enum ErrorMessage {
   NO_AUDIO_CHUNKS_PROVIDED = "No audio chunks provided",
   FAILED_TO_READ_MERGED_AUDIO_FILE = "Failed to read merged audio file",
   INTERNAL_SERVER_ERROR = "Internal server error: ",
-  }
-
+}
 export enum VoicePresetId {
   PRESET_VI_BAC_FEMALE = "preset-vi-bac-female",
   PRESET_VI_BAC_MALE = "preset-vi-bac-male",
@@ -71,7 +67,6 @@ export enum VoicePresetId {
   OPENAI_TTS_ALLOY = "openai-tts-alloy",
   OPENAI_TTS_NOVA = "openai-tts-nova",
 }
-
 export enum SplitStrategy {
   MIXED_SENTENCES = "mixed_sentences",
   ULTRADENSE = "ultradense",
@@ -90,7 +85,6 @@ export enum SplitStrategy {
   DOCUMENTARY = "documentary",
   LONG_SENTENCE = "long_sentence",
 }
-
 export enum VideoGenre {
   CINEMATIC_EPISODE = "Cinematic AI Episode",
   STORY_DRIVEN_VIDEO_ESSAY = "Story-driven Video Essay",
@@ -109,26 +103,22 @@ export enum VideoGenre {
   PHILOSOPHY = "Philosophy",
   STORYTELLING = "Storytelling",
 }
-
 export enum MimeType {
   WAV = "audio/wav",
   MPEG = "audio/mpeg",
   JPEG = "image/jpeg",
   PNG = "image/png",
 }
-
 export enum UltraStreamLogType {
   LOG = "log",
   ERROR_LOG = "error_log",
 }
-
 export enum LogLevel {
   INFO = "info",
   SUCCESS = "success",
   WARN = "warn",
   ERROR = "error",
 }
-
 export enum SceneDensity {
   THEO_TU = "THEO_TU",
   CAU_NGAN = "CAU_NGAN",
@@ -136,63 +126,51 @@ export enum SceneDensity {
   CAU_DAI = "CAU_DAI",
   THEO_DOAN = "THEO_DOAN",
 }
-
 export enum PromptStatus {
   IDLE = "idle",
   RUNNING = "running",
   SUCCESS = "success",
   ERROR = "error",
 }
-
 export enum ThumbnailActionPosition {
   TOP = "top",
   EMPTY = "empty",
 }
-
 export enum AppTheme {
   LIGHT = "light",
   DARK = "dark",
 }
-
 export enum AppLanguage {
   VI = "vi",
   EN = "en",
 }
-
 export enum StoryboardSourceMode {
   AUDIO = "audio",
   SCRIPT = "script",
 }
-
 export enum FileEncoding {
   UTF8 = "utf-8",
 }
-
 export const FFMPEG_CONFIG = { OPTIONS_CONCAT: ["-f", "concat", "-safe", "0"], OPTIONS_OUTPUT_MP3: ["-c:a", "libmp3lame", "-b:a", "128k", "-y"] };
-
 export enum SortOrder {
   DESC = "desc",
 }
-
 export enum VideoQuality {
   LOW = "low",
   HIGH = "high",
   HIGHEST = "highest",
   ULTRA_4K = "4k",
 }
-
 export enum ResourceSourceMode {
   ZIP = "ZIP",
   SPLIT = "SPLIT",
   CURRENT = "CURRENT",
 }
-
 export enum FolderSelectionType {
   PARENT = "PARENT",
   IMAGES = "IMAGES",
   VOICES = "VOICES",
 }
-
 export enum AppTab {
   PROJECTS = "projects",
   AUTO_GENERATOR = "auto-generator",
@@ -204,18 +182,15 @@ export enum AppTab {
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }
-
 export enum PIPELINE_STEPS {
   STEP_1 = 1,
   STEP_2 = 2,
   STEP_3 = 3,
   STEP_4 = 4,
-  }
-
+}
 export enum VOICE_GENDER {
   MALE = "male",
-  }
-
+}
 export enum HttpStatus {
   OK = 200,
   CREATED = 201,

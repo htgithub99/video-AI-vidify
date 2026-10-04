@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
@@ -38,7 +39,7 @@ const characterRepairPrompt = getCinematicCharacterProviderRepairPrompt("A highl
 assert.match(characterRepairPrompt, /Google Flow Characters/i);
 assert.match(characterRepairPrompt, /complete standalone prompt/i);
 
-const imageGeneratorSource = readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8");
+const imageGeneratorSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8"));
 assert.match(imageGeneratorSource, /terminalWarning = errorMessage/);
 assert.match(imageGeneratorSource, /warning: terminalWarning/);
 assert.match(imageGeneratorSource, /const connectToSharedChromeBrowser = async/);
@@ -53,13 +54,13 @@ assert.match(imageGeneratorSource, /preserveExternalPages: true/);
 assert.match(imageGeneratorSource, /if \(activeBrowserInstance\.preserveExternalPages\)/);
 assert.match(imageGeneratorSource, /const sharedChromePage = activeBrowserInstance\?\.preserveExternalPages/);
 
-const serverSource = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
+const serverSource = resolveSourceTextConstants(readFileSync(new URL("../server.ts", import.meta.url), "utf8"));
 assert.match(
   serverSource,
   /if \(!_\.isEqual\(process\.env\.NODE_ENV, SERVER_CONFIG\.PRODUCTION\)\) \{[\s\S]*clearTimeout\(forcedExitTimer\);[\s\S]*process\.exit\(0\);[\s\S]*return;[\s\S]*const killCmd/,
 );
 
-const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
 assert.match(pipelineSource, /CHARACTER_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /VI_CHARACTER_PROMPT_REPAIRING/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);
@@ -77,7 +78,7 @@ assert.doesNotMatch(pipelineSource, /continuing with the AI-authored identity pr
 assert.doesNotMatch(pipelineSource, /clean film keyframe|keyframe sạch/i);
 assert.doesNotMatch(pipelineSource, /PIPELINE_EXTRACT_THUMBNAIL_FRAME/);
 
-const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
+const controllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
 assert.match(controllerSource, /getCinematicCharacterProviderRepairPrompt/);
 assert.match(controllerSource, /getCinematicSceneImageProviderRepairPrompt/);
 assert.doesNotMatch(controllerSource, /EXTRACT_THUMBNAIL_FRAME/);

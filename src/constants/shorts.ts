@@ -1,5 +1,4 @@
 import { ShortsAspectRatio, ShortsDurationOption, ShortsReframeMode } from "../types/shorts.js";
-
 export const SHORTS_CONSTANTS = {
   DEFAULT_CLIP_COUNT: 3,
   MIN_CLIP_COUNT: 1,
@@ -58,7 +57,6 @@ export const SHORTS_CONSTANTS = {
   EXPORT_ZIP_PREFIX: "shorts_export_",
   DEFAULT_VIDEO_EXTENSIONS: [".mp4", ".jpg", ".jpeg", ".png", ".webp", ".webm"],
 } as const;
-
 export const SHORTS_MIME_TYPES: Record<string, string> = {
   ".mp4": "video/mp4",
   ".mkv": "video/mp4",
@@ -67,7 +65,6 @@ export const SHORTS_MIME_TYPES: Record<string, string> = {
   ".avi": "video/x-msvideo",
   ".ts": "video/mp2t",
 } as const;
-
 export const SHORTS_REGEX = {
   CLEAN_TITLE: /[^a-z0-9_]/gi,
   CLEAN_FILENAME: /[^a-z0-9]/gi,
@@ -77,7 +74,6 @@ export const SHORTS_REGEX = {
   CODE_BLOCK_JSON: /```json/gi,
   CODE_BLOCK: /```/g,
 } as const;
-
 export const SHORTS_UI_CONSTANTS = {
   SOURCE_PLAYING_ID: "source",
   SEEK_TOOLTIP: "Nhấn để tua đoạn nhạc",
@@ -89,7 +85,6 @@ export const SHORTS_UI_CONSTANTS = {
     HTTP: "http",
   },
 } as const;
-
 export const SHORTS_LOG_MESSAGES = {
   START_PROCESSING: (path: string) => `[SHORTS] Starting video pipeline: ${path}`,
   AUDIO_EXTRACT_WARN: (err: string) => `[SHORTS] Audio extraction failed, fallback to timeline metadata: ${err}`,
@@ -105,11 +100,9 @@ export const SHORTS_LOG_MESSAGES = {
   ERROR_PIPELINE: "[SHORTS] Error in generateShortsPipeline:",
   ERROR_EXPORT_ZIP: "[SHORTS] Error exporting shorts ZIP:",
 } as const;
-
 export const SHORTS_PROMPTS = {
   SYSTEM_ROLE: "You are a world-class AI video editor, music video director, and social media viral content strategist (TikTok, YouTube Shorts, Instagram Reels).",
-  TASK_INSTRUCTION: (durationSec: number, clipCount: number) =>
-    `Your task is to analyze the timeline of a long source video (${Math.round(durationSec)} seconds / ${(durationSec / 60).toFixed(1)} minutes), identifying the top ${clipCount} most engaging, high-energy, and viral highlight moments (chorus peaks, dramatic hooks, best vocal parts, punchlines, or key takeaways).`,
+  TASK_INSTRUCTION: (durationSec: number, clipCount: number) => `Your task is to analyze the timeline of a long source video (${Math.round(durationSec)} seconds / ${(durationSec / 60).toFixed(1)} minutes), identifying the top ${clipCount} most engaging, high-energy, and viral highlight moments (chorus peaks, dramatic hooks, best vocal parts, punchlines, or key takeaways).`,
   DURATION_AUTO: "auto (optimal segment between 30 to 60 seconds)",
   DURATION_SHORT: "short (15 to 30 seconds for quick TikTok hook)",
   DURATION_STANDARD: "standard (30 to 60 seconds for YouTube Shorts / Reels)",
@@ -122,10 +115,8 @@ export const SHORTS_PROMPTS = {
   METADATA_REQUIRED_CLIPS: (count: number) => `- Required Clips Count: ${count} clips`,
   METADATA_AUDIO_SUMMARY: (summary: string) => `- Audio Summary / Context: ${summary}`,
   REQUIREMENTS_HEADER: "Extraction Rules:\n1. Each segment must have valid startTime and endTime within 0 and the total video duration.\n2. Do not overlap timestamps excessively; distribute segments across diverse high-energy sections.\n3. Provide an engaging viral hook title, compelling reason for selection, and a realistic viralScore (between 80 and 99).",
-  JSON_FORMAT_DIRECTIVE: (clipCount: number) =>
-    `CRITICAL: Return ONLY a valid JSON Array containing exactly ${clipCount} items adhering to this JSON schema (no markdown explanations outside JSON):\n[\n  {\n    "startTime": 120.0,\n    "endTime": 165.0,\n    "title": "Explosive Chorus Climax",\n    "hookReason": "Highest vocal energy peak and powerful melodic drop",\n    "viralScore": 96\n  }\n]`,
+  JSON_FORMAT_DIRECTIVE: (clipCount: number) => `CRITICAL: Return ONLY a valid JSON Array containing exactly ${clipCount} items adhering to this JSON schema (no markdown explanations outside JSON):\n[\n  {\n    "startTime": 120.0,\n    "endTime": 165.0,\n    "title": "Explosive Chorus Climax",\n    "hookReason": "Highest vocal energy peak and powerful melodic drop",\n    "viralScore": 96\n  }\n]`,
 } as const;
-
 export const SHORTS_TEXTS = {
   TITLE: "AI Shorts & Highlight Extractor",
   SUBTITLE: "Tự động trích xuất khoảnh khắc đắt giá từ video dài (≤ 2h) và chuyển đổi sang video dọc 9:16",
@@ -186,7 +177,7 @@ export const SHORTS_TEXTS = {
   PROGRESS_MSG_CANCELLED: "Đã hủy tác vụ.",
   RESULTS_LABEL: "Danh Sách Video Shorts Đã Tạo",
   RESULTS_EMPTY_TITLE: "Chưa có video short nào được tạo",
-  RESULTS_EMPTY_DESC: "Chọn video dài ở cột trái và bấm \"Phân Tích & Tạo Shorts\" để bắt đầu",
+  RESULTS_EMPTY_DESC: 'Chọn video dài ở cột trái và bấm "Phân Tích & Tạo Shorts" để bắt đầu',
   DOWNLOAD_BUTTON: "Tải MP4",
   DOWNLOAD_ALL_ZIP: "Tải Tất Cả Clips (ZIP)",
   DOWNLOADING_ZIP: "Đang nén file ZIP...",

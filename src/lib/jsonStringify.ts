@@ -1,5 +1,1 @@
-export const stringifyJson = (
-  value: unknown,
-  replacer?: (number | string)[] | null | ((this: unknown, key: string, value: unknown) => unknown),
-  space?: string | number,
-): string => JSON.stringify(value, replacer as never, space);
+export const stringifyJson = (value: unknown, replacer?: (number | string)[] | null | ((this: unknown, key: string, value: unknown) => unknown), space?: string | number): string => JSON.stringify(value, replacer as never, space);

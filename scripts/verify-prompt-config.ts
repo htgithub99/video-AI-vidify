@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import fs from "fs";
 import path from "path";
@@ -35,10 +36,10 @@ const compiledTwice = applyBackgroundMode(compiledOnce, BackgroundMode.Auto);
 assert(compiledOnce === compiledTwice, "prompt directive compiler is not idempotent");
 assert((compiledTwice.match(/--ar\s+\d+:\d+/g) || []).length === 1, "aspect ratio was duplicated");
 
-const controller = fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8");
+const controller = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8"));
 assert(/if\s*\(config\.factCheck(?:\s*&&[^)]*)?\)[\s\S]*groundedResearchResponse\s*=\s*await generateContentWithRetry/.test(controller), "grounded research is not conditional");
 assertResponseContract({ audience: "general", versions: [{ id: "1" }] }, ResponseContractName.Hook);
-const prompts = fs.readFileSync(path.resolve("src/constants/prompts.ts"), "utf8");
+const prompts = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/constants/prompts.ts"), "utf8"));
 assert(prompts.includes("COMPACT_VISUAL_PROMPT_RULES"), "compact visual prompt module missing");
 
 writeVerificationLog("Prompt/config conflict assertions passed");

@@ -1,30 +1,20 @@
 import _ from "lodash";
 import { REFACTOR_CONSTANTS, VOICE_PRESET_MAP, VOICE_TTS_ROUTING_CONFIG } from "../constants";
 import type { VideoProject, VoiceConfig } from "../types";
-
 export interface VoiceRoutingInput {
   provider?: string;
   voiceId?: string;
 }
-
 export interface VoiceRoutingResult {
   finalVoiceId: string;
 }
-
 export const resolveVoiceRouting = ({ voiceId }: VoiceRoutingInput): VoiceRoutingResult => {
   const requestedVoiceId = _.trim(voiceId);
   const mappedVoiceId = VOICE_PRESET_MAP[requestedVoiceId] || requestedVoiceId;
   const hasKnownPrefix = _.some(REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES, (prefix) => _.startsWith(mappedVoiceId, prefix));
-  const finalVoiceId = _.isEmpty(mappedVoiceId)
-    ? REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID
-    : hasKnownPrefix
-      ? mappedVoiceId
-      : requestedVoiceId === mappedVoiceId
-        ? mappedVoiceId
-        : `${REFACTOR_CONSTANTS.EDGE_PREFIX}${mappedVoiceId}`;
+  const finalVoiceId = _.isEmpty(mappedVoiceId) ? REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID : hasKnownPrefix ? mappedVoiceId : requestedVoiceId === mappedVoiceId ? mappedVoiceId : `${REFACTOR_CONSTANTS.EDGE_PREFIX}${mappedVoiceId}`;
   return { finalVoiceId };
 };
-
 export const applyVoiceSelection = (project: VideoProject, selection: Partial<VoiceConfig>): VideoProject => {
   const currentIdentity = _.pick(project.voiceConfig, VOICE_TTS_ROUTING_CONFIG.IDENTITY_KEYS);
   const nextVoiceConfig = { ...project.voiceConfig, ...selection } as VoiceConfig;

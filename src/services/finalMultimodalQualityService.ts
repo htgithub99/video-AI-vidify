@@ -1,6 +1,5 @@
 import { FINAL_MULTIMODAL_QA_CONFIG } from "../constants";
 import { FinalMultimodalQualityReport } from "../types";
-
 export const createAdvisoryFinalVideoReport = (): FinalMultimodalQualityReport => ({
   visualScore: 0,
   cropScore: 0,

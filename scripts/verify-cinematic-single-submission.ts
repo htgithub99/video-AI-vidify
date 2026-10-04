@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService";
@@ -308,8 +309,8 @@ assert.notEqual(
   createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }),
   createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "720p", videoDuration: "8s" }),
 );
-const flowAutomationSource = fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8");
-const cinematicPipelineSource = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const flowAutomationSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
+const cinematicPipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(flowAutomationSource, /replaceFlowPromptInput/);
 assert.match(flowAutomationSource, /normalizeFlowPromptValue/);
 assert.match(flowAutomationSource, /waitForFlowPromptApplied/);
@@ -345,8 +346,8 @@ assert.match(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]*ATTA
 assert.doesNotMatch(flowAutomationSource, /const countAttachedFlowCharacters[\s\S]{0,900}promptCharacterCount/);
 assert.match(flowAutomationSource, /HTML_VIDEO_URL_PATTERN\.test\(htmlVideoUrl\)/);
 assert.doesNotMatch(flowAutomationSource, /collectFlowVideoUrls\(page\)/);
-const pipelineControllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const projectControllerSource = fs.readFileSync("src/server/controllers/projectController.ts", "utf8");
+const pipelineControllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const projectControllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/projectController.ts", "utf8"));
 assert.match(pipelineControllerSource, /activeVideoSubmissionKeys/);
 assert.match(pipelineControllerSource, /completedVideoSubmissionResults/);
 assert.match(pipelineControllerSource, /completedSubmission && _\.get\(completedSubmission, "success"\)/);
@@ -367,7 +368,7 @@ assert.doesNotMatch(cinematicPipelineSource, /submitProjectFlowVideoBatch/);
 assert.match(cinematicPipelineSource, /await finishVideoScene\(scene\)/);
 assert.match(cinematicPipelineSource, /attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT/);
 assert.match(cinematicPipelineSource, /if \(!hasSceneAsset\(scene\)\) break/);
-const flowCreatorSource = fs.readFileSync("src/components/FlowVideoCreator.tsx", "utf8");
+const flowCreatorSource = resolveSourceTextConstants(fs.readFileSync("src/components/FlowVideoCreator.tsx", "utf8"));
 assert.match(flowCreatorSource, /for \(let attempt = 0; attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT; attempt\+\+\)/);
 assert.match(flowCreatorSource, /generated\?\.remoteMediaCreated !== false/);
 assert.doesNotMatch(flowCreatorSource, /const batch: Clip\[\]/);

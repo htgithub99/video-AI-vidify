@@ -1,6 +1,5 @@
 import { MEDIA_MIX_CONFIG } from "./loading";
 import { VideoGenre } from "./enums";
-
 export const PipelineConstants = {
   DEFAULT_VOICE_CONFIG: {
     provider: "AI33Pro",

@@ -1,10 +1,11 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
 
-const source = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
-const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
+const source = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const component = resolveSourceTextConstants(fs.readFileSync("src/components/MusicCreator.tsx", "utf8"));
+const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
 
 for (const market of [
   { language: "Tiếng Việt", country: "Việt Nam", region: "Miền Nam" },

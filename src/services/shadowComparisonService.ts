@@ -1,11 +1,9 @@
+import { SOURCE_TEXT_DURATION } from "../constants/sourceText";
 import _ from "lodash";
 import { SHADOW_COMPARISON_CONFIG } from "../constants/config";
 import { PipelineShadowComparison, SceneAssetStatus, VideoProject } from "../types";
-
 const getApprovedSceneCount = (project?: VideoProject | null): number => _.size(_.filter(project?.storyboard, { assetStatus: SceneAssetStatus.Approved }));
-
-const getStoryboardDuration = (project?: VideoProject | null): number => _.sumBy(project?.storyboard, "duration");
-
+const getStoryboardDuration = (project?: VideoProject | null): number => _.sumBy(project?.storyboard, SOURCE_TEXT_DURATION);
 export const createShadowComparison = (baseline: VideoProject | null, current: VideoProject): PipelineShadowComparison => {
   const sceneCountDelta = _.size(current.storyboard) - _.size(baseline?.storyboard);
   const approvedSceneDelta = getApprovedSceneCount(current) - getApprovedSceneCount(baseline);

@@ -1,13 +1,14 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolvePipelineAiExecution } from "../src/services/pipelineAiExecutionService";
 import { getRoomOnlyScriptError } from "../src/server/services/roomOnlyErrorService";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, type VideoProject } from "../src/types";
 
-const serverSource = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
-const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
-const aiServiceSource = readFileSync(new URL("../src/server/services/geminiService.ts", import.meta.url), "utf8");
-const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
+const serverSource = resolveSourceTextConstants(readFileSync(new URL("../server.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
+const aiServiceSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/geminiService.ts", import.meta.url), "utf8"));
+const pipelineControllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
 
 assert.ok(serverSource.includes("aiExecutionMode:"));
 assert.ok(serverSource.includes("aiRoomProvider:"));
@@ -35,7 +36,7 @@ assert.match(aiServiceSource, /resolveRoomWorkerId/);
 assert.match(aiServiceSource, /AiTaskCapability\.Thumbnail[\s\S]*CINEMATIC_ROOM_STAGE\.THUMBNAIL/);
 assert.match(aiServiceSource, /AiTaskCapability\.VisualPlanning[\s\S]*CINEMATIC_ROOM_STAGE\.PROMPT/);
 assert.match(aiServiceSource, /AiTaskCapability\.VisualQa[\s\S]*CINEMATIC_ROOM_STAGE\.VIDEO/);
-assert.match(pipelineSource, /workerIds: Object\.values\(CINEMATIC_ROOM_STAGE\)/);
+assert.match(pipelineSource, /workerIds: _\.values\(CINEMATIC_ROOM_STAGE\)/);
 assert.match(pipelineSource, /const preparedThumbnailPlan = thumbnailPlanRequest \? await thumbnailPlanRequest\(\) : null/);
 assert.match(pipelineSource, /const seoRes = seoRequest \? await seoRequest\(\) : null/);
 assert.doesNotMatch(pipelineSource, /Promise\.all\(\[seoRequest, thumbnailPlanRequest\]\)/);

@@ -1,16 +1,11 @@
+import { SOURCE_TEXT_IMBALANCE, SOURCE_TEXT_LINES } from "../constants/sourceText";
 import _ from "lodash";
 import { PRODUCTION_QA_THRESHOLDS } from "./productionQualityService";
 import { StoryboardScene, SubtitleCue } from "../types";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { SEMANTIC_BREAK_PATTERN } from "../constants/regexes";
-
 const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE;
-
-const splitLongWord = (word: string): string[] =>
-  _.map(_.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE), (start) =>
-    _.slice(word, start, start + PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE).join(""),
-  );
-
+const splitLongWord = (word: string): string[] => _.map(_.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE), (start) => _.slice(word, start, start + PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE).join(""));
 const findBestSemanticBreak = (text: string): number => {
   const lowerBound = _.floor(text.length * 0.3);
   const upperBound = _.ceil(text.length * 0.7);
@@ -24,7 +19,6 @@ const findBestSemanticBreak = (text: string): number => {
   const spaces = _.compact(_.map(text, (char, index) => (_.isEqual(char, " ") ? index + 1 : 0)));
   return _.minBy(spaces, (boundary) => Math.abs(boundary - midpoint)) || text.length;
 };
-
 const splitSemanticPhrases = (text: string): string[] =>
   _.flatMap(smartSplitSentences(_.trim(text)), (sentence) => {
     const phrases: string[] = [];
@@ -45,7 +39,6 @@ const splitSemanticPhrases = (text: string): string[] =>
     }
     return phrases;
   });
-
 const createBalancedSubtitleLines = (text: string): string[] => {
   const words = _.flatMap(_.words(text, /[^\s]+/g), (word) => (_.size(word) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE ? splitLongWord(word) : [word]));
   if (_.isEqual(PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES, 1) || _.size(_.join(words, " ")) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, " ")];
@@ -57,15 +50,11 @@ const createBalancedSubtitleLines = (text: string): string[] => {
       return { lines: [first, second], imbalance: Math.abs(first.length - second.length) };
     }),
   );
-  return _.get(_.minBy(candidates, "imbalance"), "lines", [_.join(words, " ")]);
+  return _.get(_.minBy(candidates, SOURCE_TEXT_IMBALANCE), SOURCE_TEXT_LINES, [_.join(words, " ")]);
 };
-
 export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] => {
   const cueTexts = _.map(splitSemanticPhrases(scene.subtitle || scene.script), (phrase) => _.join(createBalancedSubtitleLines(phrase), "\n"));
-  const cueWeights = _.map(
-    cueTexts,
-    (text) => _.max([_.size(_.replace(text, /\s/g, "")), PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND]) || 0,
-  );
+  const cueWeights = _.map(cueTexts, (text) => _.max([_.size(_.replace(text, /\s/g, "")), PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND]) || 0);
   const totalWeight = _.sum(cueWeights);
   let cursor = 0;
   return _.map(cueTexts, (text, index) => {
@@ -74,13 +63,10 @@ export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] =
     const remainingCues = _.subtract(_.size(cueTexts), _.add(index, 1));
     const reservedDuration = remainingCues * PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS;
     const availableDuration = _.max([0, _.subtract(_.subtract(scene.duration, cursor), reservedDuration)]) || 0;
-    const durationSeconds = isLastCue
-      ? _.max([0, _.subtract(scene.duration, cursor)]) || 0
-      : _.min([_.max([PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS, proportionalDuration]) || proportionalDuration, availableDuration]) || 0;
+    const durationSeconds = isLastCue ? _.max([0, _.subtract(scene.duration, cursor)]) || 0 : _.min([_.max([PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS, proportionalDuration]) || proportionalDuration, availableDuration]) || 0;
     const cue = { text, startOffsetSeconds: cursor, durationSeconds };
     cursor = _.add(cursor, durationSeconds);
     return cue;
   });
 };
-
 export const createSubtitleCues = (scenes: StoryboardScene[]): StoryboardScene[] => _.map(scenes, (scene) => ({ ...scene, subtitleCues: createSceneSubtitleCues(scene) }));

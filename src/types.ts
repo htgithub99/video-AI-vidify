@@ -1,5 +1,5 @@
+import { SOURCE_TEXT_DOWNLOAD_GENERATED_IMAGE_BUTTON_DATA_TEST, SOURCE_TEXT_GENERATED_VIDEO_VIDEO_SRC_GENERATED_VIDEO, SOURCE_TEXT_IMG_VIDEO } from "./constants/sourceText";
 import React from "react";
-
 export enum WizardStep {
   SourceInput = 0,
   Storyboard = 1,
@@ -8,50 +8,41 @@ export enum WizardStep {
   Export = 4,
   IndependentGenerator = 5,
 }
-
 export enum ProjectInputType {
   Script = "script",
   Idea = "idea",
 }
-
 export enum ProjectKind {
   Container = "container",
   Studio = "studio",
   Auto = "auto",
   Cinematic = "cinematic",
 }
-
 export enum ProjectLanguage {
   VI = "vi",
   EN = "en",
 }
-
 export enum HookPosition {
   Start = "start",
   Mid = "mid",
   All = "all",
 }
-
 export enum AudioType {
   TTS = "tts",
   Clone = "clone",
   Upload = "upload",
   Generated = "generated",
 }
-
 export enum Gender {
   Male = "male",
   Female = "female",
 }
-
 export enum AgeGroup {
   Adult = "adult",
 }
-
 export enum AssetsMode {
   Mixed = "mixed",
 }
-
 export enum ImageGeneratorEngine {
   Imagen = "imagen",
   Veo3 = "veo3",
@@ -61,25 +52,21 @@ export enum ImageGeneratorEngine {
   LabsSandbox = "labs-sandbox",
   GrokImagine = "grok-imagine",
 }
-
 export enum ImageGenerationMode {
   LabsFlow = "labs-flow",
   GeminiChat = "gemini-chat",
 }
-
 export enum AiPlanningFallbackProvider {
   GeminiChat = "gemini-chat",
   GrokChat = "grok-chat",
   ChatGptUi = "chatgpt-ui",
   Disabled = "disabled",
 }
-
 export enum AiPlanningExecutionMode {
   RoomOnly = "room-only",
   Hybrid = "hybrid",
   ApiOnly = "api-only",
 }
-
 export enum AiPlanningChatModel {
   GeminiFlashLite = "gemini-flash-lite",
   GeminiFlash = "gemini-flash",
@@ -93,18 +80,15 @@ export enum AiPlanningChatModel {
   GrokHeavy = "grok-heavy",
   ChatGptAuto = "chatgpt-auto",
 }
-
 export enum GenerateType {
   Image = "image",
   Video = "video",
   Mixed = "mixed",
 }
-
 export enum PromptInputMethod {
   Type = "type",
   Paste = "paste",
 }
-
 export enum AspectRatio {
   SixteenNine = "16:9",
   NineSixteen = "9:16",
@@ -112,9 +96,7 @@ export enum AspectRatio {
   FourThree = "4:3",
   ThreeFour = "3:4",
 }
-
 type AssetType = "image" | "video";
-
 export enum SceneAssetStatus {
   Pending = "pending",
   Generating = "generating",
@@ -125,60 +107,48 @@ export enum SceneAssetStatus {
   Retrying = "retrying",
   Failed = "failed",
 }
-
 export enum QaStatus {
   Passed = "passed",
   Failed = "failed",
   Unavailable = "unavailable",
 }
-
 export enum AssetAcceptance {
   Approved = "approved",
   AcceptedWithWarning = "accepted_with_warning",
   Rejected = "rejected",
 }
-
 type CinematicTakeDecision = "use" | "trim" | "cover" | "regenerate_once" | "omit";
-
 export enum AudioCueType {
   Music = "music",
   SoundEffect = "sfx",
   Ambience = "ambience",
 }
-
 export enum AudioCueStatus {
   Planned = "planned",
   Approved = "approved",
 }
-
 export enum SubtitleMode {
   None = "none",
   BurnIn = "burn_in",
   Track = "track",
   Both = "both",
 }
-
 export enum QualityMode {
   Economy = "economy",
   Balanced = "balanced",
   Premium = "premium",
 }
-
 export enum ManualReviewStatus {
   Pending = "pending",
   Approved = "approved",
   Rejected = "rejected",
 }
-
 type TooltipPosition = "top" | "bottom" | "left" | "right";
-
 export type ButtonVariant = "primary" | "secondary" | "success" | "info" | "purple" | "amber" | "danger" | "ghost" | "outline" | "unstyled";
-
 interface ProjectInput {
   type: ProjectInputType;
   content: string;
 }
-
 interface ProjectConfig {
   genre: string;
   language: ProjectLanguage;
@@ -202,7 +172,6 @@ interface ProjectConfig {
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
 }
-
 export interface HookVersion {
   id: string;
   content: string;
@@ -210,14 +179,12 @@ export interface HookVersion {
   selected: boolean;
   score?: HookScore;
 }
-
 export enum FactClaimStatus {
   Verified = "verified",
   Disputed = "disputed",
   Unsupported = "unsupported",
   NeedsScope = "needs_scope",
 }
-
 export interface CreativeBrief {
   logline: string;
   centralQuestion: string;
@@ -233,7 +200,6 @@ export interface CreativeBrief {
   visualMotifs: string[];
   forbiddenDirections: string[];
 }
-
 enum NarrativeBeatType {
   Hook = "hook",
   Setup = "setup",
@@ -246,7 +212,6 @@ enum NarrativeBeatType {
   Collapse = "collapse",
   Payoff = "payoff",
 }
-
 interface CharacterArc {
   initialState: string;
   emotionalLack: string;
@@ -261,7 +226,6 @@ interface CharacterArc {
   finalCost: string;
   realization: string;
 }
-
 interface NarrativeBeat {
   id: string;
   type: NarrativeBeatType;
@@ -273,7 +237,6 @@ interface NarrativeBeat {
   targetDurationSeconds: number;
   callbackId?: string;
 }
-
 interface CallbackPlan {
   id: string;
   setupBeatId: string;
@@ -281,7 +244,6 @@ interface CallbackPlan {
   motif: string;
   changedMeaning: string;
 }
-
 interface NarrativePlan {
   viewerPromise: string;
   centralQuestion: string;
@@ -290,7 +252,6 @@ interface NarrativePlan {
   callbacks: CallbackPlan[];
   endingPayoff: string;
 }
-
 interface ChapterPlan {
   id: string;
   title: string;
@@ -304,7 +265,6 @@ interface ChapterPlan {
   forbiddenRepetition: string[];
   handoffToNextChapter: string;
 }
-
 export interface FactClaim {
   id: string;
   text: string;
@@ -316,11 +276,9 @@ export interface FactClaim {
   confidence: number;
   safeRewrite: string;
 }
-
 export interface FactPack {
   claims: FactClaim[];
 }
-
 export interface HookScore {
   retention: number;
   clarity: number;
@@ -331,7 +289,6 @@ export interface HookScore {
   accepted: boolean;
   reasons: string[];
 }
-
 export interface ScriptQualityReport {
   continuityScore: number;
   repetitionScore: number;
@@ -346,7 +303,6 @@ export interface ScriptQualityReport {
   suggestedPatches: string[];
   passed: boolean;
 }
-
 interface AiOperationMetric {
   capability: string;
   provider: string;
@@ -360,7 +316,6 @@ interface AiOperationMetric {
   outputTokens: number;
   fallbackIndex: number;
 }
-
 interface HookConfig {
   type: string;
   duration: number;
@@ -368,7 +323,6 @@ interface HookConfig {
   positions: HookPosition;
   versions: HookVersion[];
 }
-
 export interface VoiceConfig {
   provider: string;
   audioType: AudioType;
@@ -389,7 +343,6 @@ export interface VoiceConfig {
   voiceArc?: VoiceArc;
   audioQa?: AudioQualityReport;
 }
-
 export interface VisualConfig {
   source: string;
   style: string;
@@ -451,7 +404,6 @@ export interface VisualConfig {
   planningChromeHeadless?: boolean;
   preserveAiPromptText?: boolean;
 }
-
 export interface CharacterConfig {
   id: string;
   name: string;
@@ -478,7 +430,6 @@ export interface CharacterConfig {
   silhouette?: string;
   timelineStages?: CharacterTimelineStage[];
 }
-
 interface CharacterTimelineStage {
   id: string;
   label: string;
@@ -487,7 +438,6 @@ interface CharacterTimelineStage {
   posture: string;
   visibleCondition: string;
 }
-
 interface VisualLocation {
   id: string;
   name: string;
@@ -495,20 +445,17 @@ interface VisualLocation {
   geography: string;
   timeProgression: string;
 }
-
 interface VisualProp {
   id: string;
   name: string;
   visualAnchors: string[];
   narrativeFunction: string;
 }
-
 export interface Chapter {
   id: string;
   title: string;
   scriptSegment: string;
 }
-
 export enum ShotPurpose {
   Setup = "setup",
   Action = "action",
@@ -526,7 +473,6 @@ export enum ShotPurpose {
   Payoff = "payoff",
   Transition = "transition",
 }
-
 export interface CinematicEditSegment {
   segmentId: string;
   inSeconds: number;
@@ -537,7 +483,6 @@ export interface CinematicEditSegment {
   audioBridgeMode: "hard" | "j_cut" | "l_cut" | "ambience";
   containsDialogue: boolean;
 }
-
 export interface StoryboardScene {
   id: string;
   chapterId: string;
@@ -678,13 +623,11 @@ export interface StoryboardScene {
   cinematicSupportShotType?: "none" | "reaction" | "insert" | "environment" | "aftermath";
   cinematicPolicyReview?: { violatesPolicy: boolean; risks: string[]; rationale: string };
 }
-
 export interface SubtitleCue {
   text: string;
   startOffsetSeconds: number;
   durationSeconds: number;
 }
-
 export interface ThumbnailItem {
   id: string;
   prompt: string;
@@ -708,7 +651,6 @@ export interface ThumbnailItem {
   qaStatus?: QaStatus;
   acceptance?: AssetAcceptance;
 }
-
 export interface AssetRevision {
   id: string;
   parentRevisionId?: string;
@@ -721,7 +663,6 @@ export interface AssetRevision {
   approvedAt?: string;
   operation?: "generated" | "retry" | "rollback" | "upscale";
 }
-
 interface ProjectDependencyHashes {
   script?: string;
   storyboard?: string;
@@ -729,7 +670,6 @@ interface ProjectDependencyHashes {
   seo?: string;
   thumbnails?: string;
 }
-
 export interface ManualReviewItem {
   id: string;
   scope: "scene" | "audio" | "subtitle" | "thumbnail" | "final";
@@ -740,7 +680,6 @@ export interface ManualReviewItem {
   resolvedAt?: string;
   note?: string;
 }
-
 export interface FinalQualityReport {
   visualBlockingErrors: number;
   audioBlockingErrors: number;
@@ -755,7 +694,6 @@ export interface FinalQualityReport {
   publishable: boolean;
   releaseStatus: "technical_complete" | "completed_with_warnings" | "editorially_publishable";
 }
-
 export interface FinalMultimodalQualityReport {
   visualScore: number;
   cropScore: number;
@@ -770,13 +708,11 @@ export interface FinalMultimodalQualityReport {
   passed: boolean;
   reviewAvailable?: boolean;
 }
-
 export interface VoiceDirection {
   emotion: string;
   speed: number;
   pauseScale: number;
 }
-
 export interface VoiceArc {
   setup: VoiceDirection;
   descent: VoiceDirection;
@@ -785,7 +721,6 @@ export interface VoiceArc {
   reckoning: VoiceDirection;
   resolution: VoiceDirection;
 }
-
 export interface AudioQualityReport {
   pronunciationScore: number;
   pauseScore: number;
@@ -799,7 +734,6 @@ export interface AudioQualityReport {
   warnings: string[];
   passed: boolean;
 }
-
 export interface SubtitleQualityReport {
   maxTwoLines: boolean;
   semanticBreaks: boolean;
@@ -808,7 +742,6 @@ export interface SubtitleQualityReport {
   warnings: string[];
   passed: boolean;
 }
-
 export interface EditorQualityReport {
   approvedAssetsOnly: boolean;
   intentionalTransitions: boolean;
@@ -816,7 +749,6 @@ export interface EditorQualityReport {
   warnings: string[];
   passed: boolean;
 }
-
 export interface VisualStyleProfile {
   medium: string;
   characterType?: string;
@@ -841,7 +773,6 @@ export interface VisualStyleProfile {
   lockedStyleElements?: string[];
   flexibleElements?: string[];
 }
-
 export interface VisualBible {
   colorPalette?: string;
   characterSpecs?: string;
@@ -860,7 +791,6 @@ export interface VisualBible {
   locations?: VisualLocation[];
   props?: VisualProp[];
 }
-
 export interface StoryboardQualityReport {
   continuityScore: number;
   shotDiversityScore: number;
@@ -872,13 +802,11 @@ export interface StoryboardQualityReport {
   warnings: string[];
   passed: boolean;
 }
-
 export interface ImagePromptQualityIssue {
   sceneId: string;
   code: string;
   severity: "blocking" | "warning";
 }
-
 export interface ImagePromptQualityReport {
   totalPrompts: number;
   validPrompts: number;
@@ -886,7 +814,6 @@ export interface ImagePromptQualityReport {
   warnings: ImagePromptQualityIssue[];
   passed: boolean;
 }
-
 export interface ContentSafetyReport {
   sensitiveTopic: boolean;
   trueCase: boolean;
@@ -901,7 +828,6 @@ export interface ContentSafetyReport {
   warnings: string[];
   allowed: boolean;
 }
-
 export interface PipelineRolloutConfig {
   releaseChannel: "stable" | "canary";
   canaryEnabled: boolean;
@@ -917,7 +843,6 @@ export interface PipelineRolloutConfig {
     finalQc: boolean;
   };
 }
-
 export interface PipelineBenchmark {
   totalLatencyMs: number;
   aiLatencyMs: number;
@@ -927,7 +852,6 @@ export interface PipelineBenchmark {
   rejectCount: number;
   generatedAt: string;
 }
-
 export interface AudioCue {
   id: string;
   sceneId: string;
@@ -939,7 +863,6 @@ export interface AudioCue {
   assetUrl?: string;
   status: AudioCueStatus;
 }
-
 export interface AudioCueSheet {
   musicArc: string[];
   cues: AudioCue[];
@@ -949,7 +872,6 @@ export interface AudioCueSheet {
     peakDb: number;
   };
 }
-
 export interface RenderAudioTrack {
   id: string;
   type: AudioCueType;
@@ -961,7 +883,6 @@ export interface RenderAudioTrack {
   fadeInSeconds?: number;
   fadeOutSeconds?: number;
 }
-
 export interface PipelineShadowComparison {
   baselineProjectId?: string;
   comparedAt: string;
@@ -974,7 +895,6 @@ export interface PipelineShadowComparison {
   regressions: string[];
   improved: boolean;
 }
-
 export interface ThumbnailQualityReport {
   anatomyScore: number;
   characterConsistencyScore: number;
@@ -986,7 +906,6 @@ export interface ThumbnailQualityReport {
   warnings: string[];
   passed: boolean;
 }
-
 export interface SEOMetadata {
   text: string;
   searchScore: number;
@@ -994,14 +913,12 @@ export interface SEOMetadata {
   compScore: number;
   seoScore: number;
 }
-
 export interface SEOPackage {
   titles: SEOMetadata[];
   descriptions: SEOMetadata[];
   hashtags: string[];
   tags: string[];
 }
-
 interface SavedAsset {
   id: string;
   name: string;
@@ -1009,21 +926,18 @@ interface SavedAsset {
   url: string;
   sceneId?: string;
 }
-
 interface ProjectVersion {
   id: string;
   timestamp: string;
   note: string;
   scriptPreview: string;
 }
-
 interface SEOConfig {
   numTitles: number;
   numDescriptions: number;
   numHashtags: number;
   numTags: number;
 }
-
 export interface VideoProject {
   schemaVersion?: number;
   id: string;
@@ -1042,7 +956,6 @@ export interface VideoProject {
   output?: {
     audioBase64?: string;
   };
-
   scriptRewritten?: string;
   factCheckNotes?: string;
   creativeBrief?: CreativeBrief;
@@ -1076,7 +989,6 @@ export interface VideoProject {
   thumbnails?: ThumbnailItem[];
   seo?: SEOPackage;
   assets?: SavedAsset[];
-
   creditsUsed: number;
   currentStep?: WizardStep;
   versionHistory?: ProjectVersion[];
@@ -1106,7 +1018,6 @@ export interface VideoProject {
   };
   renderedVideoUrl?: string;
 }
-
 export interface IBaseModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1114,19 +1025,16 @@ export interface IBaseModalProps {
   children?: React.ReactNode;
   maxWidth?: string;
 }
-
 export interface ITooltipProps {
   content: string;
   children: React.ReactNode;
   position?: TooltipPosition;
 }
-
 export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   isLoading?: boolean;
   size?: "xs" | "sm" | "md" | "lg";
 }
-
 export enum BackgroundMode {
   Auto = "auto",
   Minimal = "minimal",
@@ -1139,7 +1047,6 @@ export enum BackgroundMode {
   Gradient = "gradient",
   Studio = "studio",
 }
-
 export enum TextInImageMode {
   Auto = "auto",
   NoText = "no_text",
@@ -1147,17 +1054,14 @@ export enum TextInImageMode {
   Moderate = "moderate",
   Abundant = "abundant",
 }
-
 export enum ThumbnailTextMode {
   Headline = "headline",
   NoText = "no_text",
 }
-
 export enum StyleReferencePurpose {
   Scene = "scene",
   Thumbnail = "thumbnail",
 }
-
 export enum ImageFocusMode {
   Default = "default",
   Portrait = "portrait",
@@ -1165,7 +1069,6 @@ export enum ImageFocusMode {
   Landscape = "landscape",
   Conceptual = "conceptual",
 }
-
 export enum GeminiChatSpeed {
   Slow = "2",
   Normal = "3",
@@ -1173,7 +1076,6 @@ export enum GeminiChatSpeed {
   SuperFast = "7",
   HyperFast = "10",
 }
-
 export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
   [GeminiChatSpeed.Slow]: 2,
   [GeminiChatSpeed.Normal]: 3,
@@ -1181,13 +1083,11 @@ export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
   [GeminiChatSpeed.SuperFast]: 7,
   [GeminiChatSpeed.HyperFast]: 10,
 };
-
 export enum GeminiChatModelName {
   Pro = "3.1 Pro",
   Flash = "3.7 Flash",
   FlashLite = "3.5 Flash-Lite",
 }
-
 export enum GeminiChatSelector {
   Response = "model-response",
   Input = 'div.ql-editor[contenteditable="true"]',
@@ -1203,25 +1103,20 @@ export enum GeminiChatSelector {
   GenerationBusy = "gem-icon-button.send-button.stop",
   ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating)',
 }
-
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image:
-    'download-generated-image-button, [data-test-id="download-generated-image-button"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^="blob:"], model-response img[src*="googleusercontent"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)',
-  video: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
-  all: "img, video",
+  image: SOURCE_TEXT_DOWNLOAD_GENERATED_IMAGE_BUTTON_DATA_TEST,
+  video: SOURCE_TEXT_GENERATED_VIDEO_VIDEO_SRC_GENERATED_VIDEO,
+  all: SOURCE_TEXT_IMG_VIDEO,
 } as const;
-
 export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",
   CreateImageVi = "Tạo hình ảnh",
 }
-
 export enum ImageModelLabel {
   Veo3 = "VEO 3.0 FLUID",
   Imagen = "IMAGEN 3 BATCH",
   LabsSandbox = "GEMINI IMAGES · NANO BANANA 2",
 }
-
 export enum BatchDelayOption {
   Default = "default",
   OneSecond = "1s",

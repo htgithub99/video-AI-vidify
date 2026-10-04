@@ -1,12 +1,11 @@
+import { SOURCE_TEMPLATE_SYMBOL_37, SOURCE_TEXT_CANVAS, SOURCE_TEXT_UPSCALE } from "../constants/sourceText";
+import { getErrorMessage } from "../utils/errorUtils";
 import _ from "lodash";
 import { IMAGE_UPSCALE_CONFIG } from "../constants";
 import { QualityMode, SceneAssetStatus, StoryboardScene } from "../types";
 import { appendAssetRevision } from "./dependencyHashService";
 import { selectScenesForUpscale } from "./qualityProfileService";
-
-const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string =>
-  _.reduce(values, (message, value, key) => message.replace(`{${key}}`, _.toString(value)), template);
-
+const formatUpscaleMessage = (template: string, values: Record<string, string | number>): string => _.reduce(values, (message, value, key) => message.replace(SOURCE_TEMPLATE_SYMBOL_37(`${key}`), _.toString(value)), template);
 interface ImageUpscaleResult {
   assetUrl: string;
   changed: boolean;
@@ -15,7 +14,6 @@ interface ImageUpscaleResult {
   outputWidth: number;
   outputHeight: number;
 }
-
 export interface ApprovedSceneUpscaleOptions {
   scenes: StoryboardScene[];
   validatedSceneIds: Set<string>;
@@ -24,7 +22,6 @@ export interface ApprovedSceneUpscaleOptions {
   persistCheckpoint: () => Promise<void>;
   onLog: (message: string) => void;
 }
-
 const loadImage = (assetUrl: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -33,14 +30,12 @@ const loadImage = (assetUrl: string): Promise<HTMLImageElement> =>
     image.onerror = () => reject(new Error(IMAGE_UPSCALE_CONFIG.SOURCE_LOAD_ERROR));
     image.src = assetUrl;
   });
-
 export const calculateUpscaleDimensions = (width: number, height: number): { width: number; height: number; changed: boolean } => {
   if (!_.every([_.isFinite(width), _.isFinite(height), width > 0, height > 0])) return { width, height, changed: false };
   const scale = _.min([IMAGE_UPSCALE_CONFIG.SCALE, IMAGE_UPSCALE_CONFIG.MAX_WIDTH / width, IMAGE_UPSCALE_CONFIG.MAX_HEIGHT / height])!;
   if (scale < IMAGE_UPSCALE_CONFIG.MIN_SCALE_GAIN) return { width, height, changed: false };
   return { width: _.round(width * scale), height: _.round(height * scale), changed: true };
 };
-
 const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleResult> => {
   if (_.isEmpty(assetUrl)) throw new Error(IMAGE_UPSCALE_CONFIG.SOURCE_MISSING_ERROR);
   const image = await loadImage(assetUrl);
@@ -48,8 +43,7 @@ const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleResult> 
   const sourceHeight = image.naturalHeight;
   const output = calculateUpscaleDimensions(sourceWidth, sourceHeight);
   if (!output.changed) return { assetUrl, changed: false, sourceWidth, sourceHeight, outputWidth: sourceWidth, outputHeight: sourceHeight };
-
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement(SOURCE_TEXT_CANVAS);
   canvas.width = output.width;
   canvas.height = output.height;
   const context = canvas.getContext(IMAGE_UPSCALE_CONFIG.CANVAS_CONTEXT, { alpha: true });
@@ -64,15 +58,7 @@ const upscaleImageAsset = async (assetUrl: string): Promise<ImageUpscaleResult> 
   canvas.height = 1;
   return { assetUrl: upscaledAssetUrl, changed: true, sourceWidth, sourceHeight, outputWidth: output.width, outputHeight: output.height };
 };
-
-export const upscaleApprovedSceneAssets = async ({
-  scenes,
-  validatedSceneIds,
-  qualityMode,
-  persistAsset,
-  persistCheckpoint,
-  onLog,
-}: ApprovedSceneUpscaleOptions): Promise<number> => {
+export const upscaleApprovedSceneAssets = async ({ scenes, validatedSceneIds, qualityMode, persistAsset, persistCheckpoint, onLog }: ApprovedSceneUpscaleOptions): Promise<number> => {
   const targets = selectScenesForUpscale(scenes, validatedSceneIds, qualityMode);
   if (_.isEmpty(targets)) return 0;
   onLog(formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.START_LOG_TEMPLATE, { count: _.size(targets) }));
@@ -87,14 +73,14 @@ export const upscaleApprovedSceneAssets = async ({
           scene.assetUrl = canonicalAssetUrl;
           scene.assetUrls = [canonicalAssetUrl];
           const revision = appendAssetRevision(scene, canonicalAssetUrl, SceneAssetStatus.Approved);
-          revision.operation = "upscale";
+          revision.operation = SOURCE_TEXT_UPSCALE;
           upscaledCount = _.add(upscaledCount, 1);
           await persistCheckpoint();
         } catch (error) {
           onLog(
             formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.SKIPPED_LOG_TEMPLATE, {
               sceneId: scene.id,
-              reason: error instanceof Error ? error.message : IMAGE_UPSCALE_CONFIG.UNKNOWN_ERROR,
+              reason: getErrorMessage(error, IMAGE_UPSCALE_CONFIG.UNKNOWN_ERROR),
             }),
           );
         }

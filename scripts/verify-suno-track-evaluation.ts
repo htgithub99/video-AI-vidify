@@ -1,8 +1,9 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const controller = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
+const controller = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
 
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
 assert.match(controller, /_.chunk\(trackPairs, SUNO_AUTOMATION_CONFIG\.EVALUATION_SONGS_PER_CHUNK\)/);
@@ -32,7 +33,7 @@ assert.doesNotMatch(controller, /buildAudioBatchUploadPrompt/);
 assert.match(constants, /Listen to every attached audio file before answering/);
 assert.match(constants, /quality score from 0 to 100/);
 assert.match(controller, /required: \["artifactType", "requestId", "selectedTrackIds", "qualityScores"\]/);
-assert.match(controller, /requestId: \{ type: "string" as const, enum: \[requestId\] \}/);
+assert.match(controller, /requestId: \{ type: "string"(?: as const)?, enum: \[requestId\] \}/);
 assert.match(controller, /_.orderBy\(evaluatedTracks[\s\S]*qualityScore[\s\S]*\["desc"\]/);
 assert.match(controller, /_.padStart\(_.toString\(rank \+ 1\), 2, "0"\)/);
 

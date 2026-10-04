@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -74,7 +75,7 @@ const storyboard = normalizeStoryboardQuality({
 assert.equal(storyboard.passed, true);
 assert.ok(storyboard.warnings.includes("storyboard_quality_below_target"));
 
-const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const autoPipeline = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(autoPipeline, /validateSceneImage/);
 assert.doesNotMatch(autoPipeline, /evaluateVisualAssetQuality|validateFinalVideo/);
 

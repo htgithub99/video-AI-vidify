@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_ROUTES, REFACTOR_CONSTANTS } from "../constants";
-
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const STALE_TIME = FIVE_MINUTES_MS;
-
 export function usePresets() {
   return useQuery({
     queryKey: [REFACTOR_CONSTANTS.PRESETS_QUERY_KEY],

@@ -1,11 +1,10 @@
+import { SOURCE_TEMPLATE_PROVIDER, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_CHOICES_0_MESSAGE_CONTENT, SOURCE_TEXT_FILEDATA, SOURCE_TEXT_INLINEDATA, SOURCE_TEXT_POST, SOURCE_TEXT_USER } from "../../constants/sourceText";
 import _ from "lodash";
 import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants/config.js";
 import { jsonUtils } from "../../lib/json.js";
 import { appLogStep } from "../../lib/logger.js";
 import { AiCallMetadata, AiTaskCapability, blockModel, isCircuitOpen, recordModelSuccess } from "./taskRouterService.js";
-
 type FreeProviderId = "cerebras" | "groq";
-
 interface FreeProviderRequest {
   contents: string | any;
   config?: any;
@@ -26,13 +25,7 @@ interface ProviderCandidate {
   apiKey: string;
   models: readonly string[];
 }
-
-const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] =>
-  requiresTools
-    ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels
-    : capability === AiTaskCapability.ScriptWriting
-      ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels
-      : FREE_AI_PROVIDER_CONFIG.GROQ.models;
+const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] => (requiresTools ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels : capability === AiTaskCapability.ScriptWriting ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels : FREE_AI_PROVIDER_CONFIG.GROQ.models);
 const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({
   id: FREE_AI_PROVIDER_CONFIG.GROQ.id,
   url: FREE_AI_PROVIDER_CONFIG.GROQ.url,
@@ -41,14 +34,11 @@ const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?
 });
 const createProviderCandidates = ({ cerebrasKey, groqKey }: FreeProviderKeys, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate[] => {
   if (requiresTools) return _.isEmpty(groqKey) ? [] : [createGroqCandidate(groqKey, true, capability)];
-  return _.compact([
-    _.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey },
-    _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability),
-  ]) as ProviderCandidate[];
+  return _.compact([_.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey }, _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability)]) as ProviderCandidate[];
 };
 const createRequestBody = (model: string, request: FreeProviderRequest) => ({
   model,
-  messages: [{ role: "user", content: request.contents }],
+  messages: [{ role: SOURCE_TEXT_USER, content: request.contents }],
   max_tokens: request.config?.maxOutputTokens || FREE_AI_PROVIDER_CONFIG.DEFAULT_MAX_OUTPUT_TOKENS,
   temperature: request.config?.temperature ?? FREE_AI_PROVIDER_CONFIG.DEFAULT_TEMPERATURE,
   ...(request.config?.responseMimeType === FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE ? { response_format: { type: FREE_AI_PROVIDER_CONFIG.JSON_RESPONSE_TYPE } } : {}),
@@ -66,7 +56,7 @@ const createMetadata = (provider: ProviderCandidate, model: string, request: Fre
   outputTokens: _.toNumber(usage?.completion_tokens) || 0,
   fallbackIndex,
 });
-const createProviderError = (data: any, status: number): Error => Object.assign(new Error(_.toString(data?.error?.message || data?.message || status)), { status });
+const createProviderError = (data: any, status: number): Error => _.assign(new Error(_.toString(data?.error?.message || data?.message || status)), { status });
 const getModelCooldown = (status: number): number => (status === 429 ? FREE_AI_PROVIDER_CONFIG.MODEL_RATE_LIMIT_COOLDOWN_MS : GEMINI_REQUEST_POLICY.TRANSIENT_COOLDOWN_MS);
 const extractTextContents = (contents: unknown): string => {
   if (_.isString(contents)) return _.trim(contents);
@@ -82,7 +72,7 @@ const extractTextContents = (contents: unknown): string => {
     }
     if (!_.isPlainObject(value)) return;
     const source = value as Record<string, unknown>;
-    if (_.has(source, "inlineData") || _.has(source, "fileData")) return;
+    if (_.has(source, SOURCE_TEXT_INLINEDATA) || _.has(source, SOURCE_TEXT_FILEDATA)) return;
     if (_.isString(source.text)) textParts.push(source.text);
     else _.forEach(_.values(source), visit);
   };
@@ -93,17 +83,16 @@ const containsMediaPayload = (contents: unknown): boolean => {
   if (_.isArray(contents)) return _.some(contents, containsMediaPayload);
   if (!_.isPlainObject(contents)) return false;
   const source = contents as Record<string, unknown>;
-  if (_.has(source, "inlineData") || _.has(source, "fileData")) return true;
+  if (_.has(source, SOURCE_TEXT_INLINEDATA) || _.has(source, SOURCE_TEXT_FILEDATA)) return true;
   return _.some(_.values(source), containsMediaPayload);
 };
-
 const requestModel = async (provider: ProviderCandidate, model: string, request: FreeProviderRequest, fallbackIndex: number): Promise<any> => {
   const startedAt = Date.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FREE_AI_PROVIDER_CONFIG.REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(provider.url, {
-      method: "POST",
+      method: SOURCE_TEXT_POST,
       headers: {
         [FREE_AI_PROVIDER_CONFIG.AUTHORIZATION_HEADER]: `${FREE_AI_PROVIDER_CONFIG.BEARER_PREFIX}${provider.apiKey}`,
         [FREE_AI_PROVIDER_CONFIG.CONTENT_TYPE_HEADER]: FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE,
@@ -113,7 +102,7 @@ const requestModel = async (provider: ProviderCandidate, model: string, request:
     });
     const data: any = await response.json().catch(() => ({}));
     if (!response.ok) throw createProviderError(data, response.status);
-    const text = _.toString(_.get(data, "choices[0].message.content"));
+    const text = _.toString(_.get(data, SOURCE_TEXT_CHOICES_0_MESSAGE_CONTENT));
     if (_.isEmpty(_.trim(text))) throw new Error(FREE_AI_PROVIDER_CONFIG.EMPTY_RESPONSE_ERROR);
     const aiMetadata = createMetadata(provider, model, request, fallbackIndex, startedAt, data?.usage);
     return { text, usageMetadata: { promptTokenCount: aiMetadata.inputTokens, candidatesTokenCount: aiMetadata.outputTokens }, aiMetadata, rotationLogs: [] };
@@ -121,7 +110,6 @@ const requestModel = async (provider: ProviderCandidate, model: string, request:
     clearTimeout(timeout);
   }
 };
-
 export const generateWithFreeProviders = async (request: FreeProviderRequest, keys: FreeProviderKeys): Promise<FreeProviderResult> => {
   const rotationLogs: string[] = [];
   const log = (message: string) => appLogStep(message, rotationLogs);
@@ -143,10 +131,10 @@ export const generateWithFreeProviders = async (request: FreeProviderRequest, ke
   let lastError: any;
   let fallbackIndex = 0;
   for (const provider of providers) {
-    const providerCircuitKey = `${provider.id}:provider`;
+    const providerCircuitKey = SOURCE_TEMPLATE_PROVIDER(`${provider.id}`);
     if (isCircuitOpen(providerCircuitKey)) continue;
     for (const model of _.take(provider.models, FREE_AI_PROVIDER_CONFIG.MAX_MODELS_PER_PROVIDER)) {
-      const circuitKey = `${provider.id}:${model}`;
+      const circuitKey = SOURCE_TEMPLATE_SYMBOL_8(`${provider.id}`, `${model}`);
       if (isCircuitOpen(circuitKey)) continue;
       try {
         log(FREE_AI_PROVIDER_LOGS.CALLING(provider.id, model));

@@ -1,25 +1,65 @@
+import {
+  SOURCE_TEXT_DESC,
+  SOURCE_TEMPLATE_0,
+  SOURCE_TEMPLATE_SYMBOL,
+  SOURCE_TEMPLATE_SYMBOL_16,
+  SOURCE_TEMPLATE_SYMBOL_18,
+  SOURCE_TEMPLATE_SYMBOL_19,
+  SOURCE_TEMPLATE_SYMBOL_20,
+  SOURCE_TEMPLATE_SYMBOL_21,
+  SOURCE_TEMPLATE_SYMBOL_22,
+  SOURCE_TEMPLATE_SYMBOL_23,
+  SOURCE_TEMPLATE_SYMBOL_24,
+  SOURCE_TEMPLATE_SYMBOL_25,
+  SOURCE_TEMPLATE_SYMBOL_26,
+  SOURCE_TEMPLATE_SYMBOL_27,
+  SOURCE_TEMPLATE_SYMBOL_28,
+  SOURCE_TEMPLATE_SYMBOL_5,
+  SOURCE_TEMPLATE_SYMBOL_7,
+  SOURCE_TEMPLATE_SYMBOL_8,
+  SOURCE_TEMPLATE_TRACKS,
+  SOURCE_TEXT_0,
+  SOURCE_TEXT_1,
+  SOURCE_TEXT_100,
+  SOURCE_TEXT_AI,
+  SOURCE_TEXT_ALERT,
+  SOURCE_TEXT_APPLICATION_JSON,
+  SOURCE_TEXT_APPLICATION_ZIP,
+  SOURCE_TEXT_BLOB,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_DUNG,
+  SOURCE_TEXT_EN,
+  SOURCE_TEXT_END,
+  SOURCE_TEXT_FEATURED,
+  SOURCE_TEXT_FILE,
+  SOURCE_TEXT_FOLDER_2,
+  SOURCE_TEXT_ID,
+  SOURCE_TEXT_MAX_W_LG,
+  SOURCE_TEXT_MUSIC_MIXER_UPLOAD,
+  SOURCE_TEXT_NAME,
+  SOURCE_TEXT_NUMBER,
+  SOURCE_TEXT_POST,
+  SOURCE_TEXT_RANDOM,
+  SOURCE_TEXT_READONLY,
+  SOURCE_TEXT_READWRITE,
+  SOURCE_TEXT_RESULTS,
+  SOURCE_TEXT_SYMBOL,
+  SOURCE_TEXT_SYMBOL_10,
+  SOURCE_TEXT_SYMBOL_11,
+  SOURCE_TEXT_SYMBOL_12,
+  SOURCE_TEXT_SYMBOL_16,
+  SOURCE_TEXT_SYMBOL_22,
+  SOURCE_TEXT_SYMBOL_23,
+  SOURCE_TEXT_SYMBOL_7,
+  SOURCE_TEXT_TRACKS,
+  SOURCE_TEXT_TRUE,
+  SOURCE_TEXT_UNSTYLED,
+  SOURCE_TEXT_VI,
+} from "../constants/sourceText";
 import { ChangeEvent, DragEvent, FC, useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
 import _ from "lodash";
-import {
-  Download,
-  FolderOpen,
-  FolderPlus,
-  Music2,
-  Shuffle,
-  Trash2,
-  Sparkles,
-  SlidersHorizontal,
-  X,
-  Disc3,
-  Layers,
-  FileArchive,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Square,
-  CheckSquare,
-} from "lucide-react";
+import { Download, FolderOpen, FolderPlus, Music2, Shuffle, Trash2, Sparkles, SlidersHorizontal, X, Disc3, Layers, FileArchive, AlertCircle, ChevronDown, ChevronUp, Square, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
@@ -34,57 +74,66 @@ import { API_ROUTES } from "../constants";
 import { MUSIC_MIXER_SERVER } from "../constants/musicMixer";
 import { recordWorkflowActivity } from "../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
-
 type Track = { file: File; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number };
 type SeoData = ReturnType<typeof createSeo>;
 type ResultFolder = { name: string; tracks: Track[]; seo?: SeoData; seoOptions?: any[] };
-
 const AUDIO_EXT = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
 const MIXER_DB = MUSIC_MIXER_SERVER.DATABASE_NAME;
-
 const numberedName = (file: File, index: number) =>
-  `${String(index + 1).padStart(2, "0")}.${file.name.replace(/\.[^.]+$/, "").replace(/^\d+[\s._-]*/, "").replace(/\s*\(\d+\)$/, "")}${file.name.match(/\.[^.]+$/)?.[0] || ""}`;
-const cleanTrackTitle = (name: string) => name.replace(/\.[^.]+$/, "").replace(/^\d+[\s._-]*/, "").replace(/\s*\(\d+\)$/, "");
+  SOURCE_TEMPLATE_SYMBOL_18(
+    `${String(index + 1).padStart(2, SOURCE_TEXT_0)}`,
+    `${file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/^\d+[\s._-]*/, "")
+      .replace(/\s*\(\d+\)$/, "")}`,
+    `${file.name.match(/\.[^.]+$/)?.[0] || ""}`,
+  );
+const cleanTrackTitle = (name: string) =>
+  name
+    .replace(/\.[^.]+$/, "")
+    .replace(/^\d+[\s._-]*/, "")
+    .replace(/\s*\(\d+\)$/, "");
 const getDisplayFolderName = (folderName: string, folderPath?: string) => {
   if (!folderPath) return folderName;
   const normalized = folderPath.replace(/^[A-Za-z]:[\\/]/, "");
-  const parts = normalized.split(/[\\/]/).filter(Boolean);
+  const parts = _.compact(normalized.split(/[\\/]/));
   if (parts.length >= 2) {
-    return `${parts[parts.length - 2]} \\ ${parts[parts.length - 1]}`;
+    return SOURCE_TEMPLATE_SYMBOL_19(`${parts[parts.length - 2]}`, `${parts[parts.length - 1]}`);
   }
   return parts[0] || folderName;
 };
-
 const selectZipDestination = async (name: string): Promise<string | null> => {
   const destinationResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_ZIP_DESTINATION, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ suggestedName: name }),
+    method: SOURCE_TEXT_POST,
+    headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
+    body: JSON.stringify({ suggestedName: name }),
   });
   const destination = await destinationResponse.json();
   if (!destinationResponse.ok || !destination.success) throw new Error(destination.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
   return destination.cancelled ? null : destination.token;
 };
-
 const saveZip = async (blob: Blob, token: string) => {
   const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_WRITE_ZIP, {
-    method: "POST", headers: { "Content-Type": "application/zip", "X-Music-Mixer-Zip-Token": token }, body: blob,
+    method: SOURCE_TEXT_POST,
+    headers: { "Content-Type": SOURCE_TEXT_APPLICATION_ZIP, "X-Music-Mixer-Zip-Token": token },
+    body: blob,
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
 };
-
 const createSeo = (folder: ResultFolder) => {
-  const title = `${folder.name} - ${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`;
+  const title = SOURCE_TEMPLATE_SYMBOL_20(`${folder.name}`, `${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`);
   let elapsed = 0;
   const tracks = _.map(folder.tracks, (track) => {
     const minutes = Math.floor(elapsed / 60);
     const seconds = Math.floor(elapsed % 60);
-    const stamp = `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(seconds), 2, "0")}`;
+    const stamp = SOURCE_TEMPLATE_SYMBOL_8(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`, `${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`);
     elapsed += track.durationSeconds || 0;
     return `${stamp} ${cleanTrackTitle(track.file.name)}`;
   });
   return {
     title,
-    description: `${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_PREFIX} ${folder.tracks.length} tracks. ${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_SUFFIX}`,
+    description: SOURCE_TEMPLATE_TRACKS(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_PREFIX}`, `${folder.tracks.length}`, `${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_SUFFIX}`),
     tags: MUSIC_MIXER_SERVER.DEFAULT_SEO_TAGS,
     chapters: _.map(tracks, (name, index) => ({ position: index + 1, label: name })),
     tracks,
@@ -92,38 +141,46 @@ const createSeo = (folder: ResultFolder) => {
 };
 const ensureTrackFile = async (track: Track): Promise<File> => {
   if (track.file.size > 0 || (!track.sourcePath && !track.sourceUrl)) return track.file;
-  const response = track.sourcePath
-    ? await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SOURCE_FILE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourcePath: track.sourcePath }) })
-    : await fetch(track.sourceUrl!);
+  const response = track.sourcePath ? await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SOURCE_FILE, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: JSON.stringify({ sourcePath: track.sourcePath }) }) : await fetch(track.sourceUrl!);
   if (!response.ok) throw new Error(MUSIC_MIXER_SERVER.SOURCE_READ_ERROR);
   const blob = await response.blob();
   return new File([blob], track.file.name, { type: blob.type || track.file.type });
 };
-const formatList = (val: unknown, sep = ", "): string => {
+const formatList = (val: unknown, sep: string = SOURCE_TEXT_SYMBOL_10): string => {
   if (_.isArray(val)) return _.join(_.compact(val), sep);
   return _.isString(val) ? val : "";
 };
-
 const formatSeoText = (folder: ResultFolder) => {
   const orderedTracks = _.map(folder.tracks, (track) => cleanTrackTitle(track.file.name));
   let elapsed = 0;
   const timeline = _.map(folder.tracks, (track) => {
     const minutes = Math.floor(elapsed / 60);
     const seconds = Math.floor(elapsed % 60);
-    const stamp = `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(seconds), 2, "0")}`;
+    const stamp = SOURCE_TEMPLATE_SYMBOL_8(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`, `${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`);
     elapsed += track.durationSeconds || 0;
     return `${stamp} ${cleanTrackTitle(track.file.name)}`;
   });
-  const options = !_.isEmpty(folder.seoOptions)
-    ? folder.seoOptions
-    : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: "AI" }];
-  return `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}\n\n${MUSIC_MIXER_SERVER.SEO_PLAYLIST_URL_LABEL}\n\n${_.map(
-    options,
-    (option, index) =>
-      `${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}${index + 1} (${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL} ${option?.seoScore || "AI"}) ===\n\n${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}\n${option?.title || ""}\n\n${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}\n${option?.description || ""}\n\n${timeline.join("\n")}\n\n${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}\n${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}\n\n${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}\n${formatList(option?.hashtags, " ")}\n\n${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}\n${formatList(option?.tags, ", ")}`,
+  const options = !_.isEmpty(folder.seoOptions) ? folder.seoOptions : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: SOURCE_TEXT_AI }];
+  return `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}\n\n${MUSIC_MIXER_SERVER.SEO_PLAYLIST_URL_LABEL}\n\n${_.map(options, (option, index) =>
+    SOURCE_TEMPLATE_SYMBOL_21(
+      `${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}`,
+      `${index + 1}`,
+      `${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL}`,
+      `${option?.seoScore || SOURCE_TEXT_AI}`,
+      `${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}`,
+      `${option?.title || ""}`,
+      `${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}`,
+      `${option?.description || ""}`,
+      `${timeline.join("\n")}`,
+      `${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}`,
+      `${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}`,
+      `${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}`,
+      `${formatList(option?.hashtags, " ")}`,
+      `${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}`,
+      `${formatList(option?.tags, SOURCE_TEXT_SYMBOL_10)}`,
+    ),
   ).join(`\n\n${MUSIC_MIXER_SERVER.SEO_DIVIDER}\n\n`)}`;
 };
-
 const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) => {
   const payload = {
     token,
@@ -133,25 +190,23 @@ const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) =>
         name: folder.name,
         files: _.map(folder.tracks, (track, index) => ({
           sourcePath: track.sourcePath,
-          zipPath: `${folder.name}/${numberedName(track.file, index)}`,
+          zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${numberedName(track.file, index)}`),
         })),
         texts: [
-          { zipPath: `${folder.name}/${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`, content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
-          { zipPath: `${folder.name}/${MUSIC_MIXER_SERVER.SEO_TXT_FILENAME}`, content: formatSeoText(folder) },
+          { zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`), content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
+          { zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${MUSIC_MIXER_SERVER.SEO_TXT_FILENAME}`), content: formatSeoText(folder) },
         ],
       };
     }),
   };
-
   const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: SOURCE_TEXT_POST,
+    headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
     body: JSON.stringify(payload),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
 };
-
 const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder) => {
   const seo = folder.seo || createSeo(folder);
   const payload = {
@@ -170,39 +225,21 @@ const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder)
       },
     ],
   };
-
   const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: SOURCE_TEXT_POST,
+    headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
     body: JSON.stringify(payload),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
 };
-
-
-const shuffle = <T,>(items: T[]): T[] => {
-  const output = [...items];
-  for (let i = output.length - 1; i > 0; i--) {
-    const bytes = new Uint32Array(1);
-    crypto.getRandomValues(bytes);
-    const j = bytes[0] % (i + 1);
-    [output[i], output[j]] = [output[j], output[i]];
-  }
-  return output;
-};
-
-const readEntries = (reader: any): Promise<any[]> =>
-  new Promise((resolve, reject) => reader.readEntries(resolve, reject));
-
-const readFile = (entry: any): Promise<File> =>
-  new Promise((resolve, reject) => entry.file(resolve, reject));
-
+const readEntries = (reader: any): Promise<any[]> => new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+const readFile = (entry: any): Promise<File> => new Promise((resolve, reject) => entry.file(resolve, reject));
 const walkEntry = async (entry: any): Promise<Track[]> => {
   if (entry.isFile) {
     const file = await readFile(entry);
     const path = String(entry.fullPath || file.name).replace(/^\//, "");
-    return AUDIO_EXT.test(file.name) ? [{ file, path, folder: path.split("/")[0] }] : [];
+    return AUDIO_EXT.test(file.name) ? [{ file, path, folder: path.split(SOURCE_TEXT_SYMBOL)[0] }] : [];
   }
   if (!entry.isDirectory) return [];
   const reader = entry.createReader();
@@ -210,20 +247,20 @@ const walkEntry = async (entry: any): Promise<Track[]> => {
   let reading = true;
   while (reading) {
     const page = await readEntries(reader);
-    if (!page.length) { reading = false; continue; }
+    if (!page.length) {
+      reading = false;
+      continue;
+    }
     children.push(...page);
   }
-  return (await Promise.all(children.map(walkEntry))).flat();
+  return (await Promise.all(_.map(children, walkEntry))).flat();
 };
-
 const PRESET_SONGS_PER_RESULT = [5, 10, 15, 20, 25];
 const PRESET_RESULT_COUNTS = [2, 3, 5, 8, 10];
-
 const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
-  const vi = currentLang === "vi";
-  const text = MUSIC_MIXER_TEXTS[vi ? "vi" : "en"];
+  const vi = currentLang === SOURCE_TEXT_VI;
+  const text = MUSIC_MIXER_TEXTS[vi ? SOURCE_TEXT_VI : SOURCE_TEXT_EN];
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [tracks, setTracks] = useState<Track[]>([]);
   const [songsPerResult, setSongsPerResult] = useState(10);
   const [resultCount, setResultCount] = useState(3);
@@ -238,7 +275,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const [seoModel, setSeoModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlashLite);
   const [seoExecutionMode, setSeoExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
   const [seoChromeHeadless, setSeoChromeHeadless] = useState(false);
-  const [trackOrder, setTrackOrder] = useState<"random" | "featured" | "name">("featured");
+  const [trackOrder, setTrackOrder] = useState<"random" | "featured" | "name">(SOURCE_TEXT_FEATURED);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [pendingFolders, setPendingFolders] = useState<Array<{ folderPath: string; files: Array<{ name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }> }>>([]);
   const [selectedPendingFolders, setSelectedPendingFolders] = useState<string[]>([]);
@@ -246,90 +283,93 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const abortRef = useRef<AbortController | null>(null);
   const projectIdRef = useRef<string | null>(null);
   const folderProjectIdsRef = useRef<string[]>([]);
-
   useEffect(() => {
     try {
       const saved = jsonUtils.getItem<Record<string, any>>(MUSIC_MIXER_SERVER.SETTINGS_STORAGE_KEY, {});
       if (Number.isFinite(saved.songsPerResult) && saved.songsPerResult > 0) setSongsPerResult(saved.songsPerResult);
       if (Number.isFinite(saved.resultCount) && saved.resultCount > 0) setResultCount(saved.resultCount);
-      if (["random", "featured", "name"].includes(saved.trackOrder)) setTrackOrder(saved.trackOrder);
+      if (_.includes([SOURCE_TEXT_RANDOM, SOURCE_TEXT_FEATURED, SOURCE_TEXT_NAME], saved.trackOrder)) setTrackOrder(saved.trackOrder);
       if (saved.seoProvider) setSeoProvider(saved.seoProvider);
       if (saved.seoModel) setSeoModel(saved.seoModel);
       if (saved.seoExecutionMode) setSeoExecutionMode(saved.seoExecutionMode);
       if (typeof saved.seoChromeHeadless === "boolean") setSeoChromeHeadless(saved.seoChromeHeadless);
-    } catch { }
-    finally { setSettingsLoaded(true); }
+    } catch {
+    } finally {
+      setSettingsLoaded(true);
+    }
     const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains("tracks")) request.result.createObjectStore("tracks", { keyPath: "id" });
-      if (!request.result.objectStoreNames.contains("results")) request.result.createObjectStore("results", { keyPath: "id" });
+      if (!request.result.objectStoreNames.contains(SOURCE_TEXT_TRACKS)) request.result.createObjectStore(SOURCE_TEXT_TRACKS, { keyPath: SOURCE_TEXT_ID });
+      if (!request.result.objectStoreNames.contains(SOURCE_TEXT_RESULTS)) request.result.createObjectStore(SOURCE_TEXT_RESULTS, { keyPath: SOURCE_TEXT_ID });
     };
     request.onsuccess = () => {
       const db = request.result;
-      const get = db.transaction("tracks", "readonly").objectStore("tracks").getAll();
-      get.onsuccess = () => setTracks(get.result.map((item: any) => ({ file: new File([item.blob], item.name, { type: item.type, lastModified: item.lastModified }), path: item.path, folder: item.folder, folderPath: item.folderPath, sourcePath: item.sourcePath, sourceUrl: item.sourceUrl, size: item.size, durationSeconds: item.durationSeconds })));
-      const savedResults = db.transaction("results", "readonly").objectStore("results").get(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
-      savedResults.onsuccess = () => { if (savedResults.result?.value) setResults(savedResults.result.value); };
+      const get = db.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READONLY).objectStore(SOURCE_TEXT_TRACKS).getAll();
+      get.onsuccess = () => setTracks(_.map(get.result, (item: any) => ({ file: new File([item.blob], item.name, { type: item.type, lastModified: item.lastModified }), path: item.path, folder: item.folder, folderPath: item.folderPath, sourcePath: item.sourcePath, sourceUrl: item.sourceUrl, size: item.size, durationSeconds: item.durationSeconds })));
+      const savedResults = db.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READONLY).objectStore(SOURCE_TEXT_RESULTS).get(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
+      savedResults.onsuccess = () => {
+        if (savedResults.result?.value) setResults(savedResults.result.value);
+      };
     };
   }, []);
-
   useEffect(() => {
     if (!settingsLoaded) return;
     jsonUtils.setItem(MUSIC_MIXER_SERVER.SETTINGS_STORAGE_KEY, { songsPerResult, resultCount, trackOrder, seoProvider, seoModel, seoExecutionMode, seoChromeHeadless });
   }, [settingsLoaded, songsPerResult, resultCount, trackOrder, seoProvider, seoModel, seoExecutionMode, seoChromeHeadless]);
-
   useEffect(() => {
     if (!results.length) return;
     const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
-    request.onsuccess = () => request.result.transaction("results", "readwrite").objectStore("results").put({ id: MUSIC_MIXER_SERVER.RESULTS_STORE_KEY, value: results });
+    request.onsuccess = () => request.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).put({ id: MUSIC_MIXER_SERVER.RESULTS_STORE_KEY, value: results });
   }, [results]);
-
   useEffect(() => {
     if (!tracks.length || !results.length) return;
-    const currentKeys = new Set(tracks.map((track) => `${track.sourcePath || track.path}:${track.file.name}`));
-    const resultKeys = results.flatMap((folder) => folder.tracks).map((track) => `${track.sourcePath || track.path}:${track.file.name}`);
-    if (resultKeys.some((key) => !currentKeys.has(key))) {
+    const currentKeys = new Set(_.map(tracks, (track) => SOURCE_TEMPLATE_SYMBOL_8(`${track.sourcePath || track.path}`, `${track.file.name}`)));
+    const resultKeys = _.map(
+      _.flatMap(results, (folder) => folder.tracks),
+      (track) => SOURCE_TEMPLATE_SYMBOL_8(`${track.sourcePath || track.path}`, `${track.file.name}`),
+    );
+    if (_.some(resultKeys, (key) => !currentKeys.has(key))) {
       setResults([]);
       const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
-      request.onsuccess = () => request.result.transaction("results", "readwrite").objectStore("results").delete(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
+      request.onsuccess = () => request.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).delete(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
     }
   }, [tracks, results]);
-
   const groups = useMemo(() => {
-    const map = new Map<string, Track[]>();
-    tracks.forEach((track) => { const key = track.folderPath || track.folder; map.set(key, [...(map.get(key) || []), track]); });
-    return [...map.entries()];
+    const grouped = _.groupBy(tracks, (track) => track.folderPath || track.folder);
+    return _.map(_.uniq(_.map(tracks, (track) => track.folderPath || track.folder)), (key) => [key, grouped[key]] as const);
   }, [tracks]);
-
   const addTracks = (incoming: Track[]) => {
     if (_.isEmpty(incoming)) {
       toast.info(text.EMPTY_SOURCE_HINT);
       return;
     }
     setTracks((current) => {
-      const known = new Set(
-        current.map((track) => `${track.path}:${track.file.size}:${track.file.lastModified}`),
-      );
-      const newItems = incoming.filter(
-        (track) => !known.has(`${track.path}:${track.file.size}:${track.file.lastModified}`),
-      );
+      const known = new Set(_.map(current, (track) => SOURCE_TEMPLATE_SYMBOL_7(`${track.path}`, `${track.file.size}`, `${track.file.lastModified}`)));
+      const newItems = _.filter(incoming, (track) => !known.has(SOURCE_TEMPLATE_SYMBOL_7(`${track.path}`, `${track.file.size}`, `${track.file.lastModified}`)));
       if (newItems.length > 0) {
-        toast.success(`${text.TOTAL_LOADED} +${newItems.length} ${text.TRACK_UNIT}`, { id: "music-mixer-upload" });
+        toast.success(SOURCE_TEMPLATE_SYMBOL_22(`${text.TOTAL_LOADED}`, `${newItems.length}`, `${text.TRACK_UNIT}`), { id: SOURCE_TEXT_MUSIC_MIXER_UPLOAD });
       }
       const next = [...current, ...newItems];
       const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
-      request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains("tracks")) request.result.createObjectStore("tracks", { keyPath: "id" }); if (!request.result.objectStoreNames.contains("results")) request.result.createObjectStore("results", { keyPath: "id" }); };
-      request.onsuccess = () => { const transaction = request.result.transaction("tracks", "readwrite"); const store = transaction.objectStore("tracks"); store.clear(); next.forEach((track) => store.put({ id: `${track.path}:${track.file.size}:${track.file.lastModified}`, blob: track.file, name: track.file.name, type: track.file.type, lastModified: track.file.lastModified, path: track.path, folder: track.folder, folderPath: track.folderPath, sourcePath: track.sourcePath, sourceUrl: track.sourceUrl, size: track.size })); };
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains(SOURCE_TEXT_TRACKS)) request.result.createObjectStore(SOURCE_TEXT_TRACKS, { keyPath: SOURCE_TEXT_ID });
+        if (!request.result.objectStoreNames.contains(SOURCE_TEXT_RESULTS)) request.result.createObjectStore(SOURCE_TEXT_RESULTS, { keyPath: SOURCE_TEXT_ID });
+      };
+      request.onsuccess = () => {
+        const transaction = request.result.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READWRITE);
+        const store = transaction.objectStore(SOURCE_TEXT_TRACKS);
+        store.clear();
+        next.forEach((track) => store.put({ id: SOURCE_TEMPLATE_SYMBOL_7(`${track.path}`, `${track.file.size}`, `${track.file.lastModified}`), blob: track.file, name: track.file.name, type: track.file.type, lastModified: track.file.lastModified, path: track.path, folder: track.folder, folderPath: track.folderPath, sourcePath: track.sourcePath, sourceUrl: track.sourceUrl, size: track.size }));
+      };
       return next;
     });
     setResults([]);
     setError("");
   };
-
   const chooseFolder = async () => {
     setIsSelectingFolder(true);
     try {
-      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_SOURCE, { method: "POST" });
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_SOURCE, { method: SOURCE_TEXT_POST });
       const selection = await response.json();
       if (!selection.success) return;
       if (!selection.folders || selection.folders.length === 0) {
@@ -338,72 +378,97 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       }
       setPendingFolders(selection.folders || []);
       setSelectedPendingFolders((selection.folders || []).map((source: { folderPath: string }) => source.folderPath));
-    } catch { setError(text.DROP_ERROR); }
-    finally { setIsSelectingFolder(false); }
+    } catch {
+      setError(text.DROP_ERROR);
+    } finally {
+      setIsSelectingFolder(false);
+    }
   };
-
   const confirmPendingFolders = () => {
-    const collected: Track[] = pendingFolders.filter((source) => selectedPendingFolders.includes(source.folderPath)).flatMap((source) => {
-        const folder = source.folderPath.split(/[\\/]/).filter(Boolean).pop() || MUSIC_MIXER_SERVER.DEFAULT_FOLDER_NAME;
-        return source.files.map((item) => ({ file: new File([], item.name, { type: item.type }), path: `${folder}/${item.relativePath.replaceAll("\\", "/")}`, folder, folderPath: source.folderPath, sourcePath: item.sourcePath, sourceUrl: item.url, size: item.size }));
-      });
+    const collected: Track[] = _.flatMap(
+      _.filter(pendingFolders, (source) => _.includes(selectedPendingFolders, source.folderPath)),
+      (source) => {
+        const folder = _.compact(source.folderPath.split(/[\\/]/)).pop() || MUSIC_MIXER_SERVER.DEFAULT_FOLDER_NAME;
+        return _.map(source.files, (item) => ({ file: new File([], item.name, { type: item.type }), path: SOURCE_TEMPLATE_SYMBOL(`${folder}`, `${item.relativePath.replaceAll(SOURCE_TEXT_SYMBOL_22, SOURCE_TEXT_SYMBOL)}`), folder, folderPath: source.folderPath, sourcePath: item.sourcePath, sourceUrl: item.url, size: item.size }));
+      },
+    );
     addTracks(collected);
     setPendingFolders([]);
     setSelectedPendingFolders([]);
   };
-
   const handleRemoveFolder = (folderName: string) => {
     setTracks((current) => {
-      const next = current.filter((track) => (track.folderPath || track.folder) !== folderName);
-      const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION); request.onsuccess = () => { const store = request.result.transaction("tracks", "readwrite").objectStore("tracks"); store.clear(); next.forEach((track) => store.put({ id: `${track.path}:${track.file.size}:${track.file.lastModified}`, blob: track.file, name: track.file.name, type: track.file.type, lastModified: track.file.lastModified, path: track.path, folder: track.folder, folderPath: track.folderPath, sourcePath: track.sourcePath, sourceUrl: track.sourceUrl, size: track.size, durationSeconds: track.durationSeconds })); };
+      const next = _.filter(current, (track) => (track.folderPath || track.folder) !== folderName);
+      const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
+      request.onsuccess = () => {
+        const store = request.result.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_TRACKS);
+        store.clear();
+        next.forEach((track) =>
+          store.put({
+            id: SOURCE_TEMPLATE_SYMBOL_7(`${track.path}`, `${track.file.size}`, `${track.file.lastModified}`),
+            blob: track.file,
+            name: track.file.name,
+            type: track.file.type,
+            lastModified: track.file.lastModified,
+            path: track.path,
+            folder: track.folder,
+            folderPath: track.folderPath,
+            sourcePath: track.sourcePath,
+            sourceUrl: track.sourceUrl,
+            size: track.size,
+            durationSeconds: track.durationSeconds,
+          }),
+        );
+      };
       return next;
     });
     setResults([]);
-    const resultDb = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION); resultDb.onsuccess = () => resultDb.result.transaction("results", "readwrite").objectStore("results").clear();
+    const resultDb = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
+    resultDb.onsuccess = () => resultDb.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).clear();
   };
-
   const handleClearAll = () => {
     setTracks([]);
-    const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION); request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains("tracks")) request.result.createObjectStore("tracks", { keyPath: "id" }); if (!request.result.objectStoreNames.contains("results")) request.result.createObjectStore("results", { keyPath: "id" }); }; request.onsuccess = () => request.result.transaction("tracks", "readwrite").objectStore("tracks").clear();
+    const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(SOURCE_TEXT_TRACKS)) request.result.createObjectStore(SOURCE_TEXT_TRACKS, { keyPath: SOURCE_TEXT_ID });
+      if (!request.result.objectStoreNames.contains(SOURCE_TEXT_RESULTS)) request.result.createObjectStore(SOURCE_TEXT_RESULTS, { keyPath: SOURCE_TEXT_ID });
+    };
+    request.onsuccess = () => request.result.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_TRACKS).clear();
     setResults([]);
-    const resultDb = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION); resultDb.onsuccess = () => resultDb.result.transaction("results", "readwrite").objectStore("results").clear();
+    const resultDb = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
+    resultDb.onsuccess = () => resultDb.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).clear();
     setError("");
   };
-
   const onFiles = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = [...(event.target.files || [])].filter((file) => AUDIO_EXT.test(file.name));
+    const files = _.filter([...(event.target.files || [])], (file) => AUDIO_EXT.test(file.name));
     addTracks(
-      files.map((file) => {
+      _.map(files, (file) => {
         const path = file.webkitRelativePath || file.name;
         return { file, path, folder: path.split(/[\\/]/)[0] };
       }),
     );
     event.target.value = "";
   };
-
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(true);
   };
-
   const onDragLeave = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(false);
   };
-
   const onDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(false);
     setBusy(true);
     try {
-      const entries = [...event.dataTransfer.items]
-        .map((item) => (item as any).webkitGetAsEntry?.())
-        .filter(Boolean);
+      const entries = _.compact(_.map([...event.dataTransfer.items], (item) => (item as any).webkitGetAsEntry?.()));
       const found = entries.length
-        ? (await Promise.all(entries.map(walkEntry))).flat()
-        : [...event.dataTransfer.files]
-            .filter((file) => AUDIO_EXT.test(file.name))
-            .map((file) => ({ file, path: file.name, folder: "Folder" }));
+        ? (await Promise.all(_.map(entries, walkEntry))).flat()
+        : _.map(
+            _.filter([...event.dataTransfer.files], (file) => AUDIO_EXT.test(file.name)),
+            (file) => ({ file, path: file.name, folder: SOURCE_TEXT_FOLDER_2 }),
+          );
       addTracks(found);
     } catch {
       setError(text.DROP_ERROR);
@@ -412,7 +477,6 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       setBusy(false);
     }
   };
-
   const generate = async () => {
     if (!tracks.length || songsPerResult < 1 || resultCount < 1 || songsPerResult > tracks.length) {
       return;
@@ -423,19 +487,18 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     projectIdRef.current = `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${crypto.randomUUID()}`;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, MUSIC_MIXER_SERVER.LOG_MIX_START(resultCount, songsPerResult));
     try {
-      let source = trackOrder === "name" ? [...tracks].sort((a, b) => a.file.name.localeCompare(b.file.name)) : shuffle(tracks);
+      const source = trackOrder === SOURCE_TEXT_NAME ? _.clone(tracks).sort((a, b) => a.file.name.localeCompare(b.file.name)) : _.shuffle(tracks);
       const folders: ResultFolder[] = Array.from({ length: resultCount }, (_, index) => ({
-        name: `${MUSIC_MIXER_SERVER.EMPTY_MIX_NAME_PREFIX}${String(index + 1).padStart(2, "0")}`,
+        name: `${MUSIC_MIXER_SERVER.EMPTY_MIX_NAME_PREFIX}${String(index + 1).padStart(2, SOURCE_TEXT_0)}`,
         tracks: [],
       }));
-      folderProjectIdsRef.current = folders.map((folder) => `${projectIdRef.current}-${folder.name}`);
-
+      folderProjectIdsRef.current = _.map(folders, (folder) => SOURCE_TEMPLATE_SYMBOL_5(`${projectIdRef.current}`, `${folder.name}`));
       let cursor = 0;
       for (let row = 0; row < songsPerResult; row++) {
         for (const folder of folders) {
           let candidate = source[cursor++ % source.length];
           let attempts = 0;
-          while (folder.tracks.includes(candidate) && attempts < source.length) {
+          while (_.includes(folder.tracks, candidate) && attempts < source.length) {
             candidate = source[cursor++ % source.length];
             attempts++;
           }
@@ -445,28 +508,50 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       const foldersWithSeo: ResultFolder[] = [];
       const maxConcurrentFolders = folders.length;
       for (let batchStart = 0; batchStart < folders.length; batchStart += maxConcurrentFolders) {
-        const batch = folders.slice(batchStart, batchStart + maxConcurrentFolders);
-        const batchResults = await Promise.all(batch.map(async (folder) => {
-        if (!folder.tracks.every((track) => track.sourcePath)) return { ...folder, seo: createSeo(folder), seoOptions: [] };
-        const folderProjectId = `${projectIdRef.current}-${folder.name}`;
-        const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { method: "POST", signal: abortController.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: folderProjectId, tracks: folder.tracks.map((track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }) });
-        const ranking = await response.json();
-        if (!response.ok || !ranking.success) throw new Error(ranking.error || text.RANK_ERROR);
-        const scores = new Map<number, { score: number; durationSeconds?: number }>(ranking.scores.map((item: { index: number; score: number; durationSeconds?: number }) => [item.index - 1, item]));
-        const orderedTracks = folder.tracks.map((track, index) => ({ track: { ...track, durationSeconds: scores.get(index)?.durationSeconds || track.durationSeconds }, score: scores.get(index)?.score ?? 0 })).sort((a, b) => b.score - a.score).map((item) => item.track);
-        const seoResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SEO, { method: "POST", signal: abortController.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titles: orderedTracks.map((track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }) });
-        const seoPayload = await seoResponse.json();
-        if (!seoResponse.ok || !seoPayload.success) throw new Error(seoPayload.error || text.RANK_ERROR);
-        return { ...folder, tracks: orderedTracks, seo: createSeo({ ...folder, tracks: orderedTracks }), seoOptions: seoPayload.playlistSeoOptions || [] };
-        }));
+        const batch = _.slice(folders, batchStart, batchStart + maxConcurrentFolders);
+        const batchResults = await Promise.all(
+          _.map(batch, async (folder) => {
+            if (!_.every(folder.tracks, (track) => track.sourcePath)) return { ...folder, seo: createSeo(folder), seoOptions: [] };
+            const folderProjectId = SOURCE_TEMPLATE_SYMBOL_5(`${projectIdRef.current}`, `${folder.name}`);
+            const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, {
+              method: SOURCE_TEXT_POST,
+              signal: abortController.signal,
+              headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
+              body: JSON.stringify({ projectId: folderProjectId, tracks: _.map(folder.tracks, (track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }),
+            });
+            const ranking = await response.json();
+            if (!response.ok || !ranking.success) throw new Error(ranking.error || text.RANK_ERROR);
+            const scores = new Map<number, { score: number; durationSeconds?: number }>(ranking.scores.map((item: { index: number; score: number; durationSeconds?: number }) => [item.index - 1, item]));
+            const orderedTracks = _.map(
+              _.orderBy(
+                _.map(folder.tracks, (track, index) => ({ track: { ...track, durationSeconds: scores.get(index)?.durationSeconds || track.durationSeconds }, score: scores.get(index)?.score ?? 0 })),
+                [(item) => item.score],
+                [SOURCE_TEXT_DESC],
+              ),
+              (item) => item.track,
+            );
+            const seoResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SEO, {
+              method: SOURCE_TEXT_POST,
+              signal: abortController.signal,
+              headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
+              body: JSON.stringify({ titles: _.map(orderedTracks, (track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }),
+            });
+            const seoPayload = await seoResponse.json();
+            if (!seoResponse.ok || !seoPayload.success) throw new Error(seoPayload.error || text.RANK_ERROR);
+            return { ...folder, tracks: orderedTracks, seo: createSeo({ ...folder, tracks: orderedTracks }), seoOptions: seoPayload.playlistSeoOptions || [] };
+          }),
+        );
         foldersWithSeo.push(...batchResults);
       }
       setResults(foldersWithSeo);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDone, folders.length, MUSIC_MIXER_SERVER.LOG_MIX_DONE);
       setError("");
-      toast.success(`${text.RESULTS_TITLE}: ${folders.length} ${text.FOLDER_UNIT}`);
+      toast.success(SOURCE_TEMPLATE_SYMBOL_23(`${text.RESULTS_TITLE}`, `${folders.length}`, `${text.FOLDER_UNIT}`));
     } catch (err: any) {
-      if (abortController.signal.aborted) { recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStop); return; }
+      if (abortController.signal.aborted) {
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStop);
+        return;
+      }
       const message = err?.message || text.DROP_ERROR;
       setError(message);
       toast.error(message);
@@ -480,14 +565,13 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       folderProjectIdsRef.current = [];
       if (finishedProjectId || finishedFolderProjectIds.length) {
         void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: SOURCE_TEXT_POST,
+          headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
           body: JSON.stringify({ projectIds: finishedFolderProjectIds, projectId: finishedProjectId, provider: seoProvider }),
         }).catch(() => undefined);
       }
     }
   };
-
   const stopGenerate = () => {
     const controller = abortRef.current;
     if (!controller) return;
@@ -497,9 +581,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     abortRef.current = null;
     const projectId = projectIdRef.current;
     projectIdRef.current = null;
-    if (projectId) void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectIds: folderProjectIdsRef.current, projectId, provider: seoProvider }) }).catch(() => undefined);
+    if (projectId) void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: JSON.stringify({ projectIds: folderProjectIdsRef.current, projectId, provider: seoProvider }) }).catch(() => undefined);
   };
-
   const downloadAll = async () => {
     if (_.isEmpty(results)) return;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadStart, results.length);
@@ -509,14 +592,20 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     try {
       const destinationToken = await selectZipDestination(`${MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME_PREFIX}${Date.now()}${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`);
       if (!destinationToken) return;
-      const allHaveSourcePath = results.every((folder) => folder.tracks.every((track) => Boolean(track.sourcePath)));
+      const allHaveSourcePath = _.every(results, (folder) => _.every(folder.tracks, (track) => Boolean(track.sourcePath)));
       if (allHaveSourcePath) {
         await buildZipDirectly(destinationToken, results);
       } else {
         const zip = new JSZip();
         for (const folder of results) for (const [index, track] of folder.tracks.entries()) zip.folder(folder.name)!.file(numberedName(track.file, index), await ensureTrackFile(track));
-        results.forEach((folder) => { const seo = folder.seo || createSeo(folder); zip.folder(folder.name)!.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder)); });
-        const blob = await zip.generateAsync({ type: "blob", compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
+        _.forEach(results, (folder) => {
+          const seo = folder.seo || createSeo(folder);
+          zip
+            .folder(folder.name)!
+            .file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2))
+            .file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
+        });
+        const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
         await saveZip(blob, destinationToken);
       }
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, results.length);
@@ -530,7 +619,6 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       setDownloadingFolder(null);
     }
   };
-
   const downloadFolder = async (folder: ResultFolder) => {
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadStart, 1, folder.name);
     setIsDownloading(true);
@@ -538,77 +626,45 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     try {
       const destinationToken = await selectZipDestination(`${folder.name}${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`);
       if (!destinationToken) return;
-      const allHaveSourcePath = folder.tracks.every((track) => Boolean(track.sourcePath));
+      const allHaveSourcePath = _.every(folder.tracks, (track) => Boolean(track.sourcePath));
       if (allHaveSourcePath) {
         await buildSingleFolderZipDirectly(destinationToken, folder);
       } else {
         const zip = new JSZip();
         for (const [index, track] of folder.tracks.entries()) zip.file(numberedName(track.file, index), await ensureTrackFile(track));
-        const seo = folder.seo || createSeo(folder); zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
-        const blob = await zip.generateAsync({ type: "blob", compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
+        const seo = folder.seo || createSeo(folder);
+        zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
+        const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
         await saveZip(blob, destinationToken);
       }
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, 1, folder.name);
-      toast.success(`${text.ZIP_SUCCESS} (${folder.name})`);
+      toast.success(SOURCE_TEMPLATE_SYMBOL_24(`${text.ZIP_SUCCESS}`, `${folder.name}`));
     } catch (error: any) {
       setError(text.ZIP_ERROR);
-      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadFail, undefined, `${folder.name}: ${error?.message || text.ZIP_ERROR}`);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadFail, undefined, SOURCE_TEMPLATE_SYMBOL_16(`${folder.name}`, `${error?.message || text.ZIP_ERROR}`));
       toast.error(`${text.ZIP_ERROR} ${error?.message || ""}`.trim());
     } finally {
       setIsDownloading(false);
       setDownloadingFolder(null);
     }
   };
-
   const isInsufficient = songsPerResult > tracks.length && tracks.length > 0;
   const isFormValid = tracks.length > 0 && songsPerResult >= 1 && resultCount >= 1 && !isInsufficient;
   const isBusy = busy || isDownloading;
-
   return (
-    <div
-      aria-busy={isBusy}
-      className={cn(
-        "creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar",
-      )}
-    >
-      <div
-        className={cn(
-          "bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80",
-        )}
-      >
-        <div
-          className={cn(
-            "glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4",
-          )}
-        >
+    <div aria-busy={isBusy} className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
+        <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
           <div className={cn("flex items-center gap-3 min-w-0")}>
-            <div
-              className={cn(
-                "w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-indigo-500 to-pink-600 p-0.5 shadow-md shadow-indigo-500/20 shrink-0",
-              )}
-            >
-              <div
-                className={cn(
-                  "w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-indigo-400",
-                )}
-              >
+            <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-indigo-500 to-pink-600 p-0.5 shadow-md shadow-indigo-500/20 shrink-0")}>
+              <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-indigo-400")}>
                 <Shuffle className={cn("w-5 h-5")} />
               </div>
             </div>
             <div className={cn("min-w-0")}>
               <div className={cn("flex items-center gap-2 flex-wrap")}>
-                <h1
-                  className={cn(
-                    "text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans",
-                  )}
-                >
-                  {text.HEADER_TITLE}
-                </h1>
-                <span
-                  className={cn(
-                    "px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs",
-                  )}
-                >
+                <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>{text.HEADER_TITLE}</h1>
+                <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
                   <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
                   {text.HEADER_BADGE}
                 </span>
@@ -616,143 +672,67 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               <p className={cn("text-[11px] text-slate-400 mt-0.5")}>{text.HEADER_DESC}</p>
             </div>
           </div>
-
           <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
-            <Tooltip content={text.AI_CONFIG_TOOLTIP} align="end">
+            <Tooltip content={text.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
               <Button
-                variant="unstyled"
-                type="button"
+                variant={SOURCE_TEXT_UNSTYLED}
+                type={SOURCE_TEXT_BUTTON}
                 onClick={() => setIsAiConfigOpen(!isAiConfigOpen)}
                 disabled={isBusy}
-                className={cn(
-                  "group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none",
-                  {
-                    "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
-                    "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
-                  },
-                )}
-              >
+                className={cn("group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none", {
+                  "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
+                  "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
+                })}>
                 <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
-                <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>
-                  {text.AI_CONFIG_TITLE}
-                </span>
-                {isAiConfigOpen ? (
-                  <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} />
-                ) : (
-                  <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />
-                )}
+                <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>{text.AI_CONFIG_TITLE}</span>
+                {isAiConfigOpen ? <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} /> : <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />}
               </Button>
             </Tooltip>
           </div>
         </div>
-
         {isAiConfigOpen && (
           <fieldset disabled={isBusy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
-            <ChatPlanningSettingsBlock
-              provider={seoProvider}
-              model={seoModel}
-              executionMode={seoExecutionMode}
-              chromeHeadless={seoChromeHeadless}
-              onProviderChange={setSeoProvider}
-              onModelChange={setSeoModel}
-              onExecutionModeChange={setSeoExecutionMode}
-              onChromeHeadlessChange={setSeoChromeHeadless}
-              currentLang={currentLang}
-            />
+            <ChatPlanningSettingsBlock provider={seoProvider} model={seoModel} executionMode={seoExecutionMode} chromeHeadless={seoChromeHeadless} onProviderChange={setSeoProvider} onModelChange={setSeoModel} onExecutionModeChange={setSeoExecutionMode} onChromeHeadlessChange={setSeoChromeHeadless} currentLang={currentLang} />
           </fieldset>
         )}
-
-
         <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
           <div className={cn("lg:col-span-2 flex flex-col min-w-0 h-full")}>
-            <div
-              className={cn(
-                "glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full h-full flex flex-col justify-start gap-4",
-              )}
-            >
+            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full h-full flex flex-col justify-start gap-4")}>
               <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <span
-                    className={cn(
-                      "w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20",
-                    )}
-                  >
-                    {text.STEP_01}
-                  </span>
-                  <h3
-                    className={cn(
-                      "text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5",
-                    )}
-                  >
+                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{text.STEP_01}</span>
+                  <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
                     <FolderOpen className={cn("w-3.5 h-3.5 text-purple-400")} />
                     <span>{text.SOURCE_TITLE}</span>
-                    <span
-                      className={cn(
-                        "px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono",
-                      )}
-                    >
-                      {text.SOURCE_BADGE}
-                    </span>
+                    <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>{text.SOURCE_BADGE}</span>
                   </h3>
                 </div>
-
                 <div className={cn("flex items-center gap-1.5")}>
-                  <Tooltip content={isSelectingFolder ? text.SELECTING_FOLDER : text.PICK_FOLDER_BTN} align="end">
-                    <Button
-                      variant="unstyled"
-                      type="button"
-                      onClick={chooseFolder}
-                      disabled={isBusy || isSelectingFolder}
-                      className={cn(
-                        "w-8 h-8 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-purple-300 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none disabled:opacity-50",
-                      )}
-                    >
+                  <Tooltip content={isSelectingFolder ? text.SELECTING_FOLDER : text.PICK_FOLDER_BTN} align={SOURCE_TEXT_END}>
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={chooseFolder} disabled={isBusy || isSelectingFolder} className={cn("w-8 h-8 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-purple-300 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none disabled:opacity-50")}>
                       {isSelectingFolder ? <Sparkles className="w-4 h-4 animate-spin text-purple-400" /> : <FolderPlus className={cn("w-4 h-4 shrink-0")} />}
                     </Button>
                   </Tooltip>
                   {tracks.length > 0 && (
-                    <Tooltip content={text.CLEAR_ALL_BTN} align="end">
-                      <Button
-                        variant="unstyled"
-                        type="button"
-                        onClick={handleClearAll}
-                        disabled={isBusy}
-                        className={cn(
-                          "w-8 h-8 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none disabled:opacity-50",
-                        )}
-                      >
+                    <Tooltip content={text.CLEAR_ALL_BTN} align={SOURCE_TEXT_END}>
+                      <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleClearAll} disabled={isBusy} className={cn("w-8 h-8 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none disabled:opacity-50")}>
                         <Trash2 className="w-4 h-4 shrink-0" />
                       </Button>
                     </Tooltip>
                   )}
-                  <input
-                    ref={fileInputRef}
-                    className={cn("sr-only")}
-                    type="file"
-                    {...{ webkitdirectory: "true", directory: "true", multiple: true }}
-                    onChange={onFiles}
-                  />
+                  <input ref={fileInputRef} className={cn("sr-only")} type={SOURCE_TEXT_FILE} {...{ webkitdirectory: SOURCE_TEXT_TRUE, directory: SOURCE_TEXT_TRUE, multiple: true }} onChange={onFiles} />
                 </div>
               </div>
-
               <div
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
                 onClick={chooseFolder}
-                className={cn(
-                  "border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2.5 select-none shrink-0",
-                  {
-                    "border-purple-400 bg-purple-500/15 ring-2 ring-purple-500/30 scale-[1.01]": isDragOver,
-                    "border-slate-800/80 hover:border-purple-500/50 bg-slate-900/50 hover:bg-slate-900/80": !isDragOver,
-                  },
-                )}
-              >
-                <div
-                  className={cn(
-                    "w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/15 via-indigo-500/15 to-pink-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-md shadow-purple-500/10",
-                  )}
-                >
+                className={cn("border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2.5 select-none shrink-0", {
+                  "border-purple-400 bg-purple-500/15 ring-2 ring-purple-500/30 scale-[1.01]": isDragOver,
+                  "border-slate-800/80 hover:border-purple-500/50 bg-slate-900/50 hover:bg-slate-900/80": !isDragOver,
+                })}>
+                <div className={cn("w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/15 via-indigo-500/15 to-pink-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-md shadow-purple-500/10")}>
                   <FolderPlus className={cn("w-6 h-6")} />
                 </div>
                 <div className={cn("text-center")}>
@@ -760,28 +740,22 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                   <p className={cn("text-[11px] text-slate-400 mt-0.5")}>{text.SOURCE_DROP_HINT}</p>
                 </div>
               </div>
-
               <div className={cn("space-y-2 pt-1 flex-1 flex flex-col min-h-0 justify-start")}>
                 <div className={cn("flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0")}>
                   <span className={cn("flex items-center gap-1.5 font-bold text-slate-200")}>
                     <Layers className={cn("w-3.5 h-3.5 text-purple-400")} />
                     <span>
-                      {text.TOTAL_LOADED}: <strong className="text-purple-300 font-bold">{tracks.length}</strong> {text.TRACK_UNIT}
+                      {text.TOTAL_LOADED}
+                      {SOURCE_TEXT_SYMBOL_7}
+                      <strong className="text-purple-300 font-bold">{tracks.length}</strong> {text.TRACK_UNIT}
                     </span>
                   </span>
                   <span className={cn("px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300")}>
                     {groups.length} {text.FOLDER_UNIT}
                   </span>
                 </div>
-
                 {_.isEmpty(groups) ? (
-                  <div
-                    className={cn(
-                      "flex-1 min-h-[140px] flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40 text-center text-xs text-slate-400 italic",
-                    )}
-                  >
-                    {text.EMPTY_SOURCE_HINT}
-                  </div>
+                  <div className={cn("flex-1 min-h-[140px] flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40 text-center text-xs text-slate-400 italic")}>{text.EMPTY_SOURCE_HINT}</div>
                 ) : (
                   <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 w-full flex-1 min-h-0 overflow-y-auto custom-scrollbar p-0.5 auto-rows-max content-start")}>
                     {_.map(groups, ([name, items]) => {
@@ -789,12 +763,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                       const folderPath = items[0]?.folderPath || name;
                       const displayTitle = getDisplayFolderName(folderName, folderPath);
                       return (
-                        <div
-                          key={name}
-                          className={cn(
-                            "group relative flex flex-col justify-between p-3 rounded-2xl border border-slate-800/90 bg-slate-900/90 hover:bg-slate-850 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200 backdrop-blur-md gap-2.5 w-full",
-                          )}
-                        >
+                        <div key={name} className={cn("group relative flex flex-col justify-between p-3 rounded-2xl border border-slate-800/90 bg-slate-900/90 hover:bg-slate-850 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200 backdrop-blur-md gap-2.5 w-full")}>
                           <div className={cn("flex items-center justify-between gap-2 min-w-0")}>
                             <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
                               <div className={cn("w-7 h-7 rounded-xl bg-gradient-to-tr from-purple-500/20 to-indigo-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-xs shrink-0 group-hover:scale-105 transition-transform")}>
@@ -804,25 +773,20 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                                 {displayTitle}
                               </span>
                             </div>
-
-                            <Tooltip content={text.CLEAR_FOLDER_TOOLTIP} align="end">
+                            <Tooltip content={text.CLEAR_FOLDER_TOOLTIP} align={SOURCE_TEXT_END}>
                               <Button
-                                variant="unstyled"
-                                type="button"
+                                variant={SOURCE_TEXT_UNSTYLED}
+                                type={SOURCE_TEXT_BUTTON}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleRemoveFolder(name);
                                 }}
                                 disabled={isBusy}
-                                className={cn(
-                                  "w-5 h-5 bg-transparent hover:bg-transparent border-0 text-slate-500 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none",
-                                )}
-                              >
+                                className={cn("w-5 h-5 bg-transparent hover:bg-transparent border-0 text-slate-500 hover:text-rose-400 flex items-center justify-center cursor-pointer transition-colors shrink-0 p-0 shadow-none outline-none")}>
                                 <X className={cn("w-3.5 h-3.5")} />
                               </Button>
                             </Tooltip>
                           </div>
-
                           <div className={cn("flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[10px] font-mono min-w-0")}>
                             <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/25 text-[10px] font-mono font-semibold text-purple-300 shrink-0")}>
                               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-xs shadow-purple-400/80 shrink-0 animate-pulse"></span>
@@ -842,83 +806,53 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               </div>
             </div>
           </div>
-
           <div className={cn("lg:col-span-1 flex flex-col gap-5 min-w-0 h-full")}>
-            <div
-              className={cn(
-                "glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl",
-              )}
-            >
+            <div className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
               <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0",
-                    )}
-                  >
+                  <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0")}>
                     <div className={cn("w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center")}>
                       <SlidersHorizontal className={cn("w-4 h-4 text-amber-400")} />
                     </div>
                   </div>
                   <div>
-                    <h2
-                      className={cn(
-                        "text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5",
-                      )}
-                    >
-                      {text.CONFIG_TITLE}
-                    </h2>
+                    <h2 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>{text.CONFIG_TITLE}</h2>
                   </div>
                 </div>
-                <span
-                  className={cn(
-                    "px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal",
-                  )}
-                >
-                  {text.CONFIG_BADGE}
-                </span>
+                <span className={cn("px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal")}>{text.CONFIG_BADGE}</span>
               </div>
-
               <div className={cn("space-y-2")}>
                 <div className={cn("flex items-center justify-between")}>
-                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>
-                    {text.SONGS_PER_RESULT_LABEL}
-                  </label>
+                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>{text.SONGS_PER_RESULT_LABEL}</label>
                   <span className={cn("text-xs font-mono font-bold text-purple-300")}>
                     {songsPerResult} {text.TRACK_UNIT}
                   </span>
                 </div>
-
                 <div className={cn("grid grid-cols-5 gap-1.5")}>
                   {_.map(PRESET_SONGS_PER_RESULT, (count) => {
                     const isSelected = _.isEqual(songsPerResult, count);
                     return (
                       <Button
-                        variant="unstyled"
+                        variant={SOURCE_TEXT_UNSTYLED}
                         key={count}
-                        type="button"
+                        type={SOURCE_TEXT_BUTTON}
                         onClick={() => {
                           setSongsPerResult(count);
                           setResults([]);
                         }}
                         disabled={isBusy}
-                        className={cn(
-                          "h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none",
-                          {
-                            "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                            "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-900": !isSelected,
-                          },
-                        )}
-                      >
+                        className={cn("h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none", {
+                          "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
+                          "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-900": !isSelected,
+                        })}>
                         <span>{count}</span>
                       </Button>
                     );
                   })}
                 </div>
-
                 <input
-                  type="number"
-                  min="1"
+                  type={SOURCE_TEXT_NUMBER}
+                  min={SOURCE_TEXT_1}
                   max={Math.max(1, tracks.length)}
                   value={songsPerResult}
                   onChange={(event) => {
@@ -926,213 +860,164 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                     setResults([]);
                   }}
                   disabled={isBusy}
-                  className={cn(
-                    "w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs font-mono outline-none shadow-inner border border-slate-800/80 focus:border-purple-500/80",
-                  )}
+                  className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs font-mono outline-none shadow-inner border border-slate-800/80 focus:border-purple-500/80")}
                 />
               </div>
-
               <div className={cn("space-y-2 pt-1")}>
                 <div className={cn("flex items-center justify-between")}>
-                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>
-                    {text.RESULT_COUNT_LABEL}
-                  </label>
+                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>{text.RESULT_COUNT_LABEL}</label>
                   <span className={cn("text-xs font-mono font-bold text-amber-300")}>
                     {resultCount} {text.FOLDER_UNIT}
                   </span>
                 </div>
-
                 <div className={cn("grid grid-cols-5 gap-1.5")}>
                   {_.map(PRESET_RESULT_COUNTS, (count) => {
                     const isSelected = _.isEqual(resultCount, count);
                     return (
                       <Button
-                        variant="unstyled"
+                        variant={SOURCE_TEXT_UNSTYLED}
                         key={count}
-                        type="button"
+                        type={SOURCE_TEXT_BUTTON}
                         onClick={() => {
                           setResultCount(count);
                           setResults([]);
                         }}
                         disabled={isBusy}
-                        className={cn(
-                          "h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none",
-                          {
-                            "bg-gradient-to-r from-amber-600 to-rose-600 border-amber-400 text-white shadow-amber-600/30 shadow-md scale-[1.02]": isSelected,
-                            "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 hover:bg-slate-900": !isSelected,
-                          },
-                        )}
-                      >
+                        className={cn("h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none", {
+                          "bg-gradient-to-r from-amber-600 to-rose-600 border-amber-400 text-white shadow-amber-600/30 shadow-md scale-[1.02]": isSelected,
+                          "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 hover:bg-slate-900": !isSelected,
+                        })}>
                         <span>{count}</span>
                       </Button>
                     );
                   })}
                 </div>
-
                 <input
-                  type="number"
-                  min="1"
-                  max="100"
+                  type={SOURCE_TEXT_NUMBER}
+                  min={SOURCE_TEXT_1}
+                  max={SOURCE_TEXT_100}
                   value={resultCount}
                   onChange={(event) => {
                     setResultCount(Math.max(1, Number(event.target.value)));
                     setResults([]);
                   }}
                   disabled={isBusy}
-                  className={cn(
-                    "w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs font-mono outline-none shadow-inner border border-slate-800/80 focus:border-amber-500/80",
-                  )}
+                  className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs font-mono outline-none shadow-inner border border-slate-800/80 focus:border-amber-500/80")}
                 />
               </div>
-
               <div className={cn("space-y-2 pt-1")}>
                 <div className={cn("flex items-center justify-between")}>
-                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>
-                    {text.TRACK_ORDER_LABEL}
-                  </label>
-                  <span className={cn("text-xs font-mono font-bold text-indigo-300")}>
-                    {trackOrder === "random"
-                      ? text.TRACK_ORDER_RANDOM
-                      : trackOrder === "featured"
-                        ? text.TRACK_ORDER_FEATURED
-                        : text.TRACK_ORDER_NAME}
-                  </span>
+                  <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider")}>{text.TRACK_ORDER_LABEL}</label>
+                  <span className={cn("text-xs font-mono font-bold text-indigo-300")}>{trackOrder === SOURCE_TEXT_RANDOM ? text.TRACK_ORDER_RANDOM : trackOrder === SOURCE_TEXT_FEATURED ? text.TRACK_ORDER_FEATURED : text.TRACK_ORDER_NAME}</span>
                 </div>
-
                 <div className={cn("grid grid-cols-3 gap-1.5")}>
-                  {(
+                  {_.map(
                     [
-                      { id: "random", label: text.TRACK_ORDER_RANDOM },
-                      { id: "featured", label: text.TRACK_ORDER_FEATURED },
-                      { id: "name", label: text.TRACK_ORDER_NAME },
-                    ] as const
-                  ).map((item) => {
-                    const isSelected = trackOrder === item.id;
-                    return (
-                      <Button
-                        variant="unstyled"
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          setTrackOrder(item.id);
-                          setResults([]);
-                        }}
-                        disabled={isBusy}
-                        className={cn(
-                          "h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none px-2",
-                          {
+                      { id: SOURCE_TEXT_RANDOM, label: text.TRACK_ORDER_RANDOM },
+                      { id: SOURCE_TEXT_FEATURED, label: text.TRACK_ORDER_FEATURED },
+                      { id: SOURCE_TEXT_NAME, label: text.TRACK_ORDER_NAME },
+                    ] as const,
+                    (item) => {
+                      const isSelected = trackOrder === item.id;
+                      return (
+                        <Button
+                          variant={SOURCE_TEXT_UNSTYLED}
+                          key={item.id}
+                          type={SOURCE_TEXT_BUTTON}
+                          onClick={() => {
+                            setTrackOrder(item.id);
+                            setResults([]);
+                          }}
+                          disabled={isBusy}
+                          className={cn("h-8 rounded-xl border font-mono font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs select-none px-2", {
                             "bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-600/30 shadow-md scale-[1.02]": isSelected,
                             "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-indigo-500/40 hover:bg-slate-900": !isSelected,
-                          },
-                        )}
-                      >
-                        <span className="truncate">{item.label}</span>
-                      </Button>
-                    );
-                  })}
+                          })}>
+                          <span className="truncate">{item.label}</span>
+                        </Button>
+                      );
+                    },
+                  )}
                 </div>
               </div>
-
-              <div
-                className={cn(
-                  "p-3 rounded-xl bg-slate-955/70 border border-slate-800/80 space-y-1.5 text-[11px] font-mono text-slate-400",
-                )}
-              >
+              <div className={cn("p-3 rounded-xl bg-slate-955/70 border border-slate-800/80 space-y-1.5 text-[11px] font-mono text-slate-400")}>
                 <div className={cn("flex items-center justify-between")}>
-                  <span>{text.SUMMARY_TOTAL_SOURCE}:</span>
+                  <span>
+                    {text.SUMMARY_TOTAL_SOURCE}
+                    {SOURCE_TEXT_SYMBOL_16}
+                  </span>
                   <span className={cn("font-bold text-slate-200")}>
                     {tracks.length} {text.TRACK_UNIT}
                   </span>
                 </div>
                 <div className={cn("flex items-center justify-between")}>
-                  <span>{text.SUMMARY_SOURCE_FOLDERS}:</span>
+                  <span>
+                    {text.SUMMARY_SOURCE_FOLDERS}
+                    {SOURCE_TEXT_SYMBOL_16}
+                  </span>
                   <span className={cn("font-bold text-slate-200")}>
                     {groups.length} {text.FOLDER_UNIT}
                   </span>
                 </div>
                 <div className={cn("flex items-center justify-between")}>
-                  <span>{text.SUMMARY_PER_FOLDER}:</span>
+                  <span>
+                    {text.SUMMARY_PER_FOLDER}
+                    {SOURCE_TEXT_SYMBOL_16}
+                  </span>
                   <span className={cn("font-bold text-purple-300")}>
                     {songsPerResult} {text.TRACK_UNIT}
                   </span>
                 </div>
                 <div className={cn("flex items-center justify-between border-t border-slate-800/60 pt-1.5")}>
-                  <span>{text.SUMMARY_TOTAL_OUTPUT}:</span>
+                  <span>
+                    {text.SUMMARY_TOTAL_OUTPUT}
+                    {SOURCE_TEXT_SYMBOL_16}
+                  </span>
                   <span className={cn("font-bold text-amber-300")}>
                     {songsPerResult * resultCount} {text.TRACK_UNIT}
                   </span>
                 </div>
               </div>
-
               {isInsufficient && (
-                <div
-                  role="alert"
-                  className={cn(
-                    "rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 break-words flex items-start gap-2",
-                  )}
-                >
+                <div role={SOURCE_TEXT_ALERT} className={cn("rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 break-words flex items-start gap-2")}>
                   <AlertCircle className={cn("w-4 h-4 text-amber-400 shrink-0 mt-0.5")} />
                   <span>{text.INSUFFICIENT_WARNING}</span>
                 </div>
               )}
-
               {error && (
-                <div
-                  role="alert"
-                  className={cn(
-                    "rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words flex items-start gap-2",
-                  )}
-                >
+                <div role={SOURCE_TEXT_ALERT} className={cn("rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words flex items-start gap-2")}>
                   <AlertCircle className={cn("w-4 h-4 text-rose-400 shrink-0 mt-0.5")} />
                   <span>{error}</span>
                 </div>
               )}
-
               <div className={cn("space-y-2 pt-1")}>
                 <div className={cn("flex items-center gap-2")}>
                   <Button
-                    variant="unstyled"
-                    type="button"
+                    variant={SOURCE_TEXT_UNSTYLED}
+                    type={SOURCE_TEXT_BUTTON}
                     onClick={generate}
                     disabled={!isFormValid || busy}
-                    className={cn(
-                      "flex-1 h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none",
-                      {
-                        "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": busy,
-                        "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer":
-                          !busy && isFormValid,
-                        "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none":
-                          !busy && !isFormValid,
-                      },
-                    )}
-                  >
+                    className={cn("flex-1 h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none", {
+                      "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": busy,
+                      "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !busy && isFormValid,
+                      "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !busy && !isFormValid,
+                    })}>
                     {busy ? (
                       <>
                         <Sparkles className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
-                        <span className={cn("truncate inline-flex items-center leading-none")}>
-                          {text.GENERATING_BTN}
-                        </span>
+                        <span className={cn("truncate inline-flex items-center leading-none")}>{text.GENERATING_BTN}</span>
                       </>
                     ) : (
                       <>
                         <Shuffle className={cn("w-4 h-4 shrink-0")} />
-                        <span className={cn("inline-flex items-center leading-none")}>
-                          {text.GENERATE_BTN}
-                        </span>
+                        <span className={cn("inline-flex items-center leading-none")}>{text.GENERATE_BTN}</span>
                       </>
                     )}
                   </Button>
                   {busy && (
-                    <Button
-                      variant="unstyled"
-                      type="button"
-                      onClick={stopGenerate}
-                      className={cn(
-                        "h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/40 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0",
-                      )}
-                    >
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={stopGenerate} className={cn("h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/40 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0")}>
                       <Square className={cn("w-3.5 h-3.5 fill-rose-300/30")} />
-                      <span>{text.STOP_BTN || "Dừng"}</span>
+                      <span>{text.STOP_BTN || SOURCE_TEXT_DUNG}</span>
                     </Button>
                   )}
                 </div>
@@ -1140,54 +1025,27 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
             </div>
           </div>
         </div>
-
-        <div
-          className={cn(
-            "glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full",
-          )}
-        >
+        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
           <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4")}>
             <div className={cn("flex items-center gap-2.5 min-w-0")}>
-              <span
-                className={cn(
-                  "w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20",
-                )}
-              >
-                {text.STEP_03}
-              </span>
+              <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{text.STEP_03}</span>
               <div>
-                <h3
-                  className={cn(
-                    "text-sm font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2",
-                  )}
-                >
+                <h3 className={cn("text-sm font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2")}>
                   <Disc3 className={cn("w-4 h-4 text-purple-400", { "animate-spin": busy })} />
                   <span>{text.RESULTS_TITLE}</span>
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono",
-                    )}
-                  >
-                    {busy
-                      ? `${resultCount} ${text.FOLDER_UNIT} · ${songsPerResult} ${text.TRACK_UNIT}/${text.FOLDER_UNIT}`
-                      : results.length > 0
-                        ? `${results.length} ${text.FOLDER_UNIT} · ${songsPerResult} ${text.TRACK_UNIT}/${text.FOLDER_UNIT}`
-                        : `0 ${text.FOLDER_UNIT}`}
+                  <span className={cn("px-2 py-0.5 rounded-full text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>
+                    {busy ? SOURCE_TEMPLATE_SYMBOL_25(`${resultCount}`, `${text.FOLDER_UNIT}`, `${songsPerResult}`, `${text.TRACK_UNIT}`, `${text.FOLDER_UNIT}`) : results.length > 0 ? SOURCE_TEMPLATE_SYMBOL_25(`${results.length}`, `${text.FOLDER_UNIT}`, `${songsPerResult}`, `${text.TRACK_UNIT}`, `${text.FOLDER_UNIT}`) : SOURCE_TEMPLATE_0(`${text.FOLDER_UNIT}`)}
                   </span>
                 </h3>
               </div>
             </div>
-
             {!busy && results.length > 0 && (
               <Button
-                variant="unstyled"
-                type="button"
+                variant={SOURCE_TEXT_UNSTYLED}
+                type={SOURCE_TEXT_BUTTON}
                 onClick={downloadAll}
                 disabled={isBusy}
-                className={cn(
-                  "h-9 px-4 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md leading-none bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border border-rose-400/40 text-white shadow-rose-600/25 active:scale-95",
-                )}
-              >
+                className={cn("h-9 px-4 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md leading-none bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border border-rose-400/40 text-white shadow-rose-600/25 active:scale-95")}>
                 {isDownloading ? (
                   <>
                     <Sparkles className={cn("w-3.5 h-3.5 animate-spin")} />
@@ -1202,19 +1060,14 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               </Button>
             )}
           </div>
-
           {busy ? (
             <div className={cn("py-16 flex flex-col items-center justify-center text-center space-y-4")}>
               <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg bg-purple-500/15 border-purple-500/30 shadow-purple-500/20")}>
                 <Disc3 className={cn("w-7 h-7 text-purple-400 animate-spin")} />
               </div>
               <div className={cn("space-y-1")}>
-                <p className={cn("text-sm font-extrabold text-slate-200")}>
-                  {text.GENERATING_BTN}
-                </p>
-                <p className={cn("text-xs text-slate-400 font-mono")}>
-                  {`${resultCount} ${text.FOLDER_UNIT} • ${songsPerResult} ${text.TRACK_UNIT}/${text.FOLDER_UNIT}`}
-                </p>
+                <p className={cn("text-sm font-extrabold text-slate-200")}>{text.GENERATING_BTN}</p>
+                <p className={cn("text-xs text-slate-400 font-mono")}>{SOURCE_TEMPLATE_SYMBOL_26(`${resultCount}`, `${text.FOLDER_UNIT}`, `${songsPerResult}`, `${text.TRACK_UNIT}`, `${text.FOLDER_UNIT}`)}</p>
               </div>
             </div>
           ) : _.isEmpty(results) ? (
@@ -1223,70 +1076,46 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                 <Music2 className={cn("w-7 h-7 text-purple-400/80")} />
               </div>
               <div className={cn("space-y-1 max-w-sm")}>
-                <h3 className={cn("text-sm font-extrabold text-slate-200")}>
-                  {text.RESULTS_EMPTY_TITLE}
-                </h3>
-                <p className={cn("text-xs text-slate-400 leading-relaxed")}>
-                  {text.RESULTS_EMPTY_DESC}
-                </p>
+                <h3 className={cn("text-sm font-extrabold text-slate-200")}>{text.RESULTS_EMPTY_TITLE}</h3>
+                <p className={cn("text-xs text-slate-400 leading-relaxed")}>{text.RESULTS_EMPTY_DESC}</p>
               </div>
             </div>
           ) : (
             <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4")}>
               {_.map(results, (folder) => (
-                <div
-                  key={folder.name}
-                  className={cn(
-                    "rounded-2xl border border-slate-800/90 bg-slate-955/80 p-4 space-y-3 shadow-md hover:border-slate-700/80 transition-all flex flex-col justify-between",
-                  )}
-                >
+                <div key={folder.name} className={cn("rounded-2xl border border-slate-800/90 bg-slate-955/80 p-4 space-y-3 shadow-md hover:border-slate-700/80 transition-all flex flex-col justify-between")}>
                   <div className={cn("flex items-center justify-between gap-2 flex-wrap border-b border-slate-800/60 pb-2.5")}>
                     <div className={cn("flex items-center gap-2 min-w-0")}>
                       <div className={cn("w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0")}>
                         <Disc3 className={cn("w-3.5 h-3.5")} />
                       </div>
-                      <span className={cn("text-xs font-bold text-purple-300 font-mono")}>
-                        {folder.name}
-                      </span>
+                      <span className={cn("text-xs font-bold text-purple-300 font-mono")}>{folder.name}</span>
                       <span className={cn("text-[10px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800")}>
                         {folder.tracks.length} {text.TRACK_UNIT}
                       </span>
                     </div>
-
                     <Button
-                      variant="unstyled"
-                      type="button"
+                      variant={SOURCE_TEXT_UNSTYLED}
+                      type={SOURCE_TEXT_BUTTON}
                       onClick={() => downloadFolder(folder)}
                       disabled={busy || (isDownloading && downloadingFolder !== folder.name)}
-                      className={cn(
-                        "h-7 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 text-purple-300 hover:text-white text-[11px] font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs leading-none",
-                      )}
-                    >
+                      className={cn("h-7 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 text-purple-300 hover:text-white text-[11px] font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs leading-none")}>
                       {downloadingFolder === folder.name ? <Sparkles className={cn("w-3 h-3 animate-spin")} /> : <Download className={cn("w-3 h-3")} />}
                       <span>{downloadingFolder === folder.name ? text.DOWNLOADING_ZIP : text.DOWNLOAD_FOLDER_ZIP}</span>
                     </Button>
                   </div>
-
                   <div className={cn("grid grid-cols-1 gap-1.5 max-h-60 overflow-y-auto custom-scrollbar p-0.5 flex-1")}>
                     {_.map(folder.tracks, (track, index) => (
-                      <div
-                        key={`${folder.name}-${track.path}-${index}`}
-                        className={cn(
-                          "flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-xs hover:border-slate-700/80 transition-colors",
-                        )}
-                      >
+                      <div key={SOURCE_TEMPLATE_SYMBOL_27(`${folder.name}`, `${track.path}`, `${index}`)} className={cn("flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-xs hover:border-slate-700/80 transition-colors")}>
                         <div className={cn("flex items-center gap-2 min-w-0")}>
                           <Music2 className={cn("w-3 h-3 text-indigo-400 shrink-0")} />
                           <span className={cn("font-mono text-slate-400 text-[10px] shrink-0")}>
-                            {String(index + 1).padStart(2, "0")}.
+                            {String(index + 1).padStart(2, SOURCE_TEXT_0)}
+                            {SOURCE_TEXT_SYMBOL_23}
                           </span>
-                          <span className={cn("font-medium text-slate-200 truncate text-[11px]")}>
-                          {cleanTrackTitle(track.file.name)}
-                          </span>
+                          <span className={cn("font-medium text-slate-200 truncate text-[11px]")}>{cleanTrackTitle(track.file.name)}</span>
                         </div>
-                        <span className={cn("text-[10px] font-mono text-slate-500 shrink-0 px-1.5 py-0.2 rounded bg-slate-955 border border-slate-800/80")}>
-                          {track.folder}
-                        </span>
+                        <span className={cn("text-[10px] font-mono text-slate-500 shrink-0 px-1.5 py-0.2 rounded bg-slate-955 border border-slate-800/80")}>{track.folder}</span>
                       </div>
                     ))}
                   </div>
@@ -1304,223 +1133,138 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
         }}
         title={
           <div className={cn("flex items-center gap-2")}>
-            <div
-              className={cn(
-                "w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0",
-              )}
-            >
+            <div className={cn("w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0")}>
               <FolderPlus className={cn("w-3.5 h-3.5")} />
             </div>
-            <span className={cn("font-bold text-sm tracking-wide")}>
-              {text.PENDING_FOLDERS_TITLE}
-            </span>
-            {pendingFolders.length > 0 && (
-              <span
-                className={cn(
-                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40",
-                )}
-              >
-                {pendingFolders.length}
-              </span>
-            )}
+            <span className={cn("font-bold text-sm tracking-wide")}>{text.PENDING_FOLDERS_TITLE}</span>
+            {pendingFolders.length > 0 && <span className={cn("text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40")}>{pendingFolders.length}</span>}
           </div>
         }
-        maxWidth="max-w-lg"
-      >
+        maxWidth={SOURCE_TEXT_MAX_W_LG}>
         <div className={cn("space-y-3")}>
           <div className={cn("flex items-center justify-between gap-3 text-xs")}>
-            <span className={cn("text-slate-400 text-xs")}>
-              {text.PENDING_FOLDERS_DESC}
-            </span>
+            <span className={cn("text-slate-400 text-xs")}>{text.PENDING_FOLDERS_DESC}</span>
             <Button
-              variant="unstyled"
-              type="button"
+              variant={SOURCE_TEXT_UNSTYLED}
+              type={SOURCE_TEXT_BUTTON}
               onClick={() => {
-                const isAllSelected =
-                  pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length;
+                const isAllSelected = pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length;
                 if (isAllSelected) {
                   setSelectedPendingFolders([]);
                 } else {
-                  setSelectedPendingFolders(pendingFolders.map((f) => f.folderPath));
+                  setSelectedPendingFolders(_.map(pendingFolders, (f) => f.folderPath));
                 }
               }}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border select-none shrink-0",
-                {
-                  "bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25":
-                    pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length,
-                  "bg-slate-800 text-slate-300 border-slate-700/60 hover:bg-slate-750 hover:text-white":
-                    !(pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length),
-                },
-              )}
-            >
-              {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? (
-                <CheckSquare className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
-              ) : (
-                <Square className={cn("w-3.5 h-3.5 text-slate-400 shrink-0")} />
-              )}
-              <span>
-                {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length
-                  ? text.PENDING_FOLDERS_DESELECT_ALL
-                  : text.PENDING_FOLDERS_SELECT_ALL}
-              </span>
+              className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border select-none shrink-0", {
+                "bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25": pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length,
+                "bg-slate-800 text-slate-300 border-slate-700/60 hover:bg-slate-750 hover:text-white": !(pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length),
+              })}>
+              {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? <CheckSquare className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} /> : <Square className={cn("w-3.5 h-3.5 text-slate-400 shrink-0")} />}
+              <span>{pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? text.PENDING_FOLDERS_DESELECT_ALL : text.PENDING_FOLDERS_SELECT_ALL}</span>
             </Button>
           </div>
-
-          <div
-            className={cn(
-              "max-h-72 overflow-y-auto space-y-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800/90 custom-scrollbar",
-            )}
-          >
-            {pendingFolders.map((source) => {
-              const isSelected = selectedPendingFolders.includes(source.folderPath);
-              const name =
-                source.folderPath.split(/[\\/]/).filter(Boolean).pop() || source.folderPath;
+          <div className={cn("max-h-72 overflow-y-auto space-y-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800/90 custom-scrollbar")}>
+            {_.map(pendingFolders, (source) => {
+              const isSelected = _.includes(selectedPendingFolders, source.folderPath);
+              const name = _.compact(source.folderPath.split(/[\\/]/)).pop() || source.folderPath;
               const hasFiles = source.files.length > 0;
-
               return (
                 <div
                   key={source.folderPath}
-                  onClick={() =>
-                    setSelectedPendingFolders((current) =>
-                      isSelected
-                        ? current.filter((path) => path !== source.folderPath)
-                        : [...current, source.folderPath],
-                    )
-                  }
-                  className={cn(
-                    "group flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg border transition-all duration-150 cursor-pointer select-none",
-                    {
-                      "bg-gradient-to-r from-purple-950/40 via-slate-900/95 to-slate-900/95 border-purple-500/50 shadow-xs ring-1 ring-purple-500/20":
-                        isSelected,
-                      "bg-slate-955/60 border-slate-800/70 hover:border-slate-700 hover:bg-slate-850/60":
-                        !isSelected,
-                    },
-                  )}
-                >
+                  onClick={() => setSelectedPendingFolders((current) => (isSelected ? _.filter(current, (path) => path !== source.folderPath) : [...current, source.folderPath]))}
+                  className={cn("group flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg border transition-all duration-150 cursor-pointer select-none", {
+                    "bg-gradient-to-r from-purple-950/40 via-slate-900/95 to-slate-900/95 border-purple-500/50 shadow-xs ring-1 ring-purple-500/20": isSelected,
+                    "bg-slate-955/60 border-slate-800/70 hover:border-slate-700 hover:bg-slate-850/60": !isSelected,
+                  })}>
                   <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
+                    <div className={cn("w-4 h-4 flex items-center justify-center shrink-0 transition-colors")}>{isSelected ? <CheckSquare className={cn("w-4 h-4 text-purple-400")} /> : <Square className={cn("w-4 h-4 text-slate-500 group-hover:text-slate-400")} />}</div>
                     <div
-                      className={cn(
-                        "w-4 h-4 flex items-center justify-center shrink-0 transition-colors",
-                      )}
-                    >
-                      {isSelected ? (
-                        <CheckSquare className={cn("w-4 h-4 text-purple-400")} />
-                      ) : (
-                        <Square className={cn("w-4 h-4 text-slate-500 group-hover:text-slate-400")} />
-                      )}
-                    </div>
-
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-colors",
-                        {
-                          "bg-purple-500/20 text-purple-300 border-purple-500/40": isSelected,
-                          "bg-slate-800 text-slate-400 border-slate-700/60": !isSelected,
-                        },
-                      )}
-                    >
+                      className={cn("w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-colors", {
+                        "bg-purple-500/20 text-purple-300 border-purple-500/40": isSelected,
+                        "bg-slate-800 text-slate-400 border-slate-700/60": !isSelected,
+                      })}>
                       <FolderOpen className={cn("w-3.5 h-3.5")} />
                     </div>
-
                     <div className={cn("min-w-0 flex-1")}>
                       <p
-                        className={cn(
-                          "text-xs font-semibold truncate transition-colors",
-                          {
-                            "text-purple-200": isSelected,
-                            "text-slate-200 group-hover:text-white": !isSelected,
-                          },
-                        )}
-                      >
+                        className={cn("text-xs font-semibold truncate transition-colors", {
+                          "text-purple-200": isSelected,
+                          "text-slate-200 group-hover:text-white": !isSelected,
+                        })}>
                         {name}
                       </p>
-                      <p
-                        className={cn(
-                          "text-[10px] font-mono text-slate-500 truncate leading-tight",
-                        )}
-                        title={source.folderPath}
-                      >
+                      <p className={cn("text-[10px] font-mono text-slate-500 truncate leading-tight")} title={source.folderPath}>
                         {source.folderPath}
                       </p>
                     </div>
                   </div>
-
                   <div className={cn("shrink-0")}>
                     <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-mono font-semibold border",
-                        {
-                          "bg-purple-500/20 text-purple-300 border-purple-500/35":
-                            hasFiles && isSelected,
-                          "bg-slate-800 text-slate-400 border-slate-700/60":
-                            hasFiles && !isSelected,
-                          "bg-rose-500/10 text-rose-400 border-rose-500/30": !hasFiles,
-                        },
-                      )}
-                    >
+                      className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-mono font-semibold border", {
+                        "bg-purple-500/20 text-purple-300 border-purple-500/35": hasFiles && isSelected,
+                        "bg-slate-800 text-slate-400 border-slate-700/60": hasFiles && !isSelected,
+                        "bg-rose-500/10 text-rose-400 border-rose-500/30": !hasFiles,
+                      })}>
                       <Music2 className={cn("w-3 h-3 shrink-0")} />
-                      <span>
-                        {hasFiles
-                          ? `${source.files.length} ${text.PENDING_FOLDERS_TOTAL_TRACKS}`
-                          : text.PENDING_FOLDERS_EMPTY_FOLDER}
-                      </span>
+                      <span>{hasFiles ? `${source.files.length} ${text.PENDING_FOLDERS_TOTAL_TRACKS}` : text.PENDING_FOLDERS_EMPTY_FOLDER}</span>
                     </span>
                   </div>
                 </div>
               );
             })}
           </div>
-
-          <div
-            className={cn(
-              "flex items-center justify-between gap-3 pt-2.5 border-t border-slate-800/90 text-xs",
-            )}
-          >
+          <div className={cn("flex items-center justify-between gap-3 pt-2.5 border-t border-slate-800/90 text-xs")}>
             <div className={cn("text-slate-400 text-xs")}>
-              <span>{text.PENDING_FOLDERS_SELECTED}: </span>
+              <span>
+                {text.PENDING_FOLDERS_SELECTED}
+                {SOURCE_TEXT_SYMBOL_7}
+              </span>
               <strong className={cn("text-purple-300 font-bold")}>
-                {selectedPendingFolders.length}/{pendingFolders.length}
+                {selectedPendingFolders.length}
+                {SOURCE_TEXT_SYMBOL}
+                {pendingFolders.length}
               </strong>
-              <span> {text.PENDING_FOLDERS_FOUND} (</span>
+              <span>
+                {" "}
+                {text.PENDING_FOLDERS_FOUND}
+                {SOURCE_TEXT_SYMBOL_11}
+              </span>
               <strong className={cn("text-slate-200 font-bold")}>
-                {pendingFolders
-                  .filter((f) => selectedPendingFolders.includes(f.folderPath))
-                  .reduce((sum, f) => sum + f.files.length, 0)}
+                {_.reduce(
+                  _.filter(pendingFolders, (f) => _.includes(selectedPendingFolders, f.folderPath)),
+                  (sum, f) => sum + f.files.length,
+                  0,
+                )}
               </strong>
-              <span> {text.PENDING_FOLDERS_TOTAL_TRACKS})</span>
+              <span>
+                {" "}
+                {text.PENDING_FOLDERS_TOTAL_TRACKS}
+                {SOURCE_TEXT_SYMBOL_12}
+              </span>
             </div>
-
             <div className={cn("flex items-center gap-2 shrink-0")}>
               <Button
-                variant="unstyled"
-                type="button"
+                variant={SOURCE_TEXT_UNSTYLED}
+                type={SOURCE_TEXT_BUTTON}
                 onClick={() => {
                   setPendingFolders([]);
                   setSelectedPendingFolders([]);
                 }}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors cursor-pointer",
-                )}
-              >
+                className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors cursor-pointer")}>
                 {text.PENDING_FOLDERS_CANCEL}
               </Button>
               <Button
-                variant="unstyled"
-                type="button"
+                variant={SOURCE_TEXT_UNSTYLED}
+                type={SOURCE_TEXT_BUTTON}
                 onClick={confirmPendingFolders}
                 disabled={!selectedPendingFolders.length}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:brightness-110 shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all cursor-pointer",
-                  {
-                    "opacity-40 cursor-not-allowed shadow-none": !selectedPendingFolders.length,
-                  },
-                )}
-              >
+                className={cn("px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:brightness-110 shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all cursor-pointer", {
+                  "opacity-40 cursor-not-allowed shadow-none": !selectedPendingFolders.length,
+                })}>
                 <FolderPlus className={cn("w-3.5 h-3.5")} />
                 <span>
                   {text.PENDING_FOLDERS_CONFIRM}
-                  {selectedPendingFolders.length > 0 && ` (${selectedPendingFolders.length})`}
+                  {selectedPendingFolders.length > 0 && SOURCE_TEMPLATE_SYMBOL_28(`${selectedPendingFolders.length}`)}
                 </span>
               </Button>
             </div>
@@ -1530,6 +1274,4 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     </div>
   );
 };
-
 export default MusicMixer;
-

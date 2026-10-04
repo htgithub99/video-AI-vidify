@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_CONFIG, SOURCE_TEXT_ID, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_NAME } from "../../constants/sourceText";
 import { Request, Response } from "express";
 import { getPresetsFromDb, savePresetToDb, deletePresetFromDb } from "../utils/db.js";
 import { appError } from "../../lib/logger.js";
@@ -6,50 +7,43 @@ import _ from "lodash";
 import { HttpStatus } from "../../constants/enums.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { PRESET_CONSTANTS } from "../../constants/texts.js";
-
 export const getAllPresets = async (_request: Request, response: Response) => {
   try {
     const presets = await getPresetsFromDb();
     response.status(HttpStatus.OK).json(presets);
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_GET_PRESETS, error);
-    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, "message", BACKEND_MESSAGES.ERROR_GET_PRESETS) });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, SOURCE_TEXT_MESSAGE, BACKEND_MESSAGES.ERROR_GET_PRESETS) });
   }
 };
-
 export const savePreset = async (request: Request, response: Response) => {
   try {
-    const name = _.trim(_.get(request.body, "name", ""));
-    const id = _.get(request.body, "id");
-    const config = _.get(request.body, "config", {});
-
+    const name = _.trim(_.get(request.body, SOURCE_TEXT_NAME, ""));
+    const id = _.get(request.body, SOURCE_TEXT_ID);
+    const config = _.get(request.body, SOURCE_TEXT_CONFIG, {});
     if (_.isEmpty(name)) {
       response.status(HttpStatus.BAD_REQUEST).json({ error: BACKEND_MESSAGES.PRESET_NAME_REQUIRED });
       return;
     }
-
     const presetData = {
       id: _.defaultTo(id, `${PRESET_CONSTANTS.ID_PREFIX}${randomUUID()}`),
       name,
       config,
     };
-
     const saved = await savePresetToDb(presetData);
     response.status(HttpStatus.CREATED).json(saved);
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_SAVE_PRESET, error);
-    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, "message", BACKEND_MESSAGES.ERROR_SAVE_PRESET) });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, SOURCE_TEXT_MESSAGE, BACKEND_MESSAGES.ERROR_SAVE_PRESET) });
   }
 };
-
 export const deletePreset = async (request: Request, response: Response) => {
   try {
-    const id = _.get(request.params, "id", "");
+    const id = _.get(request.params, SOURCE_TEXT_ID, "");
     if (_.isEmpty(id)) {
       response.status(HttpStatus.BAD_REQUEST).json({ error: BACKEND_MESSAGES.PRESET_ID_REQUIRED });
       return;
     }
-
     const deleted = await deletePresetFromDb(id);
     if (deleted) {
       response.status(HttpStatus.OK).json({ success: true });
@@ -58,6 +52,6 @@ export const deletePreset = async (request: Request, response: Response) => {
     }
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_DELETE_PRESET, error);
-    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, "message", BACKEND_MESSAGES.ERROR_DELETE_PRESET) });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: _.get(error, SOURCE_TEXT_MESSAGE, BACKEND_MESSAGES.ERROR_DELETE_PRESET) });
   }
 };

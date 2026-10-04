@@ -1,10 +1,11 @@
+import _ from "lodash";
+import { SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_H_10, SOURCE_TEXT_W_FULL_MIN_W_0_BG } from "../../constants/sourceText";
 import { ChevronDown, Film, Globe, Layout, Sparkles, WandSparkles } from "lucide-react";
 import { FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_TEXTS } from "../../constants";
 import { FLOW_VIDEO_MODEL_OPTIONS } from "../../constants/flowVideoSettings";
 import { cn } from "../../lib/utils";
 import { getVideoModelCapabilities, normalizeVideoModelSettings } from "../../services/videoModelCapabilityService";
 import { AspectRatio, ImageGeneratorEngine } from "../../types";
-
 export interface FlowVideoProductionConfig {
   engine: ImageGeneratorEngine;
   duration: string;
@@ -12,7 +13,6 @@ export interface FlowVideoProductionConfig {
   aspectRatio: AspectRatio;
   chromeHeadless: boolean;
 }
-
 interface Props {
   config: FlowVideoProductionConfig;
   onChange: (config: FlowVideoProductionConfig) => void;
@@ -20,17 +20,14 @@ interface Props {
   texts: typeof FLOW_VIDEO_TEXTS.vi | typeof FLOW_VIDEO_TEXTS.en;
   hasCharacterImages: boolean;
 }
-
-const FIELD_CLASS = "relative flex items-center h-10 px-2.5 rounded-lg border border-slate-800 bg-slate-955/90 focus-within:border-purple-500/70";
-const SELECT_CLASS = "w-full min-w-0 bg-transparent text-xs font-semibold text-slate-200 outline-none appearance-none pr-5 disabled:opacity-50";
-
+const FIELD_CLASS = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_H_10;
+const SELECT_CLASS = SOURCE_TEXT_W_FULL_MIN_W_0_BG;
 export default function FlowVideoProductionSettings({ config, onChange, disabled, texts, hasCharacterImages }: Props) {
   const capabilities = getVideoModelCapabilities(config.engine);
   const updateModel = (engine: ImageGeneratorEngine) => {
     const normalized = normalizeVideoModelSettings(engine, config);
     onChange({ ...config, engine, duration: normalized.duration, resolution: normalized.resolution, aspectRatio: normalized.aspectRatio });
   };
-
   return (
     <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3")}>
       <label className={cn("space-y-1 min-w-0")}>
@@ -45,7 +42,11 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn(FIELD_CLASS)}>
           <Sparkles className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
           <select value={config.engine} disabled={disabled} onChange={(event) => updateModel(event.target.value as ImageGeneratorEngine)} className={cn(SELECT_CLASS)}>
-            {FLOW_VIDEO_MODEL_OPTIONS.map((option) => <option key={option.value} value={option.value} disabled={hasCharacterImages && !getVideoModelCapabilities(option.value).supportsReferences}>{option.label}</option>)}
+            {_.map(FLOW_VIDEO_MODEL_OPTIONS, (option) => (
+              <option key={option.value} value={option.value} disabled={hasCharacterImages && !getVideoModelCapabilities(option.value).supportsReferences}>
+                {option.label}
+              </option>
+            ))}
           </select>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
@@ -66,7 +67,11 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn(FIELD_CLASS)}>
           <Film className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
           <select value={config.duration} disabled={disabled} onChange={(event) => onChange({ ...config, duration: event.target.value })} className={cn(SELECT_CLASS)}>
-            {capabilities.durations.map((duration) => <option key={duration} value={duration}>{duration}</option>)}
+            {_.map(capabilities.durations, (duration) => (
+              <option key={duration} value={duration}>
+                {duration}
+              </option>
+            ))}
           </select>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
@@ -76,7 +81,11 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn(FIELD_CLASS)}>
           <Sparkles className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
           <select value={config.resolution} disabled={disabled} onChange={(event) => onChange({ ...config, resolution: event.target.value })} className={cn(SELECT_CLASS)}>
-            {capabilities.resolutions.map((resolution) => <option key={resolution} value={resolution}>{resolution}</option>)}
+            {_.map(capabilities.resolutions, (resolution) => (
+              <option key={resolution} value={resolution}>
+                {resolution}
+              </option>
+            ))}
           </select>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
@@ -86,7 +95,11 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn(FIELD_CLASS)}>
           <Layout className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
           <select value={config.aspectRatio} disabled={disabled} onChange={(event) => onChange({ ...config, aspectRatio: event.target.value as AspectRatio })} className={cn(SELECT_CLASS)}>
-            {capabilities.aspectRatios.map((ratio) => <option key={ratio} value={ratio}>{ratio}</option>)}
+            {_.map(capabilities.aspectRatios, (ratio) => (
+              <option key={ratio} value={ratio}>
+                {ratio}
+              </option>
+            ))}
           </select>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>

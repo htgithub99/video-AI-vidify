@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { clearAllProjectVisualOutputs, clearProjectSceneOutput } from "../src/services/projectRegenerationService.ts";
 import { GenerateType, SceneAssetStatus, VideoProject } from "../src/types.ts";
@@ -76,10 +77,10 @@ assert.deepEqual(selectedSceneReset.thumbnails, project.thumbnails);
 assert.deepEqual(selectedSceneReset.visualConfig.characters, project.visualConfig.characters);
 
 const projectControllerSource = await import("node:fs").then(({ readFileSync }) => (
-  readFileSync("src/server/controllers/projectController.ts", "utf8")
+  resolveSourceTextConstants(readFileSync("src/server/controllers/projectController.ts", "utf8"))
 ));
 const autoVideoPipelineSource = await import("node:fs").then(({ readFileSync }) => (
-  readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8")
+  resolveSourceTextConstants(readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"))
 ));
 assert.match(projectControllerSource, /Boolean\(newProject\.allowBulkDeleteImages\)/);
 assert.match(projectControllerSource, /Boolean\(newProject\.allowAudioCleanup\)/);

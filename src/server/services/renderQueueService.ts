@@ -1,3 +1,38 @@
+import {
+  SOURCE_TEXT_ASPECTRATIO,
+  SOURCE_TEXT_ASSETTYPE,
+  SOURCE_TEXT_ASSETURL,
+  SOURCE_TEXT_AUTOMUSICPROFILE,
+  SOURCE_TEXT_CAMERAMOTION,
+  SOURCE_TEXT_DATA,
+  SOURCE_TEXT_DURATION,
+  SOURCE_TEXT_DURATIONSECONDS,
+  SOURCE_TEXT_EFFECTS,
+  SOURCE_TEXT_EXPECTEDDURATIONSECONDS,
+  SOURCE_TEXT_EXPECTEDSOURCESCENEIDS,
+  SOURCE_TEXT_FADEINSECONDS,
+  SOURCE_TEXT_FADEOUTSECONDS,
+  SOURCE_TEXT_ID,
+  SOURCE_TEXT_LIGHTINGEFFECT,
+  SOURCE_TEXT_LOOP,
+  SOURCE_TEXT_PRESERVEVIDEOAUDIO,
+  SOURCE_TEXT_PROJECTID,
+  SOURCE_TEXT_QUALITY,
+  SOURCE_TEXT_SCENEID_2,
+  SOURCE_TEXT_SHOTPURPOSE,
+  SOURCE_TEXT_SOURCECROP,
+  SOURCE_TEXT_SOURCETRIMENDSECONDS,
+  SOURCE_TEXT_SOURCETRIMSTARTSECONDS,
+  SOURCE_TEXT_STARTSECONDS,
+  SOURCE_TEXT_SUBTITLE,
+  SOURCE_TEXT_SUBTITLECUES,
+  SOURCE_TEXT_SUBTITLEMODE,
+  SOURCE_TEXT_TEXT,
+  SOURCE_TEXT_TRANSITION,
+  SOURCE_TEXT_TYPE,
+  SOURCE_TEXT_VOLUMEDB,
+} from "../../constants/sourceText";
+import { getErrorMessage } from "../../utils/errorUtils";
 import _ from "lodash";
 import { FFMPEG_RENDER_CONSTANTS, RENDER_QUEUE_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { logger } from "../../lib/logger.js";
@@ -5,7 +40,6 @@ import { getRenderJobFromDb, getRenderJobsFromDb, saveRenderJobToDb } from "../u
 import { FFmpegRenderOptions, renderFFmpegVideo } from "../utils/ffmpegRender.js";
 import { LicenseService } from "./licenseService.js";
 import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
-
 enum JobStatus {
   PENDING = "pending",
   PROCESSING = "processing",
@@ -13,7 +47,6 @@ enum JobStatus {
   FAILED = "failed",
   CANCELLED = "cancelled",
 }
-
 interface RenderJob {
   id: string;
   payload: FFmpegRenderOptions;
@@ -28,7 +61,6 @@ interface RenderJob {
   heartbeatAt?: Date;
   licenseKey?: string;
 }
-
 type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & {
   createdAt: string;
   updatedAt: string;
@@ -36,44 +68,22 @@ type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" |
   completedAt?: string;
   heartbeatAt?: string;
 };
-
 const MAX_STALE_JOB_AGE_MS = 10 * 60 * 1000;
-
 const isPersistableAssetUrl = (value: unknown): boolean => {
   const source = _.trim(_.toString(value));
-  return !_.isEmpty(source) && !_.startsWith(source, "data:") && !/^[A-Za-z0-9+/]{256,}={0,2}$/.test(source);
+  return !_.isEmpty(source) && !_.startsWith(source, SOURCE_TEXT_DATA) && !/^[A-Za-z0-9+/]{256,}={0,2}$/.test(source);
 };
-
 const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOptions => ({
-  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio", "expectedSourceSceneIds", "expectedDurationSeconds"]),
+  ..._.pick(payload, [SOURCE_TEXT_PROJECTID, SOURCE_TEXT_QUALITY, SOURCE_TEXT_ASPECTRATIO, SOURCE_TEXT_SUBTITLEMODE, SOURCE_TEXT_AUTOMUSICPROFILE, SOURCE_TEXT_PRESERVEVIDEOAUDIO, SOURCE_TEXT_EXPECTEDSOURCESCENEIDS, SOURCE_TEXT_EXPECTEDDURATIONSECONDS]),
   globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
   scenes: _.map(payload.scenes, (scene) => ({
-    ..._.pick(scene, [
-      "id",
-      "duration",
-      "text",
-      "subtitle",
-      "subtitleCues",
-      "assetType",
-      "cameraMotion",
-      "effects",
-      "lightingEffect",
-      "transition",
-      "shotPurpose",
-      "sourceTrimStartSeconds",
-      "sourceTrimEndSeconds",
-      "sourceCrop",
-    ]),
+    ..._.pick(scene, [SOURCE_TEXT_ID, SOURCE_TEXT_DURATION, SOURCE_TEXT_TEXT, SOURCE_TEXT_SUBTITLE, SOURCE_TEXT_SUBTITLECUES, SOURCE_TEXT_ASSETTYPE, SOURCE_TEXT_CAMERAMOTION, SOURCE_TEXT_EFFECTS, SOURCE_TEXT_LIGHTINGEFFECT, SOURCE_TEXT_TRANSITION, SOURCE_TEXT_SHOTPURPOSE, SOURCE_TEXT_SOURCETRIMSTARTSECONDS, SOURCE_TEXT_SOURCETRIMENDSECONDS, SOURCE_TEXT_SOURCECROP]),
     imageUrl: isPersistableAssetUrl(scene.imageUrl) ? scene.imageUrl : undefined,
     audioUrl: isPersistableAssetUrl(scene.audioUrl) ? scene.audioUrl : undefined,
   })),
-  audioTracks: _.map(payload.audioTracks, (track) =>
-    _.pick(track, ["id", "type", "assetUrl", "startSeconds", "durationSeconds", "volumeDb", "fadeInSeconds", "fadeOutSeconds", "loop"]),
-  ),
+  audioTracks: _.map(payload.audioTracks, (track) => _.pick(track, [SOURCE_TEXT_ID, SOURCE_TEXT_TYPE, SOURCE_TEXT_ASSETURL, SOURCE_TEXT_STARTSECONDS, SOURCE_TEXT_DURATIONSECONDS, SOURCE_TEXT_VOLUMEDB, SOURCE_TEXT_FADEINSECONDS, SOURCE_TEXT_FADEOUTSECONDS, SOURCE_TEXT_LOOP])),
 });
-
 const hasRecoverablePersistedPayload = (job: RenderJob): boolean => _.every(job.payload?.scenes, (scene) => isPersistableAssetUrl(scene.imageUrl));
-
 const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   ...job,
   createdAt: new Date(job.createdAt),
@@ -82,25 +92,21 @@ const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   completedAt: job.completedAt ? new Date(job.completedAt) : undefined,
   heartbeatAt: job.heartbeatAt ? new Date(job.heartbeatAt) : undefined,
 });
-
 const createPublicRenderError = (error: unknown): string => {
-  const message = error instanceof Error ? error.message : _.toString(error);
+  const message = getErrorMessage(error);
   const sceneId = _.get(message.match(RENDER_QUEUE_CONFIG.SCENE_ID_PATTERN), SecurityConstants.DEFAULT_AMOUNT, RENDER_QUEUE_CONFIG.UNKNOWN_SCENE_ID);
-  return RENDER_QUEUE_CONFIG.PUBLIC_ERROR_TEMPLATE.replace("{sceneId}", sceneId);
+  return RENDER_QUEUE_CONFIG.PUBLIC_ERROR_TEMPLATE.replace(SOURCE_TEXT_SCENEID_2, sceneId);
 };
-
 class RenderQueueService {
   private queue: RenderJob[] = [];
   private isProcessing = false;
   private jobsMap = new Map<string, RenderJob>();
   private initialized = false;
   private abortControllers = new Map<string, AbortController>();
-
   public async initialize(): Promise<void> {
     if (this.initialized) return;
     const storedJobs = await getRenderJobsFromDb<StoredRenderJob>();
     const now = Date.now();
-
     _.forEach(storedJobs, (storedJob) => {
       const job = hydrateRenderJob(storedJob);
       const isRecoverable = _.some(RENDER_QUEUE_CONFIG.RECOVERABLE_STATUSES, (status) => _.isEqual(status, job.status));
@@ -121,7 +127,6 @@ class RenderQueueService {
     this.initialized = true;
     void this.processQueue();
   }
-
   public async addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): Promise<RenderJob> {
     await this.initialize();
     const targetProjectId = payload.projectId;
@@ -147,7 +152,6 @@ class RenderQueueService {
         return false;
       });
     }
-
     const now = new Date();
     const job: RenderJob = {
       id: jobId,
@@ -165,7 +169,6 @@ class RenderQueueService {
     void this.processQueue();
     return job;
   }
-
   public async getJob(jobId: string): Promise<RenderJob | undefined> {
     await this.initialize();
     const memoryJob = this.jobsMap.get(jobId);
@@ -176,7 +179,6 @@ class RenderQueueService {
     this.jobsMap.set(jobId, job);
     return job;
   }
-
   public async cancelJob(jobId: string): Promise<boolean> {
     const job = await this.getJob(jobId);
     if (!job || _.includes([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED], job.status)) return false;
@@ -189,11 +191,9 @@ class RenderQueueService {
     await this.persist(job);
     return true;
   }
-
   private async persist(job: RenderJob): Promise<void> {
     await saveRenderJobToDb({ ...job, payload: createLightweightPayload(job.payload) });
   }
-
   private async executeRenderWithRetries(job: RenderJob, abortSignal: AbortSignal, onProgressUpdate: (progress: number) => void): Promise<string> {
     let lastError: unknown;
     for (let attempt = SecurityConstants.ZERO; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)) {
@@ -215,7 +215,6 @@ class RenderQueueService {
     }
     throw lastError;
   }
-
   private async processQueue(): Promise<void> {
     if (this.isProcessing || _.isEmpty(this.queue)) return;
     this.isProcessing = true;
@@ -229,7 +228,6 @@ class RenderQueueService {
     const abortController = new AbortController();
     this.abortControllers.set(job.id, abortController);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
     try {
       const renderPromise = this.executeRenderWithRetries(job, abortController.signal, (progress) => {
         if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
@@ -241,14 +239,12 @@ class RenderQueueService {
           void this.persist(job);
         }
       });
-
       const timeoutPromise = new Promise<never>((_resolve, reject) => {
         timeoutId = setTimeout(() => {
           abortController.abort();
           reject(new Error(RENDER_QUEUE_CONFIG.TIMEOUT_ERROR));
         }, RENDER_QUEUE_CONFIG.JOB_TIMEOUT_MS);
       });
-
       const url = await Promise.race([renderPromise, timeoutPromise]);
       if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
       job.url = url;
@@ -281,5 +277,4 @@ class RenderQueueService {
     }
   }
 }
-
 export const renderQueueService = new RenderQueueService();

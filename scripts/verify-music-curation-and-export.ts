@@ -1,14 +1,15 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
 import { MUSIC_CREATOR_REGEXES } from "../src/constants/musicCreator.ts";
 
-const controller = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const component = fs.readFileSync("src/components/MusicCreator.tsx", "utf8");
-const constants = fs.readFileSync("src/constants/sunoAutomation.ts", "utf8");
-const routes = fs.readFileSync("src/constants/apiRoutes.ts", "utf8");
-const service = fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8");
-const chatService = fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8");
+const controller = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const component = resolveSourceTextConstants(fs.readFileSync("src/components/MusicCreator.tsx", "utf8"));
+const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
+const routes = resolveSourceTextConstants(fs.readFileSync("src/constants/apiRoutes.ts", "utf8"));
+const service = resolveSourceTextConstants(fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8"));
+const chatService = resolveSourceTextConstants(fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8"));
 const pythonDialog = fs.readFileSync("python_scripts/capcut_ultra_tool.py", "utf8");
 
 assert.equal(SUNO_AUTOMATION_TEXTS.formatPlaylistTitle("Tiếng Mưa", 5), "Tiếng Mưa (5)");
@@ -97,7 +98,7 @@ assert.doesNotMatch(component, /anchor\.download/);
 assert.match(constants, /SEO_EXPORT_FILENAME:\s*"SEO"/);
 assert.match(constants, /THUMBNAIL_EXPORT_FILENAME:\s*"COVER"/);
 assert.match(component, /const sourceTitle = testOnly \? requestedSongs\[0\]\?\.title : playlistSeoOptions\[0\]\?\.title/);
-assert.match(component, /const playlistName = canResume \? pending\.playlistName : formatSunoPlaylistName\(sourceTitle, testOnly, crypto\.randomUUID\(\)/);
+assert.match(component, /const playlistName = canResume \? pending\.playlistName : formatSunoPlaylistName\(sourceTitle, testOnly, _\.slice\(crypto\.randomUUID\(\)\.split\("-"\), 0, 2\)\.join\(""\)\.toUpperCase\(\)\)/);
 assert.match(component, /playlistName,/);
 assert.match(component, /setDownloadPlaylistUrl\(createdPlaylistUrl\)/);
 assert.doesNotMatch(service, /if \(!_\.isEmpty\(missingIds\)\) throw new Error/);

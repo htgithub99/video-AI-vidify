@@ -1,10 +1,37 @@
+import {
+  SOURCE_TEMPLATE_REFERENCES,
+  SOURCE_TEMPLATE_SYMBOL_45,
+  SOURCE_TEMPLATE_SYMBOL_56,
+  SOURCE_TEMPLATE_SYMBOL_57,
+  SOURCE_TEMPLATE_SYMBOL_58,
+  SOURCE_TEXT_ASSETURL,
+  SOURCE_TEXT_AUDIOBASE64,
+  SOURCE_TEXT_CHARACTERIMAGES,
+  SOURCE_TEXT_D,
+  SOURCE_TEXT_DATA,
+  SOURCE_TEXT_ID,
+  SOURCE_TEXT_REFERENCEIMAGES,
+  SOURCE_TEXT_SCENEREFERENCEIMAGES,
+  SOURCE_TEXT_SQLITE_DELETE_ERR,
+  SOURCE_TEXT_SQLITE_DETAIL_ERR,
+  SOURCE_TEXT_SQLITE_LIST_ERR,
+  SOURCE_TEXT_SQLITE_MIGRATE_CRITICAL,
+  SOURCE_TEXT_SQLITE_WRITE_ERR,
+  SOURCE_TEXT_STYLEREFERENCEIMAGES,
+  SOURCE_TEXT_SYMBOL_21,
+  SOURCE_TEXT_SYMBOL_25,
+  SOURCE_TEXT_SYMBOL_37,
+  SOURCE_TEXT_SYMBOL_38,
+  SOURCE_TEXT_THUMBNAILREFERENCEIMAGES,
+  SOURCE_TEXT_THUMBNAILSCENEREFERENCEIMAGES,
+  SOURCE_TEXT_VOICECONFIG_AUDIOURL,
+} from "../../constants/sourceText";
 import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { GenerateType, ProjectKind, SceneAssetStatus, VideoProject } from "../../types.js";
 import { createHash, randomUUID } from "crypto";
 import _ from "lodash";
-
 import {
   REFACTOR_CONSTANTS,
   ASSETS_DIR_NAME,
@@ -33,16 +60,12 @@ import {
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
-
 const persistedVideoContentHashCache = new Map<string, { size: number; modifiedAtMs: number; hash: string }>();
-
 const getPersistedVideoContentHash = (videoPath: string): string => {
   const stats = fs.statSync(videoPath);
   const cached = persistedVideoContentHashCache.get(videoPath);
   if (cached && _.isEqual(cached.size, stats.size) && _.isEqual(cached.modifiedAtMs, stats.mtimeMs)) return cached.hash;
-  const hash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM)
-    .update(fs.readFileSync(videoPath))
-    .digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
+  const hash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM).update(fs.readFileSync(videoPath)).digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
   persistedVideoContentHashCache.set(videoPath, { size: stats.size, modifiedAtMs: stats.mtimeMs, hash });
   while (_.gt(persistedVideoContentHashCache.size, FLOW_VIDEO_MEDIA_CONFIG.IDEMPOTENCY_CACHE_MAX_ENTRIES)) {
     const oldestPath = persistedVideoContentHashCache.keys().next().value;
@@ -51,7 +74,6 @@ const getPersistedVideoContentHash = (videoPath: string): string => {
   }
   return hash;
 };
-
 async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
     const project = await getProjectDetailFromDb(id);
@@ -60,30 +82,18 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     if (!_.isEqual(validatedProject, project)) await saveProjectDetailToDb(validatedProject);
     return validatedProject;
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
+    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_DETAIL_ERR)} ${id}`, error);
     return null;
   }
 }
-
 export function getSafeFolderName(name: string): string {
   if (_.isEmpty(name)) return COMMON_STRINGS.PROJECT_DEFAULT_NAME;
-
-  const safeName = name
-    .normalize(COMMON_STRINGS.NORMALIZATION_FORM)
-    .replace(VIETNAMESE_ACCENT_MARKS_REGEX, "")
-    .replace(VIETNAMESE_D_LETTER_REGEX, "d")
-    .replace(SAFE_FOLDER_CHARS_REGEX, "")
-    .trim()
-    .replace(MULTIPLE_SPACES_REGEX, "_")
-    .toUpperCase();
-
+  const safeName = name.normalize(COMMON_STRINGS.NORMALIZATION_FORM).replace(VIETNAMESE_ACCENT_MARKS_REGEX, "").replace(VIETNAMESE_D_LETTER_REGEX, SOURCE_TEXT_D).replace(SAFE_FOLDER_CHARS_REGEX, "").trim().replace(MULTIPLE_SPACES_REGEX, SOURCE_TEXT_SYMBOL_25).toUpperCase();
   return safeName || COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 }
-
 const getProjectTree = (projects: VideoProject[], rootId: string): VideoProject[] => {
   const projectIds = new Set<string>([rootId]);
   let descendantsAdded = true;
-
   while (descendantsAdded) {
     descendantsAdded = false;
     _.forEach(projects, (project) => {
@@ -93,10 +103,8 @@ const getProjectTree = (projects: VideoProject[], rootId: string): VideoProject[
       }
     });
   }
-
   return _.filter(projects, (project) => projectIds.has(project.id));
 };
-
 const deleteProjectAssetDirectory = (assetsRoot: string, folderName: string): void => {
   const projectDir = path.resolve(assetsRoot, folderName);
   if (!_.isEqual(path.dirname(projectDir), assetsRoot) || !fs.existsSync(projectDir)) return;
@@ -106,38 +114,33 @@ const deleteProjectAssetDirectory = (assetsRoot: string, folderName: string): vo
     appError(ERROR_MESSAGES.DELETE_PROJECT_ASSETS_ERR, error);
   }
 };
-
 function processSceneAssets(scene: any, imageDir: string, videoDir: string, audioDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
   if (imgBase64 && !_.get(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY)) {
     _.set(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY, imgBase64);
   }
   if (imgBase64) delete scene[REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY];
-
   let { assetUrl, assetUrls, audioUrl, audioBase64 } = scene;
   let sceneUpdated = false;
   assetUrls = assetUrls || [];
-
   if (_.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD)) {
     const sceneId = _.replace(_.toString(scene.id), /[^a-zA-Z0-9_-]/g, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     const fileName = `${sceneId || COMMON_STRINGS.SCENE_PREFIX}${ALIGN_CONFIG.WAV_EXT}`;
     const filePath = path.join(audioDir, fileName);
     try {
       fs.writeFileSync(filePath, Buffer.from(audioBase64, COMMON_STRINGS.BASE64));
-      audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${VOICES_DIR_NAME}/${fileName}`;
+      audioUrl = SOURCE_TEMPLATE_SYMBOL_45(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${folderName}`, `${VOICES_DIR_NAME}`, `${fileName}`);
       audioBase64 = undefined;
       sceneUpdated = true;
     } catch (err) {
       appError(`${ERROR_MESSAGES.WRITE_UNIFIED_AUDIO_ERR}${scene.id}`, err);
     }
   }
-
   const enforceCorrectFolder = (u: string | undefined) => {
     const assetsPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}`;
     if (!u || !_.includes(u, assetsPrefix)) return u;
     return _.replace(u, ASSET_PROJECT_PATH_REGEX, `${COMMON_STRINGS.REGEX_REPLACE_GROUP_1}${folderName}${COMMON_STRINGS.SLASH_PREFIX}`);
   };
-
   if (_.includes(assetUrl, COMMON_STRINGS.BASE64_VIDEO_PREFIX)) {
     const matches = assetUrl.match(BASE64_VIDEO_MIME_REGEX);
     if (matches) {
@@ -146,7 +149,6 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
       const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
       const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}${COMMON_STRINGS.MP4_EXT}`;
       const filePath = path.join(videoDir, fileName);
-
       try {
         fs.writeFileSync(filePath, Buffer.from(data, COMMON_STRINGS.BASE64));
         assetUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${VIDEOS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
@@ -164,7 +166,6 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
       const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
       const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}${ext}`;
       const filePath = path.join(imageDir, fileName);
-
       try {
         fs.writeFileSync(filePath, Buffer.from(data, COMMON_STRINGS.BASE64));
         assetUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${IMAGES_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
@@ -174,7 +175,6 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
       }
     }
   }
-
   if (assetUrl) {
     const isNotBase64 = _.every([COMMON_STRINGS.BASE64_IMAGE_PREFIX, COMMON_STRINGS.BASE64_VIDEO_PREFIX], (prefix) => !_.includes(assetUrl, prefix));
     if (isNotBase64) {
@@ -184,7 +184,6 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
         sceneUpdated = true;
       }
     }
-
     const needsSync = _.isEmpty(assetUrls) || !_.includes(assetUrls, assetUrl);
     if (isNotBase64 && needsSync) {
       assetUrls = _.uniq([assetUrl, ...assetUrls]);
@@ -200,29 +199,25 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
       sceneUpdated = true;
     }
   }
-
   if (sceneUpdated) {
     const assetRevisions = _.map(scene.assetRevisions, (revision) => ({
       ...revision,
-      assetUrl: _.isEmpty(revision?.assetUrl) || (_.isString(revision?.assetUrl) && _.startsWith(revision.assetUrl, "data:")) ? assetUrl : revision?.assetUrl,
+      assetUrl: _.isEmpty(revision?.assetUrl) || (_.isString(revision?.assetUrl) && _.startsWith(revision.assetUrl, SOURCE_TEXT_DATA)) ? assetUrl : revision?.assetUrl,
     }));
     return { ...scene, assetUrl, assetUrls, audioUrl, audioBase64, assetRevisions, isUpdated: true };
   }
   return scene;
 }
-
 function processThumbAssets(thumb: any, thumbDir: string, folderName: string): any {
   let { imageUrl } = thumb;
   let thumbUpdated = false;
-
   if (_.includes(imageUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX)) {
     const matches = imageUrl?.match(BASE64_IMAGE_MIME_REGEX);
     if (matches) {
       const ext = _.eq(matches[1], COMMON_STRINGS.JPEG_EXT) ? COMMON_STRINGS.JPG_EXT : matches[1];
       const data = matches[2];
-      const fileName = `${COMMON_STRINGS.THUMB_PREFIX}${thumb.id}.${ext}`;
+      const fileName = SOURCE_TEMPLATE_SYMBOL_56(`${COMMON_STRINGS.THUMB_PREFIX}`, `${thumb.id}`, `${ext}`);
       const filePath = path.join(thumbDir, fileName);
-
       try {
         fs.writeFileSync(filePath, Buffer.from(data, COMMON_STRINGS.BASE64));
         imageUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${THUMBNAILS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
@@ -231,7 +226,7 @@ function processThumbAssets(thumb: any, thumbDir: string, folderName: string): a
         appError(`${ERROR_MESSAGES.WRITE_THUMB_IMAGE_ERR}${thumb.id}`, err);
       }
     }
-  } else if (imageUrl && !_.startsWith(imageUrl, "data:")) {
+  } else if (imageUrl && !_.startsWith(imageUrl, SOURCE_TEXT_DATA)) {
     const fileName = path.basename(imageUrl);
     const filePath = path.join(thumbDir, fileName);
     if (!fs.existsSync(filePath)) {
@@ -239,18 +234,15 @@ function processThumbAssets(thumb: any, thumbDir: string, folderName: string): a
       thumbUpdated = true;
     }
   }
-
   if (thumbUpdated) {
     return { ...thumb, imageUrl, isUpdated: true };
   }
   return thumb;
 }
-
 function processVoiceConfig(voiceConfig: any, audioDir: string, folderName: string, projectId: string): any {
   let configUpdated = false;
   let audioUrl = voiceConfig?.audioUrl;
-
-  const audioBase64 = _.get(voiceConfig, "audioBase64");
+  const audioBase64 = _.get(voiceConfig, SOURCE_TEXT_AUDIOBASE64);
   if (_.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD)) {
     const fileName = COMMON_STRINGS.UNIFIED_WAV;
     const filePath = path.join(audioDir, fileName);
@@ -262,7 +254,6 @@ function processVoiceConfig(voiceConfig: any, audioDir: string, folderName: stri
       appError(`${ERROR_MESSAGES.WRITE_UNIFIED_AUDIO_ERR}${projectId}`, err);
     }
   }
-
   if (configUpdated) {
     const newConfig = { ...voiceConfig, audioUrl };
     delete newConfig.audioBase64;
@@ -270,25 +261,21 @@ function processVoiceConfig(voiceConfig: any, audioDir: string, folderName: stri
   }
   return voiceConfig;
 }
-
 function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
   return _.map(projects, (project) => {
     if (_.isEqual(project.projectKind, ProjectKind.Container)) return project;
-
     const oldFolderName = getSafeFolderName(project.name);
     const oldProjectDir = path.join(assetsDir, oldFolderName);
     const newProjectDir = path.join(assetsDir, project.id);
-
     if (!_.eq(oldFolderName, project.id) && fs.existsSync(oldProjectDir) && !fs.existsSync(newProjectDir)) {
       try {
         fs.renameSync(oldProjectDir, newProjectDir);
-        appLog(`${LOG_MESSAGES.MIGRATE_PROJECT_DIR_SUCCESS}${oldFolderName} -> ${project.id}`);
+        appLog(SOURCE_TEMPLATE_SYMBOL_57(`${LOG_MESSAGES.MIGRATE_PROJECT_DIR_SUCCESS}`, `${oldFolderName}`, `${project.id}`));
       } catch (err) {
-        appError(`${ERROR_MESSAGES.MIGRATE_PROJECT_DIR_ERR}${oldFolderName} -> ${project.id}`, err);
+        appError(SOURCE_TEMPLATE_SYMBOL_57(`${ERROR_MESSAGES.MIGRATE_PROJECT_DIR_ERR}`, `${oldFolderName}`, `${project.id}`), err);
       }
     }
-
     const folderName = project.id;
     const projectDir = newProjectDir;
     const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
@@ -299,7 +286,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
     if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
     if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
-
     let storyboardUpdated = false;
     let storyboard = project.storyboard;
     if (_.isArray(storyboard)) {
@@ -312,7 +298,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         return processed;
       });
     }
-
     let thumbnailsUpdated = false;
     let thumbnails = project.thumbnails;
     if (_.isArray(thumbnails)) {
@@ -325,7 +310,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         return processed;
       });
     }
-
     let voiceConfigUpdated = false;
     let voiceConfig = project.voiceConfig;
     if (voiceConfig) {
@@ -336,7 +320,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         voiceConfig = processed;
       }
     }
-
     _.forEach(
       _.filter(fs.readdirSync(audioDir), (fileName) => {
         if (!ALIGN_CONFIG.LEGACY_SEGMENT_FILE_REGEX.test(fileName)) return false;
@@ -353,7 +336,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
       },
     );
-
     if (storyboardUpdated || thumbnailsUpdated || voiceConfigUpdated) {
       const updatedProject: VideoProject = { ...project, updatedAt: new Date().toISOString() };
       if (storyboardUpdated) updatedProject.storyboard = storyboard;
@@ -364,7 +346,6 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     return project;
   });
 }
-
 const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
   if (!_.isArray(project.storyboard)) return project;
   let changed = false;
@@ -372,15 +353,11 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
   const storyboard = _.map(project.storyboard, (scene) => {
     if (!_.isEqual(scene.assetType, GenerateType.Video) || _.isEmpty(scene.assetUrl)) return scene;
     const assetUrl = _.toString(scene.assetUrl);
-    const relativeAssetPath = _.trimStart(_.first(_.split(assetUrl, "?")) || "", "/\\");
+    const relativeAssetPath = _.trimStart(_.first(_.split(assetUrl, SOURCE_TEXT_SYMBOL_21)) || "", SOURCE_TEXT_SYMBOL_37);
     const resolvedAssetPath = path.resolve(getDataDirectory(), relativeAssetPath);
     const projectsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
-    const isInsideProjectsRoot = !path.relative(projectsRoot, resolvedAssetPath).startsWith("..") && !path.isAbsolute(path.relative(projectsRoot, resolvedAssetPath));
-    const hasValidLocalFile =
-      FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(assetUrl) &&
-      isInsideProjectsRoot &&
-      fs.existsSync(resolvedAssetPath) &&
-      _.gte(fs.statSync(resolvedAssetPath).size, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES);
+    const isInsideProjectsRoot = !path.relative(projectsRoot, resolvedAssetPath).startsWith(SOURCE_TEXT_SYMBOL_38) && !path.isAbsolute(path.relative(projectsRoot, resolvedAssetPath));
+    const hasValidLocalFile = FLOW_VIDEO_MEDIA_CONFIG.PROJECT_ASSET_URL_PATTERN.test(assetUrl) && isInsideProjectsRoot && fs.existsSync(resolvedAssetPath) && _.gte(fs.statSync(resolvedAssetPath).size, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES);
     if (hasValidLocalFile) {
       const contentHash = getPersistedVideoContentHash(resolvedAssetPath);
       const originalSceneId = sceneIdByContentHash.get(contentHash);
@@ -416,15 +393,15 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
   });
   const completedSceneIds = _.map(
     _.filter(storyboard, (scene) => !_.isEmpty(scene.assetUrl)),
-    "id",
+    SOURCE_TEXT_ID,
   );
   const pendingSceneIds = _.map(
     _.filter(storyboard, (scene) => _.isEmpty(scene.assetUrl)),
-    "id",
+    SOURCE_TEXT_ID,
   );
   const failedSceneIds = _.map(
     _.filter(storyboard, (scene) => _.isEqual(scene.assetStatus, SceneAssetStatus.Failed)),
-    "id",
+    SOURCE_TEXT_ID,
   );
   const requiresMediaRepair = changed || (!_.isEmpty(project.renderedVideoUrl) && !_.isEmpty(pendingSceneIds));
   const validatedProject = requiresMediaRepair
@@ -453,12 +430,11 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
     },
   };
 };
-
 function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   if (!newProject.allowBulkDeleteImages) {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
-      if (_.get(oldScene, "assetUrl") && !_.get(newScene, "assetUrl")) {
+      if (_.get(oldScene, SOURCE_TEXT_ASSETURL) && !_.get(newScene, SOURCE_TEXT_ASSETURL)) {
         return {
           ...newScene,
           assetUrl: oldScene.assetUrl,
@@ -472,10 +448,8 @@ function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   }
   return newProject.storyboard;
 }
-
 function cleanupUnusedSceneImages(storyboard: any[], imageDir: string): void {
   if (!fs.existsSync(imageDir) || !_.isArray(storyboard)) return;
-
   const activeImageFiles = new Set<string>();
   _.forEach(storyboard, (scene: any) => {
     if (scene?.assetUrl && !_.eq(scene.assetUrl, COMMON_STRINGS.UNDEFINED)) {
@@ -487,18 +461,15 @@ function cleanupUnusedSceneImages(storyboard: any[], imageDir: string): void {
       });
     }
   });
-
   _.forEach(storyboard, (newScene: any) => {
     const hasImage = (!_.isEmpty(newScene?.assetUrl) && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !_.isEmpty(newScene?.assetUrls);
     if (hasImage) return;
-
     try {
       const files = fs.readdirSync(imageDir);
       const newSceneIdStr = String(newScene.id);
       const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : newSceneIdStr;
       const prefix1 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
-      const prefix2 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}_`;
-
+      const prefix2 = SOURCE_TEMPLATE_SYMBOL_58(`${COMMON_STRINGS.SCENE_PREFIX}`, `${cleanId}`);
       _.forEach(files, (file) => {
         if ((_.startsWith(file, prefix1) || _.startsWith(file, prefix2)) && !activeImageFiles.has(file)) {
           const filePath = path.join(imageDir, file);
@@ -515,14 +486,11 @@ function cleanupUnusedSceneImages(storyboard: any[], imageDir: string): void {
     }
   });
 }
-
 function cleanupUnusedSceneAudios(storyboard: any[], oldProject: any, newProject: any, audioDir: string, cleanAudio: boolean): void {
   if (!cleanAudio || !fs.existsSync(audioDir) || !_.isArray(storyboard)) return;
-
   _.forEach(storyboard, (newScene: any) => {
     const hasAudio = !_.isEmpty(newScene?.audioUrl) && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED);
     if (hasAudio) return;
-
     try {
       const files = fs.readdirSync(audioDir);
       const newSceneIdStr = String(newScene.id);
@@ -543,9 +511,8 @@ function cleanupUnusedSceneAudios(storyboard: any[], oldProject: any, newProject
       appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
     }
   });
-
-  const oldAudioUrl = _.get(oldProject, "voiceConfig.audioUrl");
-  const newAudioUrl = _.get(newProject, "voiceConfig.audioUrl");
+  const oldAudioUrl = _.get(oldProject, SOURCE_TEXT_VOICECONFIG_AUDIOURL);
+  const newAudioUrl = _.get(newProject, SOURCE_TEXT_VOICECONFIG_AUDIOURL);
   if (oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
     const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
     if (fs.existsSync(unifiedAudioFile)) {
@@ -558,15 +525,13 @@ function cleanupUnusedSceneAudios(storyboard: any[], oldProject: any, newProject
     }
   }
 }
-
 function cleanupUnusedThumbnails(thumbnails: any[], thumbDir: string): void {
   if (!fs.existsSync(thumbDir)) return;
-
   try {
     const activeThumbnailFiles = new Set<string>();
     if (_.isArray(thumbnails)) {
       _.forEach(thumbnails, (thumb: any) => {
-        if (thumb?.imageUrl && !_.startsWith(thumb.imageUrl, "data:")) {
+        if (thumb?.imageUrl && !_.startsWith(thumb.imageUrl, SOURCE_TEXT_DATA)) {
           activeThumbnailFiles.add(path.basename(thumb.imageUrl));
         }
       });
@@ -589,25 +554,21 @@ function cleanupUnusedThumbnails(thumbnails: any[], thumbDir: string): void {
     appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${thumbDir}`, err);
   }
 }
-
 function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): void {
   if (!fs.existsSync(referencesDir)) return;
-
   try {
     const activeReferenceUrls = new Set<string>();
     const addRef = (val: unknown) => {
-      if (_.isString(val) && !_.isEmpty(val) && !_.startsWith(val, "data:")) {
+      if (_.isString(val) && !_.isEmpty(val) && !_.startsWith(val, SOURCE_TEXT_DATA)) {
         activeReferenceUrls.add(val);
         activeReferenceUrls.add(path.basename(val));
       }
     };
-
     const addRefList = (list: unknown) => {
       if (_.isArray(list)) {
         _.forEach(list, (item) => addRef(item));
       }
     };
-
     const vc = newProject.visualConfig || {};
     addRefList(vc.styleReferenceImages);
     addRefList(vc.thumbnailReferenceImages);
@@ -622,7 +583,6 @@ function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): vo
         addRefList(char?.referenceImages);
       });
     }
-
     if (_.isArray(newProject.storyboard)) {
       _.forEach(newProject.storyboard, (scene: any) => {
         addRef(scene?.assetUrl);
@@ -632,21 +592,19 @@ function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): vo
         }
       });
     }
-
     const cfg = newProject.config || {};
     addRefList(cfg.referenceImages);
     addRefList(cfg.thumbnailReferenceImages);
     addRefList(cfg.sceneReferenceImages);
     addRef(cfg.musicAssetUrl);
-
     const groups = fs.readdirSync(referencesDir);
     _.forEach(groups, (groupName) => {
       const groupDir = path.join(referencesDir, groupName);
       if (fs.existsSync(groupDir) && fs.statSync(groupDir).isDirectory()) {
         const refFiles = fs.readdirSync(groupDir);
         _.forEach(refFiles, (file) => {
-          const relUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${newProject.id}/references/${groupName}/${file}`;
-          const isReferenced = activeReferenceUrls.has(file) || activeReferenceUrls.has(relUrl) || Array.from(activeReferenceUrls).some((u) => u.includes(file));
+          const relUrl = SOURCE_TEMPLATE_REFERENCES(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${newProject.id}`, `${groupName}`, `${file}`);
+          const isReferenced = activeReferenceUrls.has(file) || activeReferenceUrls.has(relUrl) || _.some(Array.from(activeReferenceUrls), (u) => u.includes(file));
           if (!isReferenced) {
             const filePath = path.join(groupDir, file);
             try {
@@ -665,23 +623,14 @@ function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): vo
     appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${referencesDir}`, err);
   }
 }
-
 const preserveReferenceState = (newProject: VideoProject, oldProject: VideoProject): VideoProject => {
   const nextVisualConfig = { ...oldProject.visualConfig, ...newProject.visualConfig };
-  const referenceKeys = [
-    "styleReferenceImages",
-    "sceneReferenceImages",
-    "referenceImages",
-    "thumbnailReferenceImages",
-    "thumbnailSceneReferenceImages",
-    "characterImages",
-  ];
+  const referenceKeys = [SOURCE_TEXT_STYLEREFERENCEIMAGES, SOURCE_TEXT_SCENEREFERENCEIMAGES, SOURCE_TEXT_REFERENCEIMAGES, SOURCE_TEXT_THUMBNAILREFERENCEIMAGES, SOURCE_TEXT_THUMBNAILSCENEREFERENCEIMAGES, SOURCE_TEXT_CHARACTERIMAGES];
   _.forEach(referenceKeys, (key) => {
     const oldValues = _.get(oldProject.visualConfig, key);
     if (_.isEmpty(_.get(nextVisualConfig, key)) && !_.isEmpty(oldValues)) _.set(nextVisualConfig, key, oldValues);
   });
-
-  const oldCharactersById = _.keyBy(_.defaultTo(oldProject.visualConfig?.characters, []), "id");
+  const oldCharactersById = _.keyBy(_.defaultTo(oldProject.visualConfig?.characters, []), SOURCE_TEXT_ID);
   const oldCharactersByName = _.keyBy(_.defaultTo(oldProject.visualConfig?.characters, []), (character) => _.toLower(_.trim(character.name)));
   nextVisualConfig.characters = _.map(_.defaultTo(nextVisualConfig.characters, []), (character) => {
     const oldCharacter = oldCharactersById[character.id] || oldCharactersByName[_.toLower(_.trim(character.name))];
@@ -692,26 +641,15 @@ const preserveReferenceState = (newProject: VideoProject, oldProject: VideoProje
       extracted: Boolean(character.extracted || oldCharacter.extracted || !_.isEmpty(oldCharacter.images)),
     };
   });
-  nextVisualConfig.characterExtracted = Boolean(
-    nextVisualConfig.characterExtracted || _.some(nextVisualConfig.characters, (character) => !_.isEmpty(character.images)),
-  );
+  nextVisualConfig.characterExtracted = Boolean(nextVisualConfig.characterExtracted || _.some(nextVisualConfig.characters, (character) => !_.isEmpty(character.images)));
   return { ...newProject, visualConfig: nextVisualConfig };
 };
-
-function cleanUpDiskFiles(
-  newProject: any,
-  oldProject: any,
-  projectDir: string,
-  cleanImages: boolean,
-  cleanAudio: boolean,
-  cleanReferences: boolean,
-): void {
+function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, cleanImages: boolean, cleanAudio: boolean, cleanReferences: boolean): void {
   if (cleanImages) cleanupUnusedSceneImages(newProject.storyboard, path.join(projectDir, IMAGES_DIR_NAME));
   cleanupUnusedSceneAudios(newProject.storyboard, oldProject, newProject, path.join(projectDir, VOICES_DIR_NAME), cleanAudio);
   if (cleanImages) cleanupUnusedThumbnails(newProject.thumbnails, path.join(projectDir, THUMBNAILS_DIR_NAME));
   if (cleanReferences) cleanupUnusedReferenceFiles(newProject, path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY));
 }
-
 async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
   try {
     const cleanedProjects = convertBase64AssetsToFiles([project]);
@@ -719,36 +657,28 @@ async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
     await saveProjectDetailToDb(cleanedProject);
     return cleanedProject;
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_WRITE_ERR")} ${project.id}`, error);
+    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR)} ${project.id}`, error);
     throw error;
   }
 }
-
-const resolveLatestCinematicArtifacts = (
-  stored: VideoProject["cinematicScriptArtifacts"],
-  incoming: VideoProject["cinematicScriptArtifacts"],
-): VideoProject["cinematicScriptArtifacts"] => {
+const resolveLatestCinematicArtifacts = (stored: VideoProject["cinematicScriptArtifacts"], incoming: VideoProject["cinematicScriptArtifacts"]): VideoProject["cinematicScriptArtifacts"] => {
   if (!stored) return incoming;
   if (!incoming) return stored;
   const storedUpdatedAt = Date.parse(stored.updatedAt);
   const incomingUpdatedAt = Date.parse(incoming.updatedAt);
   return Number.isFinite(storedUpdatedAt) && (!Number.isFinite(incomingUpdatedAt) || storedUpdatedAt > incomingUpdatedAt) ? stored : incoming;
 };
-
 migrateJsonToSqlite().catch((error) => {
-  appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
+  appError(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATE_CRITICAL), error);
 });
-
 const inferLegacyChildKind = (project: VideoProject): ProjectKind | undefined => {
   if (_.endsWith(project.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) return ProjectKind.Studio;
   if (_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) return ProjectKind.Auto;
   if (_.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) return ProjectKind.Cinematic;
   return undefined;
 };
-
 const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<boolean> => {
   let repaired = false;
-
   const rootProjectsByName = _.keyBy(
     _.filter(projects, (project) => _.isEmpty(project.parentId) && !inferLegacyChildKind(project)),
     (project) => _.trim(project.name),
@@ -767,24 +697,15 @@ const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<
       continue;
     }
     if (!inferredKind) continue;
-
-    const suffix =
-      inferredKind === ProjectKind.Studio
-        ? COMMON_STRINGS.STUDIO_CHILD_SUFFIX
-        : inferredKind === ProjectKind.Cinematic
-          ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX
-          : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
+    const suffix = inferredKind === ProjectKind.Studio ? COMMON_STRINGS.STUDIO_CHILD_SUFFIX : inferredKind === ProjectKind.Cinematic ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
     const parentName = _.trim(project.name.slice(0, -suffix.length));
     const inferredParent = rootProjectsByName[parentName];
     const targetParentId = project.parentId || inferredParent?.id;
     if (!targetParentId) continue;
     if (_.isEqual(project.projectKind, inferredKind) && _.isEqual(project.parentId, targetParentId)) continue;
-
     if (_.isEqual(targetParentId, project.id)) continue;
-
     const detail = await getProjectDetail(project.id);
     if (!detail) continue;
-
     await saveProjectDetailToDb({
       ...detail,
       parentId: targetParentId,
@@ -792,20 +713,17 @@ const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<
     });
     repaired = true;
   }
-
   return repaired;
 };
-
 export const getAllProjects = async (_request: Request, response: Response) => {
   try {
     const list = await getProjectsListFromDb();
     const repaired = await repairLegacyWorkspaceProjects(list);
     response.json(repaired ? await getProjectsListFromDb() : list);
   } catch (error: any) {
-    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")) });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg(SOURCE_TEXT_SQLITE_LIST_ERR)) });
   }
 };
-
 export const getProjectById = async (request: Request, response: Response) => {
   const { id } = request.params;
   try {
@@ -815,10 +733,9 @@ export const getProjectById = async (request: Request, response: Response) => {
       response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
     }
   } catch (error: any) {
-    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_DETAIL_ERR")) });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg(SOURCE_TEXT_SQLITE_DETAIL_ERR)) });
   }
 };
-
 export const createProject = async (request: Request, response: Response) => {
   const now = new Date().toISOString();
   const newProject: VideoProject = {
@@ -831,13 +748,11 @@ export const createProject = async (request: Request, response: Response) => {
     const savedProject = await saveProjectDetail(newProject);
     response.status(201).json(savedProject);
   } catch (error: any) {
-    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")) });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR)) });
   }
 };
-
 function renameProjectAssetsDir(oldDir: string, newDir: string, newProject: any, oldProject: any): boolean {
   if (!fs.existsSync(oldDir)) return true;
-
   try {
     fs.renameSync(oldDir, newDir);
     return true;
@@ -858,19 +773,15 @@ function renameProjectAssetsDir(oldDir: string, newDir: string, newProject: any,
     }
   }
 }
-
 export const updateProject = async (request: Request, response: Response) => {
   const { id } = request.params;
   try {
     const oldProject = await getProjectDetail(id);
-
     if (oldProject) {
       let newProject = request.body;
-
       if (!newProject.allowReferenceCleanup) newProject = preserveReferenceState(newProject, oldProject);
-
       if (newProject.resetDerivedData) {
-        Object.assign(newProject, {
+        _.assign(newProject, {
           output: undefined,
           scriptRewritten: undefined,
           factCheckNotes: undefined,
@@ -899,23 +810,13 @@ export const updateProject = async (request: Request, response: Response) => {
           renderedVideoUrl: undefined,
         });
       }
-
       if (!newProject.allowBulkDeleteImages) {
         if (_.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard)) newProject.storyboard = oldProject.storyboard;
         if (_.isEmpty(newProject.thumbnails) && !_.isEmpty(oldProject.thumbnails)) newProject.thumbnails = oldProject.thumbnails;
         if (_.isEmpty(newProject.renderedVideoUrl) && !_.isEmpty(oldProject.renderedVideoUrl)) newProject.renderedVideoUrl = oldProject.renderedVideoUrl;
-        if (
-          _.isEmpty(newProject.voiceConfig?.audioUrl) &&
-          _.isEmpty(newProject.voiceConfig?.audioBase64) &&
-          (!_.isEmpty(oldProject.voiceConfig?.audioUrl) || !_.isEmpty(oldProject.voiceConfig?.audioBase64))
-        )
-          newProject.voiceConfig = oldProject.voiceConfig;
+        if (_.isEmpty(newProject.voiceConfig?.audioUrl) && _.isEmpty(newProject.voiceConfig?.audioBase64) && (!_.isEmpty(oldProject.voiceConfig?.audioUrl) || !_.isEmpty(oldProject.voiceConfig?.audioBase64))) newProject.voiceConfig = oldProject.voiceConfig;
       }
-
-      const failedBeforeProducingStoryboard =
-        _.includes([REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED], newProject.status) &&
-        _.isEmpty(newProject.storyboard) &&
-        !_.isEmpty(oldProject.storyboard);
+      const failedBeforeProducingStoryboard = _.includes([REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED], newProject.status) && _.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard);
       if (failedBeforeProducingStoryboard && !newProject.isRecreatingStoryboard) {
         newProject = {
           ...newProject,
@@ -925,7 +826,6 @@ export const updateProject = async (request: Request, response: Response) => {
           renderedVideoUrl: newProject.renderedVideoUrl || oldProject.renderedVideoUrl,
         };
       }
-
       if (newProject.name && oldProject.name && !_.eq(newProject.name, oldProject.name)) {
         const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
         const oldDir = path.join(assetsDir, getSafeFolderName(oldProject.name));
@@ -934,20 +834,17 @@ export const updateProject = async (request: Request, response: Response) => {
           renameProjectAssetsDir(oldDir, newDir, newProject, oldProject);
         }
       }
-
       const folderName = id;
       const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
-
       if (newProject.resetDerivedData) {
         const videoDir = path.resolve(projectDir, VIDEOS_DIR_NAME);
         const resolvedProjectDir = path.resolve(projectDir);
         const relativeVideoDir = path.relative(resolvedProjectDir, videoDir);
-        if (!relativeVideoDir.startsWith("..") && !path.isAbsolute(relativeVideoDir)) {
+        if (!relativeVideoDir.startsWith(SOURCE_TEXT_SYMBOL_38) && !path.isAbsolute(relativeVideoDir)) {
           fs.rmSync(videoDir, { recursive: true, force: true });
           fs.mkdirSync(videoDir, { recursive: true });
         }
       }
-
       if (oldProject?.storyboard && newProject?.storyboard) {
         if (newProject.isRecreatingStoryboard) {
           const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
@@ -964,22 +861,12 @@ export const updateProject = async (request: Request, response: Response) => {
           newProject.storyboard = syncOrphanedScenes(newProject, oldProject);
         }
       }
-
-      cleanUpDiskFiles(
-        newProject,
-        oldProject,
-        projectDir,
-        Boolean(newProject.allowBulkDeleteImages),
-        Boolean(newProject.allowAudioCleanup),
-        Boolean(newProject.allowReferenceCleanup),
-      );
-
+      cleanUpDiskFiles(newProject, oldProject, projectDir, Boolean(newProject.allowBulkDeleteImages), Boolean(newProject.allowAudioCleanup), Boolean(newProject.allowReferenceCleanup));
       delete newProject.allowBulkDeleteImages;
       delete newProject.isRecreatingStoryboard;
       delete newProject.allowAudioCleanup;
       delete newProject.allowReferenceCleanup;
       delete newProject.resetDerivedData;
-
       const updatedProject = {
         ...oldProject,
         ...newProject,
@@ -1000,21 +887,18 @@ export const updateProject = async (request: Request, response: Response) => {
       response.json(savedProject);
     }
   } catch (error: any) {
-    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")) });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR)) });
   }
 };
-
 export const deleteProject = async (request: Request, response: Response) => {
   const { id } = request.params;
   const isVi = !_.eq(request.query.lang, COMMON_STRINGS.EN);
-
   try {
     const projects = (await getProjectsListFromDb()) as VideoProject[];
     const projectTree = getProjectTree(projects, id);
     const projectsToDelete = _.isEmpty(projectTree) ? _.compact([await getProjectDetail(id)]) : projectTree;
     const deletionResults = await Promise.all(_.map(projectsToDelete, (project) => deleteProjectFromDb(project.id)));
     const deleted = _.some(deletionResults);
-
     if (deleted) {
       const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
       _.forEach(projectsToDelete, (project) => {
@@ -1026,6 +910,6 @@ export const deleteProject = async (request: Request, response: Response) => {
       response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
-    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_DELETE_ERR")) });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg(SOURCE_TEXT_SQLITE_DELETE_ERR)) });
   }
 };

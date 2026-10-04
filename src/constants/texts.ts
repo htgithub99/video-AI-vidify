@@ -1,6 +1,5 @@
 import { translations } from "../lib/lang.js";
 import { VideoGenre, SortOrder } from "./enums.js";
-
 export const FLOW_VIDEO_TEXTS = {
   vi: {
     SELECT_FOLDER_ERROR: "Không thể chọn thư mục.",
@@ -157,7 +156,6 @@ export const FLOW_VIDEO_TEXTS = {
     CLEAR_PROMPTS: "Clear All",
   },
 } as const;
-
 export const APP_TEXTS = {
   VN: {
     APP_TITLE: translations.vi.appTitle,
@@ -222,13 +220,9 @@ export const APP_TEXTS = {
     OPTIMIZATION_FAILED: "Could not optimize image descriptions",
   },
 };
-
 export const HTTP_METHODS = { PUT: "PUT", POST: "POST", GET: "GET", DELETE: "DELETE" };
-
 export const CONTENT_TYPES = { JSON: "application/json", NDJSON: "application/x-ndjson", JPEG: "image/jpeg" };
-
 export const HTTP_HEADERS = { CONTENT_TYPE: "Content-Type", TRANSFER_ENCODING: "Transfer-Encoding", XI_API_KEY: "xi-api-key" };
-
 export const QUOTA_TEXTS = {
   VN: {
     VIDEO_TOOLTIP: "Số lượng Video đã tạo / Tổng hạn mức cho phép",
@@ -253,11 +247,8 @@ export const QUOTA_TEXTS = {
     IMAGE: "Image",
   },
 };
-
 export const TRANSFER_ENCODINGS = { CHUNKED: "chunked" };
-
 export const HTTP_STATUS_CODES = { OK: 200, BAD_REQUEST: 400, UNPROCESSABLE_ENTITY: 422, NOT_FOUND: 404, INTERNAL_SERVER_ERROR: 500, SERVICE_UNAVAILABLE: 503 };
-
 export const TEMPLATE_CONFIG = {
   PAYLOAD_LIMIT: "50mb",
   DIR_NAME: "templates/capcut",
@@ -275,20 +266,14 @@ export const TEMPLATE_CONFIG = {
   MAX_TEMPLATES_ERROR: "EXCEED_MAX_TEMPLATES",
   INVALID_TEMPLATE_ERROR: "INVALID_CAPCUT_TEMPLATE",
 };
-
 export const AUDIO_MIME_TYPE = "audio/wav";
 export const BLOB_PREFIX = "blob:";
 export const RESTORE_SCENE_BLOB_ERR = "FAILED_RESTORE_SCENE_BLOB";
 export const RESTORE_BLOB_ERR = "FAILED_RESTORE_BLOB";
-
 export const CONTENT_TYPE_HEADER = HTTP_HEADERS.CONTENT_TYPE;
-
 export const THEME_VALUES = { DARK: "dark", LIGHT: "light" } as const;
-
 export const HTTP_STATUS = { UNAUTHORIZED: 401, FORBIDDEN: 403 } as const;
-
 export const TTS_POLLING_CONFIG = { MAX_ATTEMPTS: 60, INTERVAL_MS: 5000, STATUS_DONE: "done", STATUS_ERROR: "error" } as const;
-
 export const COMMON_STRINGS = {
   UNDEFINED: "undefined",
   NULL: "null",
@@ -326,7 +311,6 @@ export const COMMON_STRINGS = {
   AUTO_CHILD_SUFFIX: " - Tự động",
   CINEMATIC_CHILD_SUFFIX: " - Phim AI",
 } as const;
-
 export const ERROR_MESSAGES = {
   HTTP_ERROR_PREFIX: "HTTP Error ",
   AUTO_SAVE_ERR: "ERROR_AUTO_SAVING_PROJECT",
@@ -363,7 +347,6 @@ export const ERROR_MESSAGES = {
   API_ERROR_PREFIX: "API Error: ",
   MIGRATE_PROJECT_DIR_ERR: "Lỗi chuyển đổi thư mục dự án: ",
 } as const;
-
 export const LOG_MESSAGES = {
   DELETE_SCENE_IMAGE_DISK_SUCCESS: "Đã xóa ảnh phân cảnh cũ: ",
   DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Âm thanh] Đã dọn dẹp tệp ghi âm cũ: ",
@@ -372,7 +355,6 @@ export const LOG_MESSAGES = {
   DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do tệp đang được sử dụng: ",
   MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi dữ liệu dự án sang cấu trúc mới: ",
 } as const;
-
 export const DEFAULT_PROJECT_CONFIGS = {
   GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
   DURATION: "2m",
@@ -386,7 +368,6 @@ export const DEFAULT_PROJECT_CONFIGS = {
   VISUAL_STYLE: "Realistic",
   VISUAL_QUALITY: "Standard",
 } as const;
-
 export const EXTERNAL_AUDIO_TEXTS = {
   LOG_ACTION: "handleProcessExternalAudio",
   LOG_ERROR_KEY: "EXTERNAL_AUDIO_ALIGN_FAILED",
@@ -413,14 +394,12 @@ export const EXTERNAL_AUDIO_TEXTS = {
     SERVER_ALIGN_ERROR: "Failed to align voice from server.",
   },
 } as const;
-
 const SATIRICAL_LIFE_VISUAL_GUIDELINE = `CRITICAL VISUAL DIRECTIVE - SATIRICAL LIFE STORY:
 - Use an original minimalist 2D editorial-cartoon language by default: clean black outlines, flat colors, restrained shading, readable silhouettes and simple reusable backgrounds.
 - Preserve hard identity anchors, timeline-stage outfits, recurring locations, props and screen direction. Change pose, expression, blocking and shot purpose rather than redesigning the world.
 - Show concrete action, reaction, power shift or consequence. Do not translate abstract emotion into a generic centered sad portrait or a stock symbolic crossroads.
 - Use setup, action, reaction, punchline, reveal, callback, montage and emotional-hold shots deliberately. Reuse motifs only when their meaning evolves.
 - Keep generated assets free of readable text, logos and watermarks. Reserve exact typography for the editing compositor.`;
-
 export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
   [VideoGenre.CINEMATIC_EPISODE]: `CRITICAL VISUAL DIRECTIVE - CINEMATIC AI EPISODE:
 - Build continuous dramatic sequences, not a narration montage. Establish geography with a master shot, then use motivated coverage, reactions, inserts and payoff shots.
@@ -464,7 +443,6 @@ export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
 - Symbolic & Conceptual Visuals: Use surreal or highly symbolic visual representations to depict thoughts, mental states, dualities of mind, or philosophical concepts (e.g., a person looking into a mirror reflecting a maze, or contrasting dark and light halves of a face).
 - Keep a clean, artistic, thought-provoking focus.`,
 };
-
 export const VITE_HMR_LOGS = {
   vi: {
     SERVER_CONNECTION_LOST: "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
@@ -481,9 +459,7 @@ export const VITE_HMR_LOGS = {
     HOT_UPDATED: "[System] Interface updated successfully.",
   },
 } as const;
-
 export const LOG_LEVEL_SYMBOLS = { INFO: "ℹ️", SUCCESS: "✅", WARN: "⚠️", ERROR: "❌" };
-
 export const PIPELINE_STEP5_TEXTS = {
   PROMPT_SAMPLE: `1. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.\n2. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.`,
   vi: {
@@ -495,7 +471,6 @@ export const PIPELINE_STEP5_TEXTS = {
     IMAGE_ZIP_NAME: "independent_image_list.zip",
   },
 } as const;
-
 export const SETTINGS_VIEW_TEXTS = {
   vi: {
     SYSTEM_TITLE: "Tài Nguyên Cá Nhân",
@@ -536,7 +511,6 @@ export const SETTINGS_VIEW_TEXTS = {
     HIDDEN_PWD: "••••••••",
   },
 } as const;
-
 export const PIPELINE_STEP2_TEXTS = {
   vi: {
     THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
@@ -551,7 +525,6 @@ export const PIPELINE_STEP2_TEXTS = {
     CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
   },
 } as const;
-
 export const SIDEBAR_TEXTS = {
   vi: {
     DASHBOARD: "Tổng quan",
@@ -588,13 +561,9 @@ export const SIDEBAR_TEXTS = {
     CLOSE_MENU: "Close menu",
   },
 } as const;
-
 export const PLAYER_SIMULATION_CONFIG = { MIN_PROGRESS: 0, MAX_PROGRESS_PERCENT: 100 } as const;
-
 export const BUTTON_TOOLTIP_PREFIX = { VI: "Chức năng: ", EN: "Function: " } as const;
-
 export const SEO_DEFAULT_CONFIGS = { NUM_TITLES: 3, NUM_DESCRIPTIONS: 1, NUM_HASHTAGS: 5, NUM_TAGS: 10, MIN_TITLES_OPTION: 1, MAX_TITLES_OPTION: 10 } as const;
-
 export const PROJECT_LIST_TEXTS = {
   vi: {
     desc: "Quản lý và biên tập tất cả các dự án sản xuất video AI của bạn",
@@ -653,7 +622,6 @@ export const PROJECT_LIST_TEXTS = {
     linkedChildProjects: "Linked child projects:",
   },
 } as const;
-
 export const PROJECT_LIST_CONSTANTS = {
   FILTER_ALL: "all",
   LANG_VI: "vi",
@@ -666,9 +634,7 @@ export const PROJECT_LIST_CONSTANTS = {
   PAGINATION_DELIMITER: "/",
   DASH_DELIMITER: "-",
 } as const;
-
 export const URL_CONSTANTS = { IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"], ID_PARAMS: ["id", "docid", "name"] } as const;
-
 export const PIPELINE_STEP4_TEXTS = {
   LBL_QUALITY: "Chất lượng Video:",
   LBL_QUALITY_DESC: "Độ nét của video xuất ra.",
@@ -703,7 +669,6 @@ export const PIPELINE_STEP4_TEXTS = {
   AUDIO_DIR_PLACEHOLDER: "Thư mục Âm thanh...",
   AUTO_GATHER_MEDIA_HINT: "Tự động thu thập ảnh và âm thanh từ dự án hiện tại",
 } as const;
-
 export const PIPELINE_STEP3_TEXTS = {
   SEO_RESULT: "Kết quả Tối ưu SEO",
   NO_SEO_DATA: "Không có dữ liệu SEO.",
@@ -728,7 +693,6 @@ export const PIPELINE_STEP3_TEXTS = {
   HASHTAGS: "HASHTAGS",
   TAGS: "TỪ KHÓA",
 } as const;
-
 export const AUTO_GENERATE_TEXTS = {
   EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.",
   DRAFTING_SCRIPT: "Đang soạn kịch bản...",
@@ -744,7 +708,6 @@ export const AUTO_GENERATE_TEXTS = {
   ERR_CODE: "AUTO_GENERATE_ERROR",
   POSITION_TOP: "top",
 } as const;
-
 export const MEDIA_MIX_TEXTS = {
   vi: {
     mixed: "Ảnh + video",
@@ -759,7 +722,6 @@ export const MEDIA_MIX_TEXTS = {
     selecting: "AI selects scenes",
   },
 } as const;
-
 export const AUTO_GENERATOR_PANEL_TEXTS = {
   vi: {
     bannerTitle: "Tự tạo video",
@@ -879,29 +841,20 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeProject: (name: string) => `♻️ Sử dụng lại dự án [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
     logResumeScript: "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
     logResumeVoice: "♻️ Sử dụng lại Giọng đọc (TTS) đã tạo từ phiên chạy trước.",
-    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") =>
-      `♻️ Phân cảnh ${idx}/${total} đã có ${mediaType === "video" ? "video" : "hình ảnh"} hợp lệ, giữ lại và không tạo lại.`,
+    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") => `♻️ Phân cảnh ${idx}/${total} đã có ${mediaType === "video" ? "video" : "hình ảnh"} hợp lệ, giữ lại và không tạo lại.`,
     logResumeThumbnails: "♻️ Sử dụng lại ảnh bìa (Thumbnails) đã tạo.",
     logResumeAlignment: "♻️ Sử dụng lại Căn khớp & Phân đoạn âm thanh đã tạo.",
     logResumeSeo: "♻️ Sử dụng lại dữ liệu SEO đã tạo từ phiên chạy trước.",
-    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) =>
-      `🚀 Đang gửi ${count || "các"} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} tới Gemini; tài nguyên sẽ được tải ngay khi từng phân cảnh hoàn tất.`,
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
-      `✅ Đã tải ${mediaType === "video" ? "video" : "hình ảnh"} của ${sceneId} về dự án (${completed}/${total} phân cảnh).`,
-    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") =>
-      `⚠️ Chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") =>
-      `⚠️ Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} đồng thời bị gián đoạn (${msg}). Đang chuyển các phân cảnh còn thiếu sang luồng tạo dự phòng.`,
+    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Đang gửi ${count || "các"} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} tới Gemini; tài nguyên sẽ được tải ngay khi từng phân cảnh hoàn tất.`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") => `✅ Đã tải ${mediaType === "video" ? "video" : "hình ảnh"} của ${sceneId} về dự án (${completed}/${total} phân cảnh).`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} đồng thời bị gián đoạn (${msg}). Đang chuyển các phân cảnh còn thiếu sang luồng tạo dự phòng.`,
     fallbackThreeTabsReason: "luồng dự phòng",
     logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ Luồng dự phòng chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${id}.`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
-      `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng luồng dự phòng.`,
-    logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
-      `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
-    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") =>
-      `🎨 Đang thử lại ${mediaType === "video" ? "clip video" : "ảnh"} ${current}/${total}.`,
-    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
-      `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") => `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng luồng dự phòng.`,
+    logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
+    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") => `🎨 Đang thử lại ${mediaType === "video" ? "clip video" : "ảnh"} ${current}/${total}.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") => `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
     startBtnProcessing: "Đang Tạo Video...",
     startBtnStart: " Bắt Đầu Tạo",
     startBtnTooltip: "Khởi động quy trình tạo video tự động",
@@ -930,8 +883,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Mở dự án này trong AI Studio",
     alertEmptyScript: "Vui lòng nhập Kịch bản hoặc Ý tưởng ở phần Cấu hình.",
     logPipelineStart: "🚀 KHỞI ĐỘNG QUY TRÌNH TẠO VIDEO TỰ ĐỘNG",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
-      `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
     logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Đang đọc và phân tích dữ liệu đầu vào để chuẩn bị kịch bản...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Kịch bản đã hoàn thành (${words} từ, ${chapters} chương).`,
@@ -940,24 +892,16 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
     logVoiceResultDetail: (_source: string) => `✓ Giọng đọc thuyết minh đã thu âm xong.`,
     logReferenceSummary: (style: number, scene: number, character: number, cinematic: boolean = false) =>
-      style + scene + character > 0
-        ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.`
-        : cinematic
-          ? `🧬 Hệ thống tự động tạo hồ sơ nhân vật để giữ đồng bộ diện mạo xuyên suốt các phân cảnh.`
-          : `🖼️ Hệ thống tự động giữ đồng nhất phong cách hình ảnh theo thiết lập đã chọn.`,
-    logMediaPlan: (generate: number, reused: number, type: string) =>
-      `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
+      style + scene + character > 0 ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.` : cinematic ? `🧬 Hệ thống tự động tạo hồ sơ nhân vật để giữ đồng bộ diện mạo xuyên suốt các phân cảnh.` : `🖼️ Hệ thống tự động giữ đồng nhất phong cách hình ảnh theo thiết lập đã chọn.`,
+    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Đã căn khớp chính xác thời gian cho ${aligned} phân cảnh.`,
     logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) => `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
     logRenderJob: (_jobId: string) => `🧩 Đang tiến hành ghép nối và kết xuất video...`,
-    logPipelineElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Hoàn tất quy trình trong ${Math.round(seconds)} giây.` : "⏱️ Hoàn tất quy trình.",
-    logPipelineFailedElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.` : "⏱️ Quy trình đã tạm dừng.",
-    logPipelineCancelledElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Đã dừng quy trình sau ${Math.round(seconds)} giây.` : "⏱️ Đã dừng quy trình.",
+    logPipelineElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Hoàn tất quy trình trong ${Math.round(seconds)} giây.` : "⏱️ Hoàn tất quy trình."),
+    logPipelineFailedElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.` : "⏱️ Quy trình đã tạm dừng."),
+    logPipelineCancelledElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Đã dừng quy trình sau ${Math.round(seconds)} giây.` : "⏱️ Đã dừng quy trình."),
     logInitProj: "📌 [1/4] Đang khởi tạo không gian làm việc...",
     logInitProjSuccess: (_name: string) => `✅ Không gian làm việc đã sẵn sàng.`,
     logScriptGen: "📌 [1/4] Trí tuệ nhân tạo (AI) đang soạn kịch bản & thiết kế nhân vật...",
@@ -988,8 +932,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     startOverBtn: "Làm lại",
     startOverBtnTooltip: "Tạo lại từ đầu và làm mới toàn bộ cảnh quay",
     estimatePrefix: "Dự kiến:",
-    estimateSummary: (clips: number, batches: number, _promptsPerBatch: number) =>
-      `${clips} cảnh quay (${batches} lượt tạo)`,
+    estimateSummary: (clips: number, batches: number, _promptsPerBatch: number) => `${clips} cảnh quay (${batches} lượt tạo)`,
     subtitleSectionTitle: "Hậu kỳ & xuất bản",
     subtitleFieldLabel: "Phụ đề video",
     subtitleNone: "Không phụ đề",
@@ -1133,29 +1076,20 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeProject: (name: string) => `♻️ Reusing project: [${name}]. Resume mode is active.`,
     logResumeScript: "♻️ Reusing Script & Storyboard from previous session.",
     logResumeVoice: "♻️ Reusing Voice (TTS) from previous session.",
-    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") =>
-      `♻️ Scene ${idx}/${total} already has a valid ${mediaType === "video" ? "video" : "image"}; keeping it without regeneration.`,
+    logResumeSceneSkip: (idx: number, total: number, mediaType: string = "image") => `♻️ Scene ${idx}/${total} already has a valid ${mediaType === "video" ? "video" : "image"}; keeping it without regeneration.`,
     logResumeThumbnails: "♻️ Reusing generated thumbnails.",
     logResumeAlignment: "♻️ Reusing generated voice alignments.",
     logResumeSeo: "♻️ Reusing SEO data from previous session.",
-    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) =>
-      `🚀 Sending ${count || "the"} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} scenes to Gemini; each asset will be downloaded as soon as it finishes.`,
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
-      `✅ Downloaded the ${mediaType === "video" ? "video" : "image"} for ${sceneId} (${completed}/${total} scenes).`,
-    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") =>
-      `⚠️ Could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") =>
-      `⚠️ Concurrent ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} generation was interrupted (${msg}). Sending only the missing scenes to the three-tab fallback.`,
+    logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Sending ${count || "the"} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} scenes to Gemini; each asset will be downloaded as soon as it finishes.`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") => `✅ Downloaded the ${mediaType === "video" ? "video" : "image"} for ${sceneId} (${completed}/${total} scenes).`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Concurrent ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} generation was interrupted (${msg}). Sending only the missing scenes to the three-tab fallback.`,
     fallbackThreeTabsReason: "three concurrent tabs",
     logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ The fallback tab could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${id}.`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
-      `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
-    logFallbackProgress: (current: number, total: number, mediaType: string = "image") =>
-      `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
-    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") =>
-      `🎨 Retrying fallback ${mediaType === "video" ? "video clip" : "image"} ${current}/${total}.`,
-    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
-      `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") => `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
+    logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
+    logFallbackAttempt: (current: number, total: number, mediaType: string = "image") => `🎨 Retrying fallback ${mediaType === "video" ? "video clip" : "image"} ${current}/${total}.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") => `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
     startBtnProcessing: "Creating Video...",
     startBtnStart: "🚀 Start Creating",
     startBtnTooltip: "Launch 1-Click automated video creation pipeline",
@@ -1184,8 +1118,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Open this project in AI Studio",
     alertEmptyScript: "Please enter Script or Idea in configuration.",
     logPipelineStart: "🚀 LAUNCHING ONE-CLICK AUTOMATED VIDEO PIPELINE",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
-      `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
     logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Reading and analyzing input data to prepare script...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Script is ready (${words} words, ${chapters} chapters).`,
@@ -1194,24 +1127,16 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Synthesizing AI voiceover...`,
     logVoiceResultDetail: (_source: string) => `✓ AI voiceover is fully generated.`,
     logReferenceSummary: (style: number, scene: number, character: number, cinematic: boolean = false) =>
-      style + scene + character > 0
-        ? `🖼️ Using ${style} style, ${scene} scene, and ${character} character reference images for continuity.`
-        : cinematic
-          ? `🧬 System automatically creates character profiles to maintain continuity across all scenes.`
-          : `🖼️ System automatically maintains visual style based on selected settings.`,
-    logMediaPlan: (generate: number, reused: number, type: string) =>
-      `🎨 Media plan: generate ${generate} scenes as ${type === "video" ? "video" : type === "mixed" ? "images and video" : "images"}; reuse ${reused} existing scenes.`,
+      style + scene + character > 0 ? `🖼️ Using ${style} style, ${scene} scene, and ${character} character reference images for continuity.` : cinematic ? `🧬 System automatically creates character profiles to maintain continuity across all scenes.` : `🖼️ System automatically maintains visual style based on selected settings.`,
+    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Media plan: generate ${generate} scenes as ${type === "video" ? "video" : type === "mixed" ? "images and video" : "images"}; reuse ${reused} existing scenes.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Synchronizing voiceover with visual scenes...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Flawlessly aligned audio for ${aligned} scenes.`,
     logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) => `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
     logRenderJob: (_jobId: string) => `🧩 Assembling and rendering video in the background...`,
-    logPipelineElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Pipeline completed in ${Math.round(seconds)} seconds.` : "⏱️ Pipeline completed.",
-    logPipelineFailedElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.` : "⏱️ The pipeline has stopped.",
-    logPipelineCancelledElapsed: (seconds: number) =>
-      Number.isFinite(seconds) && seconds >= 1 ? `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.` : "⏱️ The pipeline was cancelled.",
+    logPipelineElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ Pipeline completed in ${Math.round(seconds)} seconds.` : "⏱️ Pipeline completed."),
+    logPipelineFailedElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.` : "⏱️ The pipeline has stopped."),
+    logPipelineCancelledElapsed: (seconds: number) => (Number.isFinite(seconds) && seconds >= 1 ? `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.` : "⏱️ The pipeline was cancelled."),
     logInitProj: "📌 [1/4] Initializing workspace...",
     logInitProjSuccess: (_name: string) => `✅ Workspace is ready.`,
     logScriptGen: "📌 [1/4] AI is composing the script & characters...",
@@ -1242,8 +1167,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     startOverBtn: "Start over",
     startOverBtnTooltip: "Start over and regenerate all scenes from scratch",
     estimatePrefix: "Estimated:",
-    estimateSummary: (clips: number, batches: number, _promptsPerBatch: number) =>
-      `${clips} scenes (${batches} batches)`,
+    estimateSummary: (clips: number, batches: number, _promptsPerBatch: number) => `${clips} scenes (${batches} batches)`,
     subtitleSectionTitle: "Post-production & publishing",
     subtitleFieldLabel: "Subtitles",
     subtitleNone: "No subtitles",
@@ -1270,7 +1194,6 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     langViOption: "Vietnamese",
   },
 } as const;
-
 export const VOICE_DIALOG_TEXTS = {
   vi: {
     TITLE: "CHỌN GIỌNG ĐỌC",
@@ -1339,7 +1262,6 @@ export const VOICE_DIALOG_TEXTS = {
     favoriteTooltip: "Favorite",
   },
 } as const;
-
 export const VOICE_DIALOG_LANGUAGE_LABELS: Record<string, Record<"vi" | "en", string>> = {
   "": { vi: "Tất cả", en: "All" },
   en: { vi: "Tiếng Anh", en: "English" },
@@ -1351,14 +1273,12 @@ export const VOICE_DIALOG_LANGUAGE_LABELS: Record<string, Record<"vi" | "en", st
   ko: { vi: "Tiếng Hàn", en: "Korean" },
   zh: { vi: "Tiếng Trung", en: "Chinese" },
 };
-
 export const VOICE_DIALOG_AGE_LABELS: Record<string, Record<"vi" | "en", string>> = {
   "": { vi: "Tất cả", en: "All" },
   young: { vi: "Trẻ tuổi", en: "Young" },
   middle_aged: { vi: "Trung niên", en: "Middle Aged" },
   old: { vi: "Cao tuổi", en: "Elderly" },
 };
-
 export const PIPELINE_STEP4_SHORT_TEXTS = {
   vi: {
     RENDER_TITLE: "Kết xuất video",
@@ -1385,7 +1305,6 @@ export const PIPELINE_STEP4_SHORT_TEXTS = {
     PREVIEW_TOOLTIP: "Preview currently active video scene",
   },
 } as const;
-
 export const PRESET_CONSTANTS = {
   ID_PREFIX: "preset_",
   DEFAULT_VOICE_NAME: "Preset Voice VI",
@@ -1400,7 +1319,6 @@ export const PRESET_CONSTANTS = {
   DEFAULT_CAMERA_MOTION: "default",
   DEFAULT_TRANSITION: "default",
 } as const;
-
 export const ADVANCED_SETTING_GROUPS = {
   vi: {
     chromeGroup: "Trình duyệt tự động",
@@ -1427,7 +1345,6 @@ export const ADVANCED_SETTING_GROUPS = {
     newDesc: "Generate fresh script, voice, and visual assets from scratch",
   },
 } as const;
-
 export const AUTO_VIDEO_UI_TEXTS = {
   vi: {
     defaultPreset: "-- Mặc định --",
@@ -1502,7 +1419,6 @@ export const AUTO_VIDEO_UI_TEXTS = {
     windowedModeValue: "windowed",
   },
 } as const;
-
 export const BACKGROUND_OPTION_GROUPS = {
   vi: [
     {
@@ -1537,7 +1453,6 @@ export const BACKGROUND_OPTION_GROUPS = {
     },
   ],
 } as const;
-
 export const SCENE_TEXT_GROUPS = {
   vi: [
     {
@@ -1558,7 +1473,6 @@ export const SCENE_TEXT_GROUPS = {
     },
   ],
 } as const;
-
 export const THUMBNAIL_TEXT_GROUPS = {
   vi: [
     {
@@ -1579,7 +1493,6 @@ export const THUMBNAIL_TEXT_GROUPS = {
     },
   ],
 } as const;
-
 export const IMAGE_FOCUS_OPTION_GROUPS = {
   vi: [
     {
@@ -1622,7 +1535,6 @@ export const IMAGE_FOCUS_OPTION_GROUPS = {
     },
   ],
 } as const;
-
 export const UI_COMMON_TEXTS = {
   vi: {
     DASHBOARD_BADGE: "Next-Gen Video AI Studio",
@@ -1649,13 +1561,11 @@ export const UI_COMMON_TEXTS = {
     KEY_PREFIX: "Key: ",
   },
 } as const;
-
 export const CINEMATIC_SETUP_TEXTS = {
   vi: {
     TITLE: "Sản xuất Phim AI",
     SUBTITLE: "Nhập ý tưởng, AI sẽ tự động tạo kịch bản, nhân vật và cảnh quay.",
-    PLACEHOLDER:
-      "Ví dụ: Một thợ săn tiền thưởng trên trạm vũ trụ phải chọn giữa phần thưởng lớn và cứu người từng phản bội...",
+    PLACEHOLDER: "Ví dụ: Một thợ săn tiền thưởng trên trạm vũ trụ phải chọn giữa phần thưởng lớn và cứu người từng phản bội...",
     FORMAT_LABEL: "Định dạng",
     EPISODES_LABEL: "Số tập",
     LANGUAGE_LABEL: "Ngôn ngữ",
@@ -1777,7 +1687,6 @@ export const CINEMATIC_SETUP_TEXTS = {
     SERIES_NOTICE: (count: number) => `AI will synchronize characters, settings, and style across ${count} episodes.`,
   },
 } as const;
-
 export const LICENSE_SECURITY_TEXTS = {
   vi: {
     MISSING_LICENSE_KEY: "Vui lòng kích hoạt mã bản quyền để sử dụng ứng dụng.",
@@ -1852,7 +1761,6 @@ export const LICENSE_SECURITY_TEXTS = {
     NOT_AVAILABLE: "N/A",
   },
 } as const;
-
 export const SETTINGS_EXTENDED_TEXTS = {
   vi: {
     ACTIVE_BADGE: "Đang hoạt động",
@@ -1883,7 +1791,6 @@ export const SETTINGS_EXTENDED_TEXTS = {
     RECOVERY_PLACEHOLDER_TOOLTIP: "Email used for account recovery if needed",
   },
 } as const;
-
 export const THUMBNAILS_PREVIEW_TEXTS = {
   vi: {
     TITLE: "Ảnh Bìa",
@@ -1904,7 +1811,6 @@ export const THUMBNAILS_PREVIEW_TEXTS = {
     SAMPLE_UNIT: "samples",
   },
 } as const;
-
 export const REGENERATION_TARGET_TEXTS = {
   vi: {
     IMAGES: "Tạo lại toàn bộ ảnh",
@@ -1919,7 +1825,6 @@ export const REGENERATION_TARGET_TEXTS = {
     RENDER: "Re-render Video",
   },
 } as const;
-
 export const COMMON_ACTION_TEXTS = {
   vi: {
     THEME_LIGHT_TOOLTIP: "Chuyển giao diện Sáng",
@@ -1936,7 +1841,6 @@ export const COMMON_ACTION_TEXTS = {
     PIPELINE_BUSY: "This project is currently processing. Please wait or cancel before starting a new task.",
   },
 } as const;
-
 export const SCRIPT_DURATION_LABELS = {
   vi: {
     "2m": "2 phút (~300 từ)",
@@ -1961,7 +1865,6 @@ export const SCRIPT_DURATION_LABELS = {
     "2h": "120 mins (~18,000 words)",
   },
 } as const;
-
 export const GENRE_GROUP_LABELS = {
   vi: {
     SATIRICAL: "Kể chuyện châm biếm",
@@ -1976,24 +1879,20 @@ export const GENRE_GROUP_LABELS = {
     YOUTUBE_TRENDING: "Trending Topics",
   },
 } as const;
-
 export const PIPELINE_EXECUTION_ROUTE_TEXTS = {
   vi: {
     ROOM_ONLY: "Trình duyệt",
     API_ONLY: "API",
     HYBRID: "Tự động",
-    formatRoute: (modeLabel: string, provider: string, model: string) =>
-      `[AI] Phương thức xử lý: ${modeLabel} · ${provider} · ${model}.`,
+    formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Phương thức xử lý: ${modeLabel} · ${provider} · ${model}.`,
   },
   en: {
     ROOM_ONLY: "Browser",
     API_ONLY: "API",
     HYBRID: "Auto",
-    formatRoute: (modeLabel: string, provider: string, model: string) =>
-      `[AI] Execution route: ${modeLabel} · ${provider} · ${model}.`,
+    formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Execution route: ${modeLabel} · ${provider} · ${model}.`,
   },
 } as const;
-
 export const PIPELINE_FLOW_TEXTS = {
   vi: {
     CHARACTER_DETECTED: "[Nhân vật] Đã nhận diện nhân vật chính. Tiếp tục tạo phim.",
@@ -2011,8 +1910,7 @@ export const PIPELINE_FLOW_TEXTS = {
     MEDIA_TYPE_VIDEO: "clip video",
     MEDIA_TYPE_MIXED: "hình ảnh và clip video",
     MEDIA_TYPE_IMAGE: "hình ảnh",
-    formatPreparingSceneMedia: (mediaType: string, modeName: string, aspectRatio: string) =>
-      `🎨 Đang chuẩn bị tạo ${mediaType} phân cảnh qua ${modeName}; tỷ lệ ${aspectRatio}.`,
+    formatPreparingSceneMedia: (mediaType: string, modeName: string, aspectRatio: string) => `🎨 Đang chuẩn bị tạo ${mediaType} phân cảnh qua ${modeName}; tỷ lệ ${aspectRatio}.`,
     ERROR_MISSING_SCENE_MEDIA: "Một số cảnh đang thiếu hình ảnh hoặc video. Vui lòng chọn Tiếp tục để tạo bổ sung.",
     formatScenePromptKept: (sceneId: string) => `[Mô tả cảnh] ${sceneId}: Chưa nhận được cập nhật mô tả; giữ nguyên mô tả hiện có.`,
     formatScenePromptNoted: (sceneId: string) => `[Mô tả cảnh] ${sceneId}: Mô tả cập nhật có lưu ý; tiếp tục với nội dung hiện có.`,
@@ -2020,8 +1918,7 @@ export const PIPELINE_FLOW_TEXTS = {
     ARCHIVE_SOURCE_DEFAULT: "nguồn lưu trữ",
     formatArchivalLoaded: (sceneId: string, provider: string) => `Đã tải ảnh tư liệu thật cho ${sceneId} từ ${provider}.`,
     formatArchivalFallbackAi: (sceneId: string) => `Không tìm thấy tư liệu phù hợp cho ${sceneId}; chuyển riêng cảnh này sang ảnh AI.`,
-    formatCreatingSceneMedia: (mediaType: string, sceneId: string, index: number, total: number) =>
-      `🎨 Đang tạo ${mediaType} cho ${sceneId} (${index}/${total}).`,
+    formatCreatingSceneMedia: (mediaType: string, sceneId: string, index: number, total: number) => `🎨 Đang tạo ${mediaType} cho ${sceneId} (${index}/${total}).`,
     formatSavedSceneMedia: (mediaType: string, sceneId: string) => `✓ Đã tải và lưu ${mediaType} ${sceneId}.`,
     formatGoogleFlowStopped: (reason: string) => `[Google Flow] Dừng các cảnh còn lại vì lỗi thiết lập chung: ${reason}`,
     LOG_THUMBNAIL_PARALLEL_GEN: "[Ảnh bìa] Gemini đang tạo ảnh bìa song song với clip phim.",
@@ -2029,53 +1926,29 @@ export const PIPELINE_FLOW_TEXTS = {
     formatImageQaUnevaluated: (sceneId: string) => `[Kiểm tra ảnh] ${sceneId}: chưa thể đánh giá; tiếp tục với ảnh hiện có.`,
     formatImageQaPassed: (sceneId: string) => `[Kiểm tra ảnh] ${sceneId}: đạt chuẩn hình thể và số lượng nhân vật.`,
     formatImageQaRecompleted: (sceneId: string) => `[Kiểm tra ảnh] ${sceneId}: đã hoàn thiện lại; tiếp tục để video hoàn thành.`,
-    formatImageQaRetrying: (sceneId: string, attempt: number, max: number) =>
-      `[Kiểm tra ảnh] ${sceneId}: đang tạo lại lần ${attempt}/${max} để đạt chất lượng tốt hơn.`,
+    formatImageQaRetrying: (sceneId: string, attempt: number, max: number) => `[Kiểm tra ảnh] ${sceneId}: đang tạo lại lần ${attempt}/${max} để đạt chất lượng tốt hơn.`,
     formatArchivalQaSwitchAi: (sceneId: string) => `[Kiểm tra tư liệu] ${sceneId}: chuyển sang hình ảnh AI tái dựng để đảm bảo độ chính xác.`,
     formatVideoQaKept: (sceneId: string) => `[Kiểm tra video] ${sceneId}: giữ cảnh quay hiện tại để tiếp tục tiến trình.`,
-    formatVideoQaRetrying: (sceneId: string, attempt: number, max: number) =>
-      `[Kiểm tra video] Cảnh ${sceneId} chưa đạt chuẩn; đang tạo lại cảnh này (${attempt}/${max}).`,
+    formatVideoQaRetrying: (sceneId: string, attempt: number, max: number) => `[Kiểm tra video] Cảnh ${sceneId} chưa đạt chuẩn; đang tạo lại cảnh này (${attempt}/${max}).`,
     ERROR_NO_READY_VIDEOS_FOR_EDITING: "Chưa có đoạn video nào sẵn sàng để dựng phim. Vui lòng kiểm tra lại rồi tiếp tục dự án.",
     LOG_THUMBNAIL_SYNCED: "[Ảnh bìa] Đã đồng bộ kết quả ảnh bìa Gemini với dự án phim.",
     LOG_AI_FILM_PRESERVE_AUDIO: "[Phim AI] Giữ thoại, ambience và âm thanh hiện trường trong từng clip; không phủ giọng đọc TTS toàn cục.",
     STEP_EDITORIAL_CUTTING_AUDIO: "🎞️ Đang kiểm tra điểm cắt, nối các clip, cân bằng âm thanh hiện trường và kết xuất phim.",
     STEP_EDITORIAL_ALIGNING_RENDER: "🎞️ Đang căn thời lượng, ghép hình/video với lời thoại, phụ đề, nhạc và kết xuất bản cuối.",
     LOG_EDITORIAL_RETRY_ANALYSIS: "[Dựng phim] Chưa hoàn tất quyết định cho mọi clip; đang phân tích lại một lần.",
-    formatEditorialAiSummary: (
-      total: number,
-      kept: number,
-      omitted: number,
-      srcDur: number,
-      selDur: number,
-      protectedDialogue: number,
-      repeatedOmitted: number,
-      wrongDialogue: number
-    ) =>
-      `[Dựng phim] Đã xem ${total} clip, giữ ${kept}, bỏ ${omitted}, rút ${srcDur}s còn ${selDur}s; bảo vệ thoại ở ${protectedDialogue} clip, loại ${repeatedOmitted} clip lặp và ${wrongDialogue} clip sai thoại.`,
-    formatEditorialAutoSummary: (
-      kept: number,
-      omitted: number,
-      srcDur: number,
-      selDur: number,
-      wrongDialogue: number
-    ) =>
-      `[Dựng phim] Đã tự động chọn đoạn tốt: giữ ${kept}, bỏ ${omitted}, rút ${srcDur}s còn ${selDur}s; phát hiện ${wrongDialogue} clip sai thoại.`,
-    formatEditorialTechCheck: (total: number) =>
-      `[Dựng phim] Đã kiểm tra kỹ thuật ${total} clip; giữ các cảnh quay hợp lệ để hoàn thành phim.`,
+    formatEditorialAiSummary: (total: number, kept: number, omitted: number, srcDur: number, selDur: number, protectedDialogue: number, repeatedOmitted: number, wrongDialogue: number) => `[Dựng phim] Đã xem ${total} clip, giữ ${kept}, bỏ ${omitted}, rút ${srcDur}s còn ${selDur}s; bảo vệ thoại ở ${protectedDialogue} clip, loại ${repeatedOmitted} clip lặp và ${wrongDialogue} clip sai thoại.`,
+    formatEditorialAutoSummary: (kept: number, omitted: number, srcDur: number, selDur: number, wrongDialogue: number) => `[Dựng phim] Đã tự động chọn đoạn tốt: giữ ${kept}, bỏ ${omitted}, rút ${srcDur}s còn ${selDur}s; phát hiện ${wrongDialogue} clip sai thoại.`,
+    formatEditorialTechCheck: (total: number) => `[Dựng phim] Đã kiểm tra kỹ thuật ${total} clip; giữ các cảnh quay hợp lệ để hoàn thành phim.`,
     LOG_AI_SCRIPT_READY_FOR_VIDEO: "[AI] Đã hoàn tất chuẩn bị kịch bản; chuyển sang giai đoạn tạo video.",
-    formatDialogueSceneAdvisories: (scenes: string) =>
-      `Thoại có lưu ý ở các cảnh ${scenes}; giữ cảnh quay hiện có để tránh tạo trùng lặp.`,
+    formatDialogueSceneAdvisories: (scenes: string) => `Thoại có lưu ý ở các cảnh ${scenes}; giữ cảnh quay hiện có để tránh tạo trùng lặp.`,
     formatEditorialOmittedSummary: (count: number) => `[Dựng phim] Đã lọc bỏ ${count} clip trùng lặp hoặc chưa đạt chuẩn.`,
     STORY_CHECK_AI: "AI đã hỗ trợ kiểm tra mạch truyện.",
     STORY_CHECK_LIBRARY: "Thư viện tự chọn điểm cắt.",
     STORY_CHECK_SAFE: "Đã dùng điểm cắt an toàn.",
-    formatEditorialTimelineSummary: (shots: number, scenes: number, duration: number, detail: string) =>
-      `[Dựng phim] Bản dựng có ${shots} đoạn từ ${scenes} clip; dài ${duration} giây. ${detail}`,
+    formatEditorialTimelineSummary: (shots: number, scenes: number, duration: number, detail: string) => `[Dựng phim] Bản dựng có ${shots} đoạn từ ${scenes} clip; dài ${duration} giây. ${detail}`,
     LOG_RELEASE_READY_AUTO_EDITED: "[Phát hành] Bản phim hoàn tất và đạt chuẩn biên tập tự động.",
-    formatReleaseReadyWithWarnings: (count: number) =>
-      `[Phát hành] Bản phim đã hoàn tất kỹ thuật, còn ${count} cảnh báo cần xem trước khi đăng.`,
-    formatReleaseHasBlockers: (count: number) =>
-      `[Phát hành] Đã tạo được tệp phim nhưng còn ${count} lỗi chặn chuẩn phát hành.`,
+    formatReleaseReadyWithWarnings: (count: number) => `[Phát hành] Bản phim đã hoàn tất kỹ thuật, còn ${count} cảnh báo cần xem trước khi đăng.`,
+    formatReleaseHasBlockers: (count: number) => `[Phát hành] Đã tạo được tệp phim nhưng còn ${count} lỗi chặn chuẩn phát hành.`,
   },
   en: {
     CHARACTER_DETECTED: "[Character] Main character recognized. Continuing video creation.",
@@ -2093,8 +1966,7 @@ export const PIPELINE_FLOW_TEXTS = {
     MEDIA_TYPE_VIDEO: "video clips",
     MEDIA_TYPE_MIXED: "images and video clips",
     MEDIA_TYPE_IMAGE: "images",
-    formatPreparingSceneMedia: (mediaType: string, modeName: string, aspectRatio: string) =>
-      `🎨 Preparing to generate scene ${mediaType} via ${modeName}; aspect ratio ${aspectRatio}.`,
+    formatPreparingSceneMedia: (mediaType: string, modeName: string, aspectRatio: string) => `🎨 Preparing to generate scene ${mediaType} via ${modeName}; aspect ratio ${aspectRatio}.`,
     ERROR_MISSING_SCENE_MEDIA: "Some scenes are missing images or videos. Please click Continue to generate missing items.",
     formatScenePromptKept: (sceneId: string) => `[Scene Prompt] ${sceneId}: No prompt update received; keeping existing description.`,
     formatScenePromptNoted: (sceneId: string) => `[Scene Prompt] ${sceneId}: Updated prompt has notes; proceeding with existing content.`,
@@ -2102,8 +1974,7 @@ export const PIPELINE_FLOW_TEXTS = {
     ARCHIVE_SOURCE_DEFAULT: "archive storage",
     formatArchivalLoaded: (sceneId: string, provider: string) => `Loaded authentic archival image for ${sceneId} from ${provider}.`,
     formatArchivalFallbackAi: (sceneId: string) => `No suitable archival media found for ${sceneId}; switching this scene to AI image.`,
-    formatCreatingSceneMedia: (mediaType: string, sceneId: string, index: number, total: number) =>
-      `🎨 Generating ${mediaType} for ${sceneId} (${index}/${total}).`,
+    formatCreatingSceneMedia: (mediaType: string, sceneId: string, index: number, total: number) => `🎨 Generating ${mediaType} for ${sceneId} (${index}/${total}).`,
     formatSavedSceneMedia: (mediaType: string, sceneId: string) => `✓ Downloaded and saved ${mediaType} ${sceneId}.`,
     formatGoogleFlowStopped: (reason: string) => `[Google Flow] Stopped remaining scenes due to general setup error: ${reason}`,
     LOG_THUMBNAIL_PARALLEL_GEN: "[Cover] Gemini is generating cover thumbnail alongside movie clips.",
@@ -2111,56 +1982,32 @@ export const PIPELINE_FLOW_TEXTS = {
     formatImageQaUnevaluated: (sceneId: string) => `[Image QA] ${sceneId}: unable to evaluate; proceeding with current image.`,
     formatImageQaPassed: (sceneId: string) => `[Image QA] ${sceneId}: verified anatomy and character count.`,
     formatImageQaRecompleted: (sceneId: string) => `[Image QA] ${sceneId}: re-refined; continuing video creation.`,
-    formatImageQaRetrying: (sceneId: string, attempt: number, max: number) =>
-      `[Image QA] ${sceneId}: regenerating attempt ${attempt}/${max} for higher quality.`,
+    formatImageQaRetrying: (sceneId: string, attempt: number, max: number) => `[Image QA] ${sceneId}: regenerating attempt ${attempt}/${max} for higher quality.`,
     formatArchivalQaSwitchAi: (sceneId: string) => `[Archival QA] ${sceneId}: switched to AI reconstruction image for accuracy.`,
     formatVideoQaKept: (sceneId: string) => `[Video QA] ${sceneId}: keeping current shot to proceed.`,
-    formatVideoQaRetrying: (sceneId: string, attempt: number, max: number) =>
-      `[Video QA] Scene ${sceneId} did not pass QC; regenerating (${attempt}/${max}).`,
+    formatVideoQaRetrying: (sceneId: string, attempt: number, max: number) => `[Video QA] Scene ${sceneId} did not pass QC; regenerating (${attempt}/${max}).`,
     ERROR_NO_READY_VIDEOS_FOR_EDITING: "No video clips are ready for editing. Please check and resume the project.",
     LOG_THUMBNAIL_SYNCED: "[Cover] Synced Gemini cover thumbnail with project.",
     LOG_AI_FILM_PRESERVE_AUDIO: "[AI Film] Preserving dialogue, ambience, and field sound in clips; no global TTS overlay.",
     STEP_EDITORIAL_CUTTING_AUDIO: "🎞️ Checking cut points, joining clips, balancing ambient audio, and exporting film.",
     STEP_EDITORIAL_ALIGNING_RENDER: "🎞️ Adjusting duration, combining media with dialogue, subtitles, music, and rendering final cut.",
     LOG_EDITORIAL_RETRY_ANALYSIS: "[Editorial] Clip decisions incomplete; running one more analysis.",
-    formatEditorialAiSummary: (
-      total: number,
-      kept: number,
-      omitted: number,
-      srcDur: number,
-      selDur: number,
-      protectedDialogue: number,
-      repeatedOmitted: number,
-      wrongDialogue: number
-    ) =>
+    formatEditorialAiSummary: (total: number, kept: number, omitted: number, srcDur: number, selDur: number, protectedDialogue: number, repeatedOmitted: number, wrongDialogue: number) =>
       `[Editorial] Reviewed ${total} clips, kept ${kept}, omitted ${omitted}, trimmed ${srcDur}s to ${selDur}s; protected dialogue in ${protectedDialogue} clips, removed ${repeatedOmitted} duplicate and ${wrongDialogue} mismatched dialogue clips.`,
-    formatEditorialAutoSummary: (
-      kept: number,
-      omitted: number,
-      srcDur: number,
-      selDur: number,
-      wrongDialogue: number
-    ) =>
-      `[Editorial] Auto-selected optimal takes: kept ${kept}, omitted ${omitted}, trimmed ${srcDur}s to ${selDur}s; detected ${wrongDialogue} mismatched dialogue clips.`,
-    formatEditorialTechCheck: (total: number) =>
-      `[Editorial] Checked ${total} clips technically; keeping valid shots to finalize video.`,
+    formatEditorialAutoSummary: (kept: number, omitted: number, srcDur: number, selDur: number, wrongDialogue: number) => `[Editorial] Auto-selected optimal takes: kept ${kept}, omitted ${omitted}, trimmed ${srcDur}s to ${selDur}s; detected ${wrongDialogue} mismatched dialogue clips.`,
+    formatEditorialTechCheck: (total: number) => `[Editorial] Checked ${total} clips technically; keeping valid shots to finalize video.`,
     LOG_AI_SCRIPT_READY_FOR_VIDEO: "[AI] Script preparation complete; moving to video generation phase.",
-    formatDialogueSceneAdvisories: (scenes: string) =>
-      `Dialogue has advisories in scenes ${scenes}; keeping existing takes to prevent duplicate generation.`,
+    formatDialogueSceneAdvisories: (scenes: string) => `Dialogue has advisories in scenes ${scenes}; keeping existing takes to prevent duplicate generation.`,
     formatEditorialOmittedSummary: (count: number) => `[Editorial] Filtered out ${count} duplicate or substandard clips.`,
     STORY_CHECK_AI: "AI verified story flow.",
     STORY_CHECK_LIBRARY: "Library selected cut points automatically.",
     STORY_CHECK_SAFE: "Applied safe cut points.",
-    formatEditorialTimelineSummary: (shots: number, scenes: number, duration: number, detail: string) =>
-      `[Editorial] Timeline has ${shots} cuts from ${scenes} clips; total ${duration}s. ${detail}`,
+    formatEditorialTimelineSummary: (shots: number, scenes: number, duration: number, detail: string) => `[Editorial] Timeline has ${shots} cuts from ${scenes} clips; total ${duration}s. ${detail}`,
     LOG_RELEASE_READY_AUTO_EDITED: "[Release] Video is complete and meets automated editorial standards.",
-    formatReleaseReadyWithWarnings: (count: number) =>
-      `[Release] Video technically complete; ${count} warnings to review before publishing.`,
-    formatReleaseHasBlockers: (count: number) =>
-      `[Release] Video file created, but ${count} blocking errors prevent publishing approval.`,
+    formatReleaseReadyWithWarnings: (count: number) => `[Release] Video technically complete; ${count} warnings to review before publishing.`,
+    formatReleaseHasBlockers: (count: number) => `[Release] Video file created, but ${count} blocking errors prevent publishing approval.`,
   },
 } as const;
-
 export const MUSIC_CREATOR_TEXTS = {
   vi: {
     HEADER_TITLE: "Sáng tác nhạc",
@@ -2629,7 +2476,6 @@ export const MUSIC_CREATOR_TEXTS = {
     DEFAULT_CREATIVE_STYLE: "Creatively adapt source context with originality and audience appeal.",
   },
 } as const;
-
 export const MUSIC_MIXER_TEXTS = {
   vi: {
     HEADER_TITLE: "Trộn nhạc",
@@ -2691,8 +2537,18 @@ export const MUSIC_MIXER_TEXTS = {
     PENDING_FOLDERS_CANCEL: "Hủy",
     PENDING_FOLDERS_CONFIRM: "Thêm folder",
     NO_AUDIO_FILES_FOUND: "Không tìm thấy file nhạc hợp lệ trong thư mục đã chọn.",
-
-    TITLE: "Trộn nhạc", SELECTING_FOLDER: "Đang chọn folder...", MIXER_SEO_STYLE: "curated music mix", PICK_FOLDER_AGAIN: "Tuyển chọn AI cần chọn lại folder nguồn bằng nút Chọn folder.", RANK_ERROR: "Không thể đánh giá bài hát bằng AI.", SEO_SCORE: "Điểm SEO", SEO_TITLE: "Tiêu đề", SEO_DESCRIPTION: "Mô tả", SEO_HASHTAGS: "HASHTAGS", SEO_TAGS: "TAGS / KEYWORDS", SEO_TRACKS: "Tracks", SEO_DIVIDER: "----------------------------------------",
+    TITLE: "Trộn nhạc",
+    SELECTING_FOLDER: "Đang chọn folder...",
+    MIXER_SEO_STYLE: "curated music mix",
+    PICK_FOLDER_AGAIN: "Tuyển chọn AI cần chọn lại folder nguồn bằng nút Chọn folder.",
+    RANK_ERROR: "Không thể đánh giá bài hát bằng AI.",
+    SEO_SCORE: "Điểm SEO",
+    SEO_TITLE: "Tiêu đề",
+    SEO_DESCRIPTION: "Mô tả",
+    SEO_HASHTAGS: "HASHTAGS",
+    SEO_TAGS: "TAGS / KEYWORDS",
+    SEO_TRACKS: "Tracks",
+    SEO_DIVIDER: "----------------------------------------",
     SUBTITLE: "Xáo trộn và chia bài hát từ nhiều folder nguồn vào các folder kết quả ngẫu nhiên.",
     SOURCE_DESC: "Chọn từng folder; mỗi lần chọn sẽ được cộng vào danh sách hiện tại.",
     DROP_DESC: "Chọn từng folder; mỗi lần chọn sẽ được cộng vào danh sách hiện tại.",
@@ -2769,8 +2625,18 @@ export const MUSIC_MIXER_TEXTS = {
     PENDING_FOLDERS_CANCEL: "Cancel",
     PENDING_FOLDERS_CONFIRM: "Add Folders",
     NO_AUDIO_FILES_FOUND: "No valid audio files found in selected folder.",
-
-    TITLE: "Music Mixer", SELECTING_FOLDER: "Selecting folder...", MIXER_SEO_STYLE: "curated music mix", PICK_FOLDER_AGAIN: "AI selection requires choosing the source folder again.", RANK_ERROR: "Could not evaluate tracks with AI.", SEO_SCORE: "SEO score", SEO_TITLE: "Title", SEO_DESCRIPTION: "Description", SEO_HASHTAGS: "HASHTAGS", SEO_TAGS: "TAGS / KEYWORDS", SEO_TRACKS: "Tracks", SEO_DIVIDER: "----------------------------------------",
+    TITLE: "Music Mixer",
+    SELECTING_FOLDER: "Selecting folder...",
+    MIXER_SEO_STYLE: "curated music mix",
+    PICK_FOLDER_AGAIN: "AI selection requires choosing the source folder again.",
+    RANK_ERROR: "Could not evaluate tracks with AI.",
+    SEO_SCORE: "SEO score",
+    SEO_TITLE: "Title",
+    SEO_DESCRIPTION: "Description",
+    SEO_HASHTAGS: "HASHTAGS",
+    SEO_TAGS: "TAGS / KEYWORDS",
+    SEO_TRACKS: "Tracks",
+    SEO_DIVIDER: "----------------------------------------",
     SUBTITLE: "Shuffle and distribute audio tracks from multiple source folders into randomized result playlists.",
     SOURCE_DESC: "Choose one folder at a time; each selection is added to the current list.",
     DROP_DESC: "Choose one folder at a time; each selection is added to the current list.",
@@ -2788,7 +2654,6 @@ export const MUSIC_MIXER_TEXTS = {
     PICK_ERROR: "Could not choose folders.",
   },
 } as const;
-
 export const SHORTS_EXTRACTOR_TEXTS = {
   vi: {
     HEADER_TITLE: "Tạo Video Short AI",
@@ -2939,5 +2804,3 @@ export const SHORTS_EXTRACTOR_TEXTS = {
     SAVE_ERROR: "Error saving video:",
   },
 } as const;
-
-

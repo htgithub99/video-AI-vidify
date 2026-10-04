@@ -5,22 +5,16 @@ import { getVoices } from "../controllers/voiceController.js";
 import settingsRoutes from "./settingsRoutes.js";
 import shortsRoutes from "./shortsRoutes.js";
 import { SERVER_ROUTES } from "../../constants/apiRoutes.js";
-
 const router = express.Router();
-
 router.get(SERVER_ROUTES.PROJECTS, getAllProjects);
 router.get(SERVER_ROUTES.PROJECTS_ID, getProjectById);
 router.post(SERVER_ROUTES.PROJECTS, createProject);
 router.put(SERVER_ROUTES.PROJECTS_ID, updateProject);
 router.delete(SERVER_ROUTES.PROJECTS_ID, deleteProject);
-
 router.get(SERVER_ROUTES.PRESETS, getAllPresets);
 router.post(SERVER_ROUTES.PRESETS, savePreset);
 router.delete(SERVER_ROUTES.PRESETS_ID, deletePreset);
-
 router.get(SERVER_ROUTES.VOICES, getVoices);
-
 router.use(SERVER_ROUTES.SETTINGS, settingsRoutes);
 router.use(SERVER_ROUTES.SHORTS, shortsRoutes);
-
 export default router;

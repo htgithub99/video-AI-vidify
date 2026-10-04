@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getCinematicCharacterAnalysisPrompt } from "../src/constants/cinematicPrompts";
@@ -92,9 +93,9 @@ assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.required, ["charac
 assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.items.required, ["id", "name", "description", "referenceGenerationPrompt"]);
 assert.equal(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.maxItems, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS);
 
-const pipelineControllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
-const imageGeneratorSource = readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8");
+const pipelineControllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
+const imageGeneratorSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8"));
 assert.match(pipelineControllerSource, /identityContinuityRisks: _\.castArray/);
 assert.doesNotMatch(pipelineControllerSource, /identityContinuityRisks:not_resolved/);
 assert.match(pipelineControllerSource, /getCinematicCharacterAnalysisPrompt/);

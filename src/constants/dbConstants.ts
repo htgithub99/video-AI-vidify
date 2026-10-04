@@ -61,7 +61,6 @@ export const SQL_STATEMENTS = {
   COMMIT: "COMMIT;",
   ROLLBACK: "ROLLBACK;",
 } as const;
-
 export const MIGRATION_DEFAULTS = {
   PROJECTS_DIR: "projects",
   BACKUP_JSON: "projects.backup.json",

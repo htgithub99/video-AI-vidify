@@ -1,6 +1,6 @@
+import { SOURCE_TEXT_BUDGETUSD, SOURCE_TEXT_CAPABILITY, SOURCE_TEXT_ESTIMATEDCOSTUSD, SOURCE_TEXT_GOOGLE, SOURCE_TEXT_ID } from "../../constants/sourceText";
 import _ from "lodash";
 import { AI_MODEL_CAPABILITY, AI_MODEL_REGISTRY, AI_TASK_ROUTER_CONFIG } from "../../constants/index.js";
-
 export enum AiTaskCapability {
   TextPlanning = "text_planning",
   ScriptWriting = "script_writing",
@@ -32,7 +32,6 @@ export interface AiCallMetadata {
   outputTokens: number;
   fallbackIndex: number;
 }
-
 const circuitState = new Map<string, { failures: number; openedAt?: number; cooldownMs?: number }>();
 const getRequiredModelCapability = (capability: AiTaskCapability): string => {
   if (_.includes([AiTaskCapability.StyleExtraction, AiTaskCapability.VisualQa, AiTaskCapability.Thumbnail], capability)) return AI_MODEL_CAPABILITY.VISUAL;
@@ -40,21 +39,12 @@ const getRequiredModelCapability = (capability: AiTaskCapability): string => {
   return AI_MODEL_CAPABILITY.TEXT;
 };
 const supports = (model: string, capability: AiTaskCapability): boolean => {
-  const modelConfig = AI_MODEL_REGISTRY.find((candidate) => candidate.id === model);
+  const modelConfig = _.find(AI_MODEL_REGISTRY, (candidate) => candidate.id === model);
   return Boolean(modelConfig && _.includes(modelConfig.capabilities, getRequiredModelCapability(capability) as never));
 };
-const estimateCost = (input: number, output: number): number =>
-  _.round(
-    (input / AI_TASK_ROUTER_CONFIG.TOKENS_PER_MILLION) * AI_TASK_ROUTER_CONFIG.INPUT_USD_PER_MILLION +
-      (output / AI_TASK_ROUTER_CONFIG.TOKENS_PER_MILLION) * AI_TASK_ROUTER_CONFIG.OUTPUT_USD_PER_MILLION,
-    AI_TASK_ROUTER_CONFIG.COST_DECIMAL_PLACES,
-  );
-
-const createCostExceededError = (estimatedCostUsd: number, budgetUsd: number): Error =>
-  new Error(AI_TASK_ROUTER_CONFIG.COST_EXCEEDED_TEMPLATE.replace("{estimatedCostUsd}", _.toString(estimatedCostUsd)).replace("{budgetUsd}", _.toString(budgetUsd)));
-
-const createUnsupportedCapabilityError = (capability: AiTaskCapability): Error => new Error(AI_TASK_ROUTER_CONFIG.NO_MODEL_TEMPLATE.replace("{capability}", capability));
-
+const estimateCost = (input: number, output: number): number => _.round((input / AI_TASK_ROUTER_CONFIG.TOKENS_PER_MILLION) * AI_TASK_ROUTER_CONFIG.INPUT_USD_PER_MILLION + (output / AI_TASK_ROUTER_CONFIG.TOKENS_PER_MILLION) * AI_TASK_ROUTER_CONFIG.OUTPUT_USD_PER_MILLION, AI_TASK_ROUTER_CONFIG.COST_DECIMAL_PLACES);
+const createCostExceededError = (estimatedCostUsd: number, budgetUsd: number): Error => new Error(AI_TASK_ROUTER_CONFIG.COST_EXCEEDED_TEMPLATE.replace(SOURCE_TEXT_ESTIMATEDCOSTUSD, _.toString(estimatedCostUsd)).replace(SOURCE_TEXT_BUDGETUSD, _.toString(budgetUsd)));
+const createUnsupportedCapabilityError = (capability: AiTaskCapability): Error => new Error(AI_TASK_ROUTER_CONFIG.NO_MODEL_TEMPLATE.replace(SOURCE_TEXT_CAPABILITY, capability));
 export const isCircuitOpen = (model: string, now = Date.now()): boolean => {
   const state = circuitState.get(model);
   if (!state?.openedAt) return false;
@@ -63,18 +53,15 @@ export const isCircuitOpen = (model: string, now = Date.now()): boolean => {
   circuitState.delete(model);
   return false;
 };
-
 export const recordModelSuccess = (model: string): void => {
   circuitState.delete(model);
 };
-
 export const recordModelFailure = (model: string): void => {
   const previous = circuitState.get(model) || { failures: 0 };
   const failures = previous.failures + 1;
   const openedAt = failures >= AI_TASK_ROUTER_CONFIG.CIRCUIT_FAILURE_THRESHOLD ? Date.now() : previous.openedAt;
   circuitState.set(model, { failures, openedAt });
 };
-
 export const blockModel = (model: string, cooldownMs: number): void => {
   circuitState.set(model, {
     failures: AI_TASK_ROUTER_CONFIG.CIRCUIT_FAILURE_THRESHOLD,
@@ -82,29 +69,24 @@ export const blockModel = (model: string, cooldownMs: number): void => {
     cooldownMs,
   });
 };
-
 export const routeAiTask = (request: AiTaskRequest) => {
   const capability = request.capability || AiTaskCapability.TextPlanning;
   const maxOutputTokens = request.maxOutputTokens || AI_TASK_ROUTER_CONFIG.DEFAULT_MAX_OUTPUT_TOKENS;
-  const estimatedCostUsd = _.round(
-    estimateCost(request.estimatedInputTokens, maxOutputTokens) + _.defaultTo(request.mediaInputCount, 0) * AI_TASK_ROUTER_CONFIG.MEDIA_INPUT_COST_USD,
-    AI_TASK_ROUTER_CONFIG.COST_DECIMAL_PLACES,
-  );
+  const estimatedCostUsd = _.round(estimateCost(request.estimatedInputTokens, maxOutputTokens) + _.defaultTo(request.mediaInputCount, 0) * AI_TASK_ROUTER_CONFIG.MEDIA_INPUT_COST_USD, AI_TASK_ROUTER_CONFIG.COST_DECIMAL_PLACES);
   const budgetUsd = _.defaultTo(request.budgetUsd, AI_TASK_ROUTER_CONFIG.DEFAULT_BUDGET_USD);
   if (estimatedCostUsd > budgetUsd) throw createCostExceededError(estimatedCostUsd, budgetUsd);
   const supportedModels = _.filter(AI_MODEL_REGISTRY, (model) => model.freeEligible && supports(model.id, capability));
   if (_.isEmpty(supportedModels)) throw createUnsupportedCapabilityError(capability);
   const healthyModels = _.reject(supportedModels, (model) => isCircuitOpen(model.id));
-  const models = _.map(_.isEmpty(healthyModels) ? supportedModels : healthyModels, "id");
+  const models = _.map(_.isEmpty(healthyModels) ? supportedModels : healthyModels, SOURCE_TEXT_ID);
   return { capability, models, estimatedCostUsd, maxOutputTokens, promptVersion: AI_TASK_ROUTER_CONFIG.PROMPT_VERSION };
 };
-
 export const createAiCallMetadata = (route: ReturnType<typeof routeAiTask>, model: string, fallbackIndex: number, latencyMs: number, usage: any): AiCallMetadata => {
   const inputTokens = _.toNumber(usage?.promptTokenCount) || 0;
   const outputTokens = _.toNumber(usage?.candidatesTokenCount) || 0;
   return {
     capability: route.capability,
-    provider: "google",
+    provider: SOURCE_TEXT_GOOGLE,
     model,
     modelVersion: model,
     promptVersion: route.promptVersion,

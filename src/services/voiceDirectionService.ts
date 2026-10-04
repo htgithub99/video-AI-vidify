@@ -1,17 +1,15 @@
+import { SOURCE_TEXT_AUDIOBASE64, SOURCE_TEXT_CLIMAX, SOURCE_TEXT_DESCENT, SOURCE_TEXT_ERROR, SOURCE_TEXT_ISOLATION, SOURCE_TEXT_PROVIDER, SOURCE_TEXT_RECKONING, SOURCE_TEXT_RESOLUTION, SOURCE_TEXT_SETUP, SOURCE_TEXT_SPEED } from "../constants/sourceText";
 import _ from "lodash";
 import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTION_CONFIG } from "../constants";
 import { delayAsync, safeSystemFetch } from "../lib/shared-utils";
 import { VoiceArc, VoiceDirection } from "../types";
-
 export interface DirectedVoiceOptions {
   text: string;
   voiceArc: VoiceArc;
   basePayload: Record<string, unknown>;
   signal?: AbortSignal;
 }
-
-const VOICE_ARC_ORDER: Array<keyof VoiceArc> = ["setup", "descent", "isolation", "climax", "reckoning", "resolution"];
-
+const VOICE_ARC_ORDER: Array<keyof VoiceArc> = [SOURCE_TEXT_SETUP, SOURCE_TEXT_DESCENT, SOURCE_TEXT_ISOLATION, SOURCE_TEXT_CLIMAX, SOURCE_TEXT_RECKONING, SOURCE_TEXT_RESOLUTION];
 const splitNarrationForVoiceArc = (text: string): string[] => {
   const paragraphs = _.filter(_.map(_.split(text, /\n{2,}/), _.trim), Boolean);
   if (_.gte(_.size(paragraphs), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) {
@@ -28,40 +26,32 @@ const splitNarrationForVoiceArc = (text: string): string[] => {
     VOICE_DIRECTION_CONFIG.SEGMENT_COUNT,
   );
 };
-
 const createDirectedPayload = (text: string, direction: VoiceDirection, basePayload: Record<string, unknown>): Record<string, unknown> => ({
   ...basePayload,
   text,
   emotion: direction.emotion || VOICE_DIRECTION_CONFIG.DEFAULT_EMOTION,
-  speed: _.clamp(_.multiply(_.toNumber(_.get(basePayload, "speed", 1)), direction.speed), VOICE_DIRECTION_CONFIG.MIN_SPEED, VOICE_DIRECTION_CONFIG.MAX_SPEED),
+  speed: _.clamp(_.multiply(_.toNumber(_.get(basePayload, SOURCE_TEXT_SPEED, 1)), direction.speed), VOICE_DIRECTION_CONFIG.MIN_SPEED, VOICE_DIRECTION_CONFIG.MAX_SPEED),
   pauseScale: direction.pauseScale,
 });
-
-const requestVoiceChunk = async (
-  text: string,
-  direction: VoiceDirection,
-  basePayload: Record<string, unknown>,
-  signal?: AbortSignal,
-): Promise<{ audioBase64: string; provider: string }> => {
+const requestVoiceChunk = async (text: string, direction: VoiceDirection, basePayload: Record<string, unknown>, signal?: AbortSignal): Promise<{ audioBase64: string; provider: string }> => {
   let lastError: string = AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED;
   for (let attempt = 0; attempt < VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS; attempt++) {
     const response = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, createDirectedPayload(text, direction, basePayload), signal);
-    const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
+    const audioBase64 = _.toString(_.get(response.data, SOURCE_TEXT_AUDIOBASE64));
     if (response.success && !_.isEmpty(audioBase64)) {
-      return { audioBase64, provider: _.toString(_.get(response.data, "provider", _.get(basePayload, "provider"))) };
+      return { audioBase64, provider: _.toString(_.get(response.data, SOURCE_TEXT_PROVIDER, _.get(basePayload, SOURCE_TEXT_PROVIDER))) };
     }
-    lastError = _.toString(response.error || _.get(response.data, "error") || lastError);
+    lastError = _.toString(response.error || _.get(response.data, SOURCE_TEXT_ERROR) || lastError);
     if (_.lt(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT), VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS)) {
       await delayAsync(VOICE_DIRECTION_CONFIG.RETRY_DELAY_MS * _.add(attempt, SecurityConstants.DEFAULT_AMOUNT));
     }
   }
   throw new Error(lastError);
 };
-
 const mergeVoiceChunks = async (chunks: Array<{ audioBase64: string }>, signal?: AbortSignal): Promise<string> => {
   for (let attempt = 0; attempt < VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS; attempt++) {
     const response = await safeSystemFetch(API_ROUTES.PIPELINE_MERGE_AUDIO, { chunks }, signal);
-    const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
+    const audioBase64 = _.toString(_.get(response.data, SOURCE_TEXT_AUDIOBASE64));
     if (response.success && !_.isEmpty(audioBase64)) return audioBase64;
     if (_.lt(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT), VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS)) {
       await delayAsync(VOICE_DIRECTION_CONFIG.RETRY_DELAY_MS * _.add(attempt, SecurityConstants.DEFAULT_AMOUNT));
@@ -69,11 +59,10 @@ const mergeVoiceChunks = async (chunks: Array<{ audioBase64: string }>, signal?:
   }
   throw new Error(VOICE_DIRECTION_CONFIG.MERGE_FAILED);
 };
-
 export const generateDirectedVoice = async ({ text, voiceArc, basePayload, signal }: DirectedVoiceOptions): Promise<{ audioBase64: string; provider: string }> => {
   const narrationSegments = splitNarrationForVoiceArc(text);
   const chunks: Array<{ audioBase64: string }> = [];
-  let provider = _.toString(_.get(basePayload, "provider"));
+  let provider = _.toString(_.get(basePayload, SOURCE_TEXT_PROVIDER));
   for (let index = 0; index < narrationSegments.length; index++) {
     const directionKey = _.get(VOICE_ARC_ORDER, index, _.last(VOICE_ARC_ORDER));
     const direction = voiceArc[directionKey];

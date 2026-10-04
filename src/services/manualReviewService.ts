@@ -1,13 +1,8 @@
 import _ from "lodash";
 import { MANUAL_REVIEW_CONFIG } from "../constants/config";
 import { ManualReviewStatus, SceneAssetStatus, VideoProject } from "../types";
-
-const approveScene = (project: VideoProject, targetId?: string): VideoProject["storyboard"] =>
-  _.map(project.storyboard, (scene) => (scene.id === targetId && scene.assetUrl ? { ...scene, assetStatus: SceneAssetStatus.Approved, assetError: undefined } : scene));
-
-const approveThumbnail = (project: VideoProject, targetId?: string): VideoProject["thumbnails"] =>
-  _.map(project.thumbnails, (thumbnail) => (thumbnail.id === targetId && thumbnail.imageUrl ? { ...thumbnail, approved: true } : thumbnail));
-
+const approveScene = (project: VideoProject, targetId?: string): VideoProject["storyboard"] => _.map(project.storyboard, (scene) => (scene.id === targetId && scene.assetUrl ? { ...scene, assetStatus: SceneAssetStatus.Approved, assetError: undefined } : scene));
+const approveThumbnail = (project: VideoProject, targetId?: string): VideoProject["thumbnails"] => _.map(project.thumbnails, (thumbnail) => (thumbnail.id === targetId && thumbnail.imageUrl ? { ...thumbnail, approved: true } : thumbnail));
 export const resolveManualReview = (project: VideoProject, reviewId: string, status: ManualReviewStatus, note = ""): VideoProject => {
   const item = _.find(project.manualReviewItems, { id: reviewId });
   if (!item) throw new Error(MANUAL_REVIEW_CONFIG.ITEM_NOT_FOUND_ERROR);

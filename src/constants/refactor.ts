@@ -1,5 +1,4 @@
 import { SETTINGS_EXTENDED_TEXTS, COMMON_ACTION_TEXTS } from "./texts";
-
 export const REFACTOR_CONSTANTS = {
   POSITION_BOTTOM: "bottom",
   ALIGN_START: "start",
@@ -11,7 +10,6 @@ export const REFACTOR_CONSTANTS = {
   VARIANT_GHOST: "ghost",
   SIZE_XS: "xs",
   PROJECT_NAME_PLACEHOLDER: "Auto_Video_Project...",
-
   VOICES_CACHE_PREFIX: "vidify_voices_cache",
   VOICES_QUERY_KEY: "voices",
   VOICES_JOIN_CHAR: "_",
@@ -45,10 +43,8 @@ export const REFACTOR_CONSTANTS = {
   LOGGER_ERROR_PREFIX: "[ERROR]",
   LOGGER_DEBUG_PREFIX: "[DEBUG]",
   VOICES_ERR_FAILED_TO_FETCH: "Không thể tải danh sách giọng nói. Vui lòng thử lại sau.",
-
   PRESETS_QUERY_KEY: "presets",
   PRESETS_ERR_FAILED_TO_FETCH: "Không thể tải cấu hình mẫu. Vui lòng thử lại sau.",
-
   LICENSE_QUERY_KEY: "licenseInfo",
   LICENSE_METHOD_POST: "POST",
   LICENSE_HEADER_CONTENT_TYPE: "Content-Type",
@@ -57,7 +53,6 @@ export const REFACTOR_CONSTANTS = {
   LICENSE_ERR_INVALID_LICENSE: "Khóa bản quyền không hợp lệ. Vui lòng kiểm tra lại.",
   LICENSE_ERR_INVALID_LICENSE_STATUS: "Không thể xác thực trạng thái bản quyền. Vui lòng kết nối mạng và thử lại.",
   LICENSE_CACHE_KEY: "vidify_license_info_cache",
-
   VD_NORMALIZE_FORM: "NFD",
   VD_NORMALIZE_REGEX: /[\u0300-\u036f]/g,
   VD_SLUG_CHAR_REGEX: /[đĐ]/g,
@@ -79,7 +74,6 @@ export const REFACTOR_CONSTANTS = {
   VD_TAG_PREFIX: "tag-",
   VD_DESC_PREFIX: "desc-",
   VD_BLANK: " ",
-
   AVG_SPLIT_MIXED: "mixed_sentences",
   AVG_DEFAULT_DURATION: "8s",
   AVG_PROJECT_NAME_PREFIX: "Auto_Video_Project",
@@ -123,7 +117,6 @@ export const REFACTOR_CONSTANTS = {
   AVG_START_POS: "start",
   AVG_EXTRACT_STYLE_ERROR: "Extract Style Error",
   AVG_EXTRACT_THUMB_STYLE_ERROR: "Extract Thumb Style Error",
-
   ENGINE_IMAGEN: "3.1 Pro",
   ENGINE_VEO3: "3.7 Flash",
   ENGINE_LABS_SANDBOX: "3.5 Flash-Lite",
@@ -165,7 +158,6 @@ export const REFACTOR_CONSTANTS = {
   AVG_DEFAULT_AR: "16:9",
   AVG_AR_REGEX: /--ar\s+\d+:\d+/g,
   AVG_DATA_IMAGE_BASE64_PREFIX: "data:image/jpeg;base64,",
-
   AVG_PROMPT_KEY: "prompt",
   AVG_DURATION_KEY: "duration",
   AVG_GENRE_KEY: "genre",
@@ -212,8 +204,7 @@ export const REFACTOR_CONSTANTS = {
   GROK_CDP_READY_TITLE_PATTERN: /^Grok(?:\s|$)/i,
   GROK_CDP_PRECONNECT_STABLE_POLLS: 5,
   GROK_CDP_VERIFICATION_ATTEMPTS: 600,
-  GROK_PRECONNECT_WAIT_LOG:
-    "[Grok] Chrome đang chờ người dùng hoàn tất xác minh bảo mật; chưa kết nối tự động hóa để tránh tải lại trang xác minh.",
+  GROK_PRECONNECT_WAIT_LOG: "[Grok] Chrome đang chờ người dùng hoàn tất xác minh bảo mật; chưa kết nối tự động hóa để tránh tải lại trang xác minh.",
   GROK_PRECONNECT_TIMEOUT_ERROR: "Grok chưa hoàn tất xác minh trong cửa sổ Chrome hiển thị.",
   WINDOWS_CHROME_PATH: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
   SHARED_CHROME_DEBUG_PORT: 9222,
@@ -249,19 +240,16 @@ export const REFACTOR_CONSTANTS = {
   ERR_HOOK_QUALITY_REJECTED: "Các phương án câu mở đầu được tạo ra không đạt tiêu chuẩn về chất lượng và độ an toàn nội dung.",
   WARN_SCRIPT_QA_CONTINUED: "Kịch bản còn cảnh báo biên tập; hệ thống vẫn tiếp tục tạo voice, phân cảnh và hoàn thành video.",
   WARN_CINEMATIC_SCRIPT_QA_CONTINUED: "Kịch bản còn cảnh báo biên tập; hệ thống vẫn tiếp tục hoàn thiện cảnh quay, thoại nhân vật và bản dựng phim.",
-  INFO_CINEMATIC_SCRIPT_QA_CONTINUED:
-    "Kịch bản đã hoàn tất. QA biên tập đề xuất cải thiện thêm về nhịp kể hoặc thời lượng; kết quả này không ảnh hưởng bước đạo diễn cảnh và không chặn tạo phim.",
+  INFO_CINEMATIC_SCRIPT_QA_CONTINUED: "Kịch bản đã hoàn tất. QA biên tập đề xuất cải thiện thêm về nhịp kể hoặc thời lượng; kết quả này không ảnh hưởng bước đạo diễn cảnh và không chặn tạo phim.",
   WARN_STORYBOARD_QA_RESULT: "Phân cảnh có điểm cần xem lại về tính liên tục hoặc độ đa dạng; hệ thống giữ nguyên nội dung.",
   IMAGE_DATA_URL_CAPTURE_REGEX: /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i,
   AUDIO_DATA_URL_CAPTURE_REGEX: /^data:(audio\/(?:mpeg|mp3|wav|ogg));base64,(.+)$/i,
-
   DATA_VIDEO_BASE64_PREFIX: "data:video/mp4;base64,",
   VIDEO_SCENE_IDS_KEY: "videoSceneIds",
   TEMPLATE_SCENE_ID: "{sceneId}",
   TEMPLATE_ERROR: "{error}",
   TEMPLATE_CURRENT_INDEX: "{currentIndex}",
   TEMPLATE_TOTAL: "{totalToProcess}",
-
   PAGE_ONE: 1,
   TAKE_DESC_COUNT: 2,
   INDEX_ONE: 1,
@@ -273,9 +261,7 @@ export const REFACTOR_CONSTANTS = {
   VOICE_NAME_MAX_LEN: 15,
   TEXTAREA_ROWS: 4,
   ZERO: 0,
-
   THUMBNAIL_COUNT_OPTIONS: [1, 2, 3, 4],
-
   DB_NAME: "VidifyDB",
   DB_STORE_NAME: "app_settings",
   DB_VERSION: 1,
@@ -310,10 +296,8 @@ export const REFACTOR_CONSTANTS = {
   USAGE_REQUEST_TEXT_PATH: "body.text",
   USAGE_REQUEST_ITEMS_PATH: "body.items",
   USAGE_BATCH_SUCCESS_FRAGMENT: '"success":true',
-
   SCENE_ASSET_TYPE_IMAGE: "image",
   SCENE_ASSET_NAME_BULK: "Scene_{0}_bulk.jpg",
-
   CACHE_DIR_VOICES: "voices",
   CACHE_DIR_IMAGES: "images",
   CACHE_FILE_PREFIX_TTS: "tts_",
@@ -330,7 +314,6 @@ export const REFACTOR_CONSTANTS = {
   ENCODING_BASE64: "base64",
   LOG_WARN_WRITE_TTS_CACHE: "Failed to write tts cache file",
   LOG_WARN_WRITE_IMG_CACHE: "Failed to write image cache",
-
   HTTP_METHOD_POST: "POST",
   HTTP_METHOD_HEAD: "HEAD",
   IMAGE_MIME_TYPE_PREFIX: "image/",
@@ -349,7 +332,6 @@ export const REFACTOR_CONSTANTS = {
   FORM_KEY_WITH_TRANSCRIPT: "with_transcript",
   VALUE_FALSE: "false",
   PROVIDER_AI33: "AI33Pro",
-
   DELAY_SAVE_KEYS_MS: 500,
   RECOVERY_PLACEHOLDER_SHORT_VI: SETTINGS_EXTENDED_TEXTS.vi.RECOVERY_PLACEHOLDER_SHORT,
   RECOVERY_PLACEHOLDER_TOOLTIP_VI: SETTINGS_EXTENDED_TEXTS.vi.RECOVERY_PLACEHOLDER_TOOLTIP,
@@ -371,7 +353,6 @@ export const REFACTOR_CONSTANTS = {
   STYLE_PRESET_PLACEHOLDER_TOOLTIP: "Mô tả phong cách ảnh sinh ra (Realistic Cinematic, 3D Render...)",
   THUMB_PRESET_PLACEHOLDER_SHORT: "Mô tả bìa...",
   THUMB_PRESET_PLACEHOLDER_TOOLTIP: "Mô tả style ảnh bìa sinh ra (Bold Clickbait 3D Style...)",
-
   DEFAULT_FAVORITE_STYLE_ID: "style_1",
   DEFAULT_FAVORITE_STYLE_NAME: "Cinematic Realistic",
   DEFAULT_FAVORITE_STYLE_PROMPT: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
@@ -382,7 +363,6 @@ export const REFACTOR_CONSTANTS = {
   DEFAULT_IMAGE_MODEL_NAME: "NARWHAL",
   LOG_ERROR_GENERAL: "GENERAL_ERROR",
   LOG_ERROR_LOADING_SANDBOX: "ERROR_LOADING_SANDBOX",
-
   KEY_SELECTED_AUTO_PROJECT: "selected_auto_project_id",
   KEY_AUTO_PIPELINE_CURRENT_LOGS: "auto_pipeline_current_logs",
   KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX: "auto_pipeline_logs_",
@@ -434,7 +414,6 @@ export const REFACTOR_CONSTANTS = {
   ERR_EDITOR_QUALITY_REJECTED: "Timeline còn tài nguyên hoặc nhịp dựng chưa đạt chuẩn. Hãy xử lý các cảnh lỗi rồi thử lại.",
   ERR_AUDIO_QUALITY_REJECTED: "Giọng đọc chưa đạt chuẩn nghe. Hãy tạo lại giọng đọc rồi tiếp tục dự án.",
   ERR_FINAL_QUALITY_REJECTED: "Bản dựng chưa đạt kiểm tra cuối. Hãy xử lý các mục bị từ chối trước khi xuất bản.",
-
   ACCOUNTS_FILE: "google_accounts.json",
   ENCODING_UTF8: "utf-8",
   LOG_READ_ACC_ERR: "Failed to read local google accounts file",
@@ -495,7 +474,6 @@ export const REFACTOR_CONSTANTS = {
   PUBLIC_DIR_NAME: "public",
   DATA_URL_PREFIX: "data:",
 } as const;
-
 export const ROUTER_PATHS = {
   EXTRACT_STYLE: "/extract-style",
   REWRITE_PROMPTS: "/rewrite-prompts",
@@ -533,7 +511,6 @@ export const ROUTER_PATHS = {
   SELECT_FOLDER: "/select-folder",
   EXPORT_ZIP: "/export-zip",
 } as const;
-
 export const MUSIC_CREATOR_CONSTANTS = {
   ALLOWED_SONG_COUNTS: [5, 10, 15, 20, 25, 30] as const,
   DEFAULT_SONG_COUNT: 10,
@@ -543,17 +520,6 @@ export const MUSIC_CREATOR_CONSTANTS = {
   PROJECT_ID_PREFIX: "music-",
   SOURCE_CHUNK_CHARACTERS: 12_000,
   OUTPUT_BATCH_SIZES: [2] as const,
-  PRESET_STYLES: [
-    "Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào",
-    "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc",
-    "Acoustic Indie Pop, guitar mộc mạc, giọng nam ấm áp",
-    "Cinematic Epic hào hùng, dàn nhạc giao hưởng, tiết tấu dồn dập",
-    "EDM Bass Boosted sôi động, drop bùng nổ, synthesizer hiện đại",
-    "R&B Soul hiện đại, giai điệu quyến rũ, nhịp beat êm ái",
-  ] as const,
-  SAMPLE_REFERENCES: [
-    "Nàng Thơ - Hoàng Dũng",
-    "Đi Để Trở Về - Soobin Hoàng Sơn",
-    "Ngày Chưa Giông Bão - Bùi Lan Hương",
-  ] as const,
+  PRESET_STYLES: ["Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào", "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc", "Acoustic Indie Pop, guitar mộc mạc, giọng nam ấm áp", "Cinematic Epic hào hùng, dàn nhạc giao hưởng, tiết tấu dồn dập", "EDM Bass Boosted sôi động, drop bùng nổ, synthesizer hiện đại", "R&B Soul hiện đại, giai điệu quyến rũ, nhịp beat êm ái"] as const,
+  SAMPLE_REFERENCES: ["Nàng Thơ - Hoàng Dũng", "Đi Để Trở Về - Soobin Hoàng Sơn", "Ngày Chưa Giông Bão - Bùi Lan Hương"] as const,
 } as const;

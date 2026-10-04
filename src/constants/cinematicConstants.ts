@@ -1,5 +1,4 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
-
 export const CINEMATIC_POLICY_CONFIG = {
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
@@ -19,27 +18,21 @@ export const CINEMATIC_POLICY_CONFIG = {
   INTRO_ASSET_STRATEGY: "ai_generated",
   NARRATIVE_ANCHOR_ROLES: ["intro", "setup", "inciting_incident", "climax", "consequence", "resolution", "payoff"],
 } as const;
-
 export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v4-flow-characters";
-
 export const CINEMATIC_ROOM_STAGE = {
   SCRIPT: "film-planning-room",
   PROMPT: "film-planning-room",
   THUMBNAIL: "film-planning-room",
   VIDEO: "video-room",
 } as const;
-
 export const CINEMATIC_ARTIFACT_TYPE = {
   FILM_PACKAGE: "film_package",
   VIDEO_PROMPTS: "video_prompts",
   THUMBNAILS: "thumbnails",
   SEO: "seo",
 } as const;
-
 const CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN = /\s+/g;
-
 export const normalizeCinematicArtifactIdentity = (value: unknown): string => String(value ?? "").replace(CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN, "");
-
 export const CINEMATIC_PROGRESS_STAGE = {
   SCRIPT: 1,
   PROMPT: 2,
@@ -47,7 +40,6 @@ export const CINEMATIC_PROGRESS_STAGE = {
   VIDEO: 4,
   TOTAL: 4,
 } as const;
-
 export const CINEMATIC_PROGRESS_MESSAGES = {
   vi: {
     SCRIPT_START: "Bước 1/4 · AI đang viết kịch bản phim.",
@@ -90,14 +82,12 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     CANCELLED: "Production stopped safely. Every completed result has been kept.",
   },
 } as const;
-
 export const CINEMATIC_CHECKPOINT_CONFIG = {
   MEDIA_PHASE_PATTERN: /media|render|completed/i,
   SCENE_COUNT_MISMATCH_TEMPLATE: "storyboard:scene_count_mismatch:{actual}/{expected}",
   ACTUAL_COUNT_TOKEN: "{actual}",
   EXPECTED_COUNT_TOKEN: "{expected}",
 } as const;
-
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 3,
   RESPONSE_TIMEOUT_MS: 300000,
@@ -141,14 +131,12 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   RESPONSE_TIMEOUT_CODE: "chat_planning_response_timeout",
   RESPONSE_TIMEOUT_MESSAGE: "AI Chat chưa hoàn tất phản hồi trong thời gian chờ. Ứng dụng đã dừng bước hiện tại để tránh gửi lặp.",
   NAVIGATION_TIMEOUT_MS: 60000,
-  GEMINI_RESPONSE_SELECTOR:
-    'model-response .presented-response-container [id^="model-response-message-content"]:not(:has([id^="model-response-message-content"]))',
+  GEMINI_RESPONSE_SELECTOR: 'model-response .presented-response-container [id^="model-response-message-content"]:not(:has([id^="model-response-message-content"]))',
   GEMINI_INPUT_SELECTOR: 'rich-textarea [contenteditable="true"], rich-textarea, div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"], textarea, [aria-label*="Enter a prompt" i], [aria-label*="Hỏi Gemini" i], [contenteditable="true"]',
   GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, .model-response-label-announcer[aria-busy="true"]',
   GROK_INPUT_SELECTOR: '[contenteditable="true"][role="textbox"][aria-label="Ask Grok anything"], [contenteditable="true"][role="textbox"]',
-  GROK_RESPONSE_SELECTOR:
-    '[data-testid="assistant-message"], [data-message-author-role="assistant"], [data-testid*="assistant" i][data-testid*="message" i], .response-content-markdown',
+  GROK_RESPONSE_SELECTOR: '[data-testid="assistant-message"], [data-message-author-role="assistant"], [data-testid*="assistant" i][data-testid*="message" i], .response-content-markdown',
   GROK_SEND_SELECTOR: 'button[aria-label="Submit"], button[type="submit"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   GROK_BUSY_SELECTOR: 'button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
   GROK_IDLE_WAIT_TIMEOUT_MS: 60000,
@@ -181,10 +169,8 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_GOOGLE_LOGIN_SELECTOR: 'button:has-text("Continue with Google"), button:has-text("Tiếp tục với Google"), a:has-text("Continue with Google")',
   CHATGPT_COOKIE_REJECT_SELECTOR: '[data-cookie-consent] button:has-text("Reject"), [data-cookie-consent] button:has-text("Từ chối")',
   CHATGPT_COOKIE_ACTION_SELECTOR: "[data-cookie-consent] button",
-  GEMINI_MODEL_BUTTON_SELECTOR:
-    'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label*="mô hình" i], button[aria-label*="model" i], button[aria-label*="chế độ" i], button[aria-label*="mode" i], button:has-text("Flash-Lite"), button:has-text("Flash"), button:has-text("Pro")',
-  GROK_MODEL_BUTTON_SELECTOR:
-    'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
+  GEMINI_MODEL_BUTTON_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label*="mô hình" i], button[aria-label*="model" i], button[aria-label*="chế độ" i], button[aria-label*="mode" i], button:has-text("Flash-Lite"), button:has-text("Flash"), button:has-text("Pro")',
+  GROK_MODEL_BUTTON_SELECTOR: 'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
     'Return only the complete raw JSON value required by the request, parseable directly with JSON.parse. Escape every double quote that occurs inside a JSON string value as \\"; preferably avoid quotation marks inside string values. Before submitting, verify the entire response with strict JSON.parse semantics. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.',
   WINDOWS_LINE_ENDING_PATTERN: /\r\n/g,
@@ -234,14 +220,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ATTACHMENT_MENU_ITEM_NAME_PATTERN: /upload files?|tải tệp lên|^tệp$|^files?$/i,
   ATTACHMENT_FALLBACK_ERROR_PREFIX: "Room-only AI execution could not attach the required media files to the selected chat room.",
 } as const;
-
-export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string =>
-  `${String(runId ?? "").trim() || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE}:${artifactType}`;
-
+export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string => `${String(runId ?? "").trim() || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE}:${artifactType}`;
 export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = ["id", "generationPrompt"] as const;
-
 export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [/:result:missing_scene$/, /:id:(?:duplicate|unexpected)$/, /:generationPrompt:missing$/] as const;
-
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
   [AiPlanningFallbackProvider.GeminiChat]: [
     { value: AiPlanningChatModel.GeminiFlashLite, label: "Flash-Lite" },
@@ -260,7 +241,6 @@ export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, Re
   [AiPlanningFallbackProvider.ChatGptUi]: [{ value: AiPlanningChatModel.ChatGptAuto, label: "Mặc định" }],
   [AiPlanningFallbackProvider.Disabled]: [],
 };
-
 export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
   [AiPlanningChatModel.GeminiFlashLite]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash[-\s]?Lite/i,
   [AiPlanningChatModel.GeminiFlash]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash(?![-\s]?Lite)/i,
@@ -274,7 +254,6 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GrokHeavy]: /Nặng|Heavy/i,
   [AiPlanningChatModel.ChatGptAuto]: /Auto|Mặc định|Default/i,
 };
-
 export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
   [AiPlanningChatModel.GeminiFlashLite]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite],
   [AiPlanningChatModel.GeminiFlash]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash],
@@ -282,12 +261,10 @@ export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, 
   [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
   [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
 };
-
 export const GEMINI_CHAT_THINKING_LEVEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
   [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiThinking],
   [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink],
 };
-
 export const CINEMATIC_PLANNING_MESSAGES = {
   VI_SCENE_RETRY: "Nội dung phân cảnh chưa đạt độ chi tiết cần thiết. AI đang soạn thảo lại các cảnh còn thiếu...",
   EN_SCENE_RETRY: "Scene details are incomplete. AI is rewriting the missing scenes...",
@@ -335,17 +312,14 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   VI_STORY_PLAN_COUNT_NOTE: "AI trả {0}/{1} cảnh nội dung; intro được xử lý riêng và không làm mất nhịp truyện.",
   EN_STORY_PLAN_COUNT_NOTE: "AI returned {0}/{1} content scenes; the intro is handled separately and does not replace a story beat.",
 } as const;
-
 export const CINEMATIC_CHARACTER_PACK_CONFIG = {
   MAX_CHARACTERS: 8,
   MAX_REFERENCES_PER_SCENE: 3,
   FLOW_CHARACTER_PROFILE_VERSION: "flow-character-v1-single-subject",
 } as const;
-
 export const resolveCinematicClipDuration = (value?: string | number): number => {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));
   if (!Number.isFinite(parsed)) return CINEMATIC_POLICY_CONFIG.CLIP_DURATION_SECONDS;
   return Math.min(CINEMATIC_POLICY_CONFIG.MAX_CLIP_DURATION_SECONDS, Math.max(CINEMATIC_POLICY_CONFIG.MIN_CLIP_DURATION_SECONDS, parsed));
 };
-
 export const CINEMATIC_POLICY_REQUIRED_FIELDS = ["generationPrompt"] as const;

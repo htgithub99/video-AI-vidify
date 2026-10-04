@@ -5,9 +5,7 @@ import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../../constants/te
 import { Lang } from "../../lib/lang";
 import { AutoVideoFormActions, AutoVideoFormState } from "../../hooks/useAutoVideoState";
 import { normalizeBackgroundMode, SCENE_TEXT_MODE } from "../../services/visualConfigModeService";
-
 export const getAutoVideoTexts = (language: Lang) => AUTO_GENERATOR_PANEL_TEXTS[language as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
-
 export const getSplitLabels = (texts: ReturnType<typeof getAutoVideoTexts>) => ({
   word: texts.splitWord,
   short_sentence: texts.splitShort,
@@ -15,7 +13,6 @@ export const getSplitLabels = (texts: ReturnType<typeof getAutoVideoTexts>) => (
   mixed_sentences: texts.splitMixed,
   paragraph: texts.splitParagraph,
 });
-
 export const getImageEngineOptions = (generationMode: ImageGenerationMode, generationType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
   if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
     if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
@@ -26,7 +23,6 @@ export const getImageEngineOptions = (generationMode: ImageGenerationMode, gener
     }
     return [{ value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_GEMINI_IMAGES }];
   }
-
   if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
     return [
       { value: ImageGeneratorEngine.GrokImagine, label: REFACTOR_CONSTANTS.ENGINE_GROK_IMAGINE },
@@ -36,7 +32,6 @@ export const getImageEngineOptions = (generationMode: ImageGenerationMode, gener
       { value: ImageGeneratorEngine.Veo3Quality, label: REFACTOR_CONSTANTS.ENGINE_VEO3_QUALITY },
     ];
   }
-
   return [
     { value: ImageGeneratorEngine.GrokImagine, label: REFACTOR_CONSTANTS.ENGINE_GROK_IMAGINE },
     { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN_3_BATCH },
@@ -44,12 +39,10 @@ export const getImageEngineOptions = (generationMode: ImageGenerationMode, gener
     { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX_STILL },
   ];
 };
-
 export const truncateWords = (text: string, maxWords: number): string => {
   const words = _.words(text);
   return _.gt(words.length, maxWords) ? _.join(_.take(words, maxWords), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS : text;
 };
-
 export const buildPresetPayload = (state: AutoVideoFormState, presetName: string) => ({
   id: `${PRESET_CONSTANTS.ID_PREFIX}${Date.now()}`,
   name: presetName,
@@ -78,13 +71,11 @@ export const buildPresetPayload = (state: AutoVideoFormState, presetName: string
     [REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY]: state.thumbnailImageFocusMode,
   },
 });
-
 export const applyPresetConfigToState = (presetConfig: Record<string, unknown>, actions: AutoVideoFormActions) => {
   const applyIfExists = (key: string, setter: (val: any) => void) => {
     const val = _.get(presetConfig, key);
     if (!_.isUndefined(val)) setter(val);
   };
-
   applyIfExists(REFACTOR_CONSTANTS.AVG_GENRE_KEY, (v) => actions.setGenre(v as string));
   applyIfExists(REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY, (v) => actions.setLanguage(v as ProjectLanguage));
   applyIfExists(REFACTOR_CONSTANTS.AVG_DURATION_KEY, (v) => actions.setDuration(v as string));

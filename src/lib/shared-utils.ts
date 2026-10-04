@@ -1,28 +1,23 @@
+import { SOURCE_TEXT_SYSTEM_ACTION_START } from "../constants/sourceText";
 import { appLog, appError } from "./logger";
 import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES, API_HEADERS, REFACTOR_CONSTANTS, SYSTEM_FETCH_CONFIG, SecurityConstants } from "../constants";
 import { BatchDelayOption } from "../types";
 import _ from "lodash";
 import { storageUtils } from "./storage";
 import { jsonUtils } from "./json";
-
 interface SystemFetchSuccess<T = any> {
   success: true;
   data: T;
   error?: undefined;
 }
-
 export interface SystemFetchFailure<T = any> {
   success: false;
   error?: string;
   data?: T;
 }
-
 export type SystemFetchResult<T = any> = SystemFetchSuccess<T> | SystemFetchFailure<T>;
-
 export const createSystemFetchFailure = <T = any>(error: string): SystemFetchFailure<T> => ({ success: false, error });
-
 export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-
 export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
   _.assign(
     {
@@ -35,7 +30,6 @@ export const createAuthenticatedHeaders = (customHeaders: Record<string, string>
     },
     customHeaders,
   );
-
 export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal): Promise<SystemFetchResult> => {
   try {
     const response = await fetch(url, {
@@ -44,9 +38,7 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
       body: jsonUtils.safeStringify(payload),
       signal,
     });
-
     const data = await response.json().catch(() => null);
-
     if (!_.isNil(data) && _.isArray(data.rotationLogs)) {
       _.forEach(data.rotationLogs, (log: string) => {
         if (_.some(LOG_ERROR_SYMBOLS, (sym) => _.includes(log, sym))) appError(log);
@@ -54,7 +46,6 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
         else appLog(log);
       });
     }
-
     if (_.eq(response.ok, false)) {
       return {
         success: false,
@@ -62,23 +53,13 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
         data,
       };
     }
-
     return { success: true, data };
   } catch (error: any) {
     appError(ERROR_MESSAGES.SYSTEM_FLOW_ERROR, url, error);
     return { success: false, error: error.message };
   }
 };
-
-export const safeSystemFetchStream = async (
-  url: string,
-  payload: any,
-  onLine: (data: any) => void,
-  onComplete?: () => void,
-  onError?: (err: any) => void,
-  cancelRef?: { current: boolean },
-  inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS,
-) => {
+export const safeSystemFetchStream = async (url: string, payload: any, onLine: (data: any) => void, onComplete?: () => void, onError?: (err: any) => void, cancelRef?: { current: boolean }, inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS) => {
   const controller = new AbortController();
   let inactivityTimer: ReturnType<typeof setTimeout> | undefined;
   const resetInactivityTimer = () => {
@@ -92,15 +73,11 @@ export const safeSystemFetchStream = async (
       body: jsonUtils.safeStringify(payload),
       signal: controller.signal,
     });
-
     if (!response.ok) throw new Error(_.join([ERROR_MESSAGES.API_ERROR_PREFIX, response.status], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-
     if (!response.body) throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
-
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-
     let isReading = true;
     resetInactivityTimer();
     while (isReading) {
@@ -110,18 +87,15 @@ export const safeSystemFetchStream = async (
         isReading = false;
         break;
       }
-
       const { value, done } = await reader.read();
       resetInactivityTimer();
       if (done) {
         isReading = false;
         break;
       }
-
       buffer += decoder.decode(value, { stream: true });
       const lines = _.split(buffer, SYSTEM_FETCH_CONFIG.NDJSON_LINE_SEPARATOR);
       buffer = lines.pop() || "";
-
       for (const line of lines) {
         if (_.isEmpty(_.trim(line))) continue;
         try {
@@ -132,8 +106,7 @@ export const safeSystemFetchStream = async (
     }
     if (onComplete) onComplete();
   } catch (error: any) {
-    const normalizedError =
-      controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT) : error;
+    const normalizedError = controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT) : error;
     appError(ERROR_MESSAGES.STREAM_FLOW_ERROR, url, normalizedError);
     if (onError) onError(normalizedError);
     throw normalizedError;
@@ -141,18 +114,14 @@ export const safeSystemFetchStream = async (
     if (inactivityTimer) clearTimeout(inactivityTimer);
   }
 };
-
-export const delayAsync = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
+export { delayAsync } from "./asyncUtils";
 export const randomDelay = (min: number = 1000, max: number = 2000): Promise<number> => {
   const ms = _.random(min, max);
   return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
 };
-
 export const logSystemAction = (actionName: string) => {
-  appLog("SYSTEM_ACTION_START", actionName);
+  appLog(SOURCE_TEXT_SYSTEM_ACTION_START, actionName);
 };
-
 export const getBatchDelayMs = (option?: BatchDelayOption | string): number => {
   const opt = (option || BatchDelayOption.Default) as BatchDelayOption;
   if (_.eq(opt, BatchDelayOption.OneSecond)) return 1000;
@@ -163,8 +132,4 @@ export const getBatchDelayMs = (option?: BatchDelayOption | string): number => {
   }
   return _.random(1000, 2000);
 };
-
-export const generateRandomString = (): string =>
-  Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
-
-
+export const generateRandomString = (): string => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);

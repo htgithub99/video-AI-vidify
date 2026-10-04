@@ -1,9 +1,9 @@
+import { SOURCE_TEXT_AUDIOBASE64, SOURCE_TEXT_END_2 } from "../constants/sourceText";
 import _ from "lodash";
 import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, REFACTOR_CONSTANTS, VOICE_ALIGNMENT_CONFIG } from "../constants";
 import { safeSystemFetch } from "../lib/shared-utils";
 import { StoryboardScene } from "../types";
 import { formatTimeHelper } from "../utils/helpers";
-
 interface VoiceAlignment {
   id: string;
   start: number;
@@ -12,13 +12,11 @@ interface VoiceAlignment {
   audioBase64?: string;
   audioUrl?: string;
 }
-
 export interface VoiceTimelineResult {
   scenes: StoryboardScene[];
   backendAligned: boolean;
   warning?: string;
 }
-
 export interface AlignVoiceTimelineOptions {
   audioBase64: string;
   scenes: StoryboardScene[];
@@ -26,13 +24,8 @@ export interface AlignVoiceTimelineOptions {
   projectName: string;
   signal?: AbortSignal;
 }
-
-const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] =>
-  _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
-
-export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGlobalNarration: boolean): StoryboardScene[] =>
-  hasGlobalNarration ? _.map(scenes, (scene) => _.omit(scene, "audioBase64") as StoryboardScene) : scenes;
-
+const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[] => _.map(scenes, (scene) => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS)) as StoryboardScene[];
+export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGlobalNarration: boolean): StoryboardScene[] => (hasGlobalNarration ? _.map(scenes, (scene) => _.omit(scene, SOURCE_TEXT_AUDIOBASE64) as StoryboardScene) : scenes);
 const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignment[]): StoryboardScene[] =>
   _.map(scenes, (scene) => {
     const alignment = _.find(alignments, (item) => _.isEqual(item.id, scene.id));
@@ -49,10 +42,7 @@ const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignm
         }
       : scene;
   });
-
-export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number =>
-  _.max(_.map(scenes, (scene) => _.toNumber(_.get(scene, "_end", 0)))) || _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
-
+export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number => _.max(_.map(scenes, (scene) => _.toNumber(_.get(scene, SOURCE_TEXT_END_2, 0)))) || _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
 export const decodeAudioDuration = async (audioBase64: string): Promise<number> => {
   const AudioContextConstructor = window.AudioContext;
   if (!AudioContextConstructor) return 0;
@@ -67,7 +57,6 @@ export const decodeAudioDuration = async (audioBase64: string): Promise<number> 
     await audioContext.close();
   }
 };
-
 const createProportionalVoiceTimeline = (scenes: StoryboardScene[], totalDurationSeconds: number): StoryboardScene[] => {
   const weights = _.map(scenes, (scene) => _.size(_.toString(scene.script || scene.subtitle).match(VOICE_ALIGNMENT_CONFIG.WORD_PATTERN)) || _.toNumber(scene.duration));
   const totalWeight = _.sum(weights);
@@ -82,7 +71,6 @@ const createProportionalVoiceTimeline = (scenes: StoryboardScene[], totalDuratio
     return alignedScene;
   });
 };
-
 export const alignVoiceTimeline = async ({ audioBase64, scenes, projectId, projectName, signal }: AlignVoiceTimelineOptions): Promise<VoiceTimelineResult> => {
   const cleanScenes = clearSceneVoiceData(scenes);
   const response = await safeSystemFetch(

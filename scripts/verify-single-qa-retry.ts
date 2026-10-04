@@ -1,9 +1,10 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { SCRIPT_PLAN_CONFIG, TECHNICAL_RESPONSE_RETRY_CONFIG } from "../src/constants/config.ts";
 import fs from "node:fs";
 
-const pipelineController = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
-const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const pipelineController = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
+const autoPipeline = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 
 assert.doesNotMatch(pipelineController, /MAX_REPAIR_ATTEMPTS|evaluateScript|evaluateStoryboard/);
 assert.doesNotMatch(autoPipeline, /validateFinalVideo|evaluateVisualAssetQuality|repairSubtitleCues|repairEditingPlan/);

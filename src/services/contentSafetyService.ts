@@ -1,11 +1,8 @@
 import _ from "lodash";
 import { CONTENT_SAFETY_CONFIG } from "../constants/config";
 import { ContentSafetyReport } from "../types";
-
 export const normalizeContentSafety = (value: Partial<ContentSafetyReport>): ContentSafetyReport => {
-  const completeResponse =
-    _.every(CONTENT_SAFETY_CONFIG.REQUIRED_BOOLEAN_FIELDS, (field) => _.isBoolean(_.get(value, field))) &&
-    _.every(CONTENT_SAFETY_CONFIG.REQUIRED_ARRAY_FIELDS, (field) => _.isArray(_.get(value, field)));
+  const completeResponse = _.every(CONTENT_SAFETY_CONFIG.REQUIRED_BOOLEAN_FIELDS, (field) => _.isBoolean(_.get(value, field))) && _.every(CONTENT_SAFETY_CONFIG.REQUIRED_ARRAY_FIELDS, (field) => _.isArray(_.get(value, field)));
   const report = {
     sensitiveTopic: Boolean(value.sensitiveTopic),
     trueCase: Boolean(value.trueCase),

@@ -371,8 +371,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_REQUEST_PACING: "[Gemini Chat] Pacing request for {0}ms...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
-    GEMINI_CAPTCHA_DETECTED:
-      "[Batch Gemini] Tab {0}: Verification screen/Captcha detected. Please solve the Captcha on your browser, system will automatically resume immediately.",
+    GEMINI_CAPTCHA_DETECTED: "[Batch Gemini] Tab {0}: Verification screen/Captcha detected. Please solve the Captcha on your browser, system will automatically resume immediately.",
     GEMINI_CAPTCHA_SOLVED_RESUMING: "[Batch Gemini] Tab {0}: Verification completed! Resuming image generation automatically...",
     SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
     API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
@@ -408,7 +407,6 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     FFMPEG_RENDER_ERROR: "FFMPEG render error",
   },
 };
-
 const PIPELINE_LOGS_LOCALIZED = {
   vi: {
     HOOK_STEP1: "[Hook] B1: Phân tích chủ đề & đối tượng...",
@@ -491,32 +489,23 @@ const PIPELINE_LOGS_LOCALIZED = {
     VOICE_ALIGN_START: "Syncing AI Voice (Python)...",
   },
 };
-
 export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
 export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
-
-export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string =>
-  isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key];
-
-export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string =>
-  isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key];
-
+export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => (isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key]);
+export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => (isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key]);
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
   get(_, prop: string) {
     const key = prop as BackendMessageKey;
     return BACKEND_MESSAGES_LOCALIZED.vi[key] || (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || "";
   },
 });
-
 export const PIPELINE_LOGS = new Proxy({} as Record<PipelineLogKey, string>, {
   get(_, prop: string) {
     const key = prop as PipelineLogKey;
     return PIPELINE_LOGS_LOCALIZED.vi[key] || (PIPELINE_LOGS_LOCALIZED.en as any)[key] || "";
   },
 });
-
 export type LogLang = "en" | "vi";
-
 export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "vi"): string => {
   const dictionary: Record<string, { vi: string; en: string }> = {
     handleCloseVoiceModal: {
@@ -684,23 +673,18 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
       en: "Starting processing and aligning external audio file...",
     },
   };
-
   if (!actionName) return "";
-
   if (actionName.startsWith("handleExtractCharacter")) {
     return lang === "vi" ? "Bắt đầu trích xuất đặc điểm nhân vật..." : "Extracting character traits from script...";
   }
-
   const match = dictionary[actionName];
   if (match) return match[lang];
-
   const cleanName = actionName
     .replace(/^handle/, "")
     .replace(/([A-Z])/g, " $1")
     .trim();
   return lang === "vi" ? `Yêu cầu thực thi: ${cleanName}` : `Requested execution: ${cleanName}`;
 };
-
 export const LOG_DICTIONARY = {
   STORYBOARD_SPLITTING_GEMINI: {
     en: "[Storyboard] Calling Gemini to split script sentences...",
@@ -742,7 +726,6 @@ export const LOG_DICTIONARY = {
     en: "Error loading the available voices list from server:",
     vi: "Không thể tải danh sách giọng đọc từ máy chủ:",
   },
-
   TTS_API_ERROR_MSG: {
     en: "Speech service warning: {0}",
     vi: "Dịch vụ chuyển giọng nói cảnh báo: {0}",
@@ -767,7 +750,6 @@ export const LOG_DICTIONARY = {
     en: "Unable to download the generated voice audio file.",
     vi: "Không thể tải về tệp âm thanh đã được tạo.",
   },
-
   GEMINI_START_ROTATION: {
     en: "[AI Service] Connecting to AI service. Rotating through {0} models, starting from index {1}.",
     vi: "[Trí tuệ nhân tạo] Bắt đầu kết nối dịch vụ AI. Hệ thống hỗ trợ xoay vòng qua {0} mô hình, bắt đầu từ mô hình {1}.",
@@ -812,7 +794,6 @@ export const LOG_DICTIONARY = {
     en: "AI generation failed across all fallback models.",
     vi: "Yêu cầu tạo nội dung thất bại trên tất cả mô hình AI dự phòng.",
   },
-
   GOOGLE_TTS_FALLBACK_SYNTHESIZING: {
     en: "[Speech Fallback] Synthesizing segment {0}/{1} ({2} characters)",
     vi: "[Hệ thống giọng nói dự phòng] Đang chuyển đổi đoạn hội thoại {0}/{1} (độ dài: {2} ký tự) thành giọng đọc...",
@@ -825,7 +806,6 @@ export const LOG_DICTIONARY = {
     en: "[Speech Fallback Critical] Permanent error on segment {0}",
     vi: "[Hệ thống giọng nói dự phòng] Gặp sự cố nghiêm trọng không thể khắc phục ở đoạn hội thoại {0}",
   },
-
   STYLE_EXTRACTION_ERROR: {
     en: "Error analyzing image style: {0}",
     vi: "Gặp lỗi khi phân tích phong cách hình ảnh: {0}",
@@ -914,7 +894,6 @@ export const LOG_DICTIONARY = {
     en: "Unexpected error during audio merging: {0}",
     vi: "Lỗi phát sinh ngoài dự kiến khi ghép âm thanh: {0}",
   },
-
   PLAYWRIGHT_TOKEN_CAPTURED: {
     en: "✅ Image creation account authenticated successfully!",
     vi: "✅ Đã kết nối và xác thực tài khoản sinh ảnh thành công!",
@@ -1015,7 +994,6 @@ export const LOG_DICTIONARY = {
     en: "Reason: ",
     vi: "Chi tiết: ",
   },
-
   CACHE_BYPASS: {
     en: "[Temporary Memory] Bypassing cached response for {0}",
     vi: "[Bộ nhớ tạm] Bỏ qua dữ liệu lưu trữ tạm thời theo yêu cầu cho {0}",
@@ -1036,12 +1014,10 @@ export const LOG_DICTIONARY = {
     en: "[Temporary Memory Error] Failed to store result:",
     vi: "[Bộ nhớ tạm] Gặp lỗi khi lưu kết quả vào bộ nhớ tạm:",
   },
-
   JSON_PARSE_WARNING: {
     en: "The AI response is not valid raw JSON and was rejected for complete regeneration: {0}",
     vi: "Phản hồi AI không phải JSON thô hợp lệ nên đã bị từ chối để tạo lại toàn bộ: {0}",
   },
-
   ERROR_LOADING_SANDBOX: {
     en: "Error loading local configuration:",
     vi: "Lỗi khi tải cấu hình môi trường:",
@@ -1050,7 +1026,6 @@ export const LOG_DICTIONARY = {
     en: "Error syncing local configuration:",
     vi: "Lỗi khi đồng bộ cấu hình môi trường:",
   },
-
   PREVIEW_PLAYBACK_FAILED: {
     en: "Unable to play audio preview:",
     vi: "Không thể phát thử bản ghi âm thanh này:",
@@ -1175,12 +1150,10 @@ export const LOG_DICTIONARY = {
     en: "Script rewriting pipeline issue:",
     vi: "Gặp sự cố khi biên tập kịch bản:",
   },
-
   ERROR_PARSING_SANDBOX_HEADER: {
     en: "Failed to parse system configurations in header bar:",
     vi: "Gặp lỗi khi phân tích cấu hình môi trường ở thanh tiêu đề:",
   },
-
   FAILED_FETCH_VOICES_REGISTRY: {
     en: "Failed to load voices library:",
     vi: "Không thể tải danh sách giọng nói từ thư viện:",
@@ -1189,7 +1162,6 @@ export const LOG_DICTIONARY = {
     en: "Unable to play selected audio sample",
     vi: "Không thể phát thử tệp âm thanh này",
   },
-
   FAILED_RESUME_AUDIO_CONTEXT: {
     en: "Failed to resume audio drivers:",
     vi: "Không thể kích hoạt lại hệ thống âm thanh trình duyệt:",
@@ -1198,7 +1170,6 @@ export const LOG_DICTIONARY = {
     en: "Audio drivers not ready. Activating video-only recording:",
     vi: "Hệ thống âm thanh của trình duyệt chưa sẵn sàng, đang chuyển sang lưu trữ dạng chỉ có hình ảnh:",
   },
-
   SYSTEM_FLOW_ERROR: {
     en: "[System Issue] {0}:",
     vi: "[Hệ thống gặp sự cố] {0}:",
@@ -1207,12 +1178,10 @@ export const LOG_DICTIONARY = {
     en: "[System Action] {0}",
     vi: "[Hệ thống] {0}",
   },
-
   LOAD_CUSTOM_MODEL_ERR: {
     en: "Failed to retrieve the specialized AI models list:",
     vi: "Lỗi tải danh sách mô hình tùy chỉnh:",
   },
-
   ERROR_PARSING_PROJECTS: {
     en: "Failed to load existing projects structure:",
     vi: "Lỗi phân tích dữ liệu danh sách dự án:",
@@ -1237,7 +1206,6 @@ export const LOG_DICTIONARY = {
     en: "Failed to sync changes to project file:",
     vi: "Lỗi khi cập nhật dự án:",
   },
-
   SERVER_RUNNING: {
     en: "Server running at http://localhost:{0}",
     vi: "Hệ thống đã khởi động thành công và sẵn sàng tại http://localhost:{0}",
@@ -1250,7 +1218,6 @@ export const LOG_DICTIONARY = {
     en: "Closing visual creator processes...",
     vi: "Đang dọn dẹp các tiến trình trình duyệt sinh ảnh...",
   },
-
   GENERAL_ERROR: {
     en: "Error: {0}",
     vi: "Gặp sự cố: {0}",
@@ -1272,9 +1239,7 @@ export const LOG_DICTIONARY = {
     vi: "=======================================================\n",
   },
 };
-
 export type LogKey = keyof typeof LOG_DICTIONARY;
-
 export const VOICE_ALIGN_LOGS = {
   ALIGN_SUCCESS: "[Whisper Alignment] ✅ Đồng bộ thành công:",
   ALIGN_FAILED: "[Whisper Alignment] ❌ Đồng bộ thất bại:",
@@ -1289,7 +1254,6 @@ export const VOICE_ALIGN_LOGS = {
   PYTHON_STDOUT: "Python script stdout: ",
   PYTHON_STDERR: "Python script stderr: ",
 };
-
 export const PIPELINE_CONTROLLER_MESSAGES = {
   TEMPLATE_LIMIT_REACHED: {
     vi: "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới.",
@@ -1302,19 +1266,13 @@ export const PIPELINE_CONTROLLER_MESSAGES = {
   AI_FALLBACK_CHAT_FAILED: "Dịch vụ AI dự phòng chưa phản hồi, hệ thống chuyển sang xử lý qua API.",
   API_PLANNING_UNAVAILABLE: "Kết nối API chưa khả dụng, chuyển sang xử lý qua trình duyệt.",
   VIETNAMESE_ACCENT_RESTORE_FAILED: "Nội dung tiếng Việt chưa đạt chuẩn, đang yêu cầu AI tạo lại.",
-  FREE_AI_PROVIDER_UNAVAILABLE:
-    "Dịch vụ AI tạm thời không phản hồi. Vui lòng kiểm tra khóa API trong phần Cài đặt rồi tiếp tục.",
-  FREE_AI_PROVIDER_QUOTA_EXHAUSTED:
-    "Dịch vụ AI đang tạm hết hạn mức hoặc chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
+  FREE_AI_PROVIDER_UNAVAILABLE: "Dịch vụ AI tạm thời không phản hồi. Vui lòng kiểm tra khóa API trong phần Cài đặt rồi tiếp tục.",
+  FREE_AI_PROVIDER_QUOTA_EXHAUSTED: "Dịch vụ AI đang tạm hết hạn mức hoặc chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
 } as const;
-
 export const ROOM_ONLY_MESSAGES = {
-  ARTIFACT_STRUCTURE_ERROR: (roomName: string, roomIssue: string) =>
-    `${roomName} đã trả dữ liệu nhưng kịch bản chưa hoàn chỉnh (${roomIssue}). Hệ thống đã lưu checkpoint các bước trước; vui lòng bấm Tiếp tục để AI hoàn thiện lại.`,
-  ARTIFACT_INCOMPLETE_ERROR: (roomName: string, roomIssue: string) =>
-    `${roomName} chưa hoàn tất kịch bản (${roomIssue}). Vui lòng kiểm tra tài khoản hoặc kết nối rồi thử lại.`,
+  ARTIFACT_STRUCTURE_ERROR: (roomName: string, roomIssue: string) => `${roomName} đã trả dữ liệu nhưng kịch bản chưa hoàn chỉnh (${roomIssue}). Hệ thống đã lưu checkpoint các bước trước; vui lòng bấm Tiếp tục để AI hoàn thiện lại.`,
+  ARTIFACT_INCOMPLETE_ERROR: (roomName: string, roomIssue: string) => `${roomName} chưa hoàn tất kịch bản (${roomIssue}). Vui lòng kiểm tra tài khoản hoặc kết nối rồi thử lại.`,
 } as const;
-
 export const FLOW_AUTOMATION_MESSAGES = {
   ATTACH_CONTINUE_IDENTITY: "Duy trì nhận diện nhân vật trong kịch bản video.",
   FLOW_NOT_ENOUGH_CHARACTERS: "Tiếp tục tạo video với đặc điểm nhân vật cố định.",
@@ -1324,13 +1282,10 @@ export const FLOW_AUTOMATION_MESSAGES = {
   FLOW_CONNECT_PORT_FAILED: "[Google Flow] Không thể kết nối với trình duyệt đang mở.",
   FLOW_KEEP_SHARED_TABS: "[Google Flow] Giữ nguyên các tab trình duyệt đang mở.",
   FLOW_SWITCH_TO_SHARED_CHROME: "[Google Flow] Chuyển sang trình duyệt đang đăng nhập.",
-  FLOW_PROMPT_MISMATCH: (expectedLen: number, observedLen: number) =>
-    `[Google Flow] Ô nhập chưa nhận đủ nội dung (expected=${expectedLen}, observed=${observedLen}).`,
-  FLOW_SENT_PROMPT_ROOM: (current: number, total: number, sceneId: string) =>
-    `[Google Flow] Đã gửi yêu cầu ${current}/${total} (cảnh ${sceneId}).`,
+  FLOW_PROMPT_MISMATCH: (expectedLen: number, observedLen: number) => `[Google Flow] Ô nhập chưa nhận đủ nội dung (expected=${expectedLen}, observed=${observedLen}).`,
+  FLOW_SENT_PROMPT_ROOM: (current: number, total: number, sceneId: string) => `[Google Flow] Đã gửi yêu cầu ${current}/${total} (cảnh ${sceneId}).`,
   GEMINI_WAITING_FOR_UI: "[Gemini] Đang tải giao diện trước khi tạo nội dung.",
 } as const;
-
 export const GROK_AUTOMATION_MESSAGES = {
   CONNECT_FAILED: "Không thể kết nối với cửa sổ Grok. Vui lòng đóng cửa sổ cũ rồi thử lại.",
   NO_SESSION_CREATED: "Chưa thể khởi tạo phiên làm việc với Grok. Vui lòng thử lại.",
@@ -1340,31 +1295,25 @@ export const GROK_AUTOMATION_MESSAGES = {
   ATTACHED_ROOM: (_projectId: string) => `[Grok] Đã kết nối phiên làm việc cho dự án.`,
   DURATION_NOT_SUPPORTED: (duration: string) => `[Grok] Thời lượng ${duration} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
   RESOLUTION_NOT_SUPPORTED: (res: string) => `[Grok] Độ phân giải ${res} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,
-  CONFIG_DETAIL: (targetRatio: string, requestedDuration: string, requestedResolution: string, _isHeadless: boolean) =>
-    `[Grok] Thiết lập: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}.`,
+  CONFIG_DETAIL: (targetRatio: string, requestedDuration: string, requestedResolution: string, _isHeadless: boolean) => `[Grok] Thiết lập: video, ${targetRatio}, ${requestedDuration}, ${requestedResolution}.`,
   SENT_PROMPT: (isVideo: boolean) => `[Grok] Đã gửi yêu cầu tạo ${isVideo ? "video" : "hình ảnh"}.`,
   NO_MEDIA_URL: "Grok chưa trả về tệp hình ảnh/video mới.",
   DOWNLOAD_FAILED: (status: number) => `Không thể tải tệp từ Grok (mã lỗi ${status}).`,
   INVALID_MEDIA_BUFFER: "Tệp tải về từ Grok không hợp lệ.",
-  DOWNLOAD_DIRECT_SUCCESS: (isVideo: boolean, length: number) =>
-    `[Grok] Đã tải thành công ${isVideo ? "video" : "hình ảnh"} (${Math.round(length / 1024)} KB).`,
+  DOWNLOAD_DIRECT_SUCCESS: (isVideo: boolean, length: number) => `[Grok] Đã tải thành công ${isVideo ? "video" : "hình ảnh"} (${Math.round(length / 1024)} KB).`,
 } as const;
-
 export const CHAT_UI_AUTOMATION_MESSAGES = {
   CLEANUP_DELETING_ATTEMPT: (provider: string, attempt: number) => `[Dọn dẹp AI] ${provider}: đang xóa cuộc trò chuyện (lần ${attempt}).`,
   CLEANUP_OPTION_BUTTON_NOT_FOUND: (provider: string) => `[Dọn dẹp AI] ${provider}: không tìm thấy nút tùy chọn.`,
-  CLEANUP_OPTION_BUTTON_STAT: (provider: string, count: number, _visible: boolean, _clicked: boolean) =>
-    `[Dọn dẹp AI] ${provider}: nút tùy chọn (${count} mục).`,
+  CLEANUP_OPTION_BUTTON_STAT: (provider: string, count: number, _visible: boolean, _clicked: boolean) => `[Dọn dẹp AI] ${provider}: nút tùy chọn (${count} mục).`,
   CLEANUP_DELETE_COMMAND_NOT_FOUND: (provider: string, _menuText: string) => `[Dọn dẹp AI] ${provider}: chưa tìm thấy lệnh xóa.`,
   CLEANUP_DIALOG_VISIBILITY: (provider: string, _visible: boolean) => `[Dọn dẹp AI] ${provider}: hộp thoại xác nhận.`,
-  CLEANUP_CONFIRM_STAT: (provider: string, _count: number, _clicked: boolean) =>
-    `[Dọn dẹp AI] ${provider}: xác nhận xóa.`,
+  CLEANUP_CONFIRM_STAT: (provider: string, _count: number, _clicked: boolean) => `[Dọn dẹp AI] ${provider}: xác nhận xóa.`,
   CLEANUP_ALL_ACTIVITY_DELETED: (provider: string) => `[Dọn dẹp AI] ${provider}: đã xóa sạch lịch sử trò chuyện.`,
   CLEANUP_NO_CONVERSATIONS: (provider: string) => `[Dọn dẹp AI] ${provider}: không còn cuộc trò chuyện nào.`,
   CLEANUP_CONVERSATIONS_FOUND: (provider: string, count: number) => `[Dọn dẹp AI] ${provider}: tìm thấy ${count} cuộc trò chuyện.`,
   INPUT_AREA_NOT_FOUND: "Không tìm thấy ô nhập nội dung trên giao diện AI.",
-  PLANNING_JSON_EARLY_RECEIVED: (length: number, _elapsedMs: number) =>
-    `Đã nhận kịch bản hoàn chỉnh từ AI (${length} ký tự).`,
+  PLANNING_JSON_EARLY_RECEIVED: (length: number, _elapsedMs: number) => `Đã nhận kịch bản hoàn chỉnh từ AI (${length} ký tự).`,
   PLANNING_RESPONSE_COMPLETE: (length: number) => `Đã nhận toàn bộ nội dung từ AI (${length} ký tự).`,
   PLANNING_WAITING_INPUT: "Đang chờ ô nhập nội dung sẵn sàng...",
   PLANNING_INPUT_READY: (_elapsedMs: number) => "Ô nhập nội dung đã sẵn sàng.",
@@ -1380,31 +1329,14 @@ export const CHAT_UI_AUTOMATION_MESSAGES = {
   CHAT_UI_READY: "Giao diện trò chuyện đã sẵn sàng.",
   FALLBACK_DISABLED: "Chế độ AI dự phòng đang tắt.",
   FALLBACK_UNSUPPORTED: "Chế độ AI dự phòng chưa được hỗ trợ.",
-  PLANNING_QUEUE_ACQUIRED: (workerId: string, providerName: string, projectId: string, elapsedMs: number) =>
-    `[AI Chat Planning][${workerId}] Đang sử dụng ${providerName} cho project ${projectId} (chờ hàng đợi ${elapsedMs} ms).`,
-  CLEANUP_FAILED: (provider: string, identity: string, remaining: number, current: string) =>
-    `[AI Chat Cleanup] ${provider}: không xóa được ${identity}; remaining=${remaining}, current=${current}.`,
-  CLEANUP_ERROR: (provider: string, message: string) =>
-    `[AI Chat Cleanup] ${provider}: ${message}`,
-  PLANNING_RAW_CONTRACT_FALLBACK: (expected: string, completionMarker: string) =>
-    `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${expected}, completionMarker=${completionMarker}).`,
-  PLANNING_RESPONSE_TIMEOUT_LOG: (
-    responses: number,
-    initial: number,
-    candidateLength: number,
-    busy: boolean,
-    identityMatch: boolean,
-    completionMarker: string,
-  ) =>
-    `[AI Chat Planning] Response timeout (responses=${responses}, initial=${initial}, candidateLength=${candidateLength}, busy=${busy}, identityMatch=${identityMatch}, completionMarker=${completionMarker}).`,
-  INPUT_NOT_FOUND_DETAIL: (url: string, title: string, selectorMatches: number, error: string) =>
-    `AI Chat chưa tìm thấy ô nhập (url=${url}, title=${title}, selectorMatches=${selectorMatches}): ${error}`,
-  CHATGPT_LOGIN_INCOMPLETE: (url: string, title: string, error: string) =>
-    `ChatGPT chưa hoàn tất đăng nhập (url=${url}, title=${title}): ${error}`,
-  PLANNING_PROVIDER_INCOMPLETE: (provider: string, error: string) =>
-    `[AI Chat Planning] ${provider} chưa hoàn tất: ${error}`,
-  PLANNING_ROOM_RELOADED: (provider: string) =>
-    `[AI Chat Planning] ${provider} lỗi hai lần liên tiếp; đã tải lại trang trong cùng room.`,
-  PLANNING_ROOM_RELOAD_FAILED: (provider: string, error: string) =>
-    `[AI Chat Planning] Chưa thể tải lại trang ${provider}: ${error}`,
+  PLANNING_QUEUE_ACQUIRED: (workerId: string, providerName: string, projectId: string, elapsedMs: number) => `[AI Chat Planning][${workerId}] Đang sử dụng ${providerName} cho project ${projectId} (chờ hàng đợi ${elapsedMs} ms).`,
+  CLEANUP_FAILED: (provider: string, identity: string, remaining: number, current: string) => `[AI Chat Cleanup] ${provider}: không xóa được ${identity}; remaining=${remaining}, current=${current}.`,
+  CLEANUP_ERROR: (provider: string, message: string) => `[AI Chat Cleanup] ${provider}: ${message}`,
+  PLANNING_RAW_CONTRACT_FALLBACK: (expected: string, completionMarker: string) => `[AI Chat Planning] Đã lấy JSON hoàn chỉnh từ room nhưng contract chưa khớp; chuyển nguyên response cho tầng đánh giá/sửa (expected=${expected}, completionMarker=${completionMarker}).`,
+  PLANNING_RESPONSE_TIMEOUT_LOG: (responses: number, initial: number, candidateLength: number, busy: boolean, identityMatch: boolean, completionMarker: string) => `[AI Chat Planning] Response timeout (responses=${responses}, initial=${initial}, candidateLength=${candidateLength}, busy=${busy}, identityMatch=${identityMatch}, completionMarker=${completionMarker}).`,
+  INPUT_NOT_FOUND_DETAIL: (url: string, title: string, selectorMatches: number, error: string) => `AI Chat chưa tìm thấy ô nhập (url=${url}, title=${title}, selectorMatches=${selectorMatches}): ${error}`,
+  CHATGPT_LOGIN_INCOMPLETE: (url: string, title: string, error: string) => `ChatGPT chưa hoàn tất đăng nhập (url=${url}, title=${title}): ${error}`,
+  PLANNING_PROVIDER_INCOMPLETE: (provider: string, error: string) => `[AI Chat Planning] ${provider} chưa hoàn tất: ${error}`,
+  PLANNING_ROOM_RELOADED: (provider: string) => `[AI Chat Planning] ${provider} lỗi hai lần liên tiếp; đã tải lại trang trong cùng room.`,
+  PLANNING_ROOM_RELOAD_FAILED: (provider: string, error: string) => `[AI Chat Planning] Chưa thể tải lại trang ${provider}: ${error}`,
 } as const;

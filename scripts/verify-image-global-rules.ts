@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { GLOBAL_IMAGE_PROMPT_MASTER_RULE, IMAGE_PROMPT_FINAL_SECTION_ORDER, createGlobalImagePromptPlanningRules } from "../src/constants/imagePromptRules.ts";
@@ -85,8 +86,8 @@ assert.doesNotMatch(quickVideoPrompt, /cinematicBeats must agree|3-5 explicitly 
 
 const aiAuthoredVideoPrompt = "One continuous clip: the courier slams the steel door, the latch catches, and the pursuer collides with it.";
 assert.equal(prepareProjectMediaPrompt({ sceneId: "sc_video", prompt: aiAuthoredVideoPrompt, generateType: GenerateType.Video }), aiAuthoredVideoPrompt);
-const controllerSource = readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8");
-const pipelineSource = readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8");
+const controllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
 assert.match(controllerSource, /if \(isCinematicPlanning\)[\s\S]*getCinematicVideoPlanningPrompt[\s\S]*getQuickVideoPlanningPrompt/);
 assert.match(controllerSource, /quickVideoPromptRequired \? \["generationPrompt"\] : \[\]/);
 assert.match(pipelineSource, /prompt: prepareProjectMediaPrompt\(\{ sceneId: scene\.id, prompt: _\.toString\(scene\.generationPrompt\), generateType: GenerateType\.Video \}\)/);

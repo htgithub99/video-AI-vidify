@@ -1,9 +1,7 @@
 import _ from "lodash";
 import { appError } from "./logger.js";
 import { REFACTOR_CONSTANTS } from "../constants/refactor.js";
-
 let dbPromise: Promise<IDBDatabase> | null = null;
-
 const getDB = (): Promise<IDBDatabase> => {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
@@ -27,7 +25,6 @@ const getDB = (): Promise<IDBDatabase> => {
   });
   return dbPromise;
 };
-
 export const storageUtils = {
   get: (key: string): string | null => {
     try {

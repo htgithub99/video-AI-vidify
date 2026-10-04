@@ -1,66 +1,66 @@
+import {
+  SOURCE_TEMPLATE_JSON,
+  SOURCE_TEXT_IMAGE,
+  SOURCE_TEXT_SQLITE_DELETE_ERR,
+  SOURCE_TEXT_SQLITE_DETAIL_ERR,
+  SOURCE_TEXT_SQLITE_INIT_ERR,
+  SOURCE_TEXT_SQLITE_LIST_ERR,
+  SOURCE_TEXT_SQLITE_MIGRATE_BACKUP_ERR,
+  SOURCE_TEXT_SQLITE_MIGRATE_CRITICAL,
+  SOURCE_TEXT_SQLITE_MIGRATE_PARSE_ERR,
+  SOURCE_TEXT_SQLITE_MIGRATION_EMPTY,
+  SOURCE_TEXT_SQLITE_MIGRATION_START,
+  SOURCE_TEXT_SQLITE_MIGRATION_SUCCESS,
+  SOURCE_TEXT_SQLITE_PRESETS_LIST_ERR,
+  SOURCE_TEXT_SQLITE_PRESET_DELETE_ERR,
+  SOURCE_TEXT_SQLITE_PRESET_WRITE_ERR,
+  SOURCE_TEXT_SQLITE_WRITE_ERR,
+} from "../../constants/sourceText";
 import sqlite3 from "sqlite3";
 import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
-import {
-  PROJECTS_FILE_NAME,
-  ENCODING_UTF8,
-  SQLITE_DB_NAME,
-  PROJECTS_BACKUP_DIR_NAME,
-  getBackendMsg,
-  SQL_STATEMENTS,
-  MIGRATION_DEFAULTS,
-  REFACTOR_CONSTANTS,
-} from "../../constants/index.js";
+import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg, SQL_STATEMENTS, MIGRATION_DEFAULTS, REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import _ from "lodash";
 import { getDataDirectory } from "./paths.js";
 import { jsonUtils } from "../../lib/json.js";
-
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
-
 async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
   if (!_.isNil(dbInstance)) {
     return dbInstance;
   }
-
   try {
     dbInstance = await open({
       filename: path.join(getDataDirectory(), SQLITE_DB_NAME),
       driver: sqlite3.Database,
     });
-
     await dbInstance.exec(SQL_STATEMENTS.PRAGMA_WAL);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PROJECTS_TABLE);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PRESETS_TABLE);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_RENDER_JOBS_TABLE);
-
     return dbInstance;
   } catch (error) {
-    appError(getBackendMsg("SQLITE_INIT_ERR"), error);
+    appError(getBackendMsg(SOURCE_TEXT_SQLITE_INIT_ERR), error);
     throw error;
   }
 }
-
 export async function getRenderJobsFromDb<T>(): Promise<T[]> {
   const db = await initDb();
   const rows = await db.all(SQL_STATEMENTS.SELECT_RENDER_JOBS);
   return _.compact(_.map(rows, (row) => jsonUtils.safeParse<T>(row.data, null)));
 }
-
 export async function getRenderJobFromDb<T>(id: string): Promise<T | null> {
   const db = await initDb();
   const row = await db.get(SQL_STATEMENTS.SELECT_RENDER_JOB, [id]);
   return row?.data ? jsonUtils.safeParse<T>(row.data, null) : null;
 }
-
 export async function saveRenderJobToDb(job: { id: string; status: string; updatedAt: Date | string } & Record<string, unknown>): Promise<void> {
   const db = await initDb();
   const updatedAt = job.updatedAt instanceof Date ? job.updatedAt.toISOString() : job.updatedAt;
   await db.run(SQL_STATEMENTS.INSERT_RENDER_JOB, [job.id, job.status, updatedAt, jsonUtils.safeStringify(job)]);
 }
-
 export async function getPresetsFromDb(): Promise<any[]> {
   try {
     const db = await initDb();
@@ -73,11 +73,10 @@ export async function getPresetsFromDb(): Promise<any[]> {
       updatedAt: row.updatedAt,
     }));
   } catch (error) {
-    appError(getBackendMsg("SQLITE_PRESETS_LIST_ERR"), error);
+    appError(getBackendMsg(SOURCE_TEXT_SQLITE_PRESETS_LIST_ERR), error);
     return [];
   }
 }
-
 export async function savePresetToDb(preset: { id: string; name: string; config: any }): Promise<any> {
   try {
     const db = await initDb();
@@ -85,27 +84,24 @@ export async function savePresetToDb(preset: { id: string; name: string; config:
     await db.run(SQL_STATEMENTS.INSERT_PRESET, [preset.id, preset.name, jsonUtils.safeStringify(preset.config), now, now]);
     return { id: preset.id, name: preset.name, config: preset.config, createdAt: now, updatedAt: now };
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_PRESET_WRITE_ERR), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
   }
 }
-
 export async function deletePresetFromDb(id: string): Promise<boolean> {
   try {
     const db = await initDb();
     const result = await db.run(SQL_STATEMENTS.DELETE_PRESET, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_PRESET_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_PRESET_DELETE_ERR), id], REFACTOR_CONSTANTS.VD_BLANK), error);
     return false;
   }
 }
-
 export async function getProjectsListFromDb(): Promise<any[]> {
   try {
     const db = await initDb();
     const rows = await db.all(SQL_STATEMENTS.SELECT_PROJECTS_LIST);
-
     return _.map(rows, (row) => {
       let config = undefined;
       const detail = jsonUtils.safeParse<any>(row.data, {});
@@ -116,7 +112,6 @@ export async function getProjectsListFromDb(): Promise<any[]> {
           duration: detail.config.duration,
         };
       }
-
       return {
         id: row.id,
         name: row.name,
@@ -132,11 +127,10 @@ export async function getProjectsListFromDb(): Promise<any[]> {
       };
     });
   } catch (error) {
-    appError(getBackendMsg("SQLITE_LIST_ERR"), error);
+    appError(getBackendMsg(SOURCE_TEXT_SQLITE_LIST_ERR), error);
     return [];
   }
 }
-
 export async function getProjectDetailFromDb(id: string): Promise<VideoProject | null> {
   try {
     const db = await initDb();
@@ -145,82 +139,60 @@ export async function getProjectDetailFromDb(id: string): Promise<VideoProject |
       return jsonUtils.safeParse<VideoProject>(row.data, null);
     }
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_DETAIL_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_DETAIL_ERR), id], REFACTOR_CONSTANTS.VD_BLANK), error);
   }
   return null;
 }
-
 export async function saveProjectDetailToDb(project: VideoProject): Promise<void> {
   try {
     const db = await initDb();
-
-    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
-      project.id,
-      project.name,
-      _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-      _.defaultTo(project.createdAt, new Date().toISOString()),
-      _.defaultTo(project.updatedAt, new Date().toISOString()),
-      _.defaultTo(project.currentStep, 0),
-      _.defaultTo(project.creditsUsed, 0),
-      jsonUtils.safeStringify(project),
-    ]);
+    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [project.id, project.name, _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING), _.defaultTo(project.createdAt, new Date().toISOString()), _.defaultTo(project.updatedAt, new Date().toISOString()), _.defaultTo(project.currentStep, 0), _.defaultTo(project.creditsUsed, 0), jsonUtils.safeStringify(project)]);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_WRITE_ERR"), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
   }
 }
-
 export async function deleteProjectFromDb(id: string): Promise<boolean> {
   try {
     const db = await initDb();
     const result = await db.run(SQL_STATEMENTS.DELETE_PROJECT, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_DELETE_ERR), id], REFACTOR_CONSTANTS.VD_BLANK), error);
     return false;
   }
 }
-
 export async function migrateJsonToSqlite(): Promise<void> {
   try {
     const projectsFile = path.join(getDataDirectory(), PROJECTS_FILE_NAME);
     const projectsDir = path.join(getDataDirectory(), MIGRATION_DEFAULTS.PROJECTS_DIR);
     const backupDir = path.join(getDataDirectory(), PROJECTS_BACKUP_DIR_NAME);
-
     if (_.isEqual(fs.existsSync(projectsFile), false)) {
       return;
     }
-
-    appLog(getBackendMsg("SQLITE_MIGRATION_START"));
-
+    appLog(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATION_START));
     const db = await initDb();
     const rawList = fs.readFileSync(projectsFile, ENCODING_UTF8);
     const metadataList = jsonUtils.safeParse<any[]>(rawList, []);
-
     if (_.isEqual(_.isArray(metadataList), false) || _.isEqual(metadataList.length, 0)) {
-      appLog(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
+      appLog(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATION_EMPTY));
       return;
     }
-
     if (_.isEqual(fs.existsSync(backupDir), false)) {
       fs.mkdirSync(backupDir, { recursive: true });
     }
-
     await db.exec(SQL_STATEMENTS.BEGIN_TRANSACTION);
-
     for (const projectMeta of metadataList) {
       const id = projectMeta.id;
       if (_.isEmpty(id)) {
         continue;
       }
-
       let projectDetail: VideoProject | null = null;
-      const detailFile = path.join(projectsDir, `${id}.json`);
+      const detailFile = path.join(projectsDir, SOURCE_TEMPLATE_JSON(`${id}`));
       if (_.isEqual(fs.existsSync(detailFile), true)) {
         const detailRaw = fs.readFileSync(detailFile, ENCODING_UTF8);
         projectDetail = jsonUtils.safeParse<VideoProject>(detailRaw, null);
       }
-
       if (_.isNil(projectDetail)) {
         projectDetail = {
           id,
@@ -262,14 +234,13 @@ export async function migrateJsonToSqlite(): Promise<void> {
             characterConsistency: true,
             assetsMode: MIGRATION_DEFAULTS.VISUAL_ASSETS_MODE,
             imageGeneratorEngine: MIGRATION_DEFAULTS.VISUAL_SOURCE,
-            generateType: "image",
+            generateType: SOURCE_TEXT_IMAGE,
             aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO,
             promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT,
             generateCount: 1,
           }),
         } as any;
       }
-
       await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
         projectDetail!.id,
         projectDetail!.name,
@@ -280,30 +251,27 @@ export async function migrateJsonToSqlite(): Promise<void> {
         _.defaultTo(projectDetail!.creditsUsed, 0),
         jsonUtils.safeStringify(projectDetail),
       ]);
-
       if (_.isEqual(fs.existsSync(detailFile), true)) {
         try {
-          fs.renameSync(detailFile, path.join(backupDir, `${id}.json`));
+          fs.renameSync(detailFile, path.join(backupDir, SOURCE_TEMPLATE_JSON(`${id}`)));
         } catch (e) {
-          appError(_.join([getBackendMsg("SQLITE_MIGRATE_PARSE_ERR"), `${id}.json`], REFACTOR_CONSTANTS.VD_BLANK), e);
+          appError(_.join([getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATE_PARSE_ERR), SOURCE_TEMPLATE_JSON(`${id}`)], REFACTOR_CONSTANTS.VD_BLANK), e);
         }
       }
     }
-
     await db.exec(SQL_STATEMENTS.COMMIT);
-
     try {
       fs.renameSync(projectsFile, path.join(backupDir, PROJECTS_FILE_NAME));
       const backupFile = path.join(getDataDirectory(), MIGRATION_DEFAULTS.BACKUP_JSON);
       if (_.isEqual(fs.existsSync(backupFile), true)) {
         fs.renameSync(backupFile, path.join(backupDir, MIGRATION_DEFAULTS.BACKUP_JSON));
       }
-      appLog(getBackendMsg("SQLITE_MIGRATION_SUCCESS"));
+      appLog(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATION_SUCCESS));
     } catch (e) {
-      appError(getBackendMsg("SQLITE_MIGRATE_BACKUP_ERR"), e);
+      appError(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATE_BACKUP_ERR), e);
     }
   } catch (error) {
-    appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
+    appError(getBackendMsg(SOURCE_TEXT_SQLITE_MIGRATE_CRITICAL), error);
     try {
       if (!_.isNil(dbInstance)) {
         await dbInstance.exec(SQL_STATEMENTS.ROLLBACK);

@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
@@ -152,7 +153,7 @@ const advisoryReviewItems = createManualReviewItems({
 assert(advisoryReviewItems.length === 0, "advisory warnings created mandatory manual-review work");
 
 const promptFiles = ["prompts.ts", "promptGuidelines.ts", "texts.ts", "data.ts"]
-  .map(file => fs.readFileSync(path.resolve("src/constants", file), "utf8"))
+  .map(file => resolveSourceTextConstants(fs.readFileSync(path.resolve("src/constants", file), "utf8")))
   .join("\n");
 assert(!/[ï¿½]|Ãƒ.|Ã¢â‚¬|Ã°Å¸/.test(promptFiles), "UTF-8/mojibake gate failed");
 writeVerificationLog("VIDIFY baseline acceptance assertions passed");

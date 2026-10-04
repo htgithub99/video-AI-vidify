@@ -1,9 +1,6 @@
 import { VoicePresetId } from "./enums";
-
 export const boundaries = [".", "!", "?", "…", "\n"];
-
 export const AUTO_VIDEO_DEFAULTS = { CONFIG_VERSION: 3, CHROME_HEADLESS: true, RESUME_MODE: true } as const;
-
 export const VOICE_MODIFIERS: Record<string, { speed: number; pitch: number }> = {
   [VoicePresetId.PRESET_VI_BAC_FEMALE]: { speed: 1.0, pitch: 1.04 },
   [VoicePresetId.PRESET_VI_BAC_MALE]: { speed: 0.95, pitch: 0.9 },
@@ -20,12 +17,10 @@ export const VOICE_MODIFIERS: Record<string, { speed: number; pitch: number }> =
   [VoicePresetId.OPENAI_TTS_ALLOY]: { speed: 1.0, pitch: 1.0 },
   [VoicePresetId.OPENAI_TTS_NOVA]: { speed: 1.05, pitch: 1.15 },
 };
-
 export const DEFAULT_SCENE_CAMERA_MOTION = "Zoom In";
 export const DEFAULT_SCENE_EFFECTS = "Soft natural lighting";
 export const DEFAULT_SCENE_LIGHTING_EFFECT = "natural_light";
 export const DEFAULT_SCENE_TRANSITION = "None";
-
 export const TEXT_PROCESSOR_CONFIGS = {
   MAX_CHUNK_SIZE: 2500,
   MIN_CHUNK_SIZE: 2000,

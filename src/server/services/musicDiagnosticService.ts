@@ -1,46 +1,132 @@
+import _ from "lodash";
+import {
+  SOURCE_TEMPLATE_MUSICDIAGNOSTICS_LOG_WRITE_FAILED,
+  SOURCE_TEXT_ACTUALCHARS,
+  SOURCE_TEXT_ATTACHMENTCOUNT,
+  SOURCE_TEXT_ATTEMPT,
+  SOURCE_TEXT_BATCH,
+  SOURCE_TEXT_BATCHSIZE,
+  SOURCE_TEXT_BODY,
+  SOURCE_TEXT_BUSY,
+  SOURCE_TEXT_BYTES,
+  SOURCE_TEXT_CANDIDATECHARS,
+  SOURCE_TEXT_CHECKPOINT,
+  SOURCE_TEXT_CHUNK,
+  SOURCE_TEXT_CHUNKCOUNT,
+  SOURCE_TEXT_CODE,
+  SOURCE_TEXT_CREATEDCOUNT,
+  SOURCE_TEXT_ELAPSEDMS,
+  SOURCE_TEXT_ERRORMESSAGE,
+  SOURCE_TEXT_ERRORNAME,
+  SOURCE_TEXT_EXPECTEDCHARS,
+  SOURCE_TEXT_FORMAT,
+  SOURCE_TEXT_IDENTITYMATCH,
+  SOURCE_TEXT_ISSUECOUNT,
+  SOURCE_TEXT_ISSUES,
+  SOURCE_TEXT_LOGS,
+  SOURCE_TEXT_LONG_QUOTED_TEXT,
+  SOURCE_TEXT_MODEL,
+  SOURCE_TEXT_MUSIC_WORKFLOW_JSONL,
+  SOURCE_TEXT_PARSED,
+  SOURCE_TEXT_PATH_2,
+  SOURCE_TEXT_PLAYLISTID,
+  SOURCE_TEXT_PROMPTCHARS,
+  SOURCE_TEXT_PROVIDER,
+  SOURCE_TEXT_PURPOSE,
+  SOURCE_TEXT_RECOVEREDCOUNT,
+  SOURCE_TEXT_REDACTED,
+  SOURCE_TEXT_RESPONSECHARS,
+  SOURCE_TEXT_RESPONSECOUNT,
+  SOURCE_TEXT_RETRYABLE,
+  SOURCE_TEXT_RUNID,
+  SOURCE_TEXT_SELECTEDCOUNT,
+  SOURCE_TEXT_SONGCOUNT,
+  SOURCE_TEXT_SONGID,
+  SOURCE_TEXT_SONGINDEX,
+  SOURCE_TEXT_STABLEPOLLS,
+  SOURCE_TEXT_STAGE,
+  SOURCE_TEXT_STATUS,
+  SOURCE_TEXT_TRACKCOUNT,
+  SOURCE_TEXT_URL_2,
+  SOURCE_TEXT_UTF8,
+  SOURCE_TEXT_VIDEOAI_VIDIFY,
+  SOURCE_TEXT_WORKERID,
+} from "../../constants/sourceText";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { logger } from "../../lib/logger.js";
 import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
-
-const logPath = path.join(process.env.LOCALAPPDATA || os.tmpdir(), "VideoAI-Vidify", "logs", "music-workflow.jsonl");
+const logPath = path.join(process.env.LOCALAPPDATA || os.tmpdir(), SOURCE_TEXT_VIDEOAI_VIDIFY, SOURCE_TEXT_LOGS, SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
-  "runId", "stage", "provider", "model", "workerId", "attempt", "batch", "batchSize",
-  "songIndex", "songId", "songCount", "trackCount", "selectedCount", "attachmentCount", "responseChars",
-  "issueCount", "elapsedMs", "format", "status", "createdCount", "recoveredCount",
-  "chunk", "chunkCount", "code", "errorName", "errorMessage", "retryable", "checkpoint",
-  "stablePolls", "candidateChars", "responseCount", "busy", "identityMatch", "playlistId", "body",
-  "expectedChars", "actualChars", "promptChars", "bytes", "purpose", "issues", "parsed",
-]);
-
-const sanitizeText = (value: unknown): string => String(value ?? "")
-  .replace(ANSI_ESCAPE_SEQUENCE_REGEX, "")
-  .split(/\r?\n/, 1)[0]
-  .replace(/(?:Bearer\s+|api[_-]?key[=:]\s*|token[=:]\s*)[^\s,;]+/gi, "[redacted]")
-  .replace(/https?:\/\/[^\s]+/gi, "[url]")
-  .replace(/[A-Z]:\\[^\s]+/gi, "[path]")
-  .replace(/\/[\w./-]+\.(?:mp3|wav|png|jpg)/gi, "[path]")
-  .replace(/(["'`]).{80,}?\1/g, "[long quoted text]")
-  .slice(0, 400);
-
+  SOURCE_TEXT_RUNID,
+  SOURCE_TEXT_STAGE,
+  SOURCE_TEXT_PROVIDER,
+  SOURCE_TEXT_MODEL,
+  SOURCE_TEXT_WORKERID,
+  SOURCE_TEXT_ATTEMPT,
+  SOURCE_TEXT_BATCH,
+  SOURCE_TEXT_BATCHSIZE,
+  SOURCE_TEXT_SONGINDEX,
+  SOURCE_TEXT_SONGID,
+  SOURCE_TEXT_SONGCOUNT,
+  SOURCE_TEXT_TRACKCOUNT,
+  SOURCE_TEXT_SELECTEDCOUNT,
+  SOURCE_TEXT_ATTACHMENTCOUNT,
+  SOURCE_TEXT_RESPONSECHARS,
+  SOURCE_TEXT_ISSUECOUNT,
+  SOURCE_TEXT_ELAPSEDMS,
+  SOURCE_TEXT_FORMAT,
+  SOURCE_TEXT_STATUS,
+  SOURCE_TEXT_CREATEDCOUNT,
+  SOURCE_TEXT_RECOVEREDCOUNT,
+  SOURCE_TEXT_CHUNK,
+  SOURCE_TEXT_CHUNKCOUNT,
+  SOURCE_TEXT_CODE,
+  SOURCE_TEXT_ERRORNAME,
+  SOURCE_TEXT_ERRORMESSAGE,
+  SOURCE_TEXT_RETRYABLE,
+  SOURCE_TEXT_CHECKPOINT,
+  SOURCE_TEXT_STABLEPOLLS,
+  SOURCE_TEXT_CANDIDATECHARS,
+  SOURCE_TEXT_RESPONSECOUNT,
+  SOURCE_TEXT_BUSY,
+  SOURCE_TEXT_IDENTITYMATCH,
+  SOURCE_TEXT_PLAYLISTID,
+  SOURCE_TEXT_BODY,
+  SOURCE_TEXT_EXPECTEDCHARS,
+  SOURCE_TEXT_ACTUALCHARS,
+  SOURCE_TEXT_PROMPTCHARS,
+  SOURCE_TEXT_BYTES,
+  SOURCE_TEXT_PURPOSE,
+  SOURCE_TEXT_ISSUES,
+  SOURCE_TEXT_PARSED,
+] as string[]);
+const sanitizeText = (value: unknown): string =>
+  String(value ?? "")
+    .replace(ANSI_ESCAPE_SEQUENCE_REGEX, "")
+    .split(/\r?\n/, 1)[0]
+    .replace(/(?:Bearer\s+|api[_-]?key[=:]\s*|token[=:]\s*)[^\s,;]+/gi, SOURCE_TEXT_REDACTED)
+    .replace(/https?:\/\/[^\s]+/gi, SOURCE_TEXT_URL_2)
+    .replace(/[A-Z]:\\[^\s]+/gi, SOURCE_TEXT_PATH_2)
+    .replace(/\/[\w./-]+\.(?:mp3|wav|png|jpg)/gi, SOURCE_TEXT_PATH_2)
+    .replace(/(["'`]).{80,}?\1/g, SOURCE_TEXT_LONG_QUOTED_TEXT)
+    .slice(0, 400);
 export const musicErrorDetails = (error: unknown): Record<string, string> => {
   const source = error instanceof Error ? error : new Error(String(error));
   return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message) };
 };
-
 export const writeMusicDiagnostic = async (event: string, details: Record<string, unknown> = {}): Promise<void> => {
   try {
     const safeDetails: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(details)) {
+    for (const [key, value] of _.toPairs(details)) {
       if (!safeKeys.has(key) || value === undefined || value === null) continue;
-      safeDetails[key] = typeof value === "string" ? sanitizeText(value)
-        : typeof value === "number" || typeof value === "boolean" ? value : undefined;
+      safeDetails[key] = typeof value === "string" ? sanitizeText(value) : typeof value === "number" || typeof value === "boolean" ? value : undefined;
     }
     await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.promises.appendFile(logPath, `${stringifyJson({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}\n`, "utf8");
+    await fs.promises.appendFile(logPath, `${stringifyJson({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}\n`, SOURCE_TEXT_UTF8);
   } catch (error) {
-    logger.warn(`[MusicDiagnostics] log write failed: ${musicErrorDetails(error).errorMessage}`);
+    logger.warn(SOURCE_TEMPLATE_MUSICDIAGNOSTICS_LOG_WRITE_FAILED(`${musicErrorDetails(error).errorMessage}`));
   }
 };

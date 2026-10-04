@@ -1,7 +1,7 @@
+import { SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEXT_CONTAINSDIALOGUE, SOURCE_TEXT_INSECONDS, SOURCE_TEXT_OFF_SCREEN_DIALOGUE, SOURCE_TEXT_OMIT, SOURCE_TEXT_ON_SCREEN_DIALOGUE, SOURCE_TEXT_OUTSECONDS, SOURCE_TEXT_SCENEID, SOURCE_TEXT_SYMBOL_32, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_TRIM, SOURCE_TEXT_USE } from "../constants/sourceText";
 import _ from "lodash";
 import { CINEMATIC_EDIT_ANALYSIS_CONFIG } from "../constants/config";
 import { CinematicEditSegment, StoryboardScene } from "../types";
-
 export interface CinematicClipAnalysisDecision {
   sceneId: string;
   takeDecision?: string;
@@ -30,24 +30,17 @@ export interface CinematicClipAnalysisDecision {
   segments?: CinematicEditSegment[];
   supportShotType?: StoryboardScene["cinematicSupportShotType"];
 }
-
 export const hasCinematicSceneDialogue = (scene: Partial<StoryboardScene>): boolean =>
-  (_.includes(["on_screen_dialogue", "off_screen_dialogue"], _.toString(scene.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene.spokenDialogue)))) ||
+  (_.includes([SOURCE_TEXT_ON_SCREEN_DIALOGUE, SOURCE_TEXT_OFF_SCREEN_DIALOGUE] as string[], _.toString(scene.dialogueMode)) && !_.isEmpty(_.trim(_.toString(scene.spokenDialogue)))) ||
   !_.isEmpty(_.trim(_.toString(scene.subtitle))) ||
-  (!CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_NEGATION_PROMPT_PATTERN.test(_.toString(scene.generationPrompt)) &&
-    CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_PROMPT_PATTERN.test(_.toString(scene.generationPrompt)));
-
+  (!CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_NEGATION_PROMPT_PATTERN.test(_.toString(scene.generationPrompt)) && CINEMATIC_EDIT_ANALYSIS_CONFIG.DIALOGUE_PROMPT_PATTERN.test(_.toString(scene.generationPrompt)));
 export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], decisions: CinematicClipAnalysisDecision[]): StoryboardScene[] => {
-  const decisionsByScene = _.keyBy(decisions, "sceneId");
+  const decisionsByScene = _.keyBy(decisions, SOURCE_TEXT_SCENEID);
   return _.map(scenes, (scene) => {
     const decision = decisionsByScene[scene.id];
     if (!decision) return scene;
     const technicalDecision = _.toString(decision.takeDecision);
-    const takeDecision: StoryboardScene["cinematicTakeDecision"] = _.isEqual(technicalDecision, "omit")
-      ? "omit"
-      : _.isEqual(technicalDecision, "trim")
-        ? "trim"
-        : "use";
+    const takeDecision: StoryboardScene["cinematicTakeDecision"] = _.isEqual(technicalDecision, SOURCE_TEXT_OMIT) ? SOURCE_TEXT_OMIT : _.isEqual(technicalDecision, SOURCE_TEXT_TRIM) ? SOURCE_TEXT_TRIM : SOURCE_TEXT_USE;
     return {
       ...scene,
       sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
@@ -55,13 +48,7 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
       sourceCrop: _.toString(decision.sourceCrop || ""),
       clipQaWarnings: _.uniq(_.castArray(decision.warnings || [])),
       cinematicTakeDecision: takeDecision,
-      cinematicTakeDecisionReason: _.join(
-        _.compact([
-          scene.cinematicTakeDecisionReason,
-          decision.reason,
-        ]),
-        ";",
-      ),
+      cinematicTakeDecisionReason: _.join(_.compact([scene.cinematicTakeDecisionReason, decision.reason]), SOURCE_TEXT_SYMBOL_32),
       transition: _.toString(decision.recommendedTransition || scene.transition),
       cinematicAudioBridgeMode: decision.audioBridgeMode,
       cinematicContinuityScore: _.isNumber(decision.continuityScore) ? decision.continuityScore : scene.cinematicContinuityScore,
@@ -69,48 +56,23 @@ export const applyCinematicClipAnalysisDecisions = (scenes: StoryboardScene[], d
       cinematicPerformanceScore: _.isNumber(decision.performanceScore) ? decision.performanceScore : scene.cinematicPerformanceScore,
       cinematicDialogueCoverageScore: _.isNumber(decision.dialogueCoverageScore) ? decision.dialogueCoverageScore : scene.cinematicDialogueCoverageScore,
       cinematicDialogueDetected: _.isBoolean(decision.dialogueDetected) ? decision.dialogueDetected : scene.cinematicDialogueDetected,
-      cinematicSpeechAnalysisAvailable: _.isBoolean(decision.speechAnalysisAvailable)
-        ? decision.speechAnalysisAvailable
-        : scene.cinematicSpeechAnalysisAvailable,
-      cinematicDetectedSpeechRanges: _.isArray(decision.detectedSpeechRanges)
-        ? decision.detectedSpeechRanges
-        : scene.cinematicDetectedSpeechRanges,
-      cinematicRecognizedTranscript: _.isString(decision.recognizedTranscript)
-        ? decision.recognizedTranscript
-        : scene.cinematicRecognizedTranscript,
-      cinematicDialogueCoverageRatio: _.isNumber(decision.dialogueCoverageRatio)
-        ? decision.dialogueCoverageRatio
-        : scene.cinematicDialogueCoverageRatio,
-      cinematicDialogueTextMatchScore: _.isNumber(decision.dialogueTextMatchScore)
-        ? decision.dialogueTextMatchScore
-        : scene.cinematicDialogueTextMatchScore,
-      cinematicDialogueMismatch: _.isBoolean(decision.dialogueMismatch)
-        ? decision.dialogueMismatch
-        : scene.cinematicDialogueMismatch,
-      cinematicSelectedDuration: _.isNumber(decision.selectedDuration)
-        ? decision.selectedDuration
-        : scene.cinematicSelectedDuration,
-      cinematicSimilarSceneId: _.isString(decision.visuallySimilarToSceneId)
-        ? decision.visuallySimilarToSceneId
-        : scene.cinematicSimilarSceneId,
-      cinematicVisualSimilarityScore: _.isNumber(decision.visualSimilarityScore)
-        ? decision.visualSimilarityScore
-        : scene.cinematicVisualSimilarityScore,
+      cinematicSpeechAnalysisAvailable: _.isBoolean(decision.speechAnalysisAvailable) ? decision.speechAnalysisAvailable : scene.cinematicSpeechAnalysisAvailable,
+      cinematicDetectedSpeechRanges: _.isArray(decision.detectedSpeechRanges) ? decision.detectedSpeechRanges : scene.cinematicDetectedSpeechRanges,
+      cinematicRecognizedTranscript: _.isString(decision.recognizedTranscript) ? decision.recognizedTranscript : scene.cinematicRecognizedTranscript,
+      cinematicDialogueCoverageRatio: _.isNumber(decision.dialogueCoverageRatio) ? decision.dialogueCoverageRatio : scene.cinematicDialogueCoverageRatio,
+      cinematicDialogueTextMatchScore: _.isNumber(decision.dialogueTextMatchScore) ? decision.dialogueTextMatchScore : scene.cinematicDialogueTextMatchScore,
+      cinematicDialogueMismatch: _.isBoolean(decision.dialogueMismatch) ? decision.dialogueMismatch : scene.cinematicDialogueMismatch,
+      cinematicSelectedDuration: _.isNumber(decision.selectedDuration) ? decision.selectedDuration : scene.cinematicSelectedDuration,
+      cinematicSimilarSceneId: _.isString(decision.visuallySimilarToSceneId) ? decision.visuallySimilarToSceneId : scene.cinematicSimilarSceneId,
+      cinematicVisualSimilarityScore: _.isNumber(decision.visualSimilarityScore) ? decision.visualSimilarityScore : scene.cinematicVisualSimilarityScore,
       cinematicObservedShotCount: _.toNumber(decision.observedShotCount),
       cinematicEditSegments: _.castArray(decision.segments || []),
       cinematicSupportShotType: decision.supportShotType,
     };
   });
 };
-
-const roundTimelineSeconds = (value: number): number =>
-  Number(value.toFixed(CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_NUMBER_PRECISION));
-
-const normalizeCinematicEditSegments = (
-  scene: StoryboardScene,
-  safeStartSeconds: number,
-  safeEndSeconds: number,
-): CinematicEditSegment[] => {
+const roundTimelineSeconds = (value: number): number => Number(value.toFixed(CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_NUMBER_PRECISION));
+const normalizeCinematicEditSegments = (scene: StoryboardScene, safeStartSeconds: number, safeEndSeconds: number): CinematicEditSegment[] => {
   const validSegments = _.sortBy(
     _.compact(
       _.map(_.castArray(scene.cinematicEditSegments || []), (segment) => {
@@ -120,9 +82,8 @@ const normalizeCinematicEditSegments = (
         return { ...segment, inSeconds, outSeconds };
       }),
     ),
-    ["inSeconds", "outSeconds"],
+    [SOURCE_TEXT_INSECONDS, SOURCE_TEXT_OUTSECONDS],
   );
-
   return _.reduce(
     validSegments,
     (segments, segment) => {
@@ -130,10 +91,7 @@ const normalizeCinematicEditSegments = (
       if (previous && _.lte(segment.inSeconds, previous.outSeconds + CINEMATIC_EDIT_ANALYSIS_CONFIG.LIBRARY.segment_merge_gap_seconds)) {
         previous.outSeconds = _.max([previous.outSeconds, segment.outSeconds]) || previous.outSeconds;
         previous.containsDialogue = previous.containsDialogue || segment.containsDialogue;
-        previous.storyContribution = _.join(
-          _.uniq(_.compact([_.trim(previous.storyContribution), _.trim(segment.storyContribution)])),
-          "; ",
-        );
+        previous.storyContribution = _.join(_.uniq(_.compact([_.trim(previous.storyContribution), _.trim(segment.storyContribution)])), SOURCE_TEXT_SYMBOL_6);
         return segments;
       }
       segments.push({ ...segment });
@@ -142,39 +100,32 @@ const normalizeCinematicEditSegments = (
     [] as CinematicEditSegment[],
   );
 };
-
 export const createCinematicEditTimeline = (scenes: StoryboardScene[]): StoryboardScene[] =>
   _.flatMap(scenes, (scene) => {
     const zeroSeconds = CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_ZERO_SECONDS;
     const sourceDuration = _.max([zeroSeconds, _.toNumber(scene.duration)]) || zeroSeconds;
     const safeStartSeconds = _.clamp(_.defaultTo(_.toNumber(scene.sourceTrimStartSeconds), zeroSeconds), zeroSeconds, sourceDuration);
-    const safeEndTrimSeconds = _.clamp(
-      _.defaultTo(_.toNumber(scene.sourceTrimEndSeconds), zeroSeconds),
-      zeroSeconds,
-      _.max([zeroSeconds, sourceDuration - safeStartSeconds]) || zeroSeconds,
-    );
+    const safeEndTrimSeconds = _.clamp(_.defaultTo(_.toNumber(scene.sourceTrimEndSeconds), zeroSeconds), zeroSeconds, _.max([zeroSeconds, sourceDuration - safeStartSeconds]) || zeroSeconds);
     const safeEndSeconds = _.max([safeStartSeconds, sourceDuration - safeEndTrimSeconds]) || safeStartSeconds;
     const segments = normalizeCinematicEditSegments(scene, safeStartSeconds, safeEndSeconds);
     if (_.isEmpty(segments)) {
       const duration = _.max([zeroSeconds, safeEndSeconds - safeStartSeconds]) || zeroSeconds;
-      return [{
-        ...scene,
-        duration: roundTimelineSeconds(duration),
-        sourceTrimStartSeconds: roundTimelineSeconds(safeStartSeconds),
-        sourceTrimEndSeconds: roundTimelineSeconds(sourceDuration - safeEndSeconds),
-        subtitleCues: [],
-      }];
+      return [
+        {
+          ...scene,
+          duration: roundTimelineSeconds(duration),
+          sourceTrimStartSeconds: roundTimelineSeconds(safeStartSeconds),
+          sourceTrimEndSeconds: roundTimelineSeconds(sourceDuration - safeEndSeconds),
+          subtitleCues: [],
+        },
+      ];
     }
-
     const sceneHasDialogue = hasCinematicSceneDialogue(scene);
-    const hasLocatedDialogue = _.some(segments, "containsDialogue");
+    const hasLocatedDialogue = _.some(segments, SOURCE_TEXT_CONTAINSDIALOGUE);
     return _.map(segments, (segment, segmentIndex) => {
       const preserveDialogueMetadata = sceneHasDialogue && (segment.containsDialogue || !hasLocatedDialogue);
       const segmentName = _.kebabCase(segment.segmentId) || CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_SEGMENT_FALLBACK_PREFIX;
-      const timelineId = _.join(
-        [scene.id, `${segmentName}-${segmentIndex + CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_INDEX_OFFSET}`],
-        CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_SEGMENT_ID_SEPARATOR,
-      );
+      const timelineId = _.join([scene.id, SOURCE_TEMPLATE_SYMBOL_5(`${segmentName}`, `${segmentIndex + CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_INDEX_OFFSET}`)], CINEMATIC_EDIT_ANALYSIS_CONFIG.TIMELINE_SEGMENT_ID_SEPARATOR);
       return {
         ...scene,
         id: timelineId,
@@ -191,6 +142,4 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
       };
     });
   });
-
-export const countCinematicTimelineShots = (scenes: StoryboardScene[]): number =>
-  _.size(createCinematicEditTimeline(scenes));
+export const countCinematicTimelineShots = (scenes: StoryboardScene[]): number => _.size(createCinematicEditTimeline(scenes));

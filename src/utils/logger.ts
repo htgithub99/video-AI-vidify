@@ -1,8 +1,6 @@
 import _ from "lodash";
 import { ConsoleLogType, REFACTOR_CONSTANTS } from "../constants";
-
 type LogListener = (type: ConsoleLogType, args: unknown[]) => void;
-
 const listeners = new Set<LogListener>();
 const systemConsole = globalThis.console;
 const nativeConsole = {
@@ -12,11 +10,9 @@ const nativeConsole = {
   debug: systemConsole.debug.bind(systemConsole),
 };
 let isIntercepting = false;
-
 const notifyListeners = (type: ConsoleLogType, args: unknown[]): void => {
   _.forEach(Array.from(listeners), (listener) => listener(type, args));
 };
-
 const installInterceptor = (): void => {
   if (isIntercepting) return;
   isIntercepting = true;
@@ -33,7 +29,6 @@ const installInterceptor = (): void => {
     nativeConsole.error(...args);
   };
 };
-
 const removeInterceptor = (): void => {
   if (!isIntercepting || !_.isEmpty(listeners)) return;
   systemConsole.log = nativeConsole.log;
@@ -41,7 +36,6 @@ const removeInterceptor = (): void => {
   systemConsole.error = nativeConsole.error;
   isIntercepting = false;
 };
-
 export const subscribeToLogs = (listener: LogListener): (() => void) => {
   listeners.add(listener);
   installInterceptor();
@@ -50,7 +44,6 @@ export const subscribeToLogs = (listener: LogListener): (() => void) => {
     removeInterceptor();
   };
 };
-
 export const logger = {
   log: (...args: unknown[]) => {
     systemConsole.log(...args);

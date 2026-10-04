@@ -1,3 +1,4 @@
+import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -53,11 +54,11 @@ assert.equal(
   "Visual DNA: 2D stickfigure cartoon style set against a moody background.",
 );
 
-const pipeline = fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8");
+const pipeline = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8"));
 assert.match(pipeline, /startPipeline/);
 assert.doesNotMatch(pipeline, /referencesAreShared/);
 
-const controller = fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8");
+const controller = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8"));
 assert.match(controller, /requestedStyle[\s\S]*resolveStylePreset\(requestedStyle\)/);
 assert.match(controller, /profileVersion: STYLE_EXTRACTION_CONFIG\.PROFILE_VERSION/);
 assert.match(controller, new RegExp(`PROJECT_ASSET_GROUP\\.${PROJECT_ASSET_GROUP.VISUALS.toUpperCase()}`));

@@ -1,3 +1,4 @@
+import { SOURCE_TEXT_VI } from "../../constants/sourceText";
 import React from "react";
 import _ from "lodash";
 import { Clock, Globe, Layers, Settings2, Sliders, ChevronDown } from "lucide-react";
@@ -7,7 +8,6 @@ import { DURATION_OPTIONS, GENRE_OPTION_GROUPS, PROJECT_LANGUAGE_OPTIONS, SPLIT_
 import { SCRIPT_DURATION_LABELS, GENRE_GROUP_LABELS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { Lang } from "../../lib/lang";
-
 interface ScriptSettingsCardProps {
   genre: string;
   setGenre: (val: string) => void;
@@ -22,25 +22,10 @@ interface ScriptSettingsCardProps {
   lockedGenreLabel?: string;
   currentLang?: Lang;
 }
-
-export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
-  genre,
-  setGenre,
-  language,
-  setLanguage,
-  duration,
-  setDuration,
-  splitStrategy,
-  setSplitStrategy,
-  splitLabelMap,
-  T,
-  lockedGenreLabel,
-  currentLang = "vi",
-}) => {
-  const safeLang = (currentLang as "vi" | "en") || "vi";
+export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({ genre, setGenre, language, setLanguage, duration, setDuration, splitStrategy, setSplitStrategy, splitLabelMap, T, lockedGenreLabel, currentLang = SOURCE_TEXT_VI }) => {
+  const safeLang = (currentLang as "vi" | "en") || SOURCE_TEXT_VI;
   const durationLabels = SCRIPT_DURATION_LABELS[safeLang] || SCRIPT_DURATION_LABELS.vi;
   const genreGroupLabels = GENRE_GROUP_LABELS[safeLang] || GENRE_GROUP_LABELS.vi;
-
   const selectFields = [
     {
       label: T.lblGenre,
@@ -48,14 +33,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
       value: genre,
       onChange: setGenre,
       optionGroups: _.map(GENRE_OPTION_GROUPS, (group, idx) => ({
-        label:
-          idx === 0
-            ? genreGroupLabels.SATIRICAL
-            : idx === 1
-              ? genreGroupLabels.STORY_EXPLAINER
-              : idx === 2
-                ? genreGroupLabels.DOCUMENTARY_KNOWLEDGE
-                : genreGroupLabels.YOUTUBE_TRENDING,
+        label: idx === 0 ? genreGroupLabels.SATIRICAL : idx === 1 ? genreGroupLabels.STORY_EXPLAINER : idx === 2 ? genreGroupLabels.DOCUMENTARY_KNOWLEDGE : genreGroupLabels.YOUTUBE_TRENDING,
         options: group.options,
       })),
     },
@@ -90,7 +68,6 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
       })),
     },
   ];
-
   return (
     <div className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center gap-2.5 relative z-10 border-b border-slate-800/80 pb-3")}>
@@ -99,7 +76,6 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
         </span>
         <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono truncate")}>{T.scriptSettingsTitle}</h3>
       </div>
-
       <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-10")}>
         {_.map(selectFields, ({ label, icon, value, onChange, options, optionGroups }, fieldIndex) => (
           <div key={label} className={cn("space-y-1.5 min-w-0")}>
@@ -109,10 +85,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({
               {fieldIndex === 0 && lockedGenreLabel ? (
                 <span className={cn("flex-1 text-amber-400 text-xs font-semibold truncate")}>{lockedGenreLabel}</span>
               ) : (
-                <select
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none truncate")}>
+                <select value={value} onChange={(e) => onChange(e.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none truncate")}>
                   {optionGroups
                     ? _.map(optionGroups, (group) => (
                         <optgroup key={group.label} label={group.label} className={cn("bg-slate-950 text-slate-400")}>

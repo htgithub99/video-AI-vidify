@@ -1,5 +1,4 @@
 import { RefObject, useEffect } from "react";
-
 export const usePausedVideoPreview = (videoRef: RefObject<HTMLVideoElement>, source: string): void => {
   useEffect(() => {
     const video = videoRef.current;

@@ -82,9 +82,6 @@ export const API_ROUTES = {
   SHORTS_BUILD_ZIP: "/api/shorts/build-zip",
   SHORTS_STREAM_SOURCE: "/api/shorts/stream-source",
 } as const;
-
-
-
 export const EXTERNAL_URLS = {
   GOOGLE_FONTS_MERIENDA: "https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&display=swap",
   FFMPEG_URL: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z",
@@ -114,7 +111,6 @@ export const EXTERNAL_URLS = {
   GOOGLE_HOME: "https://www.google.com/",
   LOCALHOST: "http://127.0.0.1",
 } as const;
-
 export const ALIGN_CONFIG = {
   TEMP_DIR: "temp_align",
   SCRIPT_FILE: "python_scripts/voice_aligner.py",
@@ -130,7 +126,6 @@ export const ALIGN_CONFIG = {
   JSON_EXT: ".json",
   LEGACY_SEGMENT_FILE_REGEX: /^scene_sc_.+\.wav$/,
 };
-
 export const EXPORT_ZIP_CONFIG = {
   ERR_MISSING_PROJECT: "Missing projectId",
   ERR_PROJECT_NOT_FOUND: "Project not found",
@@ -145,7 +140,6 @@ export const EXPORT_ZIP_CONFIG = {
   WAV_EXT: ".wav",
   EXPORT_FILE: "export.zip",
 };
-
 export const ENCODING_UTF8 = "utf-8";
 export const PROJECTS_FILE_NAME = "projects.json";
 export const SQLITE_DB_NAME = "database.db";
@@ -156,7 +150,6 @@ export const IMAGES_DIR_NAME = "images";
 export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
-
 export const API_HEADERS = {
   AI33_API_KEY: "x-ai33-api-key",
   GEMINI_API_KEY: "x-gemini-api-key",
@@ -164,7 +157,6 @@ export const API_HEADERS = {
   GROQ_API_KEY: "x-groq-api-key",
   LICENSE_KEY: "x-license-key",
 } as const;
-
 export const SERVER_ROUTES = {
   PROJECTS: "/projects",
   PROJECTS_ID: "/projects/:id",
@@ -174,7 +166,6 @@ export const SERVER_ROUTES = {
   SETTINGS: "/settings",
   SHORTS: "/shorts",
 } as const;
-
 export const SHORTS_API_PATHS = {
   BASE: "/shorts",
   METADATA: "/metadata",
@@ -186,14 +177,10 @@ export const SHORTS_API_PATHS = {
   BUILD_ZIP: "/build-zip",
   STREAM_SOURCE: "/stream-source",
 } as const;
-
-
-
 export const SETTINGS_API_PATHS = {
   GAS_CONFIG: "/gas-config",
   API_KEYS: "/api-keys",
   ACCOUNTS: "/accounts",
   ACCOUNTS_STATUS: "/accounts/status",
 } as const;
-
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;
