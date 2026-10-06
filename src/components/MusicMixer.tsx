@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import {
   SOURCE_TEXT_DESC,
   SOURCE_TEMPLATE_0,
@@ -106,7 +107,7 @@ const selectZipDestination = async (name: string): Promise<string | null> => {
   const destinationResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SELECT_ZIP_DESTINATION, {
     method: SOURCE_TEXT_POST,
     headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-    body: JSON.stringify({ suggestedName: name }),
+    body: stringifyJson({ suggestedName: name }),
   });
   const destination = await destinationResponse.json();
   if (!destinationResponse.ok || !destination.success) throw new Error(destination.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
@@ -141,7 +142,7 @@ const createSeo = (folder: ResultFolder) => {
 };
 const ensureTrackFile = async (track: Track): Promise<File> => {
   if (track.file.size > 0 || (!track.sourcePath && !track.sourceUrl)) return track.file;
-  const response = track.sourcePath ? await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SOURCE_FILE, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: JSON.stringify({ sourcePath: track.sourcePath }) }) : await fetch(track.sourceUrl!);
+  const response = track.sourcePath ? await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SOURCE_FILE, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ sourcePath: track.sourcePath }) }) : await fetch(track.sourceUrl!);
   if (!response.ok) throw new Error(MUSIC_MIXER_SERVER.SOURCE_READ_ERROR);
   const blob = await response.blob();
   return new File([blob], track.file.name, { type: blob.type || track.file.type });
@@ -193,7 +194,7 @@ const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) =>
           zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${numberedName(track.file, index)}`),
         })),
         texts: [
-          { zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`), content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
+          { zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`), content: stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2) },
           { zipPath: SOURCE_TEMPLATE_SYMBOL(`${folder.name}`, `${MUSIC_MIXER_SERVER.SEO_TXT_FILENAME}`), content: formatSeoText(folder) },
         ],
       };
@@ -202,7 +203,7 @@ const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) =>
   const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
     method: SOURCE_TEXT_POST,
     headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-    body: JSON.stringify(payload),
+    body: stringifyJson(payload),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
@@ -219,7 +220,7 @@ const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder)
           zipPath: numberedName(track.file, index),
         })),
         texts: [
-          { zipPath: MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, content: JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2) },
+          { zipPath: MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, content: stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2) },
           { zipPath: MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, content: formatSeoText(folder) },
         ],
       },
@@ -228,7 +229,7 @@ const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder)
   const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_BUILD_ZIP, {
     method: SOURCE_TEXT_POST,
     headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-    body: JSON.stringify(payload),
+    body: stringifyJson(payload),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
@@ -517,7 +518,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               method: SOURCE_TEXT_POST,
               signal: abortController.signal,
               headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-              body: JSON.stringify({ projectId: folderProjectId, tracks: _.map(folder.tracks, (track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }),
+              body: stringifyJson({ projectId: folderProjectId, tracks: _.map(folder.tracks, (track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }),
             });
             const ranking = await response.json();
             if (!response.ok || !ranking.success) throw new Error(ranking.error || text.RANK_ERROR);
@@ -534,7 +535,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               method: SOURCE_TEXT_POST,
               signal: abortController.signal,
               headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-              body: JSON.stringify({ titles: _.map(orderedTracks, (track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }),
+              body: stringifyJson({ titles: _.map(orderedTracks, (track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }),
             });
             const seoPayload = await seoResponse.json();
             if (!seoResponse.ok || !seoPayload.success) throw new Error(seoPayload.error || text.RANK_ERROR);
@@ -567,7 +568,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
         void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
           method: SOURCE_TEXT_POST,
           headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-          body: JSON.stringify({ projectIds: finishedFolderProjectIds, projectId: finishedProjectId, provider: seoProvider }),
+          body: stringifyJson({ projectIds: finishedFolderProjectIds, projectId: finishedProjectId, provider: seoProvider }),
         }).catch(() => undefined);
       }
     }
@@ -581,7 +582,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     abortRef.current = null;
     const projectId = projectIdRef.current;
     projectIdRef.current = null;
-    if (projectId) void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: JSON.stringify({ projectIds: folderProjectIdsRef.current, projectId, provider: seoProvider }) }).catch(() => undefined);
+    if (projectId) void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ projectIds: folderProjectIdsRef.current, projectId, provider: seoProvider }) }).catch(() => undefined);
   };
   const downloadAll = async () => {
     if (_.isEmpty(results)) return;
@@ -602,7 +603,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
           const seo = folder.seo || createSeo(folder);
           zip
             .folder(folder.name)!
-            .file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2))
+            .file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2))
             .file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
         });
         const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
@@ -633,7 +634,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
         const zip = new JSZip();
         for (const [index, track] of folder.tracks.entries()) zip.file(numberedName(track.file, index), await ensureTrackFile(track));
         const seo = folder.seo || createSeo(folder);
-        zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, JSON.stringify({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
+        zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
         const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
         await saveZip(blob, destinationToken);
       }

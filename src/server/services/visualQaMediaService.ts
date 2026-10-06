@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import _ from "lodash";
 import { BASE64_VIDEO_MIME_REGEX, FFMPEG_RENDER_CONSTANTS, REFACTOR_CONSTANTS, VISUAL_QA_MEDIA_CONFIG } from "../../constants/index.js";
-import { getDataDirectory, getStaticResourcePath } from "../utils/paths.js";
+import { getStaticResourcePath, getTempDirectory } from "../utils/paths.js";
 import { EncodedImageAsset, readEncodedProjectImage, resolveLocalProjectAssetPath } from "./imageAssetService.js";
 const runFrameExtraction = (inputPath: string, outputPattern: string): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -16,7 +16,7 @@ const runFrameExtraction = (inputPath: string, outputPattern: string): Promise<v
     process.once(SOURCE_TEXT_EXIT, (code) => (_.isEqual(code, 0) ? resolve() : reject(new Error(VISUAL_QA_MEDIA_CONFIG.EXTRACTION_FAILED))));
   });
 const extractVideoFrames = async (assetUrl: string): Promise<EncodedImageAsset[]> => {
-  const tempDir = path.join(getDataDirectory(), `${VISUAL_QA_MEDIA_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  const tempDir = path.join(getTempDirectory(), `${VISUAL_QA_MEDIA_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
   fs.mkdirSync(tempDir, { recursive: true });
   try {
     const dataUrlMatch = assetUrl.match(BASE64_VIDEO_MIME_REGEX);

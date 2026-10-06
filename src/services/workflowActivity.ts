@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import _ from "lodash";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 export type WorkflowArea = typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.music | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.flow;
@@ -57,7 +58,7 @@ const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 const persist = () => {
   try {
-    localStorage.setItem(WORKFLOW_ACTIVITY_CONFIG.STORAGE_KEY, JSON.stringify(activities));
+    localStorage.setItem(WORKFLOW_ACTIVITY_CONFIG.STORAGE_KEY, stringifyJson(activities));
   } catch {
     return;
   }

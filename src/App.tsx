@@ -1,30 +1,30 @@
-import { SOURCE_TEMPLATE_AUTO, SOURCE_TEMPLATE_FILM, SOURCE_TEMPLATE_PARENT, SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_2, SOURCE_TEMPLATE_SYMBOL_3, SOURCE_TEXT_AUTO, SOURCE_TEXT_CINEMATIC_AI_EPISODE, SOURCE_TEXT_CINEMATIC_PHOTOREAL, SOURCE_TEXT_FILM, SOURCE_TEXT_SINGLE, SOURCE_TEXT_TOP_RIGHT } from "./constants/sourceText";
-import { cn } from "./lib/utils";
-import { ErrorMessage } from "./constants";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Toaster } from "sonner";
-import Header from "./components/Header.tsx";
-import Sidebar from "./components/Sidebar.tsx";
-import ProjectList from "./components/ProjectList.tsx";
-import SettingsView from "./components/SettingsView.tsx";
-import DashboardView from "./components/DashboardView.tsx";
-import { PageLoadingSpinner } from "./components/ui/Skeleton.tsx";
-import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGenerationMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
-import { Lang } from "./lib/lang.js";
-import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS, CINEMATIC_CONFIG, STYLE_PRESET_CONFIG } from "./constants";
-import { AppTab, VideoGenre } from "./constants/enums";
 import _ from "lodash";
-import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
-import { jsonUtils } from "./lib/json";
-import { storageUtils } from "./lib/storage";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Toaster } from "sonner";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
+import DashboardView from "./components/DashboardView.tsx";
+import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
+import Header from "./components/Header.tsx";
+import MotionVideoCreator from "./components/MotionVideoCreator.tsx";
 import MusicCreator from "./components/MusicCreator.tsx";
 import MusicMixer from "./components/MusicMixer.tsx";
-import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
+import ProjectList from "./components/ProjectList.tsx";
+import SettingsView from "./components/SettingsView.tsx";
 import ShortsExtractor from "./components/ShortsExtractor.tsx";
+import Sidebar from "./components/Sidebar.tsx";
+import { PageLoadingSpinner } from "./components/ui/Skeleton.tsx";
 import VideoExporter from "./components/VideoExporter.tsx";
+import { API_ROUTES, CINEMATIC_CONFIG, COMMON_STRINGS, CONTENT_TYPE_HEADER, CONTENT_TYPES, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, ErrorMessage, HTTP_METHODS, LOADING_CONFIG, PROJECT_LIST_CONSTANTS, REFACTOR_CONSTANTS, STORAGE_KEYS, STYLE_PRESET_CONFIG, THEME_VALUES } from "./constants";
+import { AppTab, VideoGenre } from "./constants/enums";
+import { SOURCE_TEMPLATE_AUTO, SOURCE_TEMPLATE_FILM, SOURCE_TEMPLATE_PARENT, SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_2, SOURCE_TEMPLATE_SYMBOL_3, SOURCE_TEXT_AUTO, SOURCE_TEXT_CINEMATIC_AI_EPISODE, SOURCE_TEXT_CINEMATIC_PHOTOREAL, SOURCE_TEXT_FILM, SOURCE_TEXT_SINGLE, SOURCE_TEXT_TOP_RIGHT } from "./constants/sourceText";
+import { jsonUtils } from "./lib/json";
+import { Lang } from "./lib/lang.js";
+import { appError, setLogLanguage } from "./lib/logger.js";
+import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
+import { storageUtils } from "./lib/storage";
+import { cn } from "./lib/utils";
+import { AgeGroup, AspectRatio, AssetsMode, AudioType, Gender, GenerateType, HookPosition, ImageGenerationMode, ImageGeneratorEngine, ProjectInputType, ProjectKind, ProjectLanguage, PromptInputMethod, VideoProject } from "./types.js";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
   if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
@@ -581,6 +581,11 @@ export default function App() {
           {_.isEqual(activeTab, AppTab.VIDEO_EXPORT) && (
             <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
               <VideoExporter currentLang={currentLang} />
+            </div>
+          )}
+          {_.isEqual(activeTab, AppTab.MOTION_VIDEO) && (
+            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+              <MotionVideoCreator currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.SETTINGS) && (

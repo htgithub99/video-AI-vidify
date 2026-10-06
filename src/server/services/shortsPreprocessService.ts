@@ -24,7 +24,7 @@ import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import _ from "lodash";
-import { getStaticResourcePath, getDataDirectory } from "../utils/paths.js";
+import { getStaticResourcePath, getTempDirectory } from "../utils/paths.js";
 import { ShortsSourceMetadata } from "../../types/shorts.js";
 import { SHORTS_CONSTANTS, SHORTS_LOG_MESSAGES, SHORTS_TEXTS } from "../../constants/shorts.js";
 import { logger } from "../../lib/logger.js";
@@ -91,7 +91,7 @@ export const extractAudioFromVideo = async (videoPath: string, customOutputDir?:
   if (!fs.existsSync(videoPath)) {
     throw new Error(`${SHORTS_TEXTS.ERR_FILE_NOT_FOUND} ${videoPath}`);
   }
-  const targetDir = customOutputDir || path.join(getDataDirectory(), SHORTS_CONSTANTS.TEMP_AUDIO_DIR);
+  const targetDir = customOutputDir || path.join(getTempDirectory(), SHORTS_CONSTANTS.TEMP_AUDIO_DIR);
   await fs.promises.mkdir(targetDir, { recursive: true });
   const outputAudioName = SOURCE_TEMPLATE_AUDIO(`${Date.now()}`, `${SHORTS_CONSTANTS.TEMP_AUDIO_NAME}`);
   const outputAudioPath = path.join(targetDir, outputAudioName);

@@ -1,0 +1,14 @@
+Third-party code bundled in this folder
+=======================================
+
+three.min.js
+  - three.js r169 and selected examples/jsm addons — MIT License, (c) 2010-2024 three.js authors (see THREE_LICENSE.txt)
+  - meshoptimizer decoder — MIT License, (c) 2016-2024 Arseny Kapoulkine
+  - fflate — MIT License, (c) 2023 Arjun Barrett
+
+draco/
+  - Draco 3D geometry decoder — Apache License 2.0, (c) Google LLC, https://github.com/google/draco
+    Only used by the app when importing Draco-compressed glTF models.
+
+3D assets downloaded at runtime from Poly Haven (https://polyhaven.com) are CC0 (public domain).
+Models the user imports keep their own licences; the tool records source/licence per model.

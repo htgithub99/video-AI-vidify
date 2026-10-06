@@ -5,9 +5,42 @@ __pycache__/
 .pnp
 .pnp.js
 
+# Local data: videos, libraries (characters, 3D, cartoon), projects, database, browser profiles
+/storage/
+
+# Legacy data locations (moved into /storage automatically on start)
+output/
+/output-test/
+/motion-real/
+/short-videos/
+/Claude outputs/
+projects/
+assets/projects/
+database.db*
+*.db
+*.db-shm
+*.db-wal
+projects.json
+projects.backup.json
+projects_backup_json/
+motion-library.json
+google_accounts.json
+google_profile/
+google-profile/
+google_profiles/
+suno_chrome_profile/
+device_id.json
+data/
+templates/
+
 # Production / Build outputs
 dist/
 dist-ssr/
+dist-desktop*/
+build-desktop*/
+electron-dist*/
+builds/
+release/
 *.local
 
 # Environment variables
@@ -19,13 +52,33 @@ dist-ssr/
 .env.production.local
 
 # Debug logs and diagnostics
+*.log
+logs/
 gemini_dom_diagnostics.jsonl
 google_login_dom_diagnostics.jsonl
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-*.log
+
+# Scratch & temporary workspaces
+scratch/
+workspace/
+tmp/
+.tmp/
+.tmp_*/
+.codex-review/
+temp_render_*/
+temp_align/
+temp_shorts_audio/
+ultra_opts_*.json
+new_dictionary.json
+activeSceneId.txt
+diff.txt
+vite.config.ts.timestamp-*
+clean-build.ps1
+.cache/
+ms-playwright/
 
 # Editor & System files
 .DS_Store
@@ -37,71 +90,11 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# Puppeteer / Playwright browser profiles and caches
-google_profile/
-google-profile/
-google_profiles/
-google_accounts.json
-suno_chrome_profile/
-.cache/
-ms-playwright/
-
-# Scratch & Temporary workspaces
-scratch/
-workspace/
-projects.json
-new_dictionary.json
-activeSceneId.txt
-temp_render_*/
-
-# Local Projects Database and Assets
-projects/
-assets/projects/
-database.db*
-*.db
-*.db-shm
-ms-playwright/
-
-# Scratch & Temporary workspaces
-scratch/
-workspace/
-projects.json
-new_dictionary.json
-activeSceneId.txt
-temp_render_*/
-
-# Local Projects Database and Assets
-projects/
-assets/projects/
-database.db*
-*.db
-*.db-shm
-*.db-wal
-projects.backup.json
-projects_backup_json/
+# Generated media and binaries
 ffmpeg.exe
-diff.txt
-vite.config.ts.timestamp-*
-dist-desktop*/
-build-desktop*/
-electron-dist*/
-builds/
-release/
-temp_align/
-clean-build.ps1
-.vscode/
 package-lock.json
-templates/capcut/*.json
-templates/
-ultra_opts_*.json
-
-# Generated Output and Media files
-output/
-data/
-output/shorts/
 *.mp4
 *.m4a
 *.wav
 *.mp3
 *.zip
-

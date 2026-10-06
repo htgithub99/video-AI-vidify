@@ -62,6 +62,10 @@ if (Test-Path "python_scripts") {
     Copy-Item -Path "python_scripts" -Destination "$ReleaseDir\resources\" -Recurse -Force
 }
 
+if (Test-Path "motion-engine") {
+    Copy-Item -Path "motion-engine" -Destination "$ReleaseDir\resources\" -Recurse -Force
+}
+
 if (Test-Path "assets") {
     Copy-Item -Path "assets" -Destination $AppResourceDir -Recurse -Force
     Copy-Item -Path "assets" -Destination "$ReleaseDir\resources\" -Recurse -Force

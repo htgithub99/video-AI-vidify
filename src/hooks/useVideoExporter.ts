@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { VIDEO_EXPORT_TEXT_APPLICATION_JSON, VIDEO_EXPORT_TEXT_DESC, VIDEO_EXPORT_TEXT_OBJECT, VIDEO_EXPORT_TEXT_POST } from "../constants/videoExportText";
 import { pickVideoExportEnum as pickStoredEnum, resolveVideoExportConfig } from "../lib/videoExportConfig";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -93,7 +94,7 @@ export function useVideoExporter(lang: Lang) {
   );
   const currentPreviewSignature = useMemo(
     () =>
-      JSON.stringify({
+      stringifyJson({
         token: source?.token ?? "",
         audioIndexes: _.map(selectedAudios, (item) => item.index),
         imageIndexes: _.map(selectedImages, (item) => item.index),
@@ -301,7 +302,7 @@ export function useVideoExporter(lang: Lang) {
       void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
         method: VIDEO_EXPORT_TEXT_POST,
         headers: { "Content-Type": VIDEO_EXPORT_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({ projectId, projectIds: [projectId], provider: aiProvider }),
+        body: stringifyJson({ projectId, projectIds: [projectId], provider: aiProvider }),
       }).catch(() => undefined);
     },
     [aiProvider],

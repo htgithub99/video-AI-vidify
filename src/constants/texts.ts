@@ -1,5 +1,5 @@
 import { translations } from "../lib/lang.js";
-import { VideoGenre, SortOrder } from "./enums.js";
+import { SortOrder, VideoGenre } from "./enums.js";
 export const FLOW_VIDEO_TEXTS = {
   vi: {
     SELECT_FOLDER_ERROR: "Không thể chọn thư mục.",
@@ -536,6 +536,7 @@ export const SIDEBAR_TEXTS = {
     VIDEO_CREATOR: "Tạo video Flow",
     SHORTS_EXTRACTOR: "Tạo Shorts AI",
     VIDEO_EXPORT: "Xuất Video",
+    MOTION_VIDEO: "Video Motion",
     SETTINGS: "Cài đặt",
     AI_CREATOR: "Nhà Sáng Tạo AI",
     ACTIVE_PROJECT: "Dự án đang mở",
@@ -554,6 +555,7 @@ export const SIDEBAR_TEXTS = {
     VIDEO_CREATOR: "Flow Video Creator",
     SHORTS_EXTRACTOR: "AI Shorts Maker",
     VIDEO_EXPORT: "Video Export",
+    MOTION_VIDEO: "Motion Video",
     SETTINGS: "Settings",
     AI_CREATOR: "AI Creator",
     ACTIVE_PROJECT: "Active Project",

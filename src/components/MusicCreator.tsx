@@ -3022,23 +3022,40 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           </div>
         </div>
       </Modal>
-      <Modal isOpen={Boolean(inspoToDelete)} onClose={() => setInspoToDelete(null)} maxWidth={SOURCE_TEXT_MAX_W_MD} title={texts.INSPO_DELETE_CONFIRM}>
+      <Modal
+        isOpen={Boolean(inspoToDelete)}
+        onClose={() => setInspoToDelete(null)}
+        maxWidth={SOURCE_TEXT_MAX_W_MD}
+        title={
+          <span className={cn("inline-flex items-center gap-2 leading-none text-slate-900 dark:text-slate-100")}>
+            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0 self-center -translate-y-[1px]")} />
+            <span className={cn("leading-none text-sm font-extrabold")}>{texts.INSPO_DELETE_CONFIRM}</span>
+          </span>
+        }>
         <div className={cn("space-y-4 text-left")}>
-          <p className={cn("text-sm text-slate-300")}>
+          <p className={cn("text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed")}>
             {texts.INSPO_DELETE_CONFIRM}{" "}
-            <span className={cn("font-extrabold text-white")}>
+            <span className={cn("font-extrabold !text-[#1e1b4b] dark:!text-white")}>
               {SOURCE_TEXT_SYMBOL_19}
               {inspoToDelete?.title}
               {SOURCE_TEXT_SYMBOL_20}
             </span>
             {SOURCE_TEXT_SYMBOL_21}
           </p>
-          <div className={cn("flex justify-end gap-2.5 pt-3 border-t border-slate-800")}>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_SM} onClick={() => setInspoToDelete(null)}>
-              {texts.CANCEL_BTN}
+          <DestructiveActionNotice className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2")} iconClassName={cn("w-4 h-4 text-rose-500 shrink-0")}>
+            {texts.CANNOT_BE_UNDONE}
+          </DestructiveActionNotice>
+          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
+            <Button
+              type={SOURCE_TEXT_BUTTON}
+              variant={SOURCE_TEXT_OUTLINE}
+              size={SOURCE_TEXT_SM}
+              onClick={() => setInspoToDelete(null)}
+              className={cn("h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none")}>
+              <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
             </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteInspo}>
-              {texts.STYLE_DELETE_BTN}
+            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteInspo} className={cn("h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none")}>
+              <span className={cn("inline-flex items-center leading-none")}>{texts.STYLE_DELETE_BTN}</span>
             </Button>
           </div>
         </div>

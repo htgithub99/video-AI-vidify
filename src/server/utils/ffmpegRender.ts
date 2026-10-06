@@ -29,7 +29,7 @@ import fs from "fs";
 import path from "path";
 import { execFile } from "child_process";
 import { v4 as uuidv4 } from "uuid";
-import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "./paths.js";
+import { getDataDirectory, getStaticResourcePath, getPythonCommand, getTempDirectory } from "./paths.js";
 import { logger } from "../../lib/logger.js";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
@@ -178,7 +178,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
   if (!hasEmbeddedFilmAudio && !hasProductionAudioSource(_.map(audioSources, _.toString))) {
     throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
   }
-  const tempDir = path.join(getDataDirectory(), `${FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX}${uuidv4()}`);
+  const tempDir = path.join(getTempDirectory(), `${FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX}${uuidv4()}`);
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }

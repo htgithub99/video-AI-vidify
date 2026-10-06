@@ -1,34 +1,16 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import _ from "lodash";
-import {
-  CINEMATIC_CHAT_MODEL_LABELS,
-  CINEMATIC_CHAT_MODEL_OPTIONS,
-  CINEMATIC_CHAT_PLANNING_CONFIG,
-  CINEMATIC_POLICY_CONFIG,
-  GEMINI_CHAT_BASE_MODEL_LABELS,
-  GEMINI_CHAT_THINKING_LEVEL_LABELS,
-  normalizeCinematicArtifactIdentity,
-} from "../src/constants/cinematicConstants";
-import {
-  getCinematicVideoPlanningPrompt,
-  getCinematicVideoPlanningRepairPrompt,
-  getCinematicVideoPromptPolicyRepairPrompt,
-  getCinematicVideoPromptRepairPrompt,
-} from "../src/constants/cinematicPrompts";
+import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_POLICY_CONFIG, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity } from "../src/constants/cinematicConstants";
+import { getCinematicVideoPlanningPrompt, getCinematicVideoPlanningRepairPrompt, getCinematicVideoPromptPolicyRepairPrompt, getCinematicVideoPromptRepairPrompt } from "../src/constants/cinematicPrompts";
 import { createVisualContinuityContext } from "../src/services/visualContinuityService";
-import {
-  createCinematicPlanningBatches,
-  getBlockingCinematicPlanningIssues,
-  getBlockingCinematicStoryboardContractIssues,
-  getCinematicStoryboardContractIssues,
-} from "../src/services/cinematicProductionPolicyService";
+import { createCinematicPlanningBatches, getBlockingCinematicPlanningIssues, getBlockingCinematicStoryboardContractIssues, getCinematicStoryboardContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { createScopedVisualBibleContext, getVisualShotPlanIssues } from "../src/services/visualPlanningService";
 import { partitionCinematicPlanningResponse } from "../src/services/cinematicPlanningRecoveryService";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, type StoryboardScene, type VisualBible } from "../src/types";
 import { safeParseJSON } from "../src/server/utils/helpers";
-
 const TEST_CONSTANTS = {
   DEFAULT_CLIP_DURATION_SECONDS: 10,
   LANGUAGE_VIETNAMESE: "Vietnamese",
@@ -41,7 +23,6 @@ const TEST_CONSTANTS = {
   CINEMATIC_CONSTANTS_PATH: "../src/constants/cinematicConstants.ts",
   SUCCESS_MESSAGE: "Cinematic room planning assertions passed.\n",
 } as const;
-
 const MOCK_PREVIOUS_SCENE = {
   id: "sc_1",
   sequenceId: "seq_1",
@@ -52,19 +33,16 @@ const MOCK_PREVIOUS_SCENE = {
   wardrobeState: "dark field coat, rain soaked",
   propState: "laser rifle in both hands, intact",
 } as unknown as StoryboardScene;
-
 const MOCK_CURRENT_SCENE = {
   id: "sc_2",
   sequenceId: "seq_1",
   script: "Kade warns Varg to surrender.",
   characterIds: ["kade", "varg"],
 } as unknown as StoryboardScene;
-
 const MOCK_CHARACTERS = [
   { id: "kade", name: "Kade" },
   { id: "varg", name: "Varg" },
 ];
-
 const MOCK_ENVIRONMENT_ONLY_SCENE = {
   id: "sc_environment",
   sequenceId: "seq_1",
@@ -121,7 +99,6 @@ const MOCK_ENVIRONMENT_ONLY_SCENE = {
     },
   ],
 } as unknown as StoryboardScene;
-
 const verifyVisualContinuity = () => {
   const continuity = createVisualContinuityContext([MOCK_PREVIOUS_SCENE, MOCK_CURRENT_SCENE], 1, 1);
   const previousContinuity = continuity.previousScene as Partial<StoryboardScene>;
@@ -130,22 +107,11 @@ const verifyVisualContinuity = () => {
   assert.equal(previousContinuity.propState, MOCK_PREVIOUS_SCENE.propState);
   return continuity;
 };
-
 const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>) => {
-  const serializedScene = JSON.stringify([MOCK_CURRENT_SCENE]);
-  const serializedCharacters = JSON.stringify(MOCK_CHARACTERS);
-  const serializedContinuity = JSON.stringify(continuity);
-
-  const initialPrompt = getCinematicVideoPlanningPrompt(
-    serializedScene,
-    serializedCharacters,
-    "{}",
-    serializedContinuity,
-    "",
-    TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS,
-    TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED,
-    TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
-  );
+  const serializedScene = stringifyJson([MOCK_CURRENT_SCENE]);
+  const serializedCharacters = stringifyJson(MOCK_CHARACTERS);
+  const serializedContinuity = stringifyJson(continuity);
+  const initialPrompt = getCinematicVideoPlanningPrompt(serializedScene, serializedCharacters, "{}", serializedContinuity, "", TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS, TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED, TEST_CONSTANTS.LANGUAGE_VIETNAMESE);
   assert.match(initialPrompt, /Dialogue is REQUIRED for sc_2/);
   assert.match(initialPrompt, /Language: Vietnamese/);
   assert.match(initialPrompt, /Make all creative and directorial choices yourself/i);
@@ -157,46 +123,26 @@ const verifyInitialAndApiPlanningPrompts = (continuity: Record<string, unknown>)
   assert.match(initialPrompt, /artifactType.*requestId.*generationPrompt.*completionMarker/i);
   assert.doesNotMatch(initialPrompt, /whip-pans|action axis|contact point|decorative spinning|three to five unmistakable anchors/i);
   assert.doesNotMatch(initialPrompt, /application separately compiles|compiler-owned fields/i);
-
-  const apiPrompt = getCinematicVideoPlanningPrompt(
-    serializedScene,
-    serializedCharacters,
-    JSON.stringify({ characterSpecs: "full API visual bible" }),
-    serializedContinuity,
-    "",
-    TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS,
-  );
+  const apiPrompt = getCinematicVideoPlanningPrompt(serializedScene, serializedCharacters, stringifyJson({ characterSpecs: "full API visual bible" }), serializedContinuity, "", TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
   assert.doesNotMatch(apiPrompt, /Dialogue assignment for this request/);
   assert.doesNotMatch(apiPrompt, /Use 1 to 5 concise soundDesignCues/);
   assert.match(apiPrompt, /full API visual bible/);
 };
-
 const verifyRepairPromptGeneration = (continuity: Record<string, unknown>) => {
-  const repairPrompt = getCinematicVideoPlanningRepairPrompt(
-    JSON.stringify([MOCK_CURRENT_SCENE]),
-    JSON.stringify([{ id: "sc_2", generationPrompt: "" }]),
-    JSON.stringify(["sc_2:generationPrompt:missing"]),
-    JSON.stringify(continuity),
-    TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS,
-    TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED,
-    TEST_CONSTANTS.LANGUAGE_VIETNAMESE,
-  );
+  const repairPrompt = getCinematicVideoPlanningRepairPrompt(stringifyJson([MOCK_CURRENT_SCENE]), stringifyJson([{ id: "sc_2", generationPrompt: "" }]), stringifyJson(["sc_2:generationPrompt:missing"]), stringifyJson(continuity), TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS, TEST_CONSTANTS.DIRECTIVE_DIALOGUE_REQUIRED, TEST_CONSTANTS.LANGUAGE_VIETNAMESE);
   assert.match(repairPrompt, /sc_2:generationPrompt:missing/);
   assert.match(repairPrompt, /Previous response/);
   assert.match(repairPrompt, /best complete Veo 3 prompt for each 10-second scene/i);
   assert.match(repairPrompt, /at least 4 clearly distinct, connected shots\/camera setups/i);
   assert.match(repairPrompt, /Return the complete corrected raw JSON object only/i);
   assert.doesNotMatch(repairPrompt, /Set layout|hyphenated duration token|deterministically compiles/);
-
   const policyRepairPrompt = getCinematicVideoPromptPolicyRepairPrompt("A safe action prompt");
   assert.match(policyRepairPrompt, /change only the unsafe detail and preserve the story, characters, dialogue and creative direction/i);
-
   const technicalRepairPrompt = getCinematicVideoPromptRepairPrompt("A failed action prompt", ["contact_missing"], MOCK_CURRENT_SCENE);
   assert.match(technicalRepairPrompt, /Make all creative and directorial choices yourself/i);
   assert.match(technicalRepairPrompt, /at least 4 clearly distinct, connected shots\/camera setups/i);
   assert.doesNotMatch(technicalRepairPrompt, /whip-pans|action axis|exact block or evasion/i);
 };
-
 const verifyDialogueContractExemption = () => {
   const contractIssues = getCinematicStoryboardContractIssues([MOCK_ENVIRONMENT_ONLY_SCENE], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
   assert.equal(
@@ -204,7 +150,6 @@ const verifyDialogueContractExemption = () => {
     false,
   );
 };
-
 const verifyEnvironmentalActionRecognition = () => {
   const issues = getVisualShotPlanIssues(
     {
@@ -222,7 +167,6 @@ const verifyEnvironmentalActionRecognition = () => {
     false,
   );
 };
-
 const verifyBlockingContractClassification = () => {
   const firstScene = {
     ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE),
@@ -244,27 +188,12 @@ const verifyBlockingContractClassification = () => {
   assert.equal(continuityBlockers.includes("sc_2:continuityFrom:must_reference_previous_clip"), false);
   assert.equal(continuityBlockers.includes("sc_2:actionStartState:must_match_previous_end_state"), false);
   assert.equal(continuityBlockers.includes("sc_2:screenDirection:continuity_break"), false);
-
   const sceneMissingSound = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), generationPrompt: "Focused Veo prompt.", soundDesignCues: [] } as StoryboardScene;
-  assert.equal(
-    getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"),
-    false,
-  );
-
-  assert.deepEqual(
-    getBlockingCinematicPlanningIssues([
-      "sc_2:screenDirection:continuity_break",
-      "sc_2:neighbor_visual_repetition",
-      "sc_2:editorial_rhythm:shotSize_repeated_three_times",
-      "sc_2:prompt:incomplete_or_outside_global_length_contract",
-      "sc_2:textOverlay:must_be_empty_when_text_forbidden",
-    ]),
-    [],
-  );
+  assert.equal(getBlockingCinematicStoryboardContractIssues([sceneMissingSound], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS).includes("sc_environment:soundDesignCues:missing"), false);
+  assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:screenDirection:continuity_break", "sc_2:neighbor_visual_repetition", "sc_2:editorial_rhythm:shotSize_repeated_three_times", "sc_2:prompt:incomplete_or_outside_global_length_contract", "sc_2:textOverlay:must_be_empty_when_text_forbidden"]), []);
   assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:generationPrompt:missing", "sc_2:soundDesignCues:invalid"]), ["sc_2:generationPrompt:missing"]);
   assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_2:characterIds:unknown:varg", "sc_2:actionChoreography:aftermath_missing"]), []);
 };
-
 const verifyScopedVisualBibleIsolation = () => {
   const mockVisualBible = {
     visualStyle: "cinematic",
@@ -278,15 +207,12 @@ const verifyScopedVisualBibleIsolation = () => {
       { id: "prop_b", name: "B", visualAnchors: [], narrativeFunction: "B" },
     ],
   } as unknown as VisualBible;
-
   const targetScene = { ...MOCK_CURRENT_SCENE, locationId: "loc_b", propIds: ["prop_b"] } as unknown as StoryboardScene;
   const scopedBible = createScopedVisualBibleContext(mockVisualBible, [targetScene]);
-
   assert.deepEqual(_.map(scopedBible.locations, "id"), ["loc_b"]);
   assert.deepEqual(_.map(scopedBible.props, "id"), ["prop_b"]);
   assert.equal("characterSpecs" in scopedBible, false);
 };
-
 const verifyPartialBatchSceneRecovery = () => {
   const requestedScenes = _.map(["scene_010", "scene_011", "scene_012"], (id) => ({ id, generationPrompt: "" })) as unknown as StoryboardScene[];
   const partialResponse = [
@@ -296,13 +222,11 @@ const verifyPartialBatchSceneRecovery = () => {
   const firstPartition = partitionCinematicPlanningResponse(requestedScenes, partialResponse, ["scene_012:result:missing_scene"]);
   assert.deepEqual(_.map(firstPartition.completedScenes, "id"), ["scene_010", "scene_011"]);
   assert.deepEqual(_.map(firstPartition.unresolvedScenes, "id"), ["scene_012"]);
-
   const recoveredResponse = [{ id: "scene_012", generationPrompt: "Complete AI-authored prompt for scene twelve." }] as unknown as StoryboardScene[];
   const recoveredPartition = partitionCinematicPlanningResponse(firstPartition.unresolvedScenes, recoveredResponse, []);
   assert.deepEqual(_.map(recoveredPartition.completedScenes, "id"), ["scene_012"]);
   assert.deepEqual(recoveredPartition.unresolvedScenes, []);
 };
-
 const verifyPipelineControllerSourceInvariants = () => {
   const controllerSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.PIPELINE_CONTROLLER_PATH, import.meta.url), "utf8"));
   assert.match(controllerSource, /AiPlanningExecutionMode\.ApiOnly\)\) return requestApiPlan\(apiContents, expectedSceneIds\)/);
@@ -332,7 +256,6 @@ const verifyPipelineControllerSourceInvariants = () => {
   assert.match(controllerSource, /blockedSceneIds[\s\S]*planningPartialStoryboard/);
   assert.match(controllerSource, /storyboard: planningPartialStoryboard/);
 };
-
 const verifyPlanningRunIsolation = () => {
   const planningServiceSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8"));
   const cinematicConstantsSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CINEMATIC_CONSTANTS_PATH, import.meta.url), "utf8"));
@@ -396,7 +319,8 @@ const verifyPlanningRunIsolation = () => {
   assert.match(planningServiceSource, /stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG\.RESPONSE_STABLE_POLLS/);
   assert.match(planningServiceSource, /pendingRoomResponses\.set\(roomKey,[\s\S]*if \(!submissionConfirmed\)/);
   assert.match(planningServiceSource, /const parsedLatest = parseStrictRoomJson\(latestText\)/);
-  assert.match(planningServiceSource, /JSON\.parse\(_\.trim\(text\)\)/);
+  assert.match(planningServiceSource, /const trimmed = _\.trim\(text\)/);
+  assert.match(planningServiceSource, /return parseJson\(trimmed\)/);
   assert.match(planningServiceSource, /INVALID_JSON_RESPONSE_ERROR/);
   assert.match(planningServiceSource, /PLANNING_QUEUE_ACQUIRED/);
   assert.match(planningServiceSource, /GROK_CHALLENGE_FRAME_SELECTOR\)[\s\S]*filter\(\{ visible: true \}\)/);
@@ -414,7 +338,6 @@ const verifyPlanningRunIsolation = () => {
   assert.doesNotMatch(grokPreconnectSource, /page\.(?:goto|reload)\(|chromium\.connectOverCDP/);
   assert.doesNotMatch(planningServiceSource, /activePlanningController\?\.abort\(\)/);
 };
-
 const verifyCurrentGeminiModelPicker = () => {
   assert.deepEqual(_.map(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GeminiChat], "label"), ["Flash-Lite", "Flash", "Pro", "Pro · Tư duy mở rộng", "Pro · Deep Think"]);
   assert(CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite].test("Gemini 3.5 Flash-Lite"));
@@ -426,7 +349,6 @@ const verifyCurrentGeminiModelPicker = () => {
   assert(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_TEXT_PATTERN.test("Performing security verification"));
   assert(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_TEXT_PATTERN.test("Verify you are human"));
 };
-
 const verifyProviderRoomCleanup = () => {
   const planningServiceSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.CHAT_UI_PLANNING_SERVICE_PATH, import.meta.url), "utf8"));
   const headerSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.APP_HEADER_PATH, import.meta.url), "utf8"));
@@ -447,28 +369,18 @@ const verifyProviderRoomCleanup = () => {
   assert.match(headerSource, /CINEMATIC_SETUP_TEXTS\[currentLang as Lang\] \|\| CINEMATIC_SETUP_TEXTS\.vi/);
   assert.doesNotMatch(headerSource, /CINEMATIC_SETUP_TEXTS\[isVietnamese \? UIConstants\.LANG_VI/);
 };
-
 const verifyProviderJsonVariants = () => {
   const parsed = safeParseJSON('{"requestId":"room-json-test :video_prompts "}', {});
   assert.equal(normalizeCinematicArtifactIdentity(parsed.requestId), "room-json-test:video_prompts");
   assert.equal(safeParseJSON('```json\n{"requestId":"room-json-test:video_prompts"}\n```', {}).requestId, "room-json-test:video_prompts");
   assert.equal(safeParseJSON('Here is the result: {"requestId":"room-json-test:video_prompts"}', {}).requestId, "room-json-test:video_prompts");
-  assert.equal(
-    safeParseJSON('{"requestId":"broken{"artifactType":"music_style_analysis","requestId":"music-ok","market":{"country":"Việt Nam"}}', {}).requestId,
-    "music-ok",
-  );
-  assert.equal(
-    safeParseJSON('{"requestId":"old"}{"artifactType":"music_reference_source","requestId":"source-new","receivedPart":2,"totalParts":3}', {}).requestId,
-    "source-new",
-  );
+  assert.equal(safeParseJSON('{"requestId":"broken{"artifactType":"music_style_analysis","requestId":"music-ok","market":{"country":"Việt Nam"}}', {}).requestId, "music-ok");
+  assert.equal(safeParseJSON('{"requestId":"old"}{"artifactType":"music_reference_source","requestId":"source-new","receivedPart":2,"totalParts":3}', {}).requestId, "source-new");
   assert.equal(safeParseJSON('{"lyrics":"[Verse]\nDòng một\nDòng hai"}', {}).lyrics, "[Verse]\nDòng một\nDòng hai");
   assert.equal(safeParseJSON('{"songs":[{"title":"Có Dấu",}],}', {}).songs[0].title, "Có Dấu");
-  const invalidSamples = [
-    '{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}',
-  ];
+  const invalidSamples = ['{"requestId":"room-json-test:video_prompts","scenes":[{"id":"scene_001","generationPrompt":"The banner reads "Tề Thiên Đại Thánh" before it opens."}],"completionMarker":"VIDIFY_ARTIFACT_COMPLETE"}'];
   _.forEach(invalidSamples, (sample) => assert.throws(() => safeParseJSON(sample, {}), /invalid_ai_json_response|Dữ liệu phản hồi AI không hợp lệ|Invalid AI response structure/));
 };
-
 const verifyCinematicPlanningCheckpointing = () => {
   const pipelineSource = resolveSourceTextConstants(readFileSync(new URL(TEST_CONSTANTS.AUTO_VIDEO_PIPELINE_PATH, import.meta.url), "utf8"));
   assert.match(pipelineSource, /generationPromptProfileVersion, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION/);
@@ -504,7 +416,6 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.doesNotMatch(pipelineSource, /closeCompletedPlanningWorkers\(\[CINEMATIC_ROOM_STAGE\.(?:SCRIPT|PROMPT|THUMBNAIL)\]\)/);
   assert.match(pipelineSource, /pipelineCompleted &&[\s\S]*PIPELINE_CLOSE_CHAT_PLANNING_ROOMS/);
 };
-
 const verifyLongFilmPlanningBatches = () => {
   const twentyMinuteScenes = _.map(_.range(120), (index) => ({
     id: `scene_${_.padStart(_.toString(index + 1), 3, "0")}`,
@@ -515,13 +426,11 @@ const verifyLongFilmPlanningBatches = () => {
   assert.equal(_.sumBy(batches, "length"), twentyMinuteScenes.length);
   assert.equal(batches.length, _.ceil(_.divide(twentyMinuteScenes.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE)));
   assert(_.every(batches, (batch) => _.lte(batch.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE)));
-
   const largeScenes = _.map(_.range(4), (index) => ({ id: `large_${index}`, script: "x".repeat(9000) }));
   const sizeBoundBatches = createCinematicPlanningBatches(largeScenes);
   assert(_.gt(sizeBoundBatches.length, 1));
   assert.deepEqual(_.flatten(sizeBoundBatches), largeScenes);
 };
-
 const runAllVerificationSuites = () => {
   const continuity = verifyVisualContinuity();
   verifyInitialAndApiPlanningPrompts(continuity);
@@ -540,5 +449,4 @@ const runAllVerificationSuites = () => {
   verifyLongFilmPlanningBatches();
   process.stdout.write(TEST_CONSTANTS.SUCCESS_MESSAGE);
 };
-
 runAllVerificationSuites();

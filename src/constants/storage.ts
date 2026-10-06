@@ -1,0 +1,107 @@
+export const STORAGE_CONFIG = {
+  DIR: "storage",
+  ENV_DIR: "VIDIFY_STORAGE_DIR",
+  MARKER: ".storage-layout.json",
+  LAYOUT_VERSION: 1,
+  TEMP_MIN_AGE_MS: 60 * 60 * 1000,
+  MAX_SCAN_ENTRIES: 200000,
+  TMP_DIR: "tmp",
+  LOGS_DIR: "logs",
+} as const;
+export const STORAGE_MOVES: { from: string; to: string; exclusive?: boolean }[] = [
+  { from: "database.db", to: "database.db" },
+  { from: "database.db-shm", to: "database.db-shm" },
+  { from: "database.db-wal", to: "database.db-wal" },
+  { from: "projects.json", to: "projects.json" },
+  { from: "projects.backup.json", to: "projects.backup.json" },
+  { from: "projects_backup_json", to: "projects_backup_json" },
+  { from: "assets/projects", to: "assets/projects" },
+  { from: "output", to: "output" },
+  { from: "motion-real", to: "motion-real" },
+  { from: "motion-library.json", to: "motion-library.json" },
+  { from: "google_profiles", to: "google_profiles" },
+  { from: "google_accounts.json", to: "google_accounts.json" },
+  { from: "templates/capcut", to: "templates/capcut" },
+  { from: "short-videos", to: "short-videos" },
+  { from: "Claude outputs", to: "claude-outputs" },
+  { from: "suno_chrome_profile", to: "suno_chrome_profile", exclusive: true },
+];
+export const STORAGE_MOVES_LOCALAPPDATA: { from: string; to: string; exclusive?: boolean }[] = [
+  { from: "VideoAI-Vidify/suno_chrome_profile", to: "suno_chrome_profile", exclusive: true },
+  { from: "VideoAI-Vidify/logs", to: "logs" },
+  { from: "VideoAI-Vidify/music-download-checkpoints", to: "music-download-checkpoints" },
+];
+export enum StorageJunkGroup {
+  TEMP = "temp",
+  RENDER_WORK = "render_work",
+  DEBUG = "debug",
+  LOGS = "logs",
+  TEST_OUTPUT = "test_output",
+  DEV_SCRATCH = "dev_scratch",
+  OLD_BUILDS = "old_builds",
+  OLD_PROFILES = "old_profiles",
+}
+export const STORAGE_JUNK_ROOT: { group: StorageJunkGroup; match: RegExp; dir?: boolean }[] = [
+  { group: StorageJunkGroup.DEV_SCRATCH, match: /^vite\.config\.ts\.timestamp-.*\.mjs$/ },
+  { group: StorageJunkGroup.DEV_SCRATCH, match: /^diff\.txt$/ },
+  { group: StorageJunkGroup.DEV_SCRATCH, match: /^(tmp|\.tmp|\.tmp_character_review|\.codex-review)$/, dir: true },
+  { group: StorageJunkGroup.LOGS, match: /^server-.*\.log$/ },
+  { group: StorageJunkGroup.LOGS, match: /^logs$/, dir: true },
+  { group: StorageJunkGroup.DEBUG, match: /^(gemini|google_login)_dom_diagnostics\.jsonl$/ },
+  { group: StorageJunkGroup.TEST_OUTPUT, match: /^output-test$/, dir: true },
+  { group: StorageJunkGroup.TEMP, match: /^(temp_shorts_audio|temp_align)$/, dir: true },
+  { group: StorageJunkGroup.TEMP, match: /^(temp_render_|gemini-video-|visual-qa-|final-qc-|cinematic-edit-).+/, dir: true },
+  { group: StorageJunkGroup.TEMP, match: /^ultra_opts_.*\.json$/ },
+  { group: StorageJunkGroup.OLD_BUILDS, match: /^(release|builds)$/, dir: true },
+  { group: StorageJunkGroup.OLD_PROFILES, match: /^suno_chrome_profile$/, dir: true },
+];
+export const STORAGE_JUNK_DATA: { group: StorageJunkGroup; match: RegExp; dir?: boolean }[] = [
+  { group: StorageJunkGroup.DEBUG, match: /^(gemini|google_login)_dom_diagnostics\.jsonl$/ },
+  { group: StorageJunkGroup.TEMP, match: /^(temp_shorts_audio|temp_align)$/, dir: true },
+  { group: StorageJunkGroup.TEMP, match: /^(temp_render_|gemini-video-|visual-qa-|final-qc-|cinematic-edit-).+/, dir: true },
+  { group: StorageJunkGroup.TEMP, match: /^ultra_opts_.*\.json$/ },
+];
+export const STORAGE_JUNK_ROOT_CHILDREN: { group: StorageJunkGroup; path: string; match: RegExp; keep?: RegExp }[] = [{ group: StorageJunkGroup.DEV_SCRATCH, path: "scratch", match: /.+/, keep: /^git-cleanup-/ }];
+export const STORAGE_JUNK_MOTION: { group: StorageJunkGroup; path: string; match: RegExp }[] = [
+  { group: StorageJunkGroup.TEMP, path: "tmp", match: /.+/ },
+  { group: StorageJunkGroup.RENDER_WORK, path: "output/motion-video/work", match: /.+/ },
+  { group: StorageJunkGroup.RENDER_WORK, path: "output/motion-video/audio", match: /^sfx-.*\.wav$/ },
+  { group: StorageJunkGroup.DEBUG, path: "output/motion-video/ai-debug", match: /.+/ },
+  { group: StorageJunkGroup.DEBUG, path: "output/motion-video/storyboard-review", match: /.+/ },
+];
+export const STORAGE_TEXTS = {
+  MIGRATED: "Storage: moved",
+  MIGRATE_FAILED: "Storage: could not move",
+  BUSY: "Đang render hoặc chạy tác vụ — đợi xong rồi mới dọn dữ liệu rác.",
+  ENCODING: "utf8",
+  TEMPLATES_DIR: "templates",
+  GROUP: "group",
+  BYTES: "bytes",
+  DESC: "desc",
+  PARENT: "..",
+  LOCALAPPDATA: "LOCALAPPDATA",
+  WIN32: "win32",
+  POWERSHELL: "powershell.exe",
+  RECYCLE_LIST: "recycle-list.json",
+  RECYCLE_SCRIPT_FILE: "recycle.ps1",
+  RECYCLE_FAIL: "FAIL\t",
+  BIG_ITEM_BYTES: 1024 * 1024 * 1024,
+} as const;
+export const STORAGE_POWERSHELL_ARGS = ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"];
+export const STORAGE_RECYCLE_SCRIPT = [
+  "$ErrorActionPreference = 'Continue'",
+  "Add-Type -AssemblyName Microsoft.VisualBasic",
+  "function Send-Recycle([string]$p, [string]$ui) {",
+  "  try {",
+  "    if (Test-Path -LiteralPath $p -PathType Container) { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($p, $ui, 'SendToRecycleBin') }",
+  "    elseif (Test-Path -LiteralPath $p) { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($p, $ui, 'SendToRecycleBin') }",
+  "  } catch {",
+  "    if (Test-Path -LiteralPath $p -PathType Container) {",
+  "      foreach ($c in (Get-ChildItem -LiteralPath $p -Force)) { Send-Recycle $c.FullName 'OnlyErrorDialogs' }",
+  "      try { if (-not (Get-ChildItem -LiteralPath $p -Force)) { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($p, 'OnlyErrorDialogs', 'SendToRecycleBin') } } catch { Write-Output ('FAIL`t' + $p) }",
+  "    } else { Write-Output ('FAIL`t' + $p) }",
+  "  }",
+  "}",
+  "$items = Get-Content -Raw -Encoding UTF8 -LiteralPath $args[0] | ConvertFrom-Json",
+  "foreach ($it in $items) { Send-Recycle $it.path $(if ($it.big) { 'AllDialogs' } else { 'OnlyErrorDialogs' }) }",
+].join("\n");

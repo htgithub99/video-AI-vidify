@@ -111,38 +111,31 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
         </VideoExportSectionHeading>
         {(hasSource || isRestoring) && (
           <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_CHANGE_FOLDER} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.selectFolder} disabled={isBusy || isRestoring} className={cn("text-xs font-semibold text-purple-400 hover:text-purple-300 hover:underline transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed")}>
-            {isScanning || isRestoring ? text.SOURCE_SCANNING : text.CHANGE_FOLDER_BTN}
+            {isScanning || isRestoring ? "" : text.CHANGE_FOLDER_BTN}
           </Button>
         )}
       </div>
       {isRestoring ? (
-        <div className={cn("space-y-4 animate-in fade-in duration-150")}>
-          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950/70 border border-purple-500/30 text-slate-200 text-xs font-semibold min-w-0")}>
-            <Sparkles className={cn("w-3.5 h-3.5 text-purple-400 animate-spin shrink-0")} />
-            <span className={cn("truncate text-slate-300")}>{savedFolderPath}</span>
-            <span className={cn("ml-auto text-[10px] font-mono text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded-full border border-purple-500/30 shrink-0")}>{text.SOURCE_SCANNING}</span>
+        <div className={cn("py-10 px-6 rounded-2xl bg-slate-950/40 border border-purple-500/20 flex flex-col items-center justify-center text-center gap-4 animate-in fade-in duration-200")}>
+          <div className={cn("relative flex items-center justify-center")}>
+            <div className={cn("w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/10")}>
+              <Sparkles className={cn("w-7 h-7 text-purple-400 animate-spin")} />
+            </div>
+            <div className={cn("absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse")} />
           </div>
-          <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2")}>
-            {_.times(4, (i) => (
-              <div key={i} className={cn("h-12 rounded-xl bg-slate-950/50 border border-slate-800/80 animate-pulse")} />
-            ))}
-          </div>
-          <div className={cn("flex items-center gap-2")}>
-            <div className={cn("flex-1 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 animate-pulse")} />
-            <div className={cn("flex-1 h-9 rounded-xl bg-slate-950/40 border border-slate-800/60 animate-pulse")} />
-          </div>
-          <div className={cn("space-y-2 pt-2")}>
-            {_.times(5, (i) => (
-              <div key={i} className={cn("h-12 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-center px-3 gap-3 animate-pulse")}>
-                <div className={cn("w-4 h-4 rounded bg-slate-800 shrink-0")} />
-                <div className={cn("w-4 text-[10px] text-slate-600 font-mono")}>{i + 1}</div>
-                <div className={cn("w-4 h-4 rounded bg-slate-800/60 shrink-0")} />
-                <div className={cn("flex-1 space-y-1.5")}>
-                  <div className={cn("h-3 bg-slate-800 rounded w-2/5")} />
-                  <div className={cn("h-2 bg-slate-850 rounded w-1/4")} />
-                </div>
+
+          <div className={cn("space-y-2 max-w-md w-full flex flex-col items-center")}>
+            <p className={cn("text-sm font-bold text-slate-100")}>{text.SOURCE_SCANNING}</p>
+            {savedFolderPath && (
+              <div className={cn("flex items-center gap-1.5 max-w-full px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-mono")}>
+                <FolderOpen className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+                <span className={cn("truncate")}>{savedFolderPath}</span>
               </div>
-            ))}
+            )}
+          </div>
+
+          <div className={cn("w-48 h-1.5 rounded-full bg-slate-800 overflow-hidden")}>
+            <div className={cn("h-full w-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse")} />
           </div>
         </div>
       ) : !hasSource ? (

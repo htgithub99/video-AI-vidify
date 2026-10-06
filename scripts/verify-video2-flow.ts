@@ -1,14 +1,13 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import sqlite3 from "sqlite3";
 import _ from "lodash";
 import { createVideo2StoryboardFixture, evaluateVideo2StoryboardFixture } from "./helpers/video2StoryboardFixture.ts";
 import { resolveVisualConfig } from "../src/services/autoVideoConfigResolver.ts";
-
 const PROJECT_ID = "proj_video2_auto_7nbmnnbxm";
 const database = new sqlite3.Database("database.db");
-const storedProject = await new Promise<any>((resolve, reject) => database.get("SELECT data FROM projects WHERE id = ?", [PROJECT_ID], (error, row: any) => error ? reject(error) : resolve(JSON.parse(row?.data || "{}"))));
+const storedProject = await new Promise<any>((resolve, reject) => database.get("SELECT data FROM projects WHERE id = ?", [PROJECT_ID], (error, row: any) => (error ? reject(error) : resolve(JSON.parse(row?.data || "{}")))));
 database.close();
 const project = _.defaultsDeep(storedProject, { input: { content: "Cuộc đời sẽ khác thế nào nếu bạn từng ngồi tù?" }, config: { splitStrategy: "mixed_sentences" }, visualConfig: { style: "cinematic editorial illustration", density: 5, aspectRatio: "16:9", characterConsistency: true } });
-
 const narration = `Cánh cổng trại giam khép lại phía sau Nam, nhưng bản án của anh chưa kết thúc. Trong túi anh là vài giấy tờ, một địa chỉ cũ và câu hỏi khó nói thành lời: liệu xã hội có cho một người cơ hội bắt đầu lại? Những ngày đầu tự do không giống tự do. Nam phải học lại nhịp đường phố, cách dùng điện thoại và cách ngồi trước một nhà tuyển dụng mà không né tránh quãng trống trong hồ sơ. Khi quá khứ được hỏi đến, căn phòng bỗng im lặng. Cuộc phỏng vấn kết thúc bằng một lời hẹn không bao giờ quay lại.
 
 Khó khăn tiếp theo là chỗ ở. Một chủ nhà đổi thái độ sau khi đọc giấy tờ; người thân muốn giúp nhưng vẫn giữ khoảng cách. Mỗi lần bị từ chối khiến Nam dễ tin rằng thay đổi là vô ích. Đây là lúc hậu quả của việc ngồi tù vượt khỏi cánh cửa nhà giam: cơ hội việc làm hẹp lại, quan hệ gia đình cần được xây dựng lại và những quy định tái hòa nhập có thể tiếp tục chi phối đời sống. Các tác động không giống nhau với mọi người, vì còn phụ thuộc nơi sống, thời gian thụ án và mạng lưới hỗ trợ.
@@ -17,14 +16,31 @@ Nhưng câu chuyện không chỉ có ngõ cụt. Nam tìm đến một chương
 const chapters = _.map(_.split(narration, "\n\n"), (scriptSegment, index) => ({ id: `ch_${index + 1}`, title: `Chương ${index + 1}`, scriptSegment }));
 const storyboardScenes = createVideo2StoryboardFixture(narration, 120);
 const storyboardQa = evaluateVideo2StoryboardFixture(storyboardScenes);
-const visualResolution = resolveVisualConfig({ ...project.visualConfig, characterConsistency: true, characterPrompt: "Vietnamese man named Nam in his late thirties, short black hair, lean build, worn navy jacket", characters: [{ id: "character_1", name: "Nam", description: "Vietnamese man in his late thirties, short black hair, lean build, worn navy jacket", prompt: "Vietnamese man named Nam in his late thirties, short black hair, lean build, worn navy jacket" }] });
+const visualResolution = resolveVisualConfig({
+  ...project.visualConfig,
+  characterConsistency: true,
+  characterPrompt: "Vietnamese man named Nam in his late thirties, short black hair, lean build, worn navy jacket",
+  characters: [{ id: "character_1", name: "Nam", description: "Vietnamese man in his late thirties, short black hair, lean build, worn navy jacket", prompt: "Vietnamese man named Nam in his late thirties, short black hair, lean build, worn navy jacket" }],
+});
 const completedScenes = _.map(storyboardScenes, (scene, index) => ({ ...scene, _start: index === 0 ? 0 : _.sumBy(_.take(storyboardScenes, index), "duration"), _end: _.sumBy(_.take(storyboardScenes, index + 1), "duration"), assetUrl: `/assets/projects/${PROJECT_ID}/images/${scene.id}.jpg` }));
-const fixtureProject = { ...project, scriptRewritten: narration, chapters, storyboard: completedScenes, storyboardQa, visualConfig: visualResolution.config, seo: { titles: [{ text: project.input.content }], descriptions: [{ text: "Một video essay về cuộc sống và hành trình tái hòa nhập sau khi ra tù." }], hashtags: ["#TaiHoaNhap"] }, thumbnails: [{ id: "thumb_1", imageUrl: `/assets/projects/${PROJECT_ID}/thumbnails/thumb_1.jpg`, approved: true }] };
-const renderReady = storyboardQa.passed && !visualResolution.blocked && visualResolution.config.characterConsistency && _.every(completedScenes, scene => scene.assetUrl && _.isFinite(scene._start) && _.isFinite(scene._end)) && !_.isEmpty(fixtureProject.seo) && !_.isEmpty(fixtureProject.thumbnails);
+const fixtureProject = {
+  ...project,
+  scriptRewritten: narration,
+  chapters,
+  storyboard: completedScenes,
+  storyboardQa,
+  visualConfig: visualResolution.config,
+  seo: { titles: [{ text: project.input.content }], descriptions: [{ text: "Một video essay về cuộc sống và hành trình tái hòa nhập sau khi ra tù." }], hashtags: ["#TaiHoaNhap"] },
+  thumbnails: [{ id: "thumb_1", imageUrl: `/assets/projects/${PROJECT_ID}/thumbnails/thumb_1.jpg`, approved: true }],
+};
+const renderReady = storyboardQa.passed && !visualResolution.blocked && visualResolution.config.characterConsistency && _.every(completedScenes, (scene) => scene.assetUrl && _.isFinite(scene._start) && _.isFinite(scene._end)) && !_.isEmpty(fixtureProject.seo) && !_.isEmpty(fixtureProject.thumbnails);
 const narrationWords = _.size(_.words(narration));
 const alignedDuration = _.maxBy(completedScenes, "_end")?._end;
 if (narrationWords < 255 || narrationWords > 345) throw new Error("Video 2 narration duration range failed");
 if (alignedDuration !== 120) throw new Error("Video 2 voice timeline duration failed");
 if (completedScenes.length > 40) throw new Error("Video 2 scene density is excessive");
-if (!renderReady) throw new Error(`Video 2 end-to-end render gate failed: ${JSON.stringify({ storyboardPassed: storyboardQa.passed, visualBlocked: visualResolution.blocked, characterConsistency: visualResolution.config.characterConsistency, scenesReady: _.every(completedScenes, scene => scene.assetUrl && _.isFinite(scene._start) && _.isFinite(scene._end)), seoReady: !_.isEmpty(fixtureProject.seo), thumbnailsReady: !_.isEmpty(fixtureProject.thumbnails) })}`);
-process.stdout.write(JSON.stringify({ projectId: PROJECT_ID, words: narrationWords, chapters: chapters.length, scenes: completedScenes.length, storyboardQa, visualConfig: visualResolution.config, configIssues: visualResolution.issues, alignedDuration, seoReady: true, thumbnailReady: true, renderReady }, null, 2));
+if (!renderReady)
+  throw new Error(
+    `Video 2 end-to-end render gate failed: ${stringifyJson({ storyboardPassed: storyboardQa.passed, visualBlocked: visualResolution.blocked, characterConsistency: visualResolution.config.characterConsistency, scenesReady: _.every(completedScenes, (scene) => scene.assetUrl && _.isFinite(scene._start) && _.isFinite(scene._end)), seoReady: !_.isEmpty(fixtureProject.seo), thumbnailsReady: !_.isEmpty(fixtureProject.thumbnails) })}`,
+  );
+process.stdout.write(stringifyJson({ projectId: PROJECT_ID, words: narrationWords, chapters: chapters.length, scenes: completedScenes.length, storyboardQa, visualConfig: visualResolution.config, configIssues: visualResolution.issues, alignedDuration, seoReady: true, thumbnailReady: true, renderReady }, null, 2));

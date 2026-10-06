@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { VIDEO_EXPORT_TEMPLATE_GB, VIDEO_EXPORT_TEMPLATE_MB, VIDEO_EXPORT_TEXT_0_MB, VIDEO_EXPORT_TEXT_ABORTERROR, VIDEO_EXPORT_TEXT_APPLICATION_JSON, VIDEO_EXPORT_TEXT_ID, VIDEO_EXPORT_TEXT_NAME, VIDEO_EXPORT_TEXT_POST, VIDEO_EXPORT_TEXT_READONLY, VIDEO_EXPORT_TEXT_READWRITE } from "../../constants/videoExportText";
 import _ from "lodash";
 import { VIDEO_EXPORT_CONSTANTS } from "../../constants/videoExport.js";
@@ -23,7 +24,7 @@ export const formatFileSize = (bytes?: number): string => {
   return VIDEO_EXPORT_TEMPLATE_MB(`${(safeBytes / BYTES_IN_MB).toFixed(1)}`);
 };
 export const requestJson = async <T = any>(url: string, body?: unknown, signal?: AbortSignal): Promise<T> => {
-  const response = await fetch(url, body === undefined ? { signal } : { method: VIDEO_EXPORT_TEXT_POST, headers: JSON_HEADERS, body: JSON.stringify(body), signal });
+  const response = await fetch(url, body === undefined ? { signal } : { method: VIDEO_EXPORT_TEXT_POST, headers: JSON_HEADERS, body: stringifyJson(body), signal });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.success === false) throw new VideoExportRequestError(_.toString(data?.error) || response.statusText, response.status);
   return data as T;

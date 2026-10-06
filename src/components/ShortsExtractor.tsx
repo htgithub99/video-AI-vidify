@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_0,
   SOURCE_TEMPLATE_CLIP,
@@ -181,7 +182,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const response = await fetch(API_ROUTES.SHORTS_METADATA, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({ videoPath: filePath }),
+        body: stringifyJson({ videoPath: filePath }),
       });
       const data = await response.json();
       if (response.ok && data.success) {
@@ -269,7 +270,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const response = await fetch(API_ROUTES.SHORTS_GENERATE, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({
+        body: stringifyJson({
           sourceVideoPath,
           aspectRatio,
           reframeMode,
@@ -336,7 +337,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const destinationResponse = await fetch(API_ROUTES.SHORTS_SELECT_SAVE_DESTINATION, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({ suggestedName, extension: SHORTS_CONSTANTS.EXT_MP4 }),
+        body: stringifyJson({ suggestedName, extension: SHORTS_CONSTANTS.EXT_MP4 }),
       });
       const destinationData = await destinationResponse.json();
       if (!destinationResponse.ok || !destinationData.success) {
@@ -349,7 +350,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const saveResponse = await fetch(API_ROUTES.SHORTS_SAVE_VIDEO, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({
+        body: stringifyJson({
           token: destinationData.token,
           sourceVideoPath: clip.outputVideoPath,
         }),
@@ -378,7 +379,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const destinationResponse = await fetch(API_ROUTES.SHORTS_SELECT_SAVE_DESTINATION, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({ suggestedName, extension: SHORTS_CONSTANTS.EXT_ZIP }),
+        body: stringifyJson({ suggestedName, extension: SHORTS_CONSTANTS.EXT_ZIP }),
       });
       const destinationData = await destinationResponse.json();
       if (!destinationResponse.ok || !destinationData.success) {
@@ -391,7 +392,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const response = await fetch(API_ROUTES.SHORTS_BUILD_ZIP, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({
+        body: stringifyJson({
           token: destinationData.token,
           videoPaths,
         }),

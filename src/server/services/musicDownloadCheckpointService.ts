@@ -15,12 +15,11 @@ import {
   SOURCE_TEXT_RIFF,
   SOURCE_TEXT_SHA256,
   SOURCE_TEXT_UTF8,
-  SOURCE_TEXT_VIDEOAI_VIDIFY,
   SOURCE_TEXT_WAVE,
 } from "../../constants/sourceText";
 import fs from "fs";
-import os from "os";
 import path from "path";
+import { getDataDirectory } from "../utils/paths.js";
 import { createHash } from "crypto";
 import { stringifyJson } from "../../lib/jsonStringify.js";
 export interface MusicDownloadSelection {
@@ -39,7 +38,7 @@ export interface MusicDownloadCheckpoint {
   sourceWavRequired: true;
   updatedAt: number;
 }
-const checkpointDirectory = path.join(process.env.LOCALAPPDATA || os.tmpdir(), SOURCE_TEXT_VIDEOAI_VIDIFY, SOURCE_TEXT_MUSIC_DOWNLOAD_CHECKPOINTS);
+const checkpointDirectory = path.join(getDataDirectory(), SOURCE_TEXT_MUSIC_DOWNLOAD_CHECKPOINTS);
 const audioCacheDirectory = (key: string): string => path.join(checkpointDirectory, key, SOURCE_TEXT_EVALUATION_AUDIO);
 const audioCachePath = (key: string, songId: string): string => path.join(audioCacheDirectory(key), SOURCE_TEMPLATE_MP3(`${createHash(SOURCE_TEXT_SHA256).update(songId).digest(SOURCE_TEXT_HEX)}`));
 const wavCachePath = (key: string, songId: string): string => path.join(audioCacheDirectory(key), SOURCE_TEMPLATE_WAV(`${createHash(SOURCE_TEXT_SHA256).update(songId).digest(SOURCE_TEXT_HEX)}`));

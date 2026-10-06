@@ -1,3 +1,4 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -21,7 +22,6 @@ import {
   normalizeFlowPromptValue,
   normalizeFlowMediaId,
 } from "../src/server/services/imageGeneratorService";
-
 const scene = {
   id: "sc_preflight",
   duration: 10,
@@ -117,7 +117,6 @@ const scene = {
     },
   ],
 } as StoryboardScene;
-
 const prompt = `Cinematic live-action photorealism, natural human skin texture, physically plausible environment, realistic materials, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, grounded production design. Shot on 35mm anamorphic lens, 24fps, cinematic depth of field, natural motion blur.
 
 Kade, an original fictional character and not a real person or celebrity, faces the pilot beside an open damaged ship ramp at the same windblown landing site before sunrise. He wears unchanged weathered armor, while his rifle remains secured across his back. Cold dawn light silhouettes the ramp and drifting dust without hiding either face.
@@ -157,23 +156,12 @@ const flowMediaId = "84a69b3c-7dda-487c-a735-227c6b76b6b9";
 const duplicatedFlowMediaUrl = `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`;
 assert.equal(normalizeFlowMediaId(duplicatedFlowMediaUrl), flowMediaId);
 assert.equal(createFlowMediaRedirectUrl(duplicatedFlowMediaUrl), `https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=${flowMediaId}`);
-assert.equal(
-  extractFlowMediaIdFromUrl(
-    "https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=projects%2F0d414a19-5a6b-4e19-9287-acf5e88aebc2%2Fmedia%2F27793cf7-734b-4827-b145-5e571c99b871",
-  ),
-  "27793cf7-734b-4827-b145-5e571c99b871",
-);
+assert.equal(extractFlowMediaIdFromUrl("https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=projects%2F0d414a19-5a6b-4e19-9287-acf5e88aebc2%2Fmedia%2F27793cf7-734b-4827-b145-5e571c99b871"), "27793cf7-734b-4827-b145-5e571c99b871");
 assert.equal(isReliableFlowVideoResponseUrl("https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=27793cf7-734b-4827-b145-5e571c99b871"), true);
 assert.equal(isReliableFlowVideoResponseUrl("https://example.com/assets/0d414a19-5a6b-4e19-9287-acf5e88aebc2/image.png"), false);
 assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
 assert.equal(isFlowProjectPageUrl("https://labs.google/fx/vi/tools/flow/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), true);
-assert.equal(
-  isFlowProjectPageUrl(
-    "https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d/edit/d2dc38a3-c731-4540-bed8-761bb207d39b",
-    "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d",
-  ),
-  false,
-);
+assert.equal(isFlowProjectPageUrl("https://flow.google.com/project/8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d/edit/d2dc38a3-c731-4540-bed8-761bb207d39b", "8a74ebe7-1cc0-4e64-bd91-bbdbbd252c4d"), false);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/404?reason=project", ""), true);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/missing", "Không tìm thấy dự án."), true);
 assert.equal(isFlowProjectUnavailableState("https://flow.google.com/project/active", "Create a video"), false);
@@ -282,10 +270,7 @@ assert.deepEqual(
     { sceneId: "scene_b", mediaId: undefined },
   ],
 );
-assert.deepEqual(
-  assignFlowVideoBatchMediaIds([{ sceneId: "scene_a", prompt: "first scene prompt" }], [{ editId: "55555555-5555-4555-8555-555555555555", evidence: "dom", discoveryOrder: 0 }]),
-  [{ sceneId: "scene_a", mediaId: undefined }],
-);
+assert.deepEqual(assignFlowVideoBatchMediaIds([{ sceneId: "scene_a", prompt: "first scene prompt" }], [{ editId: "55555555-5555-4555-8555-555555555555", evidence: "dom", discoveryOrder: 0 }]), [{ sceneId: "scene_a", mediaId: undefined }]);
 assert.deepEqual(
   assignFlowVideoBatchMediaIds(
     [
@@ -305,10 +290,7 @@ assert.deepEqual(
 assert.equal(isNonRetryableFlowVideoError("Google Flow chưa áp dụng đúng cấu hình video người dùng đã chọn."), true);
 assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow xác nhận tải lên."), true);
 assert.equal(isNonRetryableFlowVideoError("Kết nối mạng tạm thời bị gián đoạn."), false);
-assert.notEqual(
-  createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }),
-  createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "720p", videoDuration: "8s" }),
-);
+assert.notEqual(createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "720p", videoDuration: "8s" }));
 const flowAutomationSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
 const cinematicPipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(flowAutomationSource, /replaceFlowPromptInput/);
@@ -374,4 +356,4 @@ assert.match(flowCreatorSource, /generated\?\.remoteMediaCreated !== false/);
 assert.doesNotMatch(flowCreatorSource, /const batch: Clip\[\]/);
 assert.match(pipelineControllerSource, /_\.size\(requestedItems\) !== FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH/);
 assert.match(cinematicPipelineSource, /await runSceneGeneration\(retryScenes, true\);[\s\S]*await recoverPendingFlowDownloads\(\)/);
-process.stdout.write(JSON.stringify({ passed: true, promptsPerGeneration: FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, retryCount: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT, videosPerPrompt: 1, creativeQaBlockers: 0 }));
+process.stdout.write(stringifyJson({ passed: true, promptsPerGeneration: FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, retryCount: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_RETRY_COUNT, videosPerPrompt: 1, creativeQaBlockers: 0 }));

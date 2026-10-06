@@ -99,6 +99,7 @@
         ],
         "extraResources": [
             "python_scripts",
+            "motion-engine",
             "ffmpeg.exe",
             "database.db"
         ],

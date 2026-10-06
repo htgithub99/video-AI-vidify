@@ -23,7 +23,6 @@ import {
   SOURCE_TEXT_IDENTITYMATCH,
   SOURCE_TEXT_ISSUECOUNT,
   SOURCE_TEXT_ISSUES,
-  SOURCE_TEXT_LOGS,
   SOURCE_TEXT_LONG_QUOTED_TEXT,
   SOURCE_TEXT_MODEL,
   SOURCE_TEXT_MUSIC_WORKFLOW_JSONL,
@@ -49,16 +48,15 @@ import {
   SOURCE_TEXT_TRACKCOUNT,
   SOURCE_TEXT_URL_2,
   SOURCE_TEXT_UTF8,
-  SOURCE_TEXT_VIDEOAI_VIDIFY,
   SOURCE_TEXT_WORKERID,
 } from "../../constants/sourceText";
 import fs from "fs";
-import os from "os";
 import path from "path";
+import { getLogsDirectory } from "../utils/paths.js";
 import { logger } from "../../lib/logger.js";
 import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
-const logPath = path.join(process.env.LOCALAPPDATA || os.tmpdir(), SOURCE_TEXT_VIDEOAI_VIDIFY, SOURCE_TEXT_LOGS, SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
+const logPath = path.join(getLogsDirectory(), SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
   SOURCE_TEXT_RUNID,
   SOURCE_TEXT_STAGE,

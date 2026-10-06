@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import {
   VIDEO_EXPORT_TEMPLATE_CAPCUT_EXPORT_CREATED_PROJECT,
   VIDEO_EXPORT_TEMPLATE_SYMBOL_3,
@@ -280,7 +281,7 @@ export const exportCapcutProject = async (params: ExportCapcutProjectParams): Pr
     materials,
     tracks,
   };
-  const draftContentStr = JSON.stringify(draftContent, null, 2);
+  const draftContentStr = stringifyJson(draftContent, null, 2);
   await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_DRAFT_CONTENT_JSON), draftContentStr, VIDEO_EXPORT_TEXT_UTF8);
   await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_DRAFT_CONTENT_JSON_BAK), draftContentStr, VIDEO_EXPORT_TEXT_UTF8);
   await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_TEMPLATE_2_TMP), draftContentStr, VIDEO_EXPORT_TEXT_UTF8);
@@ -314,7 +315,7 @@ export const exportCapcutProject = async (params: ExportCapcutProjectParams): Pr
     draft_materials_copied_info: [],
     draft_materials: metaMaterials,
   };
-  await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_DRAFT_META_INFO_JSON), JSON.stringify(draftMetaInfo, null, 2), VIDEO_EXPORT_TEXT_UTF8);
+  await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_DRAFT_META_INFO_JSON), stringifyJson(draftMetaInfo, null, 2), VIDEO_EXPORT_TEXT_UTF8);
   const projectJson = {
     config: { color_space: -1, hdr_vivid: false, mixed_track_mode_on: false, render_index_track_mode_on: false, use_float_render: false },
     create_time: nowUs,
@@ -324,7 +325,7 @@ export const exportCapcutProject = async (params: ExportCapcutProjectParams): Pr
     update_time: nowUs,
     version: 0,
   };
-  await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_TIMELINES, VIDEO_EXPORT_TEXT_PROJECT_JSON), JSON.stringify(projectJson, null, 2), VIDEO_EXPORT_TEXT_UTF8);
+  await fs.promises.writeFile(path.join(projectDir, VIDEO_EXPORT_TEXT_TIMELINES, VIDEO_EXPORT_TEXT_PROJECT_JSON), stringifyJson(projectJson, null, 2), VIDEO_EXPORT_TEXT_UTF8);
   logger.log(VIDEO_EXPORT_TEMPLATE_CAPCUT_EXPORT_CREATED_PROJECT(`${projectDir}`));
   return {
     projectName: finalProjectName,

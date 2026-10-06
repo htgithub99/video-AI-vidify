@@ -7,7 +7,7 @@ import { promisify } from "util";
 import _ from "lodash";
 import ffmpeg from "fluent-ffmpeg";
 import { FLOW_VIDEO_MEDIA_CONFIG, GEMINI_VIDEO_PROCESS_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
-import { getDataDirectory, getStaticResourcePath } from "./paths.js";
+import { getStaticResourcePath, getTempDirectory } from "./paths.js";
 const execFileAsync = promisify(execFile);
 export interface VideoAssetInspection {
   durationSeconds: number;
@@ -21,7 +21,7 @@ export const removeVideoAudioTrack = async (videoBase64: string): Promise<string
   if (_.isEmpty(videoBase64)) {
     throw new Error(GEMINI_VIDEO_PROCESS_CONFIG.ERROR_REMOVE_AUDIO);
   }
-  const temporaryDirectory = path.join(getDataDirectory(), `${GEMINI_VIDEO_PROCESS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  const temporaryDirectory = path.join(getTempDirectory(), `${GEMINI_VIDEO_PROCESS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
   const inputPath = path.join(temporaryDirectory, GEMINI_VIDEO_PROCESS_CONFIG.INPUT_FILE_NAME);
   const outputPath = path.join(temporaryDirectory, GEMINI_VIDEO_PROCESS_CONFIG.OUTPUT_FILE_NAME);
   const bundledFfmpegPath = getStaticResourcePath(GEMINI_VIDEO_PROCESS_CONFIG.FFMPEG_BINARY_NAME);
@@ -44,7 +44,7 @@ export const removeVideoAudioTrack = async (videoBase64: string): Promise<string
 };
 export const inspectGeneratedVideoBuffer = async (videoBuffer: Buffer, expectedDurationSeconds: number): Promise<VideoAssetInspection> => {
   if (_.lt(videoBuffer.length, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw new Error(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
-  const temporaryDirectory = path.join(getDataDirectory(), `${GEMINI_VIDEO_PROCESS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  const temporaryDirectory = path.join(getTempDirectory(), `${GEMINI_VIDEO_PROCESS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
   const inputPath = path.join(temporaryDirectory, GEMINI_VIDEO_PROCESS_CONFIG.INPUT_FILE_NAME);
   await fs.promises.mkdir(temporaryDirectory, { recursive: true });
   try {

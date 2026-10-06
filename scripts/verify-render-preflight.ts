@@ -1,7 +1,7 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import assert from "node:assert/strict";
 import { GenerateType } from "../src/types";
 import { validateFFmpegRenderOptions } from "../src/server/utils/ffmpegRender";
-
 const encodedImage = `data:image/png;base64,${Buffer.alloc(256, 1).toString("base64")}`;
 const encodedAudio = Buffer.alloc(256, 2).toString("base64");
 const valid = validateFFmpegRenderOptions({
@@ -9,7 +9,6 @@ const valid = validateFFmpegRenderOptions({
   globalAudioBase64: encodedAudio,
 });
 assert.equal(valid.ready, true);
-
 const invalid = validateFFmpegRenderOptions({
   scenes: [
     { id: "sc_bad", duration: 0, imageUrl: "/assets/projects/missing/image.png" },
@@ -21,7 +20,6 @@ assert(invalid.issues.includes("scene_invalid_duration:sc_bad"));
 assert(invalid.issues.includes("scene_duplicate_id:sc_bad"));
 assert.equal(invalid.issues.filter((issue) => issue.startsWith("scene_asset_missing:")).length, 1);
 assert(invalid.issues.includes("narration_missing"));
-
 const nativeAudio = validateFFmpegRenderOptions({
   preserveVideoAudio: true,
   scenes: [{ id: "sc_video", duration: 3, imageBase64: encodedImage, assetType: GenerateType.Video }],
@@ -35,4 +33,4 @@ const incompleteTimeline = validateFFmpegRenderOptions({
 });
 assert(incompleteTimeline.issues.includes("required_scene_missing:sc_missing"));
 assert(incompleteTimeline.issues.some((issue) => issue.startsWith("render_duration_too_short:")));
-process.stdout.write(JSON.stringify({ passed: true, invalidIssues: invalid.issues }));
+process.stdout.write(stringifyJson({ passed: true, invalidIssues: invalid.issues }));

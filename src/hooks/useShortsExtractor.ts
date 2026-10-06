@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { SOURCE_TEMPLATE_CLIP, SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SHORTS_EXPORT, SOURCE_TEXT_ABORTERROR, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_EN, SOURCE_TEXT_POST, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_VI } from "../constants/sourceText";
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
         const response = await fetch(API_ROUTES.SHORTS_METADATA, {
           method: SOURCE_TEXT_POST,
           headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-          body: JSON.stringify({ videoPath }),
+          body: stringifyJson({ videoPath }),
         });
         const data = await response.json();
         if (response.ok && data.success) {
@@ -94,7 +95,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
       const response = await fetch(API_ROUTES.SHORTS_GENERATE, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({
+        body: stringifyJson({
           sourceVideoPath,
           aspectRatio,
           reframeMode,
@@ -162,7 +163,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
         const destinationResponse = await fetch(API_ROUTES.SHORTS_SELECT_SAVE_DESTINATION, {
           method: SOURCE_TEXT_POST,
           headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-          body: JSON.stringify({ suggestedName, extension: SHORTS_CONSTANTS.EXT_MP4 }),
+          body: stringifyJson({ suggestedName, extension: SHORTS_CONSTANTS.EXT_MP4 }),
         });
         const destinationData = await destinationResponse.json();
         if (!destinationResponse.ok || !destinationData.success) {
@@ -175,7 +176,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
         const saveResponse = await fetch(API_ROUTES.SHORTS_SAVE_VIDEO, {
           method: SOURCE_TEXT_POST,
           headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-          body: JSON.stringify({
+          body: stringifyJson({
             token: destinationData.token,
             sourceVideoPath: clip.outputVideoPath,
           }),
@@ -206,7 +207,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
       const destinationResponse = await fetch(API_ROUTES.SHORTS_SELECT_SAVE_DESTINATION, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({ suggestedName, extension: SHORTS_CONSTANTS.EXT_ZIP }),
+        body: stringifyJson({ suggestedName, extension: SHORTS_CONSTANTS.EXT_ZIP }),
       });
       const destinationData = await destinationResponse.json();
       if (!destinationResponse.ok || !destinationData.success) {
@@ -219,7 +220,7 @@ export function useShortsExtractor(lang: Lang = SOURCE_TEXT_VI) {
       const response = await fetch(API_ROUTES.SHORTS_BUILD_ZIP, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: JSON.stringify({
+        body: stringifyJson({
           token: destinationData.token,
           videoPaths,
         }),

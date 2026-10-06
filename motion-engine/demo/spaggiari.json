@@ -1,0 +1,660 @@
+{
+ "title": "Vụ cướp thế kỷ ở Nice (demo)",
+ "aspect": "16:9",
+ "fps": 30,
+ "look": "vintage",
+ "accent": "#ffb070",
+ "subtitleStyle": "cinema",
+ "cast": {
+  "albert": {
+   "characterId": "photographer",
+   "overrides": {
+    "name": "Albert Spaggiari"
+   }
+  },
+  "digger1": {
+   "characterId": "worker_digger"
+  },
+  "digger2": {
+   "characterId": "worker_digger",
+   "overrides": {
+    "accessories": [],
+    "colors": {
+     "top": "#4a5a3a"
+    }
+   }
+  },
+  "welder": {
+   "characterId": "worker_welder"
+  },
+  "manager": {
+   "characterId": "bank_manager"
+  }
+ },
+ "shots": [
+  {
+   "id": "s1",
+   "start": 0,
+   "end": 6,
+   "template": "title",
+   "transition": {
+    "type": "fade",
+    "duration": 0.8
+   },
+   "params": {
+    "kicker": "Phóng sự · Hồ sơ vụ án",
+    "title": "Vụ cướp thế kỷ ở Nice",
+    "subtitle": "1976 · Không thù hận, không bạo lực, không vũ khí",
+    "env": "city_street",
+    "envParams": {
+     "time": "night",
+     "camera": {
+      "move": "pan",
+      "distance": 300
+     }
+    }
+   }
+  },
+  {
+   "id": "s2",
+   "start": 6,
+   "end": 13,
+   "template": "scene",
+   "transition": {
+    "type": "dip",
+    "duration": 0.8
+   },
+   "params": {
+    "env": "riviera_promenade",
+    "time": "dusk",
+    "camera": {
+     "follow": "albert",
+     "zoom": 1.55,
+     "offset": 140
+    },
+    "actors": [
+     {
+      "id": "albert",
+      "who": "albert",
+      "action": "walk",
+      "path": [
+       [
+        0,
+        900
+       ],
+       [
+        1,
+        1750
+       ]
+      ]
+     }
+    ],
+    "items": [
+     {
+      "asset": "car_vintage",
+      "lane": "mid",
+      "path": [
+       [
+        0,
+        400
+       ],
+       [
+        1,
+        2900
+       ]
+      ],
+      "params": {
+       "color": "#c9b48a",
+       "lights": true
+      }
+     }
+    ]
+   },
+   "overlays": [
+    {
+     "type": "tag",
+     "text": "NICE · PHÁP · MÙA XUÂN 1976",
+     "at": 0.6,
+     "duration": 4.5
+    }
+   ]
+  },
+  {
+   "id": "s3",
+   "start": 13,
+   "end": 19,
+   "template": "scene",
+   "transition": {
+    "type": "whip",
+    "duration": 0.6
+   },
+   "params": {
+    "env": "city_street",
+    "time": "day",
+    "camera": {
+     "move": "push",
+     "x": 1500,
+     "zoom": 1.0,
+     "amount": 1.25
+    },
+    "items": [
+     {
+      "asset": "bank_facade",
+      "x": 1700,
+      "lane": "back",
+      "y": -10,
+      "scale": 0.9,
+      "params": {
+       "text": "Société Générale"
+      }
+     }
+    ],
+    "actors": [
+     {
+      "id": "albert",
+      "who": "albert",
+      "actions": [
+       [
+        0,
+        "walk"
+       ],
+       [
+        0.75,
+        "stand"
+       ]
+      ],
+      "path": [
+       [
+        0,
+        1150
+       ],
+       [
+        0.75,
+        1560
+       ],
+       [
+        1,
+        1560
+       ]
+      ]
+     },
+     {
+      "who": "young_woman",
+      "action": "walk",
+      "path": [
+       [
+        0,
+        2200
+       ],
+       [
+        1,
+        1500
+       ]
+      ],
+      "lane": "mid"
+     }
+    ],
+    "labels": [
+     {
+      "text": "Ngân hàng an toàn nhất nước Pháp",
+      "x": 1700,
+      "y": -660,
+      "at": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "s4",
+   "start": 19,
+   "end": 25,
+   "template": "object",
+   "transition": {
+    "type": "dip",
+    "duration": 0.7
+   },
+   "params": {
+    "asset": "alarm_clock",
+    "params": {
+     "ringing": true
+    },
+    "caption": "NỬA ĐÊM · TRONG HẦM KÉT",
+    "scale": 3.4
+   }
+  },
+  {
+   "id": "s5",
+   "start": 25,
+   "end": 31,
+   "template": "scene",
+   "transition": {
+    "type": "fade",
+    "duration": 0.8
+   },
+   "params": {
+    "env": "bank_vault",
+    "time": "interior_dark",
+    "camera": {
+     "move": "push",
+     "x": 1300,
+     "amount": 1.2
+    },
+    "labels": [
+     {
+      "text": "Không có báo động âm thanh",
+      "x": 1300,
+      "y": -820,
+      "at": 0.25
+     }
+    ]
+   }
+  },
+  {
+   "id": "s6",
+   "start": 31,
+   "end": 38,
+   "template": "scene",
+   "transition": {
+    "type": "wipe",
+    "duration": 0.7
+   },
+   "params": {
+    "env": "underground_section",
+    "tunnelProgress": null,
+    "camera": {
+     "x": 1150,
+     "y": -480,
+     "zoom": 0.72,
+     "to": {
+      "zoom": 0.8
+     }
+    },
+    "labels": [
+     {
+      "text": "8 MÉT ĐẤT · BÊ TÔNG · THÉP",
+      "x": 1050,
+      "y": -150,
+      "at": 0.4
+     },
+     {
+      "text": "Hầm két sắt",
+      "x": 1500,
+      "y": -560,
+      "at": 0.15
+     },
+     {
+      "text": "Cống ngầm",
+      "x": 500,
+      "y": -400,
+      "at": 0.15
+     }
+    ]
+   }
+  },
+  {
+   "id": "s7",
+   "start": 38,
+   "end": 45,
+   "template": "scene",
+   "transition": {
+    "type": "dip",
+    "duration": 0.6
+   },
+   "params": {
+    "env": "sewer_tunnel",
+    "camera": {
+     "move": "pan",
+     "x": 1150,
+     "distance": 250,
+     "zoom": 1.7
+    },
+    "actors": [
+     {
+      "who": "digger1",
+      "action": "dig",
+      "x": 1200
+     },
+     {
+      "who": "welder",
+      "action": "weld",
+      "x": 1420,
+      "facing": "left"
+     },
+     {
+      "who": "digger2",
+      "action": "carry",
+      "path": [
+       [
+        0,
+        1900
+       ],
+       [
+        1,
+        1500
+       ]
+      ]
+     },
+     {
+      "who": "albert",
+      "action": "sweep_light",
+      "x": 1000,
+      "lane": "mid"
+     }
+    ],
+    "items": [
+     {
+      "asset": "raft",
+      "x": 1750,
+      "lane": "mid",
+      "y": 40
+     },
+     {
+      "asset": "rubble",
+      "x": 1300,
+      "lane": "front",
+      "y": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "s8",
+   "start": 45,
+   "end": 51,
+   "template": "stats",
+   "transition": {
+    "type": "flash",
+    "duration": 0.5
+   },
+   "params": {
+    "title": "60 đêm đào hầm",
+    "items": [
+     {
+      "value": 8,
+      "suffix": " m",
+      "label": "đường hầm"
+     },
+     {
+      "value": 96,
+      "suffix": " giờ",
+      "label": "trong hầm"
+     },
+     {
+      "value": 371,
+      "label": "hộp bị mở"
+     },
+     {
+      "value": 10,
+      "prefix": "$",
+      "suffix": "M",
+      "label": "bị lấy đi"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s9",
+   "start": 51,
+   "end": 58,
+   "template": "scene",
+   "transition": {
+    "type": "fade",
+    "duration": 0.8
+   },
+   "params": {
+    "env": "bank_vault",
+    "time": "interior",
+    "opened": 0.35,
+    "camera": {
+     "move": "drift",
+     "x": 1200,
+     "drift": 140,
+     "zoom": 1.45
+    },
+    "actors": [
+     {
+      "who": "digger1",
+      "action": "sit_eat",
+      "x": 980,
+      "lane": "mid"
+     },
+     {
+      "who": "welder",
+      "action": "drink",
+      "x": 1180,
+      "lane": "mid",
+      "facing": "left"
+     },
+     {
+      "who": "albert",
+      "action": "paint",
+      "x": 1560,
+      "facing": "left"
+     }
+    ],
+    "items": [
+     {
+      "asset": "picnic_table",
+      "x": 1080,
+      "lane": "mid"
+     },
+     {
+      "asset": "air_mattress",
+      "x": 700,
+      "lane": "back"
+     },
+     {
+      "asset": "gold_bars",
+      "x": 1290,
+      "lane": "front"
+     },
+     {
+      "asset": "paint_text_wall",
+      "x": 1380,
+      "y": -330,
+      "lane": "back",
+      "params": {
+       "text": "Sans armes, ni haine, ni violence",
+       "progress": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "s10",
+   "start": 58,
+   "end": 64,
+   "template": "scene",
+   "transition": {
+    "type": "whip",
+    "duration": 0.6,
+    "direction": "right"
+   },
+   "params": {
+    "env": "courtyard",
+    "time": "day",
+    "camera": {
+     "follow": "moto",
+     "zoom": 1.35
+    },
+    "items": [
+     {
+      "asset": "tree_round",
+      "x": 1500,
+      "lane": "back",
+      "scale": 0.9
+     },
+     {
+      "asset": "car_vintage",
+      "x": 700,
+      "lane": "back",
+      "params": {
+       "color": "#3a5a7a"
+      }
+     },
+     {
+      "id": "moto",
+      "asset": "motorbike",
+      "lane": "front",
+      "path": [
+       [
+        0,
+        1100
+       ],
+       [
+        0.25,
+        1100
+       ],
+       [
+        1,
+        2700
+       ]
+      ],
+      "riders": [
+       {
+        "who": "motorcyclist",
+        "seat": "driver"
+       },
+       {
+        "who": "albert",
+        "seat": "passenger"
+       }
+      ]
+     }
+    ]
+   },
+   "overlays": [
+    {
+     "type": "lowerThird",
+     "text": "10/3/1977",
+     "sub": "TẨU THOÁT KHỎI TÒA ÁN NICE",
+     "at": 0.4
+    }
+   ]
+  },
+  {
+   "id": "s11",
+   "start": 64,
+   "end": 70,
+   "template": "map",
+   "transition": {
+    "type": "fade",
+    "duration": 0.7
+   },
+   "params": {
+    "title": "Biến mất",
+    "points": [
+     {
+      "id": "nice",
+      "x": 0.62,
+      "y": 0.34,
+      "label": "Nice",
+      "at": 0.05
+     },
+     {
+      "id": "ar",
+      "x": 0.3,
+      "y": 0.78,
+      "label": "Argentina",
+      "sub": "nhiều năm lẩn trốn",
+      "at": 0.45
+     }
+    ],
+    "routes": [
+     {
+      "from": "nice",
+      "to": "ar",
+      "at": 0.15,
+      "dur": 0.35,
+      "bend": 0.12
+     }
+    ]
+   }
+  },
+  {
+   "id": "s12",
+   "start": 70,
+   "end": 76,
+   "template": "quote",
+   "transition": {
+    "type": "dip",
+    "duration": 0.8
+   },
+   "params": {
+    "text": "Không thù hận, không bạo lực, không vũ khí.",
+    "author": "Dòng chữ trên tường hầm",
+    "highlight": [
+     "thù",
+     "hận,",
+     "bạo",
+     "lực,",
+     "vũ",
+     "khí."
+    ]
+   }
+  },
+  {
+   "id": "s13",
+   "start": 76,
+   "end": 81,
+   "template": "ending",
+   "transition": {
+    "type": "fade",
+    "duration": 1
+   },
+   "params": {
+    "text": "Một chiếc đồng hồ báo thức, tám mét đường hầm và một kỳ nghỉ cuối tuần dài.",
+    "sub": "Hết",
+    "env": "night_sky"
+   }
+  }
+ ],
+ "subtitles": [
+  {
+   "start": 6.5,
+   "end": 10,
+   "text": "Mùa xuân năm 1976, thành phố Nice, nước Pháp."
+  },
+  {
+   "start": 10,
+   "end": 13,
+   "text": "Một nhiếp ảnh gia bình thường bước đi trên phố."
+  },
+  {
+   "start": 13.4,
+   "end": 18.5,
+   "text": "Ông bước vào ngân hàng an toàn nhất nước Pháp với một chiếc đồng hồ trong túi."
+  },
+  {
+   "start": 19.3,
+   "end": 24.6,
+   "text": "Nửa đêm, chiếc đồng hồ reo lên trong hầm két… nhưng không ai nghe thấy."
+  },
+  {
+   "start": 25.3,
+   "end": 30.6,
+   "text": "Hầm két không hề có báo động âm thanh."
+  },
+  {
+   "start": 31.3,
+   "end": 37.6,
+   "text": "Từ cống ngầm của thành phố, chỉ cách sàn hầm tám mét."
+  },
+  {
+   "start": 38.3,
+   "end": 44.6,
+   "text": "Suốt sáu mươi đêm, cả nhóm đào, khoan và hàn trong bóng tối."
+  },
+  {
+   "start": 51.3,
+   "end": 57.6,
+   "text": "Họ ăn uống ngay giữa hầm, rồi để lại một dòng chữ trên tường."
+  },
+  {
+   "start": 58.3,
+   "end": 63.6,
+   "text": "Bị bắt, ông nhảy qua cửa sổ tòa án và trốn trên một chiếc mô tô."
+  }
+ ]
+}

@@ -1,3 +1,4 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,7 +7,6 @@ import { CINEMATIC_CHARACTER_PACK_CONFIG } from "../src/constants/cinematicConst
 import { CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA } from "../src/constants/responseSchemas";
 import { createSceneGenerationContext, resolveCinematicSceneCharacterReferences } from "../src/services/sceneReferenceService";
 import { CharacterConfig, StoryboardScene } from "../src/types";
-
 const characters: CharacterConfig[] = [
   {
     id: "char_kade",
@@ -28,14 +28,12 @@ const characters: CharacterConfig[] = [
   },
   { id: "char_pilot", name: "Mira", description: "Pilot", images: ["/assets/mira.png"] },
 ];
-
 const scene = { id: "sc_1", characterIds: ["char_kade", "char_varg"], prompt: "Kade confronts Varg", script: "Kade confronts Varg" } as StoryboardScene;
 const cinematicReferences = resolveCinematicSceneCharacterReferences(scene, characters);
 assert.deepEqual(cinematicReferences.characterIds, ["char_kade", "char_varg"]);
 assert.deepEqual(cinematicReferences.referenceImages, []);
 assert.deepEqual(cinematicReferences.referenceImageNames, []);
 assert.deepEqual(cinematicReferences.referenceCharacterNames, ["Kade Voss", "Varg"]);
-
 const inferredReferences = resolveCinematicSceneCharacterReferences(
   {
     ...scene,
@@ -48,7 +46,6 @@ const inferredReferences = resolveCinematicSceneCharacterReferences(
 );
 assert.deepEqual(inferredReferences.characterIds, ["char_kade"]);
 assert.deepEqual(inferredReferences.referenceCharacterNames, ["Kade Voss"]);
-
 const aiMembershipRemainsAuthoritative = resolveCinematicSceneCharacterReferences(
   {
     ...scene,
@@ -59,7 +56,6 @@ const aiMembershipRemainsAuthoritative = resolveCinematicSceneCharacterReference
 );
 assert.deepEqual(aiMembershipRemainsAuthoritative.characterIds, ["char_kade", "char_varg"]);
 assert.deepEqual(aiMembershipRemainsAuthoritative.referenceCharacterNames, ["Kade Voss", "Varg"]);
-
 const explicitCharactersRemainAuthoritative = resolveCinematicSceneCharacterReferences(
   {
     id: "sc_explicit",
@@ -71,10 +67,8 @@ const explicitCharactersRemainAuthoritative = resolveCinematicSceneCharacterRefe
 );
 assert.deepEqual(explicitCharactersRemainAuthoritative.characterIds, ["char_kade"]);
 assert.deepEqual(explicitCharactersRemainAuthoritative.referenceCharacterNames, ["Kade Voss"]);
-
 const automaticContext = createSceneGenerationContext(scene, { characters });
 assert.deepEqual(automaticContext.referenceImages, []);
-
 const characterPrompt = getCinematicCharacterAnalysisPrompt("Kade confronts Varg", "cinematic live action", "");
 assert.match(characterPrompt, /referenceGenerationPrompt/);
 assert.match(characterPrompt, /Create one effective Veo character-reference prompt/i);
@@ -92,7 +86,6 @@ assert.doesNotMatch(characterPrompt, /sourceIdentityEvidence|speciesPresentation
 assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.required, ["characters"]);
 assert.deepEqual(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.items.required, ["id", "name", "description", "referenceGenerationPrompt"]);
 assert.equal(CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA.properties.characters.maxItems, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS);
-
 const pipelineControllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
 const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
 const imageGeneratorSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8"));
@@ -110,7 +103,4 @@ assert.match(imageGeneratorSource, /ensureFlowCharacters/);
 assert.match(imageGeneratorSource, /captureFlowCharacterReference/);
 assert.match(imageGeneratorSource, /imageUrl/);
 assert.match(pipelineSource, /characterImages: _\.compact/);
-
-process.stdout.write(
-  JSON.stringify({ passed: true, cinematicFlowCharacterCount: cinematicReferences.referenceCharacterNames.length, automaticReferencesUnchanged: true }),
-);
+process.stdout.write(stringifyJson({ passed: true, cinematicFlowCharacterCount: cinematicReferences.referenceCharacterNames.length, automaticReferencesUnchanged: true }));

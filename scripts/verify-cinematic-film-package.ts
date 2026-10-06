@@ -1,24 +1,14 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA, createCinematicFilmPackageResponseSchema } from "../src/constants/responseSchemas";
 import { CINEMATIC_CONFIG, CINEMATIC_SCRIPT_ARTIFACT_CONFIG } from "../src/constants/config";
-import {
-  getCinematicGlobalEditDecisionPrompt,
-  getCinematicFilmPackagePrompt,
-  getCinematicFilmPackageRepairPrompt,
-  getCinematicFinalVideoQualityPrompt,
-  getCinematicSeoPrompt,
-  getCinematicThumbnailPrompt,
-  getCinematicThumbnailProviderRepairPrompt,
-  getCinematicThumbnailTechnicalRepairPrompt,
-  getCinematicVideoPlanningPrompt,
-} from "../src/constants/cinematicPrompts";
+import { getCinematicGlobalEditDecisionPrompt, getCinematicFilmPackagePrompt, getCinematicFilmPackageRepairPrompt, getCinematicFinalVideoQualityPrompt, getCinematicSeoPrompt, getCinematicThumbnailPrompt, getCinematicThumbnailProviderRepairPrompt, getCinematicThumbnailTechnicalRepairPrompt, getCinematicVideoPlanningPrompt } from "../src/constants/cinematicPrompts";
 import { CINEMATIC_PLANNING_MESSAGES, CINEMATIC_POLICY_CONFIG, CINEMATIC_PROGRESS_MESSAGES, CINEMATIC_ROOM_STAGE } from "../src/constants/cinematicConstants";
 import { getThumbnailTechnicalPlanningIssues, normalizeThumbnailIdeas, resolveThumbnailGenerationPrompt } from "../src/services/thumbnailPromptService";
 import { ThumbnailLayoutId, ThumbnailTypographyId } from "../src/constants/thumbnail";
 import type { ThumbnailItem } from "../src/types";
-
 assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.required, ["artifactType", "requestId", "scriptSegment", "chapters", "characters", "scenes", "intro", "completionMarker"]);
 assert("completionMarker" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties);
 assert(!("continuityScore" in CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties));
@@ -27,7 +17,6 @@ assert.deepEqual(CINEMATIC_FILM_PACKAGE_RESPONSE_SCHEMA.properties.intro.require
 const exactSceneSchema = createCinematicFilmPackageResponseSchema(12);
 assert.equal(exactSceneSchema.properties.scenes.minItems, 12);
 assert.equal(exactSceneSchema.properties.scenes.maxItems, 12);
-
 const prompt = getCinematicFilmPackagePrompt("A courier must cross a flooded city.", "cinematic_episode", false, 900, 30, 10, "run:film_package");
 assert.match(prompt, /Write a complete, coherent and engaging film from the input/i);
 assert.match(prompt, /Make all creative choices yourself/i);
@@ -54,14 +43,12 @@ assert.match(prompt, /do not create a random trailer montage/i);
 assert.doesNotMatch(prompt, /escalating sequence arc|attack-counter tactics|exact defence|lateral tracking|dance-like fighting/i);
 assert.doesNotMatch(prompt, /YouTube|TikTok|viewer retention/i);
 assert.match(getCinematicFilmPackageRepairPrompt(prompt, ["scenes:missing"]), /Return the complete valid JSON again/i);
-
 const videoDirectorPrompt = getCinematicVideoPlanningPrompt("[]", "[]", "", "", "", 10);
 assert.match(videoDirectorPrompt, /restate each visible recurring character's exact supplied name/i);
 assert.match(videoDirectorPrompt, /coherent multi-shot character introduction with at least 4 motivated camera setups/i);
 assert.match(videoDirectorPrompt, /omit absent and off-screen characters/i);
 assert.match(videoDirectorPrompt, /separate starting position, action, weapon or prop, and reaction/i);
 assert.match(videoDirectorPrompt, /never merge, swap, replace or duplicate identities/i);
-
 const cinematicThumbnailPrompt = getCinematicThumbnailPrompt({
   requestId: "run:thumbnails",
   rewrittenScript: "A courier crosses a flooded city.",
@@ -89,7 +76,6 @@ assert.match(cinematicThumbnailPrompt, /locked typography/i);
 assert.match(cinematicThumbnailPrompt, /original public-domain interpretation/i);
 assert.match(cinematicThumbnailPrompt, /Never imitate a modern film, television series, game, animation, actor likeness/i);
 assert.doesNotMatch(cinematicThumbnailPrompt, /Quick Video|YouTube thumbnail|TikTok|CTR strategist|viewer retention/i);
-
 const vietnameseThumbnailPrompt = getCinematicThumbnailPrompt({
   requestId: "run:thumbnails",
   rewrittenScript: "Người đưa thư băng qua thành phố ngập nước.",
@@ -120,7 +106,6 @@ const providerRepairPrompt = getCinematicThumbnailProviderRepairPrompt('Mytholog
 assert.match(providerRepairPrompt, /without mistaking the subject for third-party entertainment content/i);
 assert.match(providerRepairPrompt, /original public-domain interpretation/i);
 assert.match(providerRepairPrompt, /Preserve the same story event, character identity, composition, approved layout and exact visible headline/i);
-
 const editPrompt = getCinematicGlobalEditDecisionPrompt([{ sceneId: "scene_001" }], [{ sceneId: "scene_001", segments: [] }]);
 assert.match(editPrompt, /deterministic libraries have already produced a complete renderable cut/i);
 assert.match(editPrompt, /never tighten, expand or create a time boundary/i);
@@ -130,7 +115,6 @@ assert.match(getCinematicFinalVideoQualityPrompt("Screenplay", "Promise"), /crea
 const cinematicSeoPrompt = getCinematicSeoPrompt("Screenplay", false, 3, 2, 5, 6, "drama", "adult", "run:seo");
 assert.match(cinematicSeoPrompt, /accurate film publishing metadata/i);
 assert.doesNotMatch(cinematicSeoPrompt, /Quick Video|YouTube|TikTok|growth template|viewer retention/i);
-
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, 2);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS, 24000);
 assert.equal(CINEMATIC_POLICY_CONFIG.PLANNING_WORKER_COUNT, 1);
@@ -139,7 +123,6 @@ assert.match(CINEMATIC_PROGRESS_MESSAGES.vi.THUMBNAIL_START, /ảnh bìa.*SEO/i)
 assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_START, /Bước 3\/4.*Flow.*Character/i);
 assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_READY, /Flow Character.*dùng lại/i);
 assert.match(CINEMATIC_PLANNING_MESSAGES.VI_CHARACTER_PACK_PARTIAL, /Flow Character.*chưa hoàn tất/i);
-
 const aiThumbnailPrompt = "AI-authored key-art prompt preserved byte-for-byte.\n";
 const aiThumbnail = {
   id: "th_ai_1",
@@ -165,7 +148,6 @@ assert(incompleteThumbnailIssues.includes("thumbnail_generation_prompt_missing")
 assert(incompleteThumbnailIssues.includes("thumbnail_layout_not_in_catalog"));
 assert(incompleteThumbnailIssues.includes("thumbnail_headline_missing"));
 assert(incompleteThumbnailIssues.includes("thumbnail_style_missing"));
-
 const controllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
 const filmSetupSource = resolveSourceTextConstants(fs.readFileSync("src/components/cinematic/CinematicFilmSetupSection.tsx", "utf8"));
@@ -207,11 +189,7 @@ assert.doesNotMatch(filmSetupSource, /roomOnly/);
 assert.match(chatSettingsSource, /value=\{AiPlanningExecutionMode\.ApiOnly\}/);
 assert.match(chatSettingsSource, /texts\.PLANNING_API_ONLY/);
 assert.doesNotMatch(filmSetupSource, /seriesMode|episodeCount/);
-assert.match(
-  generatorSource,
-  /\[planningChromeHeadless, setPlanningChromeHeadless\] = useState<boolean>\(CINEMATIC_CONFIG\.GENERATION_DEFAULTS\.CHROME_HEADLESS\)/,
-  "planning Chrome must use the centralized background-mode default",
-);
+assert.match(generatorSource, /\[planningChromeHeadless, setPlanningChromeHeadless\] = useState<boolean>\(CINEMATIC_CONFIG\.GENERATION_DEFAULTS\.CHROME_HEADLESS\)/, "planning Chrome must use the centralized background-mode default");
 assert.equal(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS, true, "cinematic planning and video Chrome must default to background mode");
 assert.match(generatorSource, /useState<SubtitleMode>\(SubtitleMode\.None\)/);
 assert.match(generatorSource, /Math\.ceil\(clips \/ FLOW_DIRECT_VIDEO_CONFIG\.PROMPTS_PER_BATCH\)/);
@@ -222,14 +200,10 @@ assert.match(imageGeneratorSource, /image_generation_rejected/);
 assert.match(imageGeneratorSource, /attachFlowCharactersByName/);
 assert.match(imageGeneratorSource, /ensureFlowCharacters/);
 assert.match(imageGeneratorSource, /if \(grokBrowser\?\.isConnected\(\)\) await grokBrowser\.close/);
-assert.match(
-  pipelineSource,
-  /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/,
-);
+assert.match(pipelineSource, /PIPELINE_ANALYZE_CINEMATIC_CLIPS[\s\S]*PIPELINE_CLEAN_BATCH_IMAGES[\s\S]*const renderPayload/);
 assert.match(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.SCENE_COUNT_MISMATCH_TEMPLATE, /scenes:count_mismatch/);
 assert.match(controllerSource, /SCENE_COUNT_MISMATCH_TEMPLATE/);
 assert.match(cinematicPromptSource, /getCinematicFilmPackagePrompt/);
 assert.doesNotMatch(cinematicPromptSource, /Quick Video|YouTube|TikTok|viewer retention/i);
 assert.doesNotMatch(sharedPromptSource, /getCinematicFilmPackagePrompt|getCinematicVideoPlanningPrompt|getCinematicThumbnailPrompt/);
-
-process.stdout.write(JSON.stringify({ passed: true, promptBatchSize: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, planningRooms: 1 }));
+process.stdout.write(stringifyJson({ passed: true, promptBatchSize: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, planningRooms: 1 }));

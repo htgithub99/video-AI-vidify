@@ -53,7 +53,6 @@ import {
   SOURCE_TEXT_INPUT,
   SOURCE_TEXT_LIBMP3LAME,
   SOURCE_TEXT_LINK,
-  SOURCE_TEXT_LOGS,
   SOURCE_TEXT_MAX,
   SOURCE_TEXT_MAX_MODE,
   SOURCE_TEXT_MESSAGE,
@@ -83,7 +82,6 @@ import {
   SOURCE_TEXT_VALUE,
   SOURCE_TEXT_VARIETY_2,
   SOURCE_TEXT_VERIFY_ACCOUNT,
-  SOURCE_TEXT_VIDEOAI_VIDIFY,
   SOURCE_TEXT_VISIBLE,
   SOURCE_TEXT_VOCAL_GENDER,
   SOURCE_TEXT_WEIRDNESS_2,
@@ -97,12 +95,11 @@ import type { Locator, Page } from "playwright";
 import { chromium } from "playwright-extra";
 import path from "path";
 import fs from "fs";
-import os from "os";
 import { spawn } from "child_process";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import ffmpeg from "fluent-ffmpeg";
-import { getDataDirectory } from "../utils/paths.js";
+import { getDataDirectory, getLogsDirectory } from "../utils/paths.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { logger } from "../../lib/logger.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
@@ -136,7 +133,7 @@ export interface SunoDownloadTrack {
   title: string;
 }
 export type SunoDownloadFormat = "mp3" | "wav";
-const SUNO_PROFILE_DIR = path.join(process.env.LOCALAPPDATA || getDataDirectory(), SUNO_AUTOMATION_CONFIG.APP_SUBDIR, SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
+const SUNO_PROFILE_DIR = path.join(getDataDirectory(), SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = SUNO_AUTOMATION_CONFIG.SUNO_CDP_URL;
 let activeSunoPage: Page | null = null;
 let sunoCancellationRequested = false;
@@ -869,7 +866,7 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
       playlistUrl = await addSongsToPlaylist(page, _.uniq(createdSongIds), playlistName, runId);
       await writeMusicDiagnostic(SOURCE_TEXT_SUNO_PLAYLIST_COMPLETED, { runId, stage, createdCount: _.uniq(createdSongIds).length });
     } catch (error) {
-      await fs.promises.writeFile(path.join(process.env.LOCALAPPDATA || os.tmpdir(), SOURCE_TEXT_VIDEOAI_VIDIFY, SOURCE_TEXT_LOGS, SOURCE_TEMPLATE_HTML(`${SUNO_AUTOMATION_CONFIG.PLAYLIST_FAILURE_HTML_PREFIX}`, `${runId}`)), await page.content().catch(() => ""), SOURCE_TEXT_UTF8).catch(() => undefined);
+      await fs.promises.writeFile(path.join(getLogsDirectory(), SOURCE_TEMPLATE_HTML(`${SUNO_AUTOMATION_CONFIG.PLAYLIST_FAILURE_HTML_PREFIX}`, `${runId}`)), await page.content().catch(() => ""), SOURCE_TEXT_UTF8).catch(() => undefined);
       await writeMusicDiagnostic(SOURCE_TEXT_SUNO_PLAYLIST_FAILED, { runId, stage, createdCount: createdSongIds.length, ...musicErrorDetails(error) });
       if (createdSongIds.length && error instanceof Error) _.assign(error, { createdSongIds: _.uniq(createdSongIds) });
       throw error;

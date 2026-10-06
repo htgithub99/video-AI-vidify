@@ -1,3 +1,10 @@
+import { parseJson } from "../../lib/jsonStringify.js";
+import { createHash } from "crypto";
+import _ from "lodash";
+import type { BrowserContext, Locator, Page } from "playwright";
+import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
+import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
+import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEXT_0_2,
   SOURCE_TEXT_A,
@@ -8,7 +15,6 @@ import {
   SOURCE_TEXT_BASE_MODEL_UNAVAILABLE,
   SOURCE_TEXT_BODY,
   SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_CHATGPT,
   SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED,
   SOURCE_TEXT_CHAT_ATTACHMENT_FAILED,
   SOURCE_TEXT_CHAT_ATTACHMENT_STARTED,
@@ -36,6 +42,7 @@ import {
   SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED,
   SOURCE_TEXT_CHAT_SUBMISSION_CHECKED,
   SOURCE_TEXT_CHAT_SUBMISSION_UNCERTAIN_WAITING_RESPONSE,
+  SOURCE_TEXT_CHATGPT,
   SOURCE_TEXT_CLOSE_2,
   SOURCE_TEXT_CODE,
   SOURCE_TEXT_COMPLETIONMARKER,
@@ -94,18 +101,13 @@ import {
   SOURCE_TEXT_XPATH,
   SOURCE_TEXT_XPATH_2,
 } from "../../constants/sourceText";
-import type { BrowserContext, Locator, Page } from "playwright";
-import { createHash } from "crypto";
-import _ from "lodash";
-import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
-import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
-import { delayAsync } from "../../lib/shared-utils.js";
-import { appLog, appWarn } from "../../lib/logger.js";
-import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
-import { assessChatComposerContent } from "./chatComposerValidation.js";
-import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { jsonUtils } from "../../lib/json.js";
+import { appLog, appWarn } from "../../lib/logger.js";
+import { delayAsync } from "../../lib/shared-utils.js";
+import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
+import { assessChatComposerContent } from "./chatComposerValidation.js";
 import { closeAppBrowserAfterTask, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
+import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 interface ChatRoomAttachment {
   name: string;
   mimeType: string;
@@ -202,12 +204,34 @@ export const cancelChatPlanningRun = (runId?: string): boolean => {
 const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
 };
-const normalizeRoomPrompt = (prompt: string): string => _.trim(_.replace(_.replace(prompt, CINEMATIC_CHAT_PLANNING_CONFIG.WINDOWS_LINE_ENDING_PATTERN, "\n"), CINEMATIC_CHAT_PLANNING_CONFIG.EXCESS_BLANK_LINES_PATTERN, "\n\n"));
+const normalizeRoomPrompt = (prompt: string): string => _.trim(_.replace(_.replace(prompt, CINEMATIC_CHAT_PLANNING_CONFIG.WINDOWS_LINE_ENDING_PATTERN, MOTION_TEXT_SYMBOL_27), CINEMATIC_CHAT_PLANNING_CONFIG.EXCESS_BLANK_LINES_PATTERN, MOTION_TEXT_SYMBOL_37));
 const parseStrictRoomJson = (text: string): unknown => {
+  const trimmed = _.trim(text);
   try {
-    return JSON.parse(_.trim(text));
+    return parseJson(trimmed);
   } catch {
-    return undefined;
+    const start = trimmed.indexOf(MOTION_TEXT_SYMBOL_35);
+    const end = trimmed.lastIndexOf(MOTION_TEXT_SYMBOL_36);
+    if (start < 0 || end <= start) return undefined;
+    const candidate = trimmed.slice(start, end + 1);
+    try {
+      return parseJson(candidate);
+    } catch {
+      try {
+        const cleaned = candidate
+          .replace(/```(?:json)?/gi, "")
+          .replace(/```/g, "")
+          .trim();
+        const cleanStart = cleaned.indexOf(MOTION_TEXT_SYMBOL_35);
+        const cleanEnd = cleaned.lastIndexOf(MOTION_TEXT_SYMBOL_36);
+        if (cleanStart >= 0 && cleanEnd > cleanStart) {
+          return parseJson(cleaned.slice(cleanStart, cleanEnd + 1));
+        }
+      } catch {
+        return undefined;
+      }
+      return undefined;
+    }
   }
 };
 const getPlanningRoomKey = (request: ChatPlanningRoomIdentity): string => _.join([request.provider, request.projectId, request.workerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID], CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR);
@@ -597,7 +621,6 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
     .evaluateAll(
       (elements, browserPayload) => {
         const { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16 } = browserPayload.texts;
-        const SOURCE_TEMPLATE_SYMBOL_8 = (value0: string, value1: string): string => value0 + SOURCE_TEXT_SYMBOL_16 + value1;
         const identityConfig = browserPayload.payload;
         return elements
           .filter((element) => {
@@ -610,7 +633,7 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
             const identityElement = element.closest(identityConfig.selector) || element;
             const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || "";
             const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || "";
-            const identity = messageId || (testId ? SOURCE_TEMPLATE_SYMBOL_8(`${testId}`, `${index}`) : identityElement.id);
+            const identity = messageId || (testId ? `${testId}${SOURCE_TEXT_SYMBOL_16}${index}` : identityElement.id);
             const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || "";
             return { identity, text: visibleText.trim() };
           });
@@ -659,6 +682,7 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
   let lastObservedResponseCount = initialCount;
   let lastObservedCandidate = "";
   let busyWaitLogged = false;
+  let lastJsonCandidate = "";
   while (Date.now() < absoluteDeadline) {
     throwIfPlanningCancelled(signal);
     await throwIfGrokRateLimited(page, busySelector);
@@ -670,7 +694,7 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
     const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
     if (providerErrorAlert) {
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
-      throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
+      throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, elapsedMs: Date.now() - startedAt, lastCandidate: _.toString(providerErrorAlert) } });
     }
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
     const count = responseSnapshots.length;
@@ -692,7 +716,12 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
       const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedCandidate, SOURCE_TEXT_REQUESTID));
       return (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) && (_.isEmpty(normalizedExpectedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
     });
-    const selectedResponse = matchingJsonResponse || _.last(responseCandidates) || "";
+    const parseableJsonResponse = _.maxBy(
+      _.filter(responseCandidates, (candidate) => !_.isUndefined(parseStrictRoomJson(candidate))),
+      (candidate) => candidate.length,
+    );
+    if (parseableJsonResponse) lastJsonCandidate = parseableJsonResponse;
+    const selectedResponse = matchingJsonResponse || parseableJsonResponse || _.maxBy(responseCandidates, (candidate) => candidate.length) || "";
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
@@ -739,12 +768,12 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
           if (CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText)) {
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR, { stage: artifactType, errorMessage: latestText });
-            throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR);
+            throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_RESPONSE, responseCount: count, initialCount, candidateChars: latestText.length, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
           }
-          throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
+          throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: isBusy, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }
         if (isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
-          throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+          throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: isBusy, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }
       }
     } else {
@@ -757,7 +786,11 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_TIMEOUT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseCount: lastResponseCount, candidateChars: lastCandidateLength, busy: lastBusyState, identityMatch: lastIdentityMatch, elapsedMs: Date.now() - startedAt });
   const timeoutError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE);
-  _.assign(timeoutError, { code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE });
+  Object.defineProperty(timeoutError, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false });
+  _.assign(timeoutError, {
+    code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE,
+    diagnostics: { responseCount: lastResponseCount, initialCount, candidateChars: lastCandidateLength, busy: lastBusyState, identityMatch: lastIdentityMatch, elapsedMs: Date.now() - startedAt, lastCandidate: lastJsonCandidate || lastObservedCandidate },
+  });
   throw timeoutError;
 };
 const isPendingResponseForRequest = (pendingResponse: PendingRoomResponse, page: Page, expectedSceneIds: string[], completionMarker?: string, artifactType?: string, requestId?: string): boolean =>
@@ -867,7 +900,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
         }
     }
   }
-  if (!uploaded) throw new Error(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX} ${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, ""))}`.trim());
+  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`, `${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, ""))}`).trim());
 };
 const getComposerReadings = async (input: Locator): Promise<string[]> => {
   const value = await input.inputValue().catch(() => "");
@@ -985,7 +1018,7 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
       }
     }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
-    const submittedPrompt = `${normalizedPrompt}\n\n${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`;
+    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(`${normalizedPrompt}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
     await input.fill(submittedPrompt);
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
     await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);

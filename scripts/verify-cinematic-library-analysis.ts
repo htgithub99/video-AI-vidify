@@ -1,3 +1,4 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -7,7 +8,6 @@ import { randomUUID } from "node:crypto";
 import { FFMPEG_RENDER_CONSTANTS } from "../src/constants/config";
 import { analyzeCinematicClipsWithLibraries, validateCinematicEditorialDecisions } from "../src/server/services/cinematicClipAnalyzerService";
 import { getStaticResourcePath } from "../src/server/utils/paths";
-
 const tempDirectory = path.join(os.tmpdir(), `vidify-library-edit-${randomUUID()}`);
 fs.mkdirSync(tempDirectory, { recursive: true });
 const videoPath = path.join(tempDirectory, "hard-cut-with-black-head.mp4");
@@ -16,51 +16,9 @@ const bundledFfmpeg = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINAR
 const ffmpeg = fs.existsSync(bundledFfmpeg) ? bundledFfmpeg : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
 const analyzerSource = fs.readFileSync("python_scripts/cinematic_edit_analyzer.py", "utf8");
 assert.match(analyzerSource, /sys\.stdout\.buffer\.write\([\s\S]*\.encode\(INPUT_ENCODING\)\)/);
-
 try {
-  execFileSync(
-    ffmpeg,
-    [
-      "-y",
-      "-f",
-      "lavfi",
-      "-i",
-      "color=c=black:s=320x180:r=24:d=0.8",
-      "-f",
-      "lavfi",
-      "-i",
-      "testsrc2=s=320x180:r=24:d=4.2",
-      "-filter_complex",
-      "[0:v][1:v]concat=n=2:v=1:a=0[v]",
-      "-map",
-      "[v]",
-      "-c:v",
-      "mpeg4",
-      videoPath,
-    ],
-    { stdio: "ignore" },
-  );
-  execFileSync(
-    ffmpeg,
-    [
-      "-y",
-      "-f",
-      "lavfi",
-      "-i",
-      "testsrc2=s=320x180:r=24:d=10",
-      "-f",
-      "lavfi",
-      "-i",
-      "sine=frequency=330:duration=10",
-      "-shortest",
-      "-c:v",
-      "mpeg4",
-      "-c:a",
-      "aac",
-      ambientVideoPath,
-    ],
-    { stdio: "ignore" },
-  );
+  execFileSync(ffmpeg, ["-y", "-f", "lavfi", "-i", "color=c=black:s=320x180:r=24:d=0.8", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=24:d=4.2", "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0[v]", "-map", "[v]", "-c:v", "mpeg4", videoPath], { stdio: "ignore" });
+  execFileSync(ffmpeg, ["-y", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=24:d=10", "-f", "lavfi", "-i", "sine=frequency=330:duration=10", "-shortest", "-c:v", "mpeg4", "-c:a", "aac", ambientVideoPath], { stdio: "ignore" });
   const result = await analyzeCinematicClipsWithLibraries(
     [
       { sceneId: "scene_test", path: videoPath, hasAudio: false, protectDialogue: false },
@@ -102,17 +60,11 @@ try {
     })),
   }));
   assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, completeEditorialDecisions).valid, true);
-  const dialogueOmitDecisions = [
-    completeEditorialDecisions[1],
-    { sceneId: protectedDialogueDecision.sceneId, takeDecision: "omit", segments: [] },
-  ];
+  const dialogueOmitDecisions = [completeEditorialDecisions[1], { sceneId: protectedDialogueDecision.sceneId, takeDecision: "omit", segments: [] }];
   assert.equal(validateCinematicEditorialDecisions([ambienceDecision, protectedDialogueDecision], dialogueOmitDecisions).valid, true);
   assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, completeEditorialDecisions.slice(0, 1)).valid, false);
-  assert.equal(
-    validateCinematicEditorialDecisions(expectedEditorialDecisions, [completeEditorialDecisions[0], completeEditorialDecisions[0]]).valid,
-    false,
-  );
-  process.stdout.write(JSON.stringify({ passed: true, decisions: result.decisions }));
+  assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, [completeEditorialDecisions[0], completeEditorialDecisions[0]]).valid, false);
+  process.stdout.write(stringifyJson({ passed: true, decisions: result.decisions }));
 } finally {
   fs.rmSync(tempDirectory, { recursive: true, force: true });
 }

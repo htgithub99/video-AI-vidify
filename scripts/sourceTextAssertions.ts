@@ -1,9 +1,10 @@
+import { stringifyJson } from "../src/lib/jsonStringify.js";
 import ts from "typescript";
 import { readFileSync } from "node:fs";
 import * as sourceTexts from "../src/constants/sourceText";
 const constantsTree = ts.createSourceFile("sourceText.ts", readFileSync(new URL("../src/constants/sourceText.ts", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true);
 const templates = new Map<string, Array<string | number>>();
-const quoteLiteral = (value: string): string => value.includes('"') ? "'" + JSON.stringify(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'") + "'" : JSON.stringify(value);
+const quoteLiteral = (value: string): string => (value.includes('"') ? "'" + stringifyJson(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'") + "'" : stringifyJson(value));
 for (const statement of constantsTree.statements) {
   if (!ts.isVariableStatement(statement)) continue;
   for (const declaration of statement.declarationList.declarations) {
@@ -11,9 +12,11 @@ for (const statement of constantsTree.statements) {
     const arrow = declaration.initializer;
     const parts: Array<string | number> = [];
     const flatten = (node: ts.Node): void => {
-      if (ts.isBinaryExpression(node)) { flatten(node.left); flatten(node.right); }
-      else if (ts.isStringLiteral(node)) parts.push(node.text);
-      else if (ts.isIdentifier(node)) parts.push(arrow.parameters.findIndex(parameter => parameter.name.getText(constantsTree) === node.text));
+      if (ts.isBinaryExpression(node)) {
+        flatten(node.left);
+        flatten(node.right);
+      } else if (ts.isStringLiteral(node)) parts.push(node.text);
+      else if (ts.isIdentifier(node)) parts.push(arrow.parameters.findIndex((parameter) => parameter.name.getText(constantsTree) === node.text));
     };
     flatten(arrow.body);
     templates.set(declaration.name.text, parts);
@@ -27,12 +30,17 @@ export const resolveSourceTextConstants = (source: string): string => {
     if (ts.isImportDeclaration(node)) return;
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && templates.has(node.expression.text)) {
       const parts = templates.get(node.expression.text)!;
-      const value = "`" + parts.map(part => {
-        if (typeof part === "string") return JSON.stringify(part).slice(1, -1).replace(/\\"/g, '"').replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-        const argument = node.arguments[part];
-        const expression = ts.isTemplateExpression(argument) && argument.head.text === "" && argument.templateSpans.length === 1 && argument.templateSpans[0].literal.text === "" ? argument.templateSpans[0].expression : argument;
-        return "${" + resolveSourceTextConstants(expression.getText(tree)) + "}";
-      }).join("") + "`";
+      const value =
+        "`" +
+        parts
+          .map((part) => {
+            if (typeof part === "string") return stringifyJson(part).slice(1, -1).replace(/\\"/g, '"').replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+            const argument = node.arguments[part];
+            const expression = ts.isTemplateExpression(argument) && argument.head.text === "" && argument.templateSpans.length === 1 && argument.templateSpans[0].literal.text === "" ? argument.templateSpans[0].expression : argument;
+            return "${" + resolveSourceTextConstants(expression.getText(tree)) + "}";
+          })
+          .join("") +
+        "`";
       edits.push({ start: node.getStart(tree), end: node.end, value });
       return;
     }

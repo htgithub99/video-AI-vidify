@@ -1,14 +1,14 @@
-import { SOURCE_TEXT_GHOST, SOURCE_TEXT_SM, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
-import { FC, useState } from "react";
-import { cn } from "../lib/utils";
-import { Lang } from "../lib/lang.js";
-import { SIDEBAR_TEXTS } from "../constants/texts";
-import { PlanType } from "../constants/security";
-import { AppTab } from "../constants/enums";
-import { Video, LayoutDashboard, FolderKanban, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, Music2, Shuffle, Scissors, Film, LucideIcon, X } from "lucide-react";
-import { Button } from "./ui/Button";
-import { useLicense } from "../contexts/LicenseContext";
 import _ from "lodash";
+import { ChevronLeft, ChevronRight, Clapperboard, Film, FolderKanban, LayoutDashboard, LucideIcon, Music2, Scissors, Settings, Shuffle, Sparkles, Video, X, Zap } from "lucide-react";
+import { FC, useState } from "react";
+import { AppTab } from "../constants/enums";
+import { PlanType } from "../constants/security";
+import { SOURCE_TEXT_GHOST, SOURCE_TEXT_SM, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
+import { SIDEBAR_TEXTS } from "../constants/texts";
+import { useLicense } from "../contexts/LicenseContext";
+import { Lang } from "../lib/lang.js";
+import { cn } from "../lib/utils";
+import { Button } from "./ui/Button";
 interface SidebarProps {
   currentLang: Lang;
   activeTab: string;
@@ -68,7 +68,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT], activeTab as AppTab);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO], activeTab as AppTab);
   const menuItems: MenuItemConfig[] = [
     {
       id: AppTab.DASHBOARD,
@@ -124,6 +124,12 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
       id: AppTab.VIDEO_EXPORT,
       label: texts.VIDEO_EXPORT,
       icon: Film,
+      requiresProject: false,
+    },
+    {
+      id: AppTab.MOTION_VIDEO,
+      label: texts.MOTION_VIDEO,
+      icon: Sparkles,
       requiresProject: false,
     },
     {

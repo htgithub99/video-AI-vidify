@@ -2,12 +2,12 @@ import { appError } from "./logger";
 import _ from "lodash";
 import { JSON_UTILS_CONFIG } from "../constants/config";
 import { storageUtils } from "./storage";
-import { stringifyJson } from "./jsonStringify";
+import { parseJson, stringifyJson } from "./jsonStringify";
 export const jsonUtils = {
   safeParse: <T = unknown>(str: string | null | undefined, fallback: T): T => {
     if (_.isNil(str) || _.isEmpty(_.trim(str))) return fallback;
     try {
-      return JSON.parse(str) as T;
+      return parseJson<T>(str);
     } catch (error) {
       appError(JSON_UTILS_CONFIG.PARSE_ERROR_EVENT, error, { preview: str.slice(0, JSON_UTILS_CONFIG.PREVIEW_LENGTH) });
       return fallback;
