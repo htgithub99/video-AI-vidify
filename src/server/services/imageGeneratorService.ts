@@ -1955,6 +1955,10 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
   await closeActiveBrowser();
   return true;
 }
+export function cancelGlobalBrowserCleanup() {
+  if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
+  activeBrowserTimeout = null;
+}
 export function scheduleGlobalBrowserCleanup() {
   if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
   activeBrowserTimeout = setTimeout(async () => {
@@ -1974,14 +1978,14 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
   const requestedHeadless = chromeHeadless !== false;
   if (activeBrowserLaunchPromise) {
     const launchedBrowser = await activeBrowserLaunchPromise;
-    if (preferSharedChrome && !launchedBrowser.preserveExternalPages) {
+    if (preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
       await closeActiveBrowser();
     } else if (activeBrowserHeadless === requestedHeadless) {
       return launchedBrowser;
     }
   }
   if (activeBrowserInstance) {
-    if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages) {
+    if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
       appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
     } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {

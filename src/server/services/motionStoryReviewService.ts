@@ -36,7 +36,7 @@ import { loadMotionEngine } from "./motionEngineService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { withRealCatalog } from "./motionRealAssetService.js";
 import { renderMotionStills } from "./motionRenderService.js";
-import { catalogGuide, normalizeBeats, runMotionAi, storyboardRules, TEXT_ONLY_PREAMBLE, type MotionAiImage } from "./motionStoryService.js";
+import { catalogGuide, mapMotionAiPool, normalizeBeats, runMotionAi, storyboardRules, TEXT_ONLY_PREAMBLE, type MotionAiImage } from "./motionStoryService.js";
 const ARTIFACT_REVIEW = MOTION_TEXT_MOTION_STORYBOARD_REVIEW;
 const MAX_IMAGES_PER_CALL = 10;
 interface ReviewOptions {
@@ -74,7 +74,7 @@ export const reviewStoryboard = async (script: MotionStoryScript, analysis: Moti
     if (beat && m && beat.shots?.[_.toNumber(m[1]) - 1]) return beat.shots[_.toNumber(m[1]) - 1].text;
     return beat?.narration || "";
   };
-  for (const group of _.chunk(stills, MAX_IMAGES_PER_CALL)) {
+  await mapMotionAiPool(_.chunk(stills, MAX_IMAGES_PER_CALL), async (group) => {
     if (opts.signal?.aborted) throw new Error(MOTION_TEXT_CANCELLED);
     const groupBeatIds = _.uniq(_.map(group, (g) => baseBeatId(g.id)));
     const groupBeats = _.compact(_.map(groupBeatIds, (id) => byId[id]));
@@ -95,7 +95,7 @@ export const reviewStoryboard = async (script: MotionStoryScript, analysis: Moti
     } catch (error) {
       if (opts.signal?.aborted) throw error;
       opts.log?.(MOTION_TEMPLATE_KIEM_TRA_HINH_BANG_AI_LOI_GIU_NGUYEN(`${_.truncate(_.toString(_.get(error, MOTION_TEXT_MESSAGE, error)), { length: 120 })}`));
-      continue;
+      return;
     }
     for (const r of _.castArray(raw?.reviews || [])) {
       const id = _.toString(r?.id);
@@ -112,7 +112,7 @@ export const reviewStoryboard = async (script: MotionStoryScript, analysis: Moti
       fixed.push(id);
       opts.log?.(MOTION_TEMPLATE_SUA(`${id}`, `${_.truncate(_.toString(r?.problems || ""), { length: 140 })}`));
     }
-  }
+  });
   try {
     const root = path.dirname(dir);
     const old = _.slice(

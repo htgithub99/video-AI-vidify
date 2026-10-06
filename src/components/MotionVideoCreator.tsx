@@ -38,9 +38,6 @@ import {
   MOTION_TEXT_ART_FAILED_MARK,
   MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO,
   MOTION_TEXT_AUDIO,
-  MOTION_TEXT_BG_GRADIENT_TO_R_FROM_AMBER_500_VIA,
-  MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT,
-  MOTION_TEXT_BG_SLATE_100_DARK_BG_SLATE_800_80,
   MOTION_TEXT_BUTTON,
   MOTION_TEXT_BYTES,
   MOTION_TEXT_CAST,
@@ -191,13 +188,23 @@ const ActionBtn: FC<{
   variant?: "primary" | "secondary" | "danger";
 }> = ({ onClick, disabled, busy, icon: Icon, children, className, variant = MOTION_TEXT_PRIMARY }) => {
   const styles = {
-    primary: MOTION_TEXT_BG_GRADIENT_TO_R_FROM_AMBER_500_VIA,
-    secondary: MOTION_TEXT_BG_SLATE_100_DARK_BG_SLATE_800_80,
-    danger: MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT,
+    primary: busy
+      ? "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse shadow-md shadow-purple-600/30"
+      : "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-purple-600/25 active:scale-98 border border-purple-400/40",
+    secondary: "bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700",
+    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25",
   };
   return (
-    <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={disabled || busy} className={cn("inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed", styles[variant], className)}>
-      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+    <button
+      type={MOTION_TEXT_BUTTON}
+      onClick={onClick}
+      disabled={disabled || busy}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed leading-none",
+        styles[variant],
+        className,
+      )}>
+      {busy ? <Sparkles className="w-4 h-4 animate-spin text-white shrink-0" /> : <Icon className="w-4 h-4 shrink-0" />}
       <span>{children}</span>
     </button>
   );
@@ -473,13 +480,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-2 gap-2 flex-wrap">
               <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                 <input type={MOTION_TEXT_CHECKBOX} checked={state.autoContinue !== false} onChange={(e) => patch({ autoContinue: e.target.checked })} className="accent-purple-500 w-4 h-4 rounded" />
                 <span>{text.AUTO_CONTINUE}</span>
               </label>
               {busyKind === MOTION_TEXT_ANALYZE ? (
-                stopAi
+                <div className="flex items-center gap-2">
+                  <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className="px-5 py-2.5">
+                    {text.ANALYZING}
+                  </ActionBtn>
+                  {stopAi}
+                </div>
               ) : (
                 <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className="px-5 py-2.5">
                   {state.analysis ? text.REANALYZE_BTN : text.ANALYZE_BTN}
@@ -488,7 +500,27 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             </div>
           </div>
         </div>
-        {state.analysis && (
+        {busyKind === MOTION_TEXT_ANALYZE ? (
+          <div className={cardCls}>
+            <StepHeader n={MOTION_TEXT_02} icon={Users} title={text.STEP_ANALYSIS} badge={text.BADGE_ANALYZING} />
+            <div className="py-14 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="relative flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Sparkles className="w-7 h-7 text-purple-400 animate-spin" />
+                </div>
+                <div className="absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse" />
+              </div>
+              <div className="space-y-1 max-w-sm">
+                <p className="text-sm font-extrabold text-slate-100">{text.ANALYZING_TITLE}</p>
+                <p className="text-xs text-slate-400 leading-relaxed font-sans">{job?.log?.[job.log.length - 1] || text.LOG_ANALYZING_DEFAULT}</p>
+              </div>
+              {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.EXEC_TIME} suffix={text.ELAPSED} />}
+              <div className="w-56 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(15, Math.round((job?.progress || 0.15) * 100))}%` }} />
+              </div>
+            </div>
+          </div>
+        ) : state.analysis ? (
           <div className={cardCls}>
             <StepHeader
               n={MOTION_TEXT_02}
@@ -603,9 +635,14 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   ))}
                 </div>
               )}
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end pt-2 gap-2 flex-wrap">
                 {busyKind === MOTION_TEXT_SCRIPT ? (
-                  stopAi
+                  <div className="flex items-center gap-2">
+                    <ActionBtn busy={true} icon={Wand2} onClick={() => {}} className="px-5 py-2.5">
+                      {text.WRITING_SCRIPT}
+                    </ActionBtn>
+                    {stopAi}
+                  </div>
                 ) : (
                   <ActionBtn icon={Wand2} onClick={() => void studio.writeScript()} disabled={studio.storyBusy} className="px-5 py-2.5">
                     {text.SCRIPT_BTN}
@@ -614,8 +651,28 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               </div>
             </div>
           </div>
-        )}
-        {state.script && state.analysis && (
+        ) : null}
+        {busyKind === MOTION_TEXT_SCRIPT ? (
+          <div className={cardCls}>
+            <StepHeader n={MOTION_TEXT_03} icon={Film} title={text.STEP_SCRIPT} badge={text.BADGE_SCRIPT_WRITING} />
+            <div className="py-14 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="relative flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Film className="w-7 h-7 text-purple-400 animate-pulse" />
+                </div>
+                <div className="absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse" />
+              </div>
+              <div className="space-y-1 max-w-sm">
+                <p className="text-sm font-extrabold text-slate-100">{text.SCRIPT_WRITING}</p>
+                <p className="text-xs text-slate-400 leading-relaxed font-sans">{job?.log?.[job.log.length - 1] || text.LOG_SCRIPT_DEFAULT}</p>
+              </div>
+              {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCRIPT_TIME} suffix={text.ELAPSED} />}
+              <div className="w-56 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(15, Math.round((job?.progress || 0.15) * 100))}%` }} />
+              </div>
+            </div>
+          </div>
+        ) : state.script && state.analysis ? (
           <div className={cardCls}>
             <StepHeader
               n={MOTION_TEXT_03}
@@ -700,7 +757,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               ))}
             </div>
           </div>
-        )}
+        ) : null}
         <div className={cardCls}>
           <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={MOTION_TEXT_LIVE_2_5D_CANVAS} />
           {studio.ME ? (
@@ -740,7 +797,22 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 <span>{text.ART_REVIEW}</span>
               </label>
               {busyKind === MOTION_TEXT_ART ? (
-                <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+                <div className="space-y-3">
+                  <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 p-4 rounded-xl bg-slate-955/60 border border-purple-500/20 animate-in fade-in">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-md">
+                      <Sparkles className="w-5 h-5 text-purple-400 animate-spin" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-200">{text.ART_GENERATING}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">{job?.log?.[job.log.length - 1] || text.LOG_ART_DEFAULT}</p>
+                    </div>
+                    {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.ART_TIME} suffix={text.ELAPSED} />}
+                    <div className="w-full max-w-xs h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(10, Math.round((job?.progress || 0.1) * 100))}%` }} />
+                    </div>
+                  </div>
+                  <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <ActionBtn icon={Wand2} className="flex-1" onClick={() => void studio.illustrate(false)} disabled={studio.storyBusy}>
@@ -799,7 +871,22 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               <input type={MOTION_TEXT_RANGE} min={0.8} max={1.2} step={0.05} value={state.voiceSpeed} onChange={(e) => patch({ voiceSpeed: _.toNumber(e.target.value) })} className="w-full accent-purple-500" />
             </div>
             {busyKind === MOTION_TEXT_VOICE ? (
-              <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+              <div className="space-y-3">
+                <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 p-4 rounded-xl bg-slate-955/60 border border-purple-500/20 animate-in fade-in">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-md">
+                    <Mic className="w-5 h-5 text-purple-400 animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-200">{text.VOICE_GENERATING}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">{job?.log?.[job.log.length - 1] || text.LOG_VOICE_DEFAULT}</p>
+                  </div>
+                  {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.VOICE_TIME} suffix={text.ELAPSED} />}
+                  <div className="w-full max-w-xs h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(10, Math.round((job?.progress || 0.1) * 100))}%` }} />
+                  </div>
+                </div>
+                <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+              </div>
             ) : (
               <ActionBtn icon={Mic} className="w-full" onClick={() => void studio.generateVoice()} disabled={!state.script?.beats?.length || !state.voiceId || studio.storyBusy}>
                 {text.VOICE_BTN}

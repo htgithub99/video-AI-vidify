@@ -132,7 +132,7 @@ import { GenerateType, ImageGenerationMode } from "../../types.js";
 import type { MotionAiExecution, MotionArt, MotionArtCast, MotionArtDirection, MotionBeat, MotionImageOptions, MotionStoryAnalysis, MotionStoryScript } from "../../types/motionVideo.js";
 import { generateBatchImagesWithGeminiChat, type BatchImageItem } from "./imageGeneratorService.js";
 import { getRealDirectory } from "./motionRealAssetService.js";
-import { runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
 const ARTIFACT_PLAN = MOTION_TEXT_MOTION_ART_PLAN;
 const ARTIFACT_REVIEW = MOTION_TEXT_MOTION_ART_REVIEW;
 const SCENE_VISUALS = [MOTION_TEXT_SCENE, MOTION_TEXT_OBJECT];
@@ -444,8 +444,10 @@ export const illustrateScript = async (input: MotionStoryScript, analysis: Motio
     const reviewUnits = _.filter(drawList(null), (u) => u.kind === MOTION_TEXT_SCENE && artExists(getArt(script, u)?.image) && (!wanted || wanted.has(u.id)));
     const redo: string[] = [];
     opts.progress?.(0.85, MOTION_TEXT_REVIEW);
-    for (const group of _.chunk(reviewUnits, MAX_REVIEW_IMAGES)) {
+    let reviewStopped = false;
+    await mapMotionAiPool(_.chunk(reviewUnits, MAX_REVIEW_IMAGES), async (group) => {
       if (opts.signal?.aborted) throw new Error(MOTION_TEXT_CANCELLED);
+      if (reviewStopped) return;
       log(MOTION_TEMPLATE_AI_XEM_ANH_DE_KIEM_TRA_CO_KHOP(`${group.length}`));
       const images: MotionAiImage[] = _.map(group, (u, i) => ({
         name: MOTION_TEMPLATE_SYMBOL_35(`${String(i + 1).padStart(2, MOTION_TEXT_0)}`, `${u.id}`, `${path.extname(getArt(script, u)!.image!).slice(1) || MOTION_TEXT_PNG}`),
@@ -472,10 +474,10 @@ export const illustrateScript = async (input: MotionStoryScript, analysis: Motio
         }
       } catch (error) {
         if (opts.signal?.aborted) throw error;
-        log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_ANH(`${_.truncate(_.toString(_.get(error, MOTION_TEXT_MESSAGE, error)), { length: 140 })}`));
-        break;
+        if (!reviewStopped) log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_ANH(`${_.truncate(_.toString(_.get(error, MOTION_TEXT_MESSAGE, error)), { length: 140 })}`));
+        reviewStopped = true;
       }
-    }
+    });
     if (redo.length) {
       done = 0;
       total = redo.length;

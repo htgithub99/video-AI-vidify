@@ -103,6 +103,11 @@ export const MOTION_STORY_CONFIG = {
   SUBTITLE_MAX_CHARS: 84,
   STORY_STORAGE_KEY: "motion_story_state_v1",
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
+  AI_PARALLEL: 2,
+  WORKER_IDS: ["motion-primary", "motion-second"],
+  BROWSER_KEEP_ALIVE_MS: 3 * 60 * 1000,
+  ROOM_PROVIDER_RETRIES: 2,
+  ROOM_RETRY_LOG: "AI báo lỗi tạm thời – mở phòng chat mới và hỏi lại…",
 } as const;
 export const MOTION_FORM_CONTROL_CLASSNAME = MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL_2;
 export const MOTION_TOON_OPTION_KEYS = {

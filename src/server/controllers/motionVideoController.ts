@@ -98,7 +98,7 @@ import { cancelRealJob, deleteRealItem, getRealJob, importRealModel, listPolyHav
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionEnvironmentInfo, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
 import { reviewStoryboard } from "../services/motionStoryReviewService.js";
-import { analyzeStory, parseStorySource, writeChapterBeats } from "../services/motionStoryService.js";
+import { analyzeStory, mapMotionAiPool, parseStorySource, writeChapterBeats } from "../services/motionStoryService.js";
 import { cleanStorageJunk, scanStorageJunk } from "../services/storageService.js";
 import { getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
 const fail = (res: Response, status: number, error: unknown) => res.status(status).json({ success: false, error: _.toString(_.get(error, MOTION_TEXT_MESSAGE, error)) });
@@ -339,17 +339,19 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       const byChapter: Record<string, MotionBeat[]> = _.groupBy(existing, MOTION_TEXT_CHAPTERID);
       const todo = _.filter(chapters, (c) => _.isEmpty(only) || _.includes(only, c.id));
       let done = 0;
-      for (const chapter of todo) {
+      await mapMotionAiPool(todo, async (chapter) => {
         if (ctx.signal.aborted) throw new Error(MOTION_TEXT_CANCELLED);
         const idx = _.findIndex(chapters, { id: chapter.id });
         ctx.progress(done / todo.length, chapter.id);
         ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(`${idx + 1}`, `${chapters.length}`, `${chapter.title}`));
-        const previous = idx > 0 ? byChapter[chapters[idx - 1].id] : undefined;
-        byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, { language, exec, signal: ctx.signal, log: ctx.log, previous, isFirst: idx === 0, isLast: idx === chapters.length - 1 });
+        const prevChapter = idx > 0 ? chapters[idx - 1] : undefined;
+        const previous = prevChapter ? byChapter[prevChapter.id] : undefined;
+        byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, { language, exec, signal: ctx.signal, log: ctx.log, previous, previousSummary: prevChapter?.summary, isFirst: idx === 0, isLast: idx === chapters.length - 1 });
         done++;
+        ctx.progress(done / todo.length, chapter.id);
         ctx.log(MOTION_TEMPLATE_BEAT(`${byChapter[chapter.id].length}`));
         ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) });
-      }
+      });
       let script = { title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) };
       if (req.body?.review !== false) {
         let ids = _.map(

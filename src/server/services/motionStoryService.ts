@@ -1,4 +1,5 @@
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
+import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import _ from "lodash";
@@ -182,10 +183,12 @@ import {
   MOTION_TEXT_WORDS,
   MOTION_TEXT_WRONG,
 } from "../../constants/motionRuntime.js";
+import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionCatalog, type MotionChapter, type MotionParamAnim, type MotionStoryAnalysis, type MotionStorySource } from "../../types/motionVideo.js";
-import { closeChatBrowserIfIdle, closeChatPlanningRoomsForProject, generatePlanningWithChatUi } from "./chatUiPlanningService.js";
+import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "./chatUiPlanningService.js";
+import { cancelGlobalBrowserCleanup } from "./imageGeneratorService.js";
 import { generateContentWithRetry } from "./geminiService.js";
 import { loadMotionEngine } from "./motionEngineService.js";
 import { matchLibraryId } from "./motionLibraryMatch.js";
@@ -345,7 +348,68 @@ export interface MotionAiImage {
   mimeType: string;
   path: string;
 }
-export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: (s: string) => void, images?: MotionAiImage[]): Promise<any> => {
+interface MotionAiRun {
+  projectId: string;
+  workerId: string;
+  signal: AbortSignal;
+  rooms: Map<string, AiPlanningFallbackProvider>;
+  roomQueue: Promise<void>;
+}
+const motionAiRunStore = new AsyncLocalStorage<MotionAiRun>();
+let motionAiSessions = 0;
+let motionAiUsedBrowser = false;
+let motionAiIdleTimer: ReturnType<typeof setTimeout> | null = null;
+const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {
+  const provider = run.rooms.get(workerId);
+  if (!provider) return;
+  run.rooms.delete(workerId);
+  await closeChatPlanningRoom({ provider, projectId: run.projectId, workerId }).catch(_.noop);
+};
+export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>): Promise<T> => {
+  motionAiSessions++;
+  if (motionAiIdleTimer) clearTimeout(motionAiIdleTimer);
+  motionAiIdleTimer = null;
+  const projectId = `${MOTION_STORY_CONFIG.PROJECT_ID_PREFIX}${runId}`;
+  const planningRun = beginChatPlanningRun(projectId, Date.now(), MOTION_STORY_CONFIG.WORKER_IDS[0]);
+  const run: MotionAiRun = { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: planningRun.signal, rooms: new Map(), roomQueue: Promise.resolve() };
+  try {
+    return await motionAiRunStore.run(run, fn);
+  } finally {
+    planningRun.complete();
+    await Promise.allSettled(_.map([...run.rooms.keys()], (workerId) => closeMotionAiRoom(run, workerId)));
+    motionAiSessions = Math.max(0, motionAiSessions - 1);
+    if (!motionAiSessions && motionAiUsedBrowser) {
+      cancelGlobalBrowserCleanup();
+      motionAiIdleTimer = setTimeout(() => {
+        motionAiIdleTimer = null;
+        if (motionAiSessions) return;
+        motionAiUsedBrowser = false;
+        void closeChatBrowserIfIdle().catch(_.noop);
+      }, MOTION_STORY_CONFIG.BROWSER_KEEP_ALIVE_MS);
+    }
+  }
+};
+export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, limit: number = MOTION_STORY_CONFIG.AI_PARALLEL): Promise<R[]> => {
+  const results: R[] = new Array(items.length);
+  const parent = motionAiRunStore.getStore();
+  let next = 0;
+  let failure: unknown;
+  const lane = async (): Promise<void> => {
+    while (next < items.length && failure === undefined) {
+      const index = next++;
+      try {
+        results[index] = await worker(items[index], index);
+      } catch (error) {
+        failure ??= error;
+      }
+    }
+  };
+  const lanes = Math.max(1, Math.min(limit, items.length, MOTION_STORY_CONFIG.WORKER_IDS.length));
+  await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerId: MOTION_STORY_CONFIG.WORKER_IDS[laneIndex] }, lane) : lane())));
+  if (failure !== undefined) throw failure;
+  return results;
+};
+export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: (s: string) => void, images?: MotionAiImage[], attempt = 0): Promise<any> => {
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
   const provider = pickEnum(_.values(AiPlanningFallbackProvider), exec.provider, AiPlanningFallbackProvider.GeminiChat);
   const useRoom = mode !== AiPlanningExecutionMode.ApiOnly && provider !== AiPlanningFallbackProvider.Disabled;
@@ -353,30 +417,45 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(`${artifactType}`, `${requestId}`);
   const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(`${prompt}`, `${identity}`);
   if (useRoom) {
-    const projectId = `${MOTION_STORY_CONFIG.PROJECT_ID_PREFIX}${requestId}`;
+    const run = motionAiRunStore.getStore();
+    const projectId = run?.projectId || `${MOTION_STORY_CONFIG.PROJECT_ID_PREFIX}${requestId}`;
+    const workerId = run?.workerId;
+    motionAiUsedBrowser = true;
     const roomCtrl = new AbortController();
     const relay = () => roomCtrl.abort();
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
+    run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
     const watchdog = setTimeout(() => {
       timedOut = true;
       roomCtrl.abort();
     }, MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS);
+    let retryRoom = false;
+    let roomOk = false;
     try {
       log?.(MOTION_TEMPLATE_GUI_YEU_CAU_TOI_PHONG_CHAT_AI_CAU(`${provider}`));
+      const model = pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
+      if (run && !run.rooms.has(workerId!)) {
+        const prepared = run.roomQueue.then(() => prepareChatPlanningRoom({ provider, model, prompt: "", projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true }));
+        run.roomQueue = prepared.catch(_.noop);
+        run.rooms.set(workerId!, provider);
+        await prepared;
+      }
       const r = await generatePlanningWithChatUi({
         provider,
-        model: pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash),
+        model,
         prompt: fullPrompt,
         projectId,
+        workerId,
         chromeHeadless: exec.chromeHeadless !== false,
         artifactType,
         requestId,
         signal: roomCtrl.signal,
-        closeRoomOnComplete: true,
+        closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
       });
+      roomOk = true;
       return extractJson(r.text);
     } catch (caught: any) {
       if (signal?.aborted && !timedOut) throw caught;
@@ -390,14 +469,26 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         return salvaged;
       }
+      if (!timedOut && _.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR && attempt < MOTION_STORY_CONFIG.ROOM_PROVIDER_RETRIES) {
+        retryRoom = true;
+        log?.(MOTION_STORY_CONFIG.ROOM_RETRY_LOG);
+        return undefined;
+      }
       const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(`${Math.round(MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS / 60000)}`)) : caught;
       log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(`${_.truncate(_.toString(error?.message), { length: 140 })}`));
       if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
     } finally {
       clearTimeout(watchdog);
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
-      await closeChatPlanningRoomsForProject({ provider, projectId }).catch(_.noop);
-      await closeChatBrowserIfIdle().catch(_.noop);
+      run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
+      if (run) {
+        if (!roomOk) await closeMotionAiRoom(run, workerId!);
+      } else {
+        await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
+        if (!retryRoom) await closeChatBrowserIfIdle().catch(_.noop);
+      }
+      if (motionAiSessions || retryRoom) cancelGlobalBrowserCleanup();
+      if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
     }
   }
   log?.(MOTION_TEXT_GOI_AI_QUA_API);
@@ -510,14 +601,14 @@ const LANES = [MOTION_TEXT_BACK, MOTION_TEXT_MID, MOTION_TEXT_FRONT, MOTION_TEXT
 const TIMES = [MOTION_TEXT_DAY, MOTION_TEXT_DUSK, MOTION_TEXT_NIGHT, MOTION_TEXT_INTERIOR, MOTION_TEXT_INTERIOR_DARK];
 const WEATHERS = [MOTION_TEXT_NONE, MOTION_TEXT_RAIN, MOTION_TEXT_STORM, MOTION_TEXT_FOG, MOTION_TEXT_SNOW];
 export const storyboardRules = (narrationLanguage: string): string => MOTION_TEMPLATE_STORYBOARD_THE_PICTURE_MUST_TELL_THE_SAME_STORY(`${VISUALS.join(MOTION_TEXT_SYMBOL_40)}`, `${SHOTS.join(MOTION_TEXT_SYMBOL_14)}`, `${MOVES.join(MOTION_TEXT_SYMBOL_28)}`, `${narrationLanguage}`);
-export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; previous?: MotionBeat[]; isFirst: boolean; isLast: boolean }): Promise<MotionBeat[]> => {
+export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; previous?: MotionBeat[]; previousSummary?: string; isFirst: boolean; isLast: boolean }): Promise<MotionBeat[]> => {
   const catalog = withRealCatalog(loadMotionEngine().catalog);
   const isVi = opts.language !== MOTION_TEXT_EN;
   const seconds = chapter.targetSeconds || 120;
   const units = Math.round(seconds * (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND) * MOTION_STORY_CONFIG.LENGTH_SAFETY);
   const beatsWanted = Math.max(2, Math.round(seconds / MOTION_STORY_CONFIG.TARGET_BEAT_SECONDS));
   const castList = _.map(analysis.cast, (c) => MOTION_TEMPLATE_DRAWN_AS(`${c.key}`, `${c.name}`, `${c.role || ""}`, `${c.characterId}`)).join(MOTION_TEXT_SYMBOL_27);
-  const prev = _.map(_.takeRight(opts.previous || [], 2), (b) => MOTION_TEMPLATE_SYMBOL_23(`${b.narration}`)).join(MOTION_TEXT_SYMBOL_27);
+  const prev = opts.previous?.length ? _.map(_.takeRight(opts.previous, 2), (b) => MOTION_TEMPLATE_SYMBOL_23(`${b.narration}`)).join(MOTION_TEXT_SYMBOL_27) : opts.previousSummary ? MOTION_TEMPLATE_SYMBOL_23(`${opts.previousSummary}`) : "";
   const narrationLanguage = isVi ? MOTION_TEXT_VIETNAMESE : MOTION_TEXT_ENGLISH;
   const prompt = MOTION_TEMPLATE_ROLE_DOCUMENTARY_SCRIPTWRITER_WRITE_THE_NARRATION_TEXT_AND_2(
     `${TEXT_ONLY_PREAMBLE}`,

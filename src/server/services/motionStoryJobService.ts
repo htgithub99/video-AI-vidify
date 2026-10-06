@@ -4,6 +4,7 @@ import { MOTION_TEMPLATE_DANG_DUNG, MOTION_TEMPLATE_LOI, MOTION_TEMPLATE_MOTION_
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { logger } from "../../lib/logger.js";
 import { MotionJobStatus, type MotionStoryJobKind, type MotionStoryJobState } from "../../types/motionVideo.js";
+import { runInMotionAiSession } from "./motionStoryService.js";
 type InternalJob = MotionStoryJobState & { controller: AbortController };
 const jobs = new Map<string, InternalJob>();
 const ACTIVE = [MotionJobStatus.QUEUED, MotionJobStatus.PREPARING, MotionJobStatus.RENDERING, MotionJobStatus.ENCODING];
@@ -36,7 +37,7 @@ export const startStoryJob = (kind: MotionStoryJobKind, run: (ctx: StoryJobConte
   stopped.catch(_.noop);
   void (async () => {
     try {
-      const result = await Promise.race([run(ctx), stopped]);
+      const result = await Promise.race([runInMotionAiSession(job.id, () => run(ctx)), stopped]);
       job.result = result;
       job.progress = 1;
       job.status = MotionJobStatus.COMPLETED;
