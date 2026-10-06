@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Box, Car, Check, Clapperboard, Copy, Footprints, Landmark, Loader2, Mountain, Package, Palette, Pencil, Plus, Search, Trash2, Trees, User, X } from "lucide-react";
+import { Box, Car, Check, Clapperboard, Copy, Footprints, Landmark, Mountain, Package, Palette, Pencil, Plus, Search, Trash2, Trees, User, X } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { API_ROUTES } from "../../constants/apiRoutes.js";
@@ -107,6 +107,7 @@ import { cn } from "../../lib/utils";
 import type { MotionCatalog, MotionCharacterDef } from "../../types/motionVideo.js";
 import { Modal } from "../ui/Modal";
 import { motionRequest, type MotionEngineGlobal } from "./motionApi";
+import { MotionModalActions } from "./MotionModalActions";
 import { MotionField as Field } from "./MotionField.js";
 import { MotionCharacterLive, MotionLazyThumb, MotionLive3D } from "./MotionLivePreview";
 import { getMotionToonActions, getMotionToonTimes } from "./motionOptions.js";
@@ -269,7 +270,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
           );
         })}
       </div>
-
       <div className="glass-card rounded-2xl p-4 border border-slate-800/80 bg-slate-900/60 min-w-0 flex flex-col gap-3.5 shadow-lg min-h-[560px]">
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           <div className="h-10 flex-1 min-w-[200px] flex items-center gap-2 px-3.5 rounded-xl bg-slate-955/80 border border-slate-800 focus-within:border-purple-500/60 transition-colors shadow-2xs">
@@ -287,9 +287,7 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
               </button>
             )}
           </div>
-
           {viewSwitcher}
-
           {view === MOTION_TEXT_TOON && (
             <div className="h-10 flex items-center gap-1 bg-slate-955/80 border border-slate-800 rounded-xl p-1 shadow-2xs">
               <button type={MOTION_TEXT_BUTTON} onClick={() => onToonStyle?.(MOTION_TEXT_TOON_LINE)} className={cn("h-full px-3 rounded-lg text-xs font-bold transition-all cursor-pointer select-none", currentToonStyle !== MOTION_TEXT_TOON_FLAT ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs font-black" : "text-slate-400 hover:text-slate-100")}>
@@ -300,7 +298,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
               </button>
             </div>
           )}
-
           {cat === MOTION_TEXT_CHARACTERS && (
             <button
               type={MOTION_TEXT_BUTTON}
@@ -325,7 +322,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
             </button>
           )}
         </div>
-
         {view === MOTION_TEXT_TOON && cat === MOTION_TEXT_CHARACTERS && (
           <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 bg-slate-955/60 border border-slate-800/80 rounded-xl">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider px-2">
@@ -339,7 +335,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
             ))}
           </div>
         )}
-
         {view === MOTION_TEXT_TOON && cat === MOTION_TEXT_ENVIRONMENTS && (
           <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 bg-slate-955/60 border border-slate-800/80 rounded-xl">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider px-2">
@@ -353,7 +348,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
             ))}
           </div>
         )}
-
         <div className="w-full max-h-[620px] overflow-y-auto custom-scrollbar pr-1">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 pb-4">
             {cat === MOTION_TEXT_CHARACTERS &&
@@ -392,7 +386,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
                   </button>
                 );
               })}
-
             {cat === MOTION_TEXT_ACTIONS &&
               _.map(
                 _.filter(catalog.actions, (a) => matches(q, a.name, a.id)),
@@ -431,7 +424,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
                   );
                 },
               )}
-
             {_.map(assets, (a) => {
               const isSel = selectedAsset?.id === a.id;
               return (
@@ -462,7 +454,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
                 </button>
               );
             })}
-
             {cat === MOTION_TEXT_ENVIRONMENTS &&
               _.map(
                 _.filter(catalog.environments, (e) => matches(q, e.name, e.id, e.tags || [])),
@@ -495,7 +486,6 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
                   );
                 },
               )}
-
             {cat === MOTION_TEXT_TEMPLATES &&
               _.map(
                 _.filter(catalog.templates, (t) => matches(q, t.name, t.id, t.description || "")),
@@ -513,13 +503,11 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
           </div>
         </div>
       </div>
-
       <div className="glass-card rounded-2xl p-4 border border-slate-800/80 bg-slate-900/60 flex flex-col gap-3.5 shadow-lg shrink-0">
         <div className="text-[10px] font-mono font-black uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 flex items-center justify-between">
           <span>{MOTION_TEXT_XEM_TRUOC_CHI_TIET}</span>
           <span className="text-[9px] font-black text-purple-300 uppercase bg-purple-500/15 px-2 py-0.5 rounded-md border border-purple-500/30">{view === MOTION_TEXT_TOON ? MOTION_TEXT_HOAT_HINH : view === MOTION_TEXT_3D ? MOTION_TEXT_3D_2 : MOTION_TEXT_2D_2_5D}</span>
         </div>
-
         {selected ? (
           <>
             <div className="flex items-start justify-between gap-2">
@@ -626,9 +614,7 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
           </div>
         )}
       </div>
-
       {editing && <MotionCharacterEditor ME={ME} value={editing} onChange={setEditing} onSave={saveCharacter} onClose={() => setEditing(null)} text={text} />}
-
       <Modal
         isOpen={Boolean(itemToDelete)}
         onClose={() => {
@@ -653,15 +639,7 @@ export const MotionLibraryPanel: FC<Props> = ({ ME, catalog, custom, onCustomCha
             {MOTION_TEXT_SYMBOL_25}
           </p>
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold leading-relaxed">{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800">
-            <button type={MOTION_TEXT_BUTTON} disabled={isDeleting} onClick={() => setItemToDelete(null)} className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-800 bg-slate-955 text-slate-300 hover:text-slate-100 cursor-pointer transition-colors">
-              {text.CLOSE || MOTION_TEXT_HUY}
-            </button>
-            <button type={MOTION_TEXT_BUTTON} disabled={isDeleting} onClick={() => void handleConfirmDelete()} className="px-5 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white cursor-pointer transition-all shadow-md shadow-rose-600/20 disabled:opacity-50 inline-flex items-center gap-1.5">
-              {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{text.DELETE || MOTION_TEXT_XOA}</span>
-            </button>
-          </div>
+          <MotionModalActions onCancel={() => setItemToDelete(null)} onConfirm={() => void handleConfirmDelete()} cancelLabel={text.CLOSE || MOTION_TEXT_HUY} confirmLabel={text.DELETE || MOTION_TEXT_XOA} busy={isDeleting} danger />
         </div>
       </Modal>
     </div>

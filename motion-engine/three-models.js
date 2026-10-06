@@ -14,7 +14,7 @@
   const M = (K.models = {});
   const shade = (c, k) => C.shade(c, k);
   const HAIR_COL = MT.VALUE_2A1E18;
-  K.EXT = K.EXT || { hats: {}, outfits: {}, acc: {}, fx: {}, longSkirt: new Set(), hideHair: new Set() };
+  K.EXT = K.EXT || { hats: {}, outfits: {}, acc: {}, fx: {}, held: {}, longSkirt: new Set(), hideHair: new Set() };
   K.character = (chIn) => {
     const ch = typeof chIn === MT.STRING ? ME.registry.characters[chIn] || (ME.customCharacters && ME.customCharacters[chIn]) || ME.registry.characters.man_casual : chIn || ME.registry.characters.man_casual;
     const d = ME.charDims(ch);
@@ -255,6 +255,7 @@
       else if (kind === MT.PHONE) held.add(mesh(box(0.02 * s, 0.14 * s, 0.07 * s), MT.VALUE_111, 0, 0, 0));
       else if (kind === MT.BOTTLE) held.add(mesh(cyl(0.03 * s, 0.035 * s, 0.25 * s, 10), MT.VALUE_2A4A2A, 0, 0.08 * s, 0));
       else if (kind === MT.MARKER) held.add(mesh(cyl(0.012 * s, 0.012 * s, 0.14 * s, 8), MT.C42A2A, 0.05 * s, 0, 0, { rz: -PI / 2 }));
+      else if (K.EXT.held && K.EXT.held[kind]) held.add(K.EXT.held[kind](s));
       else if (ME.registry.assets[kind]) {
         try {
           const obj = K.asset(kind, {});
@@ -320,8 +321,10 @@
         l.kn.rotation.z = -k;
         l.foot.rotation.z = -ang + k;
       });
-      const hk = pose.hold || (opts.hold ? (ME.HOLDABLE && ME.HOLDABLE[opts.hold]) || opts.hold : null) || (acc.includes(MT.BRIEFCASE) ? MT.BRIEFCASE : null);
+      let hk = pose.hold || (opts.hold ? (ME.HOLDABLE && ME.HOLDABLE[opts.hold]) || opts.hold : null) || (acc.includes(MT.BRIEFCASE) ? MT.BRIEFCASE : null);
+      if (hk && ME.HELD_ALIAS && ME.HELD_ALIAS[hk]) hk = ME.HELD_ALIAS[hk](acc, opts);
       setHeld(hk);
+      for (const c of torsoG.children) if (c.userData.slung) c.visible = !hk || !(K.EXT.held && K.EXT.held[hk]);
       beam.visible = hk === MT.FLASHLIGHT;
     };
     setPose(ME.registry.actions.stand.pose(0, 0, {}), { action: MT.STAND });

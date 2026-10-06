@@ -123,6 +123,7 @@ import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
 import { formatBytes, formatSeconds, motionRequest } from "./motion-video/motionApi";
 import { MotionLibraryPanel } from "./motion-video/MotionLibraryPanel";
+import { MotionDesignsPanel } from "./motion-video/MotionDesignsPanel";
 import { MotionLazyThumb } from "./motion-video/MotionLivePreview";
 import { realFileUrl } from "./motion-video/motionReal";
 import { MotionRealAssetsPanel } from "./motion-video/MotionRealAssetsPanel";
@@ -188,22 +189,12 @@ const ActionBtn: FC<{
   variant?: "primary" | "secondary" | "danger";
 }> = ({ onClick, disabled, busy, icon: Icon, children, className, variant = MOTION_TEXT_PRIMARY }) => {
   const styles = {
-    primary: busy
-      ? "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse shadow-md shadow-purple-600/30"
-      : "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-purple-600/25 active:scale-98 border border-purple-400/40",
+    primary: busy ? "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse shadow-md shadow-purple-600/30" : "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-purple-600/25 active:scale-98 border border-purple-400/40",
     secondary: "bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700",
     danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25",
   };
   return (
-    <button
-      type={MOTION_TEXT_BUTTON}
-      onClick={onClick}
-      disabled={disabled || busy}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed leading-none",
-        styles[variant],
-        className,
-      )}>
+    <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={disabled || busy} className={cn("inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed leading-none", styles[variant], className)}>
       {busy ? <Sparkles className="w-4 h-4 animate-spin text-white shrink-0" /> : <Icon className="w-4 h-4 shrink-0" />}
       <span>{children}</span>
     </button>
@@ -273,6 +264,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
                   { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
                   { id: MotionWorkspaceTab.LIBRARY, label: text.TAB_LIBRARY, icon: Users },
                   { id: MotionWorkspaceTab.REAL, label: text.TAB_REAL, icon: Box },
+                  { id: MotionWorkspaceTab.DESIGNS, label: text.TAB_DESIGNS, icon: Sparkles },
                   { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
                 ],
                 ({ id, label, icon: Icon }) => (
@@ -321,6 +313,14 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
           {tab === MotionWorkspaceTab.REAL &&
             (studio.ME && studio.catalog ? (
               <MotionRealAssetsPanel ME={studio.ME} catalog={studio.catalog} custom={studio.custom} envInfo={studio.envInfo} text={text} onCustomChange={() => void studio.reloadCustom()} />
+            ) : (
+              <div className="flex-1 flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+              </div>
+            ))}
+          {tab === MotionWorkspaceTab.DESIGNS &&
+            (studio.ME ? (
+              <MotionDesignsPanel ME={studio.ME} onLibraryChange={() => void studio.reloadCustom()} text={text} />
             ) : (
               <div className="flex-1 flex items-center justify-center py-20">
                 <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />

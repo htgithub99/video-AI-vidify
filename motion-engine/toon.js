@@ -739,7 +739,7 @@
           hy,
           s,
         ),
-        MT.DFE8EE,
+        (ch.colors && ch.colors.mask) || MT.DFE8EE,
         { d: 1, lw: 1 },
       );
   };

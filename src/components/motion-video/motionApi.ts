@@ -1,3 +1,4 @@
+import { MOTION_DESIGN_REDRAW_SUFFIX, MOTION_TEMPLATE_DESIGN_FILE_URL, MOTION_TEMPLATE_DESIGN_ITEM_URL } from "../../constants/motionRuntime.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
 import _ from "lodash";
 import { API_ROUTES } from "../../constants/apiRoutes.js";
@@ -19,6 +20,7 @@ export interface MotionEngineGlobal {
   drawCharacter: (g: CanvasRenderingContext2D, ch: unknown, o?: Record<string, unknown>) => void;
   drawAsset: (g: CanvasRenderingContext2D, id: string, x: number, y: number, o?: Record<string, unknown>, s?: number) => void;
   catalog: () => MotionCatalog;
+  registerDesigned?: (designs: Record<string, unknown>[]) => string[];
 }
 declare global {
   interface Window {
@@ -76,3 +78,5 @@ export const readFileBase64 = (file: File): Promise<string> =>
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
+export const motionDesignUrl = (id: string, redesign = false): string => MOTION_TEMPLATE_DESIGN_ITEM_URL(API_ROUTES.MOTION_VIDEO_DESIGNS, encodeURIComponent(id), redesign ? MOTION_DESIGN_REDRAW_SUFFIX : "");
+export const motionDesignFileUrl = (relativePath: string): string => MOTION_TEMPLATE_DESIGN_FILE_URL(API_ROUTES.MOTION_VIDEO_DESIGNS_FILE, encodeURIComponent(relativePath));

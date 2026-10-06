@@ -1,9 +1,3 @@
-import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
-import { AsyncLocalStorage } from "async_hooks";
-import { randomUUID } from "crypto";
-import fs from "fs";
-import _ from "lodash";
-import path from "path";
 import {
   MOTION_TEMPLATE_2_2,
   MOTION_TEMPLATE_ACTION_IDS,
@@ -24,6 +18,7 @@ import {
   MOTION_TEMPLATE_GUI_YEU_CAU_TOI_PHONG_CHAT_AI_CAU,
   MOTION_TEMPLATE_JSON,
   MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT,
+  MOTION_TEMPLATE_NEW_ITEMS_DESIGNED_FOR_THIS_STORY_PREFER_THEM,
   MOTION_TEMPLATE_PARAMS,
   MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU,
   MOTION_TEMPLATE_PHONG_CHAT_LOI,
@@ -48,6 +43,7 @@ import {
   MOTION_TEXT_AI_DEBUG,
   MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE,
   MOTION_TEXT_APPLICATION_JSON,
+  MOTION_TEXT_ARTIFACTTYPE,
   MOTION_TEXT_ASSET_IDS_BY_CATEGORY,
   MOTION_TEXT_BACK,
   MOTION_TEXT_BASE64,
@@ -163,6 +159,10 @@ import {
   MOTION_TEXT_SYMBOL_36,
   MOTION_TEXT_SYMBOL_40,
   MOTION_TEXT_SYMBOL_41,
+  MOTION_TEXT_SYMBOL_47,
+  MOTION_TEXT_SYMBOL_49,
+  MOTION_TEXT_SYMBOL_50,
+  MOTION_TEXT_SYMBOL_51,
   MOTION_TEXT_TEXT,
   MOTION_TEXT_THE_FIRST_BEAT_USES_VISUAL_TITLE_A_HOOK,
   MOTION_TEXT_THE_LAST_BEAT_USES_VISUAL_ENDING_WITH_A,
@@ -183,8 +183,14 @@ import {
   MOTION_TEXT_WORDS,
   MOTION_TEXT_WRONG,
 } from "../../constants/motionRuntime.js";
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
+import { AsyncLocalStorage } from "async_hooks";
+import { randomUUID } from "crypto";
+import fs from "fs";
+import _ from "lodash";
+import path from "path";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
-import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
+import { MOTION_STORY_CAST_HINTS, MOTION_STORY_CONFIG, MOTION_STORY_SETPIECE_RULES } from "../../constants/motionVideo.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionCatalog, type MotionChapter, type MotionParamAnim, type MotionStoryAnalysis, type MotionStorySource } from "../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "./chatUiPlanningService.js";
@@ -194,6 +200,7 @@ import { loadMotionEngine } from "./motionEngineService.js";
 import { matchLibraryId } from "./motionLibraryMatch.js";
 import { getMotionRootDirectory, listMotionCharacters } from "./motionLibraryService.js";
 import { withRealCatalog } from "./motionRealAssetService.js";
+import { roleGuide, stagingNote } from "./motionSetPieceService.js";
 import { AiTaskCapability } from "./taskRouterService.js";
 const TIMESTAMP_RE = /\((\d{1,2}):(\d{2})(?::(\d{2}))?\)/g;
 const NOISE_RE = /\[(?:music|applause|laughter|âm nhạc|nhạc)\]|>>/gi;
@@ -259,9 +266,48 @@ export const extractJson = (raw: string): any => {
   } catch {
     const a = text.indexOf(MOTION_TEXT_SYMBOL_35),
       b = text.lastIndexOf(MOTION_TEXT_SYMBOL_36);
-    if (a >= 0 && b > a) return parseJson(text.slice(a, b + 1));
+    if (a >= 0 && b > a) {
+      try {
+        return parseJson(text.slice(a, b + 1));
+      } catch {}
+    }
+    const starts = _.filter(_.range(text.length), (i) => text.startsWith(MOTION_TEXT_ARTIFACTTYPE, i));
+    for (const start of _.reverse(starts.length ? starts : a >= 0 ? [a] : [])) {
+      const repaired = closeJson(text.slice(start));
+      if (repaired == null) continue;
+      try {
+        return parseJson(repaired);
+      } catch {}
+    }
     throw new Error(MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE);
   }
+};
+const closeJson = (raw: string): string | null => {
+  const stack: string[] = [];
+  let inString = false,
+    escaped = false,
+    end = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === MOTION_TEXT_SYMBOL_49) escaped = true;
+      else if (ch === MOTION_TEXT_SYMBOL_47) inString = false;
+      continue;
+    }
+    if (ch === MOTION_TEXT_SYMBOL_47) inString = true;
+    else if (ch === MOTION_TEXT_SYMBOL_35 || ch === MOTION_TEXT_SYMBOL_50) stack.push(ch === MOTION_TEXT_SYMBOL_35 ? MOTION_TEXT_SYMBOL_36 : MOTION_TEXT_SYMBOL_51);
+    else if (ch === MOTION_TEXT_SYMBOL_36 || ch === MOTION_TEXT_SYMBOL_51) {
+      if (stack.pop() !== ch) return null;
+      if (!stack.length) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end >= 0) return raw.slice(0, end + 1);
+  if (inString || !stack.length) return null;
+  return raw.replace(/[,:\s]+$/, "") + stack.reverse().join("");
 };
 const pickEnum = <T extends string>(values: T[], v: unknown, fallback: T): T => (_.includes(values, v) ? (v as T) : fallback);
 export const TEXT_ONLY_PREAMBLE = MOTION_TEXT_IMPORTANT_TEXT_ONLY_TASK_YOU_ONLY_WRITE_TEXT;
@@ -472,11 +518,11 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       if (!timedOut && _.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR && attempt < MOTION_STORY_CONFIG.ROOM_PROVIDER_RETRIES) {
         retryRoom = true;
         log?.(MOTION_STORY_CONFIG.ROOM_RETRY_LOG);
-        return undefined;
+      } else {
+        const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(`${Math.round(MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS / 60000)}`)) : caught;
+        log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(`${_.truncate(_.toString(error?.message), { length: 140 })}`));
+        if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
       }
-      const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(`${Math.round(MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS / 60000)}`)) : caught;
-      log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(`${_.truncate(_.toString(error?.message), { length: 140 })}`));
-      if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
     } finally {
       clearTimeout(watchdog);
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
@@ -488,8 +534,8 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         if (!retryRoom) await closeChatBrowserIfIdle().catch(_.noop);
       }
       if (motionAiSessions || retryRoom) cancelGlobalBrowserCleanup();
-      if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
     }
+    if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
   }
   log?.(MOTION_TEXT_GOI_AI_QUA_API);
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
@@ -509,6 +555,8 @@ export const catalogGuide = (catalog: MotionCatalog, detailed = false, focusEnvs
       MOTION_TEXT_TIME_DAY_DUSK_NIGHT_INTERIOR_INTERIOR_DARK,
       MOTION_TEXT_WEATHER_NONE_RAIN_STORM_FOG_SNOW,
       MOTION_TEMPLATE_CHARACTER_IDS_LIBRARY(`${charLine}`),
+      MOTION_STORY_CAST_HINTS,
+      roleGuide(custom),
       MOTION_TEMPLATE_ACTION_IDS(`${_.map(catalog.actions, MOTION_TEXT_ID).join(MOTION_TEXT_SYMBOL_14)}`),
       MOTION_TEXT_ASSET_IDS_BY_CATEGORY,
       ..._.map(byCat, (items, cat) => MOTION_TEMPLATE_SYMBOL_22(`${cat}`, `${_.map(items, MOTION_TEXT_ID).join(MOTION_TEXT_SYMBOL_14)}`)),
@@ -519,12 +567,14 @@ export const catalogGuide = (catalog: MotionCatalog, detailed = false, focusEnvs
     MOTION_TEXT_ENVIRONMENTS_2,
     ..._.map(shownEnvs, (e: any) => {
       const contains = _.take(info.envs[e.id]?.builtins || [], 6);
-      return MOTION_TEMPLATE_SYMBOL_31(`${e.id}`, `${e.name}`, `${contains.length ? MOTION_TEMPLATE_CONTAINS(`${contains.join(MOTION_TEXT_SYMBOL_14)}`) : ""}`, `${info.envs[e.id]?.time ? MOTION_TEMPLATE_DEFAULT_TIME(`${info.envs[e.id].time}`) : ""}`, `${paramText(e.params)}`);
+      return MOTION_TEMPLATE_SYMBOL_31(`${e.id}`, `${e.name}${stagingNote(e.id)}`, `${contains.length ? MOTION_TEMPLATE_CONTAINS(`${contains.join(MOTION_TEXT_SYMBOL_14)}`) : ""}`, `${info.envs[e.id]?.time ? MOTION_TEMPLATE_DEFAULT_TIME(`${info.envs[e.id].time}`) : ""}`, `${paramText(e.params)}`);
     }),
     ...(listedEnvs.length ? [MOTION_TEMPLATE_ENV_IDS(`${_.map(listedEnvs, MOTION_TEXT_ID).join(MOTION_TEXT_SYMBOL_14)}`)] : []),
     MOTION_TEXT_TIME_DAY_DUSK_NIGHT_INTERIOR_INTERIOR_DARK,
     MOTION_TEXT_WEATHER_NONE_RAIN_STORM_FOG_SNOW,
     MOTION_TEMPLATE_CHARACTER_IDS_LIBRARY(`${charLine}`),
+    MOTION_STORY_CAST_HINTS,
+    roleGuide(custom),
     MOTION_TEMPLATE_ACTION_IDS(`${_.map(catalog.actions, MOTION_TEXT_ID).join(MOTION_TEXT_SYMBOL_14)}`),
     MOTION_TEXT_ASSET_IDS_BY_CATEGORY,
     ..._.map(byCat, (items, cat) => MOTION_TEMPLATE_SYMBOL_22(`${cat}`, `${_.map(items, (a: any) => `${a.id}${paramText(a.params)}`).join(MOTION_TEXT_SYMBOL_14)}`)),
@@ -586,6 +636,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, catalog: 
     chapters,
     cast,
     places: _.uniq(_.compact(_.map(_.castArray(raw?.places || []), (p) => matchLibraryId(_.map(catalog.environments, MOTION_TEXT_ID), p)))),
+    design: _.isArray(raw?.design) ? raw.design : [],
     facts: _.take(
       _.map(_.castArray(raw?.facts || []), (f: any) => ({ claim: _.toString(f?.claim), status: pickEnum([MOTION_TEXT_OK, MOTION_TEXT_UNCERTAIN, MOTION_TEXT_WRONG] as const as any, f?.status, MOTION_TEXT_UNCERTAIN), note: _.toString(f?.note || "") })),
       40,
@@ -600,7 +651,7 @@ const MOVES = [MOTION_TEXT_STAY, MOTION_TEXT_LEFT_TO_RIGHT, MOTION_TEXT_RIGHT_TO
 const LANES = [MOTION_TEXT_BACK, MOTION_TEXT_MID, MOTION_TEXT_FRONT, MOTION_TEXT_FORE];
 const TIMES = [MOTION_TEXT_DAY, MOTION_TEXT_DUSK, MOTION_TEXT_NIGHT, MOTION_TEXT_INTERIOR, MOTION_TEXT_INTERIOR_DARK];
 const WEATHERS = [MOTION_TEXT_NONE, MOTION_TEXT_RAIN, MOTION_TEXT_STORM, MOTION_TEXT_FOG, MOTION_TEXT_SNOW];
-export const storyboardRules = (narrationLanguage: string): string => MOTION_TEMPLATE_STORYBOARD_THE_PICTURE_MUST_TELL_THE_SAME_STORY(`${VISUALS.join(MOTION_TEXT_SYMBOL_40)}`, `${SHOTS.join(MOTION_TEXT_SYMBOL_14)}`, `${MOVES.join(MOTION_TEXT_SYMBOL_28)}`, `${narrationLanguage}`);
+export const storyboardRules = (narrationLanguage: string): string => [MOTION_TEMPLATE_STORYBOARD_THE_PICTURE_MUST_TELL_THE_SAME_STORY(`${VISUALS.join(MOTION_TEXT_SYMBOL_40)}`, `${SHOTS.join(MOTION_TEXT_SYMBOL_14)}`, `${MOVES.join(MOTION_TEXT_SYMBOL_28)}`, `${narrationLanguage}`), MOTION_STORY_SETPIECE_RULES].join(MOTION_TEXT_SYMBOL_27);
 export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; previous?: MotionBeat[]; previousSummary?: string; isFirst: boolean; isLast: boolean }): Promise<MotionBeat[]> => {
   const catalog = withRealCatalog(loadMotionEngine().catalog);
   const isVi = opts.language !== MOTION_TEXT_EN;
@@ -632,7 +683,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     `${prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED(`${prev}`) : ""}`,
     `${storyboardRules(narrationLanguage)}`,
     `${castList || MOTION_TEXT_NONE_2}`,
-    `${catalogGuide(catalog, true, analysis.places || [])}`,
+    `${catalogGuide(catalog, true, analysis.places || [])}${analysis.designed?.length ? MOTION_TEMPLATE_NEW_ITEMS_DESIGNED_FOR_THIS_STORY_PREFER_THEM(`${analysis.designed.join(MOTION_TEXT_SYMBOL_14)}`) : ""}`,
     `${chapter.id}`,
     `${sourceSlice(source, chapter.from, chapter.to)}`,
   );

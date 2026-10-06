@@ -1,0 +1,234 @@
+{
+  "kind": "asset",
+  "id": "banh_mi_cart",
+  "name": "Xe bánh mì vỉa hè",
+  "category": "street",
+  "size": [240, 250],
+  "palette": {
+    "teal": "#2f8c8c",
+    "tealDark": "#1f6363",
+    "cream": "#f4ead2",
+    "red": "#d23b2f",
+    "yellow": "#f2c14e",
+    "tire": "#2a2a2e",
+    "hub": "#b9bcc2",
+    "bread": "#d9973f",
+    "breadHi": "#f0bf6a",
+    "glass": "#dcefff",
+    "post": "#3b3f46"
+  },
+  "tags": ["bánh mì", "vỉa hè", "Việt Nam"],
+  "afford": {
+    "work": {
+      "mode": "beside",
+      "seated": false,
+      "dx": 150
+    },
+    "cover": {
+      "h": 130
+    }
+  },
+  "shapes": [
+    {
+      "t": "line",
+      "pts": [
+        [-104, -118],
+        [-104, -232]
+      ],
+      "stroke": "post",
+      "sw": 6
+    },
+    {
+      "t": "line",
+      "pts": [
+        [104, -118],
+        [104, -232]
+      ],
+      "stroke": "post",
+      "sw": 6
+    },
+    {
+      "t": "poly",
+      "pts": [
+        [-124, -226],
+        [124, -226],
+        [110, -252],
+        [-110, -252]
+      ],
+      "fill": "red",
+      "depth": 2
+    },
+    {
+      "t": "group",
+      "repeat": {
+        "n": 4,
+        "dx": 62
+      },
+      "shapes": [
+        {
+          "t": "poly",
+          "pts": [
+            [-93, -226],
+            [-62, -226],
+            [-58, -252],
+            [-85, -252]
+          ],
+          "fill": "cream",
+          "depth": 1
+        }
+      ]
+    },
+    {
+      "t": "group",
+      "repeat": {
+        "n": 8,
+        "dx": 31
+      },
+      "shapes": [
+        {
+          "t": "ellipse",
+          "cx": -109,
+          "cy": -224,
+          "rx": 16,
+          "ry": 8,
+          "fill": "red",
+          "depth": 1
+        }
+      ]
+    },
+    {
+      "t": "rect",
+      "x": -96,
+      "y": -196,
+      "w": 192,
+      "h": 76,
+      "r": 8,
+      "fill": "glass",
+      "alpha": 0.62,
+      "stroke": "#f6fbff",
+      "sw": 3,
+      "depth": 0
+    },
+    {
+      "t": "group",
+      "repeat": {
+        "n": 4,
+        "dx": 42
+      },
+      "shapes": [
+        {
+          "t": "ellipse",
+          "cx": -64,
+          "cy": -140,
+          "rx": 19,
+          "ry": 9,
+          "rot": -0.12,
+          "fill": "bread",
+          "depth": 2
+        },
+        {
+          "t": "line",
+          "pts": [
+            [-74, -142],
+            [-66, -146]
+          ],
+          "stroke": "breadHi",
+          "sw": 2
+        },
+        {
+          "t": "line",
+          "pts": [
+            [-64, -143],
+            [-56, -147]
+          ],
+          "stroke": "breadHi",
+          "sw": 2
+        }
+      ]
+    },
+    {
+      "t": "rect",
+      "x": -112,
+      "y": -124,
+      "w": 224,
+      "h": 82,
+      "r": 10,
+      "grad": ["teal", "tealDark"],
+      "depth": 3
+    },
+    {
+      "t": "rect",
+      "x": -112,
+      "y": -108,
+      "w": 224,
+      "h": 10,
+      "fill": "yellow",
+      "depth": 1
+    },
+    {
+      "t": "rect",
+      "x": -60,
+      "y": -92,
+      "w": 120,
+      "h": 36,
+      "r": 6,
+      "fill": "cream",
+      "depth": 1
+    },
+    {
+      "t": "rect",
+      "x": -48,
+      "y": -82,
+      "w": 96,
+      "h": 6,
+      "r": 3,
+      "fill": "red",
+      "depth": 0
+    },
+    {
+      "t": "rect",
+      "x": -36,
+      "y": -70,
+      "w": 72,
+      "h": 5,
+      "r": 2,
+      "fill": "teal",
+      "depth": 0
+    },
+    {
+      "t": "line",
+      "pts": [
+        [112, -96],
+        [150, -112],
+        [158, -112]
+      ],
+      "stroke": "post",
+      "sw": 6
+    },
+    {
+      "t": "group",
+      "repeat": {
+        "n": 2,
+        "dx": 140
+      },
+      "shapes": [
+        {
+          "t": "circle",
+          "cx": -70,
+          "cy": -26,
+          "r": 26,
+          "fill": "tire",
+          "depth": 2
+        },
+        {
+          "t": "circle",
+          "cx": -70,
+          "cy": -26,
+          "r": 11,
+          "fill": "hub",
+          "depth": 1
+        }
+      ]
+    }
+  ]
+}

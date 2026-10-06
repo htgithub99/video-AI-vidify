@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { isMotionJobTerminal } from "../lib/motionJob.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadMotionEngineClient, motionRequest, pollMotionJob, readFileBase64, registerCustomCharacters, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
@@ -52,7 +53,6 @@ import {
 } from "../types/motionVideo.js";
 import type { StorageCleanResult, StorageJunkReport } from "../types/storage.js";
 const STOPPED_TOAST = MOTION_TEXT_DA_DUNG_STOPPED;
-const TERMINAL = [MotionJobStatus.COMPLETED, MotionJobStatus.ERROR, MotionJobStatus.CANCELLED];
 interface PersistedState {
   rawText: string;
   source: MotionStorySource | null;
@@ -207,7 +207,7 @@ export function useMotionStudio() {
         setStoryJob(j);
         if (onPartial && j.result) onPartial(j.result);
       },
-      (j) => _.includes(TERMINAL, j.status),
+      (j) => isMotionJobTerminal(j.status),
       ctrl.signal,
       1200,
     ).finally(() => mounted.current && patch({ activeStoryJobId: "" }));
@@ -227,7 +227,7 @@ export function useMotionStudio() {
             setStoryJob(j);
             if ((j.kind === MotionStoryJobKind.SCRIPT || j.kind === MotionStoryJobKind.ART) && _.get(j.result, MOTION_TEXT_BEATS)) patch({ script: j.result as MotionStoryScript });
           },
-          (j) => _.includes(TERMINAL, j.status),
+          (j) => isMotionJobTerminal(j.status),
           ctrl.signal,
           1200,
         );
@@ -369,7 +369,7 @@ export function useMotionStudio() {
         const final = await pollMotionJob<MotionJobState>(
           `${API_ROUTES.MOTION_VIDEO_STATUS}${jobId}`,
           (j) => mounted.current && setRenderJob(j),
-          (j) => _.includes(TERMINAL, j.status),
+          (j) => isMotionJobTerminal(j.status),
           undefined,
           MOTION_VIDEO_CONSTANTS.POLL_INTERVAL_MS,
         );
@@ -446,8 +446,8 @@ export function useMotionStudio() {
       toast.error(e?.message);
     }
   }, [state.aspect, state.renderMode, state.toonStyle]);
-  const storyBusy = !!storyJob && !_.includes(TERMINAL, storyJob.status);
-  const renderBusy = !!renderJob && !_.includes(TERMINAL, renderJob.status);
+  const storyBusy = !!storyJob && !isMotionJobTerminal(storyJob.status);
+  const renderBusy = !!renderJob && !isMotionJobTerminal(renderJob.status);
   return {
     state,
     patch,

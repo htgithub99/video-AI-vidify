@@ -28,6 +28,7 @@ export enum MotionWorkspaceTab {
   CREATE = "create",
   LIBRARY = "library",
   REAL = "real",
+  DESIGNS = "designs",
   TOON = "toon",
   RESULTS = "results",
 }
@@ -262,6 +263,14 @@ export interface MotionFact {
   status: "ok" | "uncertain" | "wrong";
   note?: string;
 }
+export interface MotionDesignRequest {
+  kind: "asset" | "env";
+  id: string;
+  name: string;
+  brief: string;
+  size?: number[];
+  use?: string;
+}
 export interface MotionStoryAnalysis {
   title: string;
   logline: string;
@@ -271,6 +280,8 @@ export interface MotionStoryAnalysis {
   cast: MotionCastMember[];
   places: string[];
   facts: MotionFact[];
+  design?: MotionDesignRequest[];
+  designed?: string[];
 }
 export interface MotionBeatActor {
   cast: string;
@@ -383,6 +394,7 @@ export enum MotionStoryJobKind {
   SCRIPT = "script",
   VOICE = "voice",
   ART = "art",
+  DESIGN = "design",
 }
 export interface MotionAiExecution {
   provider?: string;

@@ -306,7 +306,7 @@
           actors.push({ spec, id: spec.id, ch, motion: buildMotion(spec, spec.x), lane: LANES[[MT.BACK, MT.MID, MT.FRONT][Math.max(0, [MT.BACK, MT.MID, MT.FRONT].indexOf(c.lane || MT.BACK) - row)]] || LANES.back });
         }
       });
-      const items = (env.props ? env.props(WW, tp) : []).concat(p.items || []).map((it, i) => ({ spec: it, id: it.id || MT.I + i, def: ME.registry.assets[it.asset], motion: buildMotion(it, WW * 0.5), lane: LANES[it.lane] || LANES.mid }));
+      const items = (env.props ? env.props(WW, tp).filter((it) => !(p.hideEnvProps || []).includes(it.asset)) : []).concat(p.items || []).map((it, i) => ({ spec: it, id: it.id || MT.I + i, def: ME.registry.assets[it.asset], motion: buildMotion(it, WW * 0.5), lane: LANES[it.lane] || LANES.mid }));
       const actorsAt = (id, u) => {
         const a = actors.find((x) => x.id === id) || items.find((x) => x.id === id);
         return a ? a.motion.at(u) : null;

@@ -43,6 +43,12 @@ import {
   updateRealAsset,
   uploadMotionAudio,
   voiceMotionStory,
+  createMotionDesign,
+  getMotionDesign,
+  redesignMotionDesign,
+  serveMotionDesignFile,
+  deleteMotionDesign,
+  listMotionDesigns,
 } from "../controllers/motionVideoController.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
 const router = express.Router();
@@ -72,6 +78,12 @@ router.post(MOTION_VIDEO_API_PATHS.STORY_SCRIPT, scriptMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_ART, requireLicense(FeatureType.IMAGE), artMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_VOICE, requireLicense(FeatureType.VOICE), voiceMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_COMPILE, compileMotionStory);
+router.get(MOTION_VIDEO_API_PATHS.DESIGNS, listMotionDesigns);
+router.get(MOTION_VIDEO_API_PATHS.DESIGNS_FILE, serveMotionDesignFile);
+router.get(MOTION_VIDEO_API_PATHS.DESIGNS_ID, getMotionDesign);
+router.post(MOTION_VIDEO_API_PATHS.DESIGNS_REDESIGN, redesignMotionDesign);
+router.post(MOTION_VIDEO_API_PATHS.DESIGNS, createMotionDesign);
+router.delete(MOTION_VIDEO_API_PATHS.DESIGNS_ID, deleteMotionDesign);
 router.get(MOTION_VIDEO_API_PATHS.STORY_STATUS, getMotionStoryStatus);
 router.post(MOTION_VIDEO_API_PATHS.STORY_CANCEL, cancelMotionStory);
 router.get(MOTION_VIDEO_API_PATHS.REAL_MANIFEST, getRealManifest);

@@ -21,10 +21,15 @@
     bicycle: { driver: [-0.14, 0.94] },
     cyclo: { driver: [-0.14, 0.94], passenger: [1.15, 1.05] },
   };
+  const fitLanes = (lz, zBack) => {
+    if (zBack == null || lz.back > zBack + 0.5) return lz;
+    const back = zBack + 0.9;
+    return Object.assign({}, lz, { back, mid: Math.max(lz.mid, back + 1.6) > lz.front - 1 ? (back + lz.front) / 2 : Math.max(lz.mid, back + 1.6) });
+  };
   const floorFromGround = (env, tp, WW, interior, scene) => {
     const backPx = 150,
       frontPx = 600;
-    const zBack = interior ? -8 : -12,
+    const zBack = env.zBack3d != null ? env.zBack3d : interior ? -8 : -12,
       zFront = 9;
     const xa = -WW * 0.6,
       xb = WW * 1.6;
@@ -260,7 +265,7 @@
           if (typeof console !== MT.UNDEFINED) console.warn(MT.MOTION3D_ENV_SET, env.id, e);
         }
       }
-      const items = (env.props ? env.props(WW, tp) : []).concat(p.items || []).map((it, i) => {
+      const items = (env.props ? env.props(WW, tp).filter((it) => !(p.hideEnvProps || []).includes(it.asset)) : []).concat(p.items || []).map((it, i) => {
         const params = Object.assign({ night: !!tp.night, t: 0 }, it.params || {}, it.color ? { color: it.color } : {});
         const obj = K.asset(it.asset, params);
         if (obj) {
@@ -355,6 +360,7 @@
       const camera = new T.PerspectiveCamera(FOV, ctx.W / ctx.H, 0.1, 900);
       const swing = ((ctx.shot.index || 0) % 2 ? -1 : 1) * (p.camera && p.camera.orbit != null ? p.camera.orbit : 0.1);
       return {
+        LZ: fitLanes(Object.assign({}, LANE_Z, env.lanes3d || {}), floor.zBack),
         scene,
         camera,
         light,
@@ -402,7 +408,8 @@
         it.obj.visible = vis > 0.5;
         const m = it.motion.at(u);
         const f = it.spec.facing === MT.LEFT || it.spec.facing === -1 ? -1 : it.spec.facing === MT.RIGHT || it.spec.facing === 1 ? 1 : it.motion.facing(u, dur);
-        it.obj.position.set(m.x * PX, -(it.spec.y || 0) * PX - m.y * PX, (LANE_Z[it.lane] == null ? LANE_Z.mid : LANE_Z[it.lane]) + (it.spec.z || 0) * PX);
+        it.obj.position.set(m.x * PX, -(it.spec.y || 0) * PX - m.y * PX, (S.LZ[it.lane] == null ? S.LZ.mid : S.LZ[it.lane]) + (it.spec.z || 0) * PX);
+        if (it.spec.anim && it.obj.userData.setParams) it.obj.userData.setParams(ME.evalAnim(it.spec.anim, u));
         it.obj.rotation.y = f < 0 ? PI : 0;
         K.animate(it.obj, t, m.dist * PX);
         if (it.obj.userData.bob) it.obj.position.y += Math.sin(t * 1.6) * it.obj.userData.bob;
@@ -440,7 +447,7 @@
         else f = a.motion.facing(u, dur);
         const toCam = a.motion.moving ? 0.18 : 0.42;
         a.rig.root.rotation.y = ((1 - f) / 2) * PI - toCam * f;
-        a.rig.root.position.set(m.x * PX, -(spec.y || 0) * PX - m.y * PX, (LANE_Z[a.lane] == null ? 0 : LANE_Z[a.lane]) + (spec.z || 0) * PX);
+        a.rig.root.position.set(m.x * PX, -(spec.y || 0) * PX - m.y * PX, (S.LZ[a.lane] == null ? 0 : S.LZ[a.lane]) + (spec.z || 0) * PX);
         a.rig.root.scale.setScalar(spec.scale || 1);
       }
       const c = S.cam2d(u);
@@ -476,7 +483,7 @@
         const vis = SK.visibility(c.spec, u, dur);
         const m = c.motion.at(u);
         const fc = c.spec.facing === MT.LEFT || c.spec.facing === -1 ? -1 : c.spec.facing === MT.RIGHT || c.spec.facing === 1 ? 1 : c.motion.facing(u, dur);
-        K.updateCrowd(c.cr, { x: m.x * PX, y: 0, z: (LANE_Z[c.lane] == null ? LANE_Z.back : LANE_Z[c.lane]) + (c.spec.z || 0) * PX }, vis > 0.5 ? t : t, camera, fc);
+        K.updateCrowd(c.cr, { x: m.x * PX, y: 0, z: (S.LZ[c.lane] == null ? S.LZ.back : S.LZ[c.lane]) + (c.spec.z || 0) * PX }, vis > 0.5 ? t : t, camera, fc);
         for (const mm of c.cr.meshes) mm.visible = vis > 0.5;
       }
       const sun = S.light.sun;

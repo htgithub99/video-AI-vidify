@@ -256,6 +256,7 @@
     g.restore();
   };
   ME.normalizeSpec = (spec) => {
+    if (spec && spec.designs && ME.registerDesigned) ME.registerDesigned(spec.designs);
     const s = Object.assign({ aspect: MT.VALUE_16_9, fps: 30, look: MT.DOCUMENTARY, shots: [], subtitles: [], cast: {} }, spec || {});
     const a = ME.ASPECTS[s.aspect] || ME.ASPECTS[MT.VALUE_16_9];
     s.width = s.width || a.w;
@@ -755,7 +756,7 @@
       quality: Object.keys(ME.QUALITY),
       transitions: Object.keys(ME.registry.transitions),
       templates: pick(ME.registry.templates),
-      environments: pick(ME.registry.environments),
+      environments: pick(Object.fromEntries(Object.entries(ME.registry.environments).filter(([, e]) => !e.hidden))),
       assets: pick(ME.registry.assets),
       characters: Object.values(ME.registry.characters),
       actions: Object.values(ME.registry.actions).map((a) => ({ id: a.id, name: a.name, loop: !!a.loop })),

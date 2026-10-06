@@ -50,12 +50,17 @@ export const MOTION_VIDEO_CONSTANTS = {
     "tales-props.js",
     "tales-structures.js",
     "tales-envs.js",
+    "aviation.js",
+    "aviation-world.js",
+    "interactions.js",
+    "designed.js",
     "illustration.js",
     "three-core.js",
     "three-models.js",
     "scenes3d.js",
     "three-more.js",
     "tales-3d.js",
+    "aviation-3d.js",
     "real3d.js",
   ],
   FONTS_DIR: "fonts",
@@ -66,6 +71,7 @@ export const MOTION_VIDEO_CONSTANTS = {
   WORK_FOLDER: "work",
   AUDIO_FOLDER: "audio",
   LIBRARY_FILE: "motion-library.json",
+  DESIGNS_FILE: "motion-designs.json",
   RESULTS_FILE: "motion-results.json",
   ASSETS_URL_PREFIX: "/assets/motion-video/",
   EXT_MP4: ".mp4",
@@ -126,3 +132,36 @@ export const MOTION_TOON_OPTION_KEYS = {
     [MOTION_TEXT_NIGHT, "TOON_NIGHT"],
   ],
 } as const;
+export const MOTION_DESIGN = {
+  MAX_ROUNDS: 3,
+  PASS_SCORE: 8,
+  KEEP_SCORE: 6,
+  MAX_REQUESTS: 6,
+  ARTIFACT: "motion_design",
+  ARTIFACT_REVIEW: "motion_design_review",
+  PREVIEW_FOLDER: "design-preview",
+} as const;
+export const MOTION_INTERACT = {
+  CROWD_MAX: 10,
+  HANG_DROP: 200,
+} as const;
+export const MOTION_CUES: Record<string, RegExp> = {
+  gun: /(súng|bắn|nổ súng|đấu súng|xả đạn|làn đạn|tay súng|chĩa|khống chế|uy hiếp|\bguns?\b|shoot|gunfire|armed)/i,
+  fire: /(bắn|nổ súng|đấu súng|xả đạn|làn đạn|giao tranh|đọ súng|shoot|gunfire|firefight|opened fire)/i,
+  fear: /(con tin|khống chế|sợ hãi|hoảng|uy hiếp|kinh hoàng|run rẩy|hostage|terror|panic|afraid)/i,
+  breach: /(phá cửa|mở cửa|đạp cửa|xông vào|lao vào|ập vào|đột nhập|tấn công vào|breach|storm|burst in)/i,
+  climb: /(leo|trèo|lên máy bay|áp sát|xe thang|cầu thang|bậc thang|đột kích|tiếp cận|board|climb|stair)/i,
+  window: /(cửa sổ|window)/i,
+  evac: /(cầu trượt|sơ tán|thoát hiểm|evacuat|escape slide)/i,
+  safe: /(két|tủ sắt|kho tiền|hầm tiền|\bsafes?\b|vault|strongbox)/i,
+  sleep: /(ngủ|giường|nằm viện|bệnh nặng|ốm|hôn mê|hấp hối|sleep|in bed|sick|coma|dying)/i,
+};
+export const MOTION_STORY_CAST_HINTS =
+  "CHARACTER HINTS: special forces / SWAT / GIGN / commandos = swat_officer, swat_officer_2, swat_commander; hijackers / terrorists / armed gunmen = hijacker, hijacker_rifle, hijacker_disguised (disguised as security staff); airline pilots = captain_pilot, copilot, pilot; cabin crew = flight_attendant; airline passengers / hostages = passenger_man, passenger_woman, passenger_elder. Never use thief_hooded or soldier for these roles.";
+export const MOTION_STORY_SETPIECE_RULES = [
+  "STAGING (the director places people and furniture automatically, so describe WHAT happens, not furniture positions):",
+  "- Actions that need furniture get it automatically: sit / sit_afraid / sit_hands_up / sit_eat / type / fly sit on a real seat (rows of seats, desks, tables or the env's own chairs; a chair is added only if none exists); lie lies on a bed when the place has one; open_door / kick_door / knock get a door that swings open; take_cover crouches behind cover (crates, cars, sandbags, barrels); climb goes up a ladder or boarding stairs; slide rides an evacuation slide. Do not add chair, seat, desk, bed or door props just to support these actions.",
+  "- Places with STAGING notes below already contain their furniture and background crowd; only list the story characters.",
+  "- Weapons: armed people use action aim (pointing a gun, holding someone at gunpoint) or shoot (firing, gunfight). Never use point for a gun. Victims: hands_up, cower, surrender, sit_afraid. Captors: aim or restrain. throw = throwing an object, punch = fist fight.",
+  "- Use time interior for lit interiors; prefer clear day, dusk or night lighting outdoors so faces and actions stay readable.",
+].join("\n");

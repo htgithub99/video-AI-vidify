@@ -1052,7 +1052,7 @@ export const MOTION_TEMPLATE_ROLE_DOCUMENTARY_STORY_EDITOR_YOUTUBE_HISTORY_TRUE_
   value6 +
   '; "accent": a hex accent colour.\n4. "places": the ENV ids you expect to use — only ids from the library list (pick the closest one, never invent).\n5. No depiction of violence, gore or bodies; real people are drawn as faceless silhouettes.\n6. Write "title", "logline", chapter "title"/"summary", cast "role"/"description" and fact "claim"/"note" in ' +
   value7 +
-  '.\n7. Keep it compact so the answer is fast: chapter "summary" ≤ 35 words, cast "description" ≤ 20 words, at most 12 facts, each note ≤ 20 words. Output the JSON on a single line.\n\nJSON format:\n{"title":"video title","logline":"one sentence","look":"noir","accent":"#ffb070",\n "chapters":[{"id":"c1","title":"...","summary":"...","from":0,"to":95}],\n "cast":[{"key":"albert","name":"Albert Spaggiari","role":"mastermind","description":"...","characterId":"photographer","suggested":null}],\n "places":["city_street"],\n "facts":[{"claim":"...","status":"uncertain","note":"..."}]}\n\nTRANSCRIPT:\n' +
+  '.\n7. Keep it compact so the answer is fast: chapter "summary" ≤ 35 words, cast "description" ≤ 20 words, at most 12 facts, each note ≤ 20 words. Output the JSON on a single line.\n8. \"design\": things that are ESSENTIAL to show this story but are missing from the library or only match it poorly (a specific vehicle, machine, piece of furniture, landmark, or a distinctive place). At most 4 items, [] if the library is enough. Each item: {\"kind\":\"asset\"|\"env\",\"id\":\"new_snake_case_id\",\"name\":\"display name in the narration language\",\"brief\":\"what it looks like: shape, materials, colours, era, culture, key identifying details (max 50 words)\",\"size\":[width_cm,height_cm] (assets only),\"use\":\"how characters use it, e.g. sit at it, hide behind it, climb it, or decor\"}. Never request characters, people or animals here (use cast \"suggested\" for people).\n\nJSON format:\n{"title":"video title","logline":"one sentence","look":"noir","accent":"#ffb070",\n "chapters":[{"id":"c1","title":"...","summary":"...","from":0,"to":95}],\n "cast":[{"key":"albert","name":"Albert Spaggiari","role":"mastermind","description":"...","characterId":"photographer","suggested":null}],\n "places":["city_street"],\n "facts":[{"claim":"...","status":"uncertain","note":"..."}],\n "design":[]}\n\nTRANSCRIPT:\n' +
   value8;
 export const MOTION_TEXT_NV = "nv" as const;
 export const MOTION_TEMPLATE_C_2 = (value0: string): string => "c" + value0;
@@ -1581,3 +1581,196 @@ export const MOTION_TEXT_DA_XOA_THANH_CONG = "Đã xóa thành công" as const;
 export const MOTION_TEXT_CO_LOI_XAY_RA_KHI_XOA = "Có lỗi xảy ra khi xóa" as const;
 export const MOTION_TEXT_BAN_CO_CHAC_CHAN_MUON_XOA_MO_HINH = "Bạn có chắc chắn muốn xóa mô hình này?" as const;
 export const MOTION_RENDER_CANVAS_ID = "c" as const;
+export const MOTION_TEXT_FLY = "fly" as const;
+export const MOTION_TEXT_SIT_AFRAID = "sit_afraid" as const;
+export const MOTION_TEXT_PILOT_SEAT = "pilot_seat" as const;
+export const MOTION_TEXT_AIRPORT_APRON = "airport_apron" as const;
+export const MOTION_TEXT_SHOOT = "shoot" as const;
+export const MOTION_TEXT_AIM = "aim" as const;
+export const MOTION_TEXT_AFRAID = "afraid" as const;
+export const MOTION_TEXT_COCKPIT_DOOR = "cockpit_door" as const;
+export const MOTION_TEXT_CHECK_WATCH = "check_watch" as const;
+export const MOTION_TEXT_KICK_DOOR = "kick_door" as const;
+export const MOTION_TEXT_KNOCK = "knock" as const;
+export const MOTION_TEXT_OPEN_DOOR = "open_door" as const;
+export const MOTION_TEXT_AIRLINER = "airliner" as const;
+export const MOTION_TEXT_WINDOW = "window" as const;
+export const MOTION_TEXT_LADDER = "ladder" as const;
+export const MOTION_TEXT_STAIR_TRUCK = "stair_truck" as const;
+export const MOTION_TEXT_JUMP = "jump" as const;
+export const MOTION_TEXT_FALL = "fall" as const;
+export const MOTION_TEXT_EVAC_SLIDE = "evac_slide" as const;
+export const MOTION_TEXT_SLIDE = "slide" as const;
+export const MOTION_TEXT_OFFSET = "offset" as const;
+export const MOTION_TEXT_ZOOMTO = "zoomTo" as const;
+export const MOTION_TEXT_AIRPLANE_COCKPIT = "airplane_cockpit" as const;
+export const MOTION_TEXT_SWAT_OFFICER = "swat_officer" as const;
+export const MOTION_TEXT_HIJACKER = "hijacker" as const;
+export const MOTION_TEXT_COPILOT = "copilot" as const;
+export const MOTION_TEXT_CAPTAIN_PILOT = "captain_pilot" as const;
+export const MOTION_TEXT_PASSENGER_MAN = "passenger_man" as const;
+export const MOTION_TEXT_SIT_HANDS_UP = "sit_hands_up" as const;
+export const MOTION_TEXT_HANDS_UP = "hands_up" as const;
+export const MOTION_TEXT_COWER = "cower" as const;
+export const MOTION_TEXT_CIVILIAN = "civilian" as const;
+export const MOTION_TEXT_GUNNER = "gunner" as const;
+export const MOTION_TEXT_GUN = "gun" as const;
+export const MOTION_TEXT_BEHIND = "behind" as const;
+export const MOTION_TEXT_BESIDE = "beside" as const;
+export const MOTION_TEXT_FEAR = "fear" as const;
+export const MOTION_TEXT_ROLE = "role" as const;
+export const MOTION_TEXT_LANE = "lane" as const;
+export const MOTION_TEXT_SLEEP = "sleep" as const;
+export const MOTION_TEXT_DOOR = "door" as const;
+export const MOTION_TEXT_OPEN = "open" as const;
+export const MOTION_TEXT_BREACH = "breach" as const;
+export const MOTION_TEXT_TAKE_COVER = "take_cover" as const;
+export const MOTION_TEXT_H = "h" as const;
+export const MOTION_TEXT_PILOT = "pilot" as const;
+export const MOTION_TEXT_EVAC = "evac" as const;
+export const MOTION_TEXT_ARMED_WITH_GUNS_POLICE_SPECIAL_FORCES_SOLDIERS_GANGSTERS = "armed with guns (police, special forces, soldiers, gangsters, hijackers)" as const;
+export const MOTION_TEXT_MELEE_FIGHTERS_SWORDS_SPEARS_ARMOR = "melee fighters (swords, spears, armor)" as const;
+export const MOTION_TEXT_PILOTS = "pilots" as const;
+export const MOTION_TEXT_CREW = "crew" as const;
+export const MOTION_TEXT_STUDENTS_PUPILS = "students / pupils" as const;
+export const MOTION_TEXT_TEACHERS = "teachers" as const;
+export const MOTION_TEXT_JUDGES = "judges" as const;
+export const MOTION_TEXT_DOCTORS_NURSES = "doctors / nurses" as const;
+export const MOTION_TEXT_KINGS_QUEENS_EMPERORS = "kings / queens / emperors" as const;
+export const MOTION_TEXT_COOKS = "cooks" as const;
+export const MOTION_TEXT_CLERKS_TELLERS_WAITERS = "clerks / tellers / waiters" as const;
+export const MOTION_TEXT_PRIESTS_MONKS_NUNS = "priests / monks / nuns" as const;
+export const MOTION_TEMPLATE_SYMBOL_46 = (value0: string, value1: string, value2: string): string => value0 + " = " + value1 + ": " + value2;
+export const MOTION_TEMPLATE_CHARACTER_ROLES_THE_DIRECTOR_SEATS_ARMS_AND_PLACES = (value0: string): string => "CHARACTER ROLES (the director seats, arms and places people by role):\n" + value0;
+export const MOTION_TEMPLATE_ROWS_OF = (value0: string, value1: string, value2: string): string => "rows of " + value0 + " " + value1 + value2;
+export const MOTION_TEXT_WITH_PEOPLE_SEATED_BEHIND_THEM = "with people seated behind them" as const;
+export const MOTION_TEXT_TO_SIT_ON = "to sit on" as const;
+export const MOTION_TEXT_AUTO_FILLED_WITH_BACKGROUND_PEOPLE = ", auto-filled with background people" as const;
+export const MOTION_TEMPLATE_SITS_AT_THE = (value0: string, value1: string): string => value0 + " sits at the " + value1;
+export const MOTION_TEXT_SOMEONE = "someone" as const;
+export const MOTION_TEMPLATE_STANDS = (value0: string, value1: string): string => value0 + " stands " + value1;
+export const MOTION_TEMPLATE_BY_THE = (value0: string): string => "by the " + value0;
+export const MOTION_TEXT_AT_THE_FRONT = "at the front" as const;
+export const MOTION_TEMPLATE_STAY_SEATED = (value0: string): string => value0 + " stay seated";
+export const MOTION_TEMPLATE_DOOR = (value0: string): string => "door = " + value0;
+export const MOTION_TEMPLATE_ALREADY_CONTAINS_A_PARKED_NEVER_ADD_PROPS_CLIMB = (value0: string, value1: string): string => "already contains a parked " + value0 + " (never add " + value1 + " props); climb = boarding stairs to its door, slide = evacuation slide, window escape works";
+export const MOTION_TEMPLATE_AN_PROP_BECOMES_A_FULL = (value0: string, value1: string): string => "an " + value0 + " prop becomes a full " + value1;
+export const MOTION_TEMPLATE_TAKE_COVER_USES = (value0: string): string => "take_cover uses " + value0;
+export const MOTION_TEMPLATE_LIE_ON_THE = (value0: string): string => "lie = on the " + value0;
+export const MOTION_TEMPLATE_SITTING_USES = (value0: string): string => "sitting uses " + value0;
+export const MOTION_TEMPLATE_STANDING_PEOPLE_USE_LANE = (value0: string): string => "standing people use lane " + value0;
+export const MOTION_TEMPLATE_STAGING = (value0: string): string => " STAGING: " + value0 + ".";
+export const MOTION_TEMPLATE_PULLED_INTO_FRAME = (value0: string, value1: string): string => value0 + ": " + value1 + " pulled into frame";
+export const MOTION_TEMPLATE_OVERLAPPED = (value0: string, value1: string, value2: string): string => value0 + ": " + value1 + " overlapped " + value2;
+export const MOTION_TEXT_DESK = "desk" as const;
+export const MOTION_TEXT_DESIGN = "design" as const;
+export const MOTION_TEMPLATE_FUNCTION_R_VAR_M_R_MOTIONENGINE_IF_M = (value0: string): string => "\n;(function (r) { var M = r.MotionEngine; if (M && M.registerDesigned) M.registerDesigned(" + value0 + '); })(typeof window !== "undefined" ? window : globalThis);\n';
+export const MOTION_TEXT_DESIGN_EXAMPLES = "design-examples" as const;
+export const MOTION_TEXT_YOU_ARE_THE_LEAD_2D_PROP_AND_SET =
+  "You are the lead 2D prop and set designer of a flat-vector documentary animation series. Every object you draw must look like it belongs to the same hand-made library: clean geometric shapes, bold readable silhouettes, warm limited palettes, soft toon shading (added automatically by the renderer from your colours), no photo realism." as const;
+export const MOTION_TEXT_VIEW_AND_SCALE_STRAIGHT_FRONT_ELEVATION_LIKE_A =
+  "VIEW AND SCALE: straight front elevation like a theatre set (no perspective, no 3/4 view). The object stands on the ground line y = 0, centred on x = 0, and up is NEGATIVE y. 1 unit is about 1 cm: an adult is 180 tall, a door 260, a chair seat 50, a dining table top 75, an office desk top 96, a car 150 tall and 450 long." as const;
+export const MOTION_TEXT_DESIGN_PROCESS_1_BLOCK_THE_SILHOUETTE_WITH_2 = "DESIGN PROCESS: (1) block the silhouette with 2-5 big shapes; (2) add secondary forms (panels, frames, trims, rims, legs); (3) finish with a few accents (handles, rivets, emblems, food, lights) covering at most 15% of the area. Exaggerate the features that make the object instantly recognisable at small size." as const;
+export const MOTION_TEXT_COLOUR_4_8_NAMED_PALETTE_COLOURS_EACH_MATERIAL =
+  "COLOUR: 4-8 named palette colours. Each material gets three values (light / mid / dark). 60-30-10 balance with one accent colour. Light comes from the top-left: give big masses a top-to-bottom 'grad' from lighter to darker. Keep strong value contrast between neighbouring shapes so parts read clearly. Match the era, culture and materials described in the brief." as const;
+export const MOTION_TEXT_CRAFT_OVERLAP_SHAPES_SLIGHTLY_SO_THERE_ARE_NO = "CRAFT: overlap shapes slightly so there are no gaps; keep symmetrical things symmetrical (use group.repeat); no detail thinner than 4 units; no text or letters; do not outline every shape (the renderer adds ink lines in line mode) — use 'stroke' only for wires, poles, handles and thin frames." as const;
+export const MOTION_TEXT_DESIGN_JSON_ASSETS_KIND_ASSET_ID_SNAKE_CASE = 'DESIGN JSON (assets): {"kind":"asset","id":"snake_case_id","name":"display name","category":"furniture|prop|interior|structure|street|vehicle|nature","size":[width,height],"palette":{"name":"#hex"},"tags":["..."],"params":{"open":"0..1 meaning"},"afford":{...},"shapes":[...]}' as const;
+export const MOTION_TEXT_SHAPES_DRAWN_IN_ORDER_LATER_SHAPES_ON_TOP = 'SHAPES (drawn in order, later shapes on top): rect {t,x,y,w,h,r} (x,y = top-left corner) · ellipse {t,cx,cy,rx,ry,rot} · circle {t,cx,cy,r} · poly {t,pts:[[x,y],...],smooth} · path {t,d:"SVG path data"} · line {t,pts,stroke,sw} · group {t,shapes:[...],x,y,rot,sx,sy,ox,oy,repeat:{n,dx,dy}}.' as const;
+export const MOTION_TEXT_SHAPE_STYLE_KEYS_FILL_PALETTE_NAME_OR_HEX =
+  'Shape style keys: fill (palette name or #hex or "none"), grad [top,bottom] vertical gradient, stroke + sw (stroke width), alpha 0..1, depth 0..8 (toon shading strength, 0 = flat; use 2-4 for solid volumes, 0-1 for small flat details), glow (colour halo for lamps), if / unless (draw only when a param is truthy / falsy).' as const;
+export const MOTION_TEXT_ANIMATED_PARAMS_ANY_GROUP_X_Y_ROT_SX = 'Animated params: any group x, y, rot, sx, sy or shape alpha can be {"p":"paramName","a":valueAt0,"b":valueAt1} — e.g. a door leaf group with "sx":{"p":"open","a":1,"b":0.18},"ox":-60 swings open around its hinge at x=-60.' as const;
+export const MOTION_TEXT_AFFORD_HOW_CHARACTERS_USE_IT_ONLY_WHAT_APPLIES =
+  'afford (how characters use it; only what applies): seat [{dx,h}] (sitting points, h = seat height) · faces "right"|"left" (direction a sitter faces) · bed {dx,h} · surface {h,w} (table top other props can stand on) · work {mode:"behind"|"beside",seated,dx} (where a person works at it) · cover {h} (people can crouch behind it) · door {dx} (with params.open).' as const;
+export const MOTION_TEXT_DESIGN_JSON_PLACES_KIND_ENV_ID_SNAKE_CASE =
+  'DESIGN JSON (places): {"kind":"env","id":"snake_case_id","name":"...","category":"interior|exterior","time":"interior|day|dusk|night","width":2400-4000,"palette":{...},"wall":{"color","top":-780,"trim","base"} (interiors),"sky":{"top","bottom"} (exteriors),"floor":{"color","tile":0-200},"layers":[{"depth":0.2-1,"blur":0-2,"elements":[{"x","y","every","skip":[[x0,x1]],"asset":"library id","scale","shapes":[...]}]}],"props":[{"asset","x","lane":"back|mid|front|fore","scale"}],"staging":{optional}}' as const;
+export const MOTION_TEXT_PLACE_RULES_LAYER_ELEMENTS_ARE_DRAWN_RELATIVE_TO =
+  "PLACE RULES: layer elements are drawn relative to the floor line (y = 0, up negative). Depth 1 = back wall; smaller depth = further away (exterior skylines 0.2-0.5). Use 'every' for rhythm (columns, windows, panels) and 'skip' to keep the focal area clear. The camera shows roughly y = 0 to -560 in wide shots and 0 to -420 in medium shots, so keep focal wall decoration between y = -120 and -480. Keep the floor area around the middle (x = width/2 ± 400) free of props at lanes front/fore so actors can stand there. props may use existing library asset ids or ids designed in this run." as const;
+export const MOTION_TEXT_ART_DIRECTOR_REVIEW_YOU_SEE_RENDERS_OF_THE = "ART DIRECTOR REVIEW. You see renders of the candidate design: for an asset, image 1 = the asset alone, image 2 = next to a 180 cm person; for a place, image 1 = wide shot, image 2 = medium shot with people. The last image is a reference sheet of the existing library style." as const;
+export const MOTION_TEXT_SCORE_0_10_8_READY_FOR_BROADCAST_ON =
+  "Score 0-10 (8 = ready for broadcast) on: recognisable as described in the brief; correct proportions versus the person; style consistent with the reference sheet; craftsmanship (clean shapes, no gaps or stray pieces, balanced palette, clear value contrast, right amount of detail); stands correctly on the ground and faces the viewer." as const;
+export const MOTION_TEXT_IF_THE_SCORE_IS_BELOW_8_RETURN_AN = 'If the score is below 8, return an improved FULL design JSON in "design" that fixes every issue (keep the same id and kind). If it is 8 or more, "design" may be null.' as const;
+export const MOTION_TEXT_RETURN_SCORE_N_ISSUES_SHORT_ISSUE_DESIGN_NULL = 'Return {"score":n,"issues":["short issue"],"design":{...}|null}.' as const;
+export const MOTION_TEXT_ENV_2 = "env" as const;
+export const MOTION_TEXT_VN_COURTROOM_JSON = "vn_courtroom.json" as const;
+export const MOTION_TEXT_BANH_MI_CART_JSON = "banh_mi_cart.json" as const;
+export const MOTION_TEXT_JUDGE_BENCH_VN_JSON = "judge_bench_vn.json" as const;
+export const MOTION_TEXT_BOOKSHELF = "bookshelf" as const;
+export const MOTION_TEXT_BARREL = "barrel" as const;
+export const MOTION_TEXT_TYPEWRITER = "typewriter" as const;
+export const MOTION_TEXT_RADIO = "radio" as const;
+export const MOTION_TEXT_STREET_VENDOR_CART = "street_vendor_cart" as const;
+export const MOTION_TEXT_TENT = "tent" as const;
+export const MOTION_TEXT_EXTERIOR = "exterior" as const;
+export const MOTION_TEMPLATE_WIDE = (value0: string): string => value0 + "_wide";
+export const MOTION_TEMPLATE_MED = (value0: string): string => value0 + "_med";
+export const MOTION_TEMPLATE_ISO = (value0: string): string => value0 + "_iso";
+export const MOTION_TEXT_DESIGN_STUDIO = "design_studio" as const;
+export const MOTION_TEMPLATE_SCALE = (value0: string): string => value0 + "_scale";
+export const MOTION_TEMPLATE_REF = (value0: string): string => "ref_" + value0;
+export const MOTION_TEMPLATE_EXAMPLES_OF_APPROVED_DESIGNS_FROM_THIS_LIBRARY = (value0: string): string => "EXAMPLES OF APPROVED DESIGNS FROM THIS LIBRARY:\n" + value0;
+export const MOTION_TEXT_ATTACHED_IMAGE_REFERENCE_SHEET_OF_THE_EXISTING_LIBRARY = "ATTACHED IMAGE: reference sheet of the existing library style. Match it." as const;
+export const MOTION_TEMPLATE_BRIEF_DESIGN_THE_ID = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string): string => "BRIEF: design the " + value0 + ' "' + value1 + '" (id "' + value2 + '"). ' + value3 + value4 + value5 + value6;
+export const MOTION_TEXT_PLACE = "place" as const;
+export const MOTION_TEMPLATE_APPROXIMATE_SIZE_UNITS = (value0: string): string => " Approximate size: " + value0 + " units.";
+export const MOTION_TEXT_X_2 = " x " as const;
+export const MOTION_TEMPLATE_CHARACTERS_WILL_USE_IT_TO = (value0: string): string => " Characters will use it to: " + value0 + ".";
+export const MOTION_TEMPLATE_STORY_CONTEXT = (value0: string): string => " Story context: " + value0;
+export const MOTION_TEMPLATE_RETURN_ONLY_THE_DESIGN_JSON_OBJECT_WITH_KIND = (value0: string, value1: string): string => 'Return ONLY the design JSON object with "kind":"' + value0 + '" and "id":"' + value1 + '".';
+export const MOTION_TEMPLATE_BRIEF = (value0: string, value1: string): string => 'BRIEF: "' + value0 + '" — ' + value1;
+export const MOTION_TEMPLATE_VALIDATOR_WARNINGS = (value0: string): string => "VALIDATOR WARNINGS: " + value0;
+export const MOTION_TEMPLATE_CURRENT_DESIGN_JSON = (value0: string): string => "CURRENT DESIGN JSON:\n" + value0;
+export const MOTION_TEMPLATE_THIET_KE_CHUA_HOP_LE_NHO_AI_SUA = (value0: string, value1: string): string => 'Thiết kế "' + value0 + '" chưa hợp lệ (' + value1 + ") – nhờ AI sửa…";
+export const MOTION_TEXT_STRUCTURE = "structure" as const;
+export const MOTION_TEMPLATE_R = (value0: string): string => "r" + value0;
+export const MOTION_TEMPLATE_THIET_KE_VONG_10 = (value0: string, value1: string, value2: string, value3: string): string => 'Thiết kế "' + value0 + '" vòng ' + value1 + ": " + value2 + "/10" + value3;
+export const MOTION_TEMPLATE_SYMBOL_47 = (value0: string): string => " – " + value0;
+export const MOTION_TEMPLATE_BO_THIET_KE_CHUA_DAT_DUNG_DO_CO = (value0: string): string => 'Bỏ thiết kế "' + value0 + '" (chưa đạt), dùng đồ có sẵn gần nhất.';
+export const MOTION_TEMPLATE_DA_THEM_VAO_THU_VIEN_10 = (value0: string, value1: string): string => 'Đã thêm "' + value0 + '" vào thư viện (' + value1 + "/10).";
+export const MOTION_TEMPLATE_THIET_KE_MOI_DAO_CU_BOI_CANH_CON = (value0: string, value1: string): string => "Thiết kế mới " + value0 + " đạo cụ/bối cảnh còn thiếu trong thư viện: " + value1;
+export const MOTION_TEMPLATE_LOI_THIET_KE = (value0: string, value1: string): string => 'Lỗi thiết kế "' + value0 + '": ' + value1;
+export const MOTION_TEMPLATE_NEW_ITEMS_DESIGNED_FOR_THIS_STORY_PREFER_THEM = (value0: string): string => "\nNEW ITEMS DESIGNED FOR THIS STORY (prefer them where the narration shows them): " + value0;
+export const MOTION_TEXT_SCORE = "score" as const;
+export const MOTION_TEXT_BRIEF = "brief" as const;
+export const MOTION_TEXT_KHONG_CO_YEU_CAU_THIET_KE_HOP_LE = "Không có yêu cầu thiết kế hợp lệ (id mới, tên, mô tả)." as const;
+export const MOTION_TEXT_LIST_AT_MOST_6_ISSUES_EACH_A_CONCRETE =
+  "List at most 6 issues, each a concrete fix instruction that names the part to change (for example: make the table legs twice as thick; move the window to x = -300; add a darker bottom band to the counter). For places also judge whether the wall is filled with rich, life-size, story-specific decoration around the centre and whether the room reads instantly." as const;
+export const MOTION_TEXT_RETURN_ONLY_SCORE_N_ISSUES_FIX_INSTRUCTION = 'Return only {"score":n,"issues":["fix instruction"]}.' as const;
+export const MOTION_TEXT_PLACE_COMPOSITION_AROUND_THE_CENTRE_OF_THE_ROOM =
+  "PLACE COMPOSITION: around the centre of the room (x = width/2 ± 900) place 4-7 rich, life-size focal elements on the back wall and in props (for example shelves 200 wide, windows 170 x 280, a 180 cm mannequin, a counter), plus a repeating rhythm element across the whole width. Nothing important should be smaller than 60 units. Use props (lane back or mid) for free-standing furniture so characters can interact with it." as const;
+export const MOTION_TEMPLATE_REVISION_THE_FIRST_ATTACHED_IMAGES_ARE_RENDERS_OF = (value0: string, value1: string): string => "REVISION: the first attached images are renders of your previous design. The art director scored it " + value0 + "/10 and asks you to fix:\n- " + value1;
+export const MOTION_TEXT_SYMBOL_48 = "\n- " as const;
+export const MOTION_TEMPLATE_PREVIOUS_DESIGN_JSON = (value0: string): string => "PREVIOUS DESIGN JSON:\n" + value0;
+export const MOTION_TEXT_RETURN_THE_IMPROVED_FULL_DESIGN_JSON_SAME_ID = "Return the improved FULL design JSON (same id and kind). Keep what already works." as const;
+export const MOTION_TEMPLATE_AI_THIET_KE_TRA_LOI_THU_LAI = (value0: string): string => "AI thiết kế trả lỗi (" + value0 + ") – thử lại…";
+export const MOTION_TEXT_RAISE_OVERALL_CRAFTSMANSHIP = "raise overall craftsmanship" as const;
+export const MOTION_TEMPLATE_PLACE_FURNITURE_PROPS_AND_LAYER_ELEMENTS_MAY_ONLY = (value0: string): string =>
+  "PLACE FURNITURE: props and layer elements may only use these existing library ids: " + value0 + '. Anything else the place needs (a special counter, a mannequin, a mirror, shelves of cloth…) must be designed inside the place JSON in "assets":[full asset design JSON, …] (max 6, same asset format, each with its own id, size and shapes) and then referenced by that id in props or elements.';
+export const MOTION_TEMPLATE_PLACE_FURNITURE_PROPS_AND_LAYER_ELEMENTS_MAY_USE = (value0: string): string =>
+  "PLACE FURNITURE: props and layer elements may use these existing library ids: " +
+  value0 +
+  '. Do NOT draw custom furniture inside the place JSON. If the place needs free-standing objects the library lacks (a special counter, a mannequin, a standing mirror, a cloth shelf…), list them in "needs":[{"id":"new_snake_id","name","brief","size":[w,h],"use"}] (max 3) and reference those ids in props — they are designed separately by the prop team. Wall-mounted decoration (shelves on the wall, windows, posters, fans, clocks) is drawn directly in the layers.';
+export const MOTION_TEMPLATE_CAN_THEM_DO_RIENG = (value0: string, value1: string): string => '"' + value0 + '" cần thêm đồ riêng: ' + value1;
+export const MOTION_TEXT_ARTIFACTTYPE = '{"artifactType"' as const;
+export const MOTION_TEXT_SYMBOL_49 = "\\" as const;
+export const MOTION_TEXT_SYMBOL_50 = "[" as const;
+export const MOTION_TEXT_SYMBOL_51 = "]" as const;
+export const MOTION_TEXT_TABLETOP = "tabletop" as const;
+export const MOTION_TEXT_WALL = "wall" as const;
+export const MOTION_TEXT_PLACEMENT_ADD_PLACE_FLOOR_STANDS_ON_THE_GROUND = 'PLACEMENT: add "place": "floor" (stands on the ground), "tabletop" (small object that sits on a table or counter — the director puts it on one) or "wall" (hangs on the wall; add "mountY" = height of its bottom edge above the floor, e.g. 140 for a wall clock).' as const;
+export const MOTION_TEMPLATE_BAN_VE_LAI_CHI_DAT_10_THAP_HON = (value0: string, value1: string, value2: string): string => 'Bản vẽ lại "' + value0 + '" chỉ đạt ' + value1 + "/10, thấp hơn bản cũ (" + value2 + "/10) – giữ bản cũ.";
+export const MOTION_TEMPLATE_VE_LAI = (value0: string): string => 'Vẽ lại "' + value0 + '"…';
+export const MOTION_TEMPLATE_SYMBOL_48 = (value0: string): string => value0 + "-";
+export const MOTION_TEMPLATE_SYMBOL_49 = (value0: string, value1: string, value2: string): string => value0 + "/" + value1 + "/" + value2;
+export const MOTION_TEXT_KHONG_TIM_THAY_THIET_KE = "Không tìm thấy thiết kế" as const;
+export const MOTION_TEXT_KHONG_TIM_THAY_ANH = "Không tìm thấy ảnh" as const;
+export const MOTION_TEXT_2_DIGIT = "2-digit" as const;
+export const MOTION_TEXT_NUMERIC = "numeric" as const;
+export const MOTION_TEXT_TOP = "top" as const;
+export const MOTION_TEXT_DESIGNED = "designed" as const;
+export const MOTION_TEMPLATE_DESIGN_REDRAWN = (value0: string): string => 'Đã vẽ lại "' + value0 + '".';
+export const MOTION_TEXT_TRANSPARENT = "transparent" as const;
+export const MOTION_TEXT_ASPECT_VIDEO = "aspect-video" as const;
+export const MOTION_TEXT_RESIZE_NONE_LEADING_RELAXED = "resize-none leading-relaxed" as const;
+export const MOTION_DESIGN_REDRAW_SUFFIX = "/redesign" as const;
+export const MOTION_TEMPLATE_DESIGN_ITEM_URL = (base: string, id: string, suffix: string): string => `${base}/${id}${suffix}`;
+export const MOTION_TEMPLATE_DESIGN_FILE_URL = (base: string, relativePath: string): string => `${base}?path=${relativePath}`;

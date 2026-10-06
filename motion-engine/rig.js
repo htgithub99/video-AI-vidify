@@ -708,6 +708,9 @@
   const hatCol = (ch, pal, def) => (ch.colors && ch.colors.hat ? pal.hat : def);
   const OUTFIT_EXTRA = {};
   const ACC_EXTRA = {};
+  const HELD_EXTRA = {};
+  const HELD_ALIAS = {};
+  ME.HELD_ALIAS = HELD_ALIAS;
   ME.CHAR_FX = ME.CHAR_FX || {};
   ME.charFx = (draw) => (g, chIn, o) => {
     const ch = typeof chIn === MT.STRING ? ME.registry.characters[chIn] || (ME.customCharacters && ME.customCharacters[chIn]) : chIn;
@@ -1291,7 +1294,7 @@
   };
   const HELD_KINDS = { pickaxe: 1, torch: 1, drill: 1, flashlight: 1, marker: 1, phone: 1, bottle: 1, box: 1, bag_shoulder: 1, bag_drag: 1, briefcase: 1 };
   const heldKindFor = (pose, o, acc) => {
-    if (pose.hold) return pose.hold;
+    if (pose.hold) return HELD_ALIAS[pose.hold] ? HELD_ALIAS[pose.hold](acc, o) : pose.hold;
     if (o && o.hold) {
       if (HELD_KINDS[o.hold]) return o.hold;
       const mapped = ME.HOLDABLE && ME.HOLDABLE[o.hold];
@@ -1404,7 +1407,7 @@
       g.fillStyle = MT.VALUE_24190F;
       g.fillRect(hand[0] - 4, hand[1] - 1, 8, 4);
       return;
-    }
+    } else if (HELD_EXTRA[kind]) HELD_EXTRA[kind](g, pal, t, ang);
     void t;
     g.restore();
   };
@@ -1559,7 +1562,7 @@
     return sk;
   };
   ME.drawCharacter = ME.charFx(ME.drawCharacter);
-  ME.rigInternals = { GROUND_LOCK, STAND_FOOT_Y, heldKindFor, drawHeld, drawHeldAsset, HELD_KINDS, palette, HEADWEAR_EXTRA, OUTFIT_EXTRA, ACC_EXTRA };
+  ME.rigInternals = { GROUND_LOCK, STAND_FOOT_Y, heldKindFor, drawHeld, drawHeldAsset, HELD_KINDS, palette, HEADWEAR_EXTRA, OUTFIT_EXTRA, ACC_EXTRA, HELD_EXTRA, HELD_ALIAS };
   const rimCache = {};
   const rimPal = (rim) => {
     const col = rim.color || MT.FFCF9A;

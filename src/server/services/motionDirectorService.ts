@@ -1,4 +1,3 @@
-import _ from "lodash";
 import {
   MOTION_TEMPLATE_P,
   MOTION_TEMPLATE_SYMBOL_12,
@@ -8,14 +7,10 @@ import {
   MOTION_TEXT_AERIAL,
   MOTION_TEXT_AIRCRAFT,
   MOTION_TEXT_AIRPLANE,
-  MOTION_TEXT_AIRPLANE_SEAT,
   MOTION_TEXT_AMOUNT,
   MOTION_TEXT_ANIMAL,
   MOTION_TEXT_ARMORED_TRUCK,
   MOTION_TEXT_BACK,
-  MOTION_TEXT_BANK_VAULT,
-  MOTION_TEXT_BED,
-  MOTION_TEXT_BENCH,
   MOTION_TEXT_BICYCLE,
   MOTION_TEXT_BLOCK,
   MOTION_TEXT_BUS,
@@ -23,7 +18,6 @@ import {
   MOTION_TEXT_CAR_SEDAN,
   MOTION_TEXT_CAR_VINTAGE,
   MOTION_TEXT_CCTV_CAMERA,
-  MOTION_TEXT_CHAIR,
   MOTION_TEXT_CHAPTER,
   MOTION_TEXT_CHARGE,
   MOTION_TEXT_CINEMA,
@@ -56,6 +50,7 @@ import {
   MOTION_TEXT_FADE,
   MOTION_TEXT_FFB070,
   MOTION_TEXT_FLASHLIGHT,
+  MOTION_TEXT_FLY,
   MOTION_TEXT_FOCUS,
   MOTION_TEXT_FOG,
   MOTION_TEXT_FOLLOW,
@@ -68,7 +63,6 @@ import {
   MOTION_TEXT_HEADLINE,
   MOTION_TEXT_HELICOPTER,
   MOTION_TEXT_HIT,
-  MOTION_TEXT_HOSPITAL_BED,
   MOTION_TEXT_IDLE,
   MOTION_TEXT_ILLUSTRATION,
   MOTION_TEXT_INSERT,
@@ -89,7 +83,6 @@ import {
   MOTION_TEXT_NIGHT_SKY,
   MOTION_TEXT_NONE,
   MOTION_TEXT_OBJECT,
-  MOTION_TEXT_OFFICE,
   MOTION_TEXT_PAINT,
   MOTION_TEXT_PAN,
   MOTION_TEXT_PAN_LEFT,
@@ -113,18 +106,18 @@ import {
   MOTION_TEXT_RIDE_PASSENGER,
   MOTION_TEXT_RIGHT,
   MOTION_TEXT_RIGHT_TO_LEFT,
-  MOTION_TEXT_RUBBLE,
   MOTION_TEXT_RUN,
   MOTION_TEXT_SAFE_DEPOSIT_WALL,
   MOTION_TEXT_SCENE,
   MOTION_TEXT_SCOOTER,
   MOTION_TEXT_SIT,
+  MOTION_TEXT_SIT_AFRAID,
   MOTION_TEXT_SIT_EAT,
+  MOTION_TEXT_SIT_HANDS_UP,
   MOTION_TEXT_SKY,
   MOTION_TEXT_SMALL_PLANE,
   MOTION_TEXT_SMARTPHONE,
   MOTION_TEXT_SNEAK,
-  MOTION_TEXT_SOFA,
   MOTION_TEXT_SO_DO_MINH_HOA,
   MOTION_TEXT_STAND,
   MOTION_TEXT_STATS,
@@ -139,7 +132,6 @@ import {
   MOTION_TEXT_TELEPHONE,
   MOTION_TEXT_TEXT,
   MOTION_TEXT_THINK,
-  MOTION_TEXT_THRONE,
   MOTION_TEXT_TIMELINE,
   MOTION_TEXT_TITLE,
   MOTION_TEXT_TOWARD_CENTER,
@@ -156,9 +148,11 @@ import {
   MOTION_TEXT_WINE_BOTTLE,
   MOTION_TEXT_X,
 } from "../../constants/motionRuntime.js";
+import _ from "lodash";
 import { MOTION_ASPECT_BASE, MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import type { MotionBeat, MotionBeatActor, MotionBeatCrowd, MotionBeatProp, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript } from "../../types/motionVideo.js";
 import { loadMotionEngine } from "./motionEngineService.js";
+import { applySetPieces, castRolesOf, stageInteractions, validateScene } from "./motionSetPieceService.js";
 const FRAME_H: Record<string, number> = { "16:9": 1080, "9:16": 1500, "1:1": 1150, "4:5": 1260 };
 const LOCOMOTION = [MOTION_TEXT_WALK, MOTION_TEXT_RUN, MOTION_TEXT_SNEAK, MOTION_TEXT_CRAWL, MOTION_TEXT_CARRY, MOTION_TEXT_DRAG, MOTION_TEXT_PUSH, MOTION_TEXT_SWIM];
 const SPEED: Record<string, number> = { walk: 190, run: 420, sneak: 110, crawl: 70, carry: 150, drag: 90, push: 110, swim: 120 };
@@ -305,7 +299,7 @@ const HANDS_BUSY = [
   MOTION_TEXT_DRIVE,
 ];
 const ACTION_TOOL_ASSETS: Record<string, string[]> = { dig: [MOTION_TEXT_PICKAXE], sweep_light: [MOTION_TEXT_FLASHLIGHT], drill: [MOTION_TEXT_POWER_DRILL], phone: [MOTION_TEXT_SMARTPHONE, MOTION_TEXT_TELEPHONE], drink: [MOTION_TEXT_WINE_BOTTLE], carry: [MOTION_TEXT_MONEY_BAG, MOTION_TEXT_DUFFEL_BAG], drag: [MOTION_TEXT_MONEY_BAG, MOTION_TEXT_DUFFEL_BAG] };
-const SEATED = [MOTION_TEXT_SIT, MOTION_TEXT_SIT_EAT, MOTION_TEXT_TYPE];
+const SEATED = [MOTION_TEXT_SIT, MOTION_TEXT_SIT_EAT, MOTION_TEXT_TYPE, MOTION_TEXT_FLY, MOTION_TEXT_SIT_AFRAID, MOTION_TEXT_SIT_HANDS_UP];
 const KEEP_IF_BUILTIN = [MOTION_TEXT_FURNITURE, MOTION_TEXT_PROP, MOTION_TEXT_VEHICLE, MOTION_TEXT_ANIMAL, MOTION_TEXT_AIRCRAFT, MOTION_TEXT_WATERCRAFT];
 const PERSONAL_SPACE = 95;
 interface StagedActor {
@@ -318,6 +312,10 @@ interface StagedActor {
   shortWalk: boolean;
   hold?: string;
   facing?: "left" | "right";
+  seated?: boolean;
+  placed?: boolean;
+  y?: number;
+  z?: number;
 }
 interface StagedItem {
   src: MotionBeatProp;
@@ -326,13 +324,15 @@ interface StagedItem {
   scale?: number;
   halfW: number;
   furniture: boolean;
+  seat?: boolean;
+  y?: number;
 }
 const fixLane = (lane: string | undefined, allowed: string[] | undefined, fallback: LaneName): LaneName => {
   const want = (_.includes(LANES_ORDERED, lane) ? lane : fallback) as LaneName;
   if (!allowed?.length || _.includes(allowed, want)) return want;
   return _.minBy(allowed as LaneName[], (l) => Math.abs((LANE_INDEX[l] ?? 2) - (LANE_INDEX[want] ?? 2))) || fallback;
 };
-const stageScene = (beat: MotionBeat, frame: Frame): { actors: StagedActor[]; items: StagedItem[] } => {
+const stageScene = (beat: MotionBeat, frame: Frame, rolesOf: (key: string) => string[]): { actors: StagedActor[]; items: StagedItem[]; focusX?: number } => {
   const info = loadMotionEngine().registryInfo;
   const envInfo = info.envs[beat.env || MOTION_TEXT_CITY_STREET] || { width: 3200 };
   const assets = info.assets;
@@ -398,10 +398,11 @@ const stageScene = (beat: MotionBeat, frame: Frame): { actors: StagedActor[]; it
     const halfW = ((size[0] || 200) * (scale || 1)) / 2;
     return { src: p, lane: fixLane(p.lane, envInfo.lanes, MOTION_TEXT_MID), x: xOf(p.pos == null ? 0.5 : _.clamp(p.pos, 0, 1)), scale, halfW, furniture: !moving && (a.category === MOTION_TEXT_FURNITURE || (size[0] || 0) * (scale || 1) >= 150) };
   });
+  const { focusX } = stageInteractions(beat, envInfo, actors, items, frame, rolesOf);
   for (const a of actors) {
-    if (a.move !== MOTION_TEXT_STAY) continue;
+    if (a.move !== MOTION_TEXT_STAY || a.seated || a.placed) continue;
     for (const it of items) {
-      if (!it.furniture || it.lane !== a.lane) continue;
+      if (!it.furniture || it.seat || it.lane !== a.lane) continue;
       if (Math.abs(a.x - it.x) > it.halfW + 25) continue;
       const laneOk = (i: number) => i >= 0 && i <= 2 && (!envInfo.lanes?.length || _.includes(envInfo.lanes, LANES_ORDERED[i]));
       const worksThere = _.includes(SEATED, a.action) || _.includes([MOTION_TEXT_STAND, MOTION_TEXT_IDLE, MOTION_TEXT_TALK, MOTION_TEXT_THINK, MOTION_TEXT_HANDS_POCKET, MOTION_TEXT_LOOK_AROUND, MOTION_TEXT_PHONE], a.action);
@@ -417,38 +418,16 @@ const stageScene = (beat: MotionBeat, frame: Frame): { actors: StagedActor[]; it
     for (let j = 0; j < i; j++) {
       const a = standing[i],
         b = standing[j];
+      if (a.seated || b.seated || a.placed || b.placed) continue;
       if (Math.abs(LANE_INDEX[a.lane] - LANE_INDEX[b.lane]) <= 1 && Math.abs(a.x - b.x) < 75) a.x = b.x + (a.x >= b.x ? 85 : -85);
     }
-  const safeStory = beat.env === MOTION_TEXT_BANK_VAULT || /(két|tủ sắt|kho tiền|hầm tiền|\bsafes?\b|vault|strongbox)/i.test(beat.narration || "");
-  for (const a of actors) {
-    if (!safeStory || (a.action !== MOTION_TEXT_DRILL && a.action !== MOTION_TEXT_WELD && a.then !== MOTION_TEXT_DRILL && a.then !== MOTION_TEXT_WELD) || a.move !== MOTION_TEXT_STAY) continue;
-    const face = a.facing === MOTION_TEXT_LEFT ? -1 : a.facing === MOTION_TEXT_RIGHT ? 1 : a.x <= cx ? 1 : -1;
-    a.facing = face > 0 ? MOTION_TEXT_RIGHT : MOTION_TEXT_LEFT;
-    items.push({ src: { asset: MOTION_TEXT_SAFE_DEPOSIT_WALL, move: MOTION_TEXT_STAY, params: { w: 150, h: 190, opened: 0.35, seed: Math.round(a.x) } }, lane: a.lane, x: a.x + face * 115, halfW: 75, furniture: true });
-  }
-  const SEATS = [MOTION_TEXT_CHAIR, MOTION_TEXT_SOFA, MOTION_TEXT_BENCH, MOTION_TEXT_THRONE, MOTION_TEXT_BED, MOTION_TEXT_AIRPLANE_SEAT, MOTION_TEXT_HOSPITAL_BED];
-  for (const a of actors) {
-    if (a.move !== MOTION_TEXT_STAY || !(_.includes(SEATED, a.action) || (a.then && _.includes(SEATED, a.then)))) continue;
-    if (_.some(items, (it) => _.includes(SEATS, it.src.asset) && Math.abs(it.x - a.x) < 90)) continue;
-    if (_.includes(envInfo.builtins || [], MOTION_TEXT_CHAIR) && beat.env === MOTION_TEXT_OFFICE) continue;
-    const face = a.facing || (a.x < cx - 30 ? MOTION_TEXT_RIGHT : a.x > cx + 30 ? MOTION_TEXT_LEFT : MOTION_TEXT_RIGHT);
-    a.facing = face;
-    items.push({ src: { asset: MOTION_TEXT_CHAIR, move: MOTION_TEXT_STAY, facing: face }, lane: a.lane, x: a.x, scale: 1, halfW: 35, furniture: false });
-  }
-  for (const a of actors) {
-    if (a.action !== MOTION_TEXT_DIG && a.then !== MOTION_TEXT_DIG) continue;
-    if (_.some(items, (it) => it.src.asset === MOTION_TEXT_RUBBLE && Math.abs(it.x - a.x) < 260)) continue;
-    const face = a.facing === MOTION_TEXT_LEFT ? -1 : a.facing === MOTION_TEXT_RIGHT ? 1 : a.x <= cx ? 1 : -1;
-    a.facing = face > 0 ? MOTION_TEXT_RIGHT : MOTION_TEXT_LEFT;
-    const r = assets.rubble?.size || [200, 60];
-    const sc = 0.55;
-    items.push({ src: { asset: MOTION_TEXT_RUBBLE, move: MOTION_TEXT_STAY }, lane: a.lane, x: a.x + face * 85, scale: sc, halfW: (r[0] * sc) / 2, furniture: false });
-  }
-  return { actors, items };
+  return { actors, items, focusX };
 };
 const actorSpec = (a: StagedActor, all: StagedActor[], items: StagedItem[], frame: Frame, dur: number, index: number): Record<string, unknown> => {
   const { cx, vw } = frame;
   const out: Record<string, unknown> = { who: a.src.cast, lane: a.lane };
+  if (a.y) out.y = a.y;
+  if (a.z) out.z = a.z;
   if (a.hold) {
     out.hold = a.hold;
     if (a.src.holdFrom != null) out.holdFrom = a.src.holdFrom;
@@ -612,7 +591,9 @@ const compileDrawnBeatParams = (beat: MotionBeat, analysis: MotionStoryAnalysis 
   switch (beat.visual) {
     case MOTION_TEXT_SCENE: {
       const { frame, camera } = frameFor(beat, aspect, prevShot);
-      const staged = stageScene(beat, frame);
+      const rolesOf = castRolesOf(analysis);
+      const staged = stageScene(beat, frame, rolesOf);
+      if (staged.focusX != null && camera.follow == null) camera.x = staged.focusX;
       const focusIdx0 = beat.focus ? _.findIndex(staged.items, (it) => it.src.asset === beat.focus) : -1;
       if (beat.shot === MOTION_TEXT_INSERT && focusIdx0 >= 0) {
         const it = staged.items[focusIdx0];
@@ -654,7 +635,14 @@ const compileDrawnBeatParams = (beat: MotionBeat, analysis: MotionStoryAnalysis 
         if (a.move === MOTION_TEXT_STAY && a.facing) specs[i].facing = a.facing;
       });
       const actors = specs;
-      const items = _.map(staged.items, (it) => propItem({ ...it.src, lane: it.lane, scale: it.scale }, frame, dur, beat.time, it.x));
+      const items = _.map(staged.items, (it) => {
+        const out = propItem({ ...it.src, lane: it.lane, scale: it.scale }, frame, dur, beat.time, it.x);
+        if (it.y) out.y = it.y;
+        return out;
+      });
+      const envStaging = loadMotionEngine().registryInfo.envs[beat.env || MOTION_TEXT_CITY_STREET]?.staging;
+      const setPieceStyle = applySetPieces(beat, envStaging, camera, actors, items, rolesOf, frame);
+      stagingIssues.push(...validateScene(beat.id, camera, actors, items, frame));
       const focusIdx = beat.focus ? _.findIndex(staged.items, (it) => it.src.asset === beat.focus) : -1;
       if (focusIdx >= 0 && (beat.shot === MOTION_TEXT_INSERT || beat.shot === MOTION_TEXT_CLOSE || beat.shot === MOTION_TEXT_PUSH_IN)) {
         const it = staged.items[focusIdx];
@@ -675,6 +663,8 @@ const compileDrawnBeatParams = (beat: MotionBeat, analysis: MotionStoryAnalysis 
         }
       }
       const params: Record<string, unknown> = { ...(beat.sceneParams || {}), env: beat.env, time: beat.time, camera, actors, items };
+      if (envStaging?.hideProps?.length) params.hideEnvProps = envStaging.hideProps;
+      if (setPieceStyle && params.figureStyle == null) params.figureStyle = setPieceStyle;
       if (beat.sceneAnim && !_.isEmpty(beat.sceneAnim)) params.anim = beat.sceneAnim;
       const envLanes = loadMotionEngine().registryInfo.envs[beat.env || MOTION_TEXT_CITY_STREET]?.lanes;
       if (beat.crowds?.length) params.crowds = _.map(_.take(beat.crowds, 4), (c, i) => crowdSpec({ ...c, lane: fixLane(c.lane, envLanes, MOTION_TEXT_BACK) as MotionBeatCrowd["lane"] }, frame, dur, i));
@@ -736,6 +726,7 @@ const compileDrawnBeatParams = (beat: MotionBeat, analysis: MotionStoryAnalysis 
       return { template: MOTION_TEXT_QUOTE, params: { text: beat.narration } };
   }
 };
+let stagingIssues: string[] = [];
 const ART_SCENE_VISUALS = [MOTION_TEXT_SCENE, MOTION_TEXT_OBJECT];
 const ART_BG_VISUALS = [MOTION_TEXT_TITLE, MOTION_TEXT_ENDING, MOTION_TEXT_CHAPTER, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER];
 const artSeed = (id: string): number => _.reduce(_.toString(id).split(""), (h, ch) => (h * 31 + ch.charCodeAt(0)) % 997, 7);
@@ -763,8 +754,10 @@ export interface CompiledStory {
   starts: number[];
   ends: number[];
   sfxCues: { t: number; kind: "hit" | "rise" | "chapter" }[];
+  stagingIssues: string[];
 }
 export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string }): CompiledStory => {
+  stagingIssues = [];
   const beats = script.beats;
   if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO);
   const durations = _.map(beats, (b, i) => opts.durations?.[i] || b.duration || estimateBeatSeconds(b, script.language));
@@ -834,5 +827,5 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitles,
     duration: +total.toFixed(3),
   };
-  return { spec, starts, ends, sfxCues };
+  return { spec, starts, ends, sfxCues, stagingIssues: [...stagingIssues] };
 };
