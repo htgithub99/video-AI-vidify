@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Loader2, Mic, Monitor, PlayCircle, RefreshCw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Wand2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Loader2, Mic, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -75,8 +75,6 @@ import {
   MOTION_TEXT_SYMBOL_12,
   MOTION_TEXT_SYMBOL_2,
   MOTION_TEXT_SYMBOL_21,
-  MOTION_TEXT_SYMBOL_25,
-  MOTION_TEXT_SYMBOL_27,
   MOTION_TEXT_SYMBOL_3,
   MOTION_TEXT_SYMBOL_4,
   MOTION_TEXT_SYMBOL_43,
@@ -617,19 +615,62 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               {!_.isEmpty(gen?.locationInfo) && (
                 <div className={MOTION_STYLES.SPACE_Y_1_5}>
                   <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>{text.SCENES_LOCATIONS}</div>
-                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_1_5}>
+                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
                     {_.map(gen!.locationInfo, (info, key) => (
-                      <div key={key} className={MOTION_STYLES.RELATIVE_ASPECT_VIDEO_ROUNDED_LG_OVERFLOW_HIDDEN_BORDER_BORDER_SLATE_800_BG_SLATE_900} title={(info.issues || []).join(MOTION_TEXT_SYMBOL_27)}>
-                        {info.files?.[0] && <img src={genPreviewUrl(info.files[0], info.at)} alt={key} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER} loading={MOTION_TEXT_LAZY} />}
-                        <span className={MOTION_STYLES.ABSOLUTE_LEFT_1_BOTTOM_1_PX_1_ROUNDED_BG_BLACK_60_TEXT_8PX}>
-                          {key}
-                          {MOTION_TEXT_SYMBOL_10}
-                          {info.score ?? MOTION_TEXT_SYMBOL_25}
-                          {MOTION_TEXT_10}
-                        </span>
-                        <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ locations: [key], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.ABSOLUTE_RIGHT_1_TOP_1_PX_1_5_PY_0_5_ROUNDED_BG_BLACK_70}>
-                          {text.SCENES_REDO_LOCATION}
-                        </button>
+                      <div
+                        key={key}
+                        className={MOTION_STYLES.LOCATION_CARD_CONTAINER}
+                        title={(info.issues || []).join(MOTION_TEXT_SYMBOL_10)}
+                      >
+                        {info.files?.[0] ? (
+                          <img
+                            src={genPreviewUrl(info.files[0], info.at)}
+                            alt={key}
+                            className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE}
+                            loading={MOTION_TEXT_LAZY}
+                          />
+                        ) : (
+                          <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>
+                            {key}
+                          </div>
+                        )}
+
+                        {/* Gradient overlay on hover/bottom */}
+                        <div className={MOTION_STYLES.LOCATION_OVERLAY_GRADIENT} />
+
+                        {/* Location Name & Score Badge */}
+                        <div className={MOTION_STYLES.LOCATION_BOTTOM_BADGE_BAR}>
+                          <span className={MOTION_STYLES.LOCATION_NAME_BADGE}>
+                            {key}
+                          </span>
+                          {info.score != null && (
+                            <span
+                              className={cn(
+                                MOTION_STYLES.LOCATION_SCORE_BASE,
+                                info.score >= 8
+                                  ? MOTION_STYLES.SCORE_EMERALD
+                                  : info.score >= 6
+                                  ? MOTION_STYLES.SCORE_PURPLE
+                                  : MOTION_STYLES.SCORE_AMBER
+                              )}
+                            >
+                              {info.score}{MOTION_TEXT_10}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Redraw Button */}
+                        <Button
+                          variant={MOTION_TEXT_UNSTYLED}
+                          type={MOTION_TEXT_BUTTON}
+                          onClick={() => void studio.buildScenes({ locations: [key], note: sceneNote || undefined })}
+                          disabled={studio.storyBusy}
+                          title={text.SCENES_REDO_LOCATION}
+                          aria-label={text.SCENES_REDO_LOCATION}
+                          className={MOTION_STYLES.REDO_CIRCLE_BUTTON}
+                        >
+                          <RotateCcw className={MOTION_STYLES.REDO_ICON_ROTATING} />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -641,16 +682,79 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     {text.SCENES_BEATS}
                     {gen?.failed?.length ? MOTION_TEMPLATE_SYMBOL_57(`${gen.failed.length}`, `${text.SCENES_FAILED}`) : ""}
                   </div>
-                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_1_5_MAX_H_360PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
+                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2_MAX_H_360PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                     {_.map(sceneBeats, (b) => {
                       const pv = gen?.previews?.[b.id];
                       const bad = !gen?.staging?.[b.id] || (pv?.score != null && pv.score < 6);
                       return (
-                        <div key={b.id} className={cn(MOTION_STYLES.RELATIVE_ASPECT_VIDEO_ROUNDED_LG_OVERFLOW_HIDDEN_BORDER_BG_SLATE_900_GROUP, bad ? MOTION_STYLES.BORDER_AMBER_500_60 : MOTION_STYLES.BORDER_SLATE_800)} title={[b.narration, b.action, ...(pv?.issues || []), pv?.note || ""].filter(Boolean).join(MOTION_TEXT_SYMBOL_27)}>
-                          {pv?.file ? <img src={genPreviewUrl(pv.file, pv.at)} alt={b.id} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER} loading={MOTION_TEXT_LAZY} /> : <div className={MOTION_STYLES.W_FULL_H_FULL_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_9PX_FONT_MONO}>{b.id}</div>}
-                          <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ beats: [b.id], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.ABSOLUTE_RIGHT_1_TOP_1_PX_1_5_PY_0_5_ROUNDED_BG_BLACK_70}>
-                            {text.SCENES_REDO}
-                          </button>
+                        <div
+                          key={b.id}
+                          className={cn(
+                            MOTION_STYLES.SCENE_BEAT_CARD_BASE,
+                            bad
+                              ? MOTION_STYLES.SCENE_BEAT_CARD_BAD
+                              : MOTION_STYLES.SCENE_BEAT_CARD_GOOD
+                          )}
+                          title={[b.narration, b.action, ...(pv?.issues || []), pv?.note || ""].filter(Boolean).join(MOTION_TEXT_SYMBOL_10)}
+                        >
+                          {pv?.file ? (
+                            <img
+                              src={genPreviewUrl(pv.file, pv.at)}
+                              alt={b.id}
+                              className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE}
+                              loading={MOTION_TEXT_LAZY}
+                            />
+                          ) : (
+                            <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>
+                              {b.id}
+                            </div>
+                          )}
+
+                          {/* Gradient overlay on hover/bottom */}
+                          <div className={MOTION_STYLES.LOCATION_OVERLAY_GRADIENT} />
+
+                          {/* Beat ID & Warning Badge */}
+                          <div className={MOTION_STYLES.SCENE_BEAT_TOP_BADGE_BAR}>
+                            <span className={MOTION_STYLES.SCENE_BEAT_ID_BADGE}>
+                              {b.id}
+                            </span>
+                            {bad && (
+                              <span className={MOTION_STYLES.SCENE_BEAT_WARNING_BADGE}>
+                                <AlertTriangle className={MOTION_STYLES.W_2_5_H_2_5} />
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Beat Score Badge */}
+                          {pv?.score != null && (
+                            <div className={MOTION_STYLES.SCENE_BEAT_BOTTOM_SCORE_BAR}>
+                              <span
+                                className={cn(
+                                  MOTION_STYLES.LOCATION_SCORE_BASE,
+                                  pv.score >= 8
+                                    ? MOTION_STYLES.SCORE_EMERALD
+                                    : pv.score >= 6
+                                    ? MOTION_STYLES.SCORE_PURPLE
+                                    : MOTION_STYLES.SCORE_AMBER
+                                )}
+                              >
+                                {pv.score}{MOTION_TEXT_10}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Redraw Button */}
+                          <Button
+                            variant={MOTION_TEXT_UNSTYLED}
+                            type={MOTION_TEXT_BUTTON}
+                            onClick={() => void studio.buildScenes({ beats: [b.id], note: sceneNote || undefined })}
+                            disabled={studio.storyBusy}
+                            title={text.SCENES_REDO}
+                            aria-label={text.SCENES_REDO}
+                            className={MOTION_STYLES.REDO_CIRCLE_BUTTON}
+                          >
+                            <RotateCcw className={MOTION_STYLES.REDO_ICON_ROTATING} />
+                          </Button>
                         </div>
                       );
                     })}
