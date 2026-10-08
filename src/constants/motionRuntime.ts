@@ -3,9 +3,6 @@ export const MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P = "glass-card r
 export const MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL = "w-full px-3 py-2 rounded-xl bg-slate-955/70 border border-slate-800 text-xs text-slate-100 placeholder:text-slate-500 outline-none focus:border-purple-500/60 transition-colors shadow-2xs" as const;
 export const MOTION_TEXT_BUTTON = "button" as const;
 export const MOTION_TEXT_PRIMARY = "primary" as const;
-export const MOTION_TEXT_BG_GRADIENT_TO_R_FROM_AMBER_500_VIA = "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:brightness-110 text-white shadow-lg shadow-purple-600/25 border border-purple-400/30" as const;
-export const MOTION_TEXT_BG_SLATE_100_DARK_BG_SLATE_800_80 = "bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700" as const;
-export const MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT = "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/25 border border-rose-500/30" as const;
 export const MOTION_TEXT_SYMBOL = "…" as const;
 export const MOTION_TEXT_VI = "vi" as const;
 export const MOTION_TEMPLATE_SYMBOL = (value0: string, value1: string): string => value0 + " (" + value1 + ")";
@@ -48,7 +45,6 @@ export const MOTION_TEMPLATE_SYMBOL_2 = (value0: string): string => "(" + value0
 export const MOTION_TEXT_SCENE = "scene" as const;
 export const MOTION_TEXT_SYMBOL_10 = " · " as const;
 export const MOTION_TEXT_SYMBOL_11 = "▶" as const;
-export const MOTION_TEXT_LIVE_2_5D_CANVAS = "Live 2.5D Canvas" as const;
 export const MOTION_TEXT_04 = "04" as const;
 export const MOTION_TEXT_AI_VOICE = "AI Voice" as const;
 export const MOTION_TEXT_SYMBOL_12 = "×" as const;
@@ -70,189 +66,29 @@ export const MOTION_TEXT_MOTION_VIDEO = "motion-video" as const;
 export const MOTION_TEXT_METADATA = "metadata" as const;
 export const MOTION_TEXT_FPS_2 = "fps · " as const;
 export const MOTION_TEXT_RENDER = " · render " as const;
-export const MOTION_TEXT_CHARACTERS = "characters" as const;
-export const MOTION_TEXT_LIB_CHARACTERS = "LIB_CHARACTERS" as const;
-export const MOTION_TEXT_ACTIONS = "actions" as const;
-export const MOTION_TEXT_LIB_ACTIONS = "LIB_ACTIONS" as const;
-export const MOTION_TEXT_VEHICLES = "vehicles" as const;
-export const MOTION_TEXT_LIB_VEHICLES = "LIB_VEHICLES" as const;
-export const MOTION_TEXT_NATURE = "nature" as const;
-export const MOTION_TEXT_LIB_NATURE = "LIB_NATURE" as const;
-export const MOTION_TEXT_URBAN = "urban" as const;
-export const MOTION_TEXT_LIB_URBAN = "LIB_URBAN" as const;
-export const MOTION_TEXT_PROPS = "props" as const;
-export const MOTION_TEXT_LIB_PROPS = "LIB_PROPS" as const;
-export const MOTION_TEXT_ENVIRONMENTS = "environments" as const;
-export const MOTION_TEXT_LIB_ENVIRONMENTS = "LIB_ENVIRONMENTS" as const;
-export const MOTION_TEXT_TEMPLATES = "templates" as const;
-export const MOTION_TEXT_LIB_TEMPLATES = "LIB_TEMPLATES" as const;
-export const MOTION_TEXT_MOTION_LIBRARY_VIEW = "motion-library-view" as const;
-export const MOTION_TEXT_3D = "3d" as const;
 export const MOTION_TEXT_2D = "2d" as const;
 export const MOTION_TEXT_SYMBOL_13 = " " as const;
-export const MOTION_TEXT_WALK = "walk" as const;
 export const MOTION_TEMPLATE_SYMBOL_4 = (value0: string, value1: string): string => value0 + "/" + value1;
 export const MOTION_TEXT_PUT = "PUT" as const;
 export const MOTION_TEXT_POST = "POST" as const;
-export const MOTION_TEXT_BAN_CO_CHAC_CHAN_MUON_XOA_NHAN_VAT = "Bạn có chắc chắn muốn xóa nhân vật này không?" as const;
 export const MOTION_TEXT_DELETE = "DELETE" as const;
-export const MOTION_TEXT_DANH_MUC_KHO = "Danh mục kho" as const;
 export const MOTION_TEXT_MALE = "male" as const;
-export const MOTION_TEXT_ADULT = "adult" as const;
-export const MOTION_TEXT_NORMAL = "normal" as const;
-export const MOTION_TEXT_SHORT = "short" as const;
 export const MOTION_TEXT_NONE = "none" as const;
-export const MOTION_TEXT_CASUAL = "casual" as const;
-export const MOTION_TEXT_4A5568 = "#4a5568" as const;
-export const MOTION_TEXT_2D3748 = "#2d3748" as const;
-export const MOTION_TEXT_MAN_CASUAL = "man_casual" as const;
-export const MOTION_TEXT_3D_2 = "3D" as const;
-export const MOTION_TEXT_2_5D = "2.5D" as const;
-export const MOTION_TEXT_XEM_TRUOC_CHI_TIET = "Xem trước & Chi tiết" as const;
 export const MOTION_TEXT_ID = "id" as const;
-export const MOTION_TEXT_BUILTIN = "builtin" as const;
-export const MOTION_TEXT_CREATEDAT = "createdAt" as const;
-export const MOTION_TEXT_UPDATEDAT = "updatedAt" as const;
-export const MOTION_TEMPLATE_2 = (value0: string): string => value0 + " (2)";
-export const MOTION_TEXT_CHARACTER = "character" as const;
-export const MOTION_TEXT_HANH_DONG_MAU = "Hành động mẫu" as const;
 export const MOTION_TEMPLATE_SYMBOL_5 = (value0: string, value1: string): string => value0 + "-" + value1;
 export const MOTION_TEMPLATE_SYMBOL_6 = (value0: string): string => " · " + value0;
-export const MOTION_TEXT_ASSET = "asset" as const;
-export const MOTION_TEXT_PHOTOGRAPHER = "photographer" as const;
-export const MOTION_TEXT_CHON_MOT_NHAN_VAT_HOAC_DO_VAT_DE = "Chọn một nhân vật hoặc đồ vật để xem" as const;
-export const MOTION_TEXT_KHO_CHUA_HON = "Kho chứa hơn " as const;
-export const MOTION_TEXT_NHAN_VAT = " nhân vật, " as const;
-export const MOTION_TEXT_DONG_TAC_VA_HANG_TRAM_BOI_CANH_2 = " động tác và hàng trăm bối cảnh 2.5D/3D." as const;
-export const MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL_2 = "w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-955/70 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-purple-500/50 shadow-2xs" as const;
-export const MOTION_TEXT_TEN_NHAN_VAT = "Tên nhân vật..." as const;
-export const MOTION_TEXT_GENDER = "gender" as const;
-export const MOTION_TEXT_AGE = "age" as const;
-export const MOTION_TEXT_BUILD = "build" as const;
-export const MOTION_TEXT_HAIR = "hair" as const;
-export const MOTION_TEXT_HEADWEAR = "headwear" as const;
-export const MOTION_TEXT_OUTFIT = "outfit" as const;
 export const MOTION_TEMPLATE_SYMBOL_7 = (value0: string, value1: string): string => value0 + " · " + value1;
 export const MOTION_TEXT_COLOR = "color" as const;
-export const MOTION_TEXT_888888 = "#888888" as const;
 export const MOTION_TEXT_SYMBOL_14 = ", " as const;
-export const MOTION_TEXT_SYMBOL_15 = "," as const;
-export const MOTION_TEXT_TAG_PHAN_LOAI_CACH_NHAU_BANG_DAU_PHAY = "Tag phân loại (cách nhau bằng dấu phẩy)..." as const;
-export const MOTION_TEXT_XEM_THU_MO_HINH = "Xem thử mô hình" as const;
 export const MOTION_TEXT_PREVIEW = "preview" as const;
-export const MOTION_TEXT_RGBA_251_191_36_0_16 = "rgba(251,191,36,0.16)" as const;
-export const MOTION_TEXT_RGBA_0_0_0_0 = "rgba(0,0,0,0)" as const;
-export const MOTION_TEXT_200PX = "200px" as const;
-export const MOTION_TEXT_0B1220 = "#0b1220" as const;
-export const MOTION_TEXT_151C28 = "#151c28" as const;
-export const MOTION_TEXT_MINE = "mine" as const;
-export const MOTION_TEXT_RUNNING = "running" as const;
-export const MOTION_TEXT_COMPLETED = "completed" as const;
-export const MOTION_TEMPLATE_SYMBOL_8 = (value0: string, value1: string, value2: string): string => value0 + ": " + value1 + "/" + value2;
-export const MOTION_TEXT_KHONG_DOC_DUOC_MO_HINH = "Không đọc được mô hình" as const;
-export const MOTION_TEXT_SOFT = "soft" as const;
-export const MOTION_TEXT_UNKNOWN = "unknown" as const;
-export const MOTION_TEXT_FREE = "free" as const;
-export const MOTION_TEXT_ENVS = "envs" as const;
-export const MOTION_TEXT_GUIDE = "guide" as const;
-export const MOTION_TEMPLATE_MUC = (value0: string, value1: string): string => value0 + " mục · " + value1;
-export const MOTION_TEXT_GLB_GLTF_FBX_ZIP_BIN_PNG_JPG_JPEG = ".glb,.gltf,.fbx,.zip,.bin,.png,.jpg,.jpeg,.webp,.ktx2" as const;
 export const MOTION_TEXT_SYMBOL_16 = "/" as const;
-export const MOTION_TEXT_ALL = "all" as const;
-export const MOTION_TEXT_IMPORT = "import" as const;
-export const MOTION_TEXT_ASC = "asc" as const;
-export const MOTION_TEXT_DESC = "desc" as const;
-export const MOTION_TEXT_CHUA_CO_MO_HINH_CA_NHAN_NAO = "Chưa có mô hình cá nhân nào" as const;
 export const MOTION_TEXT_MODEL = "model" as const;
 export const MOTION_TEXT_ANIMATION = "animation" as const;
-export const MOTION_TEXT_HDRI = "hdri" as const;
-export const MOTION_TEXT_TEXTURE = "texture" as const;
-export const MOTION_TEXT_TAT_CA = "∗ Tất cả" as const;
 export const MOTION_TEXT_LAZY = "lazy" as const;
-export const MOTION_TEXT_SYMBOL_17 = "→ " as const;
-export const MOTION_TEXT_BAU_TROI_HDRI = "Bầu trời HDRI" as const;
-export const MOTION_TEXT_CHAT_LIEU_PBR = "Chất liệu PBR" as const;
 export const MOTION_TEXT_XOA = "Xóa" as const;
-export const MOTION_TEXT_MODELS = "models" as const;
-export const MOTION_TEMPLATE_TYPE_SEARCH_CATEGORY_LIMIT_240 = (value0: string, value1: string, value2: string, value3: string): string => value0 + "?type=" + value1 + "&search=" + value2 + "&category=" + value3 + "&limit=240";
-export const MOTION_TEXT_POLY_HAVEN = "Poly Haven" as const;
-export const MOTION_TEXT_CATEGORIES = "categories" as const;
-export const MOTION_TEXT_POLYHAVEN = "polyhaven" as const;
-export const MOTION_TEXT_SOURCEID = "sourceId" as const;
-export const MOTION_TEXT_HDRIS = "hdris" as const;
-export const MOTION_TEXT_TEXTURES = "textures" as const;
-export const MOTION_TEXT_HTTPS_POLYHAVEN_COM_LICENSE = "https://polyhaven.com/license" as const;
-export const MOTION_TEXT_BLANK = "_blank" as const;
-export const MOTION_TEXT_NOREFERRER = "noreferrer" as const;
-export const MOTION_TEXT_CC0_POLYHAVEN_COM = "CC0 · polyhaven.com" as const;
-export const MOTION_TEXT_HDRI_2 = "HDRI" as const;
-export const MOTION_TEXT_TEXTURE_2 = "Texture" as const;
-export const MOTION_TEXT_3D_MODEL = "3D Model" as const;
-export const MOTION_TEXT_SYMBOL_18 = "✓ " as const;
-export const MOTION_TEMPLATE_THANH_CONG = (value0: string): string => value0 + " thành công";
-export const MOTION_TEXT_DA_LUU_BOI_CANH = "Đã lưu bối cảnh" as const;
-export const MOTION_TEXT_ENV = "ENV" as const;
 export const MOTION_TEXT_SYMBOL_19 = "—" as const;
-export const MOTION_TEXT_NHAN_VAT_NGUOI_THAT_CHUYEN_DONG_MIEN_PHI = "Nhân vật người thật + Chuyển động (Miễn phí)" as const;
-export const MOTION_TEXT_VAO = "Vào " as const;
-export const MOTION_TEXT_MIXAMO_COM = "mixamo.com" as const;
-export const MOTION_TEXT_DANG_NHAP_ADOBE_MIEN_PHI_TAB = " (đăng nhập Adobe miễn phí) → tab " as const;
-export const MOTION_TEXT_CHARACTERS_2 = "Characters" as const;
-export const MOTION_TEXT_CHON_NHAN_VAT_YEU_THICH = ", chọn nhân vật yêu thích." as const;
-export const MOTION_TEXT_BAM = "Bấm " as const;
-export const MOTION_TEXT_DOWNLOAD = "Download" as const;
-export const MOTION_TEXT_FORMAT = " → Format " as const;
-export const MOTION_TEXT_FBX_BINARY = "FBX Binary" as const;
-export const MOTION_TEXT_POSE = ", Pose " as const;
-export const MOTION_TEXT_T_POSE = "T-pose" as const;
-export const MOTION_TEXT_WITH_SKIN = "With Skin" as const;
-export const MOTION_TEXT_SYMBOL_20 = "." as const;
-export const MOTION_TEXT_TAB = "Tab " as const;
-export const MOTION_TEXT_ANIMATIONS = "Animations" as const;
-export const MOTION_TEXT_CHON_WALKING_RUNNING_IDLE_TALKING_BAT = ": chọn Walking, Running, Idle, Talking… bật " as const;
-export const MOTION_TEXT_IN_PLACE = "In Place" as const;
-export const MOTION_TEXT_DOWNLOAD_2 = " → Download " as const;
-export const MOTION_TEXT_FBX = "FBX" as const;
-export const MOTION_TEXT_WITHOUT_SKIN = "Without Skin" as const;
-export const MOTION_TEXT_TRONG_UNG_DUNG_BAM = "Trong ứng dụng: bấm " as const;
-export const MOTION_TEXT_NHAP_MO_HINH = "Nhập mô hình" as const;
-export const MOTION_TEXT_CHON_FILE_NHAN_VAT_LOAI = " → chọn file nhân vật → Loại " as const;
-export const MOTION_TEXT_NHAN_VAT_2 = "Nhân vật" as const;
-export const MOTION_TEXT_LUU = " → Lưu." as const;
-export const MOTION_TEXT_XE_CO_NHA_CUA_VU_KHI_CANH_QUAN = "Xe cộ, nhà cửa, vũ khí, cảnh quan 3D" as const;
-export const MOTION_TEXT_SKETCHFAB = "Sketchfab" as const;
-export const MOTION_TEXT_LOC_DOWNLOADABLE_CC_BY_CC0_TAI_FILE = " (lọc “Downloadable”, CC-BY/CC0) → Tải file " as const;
-export const MOTION_TEXT_GLTF_ZIP = "glTF (.zip)" as const;
-export const MOTION_TEXT_KEO_CA_FILE_ZIP_VAO_APP = " → kéo cả file zip vào app." as const;
-export const MOTION_TEXT_TAB_THU_VIEN_MIEN_PHI_CAY_COI_BAU = " (tab Thư viện miễn phí): cây cối, bầu trời HDRI, chất liệu gạch/đá — hoàn toàn miễn phí CC0." as const;
-export const MOTION_TEXT_MOI_MO_HINH_NEN_DUOI_50_MB_DE = "Mỗi mô hình nên dưới ~50 MB để render tối ưu và mượt mà nhất trên trình duyệt." as const;
-export const MOTION_TEXT_NAME = "name" as const;
-export const MOTION_TEMPLATE_SYMBOL_9 = (value0: string, value1: string, value2: string): string => value0 + " " + value1 + " " + value2;
-export const MOTION_TEXT_CRATE = "crate" as const;
-export const MOTION_TEXT_LOI = "Lỗi" as const;
 export const MOTION_TEXT_SYMBOL_21 = ": " as const;
-export const MOTION_TEXT_MESH = " mesh / " as const;
-export const MOTION_TEXT_TAM_GIAC = " tam giác / " as const;
-export const MOTION_TEXT_XUONG = " xương · " as const;
-export const MOTION_TEXT_SYMBOL_22 = " × " as const;
-export const MOTION_TEXT_M = " m" as const;
-export const MOTION_TEXT_STAND = "stand" as const;
-export const MOTION_TEXT_RUN = "run" as const;
 export const MOTION_TEXT_TALK = "talk" as const;
-export const MOTION_TEXT_SIT = "sit" as const;
-export const MOTION_TEXT_POINT = "point" as const;
-export const MOTION_TEXT_FIGHT = "fight" as const;
-export const MOTION_TEXT_ATTACK = "attack" as const;
-export const MOTION_TEXT_CHARGE = "charge" as const;
-export const MOTION_TEXT_DIE = "die" as const;
-export const MOTION_TEXT_CHEER = "cheer" as const;
-export const MOTION_TEXT_DANCE = "dance" as const;
-export const MOTION_TEXT_M_2 = " (m)" as const;
-export const MOTION_TEXT_NUMBER = "number" as const;
-export const MOTION_TEXT_SYMBOL_23 = "°" as const;
-export const MOTION_TEXT_ID_TEN = "id / tên" as const;
-export const MOTION_TEXT_MIXAMO_CC_BY = "Mixamo / CC-BY …" as const;
-export const MOTION_TEXT_REAL = "real" as const;
 export const MOTION_TEXT_3D_3 = " 3D…" as const;
 export const MOTION_TEXT_AUTO = "auto" as const;
 export const MOTION_TEXT_SYMBOL_24 = " / " as const;
@@ -266,30 +102,11 @@ export const MOTION_TEMPLATE_SYMBOL_10 = (value0: string, value1: string, value2
 export const MOTION_TEMPLATE_SYMBOL_11 = (value0: string, value1: string): string => value0 + ":" + value1;
 export const MOTION_TEMPLATE_GB = (value0: string): string => value0 + " GB";
 export const MOTION_TEMPLATE_MB = (value0: string): string => value0 + " MB";
-export const MOTION_TEXT_BLOB = "blob" as const;
-export const MOTION_TEXT_ENGINE_3D_CHUA_SAN_SANG = "Engine 3D chưa sẵn sàng" as const;
-export const MOTION_TEXT_CHON_FILE_GLB_GLTF_FBX_HOAC_ZIP_CHUA = "Chọn file .glb, .gltf, .fbx hoặc .zip chứa mô hình" as const;
 export const MOTION_TEXT_SYMBOL_25 = "?" as const;
 export const MOTION_TEMPLATE_SYMBOL_12 = (value0: string, value1: string): string => value0 + " " + value1;
-export const MOTION_TEXT_0F141C = "#0f141c" as const;
-export const MOTION_TEXT_E8EEF8 = "#e8eef8" as const;
-export const MOTION_TEXT_3A3430 = "#3a3430" as const;
-export const MOTION_TEXT_FFF4E0 = "#fff4e0" as const;
-export const MOTION_TEXT_1B222C = "#1b222c" as const;
-export const MOTION_TEXT_2C3646 = "#2c3646" as const;
-export const MOTION_TEXT_222A36 = "#222a36" as const;
-export const MOTION_TEXT_CANVAS = "canvas" as const;
 export const MOTION_TEXT_IMAGE_JPEG = "image/jpeg" as const;
-export const MOTION_TEXT_IMAGE_PNG = "image/png" as const;
 export const MOTION_TEXT_HIGH = "high" as const;
-export const MOTION_TEMPLATE_A = (value0: string, value1: string): string => "a:" + value0 + ":" + value1;
-export const MOTION_TEMPLATE_C = (value0: string, value1: string, value2: string): string => "c:" + value0 + ":" + value1 + ":" + value2;
-export const MOTION_TEMPLATE_E = (value0: string, value1: string): string => "e:" + value0 + ":" + value1;
 export const MOTION_TEXT_DOCUMENTARY = "documentary" as const;
-export const MOTION_TEXT_TODATAURL = "toDataURL" as const;
-export const MOTION_TEMPLATE_A3 = (value0: string): string => "a3:" + value0;
-export const MOTION_TEMPLATE_C3 = (value0: string, value1: string): string => "c3:" + value0 + ":" + value1;
-export const MOTION_TEMPLATE_E3 = (value0: string): string => "e3:" + value0;
 export const MOTION_TEXT_DA_DUNG_STOPPED = "Đã dừng / Stopped" as const;
 export const MOTION_TEXT_NARRATION = "narration" as const;
 export const MOTION_TEXT_SYMBOL_26 = "␞" as const;
@@ -302,12 +119,10 @@ export const MOTION_TEMPLATE_S = (value0: string, value1: string, value2: string
 export const MOTION_TEXT_SYMBOL_27 = "\n" as const;
 export const MOTION_TEXT_MOTION = "motion" as const;
 export const MOTION_TEXT_DARK = "dark" as const;
-export const MOTION_TEMPLATE_NAME_SPAGGIARI = (value0: string): string => value0 + "?name=spaggiari";
 export const MOTION_TEXT_MESSAGE = "message" as const;
 export const MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO = "Kịch bản dựng (spec) chưa có cảnh nào." as const;
 export const MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO = "Quá nhiều cảnh trong một video." as const;
 export const MOTION_TEXT_APPLICATION_JAVASCRIPT = "application/javascript" as const;
-export const MOTION_TEXT_SPAGGIARI = "spaggiari" as const;
 export const MOTION_TEXT_KHONG_TIM_THAY_VIDEO_MAU = "Không tìm thấy video mẫu" as const;
 export const MOTION_TEXT_VOICE_MP3 = "voice.mp3" as const;
 export const MOTION_TEXT_MP3 = ".mp3" as const;
@@ -328,9 +143,6 @@ export const MOTION_TEXT_PHIEN_LUU_DA_HET_HAN_HAY_CHON_LAI = "Phiên lưu đã h
 export const MOTION_TEXT_KHONG_TIM_THAY_TEP_VIDEO = "Không tìm thấy tệp video" as const;
 export const MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN = "Chưa có nội dung câu chuyện." as const;
 export const MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT = (value0: string, value1: string): string => "Phân tích câu chuyện (" + value0 + " từ, ~" + value1 + " phút)…";
-export const MOTION_TEXT_AI_DE_XUAT = "AI đề xuất" as const;
-export const MOTION_TEMPLATE_DA_THEM_NHAN_VAT_MOI_VAO_KHO_NHAN = (value0: string): string => "Đã thêm " + value0 + " nhân vật mới vào kho nhân vật";
-export const MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_DIEM_CAN_KIEM = (value0: string, value1: string, value2: string): string => "AI chia " + value0 + " chương, " + value1 + " nhân vật, " + value2 + " điểm cần kiểm chứng";
 export const MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC = "Cần phân tích câu chuyện trước." as const;
 export const MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG = (value0: string, value1: string, value2: string): string => "Viết lời dẫn + phân cảnh chương " + value0 + "/" + value1 + ": " + value2;
 export const MOTION_TEMPLATE_BEAT = (value0: string): string => "→ " + value0 + " beat";
@@ -342,16 +154,6 @@ export const MOTION_TEXT_CHUA_CO_KICH_BAN = "Chưa có kịch bản." as const;
 export const MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH = "Không tìm thấy tiến trình" as const;
 export const MOTION_TEXT_CACHE_CONTROL = "Cache-Control" as const;
 export const MOTION_TEXT_PRIVATE_MAX_AGE_86400 = "private, max-age=86400" as const;
-export const MOTION_TEXT_CHUA_CHON_TAI_NGUYEN = "Chưa chọn tài nguyên" as const;
-export const MOTION_TEXT_TAI_TAI_NGUYEN = "Tải tài nguyên" as const;
-export const MOTION_TEXT_GOI_CHAN_THUC_MAC_DINH = "Gói chân thực mặc định" as const;
-export const MOTION_TEXT_KHONG_TIM_THAY_TAC_VU = "Không tìm thấy tác vụ" as const;
-export const MOTION_TEXT_THIEU_DU_LIEU_MO_HINH = "Thiếu dữ liệu mô hình" as const;
-export const MOTION_TEXT_KHONG_TIM_THAY_MO_HINH = "Không tìm thấy mô hình" as const;
-export const MOTION_TEXT_VENDOR = "vendor" as const;
-export const MOTION_TEXT_DRACO = "draco" as const;
-export const MOTION_TEXT_WASM = ".wasm" as const;
-export const MOTION_TEXT_APPLICATION_WASM = "application/wasm" as const;
 export const MOTION_TEMPLATE_SYMBOL_13 = (value0: string): string => value0 + "/*";
 export const MOTION_TEXT_AI33_TTS_ABORTED = "AI33_TTS_ABORTED" as const;
 export const MOTION_TEXT_ABORT = "abort" as const;
@@ -398,18 +200,6 @@ export const MOTION_TEXT_CHAPTER = "chapter" as const;
 export const MOTION_TEXT_HIT = "hit" as const;
 export const MOTION_TEXT_CHIME = "chime" as const;
 export const MOTION_TEMPLATE_SFX_WAV = (value0: string): string => "sfx-" + value0 + ".wav";
-export const MOTION_TEXT_SNEAK = "sneak" as const;
-export const MOTION_TEXT_CRAWL = "crawl" as const;
-export const MOTION_TEXT_CARRY = "carry" as const;
-export const MOTION_TEXT_DRAG = "drag" as const;
-export const MOTION_TEXT_PUSH = "push" as const;
-export const MOTION_TEXT_SWIM = "swim" as const;
-export const MOTION_TEXT_AIRPLANE = "airplane" as const;
-export const MOTION_TEXT_SMALL_PLANE = "small_plane" as const;
-export const MOTION_TEXT_HELICOPTER = "helicopter" as const;
-export const MOTION_TEXT_MOTORBIKE = "motorbike" as const;
-export const MOTION_TEXT_SCOOTER = "scooter" as const;
-export const MOTION_TEXT_BICYCLE = "bicycle" as const;
 export const MOTION_TEXT_TITLE = "title" as const;
 export const MOTION_TEXT_QUOTE = "quote" as const;
 export const MOTION_TEXT_STATS = "stats" as const;
@@ -418,124 +208,30 @@ export const MOTION_TEXT_MAP = "map" as const;
 export const MOTION_TEXT_TIMELINE = "timeline" as const;
 export const MOTION_TEXT_HEADLINE = "headline" as const;
 export const MOTION_TEXT_ENDING = "ending" as const;
-export const MOTION_TEXT_CITY_STREET = "city_street" as const;
 export const MOTION_TEXT_MEDIUM = "medium" as const;
 export const MOTION_TEXT_AERIAL = "aerial" as const;
-export const MOTION_TEXT_DRIFT = "drift" as const;
 export const MOTION_TEXT_WIDE = "wide" as const;
-export const MOTION_TEXT_PAN_LEFT = "pan_left" as const;
-export const MOTION_TEXT_PAN = "pan" as const;
-export const MOTION_TEXT_LEFT = "left" as const;
-export const MOTION_TEXT_PAN_RIGHT = "pan_right" as const;
-export const MOTION_TEXT_RIGHT = "right" as const;
-export const MOTION_TEXT_PUSH_IN = "push_in" as const;
-export const MOTION_TEXT_PULL_OUT = "pull_out" as const;
-export const MOTION_TEXT_PULL = "pull" as const;
-export const MOTION_TEXT_BACK = "back" as const;
-export const MOTION_TEXT_MID = "mid" as const;
-export const MOTION_TEXT_FRONT = "front" as const;
-export const MOTION_TEXT_FORE = "fore" as const;
-export const MOTION_TEXT_DIG = "dig" as const;
-export const MOTION_TEXT_WELD = "weld" as const;
-export const MOTION_TEXT_DRILL = "drill" as const;
-export const MOTION_TEXT_LIFT = "lift" as const;
-export const MOTION_TEXT_PHONE = "phone" as const;
-export const MOTION_TEXT_PAINT = "paint" as const;
-export const MOTION_TEXT_DRINK = "drink" as const;
-export const MOTION_TEXT_SWEEP_LIGHT = "sweep_light" as const;
-export const MOTION_TEXT_CLIMB = "climb" as const;
-export const MOTION_TEXT_TYPE = "type" as const;
-export const MOTION_TEXT_SIT_EAT = "sit_eat" as const;
-export const MOTION_TEXT_RIDE_MOTO = "ride_moto" as const;
-export const MOTION_TEXT_RIDE_PASSENGER = "ride_passenger" as const;
-export const MOTION_TEXT_RIDE_BIKE = "ride_bike" as const;
-export const MOTION_TEXT_DRIVE = "drive" as const;
-export const MOTION_TEXT_PICKAXE = "pickaxe" as const;
-export const MOTION_TEXT_FLASHLIGHT = "flashlight" as const;
-export const MOTION_TEXT_POWER_DRILL = "power_drill" as const;
-export const MOTION_TEXT_SMARTPHONE = "smartphone" as const;
-export const MOTION_TEXT_TELEPHONE = "telephone" as const;
-export const MOTION_TEXT_WINE_BOTTLE = "wine_bottle" as const;
-export const MOTION_TEXT_MONEY_BAG = "money_bag" as const;
-export const MOTION_TEXT_DUFFEL_BAG = "duffel_bag" as const;
-export const MOTION_TEXT_FURNITURE = "furniture" as const;
-export const MOTION_TEXT_PROP = "prop" as const;
-export const MOTION_TEXT_VEHICLE = "vehicle" as const;
-export const MOTION_TEXT_ANIMAL = "animal" as const;
-export const MOTION_TEXT_AIRCRAFT = "aircraft" as const;
-export const MOTION_TEXT_WATERCRAFT = "watercraft" as const;
-export const MOTION_TEXT_STAY = "stay" as const;
-export const MOTION_TEXT_RIGHT_TO_LEFT = "right_to_left" as const;
-export const MOTION_TEXT_LEFT_TO_RIGHT = "left_to_right" as const;
-export const MOTION_TEXT_FX = "fx" as const;
-export const MOTION_TEXT_SKY = "sky" as const;
 export const MOTION_TEXT_IDLE = "idle" as const;
-export const MOTION_TEXT_THINK = "think" as const;
-export const MOTION_TEXT_HANDS_POCKET = "hands_pocket" as const;
-export const MOTION_TEXT_LOOK_AROUND = "look_around" as const;
-export const MOTION_TEXT_BANK_VAULT = "bank_vault" as const;
-export const MOTION_TEXT_SAFE_DEPOSIT_WALL = "safe_deposit_wall" as const;
-export const MOTION_TEXT_CHAIR = "chair" as const;
-export const MOTION_TEXT_SOFA = "sofa" as const;
-export const MOTION_TEXT_BENCH = "bench" as const;
-export const MOTION_TEXT_THRONE = "throne" as const;
-export const MOTION_TEXT_BED = "bed" as const;
-export const MOTION_TEXT_AIRPLANE_SEAT = "airplane_seat" as const;
-export const MOTION_TEXT_HOSPITAL_BED = "hospital_bed" as const;
-export const MOTION_TEXT_OFFICE = "office" as const;
-export const MOTION_TEXT_RUBBLE = "rubble" as const;
-export const MOTION_TEXT_ENTER_LEFT = "enter_left" as const;
-export const MOTION_TEXT_ENTER_RIGHT = "enter_right" as const;
-export const MOTION_TEXT_EXIT_RIGHT = "exit_right" as const;
-export const MOTION_TEXT_EXIT_LEFT = "exit_left" as const;
-export const MOTION_TEXT_TOWARD_CENTER = "toward_center" as const;
-export const MOTION_TEXT_BLOCK = "block" as const;
-export const MOTION_TEXT_ADVANCE = "advance" as const;
-export const MOTION_TEXT_RETREAT = "retreat" as const;
-export const MOTION_TEXT_DRIVER = "driver" as const;
-export const MOTION_TEXT_PASSENGER = "passenger" as const;
 export const MOTION_TEXT_NIGHT = "night" as const;
 export const MOTION_TEXT_DUSK = "dusk" as const;
 export const MOTION_TEXT_INTERIOR_DARK = "interior_dark" as const;
-export const MOTION_TEXT_CAR_SEDAN = "car_sedan" as const;
-export const MOTION_TEXT_CAR_VINTAGE = "car_vintage" as const;
-export const MOTION_TEXT_POLICE_CAR = "police_car" as const;
-export const MOTION_TEXT_TAXI = "taxi" as const;
-export const MOTION_TEXT_VAN = "van" as const;
-export const MOTION_TEXT_TRUCK = "truck" as const;
-export const MOTION_TEXT_ARMORED_TRUCK = "armored_truck" as const;
-export const MOTION_TEXT_BUS = "bus" as const;
 export const MOTION_TEXT_FADE = "fade" as const;
 export const MOTION_TEXT_CUT = "cut" as const;
 export const MOTION_TEXT_DIP = "dip" as const;
-export const MOTION_TEXT_FOLLOW = "follow" as const;
-export const MOTION_TEXT_FOLLOW_TARGET = "follow_target" as const;
-export const MOTION_TEXT_MOVE = "move" as const;
-export const MOTION_TEXT_AMOUNT = "amount" as const;
 export const MOTION_TEXT_X = "x" as const;
 export const MOTION_TEXT_FOG = "fog" as const;
 export const MOTION_TEXT_TAG = "tag" as const;
 export const MOTION_TEXT_CLOCK = "clock" as const;
-export const MOTION_TEXT_OBJECT = "object" as const;
-export const MOTION_TEXT_DOCUMENTS = "documents" as const;
-export const MOTION_TEXT_SO_DO_MINH_HOA = "Sơ đồ minh họa" as const;
 export const MOTION_TEMPLATE_P = (value0: string): string => "p" + value0;
 export const MOTION_TEXT_NHAT_BAO = "Nhật báo" as const;
-export const MOTION_TEXT_NIGHT_SKY = "night_sky" as const;
-export const MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO = "Kịch bản chưa có beat nào." as const;
 export const MOTION_TEXT_FFB070 = "#ffb070" as const;
 export const MOTION_TEXT_CINEMA = "cinema" as const;
 export const MOTION_TEMPLATE_MISSING = (value0: string): string => value0 + ":missing";
 export const MOTION_TEXT_SYMBOL_28 = "|" as const;
 export const MOTION_TEXT_UTF8 = "utf8" as const;
 export const MOTION_TEMPLATE_DATA_FONT_WOFF2_BASE64 = (value0: string): string => "data:font/woff2;base64," + value0;
-export const MOTION_TEMPLATE_SYMBOL_15 = (value0: string, value1: string): string => "/* " + value0 + " */\n" + value1;
 export const MOTION_TEXT_SYMBOL_29 = "\n;\n" as const;
 export const MOTION_TEMPLATE_FONT_FACE_FONT_FAMILY_FONT_STYLE_FONT_WEIGHT = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "@font-face{font-family:'" + value0 + "';font-style:" + value1 + ";font-weight:" + value2 + ";font-display:block;src:url(" + value3 + ") format('woff2');unicode-range:" + value4 + ";}";
-export const MOTION_TEMPLATE_FUNCTION_IF_TYPEOF_FONTFACE_UNDEFINED_TYPEOF_DOCUMENT_UNDEFINED = (value0: string): string =>
-  "(function(){if(typeof FontFace==='undefined'||typeof document==='undefined')return;var list=" +
-  value0 +
-  ";var ps=list.map(function(f){try{var ff=new FontFace(f.family,'url('+f.src+')',{weight:f.weight,style:f.style,unicodeRange:f.unicodeRange});document.fonts.add(ff);return ff.load().catch(function(){});}catch(e){return Promise.resolve();}});window.MotionEngine&&(window.MotionEngine.fontsReady=Promise.all(ps));})();";
 export const MOTION_TEMPLATE_SYMBOL_16 = (value0: string, value1: string): string => value0 + "\n;\n" + value1;
 export const MOTION_TEXT_400_24PX_BE_VIETNAM_PRO = "400 24px 'Be Vietnam Pro'" as const;
 export const MOTION_TEXT_600_24PX_BE_VIETNAM_PRO = "600 24px 'Be Vietnam Pro'" as const;
@@ -547,316 +243,13 @@ export const MOTION_TEXT_700_24PX_PLAYFAIR_DISPLAY = "700 24px 'Playfair Display
 export const MOTION_TEXT_ITALIC_600_24PX_PLAYFAIR_DISPLAY = "italic 600 24px 'Playfair Display'" as const;
 export const MOTION_TEXT_ITALIC_700_24PX_PLAYFAIR_DISPLAY = "italic 700 24px 'Playfair Display'" as const;
 export const MOTION_TEXT_U003C = "\\u003c" as const;
-export const MOTION_TEMPLATE_DOCTYPE_HTML_HTML_HEAD_META_CHARSET_UTF_8 = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string): string =>
-  '<!doctype html><html><head><meta charset="utf-8"><style>' +
-  value0 +
-  'html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head><body><canvas id="c"></canvas>\n<script>' +
-  value1 +
-  "</script>\n<script>\nwindow.__SPEC=" +
-  value2 +
-  ";\nwindow.__CUSTOM=" +
-  value3 +
-  ";\nwindow.__REAL=" +
-  value4 +
-  ";\nwindow.__fontsReady=Promise.all(" +
-  value5 +
-  ".map(function(f){return document.fonts.load(f,'Việt Nam ẩ ữ')})).then(function(){return document.fonts.ready});\nwindow.__setup=async function(quality,width,height){\n  MotionEngine.customCharacters={};(window.__CUSTOM||[]).forEach(function(c){MotionEngine.customCharacters[c.id]=c;});\n  if(window.__REAL&&MotionEngine.REAL&&MotionEngine.REAL.setManifest){MotionEngine.REAL.setManifest(window.__REAL.manifest,window.__REAL.base);if(window.__REAL.prepare){try{await MotionEngine.REAL.prepare(window.__SPEC);}catch(e){console.warn('real prepare',e);}}}\n  if(MotionEngine.ILLU&&MotionEngine.ILLU.prepare){try{await MotionEngine.ILLU.prepare(window.__SPEC,90000);}catch(e){}}\n  window.__R=MotionEngine.createRenderer(document.getElementById('c'),window.__SPEC,{quality:quality,width:width,height:height});\n  return window.__R.duration;\n};\nwindow.__frames=function(start,end,fps,q){var out=[];var cv=document.getElementById('c');for(var i=start;i<end;i++){window.__R.drawFrame(i/fps);out.push(cv.toDataURL('image/jpeg',q).slice(23));}return out;};\n</script></body></html>";
 export const MOTION_TEMPLATE_JSON = (value0: string): string => value0 + ".json";
-export const MOTION_TEXT_OLD_MAN_VN = "old_man_vn" as const;
-export const MOTION_TEXT_ELDERLY_MAN = "elderly_man" as const;
-export const MOTION_TEXT_POLICE_OFFICER = "police_officer" as const;
-export const MOTION_TEXT_POLICE_STATION = "police_station" as const;
-export const MOTION_TEXT_HOT_AIR_BALLOON = "hot_air_balloon" as const;
-export const MOTION_TEXT_SHIP = "ship" as const;
-export const MOTION_TEXT_SAILBOAT = "sailboat" as const;
-export const MOTION_TEXT_ROWBOAT = "rowboat" as const;
-export const MOTION_TEXT_TREE_ROUND = "tree_round" as const;
-export const MOTION_TEXT_TREE_OAK = "tree_oak" as const;
-export const MOTION_TEXT_TREE_PINE = "tree_pine" as const;
-export const MOTION_TEXT_TREE_PALM = "tree_palm" as const;
-export const MOTION_TEXT_BUSH = "bush" as const;
-export const MOTION_TEXT_FLOWERS = "flowers" as const;
-export const MOTION_TEXT_ROCK = "rock" as const;
-export const MOTION_TEXT_MOUNTAIN = "mountain" as const;
-export const MOTION_TEXT_HOUSE = "house" as const;
-export const MOTION_TEXT_HOME_INTERIOR = "home_interior" as const;
-export const MOTION_TEXT_FARMHOUSE = "farmhouse" as const;
-export const MOTION_TEXT_BUILDING_MODERN = "building_modern" as const;
-export const MOTION_TEXT_BUILDING_HAUSSMANN = "building_haussmann" as const;
-export const MOTION_TEXT_SKYSCRAPER = "skyscraper" as const;
-export const MOTION_TEXT_CONTROL_TOWER = "control_tower" as const;
-export const MOTION_TEXT_APARTMENT_BLOCK = "apartment_block" as const;
-export const MOTION_TEXT_SHOP_FRONT = "shop_front" as const;
-export const MOTION_TEXT_BANK_FACADE = "bank_facade" as const;
-export const MOTION_TEXT_BANK_LOBBY = "bank_lobby" as const;
-export const MOTION_TEXT_PAGODA = "pagoda" as const;
-export const MOTION_TEXT_PRISON_WALL = "prison_wall" as const;
-export const MOTION_TEXT_PRISON_CELL = "prison_cell" as const;
-export const MOTION_TEXT_PRISON_BARS = "prison_bars" as const;
-export const MOTION_TEXT_COURTHOUSE = "courthouse" as const;
-export const MOTION_TEXT_COURTROOM = "courtroom" as const;
-export const MOTION_TEXT_BRIDGE_TRUSS = "bridge_truss" as const;
-export const MOTION_TEXT_STREET_LAMP = "street_lamp" as const;
-export const MOTION_TEXT_DESK_LAMP = "desk_lamp" as const;
-export const MOTION_TEXT_STUDIO_LIGHT = "studio_light" as const;
-export const MOTION_TEXT_CASH_STACK = "cash_stack" as const;
-export const MOTION_TEXT_GOLD_BARS = "gold_bars" as const;
-export const MOTION_TEXT_DIAMOND_POUCH = "diamond_pouch" as const;
-export const MOTION_TEXT_BACKPACK = "backpack" as const;
-export const MOTION_TEXT_SUITCASE = "suitcase" as const;
-export const MOTION_TEXT_VAULT_DOOR = "vault_door" as const;
-export const MOTION_TEXT_TOOLBOX = "toolbox" as const;
-export const MOTION_TEXT_ROPE_COIL = "rope_coil" as const;
-export const MOTION_TEXT_NEWSPAPER = "newspaper" as const;
-export const MOTION_TEXT_CASE_FILE = "case_file" as const;
-export const MOTION_TEXT_ENVELOPE = "envelope" as const;
-export const MOTION_TEXT_LETTERS_BUNDLE = "letters_bundle" as const;
-export const MOTION_TEXT_MAP_BOARD = "map_board" as const;
-export const MOTION_TEXT_TV_OLD = "tv_old" as const;
-export const MOTION_TEXT_COMPUTER = "computer" as const;
-export const MOTION_TEXT_LAPTOP = "laptop" as const;
-export const MOTION_TEXT_CCTV_CAMERA = "cctv_camera" as const;
-export const MOTION_TEXT_CAMERA_TRIPOD = "camera_tripod" as const;
-export const MOTION_TEXT_HANDCUFFS = "handcuffs" as const;
-export const MOTION_TEXT_FIRE = "fire" as const;
-export const MOTION_TEXT_SMOKE = "smoke" as const;
-export const MOTION_TEXT_CAMPFIRE = "campfire" as const;
-export const MOTION_TEXT_DOG = "dog" as const;
-export const MOTION_TEXT_CAT = "cat" as const;
-export const MOTION_TEXT_WATER_BUFFALO = "water_buffalo" as const;
-export const MOTION_TEXT_BIRD_FLOCK = "bird_flock" as const;
-export const MOTION_TEXT_CONICAL_HAT = "conical_hat" as const;
-export const MOTION_TEXT_VN_STREET = "vn_street" as const;
-export const MOTION_TEXT_HIGHWAY = "highway" as const;
-export const MOTION_TEXT_COUNTRYSIDE = "countryside" as const;
-export const MOTION_TEXT_MOUNTAIN_ROAD = "mountain_road" as const;
-export const MOTION_TEXT_CITY_MODERN = "city_modern" as const;
-export const MOTION_TEXT_VN_VILLAGE = "vn_village" as const;
-export const MOTION_TEXT_RICE_FIELD = "rice_field" as const;
-export const MOTION_TEXT_FOREST = "forest" as const;
-export const MOTION_TEXT_OPEN_SEA = "open_sea" as const;
-export const MOTION_TEXT_BEACH = "beach" as const;
-export const MOTION_TEXT_HARBOR = "harbor" as const;
-export const MOTION_TEXT_RIVIERA_PROMENADE = "riviera_promenade" as const;
-export const MOTION_TEXT_TRAIN_STATION = "train_station" as const;
-export const MOTION_TEXT_HOSPITAL_ROOM = "hospital_room" as const;
-export const MOTION_TEXT_HOSPITAL = "hospital" as const;
-export const MOTION_TEXT_CLASSROOM = "classroom" as const;
-export const MOTION_TEXT_SCHOOL = "school" as const;
-export const MOTION_TEXT_CAFE_INTERIOR = "cafe_interior" as const;
-export const MOTION_TEXT_CAFE_TABLE = "cafe_table" as const;
-export const MOTION_TEXT_COFFEE_CUP = "coffee_cup" as const;
-export const MOTION_TEXT_SEWER_TUNNEL = "sewer_tunnel" as const;
-export const MOTION_TEXT_UNDERGROUND_SECTION = "underground_section" as const;
-export const MOTION_TEXT_AIRPORT = "airport" as const;
-export const MOTION_TEXT_RUNWAY = "runway" as const;
-export const MOTION_TEXT_DESERT_ROAD = "desert_road" as const;
-export const MOTION_TEXT_SNOW_MOUNTAIN = "snow_mountain" as const;
-export const MOTION_TEXT_CASTLE = "castle" as const;
-export const MOTION_TEXT_CASTLE_COURTYARD = "castle_courtyard" as const;
-export const MOTION_TEXT_CASTLE_HALL = "castle_hall" as const;
-export const MOTION_TEXT_IMPERIAL_PALACE = "imperial_palace" as const;
-export const MOTION_TEXT_PALACE_GATE = "palace_gate" as const;
-export const MOTION_TEXT_MEDIEVAL_VILLAGE = "medieval_village" as const;
-export const MOTION_TEXT_ANCIENT_RUINS = "ancient_ruins" as const;
-export const MOTION_TEXT_RUINED_WALL = "ruined_wall" as const;
-export const MOTION_TEXT_TEMPLE_COLUMNS = "temple_columns" as const;
-export const MOTION_TEXT_ROMAN_SOLDIER = "roman_soldier" as const;
-export const MOTION_TEXT_DESERT_DUNES = "desert_dunes" as const;
-export const MOTION_TEXT_PYRAMID = "pyramid" as const;
-export const MOTION_TEXT_WILD_WEST_TOWN = "wild_west_town" as const;
-export const MOTION_TEXT_SALOON = "saloon" as const;
-export const MOTION_TEXT_COWBOY = "cowboy" as const;
-export const MOTION_TEXT_SNOWY_PINE = "snowy_pine" as const;
-export const MOTION_TEXT_IGLOO = "igloo" as const;
-export const MOTION_TEXT_CITY_PARK = "city_park" as const;
-export const MOTION_TEXT_STADIUM = "stadium" as const;
-export const MOTION_TEXT_STADIUM_STAND = "stadium_stand" as const;
-export const MOTION_TEXT_FOOTBALL = "football" as const;
-export const MOTION_TEXT_GOAL_POST = "goal_post" as const;
-export const MOTION_TEXT_BATTLEFIELD = "battlefield" as const;
-export const MOTION_TEXT_TANK = "tank" as const;
-export const MOTION_TEXT_SANDBAGS = "sandbags" as const;
-export const MOTION_TEXT_GRAVEYARD = "graveyard" as const;
-export const MOTION_TEXT_GRAVESTONE = "gravestone" as const;
-export const MOTION_TEXT_VN_MARKET = "vn_market" as const;
-export const MOTION_TEXT_MARKET_STALL = "market_stall" as const;
-export const MOTION_TEXT_UNDERWATER = "underwater" as const;
-export const MOTION_TEXT_CORAL = "coral" as const;
-export const MOTION_TEXT_MOON_SURFACE = "moon_surface" as const;
-export const MOTION_TEXT_MOON = "moon" as const;
-export const MOTION_TEXT_OUTER_SPACE = "outer_space" as const;
-export const MOTION_TEXT_SATELLITE = "satellite" as const;
-export const MOTION_TEXT_AIRPLANE_CABIN = "airplane_cabin" as const;
-export const MOTION_TEXT_LABORATORY = "laboratory" as const;
-export const MOTION_TEXT_LAB_BENCH = "lab_bench" as const;
-export const MOTION_TEXT_SUPERMARKET = "supermarket" as const;
-export const MOTION_TEXT_STORE_SHELF = "store_shelf" as const;
-export const MOTION_TEXT_CONCERT_STAGE = "concert_stage" as const;
-export const MOTION_TEXT_KITCHEN = "kitchen" as const;
-export const MOTION_TEXT_BEDROOM = "bedroom" as const;
-export const MOTION_TEXT_VN_HOUSE_TET = "vn_house_tet" as const;
-export const MOTION_TEXT_RED_LANTERN = "red_lantern" as const;
-export const MOTION_TEXT_PEACH_BLOSSOM = "peach_blossom" as const;
-export const MOTION_TEXT_MAI_BLOSSOM = "mai_blossom" as const;
-export const MOTION_TEXT_ALTAR_VN = "altar_vn" as const;
-export const MOTION_TEXT_ROCKET = "rocket" as const;
-export const MOTION_TEXT_SPACESHIP = "spaceship" as const;
-export const MOTION_TEXT_UFO = "ufo" as const;
-export const MOTION_TEXT_ALIEN = "alien" as const;
-export const MOTION_TEXT_FIGHTER_JET = "fighter_jet" as const;
-export const MOTION_TEXT_EXCAVATOR = "excavator" as const;
-export const MOTION_TEXT_HORSE_CARRIAGE = "horse_carriage" as const;
-export const MOTION_TEXT_COVERED_WAGON = "covered_wagon" as const;
-export const MOTION_TEXT_PIRATE_SHIP = "pirate_ship" as const;
-export const MOTION_TEXT_PIRATE = "pirate" as const;
-export const MOTION_TEXT_SUBMARINE = "submarine" as const;
-export const MOTION_TEXT_TREASURE_CHEST = "treasure_chest" as const;
-export const MOTION_TEXT_BIRTHDAY_CAKE = "birthday_cake" as const;
-export const MOTION_TEXT_GIFT_BOX = "gift_box" as const;
-export const MOTION_TEXT_BALLOON_BUNCH = "balloon_bunch" as const;
-export const MOTION_TEXT_FIREWORKS = "fireworks" as const;
-export const MOTION_TEXT_EXPLOSION = "explosion" as const;
-export const MOTION_TEXT_LIGHTNING = "lightning" as const;
-export const MOTION_TEXT_MAGIC_GLOW = "magic_glow" as const;
-export const MOTION_TEXT_LANTERN_STRING = "lantern_string" as const;
-export const MOTION_TEXT_FISH_SCHOOL = "fish_school" as const;
-export const MOTION_TEXT_SHARK = "shark" as const;
-export const MOTION_TEXT_SHEEP = "sheep" as const;
-export const MOTION_TEXT_PIG = "pig" as const;
-export const MOTION_TEXT_KING = "king" as const;
-export const MOTION_TEXT_EMPEROR_VN = "emperor_vn" as const;
-export const MOTION_TEXT_QUEEN = "queen" as const;
-export const MOTION_TEXT_PRINCESS = "princess" as const;
-export const MOTION_TEXT_PRINCE = "prince" as const;
-export const MOTION_TEXT_KNIGHT = "knight" as const;
-export const MOTION_TEXT_WIZARD = "wizard" as const;
-export const MOTION_TEXT_WITCH = "witch" as const;
-export const MOTION_TEXT_GENERAL_VN = "general_vn" as const;
-export const MOTION_TEXT_MANDARIN_VN = "mandarin_vn" as const;
-export const MOTION_TEXT_ONG_DO = "ong_do" as const;
-export const MOTION_TEXT_NINJA = "ninja" as const;
-export const MOTION_TEXT_SAMURAI = "samurai" as const;
-export const MOTION_TEXT_VIKING = "viking" as const;
-export const MOTION_TEXT_CAVEMAN = "caveman" as const;
-export const MOTION_TEXT_EXPLORER = "explorer" as const;
-export const MOTION_TEXT_SHERIFF = "sheriff" as const;
-export const MOTION_TEXT_ROBOT = "robot" as const;
-export const MOTION_TEXT_ZOMBIE = "zombie" as const;
-export const MOTION_TEXT_HERO_CAPED = "hero_caped" as const;
-export const MOTION_TEXT_SURGEON = "surgeon" as const;
-export const MOTION_TEXT_FLIGHT_ATTENDANT = "flight_attendant" as const;
-export const MOTION_TEXT_HACKER = "hacker" as const;
-export const MOTION_TEXT_FOOTBALLER = "footballer" as const;
-export const MOTION_TEXT_RUNNER = "runner" as const;
-export const MOTION_TEXT_BOXER = "boxer" as const;
-export const MOTION_TEXT_SINGER = "singer" as const;
-export const MOTION_TEXT_BRIDE = "bride" as const;
-export const MOTION_TEXT_GROOM = "groom" as const;
-export const MOTION_TEXT_GRADUATE = "graduate" as const;
-export const MOTION_TEXT_SANTA = "santa" as const;
-export const MOTION_TEXT_PRIEST = "priest" as const;
-export const MOTION_TEXT_STREET_VENDOR_VN = "street_vendor_vn" as const;
-export const MOTION_TEXT_ROOM = "room" as const;
-export const MOTION_TEXT_STREET = "street" as const;
-export const MOTION_TEXT_CITY = "city" as const;
-export const MOTION_TEXT_ROAD = "road" as const;
 export const MOTION_TEXT_LIGHT = "light" as const;
-export const MOTION_TEXT_HOME = "home" as const;
-export const MOTION_TEXT_STATION = "station" as const;
-export const MOTION_TEXT_FIELD = "field" as const;
-export const MOTION_TEXT_OLD = "old" as const;
-export const MOTION_TEXT_THE = "the" as const;
-export const MOTION_TEXT_A = "a" as const;
-export const MOTION_TEXT_AN = "an" as const;
-export const MOTION_TEXT_OF = "of" as const;
-export const MOTION_TEXT_AND = "and" as const;
-export const MOTION_TEXT_WITH = "with" as const;
-export const MOTION_TEXT_NEW = "new" as const;
-export const MOTION_TEXT_BIG = "big" as const;
-export const MOTION_TEXT_SMALL = "small" as const;
-export const MOTION_TEXT_LARGE = "large" as const;
-export const MOTION_TEXT_SS = "ss" as const;
 export const MOTION_TEXT_SYMBOL_30 = "_" as const;
 export const MOTION_TEMPLATE_TMP = (value0: string, value1: string): string => value0 + "." + value1 + ".tmp";
-export const MOTION_TEXT_TAGS = "tags" as const;
 export const MOTION_TEXT_HEIGHT = "height" as const;
-export const MOTION_TEXT_FACIAL = "facial" as const;
-export const MOTION_TEXT_ACCESSORIES = "accessories" as const;
-export const MOTION_TEXT_COLORS = "colors" as const;
-export const MOTION_TEXT_REALMODEL = "realModel" as const;
-export const MOTION_TEXT_NHAN_VAT_MOI = "Nhân vật mới" as const;
-export const MOTION_TEMPLATE_USER = (value0: string): string => "user_" + value0;
-export const MOTION_TEXT_HTTPS_API_POLYHAVEN_COM = "https://api.polyhaven.com" as const;
-export const MOTION_TEMPLATE_HTTPS_CDN_POLYHAVEN_COM_ASSET_IMG_THUMBS_PNG = (value0: string): string => "https://cdn.polyhaven.com/asset_img/thumbs/" + value0 + ".png?width=256&height=256";
-export const MOTION_TEXT_2K = "2k" as const;
-export const MOTION_TEXT_1K = "1k" as const;
-export const MOTION_TEXT_MOTION_REAL = "motion-real" as const;
-export const MOTION_TEXT_MANIFEST_JSON = "manifest.json" as const;
-export const MOTION_TEXT_SYMBOL_31 = "/\\" as const;
-export const MOTION_TEXT_MODEL_GLTF_JSON = "model/gltf+json" as const;
 export const MOTION_TEXT_MODEL_GLTF_BINARY = "model/gltf-binary" as const;
-export const MOTION_TEXT_APPLICATION_OCTET_STREAM = "application/octet-stream" as const;
-export const MOTION_TEXT_IMAGE_WEBP = "image/webp" as const;
-export const MOTION_TEXT_IMAGE_KTX2 = "image/ktx2" as const;
-export const MOTION_TEXT_CACHE = "cache" as const;
-export const MOTION_TEMPLATE_PH_JSON = (value0: string): string => "ph_" + value0 + ".json";
-export const MOTION_TEMPLATE_ASSETS_T = (value0: string, value1: string): string => value0 + "/assets?t=" + value1;
-export const MOTION_TEXT_VIDIFY_MOTION_1_0 = "vidify-motion/1.0" as const;
-export const MOTION_TEMPLATE_POLY_HAVEN = (value0: string): string => "Poly Haven " + value0;
-export const MOTION_TEMPLATE_SYMBOL_17 = (value0: string, value1: string, value2: string, value3: string): string => value0 + " " + value1 + " " + value2 + " " + value3;
-export const MOTION_TEXT_INSTALLED = "installed" as const;
-export const MOTION_TEXT_DOWNLOADS = "downloads" as const;
-export const MOTION_TEMPLATE_TAI_LOI = (value0: string, value1: string): string => "Tải lỗi " + value0 + ": " + value1;
-export const MOTION_TEMPLATE_PART = (value0: string): string => value0 + ".part";
-export const MOTION_TEMPLATE_FILES = (value0: string, value1: string): string => value0 + "/files/" + value1;
-export const MOTION_TEMPLATE_POLY_HAVEN_KHONG_CO = (value0: string): string => 'Poly Haven: không có "' + value0 + '"';
-export const MOTION_TEMPLATE_POLY_HAVEN_LOI = (value0: string): string => "Poly Haven lỗi " + value0;
-export const MOTION_TEMPLATE_PH = (value0: string): string => "ph_" + value0;
-export const MOTION_TEXT_CC0_POLY_HAVEN = "CC0 (Poly Haven)" as const;
-export const MOTION_TEMPLATE_HDRI_THIEU_FILE = (value0: string, value1: string): string => "HDRI " + value0 + ": thiếu file " + value1;
-export const MOTION_TEMPLATE_HDRI_HDR = (value0: string, value1: string): string => "hdri/" + value0 + "_" + value1 + ".hdr";
-export const MOTION_TEMPLATE_TEXTURES = (value0: string): string => "textures/" + value0;
-export const MOTION_TEXT_DIFF = "diff" as const;
-export const MOTION_TEXT_DIFFUSE = "Diffuse" as const;
-export const MOTION_TEXT_NOR = "nor" as const;
-export const MOTION_TEXT_NOR_GL = "nor_gl" as const;
-export const MOTION_TEXT_ARM = "arm" as const;
-export const MOTION_TEXT_ROUGH = "Rough" as const;
-export const MOTION_TEMPLATE_JPG = (value0: string, value1: string): string => value0 + "/" + value1 + ".jpg";
-export const MOTION_TEMPLATE_TEXTURE_THIEU_ANH_MAU = (value0: string): string => "Texture " + value0 + ": thiếu ảnh màu";
-export const MOTION_TEMPLATE_MODEL_KHONG_CO_BAN_GLTF = (value0: string): string => "Model " + value0 + ": không có bản glTF";
-export const MOTION_TEMPLATE_MODELS = (value0: string): string => "models/" + value0;
-export const MOTION_TEXT_SYMBOL_32 = ".." as const;
-export const MOTION_TEXT_CTRL = "ctrl" as const;
-export const MOTION_TEMPLATE_LOI_MUC = (value0: string, value1: string): string => "Lỗi " + value0 + " mục: " + value1;
-export const MOTION_TEMPLATE_TAI = (value0: string, value1: string): string => "Tải " + value0 + " " + value1 + "…";
-export const MOTION_TEMPLATE_BO_QUA = (value0: string, value1: string): string => "Bỏ qua " + value0 + ": " + value1;
-export const MOTION_TEMPLATE_CHE_DO_CHAN_THUC_TAI_TAI_NGUYEN_3D = (value0: string): string => "Chế độ chân thực: tải " + value0 + " tài nguyên 3D (Poly Haven, CC0)…";
-export const MOTION_TEXT_MO_HINH = "Mô hình" as const;
-export const MOTION_TEXT_NGUOI_DUNG_NHAP = "Người dùng nhập" as const;
-export const MOTION_TEXT_ASCII = "ascii" as const;
-export const MOTION_TEXT_GLTF = "glTF" as const;
-export const MOTION_TEXT_FILE_KHONG_PHAI_GLB_HOP_LE = "File không phải GLB hợp lệ" as const;
-export const MOTION_TEMPLATE_IMP = (value0: string): string => "imp_" + value0;
-export const MOTION_TEMPLATE_IMPORTS = (value0: string): string => "imports/" + value0;
-export const MOTION_TEXT_MODEL_GLB = "model.glb" as const;
-export const MOTION_TEMPLATE_THUMB = (value0: string, value1: string): string => value0 + "/thumb." + value1;
-export const MOTION_TEMPLATE_MODEL_GLB = (value0: string): string => value0 + "/model.glb";
-export const MOTION_TEXT_3D_THAT = "3D thật" as const;
-export const MOTION_TEXT_LICENSE = "license" as const;
-export const MOTION_TEXT_AUTHOR = "author" as const;
-export const MOTION_TEXT_BIND = "bind" as const;
-export const MOTION_TEXT_SIZE = "size" as const;
-export const MOTION_TEXT_YAW = "yaw" as const;
-export const MOTION_TEXT_CATEGORY = "category" as const;
-export const MOTION_TEXT_ACTIONMAP = "actionMap" as const;
-export const MOTION_TEXT_GROUND = "ground" as const;
-export const MOTION_TEXT_GRASS = "grass" as const;
-export const MOTION_TEXT_SET = "set" as const;
-export const MOTION_TEXT_CARDS = "cards" as const;
 export const MOTION_TEXT_BYTES = "bytes" as const;
-export const MOTION_TEXT_KIND = "kind" as const;
 export const MOTION_TEXT_MOTION_RENDER_ABORTED = "MOTION_RENDER_ABORTED" as const;
 export const MOTION_TEXT_Y = "-y" as const;
 export const MOTION_TEMPLATE_FFMPEG_EXITED = (value0: string): string => "ffmpeg exited " + value0;
@@ -920,8 +313,6 @@ export const MOTION_TEXT_CRF = "-crf" as const;
 export const MOTION_TEXT_D = "d" as const;
 export const MOTION_TEXT_D_2 = "D" as const;
 export const MOTION_TEXT_NFD = "NFD" as const;
-export const MOTION_TEXT_HTTPS_MOTION_REAL_LOCAL = "https://motion-real.local" as const;
-export const MOTION_TEMPLATE_SYMBOL_18 = (value0: string): string => value0 + "/**";
 export const MOTION_TEXT_SYMBOL_34 = "*" as const;
 export const MOTION_TEXT_LOAD = "load" as const;
 export const MOTION_TEXT_VF = "-vf" as const;
@@ -933,12 +324,8 @@ export const MOTION_TEXT_R = "-r" as const;
 export const MOTION_TEXT_AN_2 = "-an" as const;
 export const MOTION_TEXT_DRAIN = "drain" as const;
 export const MOTION_TEXT_PREPARE = "prepare" as const;
-export const MOTION_TEMPLATE_KHONG_TAI_DUOC_TAI_NGUYEN_CAC_PHAN_DO = (value0: string): string => "Không tải được " + value0 + " tài nguyên – các phần đó dùng mô hình 3D thường";
 export const MOTION_TEMPLATE_SYMBOL_19 = (value0: string): string => value0 + "/";
 export const MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "Bộ mã hoá: " + value0 + " · " + value1 + "×" + value2 + " @" + value3 + "fps · chất lượng " + value4;
-export const MOTION_TEXT_SCENE3D = "scene3d" as const;
-export const MOTION_TEMPLATE_CANH_WEBGL = (value0: string, value1: string, value2: string, value3: string): string => value0 + " · " + value1 + " cảnh · WebGL: " + value2 + value3;
-export const MOTION_TEXT_KHONG_KHOI_TAO_DUOC_WEBGL_DUNG_DUNG_2D = "Không khởi tạo được WebGL – dùng dựng 2D" as const;
 export const MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S = (value0: string, value1: string): string => "Trình duyệt render: " + value0 + " · thời lượng " + value1 + "s";
 export const MOTION_TEXT_DA_TAO_AM_NEN_HIEU_UNG_TRAM = "Đã tạo âm nền + hiệu ứng trầm" as const;
 export const MOTION_TEMPLATE_PART_MP4 = (value0: string): string => "part" + value0 + ".mp4";
@@ -983,7 +370,6 @@ export const MOTION_TEXT_CONTROLLER = "controller" as const;
 export const MOTION_TEXT_DANG_DUNG_RENDER = "Đang dừng render…" as const;
 export const MOTION_TEXT_PAGEERROR = "pageerror" as const;
 export const MOTION_TEXT_PAGE = "page" as const;
-export const MOTION_TEXT_BUOC_NAY_DANG_CHAY_HAY_CHO_HOAC_HUY = "Bước này đang chạy, hãy chờ hoặc huỷ trước." as const;
 export const MOTION_TEXT_HOAN_TAT = "Hoàn tất" as const;
 export const MOTION_TEMPLATE_MOTION_STORY_FAILED = (value0: string): string => "[motion-story] " + value0 + " failed";
 export const MOTION_TEMPLATE_DANG_DUNG = (value0: string): string => value0 + " · Đang dừng…";
@@ -996,8 +382,6 @@ export const MOTION_TEMPLATE_SYMBOL_21 = (value0: string, value1: string): strin
 export const MOTION_TEXT_SYMBOL_35 = "{" as const;
 export const MOTION_TEXT_SYMBOL_36 = "}" as const;
 export const MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE = "AI không trả về JSON hợp lệ." as const;
-export const MOTION_TEXT_IMPORTANT_TEXT_ONLY_TASK_YOU_ONLY_WRITE_TEXT =
-  "IMPORTANT – TEXT-ONLY TASK: you only write text and return structured JSON data. You are NOT asked to create, render or edit any video, image, animation or audio. A separate rendering program on the user's computer reads your JSON and draws simple faceless 2D/3D motion graphics from it. The story is a publicly documented event; retell it factually and neutrally for an educational documentary." as const;
 export const MOTION_TEXT_AI_DEBUG = "ai-debug" as const;
 export const MOTION_TEXT_FUNCTION = "function" as const;
 export const MOTION_TEMPLATE_PNG = (value0: string): string => value0 + ".png";
@@ -1025,138 +409,19 @@ export const MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG = "Phòng chat đã
 export const MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU = (value0: string): string => "Phòng chat AI không trả kết quả sau " + value0 + " phút. Hãy thử lại, đổi model, hoặc chuyển sang chế độ API/Hybrid.";
 export const MOTION_TEMPLATE_PHONG_CHAT_LOI = (value0: string): string => "Phòng chat lỗi: " + value0;
 export const MOTION_TEXT_GOI_AI_QUA_API = "Gọi AI qua API…" as const;
-export const MOTION_TEXT_CUSTOM = " (custom)" as const;
-export const MOTION_TEXT_OTHER = "other" as const;
-export const MOTION_TEMPLATE_ENV_IDS = (value0: string): string => "ENV ids: " + value0;
-export const MOTION_TEXT_TIME_DAY_DUSK_NIGHT_INTERIOR_INTERIOR_DARK = "TIME: day, dusk, night, interior, interior_dark" as const;
-export const MOTION_TEXT_WEATHER_NONE_RAIN_STORM_FOG_SNOW = "WEATHER: none, rain, storm, fog, snow" as const;
-export const MOTION_TEMPLATE_CHARACTER_IDS_LIBRARY = (value0: string): string => "CHARACTER ids (library): " + value0;
-export const MOTION_TEMPLATE_ACTION_IDS = (value0: string): string => "ACTION ids: " + value0;
-export const MOTION_TEXT_ASSET_IDS_BY_CATEGORY = "ASSET ids by category:" as const;
-export const MOTION_TEMPLATE_SYMBOL_22 = (value0: string, value1: string): string => "  - " + value0 + ": " + value1;
 export const MOTION_TEXT_ENGLISH = "English" as const;
 export const MOTION_TEXT_VIETNAMESE = "Vietnamese" as const;
-export const MOTION_TEMPLATE_ROLE_DOCUMENTARY_STORY_EDITOR_YOUTUBE_HISTORY_TRUE_STORY = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string, value7: string, value8: string): string =>
-  value0 +
-  "\nROLE: documentary story editor (YouTube history / true-story storytelling style, faceless silhouette characters).\nTASK: ANALYZE the story below and return the structured JSON plan.\n\nContext:\n- Original title: " +
-  value1 +
-  "\n- Target video length: ~" +
-  value2 +
-  " seconds. Narration language: " +
-  value3 +
-  ".\n- Split the story into about " +
-  value4 +
-  ' chapters following the plot. "from"/"to" are seconds in the source transcript.\n\nAvailable production library (use ids exactly as written):\n' +
-  value5 +
-  '\n\nRequirements:\n1. "cast": every important character. "key" = short snake_case ASCII id. Map "characterId" to the closest CHARACTER id. If none fits well, still map the closest one AND add "suggested": a new character description {name, gender(male|female), age(child|teen|adult|elderly), build(slim|normal|heavy|athletic), hair(short|curly|long|ponytail|bun|bald), headwear(none|cap|police_cap|fedora|beret|helmet|hardhat|beanie|headlamp|hood|conical|chef_hat|crown|tiara|knight_helmet|cowboy_hat|wizard_hat|tricorn|turban|khan_dong|hijab|headband|top_hat|grad_cap|straw_hat|bubble_helmet|santa_hat), outfit(casual|suit|coat|trench|dress|gown|ao_dai|uniform|military|overalls|robe|tunic|armor|spacesuit|sport|apron), accessories[] (glasses|beard|mustache|tie|scarf|vest|camera|briefcase|backpack|tank|cape|sword|shield|staff|eyepatch|face_mask|necklace|medal|handbag), colors{top,bottom}}.\n2. "facts": proper names, dates, numbers and places that auto-generated transcripts often get wrong (book titles, dates of death, place names…). status = ok | uncertain | wrong, with a short "note". Never invent facts.\n3. "look": one of ' +
-  value6 +
-  '; "accent": a hex accent colour.\n4. "places": the ENV ids you expect to use — only ids from the library list (pick the closest one, never invent).\n5. No depiction of violence, gore or bodies; real people are drawn as faceless silhouettes.\n6. Write "title", "logline", chapter "title"/"summary", cast "role"/"description" and fact "claim"/"note" in ' +
-  value7 +
-  '.\n7. Keep it compact so the answer is fast: chapter "summary" ≤ 35 words, cast "description" ≤ 20 words, at most 12 facts, each note ≤ 20 words. Output the JSON on a single line.\n8. \"design\": things that are ESSENTIAL to show this story but are missing from the library or only match it poorly (a specific vehicle, machine, piece of furniture, landmark, or a distinctive place). At most 4 items, [] if the library is enough. Each item: {\"kind\":\"asset\"|\"env\",\"id\":\"new_snake_case_id\",\"name\":\"display name in the narration language\",\"brief\":\"what it looks like: shape, materials, colours, era, culture, key identifying details (max 50 words)\",\"size\":[width_cm,height_cm] (assets only),\"use\":\"how characters use it, e.g. sit at it, hide behind it, climb it, or decor\"}. Never request characters, people or animals here (use cast \"suggested\" for people).\n\nJSON format:\n{"title":"video title","logline":"one sentence","look":"noir","accent":"#ffb070",\n "chapters":[{"id":"c1","title":"...","summary":"...","from":0,"to":95}],\n "cast":[{"key":"albert","name":"Albert Spaggiari","role":"mastermind","description":"...","characterId":"photographer","suggested":null}],\n "places":["city_street"],\n "facts":[{"claim":"...","status":"uncertain","note":"..."}],\n "design":[]}\n\nTRANSCRIPT:\n' +
-  value8;
 export const MOTION_TEXT_NV = "nv" as const;
 export const MOTION_TEMPLATE_C_2 = (value0: string): string => "c" + value0;
 export const MOTION_TEMPLATE_CHUONG = (value0: string): string => "Chương " + value0;
 export const MOTION_TEXT_C1 = "c1" as const;
 export const MOTION_TEMPLATE_2_2 = (value0: string): string => value0 + "_2";
-export const MOTION_TEXT_WOMAN_CASUAL = "woman_casual" as const;
 export const MOTION_TEXT_UNCERTAIN = "uncertain" as const;
-export const MOTION_TEXT_BLOCKS = "blocks" as const;
-export const MOTION_TEXT_LINE = "line" as const;
-export const MOTION_TEXT_COLUMN = "column" as const;
-export const MOTION_TEXT_SCATTER = "scatter" as const;
 export const MOTION_TEXT_DAY = "day" as const;
-export const MOTION_TEXT_INTERIOR = "interior" as const;
 export const MOTION_TEXT_RAIN = "rain" as const;
-export const MOTION_TEXT_STORM = "storm" as const;
 export const MOTION_TEXT_SNOW = "snow" as const;
-export const MOTION_TEMPLATE_DRAWN_AS = (value0: string, value1: string, value2: string, value3: string): string => value0 + " = " + value1 + " (" + value2 + "; drawn as " + value3 + ")";
 export const MOTION_TEMPLATE_SYMBOL_23 = (value0: string): string => "- " + value0;
-export const MOTION_TEMPLATE_ROLE_DOCUMENTARY_SCRIPTWRITER_WRITE_THE_NARRATION_TEXT_AND = (
-  value0: string,
-  value1: string,
-  value2: string,
-  value3: string,
-  value4: string,
-  value5: string,
-  value6: string,
-  value7: string,
-  value8: string,
-  value9: string,
-  value10: string,
-  value11: string,
-  value12: string,
-  value13: string,
-  value14: string,
-  value15: string,
-  value16: string,
-  value17: string,
-  value18: string,
-  value19: string,
-  value20: string,
-  value21: string,
-  value22: string,
-  value23: string,
-  value24: string,
-  value25: string,
-  value26: string,
-): string =>
-  value0 +
-  '\nROLE: documentary scriptwriter. Write the narration text and a structured shot list (JSON data) for one chapter of an educational history/documentary story.\nStory: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nWrite CHAPTER " +
-  value3 +
-  ': "' +
-  value4 +
-  '" — ' +
-  value5 +
-  "\n\nNARRATION:\n- Language: " +
-  value6 +
-  '. The "narration" field MUST be written in ' +
-  value7 +
-  ".\n- Retell the facts from the transcript in your own words — do NOT translate it sentence by sentence. Use only facts you are sure about.\n- Total chapter length ≈ " +
-  value8 +
-  " " +
-  value9 +
-  " (≈" +
-  value10 +
-  " seconds of speech). HARD LIMIT: never more than " +
-  value11 +
-  " " +
-  value12 +
-  " in total for all beats together – count them; slightly shorter is fine, longer is not. Split it into about " +
-  value13 +
-  " beats; each beat is 1–3 short sentences (≈" +
-  value14 +
-  " " +
-  value15 +
-  ") and becomes one shot.\n- Spell out numbers that a TTS voice may misread." +
-  value16 +
-  value17 +
-  "\n" +
-  value18 +
-  '\n\nVISUALS (per beat):\n- "visual": ' +
-  value19 +
-  '. Prefer "scene" (environment + characters acting) for ~70% of beats; mix in infographics (stats, counter, map, timeline, quote, object, headline) for rhythm; never repeat the same visual type more than 3 times in a row.\n- scene fields: "env", "time", "weather", "shot" (' +
-  value20 +
-  '), "actors": [{"cast": CAST_KEY, "action": ACTION_ID, "then": ACTION_ID (optional change mid-beat), "move": ' +
-  value21 +
-  ', "pos": 0..1 (horizontal position in frame), "lane": back|mid|front}], "props": [{"asset": ASSET_ID, "move": stay|left_to_right|right_to_left, "pos": 0..1, "lane": back|mid|front, "riders": [CAST_KEY] (motorbikes/bicycles/scooters only)}], "label" (optional small place/time tag).\n- "crowds" (optional, for armies, battles, protests, audiences, markets): [{"cast": CAST_KEY or "character": CHARACTER_ID, "count": 20..3000, "formation": block|blocks|line|column|scatter, "action": ACTION_ID, "move": stay|left_to_right|right_to_left|advance|retreat, "pos": 0..1, "lane": back|mid|front, "facing": left|right, "bannerColor": "#hex"}]. Two opposing armies = two crowds facing each other. Use shot "aerial" to show the whole battlefield from above.\n- Logic must be correct: a moving vehicle needs a rider/driver, otherwise it stays parked; movement direction stays consistent between consecutive beats; 2–4 characters per scene looks best; mostly wide/medium shots, few close-ups.\n- ACTIONS MUST SHOW THE VERB OF THE NARRATION at that moment: breaking/prying/opening safes → "drill" or "weld"; digging → "dig"; carrying loot → "carry" (moving); putting/placing something → "lift" or "kneel"; searching → "look_around" or "sweep_light"; talking/renting/negotiating → "talk"; working at a desk → "type" or "sit". "celebrate" ONLY when the line is about joy or success.\n- MOVEMENT MUST MATCH: someone who leaves / slips away / escapes → "move": "exit_left" or "exit_right"; someone who walks in / arrives → "enter_left" or "enter_right"; never use walk/run/sneak/carry with "move": "stay".\n- People are never placed on the same spot as another person or inside furniture: give each a different "pos"; a clerk/teller stands at pos of a desk/counter (the editor puts them behind it).\n- If the line mentions a group (gang, accomplices, "twenty men", soldiers, crowd), show it: 3–4 actors (the same cast key may repeat with different pos) or a "crowds" entry.\n- Small objects someone holds (alarm clock, keys, phone, documents, flashlight, briefcase) go in "props" with the same "pos" as that person – the editor puts them in the hand. Do not list the tool an action already shows (pickaxe for "dig", flashlight for "sweep_light"). Do not add set pieces the environment already contains (e.g. safe-deposit walls in bank_vault, pipes in sewer_tunnel).\n- "data" for the other visuals:\n  title: {"kicker","title","subtitle","env","time"}; chapter: {"number","title"}; quote: {"text","author","highlight":[words to emphasise]};\n  stats: {"title","items":[{"value":8,"prefix":"","suffix":" m","label":"..."}]} (1–4 numbers); counter: {"from":0,"to":60,"label":"NIGHTS","format":"int|clock"};\n  object: {"asset": ASSET_ID, "caption","params":{}}; map: {"title","points":[{"id","x":0..1,"y":0..1,"label","sub"}],"routes":[{"from","to"}]} (schematic map, not a real one);\n  timeline: {"title","events":[{"date","text"}]}; headline: {"paper":"a generic newspaper name, never a real one","date","headline","sub"}; ending: {"text","sub","env"}.\n  All on-screen text inside "data" and "label" must be in ' +
-  value22 +
-  '.\n- "emphasis": true for the 1–2 most important moments of the chapter (adds a low sound hit).\n- Never depict violence, blood or bodies; suggest sensitive moments with light, darkness and silence.\n- Build every shot ONLY from the production library below: "env", "asset" and "action" values must be ids from the lists, never invented names. Pick the closest library item (e.g. a jet airliner → airplane, a police van → police_car, a palace → imperial_palace or castle_hall). Use the genre packs when the story fits (fantasy/royal, sci-fi/space, war, wild west, horror, sport, festivals/Tết, underwater …).\n\nCAST (use these keys):\n' +
-  value23 +
-  "\n\nPRODUCTION LIBRARY (use ids exactly):\n" +
-  value24 +
-  '\n\nJSON:\n{"chapterId":"' +
-  value25 +
-  '","beats":[{"narration":"...","visual":"scene","env":"bank_vault","time":"interior_dark","shot":"wide","actors":[{"cast":"albert","action":"walk","move":"left_to_right","pos":0.4,"lane":"front"}],"props":[],"label":"","emphasis":false,"data":{}}]}\n\nSOURCE TRANSCRIPT FOR THIS CHAPTER:\n' +
-  value26;
-export const MOTION_TEMPLATE_YOUR_PREVIOUS_ANSWER_FAILED_REMINDER_THIS_IS_ONLY = (value0: string): string => "\n\nYOUR PREVIOUS ANSWER FAILED: " + value0 + ". Reminder: this is only a writing task – you write text and JSON data, nothing is generated by you except text. Return the JSON object only.";
-export const MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO = "Chương không có beat nào." as const;
 export const MOTION_TEMPLATE_CHUONG_LOI_THU_LAI = (value0: string, value1: string): string => "Chương " + value0 + " lỗi, thử lại: " + value1;
-export const MOTION_TEXT_CELEBRATE = "celebrate" as const;
 export const MOTION_TEXT_KEY = "key" as const;
 export const MOTION_TEMPLATE_B = (value0: string, value1: string): string => value0 + "_b" + value1;
 export const MOTION_TEXT_VALUE = "value" as const;
@@ -1170,342 +435,23 @@ export const MOTION_TEMPLATE_SYMBOL_28 = (value0: string, value1: string, value2
 export const MOTION_TEMPLATE_SYMBOL_29 = (value0: string, value1: string): string => value0 + "\n" + value1;
 export const MOTION_TEXT_ALERT = "alert" as const;
 export const MOTION_TEXT_RESPONSE = "response" as const;
-export const MOTION_TEXT_3D_MODEL_2 = "3D model" as const;
-export const MOTION_TEXT_BAU_TROI = "bầu trời" as const;
-export const MOTION_TEXT_CHAT_LIEU = "chất liệu" as const;
-export const MOTION_TEXT_MO_HINH_2 = "mô hình" as const;
-export const MOTION_TEXT_JPEG = "jpeg" as const;
-export const MOTION_TEXT_JPG = "jpg" as const;
 export const MOTION_TEXT_VI_VN = "vi-VN" as const;
-export const MOTION_TEXT_DUNG_3D_CHAN_THUC = "Dựng 3D chân thực" as const;
-export const MOTION_TEXT_DUNG_3D = "Dựng 3D" as const;
-export const MOTION_TEXT_KHONG_DUNG_DUOC_GPU_3D_SE_CHAM = " (không dùng được GPU – 3D sẽ chậm)" as const;
 export const MOTION_TEXT_SYMBOL_38 = "'\\''" as const;
 export const MOTION_TEXT_SYMBOL_39 = ":" as const;
 export const MOTION_TEXT_CO = "có" as const;
 export const MOTION_TEXT_KHONG = "không" as const;
-export const MOTION_TEXT_NATURAL_FLUENT_VIETNAMESE_IN_A_DOCUMENTARY_STORYTELLING_VOICE = "natural, fluent Vietnamese in a documentary storytelling voice; short, clear sentences" as const;
-export const MOTION_TEXT_NATURAL_ENGLISH_DOCUMENTARY_NARRATION_SHORT_CLEAR_SENTENCES = "natural English documentary narration; short, clear sentences" as const;
 export const MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS = "Vietnamese syllables (words)" as const;
 export const MOTION_TEXT_WORDS = "words" as const;
-export const MOTION_TEXT_SYLLABLES = "syllables" as const;
-export const MOTION_TEXT_THE_FIRST_BEAT_USES_VISUAL_TITLE_A_HOOK = '\n- The first beat uses visual "title" (a hook opening).' as const;
-export const MOTION_TEXT_THE_LAST_BEAT_USES_VISUAL_ENDING_WITH_A = '\n- The last beat uses visual "ending" with a resonant closing line.' as const;
-export const MOTION_TEXT_SYMBOL_40 = " | " as const;
 export const MOTION_TEXT_NONE_2 = "(none)" as const;
-export const MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED = (value0: string): string => "- Continue naturally from the previous chapter, which ended with:\n" + value0;
-export const MOTION_TEXT_WALL_CLOCK = "wall_clock" as const;
-export const MOTION_TEXT_PICTURE_FRAME = "picture_frame" as const;
-export const MOTION_TEXT_WALL_TORCH = "wall_torch" as const;
 export const MOTION_TEXT_INSERT = "insert" as const;
-export const MOTION_TEXT_REACH = "reach" as const;
-export const MOTION_TEXT_FOCUS = "focus" as const;
-export const MOTION_TEMPLATE_S_2 = (value0: string, value1: string): string => value0 + "_s" + value1;
 export const MOTION_TEXT_USER = "user" as const;
-export const MOTION_TEMPLATE_PARAMS = (value0: string): string => " [params: " + value0 + "]";
-export const MOTION_TEMPLATE_SYMBOL_30 = (value0: string, value1: string): string => value0 + ": " + value1;
 export const MOTION_TEXT_SYMBOL_41 = "; " as const;
-export const MOTION_TEXT_ENVIRONMENTS_2 = "ENVIRONMENTS:" as const;
-export const MOTION_TEMPLATE_SYMBOL_31 = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "  - " + value0 + " — " + value1 + value2 + value3 + value4;
-export const MOTION_TEMPLATE_CONTAINS = (value0: string): string => "; contains: " + value0;
-export const MOTION_TEMPLATE_DEFAULT_TIME = (value0: string): string => "; default time " + value0;
-export const MOTION_TEMPLATE_ACTIONS = (value0: string): string => "ACTIONS: " + value0;
-export const MOTION_TEXT_ASSETS_BY_CATEGORY_ID_NAME = "ASSETS by category (id (name)):" as const;
-export const MOTION_TEMPLATE_SYMBOL_32 = (value0: string, value1: string, value2: string): string => value0 + " (" + value1 + ")" + value2;
-export const MOTION_TEMPLATE_STORYBOARD_THE_PICTURE_MUST_TELL_THE_SAME_STORY = (value0: string, value1: string, value2: string, value3: string): string =>
-  'STORYBOARD – THE PICTURE MUST TELL THE SAME STORY AS THE WORDS (most important rule):\n- For every beat, list the concrete EVENTS of its narration in order (who does what, where, to which object, what happens to the object). Every event must be visible on screen, literally: the right place, the right people, the object the line talks about and what happens to it.\n- A beat with ONE event is one visual. A beat with 2–3 events MUST use "shots": [ ... ] – one shot per event, in order. Each shot has "text" = the exact consecutive words of the narration it illustrates (together the texts cover the whole narration) plus all visual fields of a beat.\n- Pick the environment by what it looks like (see the descriptions in the library), never by a vague association. A night/after-hours moment uses time "night"/"interior_dark". A cross-section / plan of tunnels uses "underground_section".\n- Something hidden (in a pocket, secretly carried) is NOT shown. Something the line says is put somewhere must be shown going there.\n- Use infographics (stats, counter, map, timeline, quote, headline) only for numbers, dates, routes and quotes – and only when the line is about them.\n\nVISUAL FIELDS:\n- "visual": ' +
-  value0 +
-  '.\n- scene: "env", "time", "weather", "shot" (' +
-  value1 +
-  '), "label" (optional small place/time tag),\n  "actors": [{"cast": CAST_KEY, "action": ACTION_ID, "then": ACTION_ID (optional change at ~55% of the shot), "move": ' +
-  value2 +
-  ', "pos": 0..1, "lane": back|mid|front, "facing": left|right, "hold": ASSET_ID (small object in the hand), "holdFrom": 0..1, "holdUntil": 0..1 (when it is picked up / put down)}],\n  "props": [{"asset": ASSET_ID, "move": stay|left_to_right|right_to_left (vehicles/animals only), "pos": 0..1, "lane": back|mid|front, "params": {state of the prop – see [params] in the library}, "anim": {"param": [[0,0],[0.5,1]]} (state changing during the shot), "riders": [CAST_KEY] (two-wheelers only)}],\n  "sceneParams": {environment params – see [params] of the env}, "sceneAnim": {"param": [[0,0.2],[1,0.9]]},\n  "crowds" (armies, protests, audiences, markets): [{"cast" or "character", "count": 20..3000, "formation": block|blocks|line|column|scatter, "action", "move": stay|left_to_right|right_to_left|advance|retreat, "pos", "lane", "facing", "bannerColor"}].\n- shot "insert" + "focus": ASSET_ID = a close-up on that prop (a drawer, a clock, a document, writing on a wall) – use it for the key object moments.\n- Actions show the verb of the line: open / put in / take out / press → "reach"; waiting, checking the time → "check_watch"; writing or painting on a wall → "paint"; breaking into safes → "drill" or "weld"; digging → "dig"; carrying loot → "carry" (moving); searching → "look_around" or "sweep_light"; talking / renting / negotiating → "talk"; at a desk → "type" or "sit"; "celebrate" only for joy. Leaving → move exit_left/exit_right; arriving → enter_left/enter_right; never walk/run/sneak/carry with move "stay".\n- Interactions with library objects (examples of params/anim): safe_deposit_wall {"drawer":7,"drawerOpen":1,"content":"documents","highlight":1} and anim {"drawerOpen":[[0,0],[0.4,1],[0.85,1],[1,0]]}; something ringing/rattling inside a closed box → {"content":"alarm_clock","contentParams":{"ringing":true},"reveal":0.8}; alarm_clock {"ringing":true}; vault_door {"open":0..1}; paint_text_wall {"text":"…","progress":0..1} with anim progress [[0,0],[1,1]]; underground_section sceneAnim {"tunnelProgress":[[0,0.1],[1,0.8]]}.\n- People never stand on the same spot or inside furniture (different "pos"); a clerk works at the pos of a desk (the editor puts them behind it). A group in the line ("twenty men", a gang, soldiers) → 3–4 actors (a cast key may repeat) or "crowds".\n- Do not list the tool an action already draws (pickaxe for "dig", flashlight for "sweep_light", drill for "drill"). Environments already contain the set pieces listed in "contains:" – add one as a prop only when you set its params/anim (e.g. one drawer of the safe wall).\n- "data" for the other visuals:\n  title: {"kicker","title","subtitle","env","time"}; chapter: {"number","title"}; quote: {"text","author","highlight":[words to emphasise]};\n  stats: {"title","items":[{"value":8,"prefix":"","suffix":" m","label":"..."}]} (1–4 numbers); counter: {"from":0,"to":60,"label":"NIGHTS","format":"int|clock"};\n  object: {"asset": ASSET_ID, "caption","params":{}}; map: {"title","points":[{"id","x":0..1,"y":0..1,"label","sub"}],"routes":[{"from","to"}]} (schematic map, not a real one);\n  timeline: {"title","events":[{"date","text"}]}; headline: {"paper":"a generic newspaper name, never a real one","date","headline","sub"}; ending: {"text","sub","env"}.\n  All on-screen text inside "data", "label" and params text must be in ' +
-  value3 +
-  '.\n- "emphasis": true for the 1–2 most important moments of the chapter (adds a low sound hit).\n- Never depict violence, blood or bodies; suggest sensitive moments with light, darkness and silence.\n- Use ONLY ids from the production library below ("env", "asset", "action", "hold", "focus"); pick the closest item by its description.';
-export const MOTION_TEMPLATE_ROLE_DOCUMENTARY_SCRIPTWRITER_WRITE_THE_NARRATION_TEXT_AND_2 = (
-  value0: string,
-  value1: string,
-  value2: string,
-  value3: string,
-  value4: string,
-  value5: string,
-  value6: string,
-  value7: string,
-  value8: string,
-  value9: string,
-  value10: string,
-  value11: string,
-  value12: string,
-  value13: string,
-  value14: string,
-  value15: string,
-  value16: string,
-  value17: string,
-  value18: string,
-  value19: string,
-  value20: string,
-  value21: string,
-  value22: string,
-  value23: string,
-): string =>
-  value0 +
-  '\nROLE: documentary scriptwriter. Write the narration text and a structured shot list (JSON data) for one chapter of an educational history/documentary story.\nStory: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nWrite CHAPTER " +
-  value3 +
-  ': "' +
-  value4 +
-  '" — ' +
-  value5 +
-  "\n\nNARRATION:\n- Language: " +
-  value6 +
-  '. The "narration" field MUST be written in ' +
-  value7 +
-  ".\n- Retell the facts from the transcript in your own words — do NOT translate it sentence by sentence. Use only facts you are sure about.\n- Total chapter length ≈ " +
-  value8 +
-  " " +
-  value9 +
-  " (≈" +
-  value10 +
-  " seconds of speech). HARD LIMIT: never more than " +
-  value11 +
-  " " +
-  value12 +
-  " in total for all beats together – count them; slightly shorter is fine, longer is not. Split it into about " +
-  value13 +
-  " beats; each beat is 1–3 short sentences (≈" +
-  value14 +
-  " " +
-  value15 +
-  ").\n- Spell out numbers that a TTS voice may misread." +
-  value16 +
-  value17 +
-  "\n" +
-  value18 +
-  "\n\n" +
-  value19 +
-  "\n\nCAST (use these keys):\n" +
-  value20 +
-  "\n\nPRODUCTION LIBRARY (id — description; contains = set pieces already drawn; [params] = settable state):\n" +
-  value21 +
-  '\n\nJSON (example shape – a different story):\n{"chapterId":"' +
-  value22 +
-  '","beats":[\n {"narration":"The courier slips into the bank, opens a deposit box and leaves the papers inside.","emphasis":true,"shots":[\n  {"text":"The courier slips into the bank,","visual":"scene","env":"bank_lobby","time":"day","shot":"wide","actors":[{"cast":"courier","action":"walk","move":"enter_left","pos":0.45,"lane":"front","hold":"briefcase"}],"props":[]},\n  {"text":"opens a deposit box","visual":"scene","env":"bank_vault","time":"interior","shot":"medium","actors":[{"cast":"courier","action":"reach","move":"stay","pos":0.42,"lane":"front","facing":"right"}],"props":[{"asset":"safe_deposit_wall","pos":0.62,"lane":"mid","params":{"drawer":7,"highlight":1,"w":300,"h":260},"anim":{"drawerOpen":[[0,0],[0.6,1]]}}]},\n  {"text":"and leaves the papers inside.","visual":"scene","env":"bank_vault","time":"interior","shot":"insert","focus":"safe_deposit_wall","actors":[],"props":[{"asset":"safe_deposit_wall","pos":0.5,"lane":"mid","params":{"drawer":7,"drawerOpen":1,"content":"documents","w":300,"h":260},"anim":{"drawerOpen":[[0,1],[0.7,1],[1,0]]}}]}\n ]},\n {"narration":"…","visual":"stats","data":{"title":"…","items":[{"value":3,"suffix":" days","label":"…"}]}}\n]}\n\nSOURCE TRANSCRIPT FOR THIS CHAPTER:\n' +
-  value23;
 export const MOTION_TEMPLATE_JPG_2 = (value0: string): string => value0 + ".jpg";
 export const MOTION_TEXT_REVIEW = "review" as const;
-export const MOTION_TEXT_AI_KIEM_TRA_TUNG_CANH_CO_KHOP_LOI = "AI kiểm tra từng cảnh có khớp lời dẫn…" as const;
-export const MOTION_TEMPLATE_KIEM_TRA_LAI_BEAT_VUA_SUA = (value0: string): string => "Kiểm tra lại " + value0 + " beat vừa sửa…";
-export const MOTION_TEMPLATE_DA_SUA_BEAT_CHO_KHOP_LOI_DAN = (value0: string, value1: string): string => "Đã sửa " + value0 + "/" + value1 + " beat cho khớp lời dẫn";
-export const MOTION_TEXT_TAT_CA_CANH_KHOP_LOI_DAN = "Tất cả cảnh khớp lời dẫn" as const;
-export const MOTION_TEMPLATE_BO_QUA_BUOC_KIEM_TRA_HINH = (value0: string): string => "Bỏ qua bước kiểm tra hình: " + value0;
-export const MOTION_TEXT_MOTION_STORYBOARD_REVIEW = "motion-storyboard-review" as const;
-export const MOTION_TEXT_DURATION = "duration" as const;
-export const MOTION_TEXT_AUDIOFILE = "audioFile" as const;
-export const MOTION_TEXT_STORYBOARD_REVIEW = "storyboard-review" as const;
-export const MOTION_TEMPLATE_DUNG_ANH_NHAP_DE_AI_KIEM_TRA_HINH = (value0: string): string => "Dựng " + value0 + " ảnh nháp để AI kiểm tra hình có khớp lời dẫn…";
-export const MOTION_TEMPLATE_SYMBOL_33 = (value0: string, value1: string): string => value0 + "_" + value1;
-export const MOTION_TEMPLATE_ROLE_STORYBOARD_SUPERVISOR_OF_AN_EDUCATIONAL_DOCUMENTARY_YOU = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string, value7: string): string =>
-  value0 +
-  '\nROLE: storyboard supervisor of an educational documentary. You check that every picture shows EXACTLY what its narration says, and you rewrite the storyboard of the beats that do not.\n\nSTORY: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nCAST: " +
-  value3 +
-  "\n\nATTACHED IMAGES (in this order) – draft frames of the shots:\n" +
-  value4 +
-  "\n\nHow to judge (the drawing style is simple 2D side-view graphics with faceless figures – judge CONTENT, not drawing quality):\n- Is it the right PLACE for these words? The right PEOPLE?\n- Is the ACTION of the words happening (e.g. putting something into a box, digging, leaving, writing on a wall)?\n- Is the OBJECT the words talk about visible and in the right STATE (inside the box, ringing, open/closed, hidden in a pocket = not visible)?\n- Does anything contradict the story (wrong object, wrong room, wrong time of day, extra things that make no sense)?\n\nCURRENT STORYBOARD (JSON beats):\n" +
-  value5 +
-  '\n\nFor EVERY beat listed above return a review. If all its pictures match: {"id": BEAT_ID, "ok": true}. Otherwise: {"id": BEAT_ID, "ok": false, "problems": "short list in English", "beat": CORRECTED_BEAT} where CORRECTED_BEAT follows the rules below, keeps "narration" EXACTLY unchanged, and uses "shots" (with "text" = consecutive pieces of the narration) when the line has several events.\n\n' +
-  value6 +
-  "\n\nPRODUCTION LIBRARY (id — description; contains = set pieces already drawn; [params] = settable state):\n" +
-  value7 +
-  '\n\nReturn JSON: {"reviews":[{"id":"c1_b2","ok":true},{"id":"c1_b3","ok":false,"problems":"...","beat":{...}}]}';
-export const MOTION_TEMPLATE_SYMBOL_34 = (value0: string, value1: string, value2: string): string => value0 + " = " + value1 + " (" + value2 + ")";
-export const MOTION_TEMPLATE_SHOT_WORDS = (value0: string, value1: string, value2: string): string => "[" + value0 + "] shot " + value1 + ' — words: "' + value2 + '"';
-export const MOTION_TEMPLATE_KIEM_TRA_HINH_BANG_AI_LOI_GIU_NGUYEN = (value0: string): string => "Kiểm tra hình bằng AI lỗi, giữ nguyên phân cảnh: " + value0;
-export const MOTION_TEMPLATE_SUA = (value0: string, value1: string): string => "Sửa " + value0 + ": " + value1;
-export const MOTION_TEXT_T_2 = "t" as const;
-export const MOTION_TEMPLATE_SHOT_TOOLTIP_LINE = (value0: string, value1: string, value2: string): string => value0 + '. "' + value1 + '" → ' + value2;
 export const MOTION_TEXT_BEATS = "beats" as const;
-export const MOTION_TEXT_MOTION_ART_PLAN = "motion-art-plan" as const;
-export const MOTION_TEXT_MOTION_ART_REVIEW = "motion-art-review" as const;
-export const MOTION_TEXT_RISE = "rise" as const;
-export const MOTION_TEXT_DESCEND = "descend" as const;
-export const MOTION_TEXT_STILL = "still" as const;
-export const MOTION_TEXT_DUST = "dust" as const;
-export const MOTION_TEXT_EMBERS = "embers" as const;
-export const MOTION_TEXT_FLICKER = "flicker" as const;
-export const MOTION_TEXT_CINEMATIC_DOCUMENTARY_ILLUSTRATION_DETAILED_DIGITAL_PAINTING_IN_THE = "cinematic documentary illustration, detailed digital painting in the style of a high-end graphic novel, painterly brush textures, realistic proportions and expressive faces, dramatic chiaroscuro lighting, muted film color palette with warm highlights and teal shadows, subtle 35mm film grain" as const;
-export const MOTION_TEXT_NO_TEXT_NO_LETTERS_NO_WORDS_NO_CAPTIONS = "No text, no letters, no words, no captions, no signs with readable writing, no logos, no watermark, no frame or border." as const;
-export const MOTION_TEXT_PNG = "png" as const;
-export const MOTION_TEXT_WEBP = "WEBP" as const;
-export const MOTION_TEXT_WEBP_2 = "webp" as const;
-export const MOTION_TEMPLATE_DATA_IMAGE_BASE64 = (value0: string, value1: string): string => "data:image/" + value0 + ";base64," + value1;
-export const MOTION_TEXT_ART = "art" as const;
-export const MOTION_TEMPLATE_SYMBOL_35 = (value0: string, value1: string, value2: string): string => value0 + "_" + value1 + "." + value2;
-export const MOTION_TEMPLATE_ART = (value0: string, value1: string): string => "art/" + value0 + "/" + value1;
-export const MOTION_TEMPLATE_PLACE = (value0: string, value1: string): string => "place=" + value0 + value1;
-export const MOTION_TEMPLATE_SYMBOL_36 = (value0: string): string => "/" + value0;
-export const MOTION_TEMPLATE_FRAMING = (value0: string): string => "framing=" + value0;
-export const MOTION_TEMPLATE_PEOPLE = (value0: string): string => "people=" + value0;
-export const MOTION_TEMPLATE_SYMBOL_37 = (value0: string, value1: string, value2: string): string => value0 + ":" + value1 + value2;
-export const MOTION_TEMPLATE_HOLDING = (value0: string): string => "(holding " + value0 + ")";
-export const MOTION_TEMPLATE_OBJECTS = (value0: string): string => "objects=" + value0;
-export const MOTION_TEMPLATE_OBJECT = (value0: string): string => "object=" + value0;
-export const MOTION_TEXT_DATA_ASSET = "data.asset" as const;
-export const MOTION_TEXT_BG = "bg" as const;
-export const MOTION_TEMPLATE_CARD = (value0: string, value1: string): string => value0 + " card; " + value1;
-export const MOTION_TEXT_DATA_ENV = "data.env" as const;
-export const MOTION_TEXT_DATA_TIME = "data.time" as const;
-export const MOTION_TEMPLATE_SYMBOL_38 = (value0: string, value1: string, value2: string, value3: string): string => "- " + value0 + ": " + value1 + " — " + value2 + value3;
-export const MOTION_TEMPLATE_SYMBOL_39 = (value0: string): string => "; " + value0;
-export const MOTION_TEMPLATE_ROLE_ART_DIRECTOR_AND_STORYBOARD_ARTIST_OF_A = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string, value7: string, value8: string, value9: string): string =>
-  value0 +
-  '\nROLE: art director and storyboard artist of a premium illustrated documentary (YouTube history channel). For every unit below you write ONE image description for an AI image generator. The picture must show EXACTLY what the narration words of that unit say.\n\nSTORY: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nLANGUAGE OF NARRATION: " +
-  value3 +
-  " (your prompts are in ENGLISH)\nFRAME: " +
-  value4 +
-  "\n\nCAST (keys):\n" +
-  value5 +
-  "\n\nUNITS (id — kind — narration words — rough storyboard notes from the editor, may be wrong):\n" +
-  value6 +
-  '\n\nRULES\n1. "style": ONE art style sentence for the whole film (consistent look). Start from: "' +
-  value7 +
-  '" and adapt the palette/era to this story.\n2. "cast": for every cast key that appears in pictures, a fixed visual identity: age, build, face (hair, facial hair, glasses), clothing with colors and era. These descriptions are pasted into every image, so be concrete. NEVER use the real name of a real person in descriptions or prompts (describe the look instead).\n3. "units": for EVERY unit id:\n   - "prompt": 2–4 sentences: WHERE (period-accurate place, time of day, light), WHO (refer to people by their cast key in square brackets, e.g. [albert_spaggiari]), WHAT they are doing at this exact moment (the verb of the words), WHICH object and its state (e.g. an alarm clock placed inside an open steel safe-deposit drawer). Framing: wide establishing / medium / close-up / extreme close-up on an object — choose what tells the words best; vary framing between consecutive units. Something "hidden" or "secret" is shown as concealed (e.g. a bulge in a coat pocket), not displayed.\n   - kind "bg" = background for a title/ending card: an atmospheric establishing image of the place, no people in focus, leave calm space in the center.\n   - "cast": the cast keys visible in the picture ([] if none).\n   - "move": camera move over the still: ' +
-  value8 +
-  ' (push_in toward the subject for tension/details, pull_out to reveal, pan along wide places, rise for buildings, still for calm).\n   - "focus": [x, y] 0..1 position of the main subject in the frame.\n   - "fx": ' +
-  value9 +
-  ' (rain only if it rains, smoke/embers only if something burns, flicker for torch/flashlight-lit darkness).\n4. Never show violence, blood, weapons pointed at people, or dead bodies. Never put text, letters, signs, newspapers with writing or logos in the picture.\n\nReturn JSON: {"style":"...","cast":[{"key":"...","appearance":"..."}],"units":[{"id":"...","prompt":"...","cast":["..."],"move":"push_in","focus":[0.5,0.45],"fx":"dust"}]}';
-export const MOTION_TEXT_VERTICAL_9_16 = "vertical 9:16" as const;
-export const MOTION_TEXT_SQUARE_1_1 = "square 1:1" as const;
-export const MOTION_TEXT_PORTRAIT_4_5 = "portrait 4:5" as const;
-export const MOTION_TEXT_HORIZONTAL_16_9 = "horizontal 16:9" as const;
-export const MOTION_TEMPLATE_SYMBOL_40 = (value0: string, value1: string, value2: string, value3: string): string => "[" + value0 + "] " + value1 + ' — "' + value2 + '" — ' + value3;
-export const MOTION_TEMPLATE_SYMBOL_41 = (value0: string): string => "[" + value0 + "]";
-export const MOTION_TEMPLATE_THE = (value0: string): string => "the " + value0;
-export const MOTION_TEXT_A_PERSON = "a person" as const;
-export const MOTION_TEXT_WIDE_HORIZONTAL_16_9 = "wide horizontal 16:9" as const;
-export const MOTION_TEMPLATE_CREATE_ONE_ILLUSTRATION = (value0: string): string => "Create one " + value0 + " illustration.";
-export const MOTION_TEMPLATE_CHARACTERS_KEEP_EXACTLY_THIS_LOOK = (value0: string, value1: string): string => "Characters (keep exactly this look" + value0 + "): " + value1 + ".";
-export const MOTION_TEXT_MATCHING_THE_ATTACHED_REFERENCE_IMAGES = ", matching the attached reference images" as const;
-export const MOTION_TEMPLATE_ART_STYLE = (value0: string): string => "Art style: " + value0 + ".";
-export const MOTION_TEMPLATE_CREATE_ONE_CHARACTER_DESIGN_REFERENCE_IMAGE_A_SINGLE = (value0: string, value1: string, value2: string): string =>
-  "Create one character design reference image: a single full-body figure standing in a relaxed three-quarter front view on a plain light grey studio background, whole body visible from head to shoes.\nCharacter: " + value0 + ".\nArt style: " + value1 + ".\n" + value2;
-export const MOTION_TEXT_KICH_BAN_CHUA_CO_CANH_NAO_DE_VE = "Kịch bản chưa có cảnh nào để vẽ minh hoạ" as const;
-export const MOTION_TEMPLATE_SYMBOL_42 = (value0: string, value1: string): string => value0 + "|" + value1;
-export const MOTION_TEXT_PLAN = "plan" as const;
-export const MOTION_TEMPLATE_AI_DAO_DIEN_HINH_ANH_VIET_MO_TA = (value0: string): string => "AI đạo diễn hình ảnh: viết mô tả cho " + value0 + " khung hình…";
-export const MOTION_TEMPLATE_AI_BO_SOT_KHUNG_HINH_SE_DUNG_HINH = (value0: string): string => "AI bỏ sót " + value0 + " khung hình – sẽ dùng hình đồ hoạ cho các cảnh đó";
-export const MOTION_TEMPLATE_VE_ANH_THAM_CHIEU_CHO_NHAN_VAT_GIU = (value0: string): string => "Vẽ ảnh tham chiếu cho " + value0 + " nhân vật (giữ khuôn mặt, trang phục giống nhau giữa các cảnh)…";
-export const MOTION_TEMPLATE_CAST = (value0: string): string => "cast_" + value0;
-export const MOTION_TEMPLATE_NHAN_VAT = (value0: string): string => "✓ Nhân vật " + value0;
-export const MOTION_TEMPLATE_KHONG_VE_DUOC_NHAN_VAT = (value0: string, value1: string): string => "✗ Không vẽ được nhân vật " + value0 + ": " + value1;
-export const MOTION_TEXT_IMAGES = "images" as const;
-export const MOTION_TEMPLATE_KHUNG_HINH = (value0: string, value1: string, value2: string): string => "✓ Khung hình " + value0 + " (" + value1 + "/" + value2 + ")";
-export const MOTION_TEXT_IMAGE_FAILED = "image failed" as const;
-export const MOTION_TEMPLATE_KHUNG_HINH_LOI = (value0: string, value1: string, value2: string, value3: string): string => "✗ Khung hình " + value0 + " lỗi (" + value1 + "/" + value2 + "): " + value3;
-export const MOTION_TEMPLATE_VE_KHUNG_HINH_MINH_HOA_BANG_GEMINI = (value0: string): string => "Vẽ " + value0 + " khung hình minh hoạ bằng Gemini…";
-export const MOTION_TEMPLATE_AI_XEM_ANH_DE_KIEM_TRA_CO_KHOP = (value0: string): string => "AI xem " + value0 + " ảnh để kiểm tra có khớp lời dẫn…";
-export const MOTION_TEXT_IMAGE = "image/" as const;
-export const MOTION_TEXT_JPG_2 = ".jpg" as const;
-export const MOTION_TEMPLATE_ROLE_PICTURE_EDITOR_OF_AN_ILLUSTRATED_DOCUMENTARY_CHECK = (value0: string, value1: string, value2: string, value3: string, value4: string): string =>
-  value0 +
-  '\nROLE: picture editor of an illustrated documentary. Check that every attached picture shows what its narration words say.\nSTORY: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nCAST LOOK: " +
-  value3 +
-  "\nATTACHED IMAGES (in this order):\n" +
-  value4 +
-  '\nJudge content, not taste: right place and era, right people (count, clothes), the action of the words happening, the object of the words visible in the right state, nothing contradicting the story, no readable text/letters, no extra limbs or broken faces.\nFor each image return {"id","ok":true} or {"id","ok":false,"problems":"short","prompt":"a corrected 2–4 sentence prompt using [cast_key] references"}.\nReturn JSON: {"reviews":[...]}';
-export const MOTION_TEMPLATE_SYMBOL_43 = (value0: string, value1: string): string => value0 + " = " + value1;
-export const MOTION_TEMPLATE_WORDS_IMAGE_PROMPT_WAS = (value0: string, value1: string, value2: string, value3: string): string => "[" + value0 + "] " + value1 + ' — words: "' + value2 + '" — image prompt was: "' + value3 + '"';
-export const MOTION_TEMPLATE_SYMBOL_44 = (value0: string, value1: string): string => "↻ " + value0 + ": " + value1;
-export const MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_ANH = (value0: string): string => "Bỏ qua bước AI xem ảnh: " + value0;
-export const MOTION_TEMPLATE_VE_LAI_KHUNG_HINH_CHUA_KHOP = (value0: string): string => "Vẽ lại " + value0 + " khung hình chưa khớp…";
-export const MOTION_TEMPLATE_XONG_KHUNG_HINH_CO_ANH_MINH_HOA = (value0: string, value1: string): string => "Xong: " + value0 + "/" + value1 + " khung hình có ảnh minh hoạ";
-export const MOTION_TEXT_ILLUSTRATION = "illustration" as const;
 export const MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC = "Cần viết lời dẫn & phân cảnh trước" as const;
 export const MOTION_TEXT_AI_2 = "AI" as const;
-export const MOTION_TEXT_ART_FAILED_MARK = "✗" as const;
-export const MOTION_TEMPLATE_ART_BADGE = (value0: string, value1: string, value2: string): string => value0 + "/" + value1 + " " + value2;
-export const MOTION_TEMPLATE_GEMINI_MODEL = (value0: string): string => "Gemini " + value0;
-export const MOTION_TEMPLATE_ART_TOOLTIP = (value0: string, value1: string, value2: string, value3: string, value4: string): string => value0 + " — " + value1 + "\n\n" + value2 + (value3 ? "\n\n↻ " + value3 : "") + (value4 ? "\n\n✗ " + value4 : "");
-export const MOTION_TEXT_TEXT_ONLY_TASK_YOU_WRITE_A_WRITTEN_SHOT =
-  "TEXT-ONLY TASK: you write a written shot list (text) and return it as JSON data. You do not create or edit any image here. A separate illustration tool later paints ORIGINAL, fictional-looking illustrative characters (never a likeness of any real person) for an educational history documentary, based on your text. People are referred to only by neutral labels (P1, P2…)." as const;
-export const MOTION_TEXT_SYMBOL_42 = "\\$&" as const;
-export const MOTION_TEMPLATE_P_2 = (value0: string): string => "P" + value0;
-export const MOTION_TEXT_GIU = "giu" as const;
-export const MOTION_TEMPLATE_SYMBOL_45 = (value0: string, value1: string): string => "- " + value0 + ": " + value1;
-export const MOTION_TEXT_PERSON = "person" as const;
-export const MOTION_TEMPLATE_ROLE_ART_DIRECTOR_AND_STORYBOARD_ARTIST_OF_A_2 = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string, value7: string, value8: string, value9: string): string =>
-  value0 +
-  '\nROLE: art director and storyboard artist of a premium illustrated documentary (YouTube history channel). For every unit below you write ONE image description for an AI image generator. The picture must show EXACTLY what the narration words of that unit say.\n\nSTORY: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nLANGUAGE OF NARRATION: " +
-  value3 +
-  " (your prompts are in ENGLISH)\nFRAME: " +
-  value4 +
-  "\n\nCAST (keys):\n" +
-  value5 +
-  "\n\nUNITS (id — kind — narration words — rough storyboard notes from the editor, may be wrong):\n" +
-  value6 +
-  '\n\nRULES\n1. "style": ONE art style sentence for the whole film (consistent look). Start from: "' +
-  value7 +
-  '" and adapt the palette/era to this story.\n2. "cast": for every person label (P1, P2…) that appears in pictures, a fixed visual identity: age, build, face (hair, facial hair, glasses), clothing with colors and era. These descriptions are pasted into every image, so be concrete. Invent an ordinary, period-appropriate look; never name anybody.\n3. "units": for EVERY unit id:\n   - "prompt": 2–4 sentences: WHERE (period-accurate place, time of day, light), WHO (refer to people only by their label in square brackets, e.g. [P1]), WHAT they are doing at this exact moment (the verb of the words), WHICH object and its state (e.g. an alarm clock placed inside an open steel safe-deposit drawer). Framing: wide establishing / medium / close-up / extreme close-up on an object — choose what tells the words best; vary framing between consecutive units. Something "hidden" or "secret" is shown as concealed (e.g. a bulge in a coat pocket), not displayed.\n   - kind "bg" = background for a title/ending card: an atmospheric establishing image of the place, no people in focus, leave calm space in the center.\n   - "cast": the labels visible in the picture, e.g. ["P1"] ([] if none).\n   - "move": camera move over the still: ' +
-  value8 +
-  ' (push_in toward the subject for tension/details, pull_out to reveal, pan along wide places, rise for buildings, still for calm).\n   - "focus": [x, y] 0..1 position of the main subject in the frame.\n   - "fx": ' +
-  value9 +
-  ' (rain only if it rains, smoke/embers only if something burns, flicker for torch/flashlight-lit darkness).\n4. Never show violence, blood, weapons pointed at people, or dead bodies. Never put text, letters, signs, newspapers with writing or logos in the picture.\n\nReturn JSON: {"style":"...","cast":[{"key":"P1","appearance":"..."}],"units":[{"id":"...","prompt":"...","cast":["..."],"move":"push_in","focus":[0.5,0.45],"fx":"dust"}]}';
-export const MOTION_TEXT_THE_PERSON = "the person" as const;
-export const MOTION_TEMPLATE_HERE_YOU_ONLY_LOOK_AT_ATTACHED_DRAFT_PICTURES = (value0: string, value1: string, value2: string, value3: string, value4: string): string =>
-  value0 +
-  ' Here you only look at attached draft pictures and write a text review.\nROLE: picture editor of an illustrated documentary. Check that every attached picture shows what its narration words say.\nSTORY: "' +
-  value1 +
-  '" — ' +
-  value2 +
-  "\nPEOPLE: " +
-  value3 +
-  "\nATTACHED IMAGES (in this order):\n" +
-  value4 +
-  '\nJudge content, not taste: right place and era, right people (count, clothes), the action of the words happening, the object of the words visible in the right state, nothing contradicting the story, no readable text/letters, no extra limbs or broken faces.\nFor each image return {"id","ok":true} or {"id","ok":false,"problems":"short","prompt":"a corrected 2–4 sentence prompt using [P1]-style labels"}.\nReturn JSON: {"reviews":[...]}';
-export const MOTION_TEXT_MEN = "men" as const;
-export const MOTION_TEXT_OPENING = "opening" as const;
-export const MOTION_TEXT_TOOLS = "tools" as const;
-export const MOTION_TEMPLATE_CALM_TASTEFUL_HISTORICAL_ILLUSTRATION_FOR_AN_EDUCATIONAL_MUSEUM = (value0: string): string => "Calm, tasteful historical illustration for an educational museum documentary; nobody is hurt, no weapons, no violence.\n" + value0;
-export const MOTION_TEMPLATE_THU_VE_LAI_NHAN_VAT_VOI_MO_TA = (value0: string): string => "Thử vẽ lại " + value0 + " nhân vật với mô tả nhẹ nhàng hơn…";
-export const MOTION_TEMPLATE_THU_VE_LAI_KHUNG_HINH_LOI_VOI_MO = (value0: string): string => "Thử vẽ lại " + value0 + " khung hình lỗi với mô tả nhẹ nhàng hơn…";
-export const MOTION_TEXT_TOON = "toon" as const;
-export const MOTION_TEXT_TOON_ASSET = "ta" as const;
-export const MOTION_TEXT_TOON_CHARACTER = "tc" as const;
-export const MOTION_TEXT_TOON_ENV = "te" as const;
-export const MOTION_TEMPLATE_TOON_THUMB_KEY = (value0: string, value1: string, value2: string): string => value0 + ":" + value1 + ":" + value2;
-export const MOTION_TEXT_TOON_LINE = "line" as const;
-export const MOTION_TEXT_TOON_FLAT = "flat" as const;
-export const MOTION_TEXT_TOON_CAT_CHARACTERS = "characters" as const;
-export const MOTION_TEXT_TOON_CAT_ENVS = "envs" as const;
-export const MOTION_TEXT_TOON_CAT_VEHICLES = "vehicles" as const;
-export const MOTION_TEXT_TOON_CAT_NATURE = "nature" as const;
-export const MOTION_TEXT_TOON_CAT_URBAN = "urban" as const;
 export const MOTION_TEXT_TOON_CAT_INTERIOR = "interior" as const;
-export const MOTION_TOON_GROUPS = {
-  vehicles: ["vehicle", "aircraft", "watercraft"],
-  nature: ["nature", "sky", "animal", "fx"],
-  urban: ["urban", "street"],
-  interior: ["furniture", "interior", "prop"],
-} as const;
-export const MOTION_TEXT_TOON_WAVE = "wave" as const;
 export const MOTION_TEXT_SFX_PREFIX = "sfx-" as const;
 export const MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA = "Đang có video render — đợi render xong hoặc huỷ rồi mới xoá tất cả." as const;
 export const MOTION_TEMPLATE_JOIN_SPACE = (value0: string, value1: string): string => value0 + " " + value1;
@@ -1557,220 +503,170 @@ export const MOTION_TEXT_SYMBOL_44 = "#" as const;
 export const MOTION_TEXT_SCENE_2 = "🎬 scene" as const;
 export const MOTION_TEXT_TITLE_2 = "🏷️ title" as const;
 export const MOTION_TEXT_STATS_2 = "📊 stats" as const;
-export const MOTION_TEXT_SYMBOL_45 = "📍 " as const;
-export const MOTION_TEXT_SYMBOL_46 = "🎞️ " as const;
 export const MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH = "Nhập nội dung lời dẫn cho phân cảnh..." as const;
 export const MOTION_TEXT_MAX_W_MD = "max-w-md" as const;
 export const MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC = "Hành động này không thể hoàn tác." as const;
-export const MOTION_TEXT_FLEX_FLEX_COL_GAP_1_5 = "flex flex-col gap-1.5" as const;
-export const MOTION_TEXT_TEXT_10PX_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400" as const;
-export const MOTION_TEXT_DUNG = "Đứng" as const;
-export const MOTION_TEXT_2D_2_5D = "2D (2.5D)" as const;
-export const MOTION_TEXT_3D_MO_HINH = "3D (Mô hình)" as const;
-export const MOTION_TEXT_KHO_HOAT_HINH = "Kho hoạt hình" as const;
-export const MOTION_TEXT_VIEN_NET = "Viền nét" as const;
-export const MOTION_TEXT_PHANG_ANH_SANG_MEM = "Phẳng · ánh sáng mềm" as const;
-export const MOTION_TEXT_DONG_TAC = "Động tác" as const;
-export const MOTION_TEXT_THOI_DIEM = "Thời điểm" as const;
-export const MOTION_TEXT_MOI = "Mới" as const;
-export const MOTION_TEXT_HOAT_HINH = "Hoạt hình" as const;
-export const MOTION_TEXT_XAC_NHAN_XOA = "Xác nhận xóa" as const;
 export const MOTION_TEXT_SYMBOL_47 = '"' as const;
-export const MOTION_TEXT_HUY = "Hủy" as const;
-export const MOTION_TEXT_DA_XOA_THANH_CONG = "Đã xóa thành công" as const;
-export const MOTION_TEXT_CO_LOI_XAY_RA_KHI_XOA = "Có lỗi xảy ra khi xóa" as const;
-export const MOTION_TEXT_BAN_CO_CHAC_CHAN_MUON_XOA_MO_HINH = "Bạn có chắc chắn muốn xóa mô hình này?" as const;
 export const MOTION_RENDER_CANVAS_ID = "c" as const;
-export const MOTION_TEXT_FLY = "fly" as const;
-export const MOTION_TEXT_SIT_AFRAID = "sit_afraid" as const;
-export const MOTION_TEXT_PILOT_SEAT = "pilot_seat" as const;
-export const MOTION_TEXT_AIRPORT_APRON = "airport_apron" as const;
-export const MOTION_TEXT_SHOOT = "shoot" as const;
-export const MOTION_TEXT_AIM = "aim" as const;
-export const MOTION_TEXT_AFRAID = "afraid" as const;
-export const MOTION_TEXT_COCKPIT_DOOR = "cockpit_door" as const;
-export const MOTION_TEXT_CHECK_WATCH = "check_watch" as const;
-export const MOTION_TEXT_KICK_DOOR = "kick_door" as const;
-export const MOTION_TEXT_KNOCK = "knock" as const;
-export const MOTION_TEXT_OPEN_DOOR = "open_door" as const;
-export const MOTION_TEXT_AIRLINER = "airliner" as const;
-export const MOTION_TEXT_WINDOW = "window" as const;
-export const MOTION_TEXT_LADDER = "ladder" as const;
-export const MOTION_TEXT_STAIR_TRUCK = "stair_truck" as const;
-export const MOTION_TEXT_JUMP = "jump" as const;
-export const MOTION_TEXT_FALL = "fall" as const;
-export const MOTION_TEXT_EVAC_SLIDE = "evac_slide" as const;
-export const MOTION_TEXT_SLIDE = "slide" as const;
-export const MOTION_TEXT_OFFSET = "offset" as const;
-export const MOTION_TEXT_ZOOMTO = "zoomTo" as const;
-export const MOTION_TEXT_AIRPLANE_COCKPIT = "airplane_cockpit" as const;
-export const MOTION_TEXT_SWAT_OFFICER = "swat_officer" as const;
-export const MOTION_TEXT_HIJACKER = "hijacker" as const;
-export const MOTION_TEXT_COPILOT = "copilot" as const;
-export const MOTION_TEXT_CAPTAIN_PILOT = "captain_pilot" as const;
-export const MOTION_TEXT_PASSENGER_MAN = "passenger_man" as const;
-export const MOTION_TEXT_SIT_HANDS_UP = "sit_hands_up" as const;
-export const MOTION_TEXT_HANDS_UP = "hands_up" as const;
-export const MOTION_TEXT_COWER = "cower" as const;
-export const MOTION_TEXT_CIVILIAN = "civilian" as const;
-export const MOTION_TEXT_GUNNER = "gunner" as const;
-export const MOTION_TEXT_GUN = "gun" as const;
-export const MOTION_TEXT_BEHIND = "behind" as const;
-export const MOTION_TEXT_BESIDE = "beside" as const;
-export const MOTION_TEXT_FEAR = "fear" as const;
-export const MOTION_TEXT_ROLE = "role" as const;
-export const MOTION_TEXT_LANE = "lane" as const;
-export const MOTION_TEXT_SLEEP = "sleep" as const;
-export const MOTION_TEXT_DOOR = "door" as const;
-export const MOTION_TEXT_OPEN = "open" as const;
-export const MOTION_TEXT_BREACH = "breach" as const;
-export const MOTION_TEXT_TAKE_COVER = "take_cover" as const;
-export const MOTION_TEXT_H = "h" as const;
-export const MOTION_TEXT_PILOT = "pilot" as const;
-export const MOTION_TEXT_EVAC = "evac" as const;
-export const MOTION_TEXT_ARMED_WITH_GUNS_POLICE_SPECIAL_FORCES_SOLDIERS_GANGSTERS = "armed with guns (police, special forces, soldiers, gangsters, hijackers)" as const;
-export const MOTION_TEXT_MELEE_FIGHTERS_SWORDS_SPEARS_ARMOR = "melee fighters (swords, spears, armor)" as const;
-export const MOTION_TEXT_PILOTS = "pilots" as const;
-export const MOTION_TEXT_CREW = "crew" as const;
-export const MOTION_TEXT_STUDENTS_PUPILS = "students / pupils" as const;
-export const MOTION_TEXT_TEACHERS = "teachers" as const;
-export const MOTION_TEXT_JUDGES = "judges" as const;
-export const MOTION_TEXT_DOCTORS_NURSES = "doctors / nurses" as const;
-export const MOTION_TEXT_KINGS_QUEENS_EMPERORS = "kings / queens / emperors" as const;
-export const MOTION_TEXT_COOKS = "cooks" as const;
-export const MOTION_TEXT_CLERKS_TELLERS_WAITERS = "clerks / tellers / waiters" as const;
-export const MOTION_TEXT_PRIESTS_MONKS_NUNS = "priests / monks / nuns" as const;
-export const MOTION_TEMPLATE_SYMBOL_46 = (value0: string, value1: string, value2: string): string => value0 + " = " + value1 + ": " + value2;
-export const MOTION_TEMPLATE_CHARACTER_ROLES_THE_DIRECTOR_SEATS_ARMS_AND_PLACES = (value0: string): string => "CHARACTER ROLES (the director seats, arms and places people by role):\n" + value0;
-export const MOTION_TEMPLATE_ROWS_OF = (value0: string, value1: string, value2: string): string => "rows of " + value0 + " " + value1 + value2;
-export const MOTION_TEXT_WITH_PEOPLE_SEATED_BEHIND_THEM = "with people seated behind them" as const;
-export const MOTION_TEXT_TO_SIT_ON = "to sit on" as const;
-export const MOTION_TEXT_AUTO_FILLED_WITH_BACKGROUND_PEOPLE = ", auto-filled with background people" as const;
-export const MOTION_TEMPLATE_SITS_AT_THE = (value0: string, value1: string): string => value0 + " sits at the " + value1;
-export const MOTION_TEXT_SOMEONE = "someone" as const;
-export const MOTION_TEMPLATE_STANDS = (value0: string, value1: string): string => value0 + " stands " + value1;
-export const MOTION_TEMPLATE_BY_THE = (value0: string): string => "by the " + value0;
-export const MOTION_TEXT_AT_THE_FRONT = "at the front" as const;
-export const MOTION_TEMPLATE_STAY_SEATED = (value0: string): string => value0 + " stay seated";
-export const MOTION_TEMPLATE_DOOR = (value0: string): string => "door = " + value0;
-export const MOTION_TEMPLATE_ALREADY_CONTAINS_A_PARKED_NEVER_ADD_PROPS_CLIMB = (value0: string, value1: string): string => "already contains a parked " + value0 + " (never add " + value1 + " props); climb = boarding stairs to its door, slide = evacuation slide, window escape works";
-export const MOTION_TEMPLATE_AN_PROP_BECOMES_A_FULL = (value0: string, value1: string): string => "an " + value0 + " prop becomes a full " + value1;
-export const MOTION_TEMPLATE_TAKE_COVER_USES = (value0: string): string => "take_cover uses " + value0;
-export const MOTION_TEMPLATE_LIE_ON_THE = (value0: string): string => "lie = on the " + value0;
-export const MOTION_TEMPLATE_SITTING_USES = (value0: string): string => "sitting uses " + value0;
-export const MOTION_TEMPLATE_STANDING_PEOPLE_USE_LANE = (value0: string): string => "standing people use lane " + value0;
-export const MOTION_TEMPLATE_STAGING = (value0: string): string => " STAGING: " + value0 + ".";
-export const MOTION_TEMPLATE_PULLED_INTO_FRAME = (value0: string, value1: string): string => value0 + ": " + value1 + " pulled into frame";
-export const MOTION_TEMPLATE_OVERLAPPED = (value0: string, value1: string, value2: string): string => value0 + ": " + value1 + " overlapped " + value2;
-export const MOTION_TEXT_DESK = "desk" as const;
-export const MOTION_TEXT_DESIGN = "design" as const;
-export const MOTION_TEMPLATE_FUNCTION_R_VAR_M_R_MOTIONENGINE_IF_M = (value0: string): string => "\n;(function (r) { var M = r.MotionEngine; if (M && M.registerDesigned) M.registerDesigned(" + value0 + '); })(typeof window !== "undefined" ? window : globalThis);\n';
-export const MOTION_TEXT_DESIGN_EXAMPLES = "design-examples" as const;
-export const MOTION_TEXT_YOU_ARE_THE_LEAD_2D_PROP_AND_SET =
-  "You are the lead 2D prop and set designer of a flat-vector documentary animation series. Every object you draw must look like it belongs to the same hand-made library: clean geometric shapes, bold readable silhouettes, warm limited palettes, soft toon shading (added automatically by the renderer from your colours), no photo realism." as const;
-export const MOTION_TEXT_VIEW_AND_SCALE_STRAIGHT_FRONT_ELEVATION_LIKE_A =
-  "VIEW AND SCALE: straight front elevation like a theatre set (no perspective, no 3/4 view). The object stands on the ground line y = 0, centred on x = 0, and up is NEGATIVE y. 1 unit is about 1 cm: an adult is 180 tall, a door 260, a chair seat 50, a dining table top 75, an office desk top 96, a car 150 tall and 450 long." as const;
-export const MOTION_TEXT_DESIGN_PROCESS_1_BLOCK_THE_SILHOUETTE_WITH_2 = "DESIGN PROCESS: (1) block the silhouette with 2-5 big shapes; (2) add secondary forms (panels, frames, trims, rims, legs); (3) finish with a few accents (handles, rivets, emblems, food, lights) covering at most 15% of the area. Exaggerate the features that make the object instantly recognisable at small size." as const;
-export const MOTION_TEXT_COLOUR_4_8_NAMED_PALETTE_COLOURS_EACH_MATERIAL =
-  "COLOUR: 4-8 named palette colours. Each material gets three values (light / mid / dark). 60-30-10 balance with one accent colour. Light comes from the top-left: give big masses a top-to-bottom 'grad' from lighter to darker. Keep strong value contrast between neighbouring shapes so parts read clearly. Match the era, culture and materials described in the brief." as const;
-export const MOTION_TEXT_CRAFT_OVERLAP_SHAPES_SLIGHTLY_SO_THERE_ARE_NO = "CRAFT: overlap shapes slightly so there are no gaps; keep symmetrical things symmetrical (use group.repeat); no detail thinner than 4 units; no text or letters; do not outline every shape (the renderer adds ink lines in line mode) — use 'stroke' only for wires, poles, handles and thin frames." as const;
-export const MOTION_TEXT_DESIGN_JSON_ASSETS_KIND_ASSET_ID_SNAKE_CASE = 'DESIGN JSON (assets): {"kind":"asset","id":"snake_case_id","name":"display name","category":"furniture|prop|interior|structure|street|vehicle|nature","size":[width,height],"palette":{"name":"#hex"},"tags":["..."],"params":{"open":"0..1 meaning"},"afford":{...},"shapes":[...]}' as const;
-export const MOTION_TEXT_SHAPES_DRAWN_IN_ORDER_LATER_SHAPES_ON_TOP = 'SHAPES (drawn in order, later shapes on top): rect {t,x,y,w,h,r} (x,y = top-left corner) · ellipse {t,cx,cy,rx,ry,rot} · circle {t,cx,cy,r} · poly {t,pts:[[x,y],...],smooth} · path {t,d:"SVG path data"} · line {t,pts,stroke,sw} · group {t,shapes:[...],x,y,rot,sx,sy,ox,oy,repeat:{n,dx,dy}}.' as const;
-export const MOTION_TEXT_SHAPE_STYLE_KEYS_FILL_PALETTE_NAME_OR_HEX =
-  'Shape style keys: fill (palette name or #hex or "none"), grad [top,bottom] vertical gradient, stroke + sw (stroke width), alpha 0..1, depth 0..8 (toon shading strength, 0 = flat; use 2-4 for solid volumes, 0-1 for small flat details), glow (colour halo for lamps), if / unless (draw only when a param is truthy / falsy).' as const;
-export const MOTION_TEXT_ANIMATED_PARAMS_ANY_GROUP_X_Y_ROT_SX = 'Animated params: any group x, y, rot, sx, sy or shape alpha can be {"p":"paramName","a":valueAt0,"b":valueAt1} — e.g. a door leaf group with "sx":{"p":"open","a":1,"b":0.18},"ox":-60 swings open around its hinge at x=-60.' as const;
-export const MOTION_TEXT_AFFORD_HOW_CHARACTERS_USE_IT_ONLY_WHAT_APPLIES =
-  'afford (how characters use it; only what applies): seat [{dx,h}] (sitting points, h = seat height) · faces "right"|"left" (direction a sitter faces) · bed {dx,h} · surface {h,w} (table top other props can stand on) · work {mode:"behind"|"beside",seated,dx} (where a person works at it) · cover {h} (people can crouch behind it) · door {dx} (with params.open).' as const;
-export const MOTION_TEXT_DESIGN_JSON_PLACES_KIND_ENV_ID_SNAKE_CASE =
-  'DESIGN JSON (places): {"kind":"env","id":"snake_case_id","name":"...","category":"interior|exterior","time":"interior|day|dusk|night","width":2400-4000,"palette":{...},"wall":{"color","top":-780,"trim","base"} (interiors),"sky":{"top","bottom"} (exteriors),"floor":{"color","tile":0-200},"layers":[{"depth":0.2-1,"blur":0-2,"elements":[{"x","y","every","skip":[[x0,x1]],"asset":"library id","scale","shapes":[...]}]}],"props":[{"asset","x","lane":"back|mid|front|fore","scale"}],"staging":{optional}}' as const;
-export const MOTION_TEXT_PLACE_RULES_LAYER_ELEMENTS_ARE_DRAWN_RELATIVE_TO =
-  "PLACE RULES: layer elements are drawn relative to the floor line (y = 0, up negative). Depth 1 = back wall; smaller depth = further away (exterior skylines 0.2-0.5). Use 'every' for rhythm (columns, windows, panels) and 'skip' to keep the focal area clear. The camera shows roughly y = 0 to -560 in wide shots and 0 to -420 in medium shots, so keep focal wall decoration between y = -120 and -480. Keep the floor area around the middle (x = width/2 ± 400) free of props at lanes front/fore so actors can stand there. props may use existing library asset ids or ids designed in this run." as const;
-export const MOTION_TEXT_ART_DIRECTOR_REVIEW_YOU_SEE_RENDERS_OF_THE = "ART DIRECTOR REVIEW. You see renders of the candidate design: for an asset, image 1 = the asset alone, image 2 = next to a 180 cm person; for a place, image 1 = wide shot, image 2 = medium shot with people. The last image is a reference sheet of the existing library style." as const;
-export const MOTION_TEXT_SCORE_0_10_8_READY_FOR_BROADCAST_ON =
-  "Score 0-10 (8 = ready for broadcast) on: recognisable as described in the brief; correct proportions versus the person; style consistent with the reference sheet; craftsmanship (clean shapes, no gaps or stray pieces, balanced palette, clear value contrast, right amount of detail); stands correctly on the ground and faces the viewer." as const;
-export const MOTION_TEXT_IF_THE_SCORE_IS_BELOW_8_RETURN_AN = 'If the score is below 8, return an improved FULL design JSON in "design" that fixes every issue (keep the same id and kind). If it is 8 or more, "design" may be null.' as const;
-export const MOTION_TEXT_RETURN_SCORE_N_ISSUES_SHORT_ISSUE_DESIGN_NULL = 'Return {"score":n,"issues":["short issue"],"design":{...}|null}.' as const;
-export const MOTION_TEXT_ENV_2 = "env" as const;
-export const MOTION_TEXT_VN_COURTROOM_JSON = "vn_courtroom.json" as const;
-export const MOTION_TEXT_BANH_MI_CART_JSON = "banh_mi_cart.json" as const;
-export const MOTION_TEXT_JUDGE_BENCH_VN_JSON = "judge_bench_vn.json" as const;
-export const MOTION_TEXT_BOOKSHELF = "bookshelf" as const;
-export const MOTION_TEXT_BARREL = "barrel" as const;
-export const MOTION_TEXT_TYPEWRITER = "typewriter" as const;
-export const MOTION_TEXT_RADIO = "radio" as const;
-export const MOTION_TEXT_STREET_VENDOR_CART = "street_vendor_cart" as const;
-export const MOTION_TEXT_TENT = "tent" as const;
 export const MOTION_TEXT_EXTERIOR = "exterior" as const;
-export const MOTION_TEMPLATE_WIDE = (value0: string): string => value0 + "_wide";
-export const MOTION_TEMPLATE_MED = (value0: string): string => value0 + "_med";
-export const MOTION_TEMPLATE_ISO = (value0: string): string => value0 + "_iso";
-export const MOTION_TEXT_DESIGN_STUDIO = "design_studio" as const;
-export const MOTION_TEMPLATE_SCALE = (value0: string): string => value0 + "_scale";
-export const MOTION_TEMPLATE_REF = (value0: string): string => "ref_" + value0;
-export const MOTION_TEMPLATE_EXAMPLES_OF_APPROVED_DESIGNS_FROM_THIS_LIBRARY = (value0: string): string => "EXAMPLES OF APPROVED DESIGNS FROM THIS LIBRARY:\n" + value0;
-export const MOTION_TEXT_ATTACHED_IMAGE_REFERENCE_SHEET_OF_THE_EXISTING_LIBRARY = "ATTACHED IMAGE: reference sheet of the existing library style. Match it." as const;
-export const MOTION_TEMPLATE_BRIEF_DESIGN_THE_ID = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string): string => "BRIEF: design the " + value0 + ' "' + value1 + '" (id "' + value2 + '"). ' + value3 + value4 + value5 + value6;
 export const MOTION_TEXT_PLACE = "place" as const;
-export const MOTION_TEMPLATE_APPROXIMATE_SIZE_UNITS = (value0: string): string => " Approximate size: " + value0 + " units.";
-export const MOTION_TEXT_X_2 = " x " as const;
-export const MOTION_TEMPLATE_CHARACTERS_WILL_USE_IT_TO = (value0: string): string => " Characters will use it to: " + value0 + ".";
-export const MOTION_TEMPLATE_STORY_CONTEXT = (value0: string): string => " Story context: " + value0;
-export const MOTION_TEMPLATE_RETURN_ONLY_THE_DESIGN_JSON_OBJECT_WITH_KIND = (value0: string, value1: string): string => 'Return ONLY the design JSON object with "kind":"' + value0 + '" and "id":"' + value1 + '".';
-export const MOTION_TEMPLATE_BRIEF = (value0: string, value1: string): string => 'BRIEF: "' + value0 + '" — ' + value1;
-export const MOTION_TEMPLATE_VALIDATOR_WARNINGS = (value0: string): string => "VALIDATOR WARNINGS: " + value0;
-export const MOTION_TEMPLATE_CURRENT_DESIGN_JSON = (value0: string): string => "CURRENT DESIGN JSON:\n" + value0;
-export const MOTION_TEMPLATE_THIET_KE_CHUA_HOP_LE_NHO_AI_SUA = (value0: string, value1: string): string => 'Thiết kế "' + value0 + '" chưa hợp lệ (' + value1 + ") – nhờ AI sửa…";
-export const MOTION_TEXT_STRUCTURE = "structure" as const;
 export const MOTION_TEMPLATE_R = (value0: string): string => "r" + value0;
-export const MOTION_TEMPLATE_THIET_KE_VONG_10 = (value0: string, value1: string, value2: string, value3: string): string => 'Thiết kế "' + value0 + '" vòng ' + value1 + ": " + value2 + "/10" + value3;
-export const MOTION_TEMPLATE_SYMBOL_47 = (value0: string): string => " – " + value0;
-export const MOTION_TEMPLATE_BO_THIET_KE_CHUA_DAT_DUNG_DO_CO = (value0: string): string => 'Bỏ thiết kế "' + value0 + '" (chưa đạt), dùng đồ có sẵn gần nhất.';
-export const MOTION_TEMPLATE_DA_THEM_VAO_THU_VIEN_10 = (value0: string, value1: string): string => 'Đã thêm "' + value0 + '" vào thư viện (' + value1 + "/10).";
-export const MOTION_TEMPLATE_THIET_KE_MOI_DAO_CU_BOI_CANH_CON = (value0: string, value1: string): string => "Thiết kế mới " + value0 + " đạo cụ/bối cảnh còn thiếu trong thư viện: " + value1;
-export const MOTION_TEMPLATE_LOI_THIET_KE = (value0: string, value1: string): string => 'Lỗi thiết kế "' + value0 + '": ' + value1;
-export const MOTION_TEMPLATE_NEW_ITEMS_DESIGNED_FOR_THIS_STORY_PREFER_THEM = (value0: string): string => "\nNEW ITEMS DESIGNED FOR THIS STORY (prefer them where the narration shows them): " + value0;
-export const MOTION_TEXT_SCORE = "score" as const;
-export const MOTION_TEXT_BRIEF = "brief" as const;
-export const MOTION_TEXT_KHONG_CO_YEU_CAU_THIET_KE_HOP_LE = "Không có yêu cầu thiết kế hợp lệ (id mới, tên, mô tả)." as const;
-export const MOTION_TEXT_LIST_AT_MOST_6_ISSUES_EACH_A_CONCRETE =
-  "List at most 6 issues, each a concrete fix instruction that names the part to change (for example: make the table legs twice as thick; move the window to x = -300; add a darker bottom band to the counter). For places also judge whether the wall is filled with rich, life-size, story-specific decoration around the centre and whether the room reads instantly." as const;
-export const MOTION_TEXT_RETURN_ONLY_SCORE_N_ISSUES_FIX_INSTRUCTION = 'Return only {"score":n,"issues":["fix instruction"]}.' as const;
-export const MOTION_TEXT_PLACE_COMPOSITION_AROUND_THE_CENTRE_OF_THE_ROOM =
-  "PLACE COMPOSITION: around the centre of the room (x = width/2 ± 900) place 4-7 rich, life-size focal elements on the back wall and in props (for example shelves 200 wide, windows 170 x 280, a 180 cm mannequin, a counter), plus a repeating rhythm element across the whole width. Nothing important should be smaller than 60 units. Use props (lane back or mid) for free-standing furniture so characters can interact with it." as const;
-export const MOTION_TEMPLATE_REVISION_THE_FIRST_ATTACHED_IMAGES_ARE_RENDERS_OF = (value0: string, value1: string): string => "REVISION: the first attached images are renders of your previous design. The art director scored it " + value0 + "/10 and asks you to fix:\n- " + value1;
-export const MOTION_TEXT_SYMBOL_48 = "\n- " as const;
-export const MOTION_TEMPLATE_PREVIOUS_DESIGN_JSON = (value0: string): string => "PREVIOUS DESIGN JSON:\n" + value0;
-export const MOTION_TEXT_RETURN_THE_IMPROVED_FULL_DESIGN_JSON_SAME_ID = "Return the improved FULL design JSON (same id and kind). Keep what already works." as const;
-export const MOTION_TEMPLATE_AI_THIET_KE_TRA_LOI_THU_LAI = (value0: string): string => "AI thiết kế trả lỗi (" + value0 + ") – thử lại…";
-export const MOTION_TEXT_RAISE_OVERALL_CRAFTSMANSHIP = "raise overall craftsmanship" as const;
-export const MOTION_TEMPLATE_PLACE_FURNITURE_PROPS_AND_LAYER_ELEMENTS_MAY_ONLY = (value0: string): string =>
-  "PLACE FURNITURE: props and layer elements may only use these existing library ids: " + value0 + '. Anything else the place needs (a special counter, a mannequin, a mirror, shelves of cloth…) must be designed inside the place JSON in "assets":[full asset design JSON, …] (max 6, same asset format, each with its own id, size and shapes) and then referenced by that id in props or elements.';
-export const MOTION_TEMPLATE_PLACE_FURNITURE_PROPS_AND_LAYER_ELEMENTS_MAY_USE = (value0: string): string =>
-  "PLACE FURNITURE: props and layer elements may use these existing library ids: " +
-  value0 +
-  '. Do NOT draw custom furniture inside the place JSON. If the place needs free-standing objects the library lacks (a special counter, a mannequin, a standing mirror, a cloth shelf…), list them in "needs":[{"id":"new_snake_id","name","brief","size":[w,h],"use"}] (max 3) and reference those ids in props — they are designed separately by the prop team. Wall-mounted decoration (shelves on the wall, windows, posters, fans, clocks) is drawn directly in the layers.';
-export const MOTION_TEMPLATE_CAN_THEM_DO_RIENG = (value0: string, value1: string): string => '"' + value0 + '" cần thêm đồ riêng: ' + value1;
 export const MOTION_TEXT_ARTIFACTTYPE = '{"artifactType"' as const;
 export const MOTION_TEXT_SYMBOL_49 = "\\" as const;
 export const MOTION_TEXT_SYMBOL_50 = "[" as const;
 export const MOTION_TEXT_SYMBOL_51 = "]" as const;
-export const MOTION_TEXT_TABLETOP = "tabletop" as const;
-export const MOTION_TEXT_WALL = "wall" as const;
-export const MOTION_TEXT_PLACEMENT_ADD_PLACE_FLOOR_STANDS_ON_THE_GROUND = 'PLACEMENT: add "place": "floor" (stands on the ground), "tabletop" (small object that sits on a table or counter — the director puts it on one) or "wall" (hangs on the wall; add "mountY" = height of its bottom edge above the floor, e.g. 140 for a wall clock).' as const;
-export const MOTION_TEMPLATE_BAN_VE_LAI_CHI_DAT_10_THAP_HON = (value0: string, value1: string, value2: string): string => 'Bản vẽ lại "' + value0 + '" chỉ đạt ' + value1 + "/10, thấp hơn bản cũ (" + value2 + "/10) – giữ bản cũ.";
-export const MOTION_TEMPLATE_VE_LAI = (value0: string): string => 'Vẽ lại "' + value0 + '"…';
-export const MOTION_TEMPLATE_SYMBOL_48 = (value0: string): string => value0 + "-";
-export const MOTION_TEMPLATE_SYMBOL_49 = (value0: string, value1: string, value2: string): string => value0 + "/" + value1 + "/" + value2;
-export const MOTION_TEXT_KHONG_TIM_THAY_THIET_KE = "Không tìm thấy thiết kế" as const;
-export const MOTION_TEXT_KHONG_TIM_THAY_ANH = "Không tìm thấy ảnh" as const;
-export const MOTION_TEXT_2_DIGIT = "2-digit" as const;
-export const MOTION_TEXT_NUMERIC = "numeric" as const;
-export const MOTION_TEXT_TOP = "top" as const;
-export const MOTION_TEXT_DESIGNED = "designed" as const;
-export const MOTION_TEMPLATE_DESIGN_REDRAWN = (value0: string): string => 'Đã vẽ lại "' + value0 + '".';
-export const MOTION_TEXT_TRANSPARENT = "transparent" as const;
-export const MOTION_TEXT_ASPECT_VIDEO = "aspect-video" as const;
-export const MOTION_TEXT_RESIZE_NONE_LEADING_RELAXED = "resize-none leading-relaxed" as const;
-export const MOTION_DESIGN_REDRAW_SUFFIX = "/redesign" as const;
-export const MOTION_TEMPLATE_DESIGN_ITEM_URL = (base: string, id: string, suffix: string): string => `${base}/${id}${suffix}`;
-export const MOTION_TEMPLATE_DESIGN_FILE_URL = (base: string, relativePath: string): string => `${base}?path=${relativePath}`;
+export const MOTION_TEXT_REF = "__ref" as const;
+export const MOTION_TEXT_GEN_RUNID = "gen.runId" as const;
+export const MOTION_TEMPLATE_SYMBOL_50 = (value0: string, value1: string): string => value0 + " — " + value1;
+export const MOTION_TEMPLATE_LOOK = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "- " + value0 + " (" + value1 + "): " + value2 + ", " + value3 + ". Look: " + value4;
+export const MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN = (value0: string): string => "AI sửa trang phục (lần " + value0 + ")…";
+export const MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH = "AI thiết kế trang phục ma-nơ-canh và tông màu…" as const;
+export const MOTION_TEXT_NEUTRAL = "neutral" as const;
+export const MOTION_TEXT_E9EAEC = "#e9eaec" as const;
+export const MOTION_TEMPLATE_CAST_IS_MISSING = (value0: string): string => "cast." + value0 + " is missing";
+export const MOTION_TEMPLATE_CAST_2 = (value0: string, value1: string): string => "cast." + value0 + ": " + value1;
+export const MOTION_TEXT_TROUSERS = "trousers" as const;
+export const MOTION_TEXT_JEANS = "jeans" as const;
+export const MOTION_TEXT_SHORTS = "shorts" as const;
+export const MOTION_TEXT_SKIRT = "skirt" as const;
+export const MOTION_TEXT_DRESS = "dress" as const;
+export const MOTION_TEXT_2A2C30 = "#2a2c30" as const;
+export const MOTION_TEXT_PLAIN = "plain" as const;
+export const MOTION_TEXT_SHOES = "shoes" as const;
+export const MOTION_TEXT_SNEAKERS = "sneakers" as const;
+export const MOTION_TEXT_BOOTS = "boots" as const;
+export const MOTION_TEXT_141414 = "#141414" as const;
+export const MOTION_TEMPLATE_TRANG_PHUC_CON_LOI_NHO_DA_TU_BO = (value0: string): string => "Trang phục còn " + value0 + " lỗi nhỏ – đã tự bỏ phần sai.";
+export const MOTION_TEXT_SHIRT = "shirt" as const;
+export const MOTION_TEXT_6A6F78 = "#6a6f78" as const;
+export const MOTION_TEXT_151515 = "#151515" as const;
+export const MOTION_TEXT_ESTABLISHING_SHOTS = "- (establishing shots)" as const;
+export const MOTION_TEXT_CLEAN = "clean" as const;
+export const MOTION_TEXT_CAMERA = "camera" as const;
+export const MOTION_TEMPLATE_A_2 = (value0: string): string => value0 + "_a";
+export const MOTION_TEXT_GEN3D = "gen3d" as const;
+export const MOTION_TEMPLATE_B_2 = (value0: string): string => value0 + "_b";
+export const MOTION_TEMPLATE_LOC = (value0: string): string => "loc_" + value0;
+export const MOTION_TEMPLATE_FILM_LOOK_GRADE = (value0: string, value1: string, value2: string): string => value0 + " film look, " + value1 + " grade " + value2;
+export const MOTION_TEMPLATE_USER_NOTE = (value0: string): string => "USER NOTE: " + value0;
+export const MOTION_TEMPLATE_AI_VE_BOI_CANH = (value0: string): string => "AI vẽ bối cảnh “" + value0 + "”…";
+export const MOTION_TEMPLATE_AI_SUA_LOI_DINH_DANG_BOI_CANH = (value0: string): string => "AI sửa lỗi định dạng bối cảnh “" + value0 + "”…";
+export const MOTION_TEMPLATE_AI_CHINH_BOI_CANH_THEO_NHAN_XET = (value0: string): string => "AI chỉnh bối cảnh “" + value0 + "” theo nhận xét…";
+export const MOTION_TEMPLATE_BO_QUA_LOI = (value0: string): string => " (bỏ qua " + value0 + " lỗi)";
+export const MOTION_TEMPLATE_BOI_CANH_KHOI_DEN = (value0: string, value1: string, value2: string, value3: string): string => "Bối cảnh “" + value0 + "”: " + value1 + " khối, " + value2 + " đèn" + value3 + ".";
+export const MOTION_TEMPLATE_BOI_CANH_CO_LOI_DINH_DANG_NHO_AI = (value0: string, value1: string): string => "Bối cảnh “" + value0 + "” có " + value1 + " lỗi định dạng – nhờ AI sửa.";
+export const MOTION_TEMPLATE_BO_QUA_BUOC_AI_CHAM_BOI_CANH = (value0: string): string => "Bỏ qua bước AI chấm bối cảnh: " + value0;
+export const MOTION_TEMPLATE_DIEM_CAN_SUA = (value0: string): string => " – " + value0 + " điểm cần sửa";
+export const MOTION_TEMPLATE_AI_CHAM_BOI_CANH_10 = (value0: string, value1: string, value2: string): string => "AI chấm bối cảnh “" + value0 + "”: " + value1 + "/10" + value2 + ".";
+export const MOTION_TEMPLATE_KHONG_VE_DUOC_BOI_CANH = (value0: string): string => "Không vẽ được bối cảnh “" + value0 + "”";
+export const MOTION_TEXT_BOX = "box" as const;
+export const MOTION_TEXT_CYLINDER = "cylinder" as const;
+export const MOTION_TEXT_CONE = "cone" as const;
+export const MOTION_TEXT_SPHERE = "sphere" as const;
+export const MOTION_TEXT_CAPSULE = "capsule" as const;
+export const MOTION_TEXT_PLANE = "plane" as const;
+export const MOTION_TEXT_EXTRUDE = "extrude" as const;
+export const MOTION_TEXT_USE = "use" as const;
+export const MOTION_TEXT_REPEAT = "repeat" as const;
+export const MOTION_TEMPLATE_CENTRE_SIZE_X_Y_Z_TOP_Y = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string): string => value0 + ": centre [" + value1 + "," + value2 + "] size " + value3 + "×" + value4 + "×" + value5 + " (x,y,z) top y=" + value6;
+export const MOTION_TEMPLATE_SYMBOL_51 = (value0: string): string => " (" + value0 + ")";
+export const MOTION_TEMPLATE_LOCATION_TIME = (value0: string, value1: string, value2: string, value3: string): string => 'LOCATION "' + value0 + '"' + value1 + ": " + value2 + ", time " + value3;
+export const MOTION_TEMPLATE_STAGE_CENTRE_SIZE_X_Z_DEFAULT_CAMERA_POS = (value0: string, value1: string, value2: string, value3: string): string => "  stage centre [" + value0 + "] size " + value1 + " (x,z); default camera pos [" + value2 + "] target [" + value3 + "]";
+export const MOTION_TEMPLATE_SYMBOL_52 = (value0: string, value1: string): string => value0 + " [" + value1 + "]";
+export const MOTION_TEMPLATE_MARKS = (value0: string): string => "  marks: " + value0;
+export const MOTION_TEXT_NONE_NAMED = "none named" as const;
+export const MOTION_TEMPLATE_OBJECTS_2 = (value0: string): string => "  objects: " + value0;
+export const MOTION_TEXT_DOLLY_IN = "dolly_in" as const;
+export const MOTION_TEXT_NOBODY = "nobody" as const;
+export const MOTION_TEXT_FOLLOW_THE_NARRATION = "(follow the narration)" as const;
+export const MOTION_TEMPLATE_FIX_REQUIRED = (value0: string): string => "\n  FIX REQUIRED: " + value0;
+export const MOTION_TEMPLATE_ID_LOCATION_TIME_SHOT_HINT_S_CAST_NARRATION = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string, value6: string, value7: string, value8: string): string =>
+  "- id " + value0 + " | location " + value1 + " | time " + value2 + " | shot hint " + value3 + " | ≈" + value4 + " s | cast " + value5 + "\n  narration: " + value6 + "\n  action: " + value7 + value8;
+export const MOTION_TEXT_BODY = "body" as const;
+export const MOTION_TEMPLATE_M = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string): string => "- " + value0 + ": " + value1 + " (" + value2 + "), " + value3 + ", " + value4 + " m – " + value5;
+export const MOTION_TEXT_LOCATION = "location" as const;
+export const MOTION_TEMPLATE_CONTINUITY_THE_SHOT_BEFORE_THIS_GROUP_WAS_AT = (value0: string, value1: string): string => "CONTINUITY: the shot before this group was " + value0 + " at " + value1 + " – keep positions consistent when the place is the same.";
+export const MOTION_TEMPLATE_AI_DAN_DUNG_LAI_CANH_CON_LOI = (value0: string): string => "AI dàn dựng lại " + value0 + " cảnh còn lỗi…";
+export const MOTION_TEMPLATE_AI_DAN_DUNG_CANH_VI_TRI_DONG_TAC = (value0: string): string => "AI dàn dựng " + value0 + " cảnh (vị trí, động tác, máy quay)…";
+export const MOTION_TEMPLATE_DAN_DUNG_LOI = (value0: string): string => "Dàn dựng lỗi: " + value0;
+export const MOTION_TEXT_THIS_BEAT_WAS_MISSING_FROM_YOUR_ANSWER = "this beat was missing from your answer" as const;
+export const MOTION_TEMPLATE_FORMAT_ERRORS = (value0: string): string => "format errors: " + value0;
+export const MOTION_TEMPLATE_CANH_DUNG_BO_TRI_TU_DONG = (value0: string): string => "Cảnh " + value0 + ": dùng bố trí tự động.";
+export const MOTION_TEXT_DRAFT = "draft" as const;
+export const MOTION_TEMPLATE_RENDER_ERROR = (value0: string): string => "render error: " + value0;
+export const MOTION_TEMPLATE_NARRATION_ACTION_AUTO_CHECK = (value0: string, value1: string, value2: string, value3: string): string => "- " + value0 + ': narration "' + value1 + '" | action: ' + value2 + " | auto-check: " + value3;
+export const MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_LAI_CANH = (value0: string): string => "Bỏ qua bước AI xem lại cảnh: " + value0;
+export const MOTION_TEXT_RUNID = "runId" as const;
+export const MOTION_TEXT_BIBLE = "bible" as const;
+export const MOTION_TEXT_LOCATIONS = "locations" as const;
+export const MOTION_TEMPLATE_VE_BOI_CANH = (value0: string): string => "Vẽ " + value0 + " bối cảnh…";
+export const MOTION_TEXT_STAGING = "staging" as const;
+export const MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH = (value0: string): string => "Dựng ảnh xem trước " + value0 + " cảnh…";
+export const MOTION_TEXT_AI_XEM_LAI_TUNG_CANH_CO_KHOP_LOI = "AI xem lại từng cảnh có khớp lời dẫn không…" as const;
+export const MOTION_TEXT_TAT_CA_CANH_DAT = "Tất cả cảnh đạt." as const;
+export const MOTION_TEMPLATE_SUA_CANH_THEO_NHAN_XET = (value0: string): string => "Sửa " + value0 + " cảnh theo nhận xét…";
+export const MOTION_TEXT_SO_DO_MINH_HOA_2 = "Sơ đồ minh hoạ" as const;
+export const MOTION_TEXT_CAMERAS = "cameras" as const;
+export const MOTION_TEMPLATE_C_3 = (value0: string, value1: string): string => value0 + "_c" + value1;
+export const MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2 = "Kịch bản chưa có beat nào" as const;
+export const MOTION_TEXT_BG3D = "bg3d" as const;
+export const MOTION_TEMPLATE_FUNCTION_IF_TYPEOF_FONTFACE_UNDEFINED_TYPEOF_DOCUMENT_UNDEFINED_2 = (value0: string): string =>
+  "(function(){if(typeof FontFace==='undefined'||typeof document==='undefined')return;var list=" +
+  value0 +
+  ";var ps=list.map(function(f){try{var ff=new FontFace(f.family,'url('+f.src+') format(\"woff2\")',{weight:f.weight,style:f.style,unicodeRange:f.unicodeRange});document.fonts.add(ff);return ff.load().catch(function(){});}catch(e){return Promise.resolve();}});if(window.MotionEngine)window.MotionEngine.fontsReady=Promise.all(ps);})();";
+export const MOTION_TEMPLATE_DOCTYPE_HTML_HTML_HEAD_META_CHARSET_UTF_8_2 = (value0: string, value1: string, value2: string, value3: string, value4: string): string =>
+  '<!doctype html><html><head><meta charset="utf-8"><style>' +
+  value0 +
+  '\nhtml,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head><body><canvas id="c"></canvas>\n<script>' +
+  value1 +
+  "</script>\n<script>\nwindow.__SPEC=" +
+  value2 +
+  ";\nwindow.__fontsReady=Promise.all(" +
+  value3 +
+  ".map(function(f){return document.fonts.load(f,'Việt Nam ẩ ữ')})).then(function(){return document.fonts.ready});\nwindow.__setup=async function(quality,width,height){\n  var ME=MotionEngine;if(ME.GEN&&ME.GEN.prepare){await ME.GEN.prepare(window.__SPEC," +
+  value4 +
+  ");}\n  window.__R=ME.createRenderer(document.getElementById('c'),window.__SPEC,{quality:quality,width:width,height:height});\n  return window.__R.duration;\n};\nwindow.__load=async function(spec,quality,width,height){\n  window.__SPEC=spec;if(MotionEngine.GEN)MotionEngine.GEN.info={};return window.__setup(quality,width,height);\n};\nwindow.__frames=function(start,end,fps,q){var out=[];var cv=document.getElementById('c');for(var i=start;i<end;i++){window.__R.drawFrame(i/fps);out.push(cv.toDataURL('image/jpeg',q).slice(23));}return out;};\nwindow.__still=function(t,q){window.__R.drawFrame(t);var info=(MotionEngine.GEN&&MotionEngine.GEN.info)||{};return {img:document.getElementById('c').toDataURL('image/jpeg',q).slice(23),info:JSON.parse(JSON.stringify(info))};};\n</script></body></html>";
+export const MOTION_TEXT_DEMO = "demo" as const;
+export const MOTION_TEXT_DAWN = "dawn" as const;
+export const MOTION_TEXT_OVERCAST = "overcast" as const;
+export const MOTION_TEXT_OVER_SHOULDER = "over_shoulder" as const;
+export const MOTION_TEXT_LOW = "low" as const;
+export const MOTION_TEXT_FEMALE = "female" as const;
+export const MOTION_TEXT_MAIN_PLACE = "main_place" as const;
+export const MOTION_TEMPLATE_SYMBOL_53 = (value0: string): string => '"' + value0 + '"';
+export const MOTION_TEXT_NATURAL_FLUENT_VIETNAMESE_IN_A_DOCUMENTARY_STORYTELLING_VOICE_2 = "Natural, fluent Vietnamese in a documentary storytelling voice" as const;
+export const MOTION_TEXT_NATURAL_ENGLISH_DOCUMENTARY_NARRATION_SHORT_CLEAR_SENTENCES_2 = "Natural English documentary narration, short clear sentences" as const;
+export const MOTION_TEXT_THE_FIRST_BEAT_USES_VISUAL_TITLE_A_HOOK_2 = '\n- The first beat uses visual "title" (a hook) – or a strong establishing scene.' as const;
+export const MOTION_TEXT_THE_LAST_BEAT_USES_VISUAL_ENDING_WITH_A_2 = '\n- The last beat uses visual "ending" with a closing line.' as const;
+export const MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2 = (value0: string): string => "Continue naturally from the previous chapter, which ended with:\n" + value0;
+export const MOTION_TEMPLATE_SYMBOL_54 = (value0: string, value1: string, value2: string, value3: string): string => "- " + value0 + ": " + value1 + " (" + value2 + ") – " + value3;
+export const MOTION_TEMPLATE_SYMBOL_55 = (value0: string, value1: string, value2: string): string => "- " + value0 + ": " + value1 + " – " + value2;
+export const MOTION_TEMPLATE_YOUR_PREVIOUS_ANSWER_FAILED_RETURN_ONLY_THE_JSON = (value0: string): string => "\n\nYOUR PREVIOUS ANSWER FAILED (" + value0 + "). Return only the JSON object.";
+export const MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2 = "Chương không có beat nào" as const;
+export const MOTION_TEXT_ACTION = "action" as const;
+export const MOTION_TEMPLATE_SYMBOL_56 = (value0: string): string => value0 + "**";
+export const MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM = " – không dùng được GPU, render sẽ chậm" as const;
+export const MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL = (value0: string, value1: string, value2: string): string => "Cảnh 3D (AI vẽ): " + value0 + " shot – WebGL: " + value1 + value2;
+export const MOTION_TEXT_KHONG_CO_CANH_3D = "Không có cảnh 3D" as const;
+export const MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM = (value0: string, value1: string, value2: string, value3: string): string => "AI chia " + value0 + " chương, " + value1 + " nhân vật, " + value2 + " bối cảnh, " + value3 + " điểm cần kiểm chứng.";
+export const MOTION_TEXT_NO_CACHE = "no-cache" as const;
+export const MOTION_TEXT_RENDERMODE = "renderMode" as const;
+export const MOTION_TEXT_TOONSTYLE = "toonStyle" as const;
+export const MOTION_TEXT_USEART = "useArt" as const;
+export const MOTION_TEXT_ARTENGINE = "artEngine" as const;
+export const MOTION_TEXT_ARTREVIEW = "artReview" as const;
+export const MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP = (value0: string): string => value0 + " cảnh chưa dựng được – bấm “Dựng tiếp”.";
+export const MOTION_TEXT_DA_DUNG_XONG_CAC_CANH_3D = "Đã dựng xong các cảnh 3D" as const;
+export const MOTION_TEMPLATE_NAME_DEMO = (value0: string): string => value0 + "?name=demo";
+export const MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA = "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse shadow-md shadow-purple-600/30" as const;
+export const MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_2 = "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-purple-600/25 active:scale-98 border border-purple-400/40" as const;
+export const MOTION_TEXT_BG_SLATE_100_HOVER_BG_SLATE_200_TEXT = "bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700" as const;
+export const MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT_2 = "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25" as const;
+export const MOTION_TEXT_PLACES = "places" as const;
+export const MOTION_TEXT_SCENES = "scenes" as const;
+export const MOTION_TEXT_10 = "/10" as const;
+export const MOTION_TEMPLATE_SYMBOL_57 = (value0: string, value1: string): string => " · " + value0 + " " + value1;
+export const MOTION_TEMPLATE_V = (value0: string): string => "&v=" + value0;
+export const MOTION_TEXT_STILL_LABEL_BG = "rgba(0,0,0,0.65)" as const;
+export const MOTION_TEXT_STILL_LABEL_FG = "#ffffff" as const;
+export const MOTION_TEXT_STILL_LABEL_FONT = "bold 22px sans-serif" as const;

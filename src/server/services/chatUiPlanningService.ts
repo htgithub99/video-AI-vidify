@@ -587,13 +587,16 @@ const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefi
   rooms.delete(projectId);
   return undefined;
 };
-const createRoom = async (context: BrowserContext, url: string, rooms: Map<string, Page>, projectId: string): Promise<Page> => {
+const createRoom = async (context: BrowserContext, url: string, rooms: Map<string, Page>, projectId: string, signal?: AbortSignal): Promise<Page> => {
+  throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
   if (existingRoom) return existingRoom;
   const page = await context.newPage();
-  rooms.set(projectId, page);
   try {
+    throwIfPlanningCancelled(signal);
+    rooms.set(projectId, page);
     await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
+    throwIfPlanningCancelled(signal);
     return page;
   } catch (error) {
     rooms.delete(projectId);
@@ -1298,7 +1301,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
+  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
   await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
   await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
@@ -1324,14 +1327,14 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
   throwIfPlanningCancelled(request.signal);
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request));
+    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
     await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
     await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-    const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request));
+    const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
     await ensureChatGptReady(room, browser.account.email);
     return;
   }
@@ -1339,7 +1342,7 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
     const browser = await getOrLaunchGrokBrowser(request.chromeHeadless);
     const releaseBootstrap = await getGrokBootstrapMutex(browser.context).acquire();
     try {
-      const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request));
+      const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request), request.signal);
       await ensureGrokReady(room, request);
       await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
     } finally {
@@ -1353,7 +1356,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
   const releaseBootstrap = await getGrokBootstrapMutex(browser.context).acquire();
   let room: Page;
   try {
-    room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request));
+    room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request), request.signal);
     await ensureGrokReady(room, request);
   } finally {
     releaseBootstrap();
@@ -1380,7 +1383,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request));
+  const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
     room,
@@ -1419,6 +1422,10 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   planningMutexes.set(roomKey, planningMutex);
   const mutexStartedAt = Date.now();
   const release = await planningMutex.acquire();
+  const closeCancelledRoom = () => {
+    void closeChatPlanningRoom(request).then(() => closeChatBrowserIfIdle()).catch(() => undefined);
+  };
+  request.signal?.addEventListener("abort", closeCancelledRoom, { once: true });
   let responseCompleted = false;
   const diagnosticBase = { runId: request.requestId || request.projectId, workerId: request.workerId, provider: request.provider, model: request.model, stage: request.artifactType || SOURCE_TEXT_PLANNING, attachmentCount: request.attachments?.length || 0 };
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_REQUEST_STARTED, { ...diagnosticBase, elapsedMs: Date.now() - mutexStartedAt });
@@ -1433,6 +1440,7 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
       try {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_STARTED, { ...diagnosticBase, attempt: recoveryAttempt + 1 });
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
+        throwIfPlanningCancelled(request.signal);
         const text = await generator(request);
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: text.length, elapsedMs: Date.now() - mutexStartedAt });
         providerErrorCounts.delete(roomKey);
@@ -1472,9 +1480,11 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     }
     throw error;
   } finally {
-    if (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE)) {
+    request.signal?.removeEventListener("abort", closeCancelledRoom);
+    if (request.signal?.aborted || (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE))) {
       await closeChatPlanningRoom(request);
     }
     release();
+    if (request.signal?.aborted) await closeChatBrowserIfIdle();
   }
 };

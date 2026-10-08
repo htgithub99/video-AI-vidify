@@ -26,60 +26,7 @@ export enum MotionJobStatus {
 }
 export enum MotionWorkspaceTab {
   CREATE = "create",
-  LIBRARY = "library",
-  REAL = "real",
-  DESIGNS = "designs",
-  TOON = "toon",
   RESULTS = "results",
-}
-export enum MotionLibraryCategory {
-  CHARACTER = "character",
-  VEHICLE = "vehicle",
-  NATURE = "nature",
-  URBAN = "urban",
-  INTERIOR = "interior",
-  PROP = "prop",
-  ENVIRONMENT = "environment",
-  ACTION = "action",
-}
-export interface MotionCharacterDef {
-  id: string;
-  name: string;
-  tags?: string[];
-  builtin?: boolean;
-  gender?: "male" | "female";
-  age?: "child" | "teen" | "adult" | "elderly";
-  build?: "slim" | "normal" | "heavy" | "athletic";
-  height?: number;
-  hair?: string;
-  headwear?: string;
-  outfit?: string;
-  facial?: string;
-  accessories?: string[];
-  colors?: Record<string, string>;
-  realModel?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-export interface MotionCatalogItem {
-  id: string;
-  name: string;
-  category?: string;
-  tags?: string[];
-  params?: Record<string, string>;
-  description?: string;
-}
-export interface MotionCatalog {
-  version: string;
-  aspects: string[];
-  looks: { id: string; name: string }[];
-  quality: string[];
-  transitions: string[];
-  templates: MotionCatalogItem[];
-  environments: MotionCatalogItem[];
-  assets: MotionCatalogItem[];
-  characters: MotionCharacterDef[];
-  actions: { id: string; name: string; loop: boolean }[];
 }
 export interface MotionShot {
   id?: string;
@@ -90,78 +37,20 @@ export interface MotionShot {
   transition?: { type: string; duration?: number; direction?: string };
   overlays?: Record<string, unknown>[];
 }
-export type MotionRenderMode = "2d" | "3d" | "real" | "toon";
-export type MotionToonStyle = "line" | "flat";
-export type MotionRealKind = "model" | "character" | "animation" | "hdri" | "texture";
-export interface MotionRealAsset {
-  id: string;
-  name: string;
-  kind: MotionRealKind;
-  source: "polyhaven" | "import";
-  sourceId?: string;
-  license: string;
-  author?: string;
-  file?: string;
-  maps?: { diff?: string; nor?: string; arm?: string };
-  thumb?: string;
-  bytes: number;
-  bind: string[];
-  newId?: string;
-  base?: string;
-  category?: string;
-  size?: number;
-  yaw?: number;
-  clips?: string[];
-  actionMap?: Record<string, string>;
-  tags?: string[];
-  createdAt: string;
-}
-export interface MotionRealEnvOverride {
-  hdri?: string;
-  sky?: string;
-  ground?: string;
-  road?: string | null;
-  grass?: number;
-  set?: boolean;
-  cards?: "none" | "far" | "all";
-}
-export interface MotionRealManifest {
-  version: number;
-  items: MotionRealAsset[];
-  envs: Record<string, MotionRealEnvOverride>;
-}
-export interface MotionPolyHavenAsset {
-  id: string;
-  name: string;
-  type: "hdris" | "textures" | "models";
-  categories: string[];
-  tags: string[];
-  thumb: string;
-  downloads: number;
-  authors: string[];
-  installed: boolean;
-}
-export interface MotionRealJob {
-  id: string;
-  status: "running" | "completed" | "error" | "cancelled";
-  label: string;
-  done: number;
-  total: number;
-  bytes: number;
-  error?: string;
-  log: string[];
+export interface MotionGenSpec {
+  style?: MotionGenStyle;
+  cast?: Record<string, unknown>;
+  locations?: Record<string, unknown>;
 }
 export interface MotionSpec {
   title?: string;
-  renderMode?: MotionRenderMode;
-  toonStyle?: MotionToonStyle;
   aspect?: MotionAspect | string;
   fps?: number;
   look?: string;
   accent?: string;
   letterbox?: boolean;
   subtitleStyle?: string;
-  cast?: Record<string, { characterId?: string; overrides?: Partial<MotionCharacterDef> }>;
+  gen?: MotionGenSpec;
   shots: MotionShot[];
   subtitles?: { start: number; end: number; text: string }[];
   duration?: number;
@@ -178,8 +67,6 @@ export interface MotionRenderOptions {
   sfxId?: string;
   sfxVolume?: number;
   sfx?: { cues: { t: number; kind: string }[]; mood?: string };
-  renderMode?: MotionRenderMode;
-  toonStyle?: MotionToonStyle;
 }
 export interface MotionJobState {
   id: string;
@@ -228,6 +115,7 @@ export interface MotionEnvironmentInfo {
   recommendedWorkers: number;
   webgl?: string | null;
   gpu3d?: boolean;
+  mannequin?: boolean;
 }
 export interface MotionStorySegment {
   t: number;
@@ -246,9 +134,15 @@ export interface MotionCastMember {
   name: string;
   role?: string;
   description?: string;
-  characterId: string;
-  overrides?: Partial<MotionCharacterDef>;
-  suggested?: Partial<MotionCharacterDef>;
+  look?: string;
+  gender?: "male" | "female";
+}
+export interface MotionPlace {
+  key: string;
+  name: string;
+  description: string;
+  interior?: boolean;
+  time?: string;
 }
 export interface MotionChapter {
   id: string;
@@ -263,118 +157,64 @@ export interface MotionFact {
   status: "ok" | "uncertain" | "wrong";
   note?: string;
 }
-export interface MotionDesignRequest {
-  kind: "asset" | "env";
-  id: string;
-  name: string;
-  brief: string;
-  size?: number[];
-  use?: string;
-}
 export interface MotionStoryAnalysis {
   title: string;
   logline: string;
   look: string;
   accent?: string;
+  era?: string;
   chapters: MotionChapter[];
   cast: MotionCastMember[];
-  places: string[];
+  places: MotionPlace[];
   facts: MotionFact[];
-  design?: MotionDesignRequest[];
-  designed?: string[];
-}
-export interface MotionBeatActor {
-  cast: string;
-  action?: string;
-  then?: string;
-  move?: "stay" | "left_to_right" | "right_to_left" | "enter_left" | "enter_right" | "exit_left" | "exit_right" | "toward_center";
-  pos?: number;
-  lane?: "back" | "mid" | "front" | "fore";
-  facing?: "left" | "right";
-  hold?: string;
-  holdFrom?: number;
-  holdUntil?: number;
-}
-export type MotionParamAnim = Record<string, [number, unknown][]>;
-export interface MotionBeatProp {
-  asset: string;
-  move?: "stay" | "left_to_right" | "right_to_left";
-  pos?: number;
-  lane?: "back" | "mid" | "front" | "fore";
-  scale?: number;
-  params?: Record<string, unknown>;
-  riders?: string[];
-  facing?: "left" | "right";
-  anim?: MotionParamAnim;
-}
-export interface MotionBeatCrowd {
-  cast?: string;
-  character?: string;
-  count: number;
-  formation?: "block" | "blocks" | "line" | "column" | "scatter";
-  action?: string;
-  move?: "stay" | "left_to_right" | "right_to_left" | "advance" | "retreat";
-  pos?: number;
-  lane?: "back" | "mid" | "front";
-  facing?: "left" | "right";
-  banners?: boolean;
-  bannerColor?: string;
 }
 export interface MotionBeat {
   id: string;
   chapterId: string;
   narration: string;
   visual: string;
-  env?: string;
+  place?: string;
   time?: string;
   weather?: string;
   shot?: string;
-  actors?: MotionBeatActor[];
-  props?: MotionBeatProp[];
-  crowds?: MotionBeatCrowd[];
+  cast?: string[];
+  action?: string;
   label?: string;
   emphasis?: boolean;
   data?: Record<string, unknown>;
-  sceneParams?: Record<string, unknown>;
-  sceneAnim?: MotionParamAnim;
-  focus?: string;
-  shots?: MotionBeatShot[];
-  art?: MotionArt;
   duration?: number;
   audioFile?: string;
 }
-export interface MotionArt {
-  prompt: string;
-  cast?: string[];
-  move?: string;
-  focus?: number[];
-  fx?: string;
-  image?: string;
-  failed?: string;
+export interface MotionGenStyle {
+  grade?: string;
+  skin?: string;
+  gloss?: number;
+  palette?: string[];
+  notes?: string;
+}
+export interface MotionGenPreview {
+  file?: string;
+  issues?: string[];
+  score?: number;
   note?: string;
+  at?: string;
 }
-export interface MotionArtCast {
-  key: string;
-  appearance: string;
-  image?: string;
+export interface MotionGenState {
+  style: MotionGenStyle;
+  cast: Record<string, unknown>;
+  locations: Record<string, unknown>;
+  locationInfo: Record<string, MotionGenPreview & { files?: string[] }>;
+  staging: Record<string, unknown>;
+  previews: Record<string, MotionGenPreview>;
+  failed: string[];
+  castPreview?: string;
+  updatedAt?: string;
 }
-export interface MotionArtDirection {
-  style: string;
-  cast: MotionArtCast[];
-  key: string;
-}
-export interface MotionImageOptions {
-  mode?: string;
-  engine?: string;
-  headless?: boolean;
-  review?: boolean;
-}
-export type MotionBeatShot = Omit<MotionBeat, "id" | "chapterId" | "narration" | "shots" | "duration" | "audioFile" | "emphasis"> & { text: string };
 export interface MotionStoryScript {
   title: string;
   language: string;
   beats: MotionBeat[];
-  art?: MotionArtDirection;
+  gen?: MotionGenState;
 }
 export interface MotionVoiceTrack {
   audioId: string;
@@ -393,8 +233,7 @@ export enum MotionStoryJobKind {
   ANALYZE = "analyze",
   SCRIPT = "script",
   VOICE = "voice",
-  ART = "art",
-  DESIGN = "design",
+  SCENES = "scenes",
 }
 export interface MotionAiExecution {
   provider?: string;

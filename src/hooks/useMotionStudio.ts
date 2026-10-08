@@ -1,58 +1,47 @@
 import _ from "lodash";
-import { isMotionJobTerminal } from "../lib/motionJob.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { loadMotionEngineClient, motionRequest, pollMotionJob, readFileBase64, registerCustomCharacters, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
-import { loadRealManifest } from "../components/motion-video/motionReal.js";
+import { loadMotionEngineClient, motionJobStatusUrl, motionRequest, pollMotionJob, readFileBase64, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
 import { API_ROUTES } from "../constants/apiRoutes.js";
 import {
   MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT,
-  MOTION_TEMPLATE_NAME_SPAGGIARI,
+  MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP,
+  MOTION_TEMPLATE_NAME_DEMO,
   MOTION_TEMPLATE_S,
   MOTION_TEMPLATE_SYMBOL_4,
-  MOTION_TEXT_2D,
   MOTION_TEXT_AI_ERROR,
-  MOTION_TEXT_ART,
+  MOTION_TEXT_ARTENGINE,
+  MOTION_TEXT_ARTREVIEW,
   MOTION_TEXT_BEATS,
   MOTION_TEXT_CANCELLED,
   MOTION_TEXT_DARK,
   MOTION_TEXT_DA_DUNG_STOPPED,
+  MOTION_TEXT_DA_DUNG_XONG_CAC_CANH_3D,
   MOTION_TEXT_DELETE,
   MOTION_TEXT_ENGINE,
   MOTION_TEXT_MOTION,
   MOTION_TEXT_NARRATION,
   MOTION_TEXT_OK_2,
+  MOTION_TEXT_RENDERMODE,
   MOTION_TEXT_SYMBOL_26,
   MOTION_TEXT_SYMBOL_27,
-  MOTION_TEXT_TOON_LINE,
+  MOTION_TEXT_TOONSTYLE,
+  MOTION_TEXT_USEART,
   MOTION_TEXT_VI,
 } from "../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_VIDEO_CONSTANTS } from "../constants/motionVideo.js";
 import { jsonUtils } from "../lib/json.js";
-import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ImageGeneratorEngine } from "../types.js";
-import {
-  MotionAspect,
-  MotionEncoderPreference,
-  MotionJobStatus,
-  MotionQuality,
-  MotionStoryJobKind,
-  MotionStoryLength,
-  type MotionCatalog,
-  type MotionCharacterDef,
-  type MotionEnvironmentInfo,
-  type MotionJobState,
-  type MotionRenderMode,
-  type MotionResultItem,
-  type MotionSpec,
-  type MotionStoryAnalysis,
-  type MotionStoryJobState,
-  type MotionStoryScript,
-  type MotionStorySource,
-  type MotionToonStyle,
-  type MotionVoiceTrack,
-} from "../types/motionVideo.js";
+import { isMotionJobTerminal } from "../lib/motionJob.js";
+import { getMotionErrorMessage } from "../lib/motionUtils.js";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../types.js";
+import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionEnvironmentInfo, type MotionJobState, type MotionResultItem, type MotionSpec, type MotionStoryAnalysis, type MotionStoryJobState, type MotionStoryScript, type MotionStorySource, type MotionVoiceTrack } from "../types/motionVideo.js";
 import type { StorageCleanResult, StorageJunkReport } from "../types/storage.js";
 const STOPPED_TOAST = MOTION_TEXT_DA_DUNG_STOPPED;
+const reportStoryError = (error: unknown): void => {
+  const message = getMotionErrorMessage(error);
+  if (message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
+  else toast.error(message);
+};
 interface PersistedState {
   rawText: string;
   source: MotionStorySource | null;
@@ -79,11 +68,6 @@ interface PersistedState {
   activeRenderJobId: string;
   activeStoryJobId: string;
   autoContinue: boolean;
-  renderMode: MotionRenderMode;
-  toonStyle: MotionToonStyle;
-  useArt: boolean;
-  artEngine: string;
-  artReview: boolean;
 }
 const DEFAULTS: PersistedState = {
   rawText: "",
@@ -111,26 +95,25 @@ const DEFAULTS: PersistedState = {
   activeRenderJobId: "",
   activeStoryJobId: "",
   autoContinue: true,
-  renderMode: MOTION_TEXT_2D,
-  toonStyle: MOTION_TEXT_TOON_LINE,
-  useArt: true,
-  artEngine: ImageGeneratorEngine.Veo3,
-  artReview: true,
 };
-const withoutArt = (script: MotionStoryScript): MotionStoryScript => ({ ..._.omit(script, [MOTION_TEXT_ART]), beats: _.map(script.beats, (b) => ({ ..._.omit(b, [MOTION_TEXT_ART]), shots: b.shots ? _.map(b.shots, (sh) => _.omit(sh, [MOTION_TEXT_ART]) as typeof sh) : b.shots })) }) as MotionStoryScript;
+export interface MotionScenesRequest {
+  beats?: string[];
+  locations?: string[];
+  restart?: boolean;
+  restyle?: boolean;
+  note?: string;
+}
 export const narrationSignature = (script: MotionStoryScript | null): string => (script ? _.map(script.beats, MOTION_TEXT_NARRATION).join(MOTION_TEXT_SYMBOL_26) : "");
 export function useMotionStudio() {
   const [state, setState] = useState<PersistedState>(DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
   const [ME, setME] = useState<MotionEngineGlobal | null>(null);
-  const [catalog, setCatalog] = useState<MotionCatalog | null>(null);
-  const [custom, setCustom] = useState<MotionCharacterDef[]>([]);
   const [engineError, setEngineError] = useState("");
   const [storyJob, setStoryJob] = useState<MotionStoryJobState | null>(null);
   const [renderJob, setRenderJob] = useState<MotionJobState | null>(null);
   const [results, setResults] = useState<MotionResultItem[]>([]);
   const [envInfo, setEnvInfo] = useState<MotionEnvironmentInfo | null>(null);
-  const [compiled, setCompiled] = useState<{ spec: MotionSpec; sfxCues: { t: number; kind: string }[] } | null>(null);
+  const [compiled, setCompiled] = useState<{ spec: MotionSpec; sfxCues: { t: number; kind: string }[]; missing: string[] } | null>(null);
   const [checking, setChecking] = useState(false);
   const mounted = useRef(true);
   const pollAbort = useRef<AbortController | null>(null);
@@ -140,18 +123,14 @@ export function useMotionStudio() {
     (async () => {
       const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
       if (!mounted.current) return;
-      setState({ ...DEFAULTS, ...(saved || {}) });
+      setState({ ...DEFAULTS, ...(_.omit(saved || {}, [MOTION_TEXT_RENDERMODE, MOTION_TEXT_TOONSTYLE, MOTION_TEXT_USEART, MOTION_TEXT_ARTENGINE, MOTION_TEXT_ARTREVIEW]) as Partial<PersistedState>) });
       setHydrated(true);
     })();
     (async () => {
       try {
-        const [engine, cat] = await Promise.all([loadMotionEngineClient(), motionRequest<{ catalog: MotionCatalog; custom: MotionCharacterDef[] }>(API_ROUTES.MOTION_VIDEO_CATALOG)]);
+        const engine = await loadMotionEngineClient();
         if (!mounted.current) return;
-        registerCustomCharacters(engine, cat.custom || []);
-        await loadRealManifest(engine).catch(_.noop);
         setME(engine);
-        setCatalog(cat.catalog);
-        setCustom(cat.custom || []);
       } catch (e: any) {
         setEngineError(e?.message || MOTION_TEXT_ENGINE);
       }
@@ -179,19 +158,6 @@ export function useMotionStudio() {
     if (!hydrated || !state.activeStoryJobId || storyJob) return;
     void resumeStoryJob(state.activeStoryJobId);
   }, [hydrated]);
-  const updateCustom = useCallback(
-    (items: MotionCharacterDef[]) => {
-      setCustom(items);
-      if (ME) registerCustomCharacters(ME, items);
-    },
-    [ME],
-  );
-  const reloadCustom = useCallback(async () => {
-    try {
-      const r = await motionRequest<{ items: MotionCharacterDef[] }>(API_ROUTES.MOTION_VIDEO_LIBRARY);
-      if (mounted.current && r?.items) updateCustom(r.items);
-    } catch {}
-  }, [updateCustom]);
   const aiExecution = { provider: state.aiProvider, model: state.aiModel, mode: state.aiMode, chromeHeadless: state.aiHeadless };
   const runStoryJob = useCallback(async (url: string, body: unknown, onPartial?: (r: any) => void): Promise<any> => {
     pollAbort.current?.abort();
@@ -201,7 +167,7 @@ export function useMotionStudio() {
     setStoryJob(job);
     patch({ activeStoryJobId: job.id });
     const final = await pollMotionJob<MotionStoryJobState>(
-      `${API_ROUTES.MOTION_STORY_STATUS}${job.id}`,
+      motionJobStatusUrl(API_ROUTES.MOTION_STORY_STATUS, job.id),
       (j) => {
         if (!mounted.current) return;
         setStoryJob(j);
@@ -210,7 +176,7 @@ export function useMotionStudio() {
       (j) => isMotionJobTerminal(j.status),
       ctrl.signal,
       1200,
-    ).finally(() => mounted.current && patch({ activeStoryJobId: "" }));
+    ).finally(() => mounted.current && !ctrl.signal.aborted && patch({ activeStoryJobId: "" }));
     if (final.status === MotionJobStatus.ERROR) throw new Error(final.error || MOTION_TEXT_AI_ERROR);
     if (final.status === MotionJobStatus.CANCELLED) throw new Error(MOTION_TEXT_CANCELLED);
     return final.result;
@@ -221,24 +187,24 @@ export function useMotionStudio() {
       pollAbort.current = ctrl;
       try {
         const final = await pollMotionJob<MotionStoryJobState>(
-          `${API_ROUTES.MOTION_STORY_STATUS}${jobId}`,
+          motionJobStatusUrl(API_ROUTES.MOTION_STORY_STATUS, jobId),
           (j) => {
             if (!mounted.current) return;
             setStoryJob(j);
-            if ((j.kind === MotionStoryJobKind.SCRIPT || j.kind === MotionStoryJobKind.ART) && _.get(j.result, MOTION_TEXT_BEATS)) patch({ script: j.result as MotionStoryScript });
+            if ((j.kind === MotionStoryJobKind.SCRIPT || j.kind === MotionStoryJobKind.SCENES) && _.get(j.result, MOTION_TEXT_BEATS)) patch({ script: j.result as MotionStoryScript });
           },
           (j) => isMotionJobTerminal(j.status),
           ctrl.signal,
           1200,
         );
         if (!mounted.current || final.status !== MotionJobStatus.COMPLETED || !final.result) return;
-        if (final.kind === MotionStoryJobKind.SCRIPT || final.kind === MotionStoryJobKind.ART) patch({ script: final.result as MotionStoryScript });
+        if (final.kind === MotionStoryJobKind.SCRIPT || final.kind === MotionStoryJobKind.SCENES) patch({ script: final.result as MotionStoryScript });
         if (final.kind === MotionStoryJobKind.ANALYZE) patch({ analysis: final.result as MotionStoryAnalysis, script: null, voice: null });
         setCompiled(null);
       } catch {
-        if (mounted.current) setStoryJob(null);
+        if (mounted.current && !ctrl.signal.aborted) setStoryJob(null);
       } finally {
-        if (mounted.current) patch({ activeStoryJobId: "" });
+        if (mounted.current && !ctrl.signal.aborted) patch({ activeStoryJobId: "" });
       }
     },
     [patch],
@@ -263,44 +229,48 @@ export function useMotionStudio() {
       const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, { source: state.source, language: state.language, length: state.length, aiExecution })) as MotionStoryAnalysis;
       patch({ analysis, script: null, voice: null, look: analysis.look || state.look });
       setCompiled(null);
-      await reloadCustom();
       toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(`${analysis.chapters.length}`, `${analysis.cast.length}`));
       if (state.autoContinue !== false && writeScriptRef.current) await writeScriptRef.current(undefined, analysis);
     } catch (e: any) {
-      if (e?.message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
-      else toast.error(e?.message);
+      reportStoryError(e);
     }
-  }, [state.source, state.language, state.length, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch, reloadCustom]);
+  }, [state.source, state.language, state.length, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
     async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis) => {
       const analysis = analysisOverride || state.analysis;
       if (!state.source || !analysis) return;
       try {
-        const script = (await runStoryJob(API_ROUTES.MOTION_STORY_SCRIPT, { source: state.source, analysis, language: state.language, aiExecution, chapterIds, beats: analysisOverride ? [] : state.script?.beats || [], aspect: state.aspect }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
+        const script = (await runStoryJob(API_ROUTES.MOTION_STORY_SCRIPT, { source: state.source, analysis, language: state.language, aiExecution, chapterIds, beats: analysisOverride ? [] : state.script?.beats || [], gen: chapterIds?.length ? state.script?.gen : undefined, aspect: state.aspect }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
         patch({ script });
         setCompiled(null);
+        if (state.autoContinue !== false && scenesRef.current) await scenesRef.current({}, script, analysis);
       } catch (e: any) {
-        if (e?.message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
-        else toast.error(e?.message);
+        reportStoryError(e);
       }
     },
     [state.source, state.analysis, state.language, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
   );
   writeScriptRef.current = writeScript;
-  const illustrate = useCallback(
-    async (restart?: boolean) => {
-      if (!state.script?.beats?.length || !state.analysis) return;
+  const scenesRef = useRef<((req: MotionScenesRequest, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => Promise<void>) | null>(null);
+  const buildScenes = useCallback(
+    async (req: MotionScenesRequest = {}, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => {
+      const script = scriptOverride || state.script;
+      const analysis = analysisOverride || state.analysis;
+      if (!script?.beats?.length || !analysis) return;
       try {
-        const script = (await runStoryJob(API_ROUTES.MOTION_STORY_ART, { script: state.script, analysis: state.analysis, aspect: state.aspect, aiExecution, image: { engine: state.artEngine, headless: state.aiHeadless, review: state.artReview }, restart: !!restart }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
-        patch({ script, useArt: true });
+        const result = (await runStoryJob(API_ROUTES.MOTION_STORY_SCENES, { script, analysis, aspect: state.aspect, aiExecution, ...req }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
+        patch({ script: result });
         setCompiled(null);
+        const failed = result.gen?.failed?.length || 0;
+        if (failed) toast.warning(MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP(`${failed}`));
+        else toast.success(MOTION_TEXT_DA_DUNG_XONG_CAC_CANH_3D);
       } catch (e: any) {
-        if (e?.message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
-        else toast.error(e?.message);
+        reportStoryError(e);
       }
     },
-    [state.script, state.analysis, state.aspect, state.artEngine, state.artReview, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
+    [state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
   );
+  scenesRef.current = buildScenes;
   const generateVoice = useCallback(async () => {
     if (!state.script?.beats?.length || !state.voiceId) return;
     try {
@@ -308,8 +278,7 @@ export function useMotionStudio() {
       patch({ voice: { ...track, signature: narrationSignature(state.script) }, uploadedAudio: null });
       setCompiled(null);
     } catch (e: any) {
-      if (e?.message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
-      else toast.error(e?.message);
+      reportStoryError(e);
     }
   }, [state.script, state.voiceId, state.voiceSpeed, runStoryJob, patch]);
   const uploadVoice = useCallback(
@@ -331,23 +300,29 @@ export function useMotionStudio() {
   const voiceValid = !!state.voice && state.voice.signature === narrationSignature(state.script);
   const compile = useCallback(async (): Promise<{ spec: MotionSpec; sfxCues: { t: number; kind: string }[] } | null> => {
     if (!state.script?.beats?.length) return null;
-    const r = await motionRequest<{ spec: MotionSpec; sfxCues: { t: number; kind: string }[] }>(API_ROUTES.MOTION_STORY_COMPILE, {
-      script: state.useArt ? state.script : withoutArt(state.script),
+    const r = await motionRequest<{ spec: MotionSpec; sfxCues: { t: number; kind: string }[]; missing: string[] }>(API_ROUTES.MOTION_STORY_COMPILE, {
+      script: state.script,
       analysis: state.analysis,
       aspect: state.aspect,
       look: state.look || undefined,
       durations: voiceValid ? state.voice?.durations : undefined,
       uploadedAudioSeconds: !voiceValid && state.uploadedAudio ? state.uploadedAudio.durationSeconds : undefined,
     });
-    const value = { spec: { ...r.spec, fps: state.fps, renderMode: state.renderMode, toonStyle: state.toonStyle }, sfxCues: r.sfxCues };
+    const value = { spec: { ...r.spec, fps: state.fps }, sfxCues: r.sfxCues, missing: r.missing || [] };
     setCompiled(value);
     return value;
-  }, [state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.renderMode, state.toonStyle, state.useArt, voiceValid]);
+  }, [state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, voiceValid]);
+  const compiledSig = useRef("");
   useEffect(() => {
     if (!hydrated || !state.script?.beats?.length) return;
-    const t = setTimeout(() => void compile().catch(_.noop), 400);
+    const sig = JSON.stringify([state.script, state.analysis, state.aspect, state.look, voiceValid ? state.voice?.durations : null, state.uploadedAudio?.durationSeconds, state.fps]);
+    if (sig === compiledSig.current) return;
+    const t = setTimeout(() => {
+      compiledSig.current = sig;
+      void compile().catch(() => (compiledSig.current = ""));
+    }, 400);
     return () => clearTimeout(t);
-  }, [hydrated, compile, state.script]);
+  }, [hydrated, compile, state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, voiceValid]);
   const audioId = voiceValid ? state.voice?.audioId : state.uploadedAudio?.id;
   const check = useCallback(async () => {
     const c = compiled || (await compile());
@@ -367,7 +342,7 @@ export function useMotionStudio() {
     async (jobId: string) => {
       try {
         const final = await pollMotionJob<MotionJobState>(
-          `${API_ROUTES.MOTION_VIDEO_STATUS}${jobId}`,
+          motionJobStatusUrl(API_ROUTES.MOTION_VIDEO_STATUS, jobId),
           (j) => mounted.current && setRenderJob(j),
           (j) => isMotionJobTerminal(j.status),
           undefined,
@@ -397,8 +372,6 @@ export function useMotionStudio() {
           aspect: state.aspect,
           fps: state.fps,
           encoder: state.encoder,
-          renderMode: state.renderMode,
-          toonStyle: state.toonStyle,
           title: state.analysis?.title || state.script?.title || MOTION_TEXT_MOTION,
           audioId,
           audioVolume: 1,
@@ -412,7 +385,7 @@ export function useMotionStudio() {
     } catch (e: any) {
       toast.error(e?.message);
     }
-  }, [compiled, compile, state.quality, state.aspect, state.fps, state.encoder, state.renderMode, state.toonStyle, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch]);
+  }, [compiled, compile, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch]);
   const cancelRender = useCallback(async () => {
     await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: renderJob?.id }).catch(_.noop);
   }, [renderJob]);
@@ -440,12 +413,12 @@ export function useMotionStudio() {
   }, []);
   const loadDemo = useCallback(async () => {
     try {
-      const r = await motionRequest<{ spec: MotionSpec }>(MOTION_TEMPLATE_NAME_SPAGGIARI(`${API_ROUTES.MOTION_VIDEO_DEMO}`));
-      setCompiled({ spec: { ...r.spec, aspect: state.aspect, renderMode: state.renderMode, toonStyle: state.toonStyle }, sfxCues: [] });
+      const r = await motionRequest<{ spec: MotionSpec }>(MOTION_TEMPLATE_NAME_DEMO(`${API_ROUTES.MOTION_VIDEO_DEMO}`));
+      setCompiled({ spec: { ...r.spec, aspect: state.aspect }, sfxCues: [], missing: [] });
     } catch (e: any) {
       toast.error(e?.message);
     }
-  }, [state.aspect, state.renderMode, state.toonStyle]);
+  }, [state.aspect]);
   const storyBusy = !!storyJob && !isMotionJobTerminal(storyJob.status);
   const renderBusy = !!renderJob && !isMotionJobTerminal(renderJob.status);
   return {
@@ -453,10 +426,6 @@ export function useMotionStudio() {
     patch,
     hydrated,
     ME,
-    catalog,
-    custom,
-    updateCustom,
-    reloadCustom,
     engineError,
     storyJob,
     storyBusy,
@@ -471,7 +440,7 @@ export function useMotionStudio() {
     parseSource,
     analyze,
     writeScript,
-    illustrate,
+    buildScenes,
     generateVoice,
     uploadVoice,
     cancelStory,

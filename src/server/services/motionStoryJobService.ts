@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import _ from "lodash";
-import { MOTION_TEMPLATE_DANG_DUNG, MOTION_TEMPLATE_LOI, MOTION_TEMPLATE_MOTION_STORY_FAILED, MOTION_TEMPLATE_SYMBOL_7, MOTION_TEXT_ABORT, MOTION_TEXT_BUOC_NAY_DANG_CHAY_HAY_CHO_HOAC_HUY, MOTION_TEXT_CANCELLED, MOTION_TEXT_CONTROLLER, MOTION_TEXT_DA_HUY, MOTION_TEXT_HOAN_TAT, MOTION_TEXT_STOPPING, MOTION_TEXT_VI_VN } from "../../constants/motionRuntime.js";
+import { MOTION_TEMPLATE_DANG_DUNG, MOTION_TEMPLATE_LOI, MOTION_TEMPLATE_MOTION_STORY_FAILED, MOTION_TEMPLATE_SYMBOL_7, MOTION_TEXT_ABORT, MOTION_TEXT_CANCELLED, MOTION_TEXT_CONTROLLER, MOTION_TEXT_DA_HUY, MOTION_TEXT_HOAN_TAT, MOTION_TEXT_STOPPING, MOTION_TEXT_VI_VN } from "../../constants/motionRuntime.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { logger } from "../../lib/logger.js";
 import { MotionJobStatus, type MotionStoryJobKind, type MotionStoryJobState } from "../../types/motionVideo.js";
@@ -17,7 +17,7 @@ export interface StoryJobContext {
 const publicJob = (job: InternalJob): MotionStoryJobState => _.omit(job, [MOTION_TEXT_CONTROLLER]) as MotionStoryJobState;
 export const startStoryJob = (kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>): MotionStoryJobState => {
   const running = _.find([...jobs.values()], (j) => j.kind === kind && _.includes(ACTIVE, j.status));
-  if (running) throw new Error(MOTION_TEXT_BUOC_NAY_DANG_CHAY_HAY_CHO_HOAC_HUY);
+  if (running) return publicJob(running);
   const job: InternalJob = { id: randomUUID(), kind, status: MotionJobStatus.RENDERING, progress: 0, log: [], startedAt: Date.now(), controller: new AbortController() };
   jobs.set(job.id, job);
   const ctx: StoryJobContext = {

@@ -1,9 +1,24 @@
-import { MOTION_DESIGN_REDRAW_SUFFIX, MOTION_TEMPLATE_DESIGN_FILE_URL, MOTION_TEMPLATE_DESIGN_ITEM_URL } from "../../constants/motionRuntime.js";
-import { stringifyJson } from "../../lib/jsonStringify.js";
 import _ from "lodash";
 import { API_ROUTES } from "../../constants/apiRoutes.js";
-import { MOTION_TEMPLATE_GB, MOTION_TEMPLATE_MB, MOTION_TEMPLATE_SYMBOL_10, MOTION_TEMPLATE_SYMBOL_11, MOTION_TEXT_0, MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR, MOTION_TEXT_APPLICATION_JSON, MOTION_TEXT_ID, MOTION_TEXT_KHONG_TAI_DUOC_MOTION_ENGINE, MOTION_TEXT_MOTION_ENGINE_LOI_KHOI_TAO, MOTION_TEXT_POST, MOTION_TEXT_REQUEST_FAILED, MOTION_TEXT_SCRIPT } from "../../constants/motionRuntime.js";
-import type { MotionCatalog, MotionCharacterDef } from "../../types/motionVideo.js";
+import {
+  MOTION_TEMPLATE_GB,
+  MOTION_TEMPLATE_MB,
+  MOTION_TEMPLATE_SYMBOL_10,
+  MOTION_TEMPLATE_SYMBOL_11,
+  MOTION_TEMPLATE_SYMBOL_3,
+  MOTION_TEMPLATE_V,
+  MOTION_TEXT_0,
+  MOTION_TEXT_ABORTED,
+  MOTION_TEXT_ABORTERROR,
+  MOTION_TEXT_APPLICATION_JSON,
+  MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO,
+  MOTION_TEXT_KHONG_TAI_DUOC_MOTION_ENGINE,
+  MOTION_TEXT_MOTION_ENGINE_LOI_KHOI_TAO,
+  MOTION_TEXT_POST,
+  MOTION_TEXT_REQUEST_FAILED,
+  MOTION_TEXT_SCRIPT,
+} from "../../constants/motionRuntime.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 export const motionRequest = async <T = any>(url: string, body?: unknown, method?: string, signal?: AbortSignal): Promise<T> => {
   const init: RequestInit = body === undefined && !method ? { signal } : { method: method || MOTION_TEXT_POST, headers: { "Content-Type": MOTION_TEXT_APPLICATION_JSON }, body: body === undefined ? undefined : stringifyJson(body), signal };
   const response = await fetch(url, init);
@@ -14,13 +29,9 @@ export const motionRequest = async <T = any>(url: string, body?: unknown, method
 export interface MotionEngineGlobal {
   version: string;
   fontsReady?: Promise<unknown>;
-  customCharacters?: Record<string, MotionCharacterDef>;
-  registry: { characters: Record<string, MotionCharacterDef>; assets: Record<string, any>; environments: Record<string, any>; actions: Record<string, any>; templates: Record<string, any> };
+  registry: { templates: Record<string, any> };
   createRenderer: (canvas: HTMLCanvasElement, spec: unknown, opts?: Record<string, unknown>) => { duration: number; drawFrame: (t: number) => void; width: number; height: number };
-  drawCharacter: (g: CanvasRenderingContext2D, ch: unknown, o?: Record<string, unknown>) => void;
-  drawAsset: (g: CanvasRenderingContext2D, id: string, x: number, y: number, o?: Record<string, unknown>, s?: number) => void;
-  catalog: () => MotionCatalog;
-  registerDesigned?: (designs: Record<string, unknown>[]) => string[];
+  GEN?: { prepare: (spec: unknown, base?: string) => Promise<unknown>; info?: Record<string, unknown> };
 }
 declare global {
   interface Window {
@@ -47,9 +58,6 @@ export const loadMotionEngineClient = (): Promise<MotionEngineGlobal> => {
     throw e;
   });
   return enginePromise;
-};
-export const registerCustomCharacters = (ME: MotionEngineGlobal, custom: MotionCharacterDef[]) => {
-  ME.customCharacters = _.keyBy(custom, MOTION_TEXT_ID);
 };
 export const pollMotionJob = async <T>(statusUrl: string, onUpdate: (job: T) => void, isDone: (job: T) => boolean, signal?: AbortSignal, intervalMs = 1000): Promise<T> => {
   for (;;) {
@@ -78,5 +86,8 @@ export const readFileBase64 = (file: File): Promise<string> =>
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
-export const motionDesignUrl = (id: string, redesign = false): string => MOTION_TEMPLATE_DESIGN_ITEM_URL(API_ROUTES.MOTION_VIDEO_DESIGNS, encodeURIComponent(id), redesign ? MOTION_DESIGN_REDRAW_SUFFIX : "");
-export const motionDesignFileUrl = (relativePath: string): string => MOTION_TEMPLATE_DESIGN_FILE_URL(API_ROUTES.MOTION_VIDEO_DESIGNS_FILE, encodeURIComponent(relativePath));
+export const MOTION_ASSET_BASE = API_ROUTES.MOTION_VIDEO_ASSET;
+export const motionAudioUrl = (id?: string): string | undefined => (id ? `${MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO}${encodeURIComponent(id)}` : undefined);
+export const motionJobStatusUrl = (prefix: string, id: string): string => `${prefix}${encodeURIComponent(id)}`;
+export const formatMotionProgress = (progress = 0, minimum = 0): string => MOTION_TEMPLATE_SYMBOL_3(String(Math.min(100, Math.max(minimum, Math.round(progress * 100)))));
+export const genPreviewUrl = (rel?: string, stamp?: string): string => (rel ? `${API_ROUTES.MOTION_GEN_PREVIEW}${encodeURIComponent(rel)}${stamp ? MOTION_TEMPLATE_V(`${encodeURIComponent(stamp)}`) : ""}` : "");

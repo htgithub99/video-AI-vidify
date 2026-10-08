@@ -134,10 +134,10 @@
   ME.registerEnvironment = (id, def) => (ME.registry.environments[id] = Object.assign({ id }, def));
   ME.registerTemplate = (id, def) => (ME.registry.templates[id] = Object.assign({ id }, def));
   ME.ASPECTS = {
-    "16:9": { w: 1920, h: 1080, frameH: 1080, ground: 0.76 },
-    "9:16": { w: 1080, h: 1920, frameH: 1500, ground: 0.7 },
-    "1:1": { w: 1080, h: 1080, frameH: 1150, ground: 0.74 },
-    "4:5": { w: 1080, h: 1350, frameH: 1260, ground: 0.73 },
+    [MT.VALUE_16_9]: { w: 1920, h: 1080, frameH: 1080, ground: 0.76 },
+    [MT.VALUE_9_16]: { w: 1080, h: 1920, frameH: 1500, ground: 0.7 },
+    [MT.VALUE_1_1]: { w: 1080, h: 1080, frameH: 1150, ground: 0.74 },
+    [MT.VALUE_4_5]: { w: 1080, h: 1350, frameH: 1260, ground: 0.73 },
   };
   ME.LOOKS = {
     documentary: { name: MT.TAI_LIEU_TRUNG_TINH, filter: MT.CONTRAST_1_06_SATURATE_1_02, shadows: MT.VALUE_10202C, highlights: MT.FFF1DC, split: 0.12, vignette: 0.35, grain: 0.05, bloom: 0.18 },
@@ -169,6 +169,15 @@
     serif: MT.PLAYFAIR_DISPLAY_GEORGIA_SERIF,
   };
   ME.font = (weight, size, fam = MT.BODY, style = MT.NORMAL) => MF.PX(`${style}`, `${weight}`, `${Math.round(size * 10) / 10}`, `${ME.FONTS[fam] || fam}`);
+  ME.measure = (g, str, o = {}) => {
+    const size = o.size || 40;
+    const chars = Array.from(String(str == null ? "" : str));
+    g.save();
+    g.font = ME.font(o.weight || 700, size, o.family || MT.BODY, o.style || MT.NORMAL);
+    const w = chars.reduce((a, c) => a + g.measureText(c).width, 0) + (o.tracking || 0) * size * Math.max(0, chars.length - 1);
+    g.restore();
+    return w;
+  };
   ME.text = (g, str, x, y, o = {}) => {
     str = String(str == null ? "" : str);
     const size = o.size || 40;
@@ -256,18 +265,10 @@
     g.restore();
   };
   ME.normalizeSpec = (spec) => {
-    if (spec && spec.designs && ME.registerDesigned) ME.registerDesigned(spec.designs);
     const s = Object.assign({ aspect: MT.VALUE_16_9, fps: 30, look: MT.DOCUMENTARY, shots: [], subtitles: [], cast: {} }, spec || {});
     const a = ME.ASPECTS[s.aspect] || ME.ASPECTS[MT.VALUE_16_9];
     s.width = s.width || a.w;
     s.height = s.height || a.h;
-    const use3d = (s.renderMode === MT.VALUE_3D || s.renderMode === MT.REAL) && ME.T3 && ME.T3.ok && ME.registry.templates.scene3d && (typeof document === MT.UNDEFINED || ME.T3.hasWebGL());
-    if (use3d)
-      (s.shots || []).forEach((sh) => {
-        if (!sh || (sh.template !== MT.SCENE && sh.template !== MT.SCENE3D)) return;
-        sh.template = MT.SCENE3D;
-        if (s.renderMode === MT.REAL) sh.params = Object.assign({}, sh.params, { real: true });
-      });
     s.shots = (s.shots || []).filter((sh) => sh && ME.registry.templates[sh.template]).sort((x, y) => x.start - y.start);
     let end = 0;
     s.shots.forEach((sh, i) => {
@@ -502,8 +503,7 @@
       }
       out.restore();
     };
-    const toonStyle = spec.renderMode === MT.TOON ? spec.toonStyle || MT.LINE : null;
-    const inToon = (fn) => (toonStyle && ME.TOON ? ME.TOON.wrap(toonStyle, fn) : fn());
+    const inToon = (fn) => fn();
     const drawFrame = (t) => {
       const frameIndex = Math.round(t * fps);
       const K = Math.max(1, Math.round(q.motionBlur || 1));
@@ -738,28 +738,5 @@
       ME.text(g, ov.text, W / 2, H * (ov.y || 0.15), { size: s, weight: 600, align: MT.CENTER, tracking: 0.18, color: ov.textColor || MT.E9E3D8, progress: U.clamp(k / 1) });
     }
     g.restore();
-  };
-  ME.catalog = () => {
-    const pick = (o) =>
-      Object.values(o).map((d) => ({
-        id: d.id,
-        name: d.name,
-        category: d.category,
-        tags: d.tags || [],
-        params: d.params || undefined,
-        description: d.description || undefined,
-      }));
-    return {
-      version: ME.version,
-      aspects: Object.keys(ME.ASPECTS),
-      looks: Object.entries(ME.LOOKS).map(([id, l]) => ({ id, name: l.name })),
-      quality: Object.keys(ME.QUALITY),
-      transitions: Object.keys(ME.registry.transitions),
-      templates: pick(ME.registry.templates),
-      environments: pick(Object.fromEntries(Object.entries(ME.registry.environments).filter(([, e]) => !e.hidden))),
-      assets: pick(ME.registry.assets),
-      characters: Object.values(ME.registry.characters),
-      actions: Object.values(ME.registry.actions).map((a) => ({ id: a.id, name: a.name, loop: !!a.loop })),
-    };
   };
 })(typeof window !== globalThis.MotionEngineText.UNDEFINED ? window : globalThis);

@@ -1,11 +1,12 @@
+import { randomUUID } from "crypto";
+import type { Request, Response } from "express";
+import fs from "fs";
+import _ from "lodash";
+import path from "path";
 import {
-  MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_DIEM_CAN_KIEM,
+  MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM,
   MOTION_TEMPLATE_BEAT,
-  MOTION_TEMPLATE_BO_QUA_BUOC_KIEM_TRA_HINH,
-  MOTION_TEMPLATE_DA_SUA_BEAT_CHO_KHOP_LOI_DAN,
-  MOTION_TEMPLATE_DA_THEM_NHAN_VAT_MOI_VAO_KHO_NHAN,
   MOTION_TEMPLATE_GIONG_DOC_GIAY,
-  MOTION_TEMPLATE_KIEM_TRA_LAI_BEAT_VUA_SUA,
   MOTION_TEMPLATE_MOTION,
   MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT,
   MOTION_TEMPLATE_SYMBOL_4,
@@ -13,102 +14,65 @@ import {
   MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG,
   MOTION_TEXT_16_9,
   MOTION_TEXT_1_1,
-  MOTION_TEXT_2D,
-  MOTION_TEXT_3D,
   MOTION_TEXT_4_5,
   MOTION_TEXT_9_16,
   MOTION_TEXT_AAC,
-  MOTION_TEXT_AI_DE_XUAT,
-  MOTION_TEXT_AI_KIEM_TRA_TUNG_CANH_CO_KHOP_LOI,
   MOTION_TEXT_ANALYZE,
   MOTION_TEXT_APPLICATION_JAVASCRIPT,
-  MOTION_TEXT_APPLICATION_WASM,
   MOTION_TEXT_BASE64,
-  MOTION_TEXT_BRIEF,
   MOTION_TEXT_CACHE_CONTROL,
   MOTION_TEXT_CANCELLED,
   MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC,
   MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC,
   MOTION_TEXT_CHAPTERID,
-  MOTION_TEXT_CHUA_CHON_TAI_NGUYEN,
   MOTION_TEXT_CHUA_CO_KICH_BAN,
   MOTION_TEXT_CHUA_CO_LOI_DAN_DE_TAO_GIONG,
   MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN,
-  MOTION_TEXT_CREATEDAT,
   MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA,
   MOTION_TEXT_DARK,
+  MOTION_TEXT_DEMO,
   MOTION_TEXT_DINH_DANG_AM_THANH_KHONG_HO_TRO,
-  MOTION_TEXT_DRACO,
   MOTION_TEXT_EN,
-  MOTION_TEXT_ENV_2,
   MOTION_TEXT_FLAC,
-  MOTION_TEXT_GOI_CHAN_THUC_MAC_DINH,
   MOTION_TEXT_HAY_CHON_GIONG_DOC_AI33,
-  MOTION_TEXT_HDRIS,
-  MOTION_TEXT_ID,
-  MOTION_TEXT_KHONG_CO_YEU_CAU_THIET_KE_HOP_LE,
-  MOTION_TEXT_KHONG_TIM_THAY_ANH,
-  MOTION_TEXT_KHONG_TIM_THAY_MO_HINH,
-  MOTION_TEXT_KHONG_TIM_THAY_TAC_VU,
   MOTION_TEXT_KHONG_TIM_THAY_TEP_VIDEO,
-  MOTION_TEXT_KHONG_TIM_THAY_THIET_KE,
   MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH,
   MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH_RENDER,
   MOTION_TEXT_KHONG_TIM_THAY_VIDEO_MAU,
   MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO,
-  MOTION_TEXT_KIND,
   MOTION_TEXT_M4A,
   MOTION_TEXT_MESSAGE,
-  MOTION_TEXT_MODELS,
+  MOTION_TEXT_MODEL_GLTF_BINARY,
   MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED,
   MOTION_TEXT_MP3,
-  MOTION_TEXT_NAME,
+  MOTION_TEXT_NO_CACHE,
   MOTION_TEXT_OGG,
   MOTION_TEXT_PHIEN_LUU_DA_HET_HAN_HAY_CHON_LAI,
   MOTION_TEXT_PRIVATE_MAX_AGE_86400,
   MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO,
-  MOTION_TEXT_REAL,
-  MOTION_TEXT_REVIEW,
-  MOTION_TEXT_SCORE,
   MOTION_TEXT_SELECT_SAVE_FILE,
-  MOTION_TEXT_SPAGGIARI,
-  MOTION_TEXT_TAI_TAI_NGUYEN,
-  MOTION_TEXT_TAT_CA_CANH_KHOP_LOI_DAN,
   MOTION_TEXT_TEP_AM_THANH_QUA_LON,
   MOTION_TEXT_TEP_AM_THANH_TRONG,
-  MOTION_TEXT_TEXTURES,
-  MOTION_TEXT_THIEU_DU_LIEU_MO_HINH,
-  MOTION_TEXT_VENDOR,
   MOTION_TEXT_VI,
   MOTION_TEXT_VOICE_MP3,
-  MOTION_TEXT_WASM,
   MOTION_TEXT_WAV,
 } from "../../constants/motionRuntime.js";
-import { parseJson } from "../../lib/jsonStringify.js";
-import { randomUUID } from "crypto";
-import type { Request, Response } from "express";
-import fs from "fs";
-import _ from "lodash";
-import path from "path";
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { FeatureType } from "../../constants/security.js";
 import { STORAGE_TEXTS } from "../../constants/storage.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../constants/sunoAutomation.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
-import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionImageOptions, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
+import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
-import { illustrateScript } from "../services/motionArtService.js";
 import { buildAi33VoiceTrack, fitUploadedVoice } from "../services/motionAudioService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
-import { getMotionDemoSpec, getMotionEngineClientScript, getMotionEngineDir, getRealDefaults, loadMotionEngine } from "../services/motionEngineService.js";
-import { designMissing, designPreviewFile, designPreviews, normalizeDesignRequests, redesign } from "../services/motionDesignService.js";
-import { deleteDesign, listDesigns } from "../services/motionDesignStore.js";
-import { clearMotionResults, deleteMotionCharacter, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionCharacters, listMotionResults, saveMotionCharacter } from "../services/motionLibraryService.js";
-import { cancelRealJob, deleteRealItem, getRealJob, importRealModel, listPolyHaven, readRealManifest, REAL_RES, realContentType, realStats, resolveRealFile, setRealEnvOverride, starterPackList, startRealDownloadJob, updateRealItem, withRealCatalog } from "../services/motionRealAssetService.js";
+import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
+import { buildScenes, resolveGenPreview } from "../services/motionGenService.js";
+import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionEnvironmentInfo, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
-import { reviewStoryboard } from "../services/motionStoryReviewService.js";
 import { analyzeStory, mapMotionAiPool, parseStorySource, writeChapterBeats } from "../services/motionStoryService.js";
 import { cleanStorageJunk, scanStorageJunk } from "../services/storageService.js";
 import { getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
@@ -127,15 +91,8 @@ export const getMotionEngineScript = (_req: Request, res: Response): void => {
     fail(res, 500, error);
   }
 };
-export const getMotionCatalog = (_req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, catalog: withRealCatalog(loadMotionEngine().catalog), custom: listMotionCharacters() });
-  } catch (error) {
-    fail(res, 500, error);
-  }
-};
 export const getMotionDemo = (req: Request, res: Response): void => {
-  const spec = getMotionDemoSpec(_.toString(req.query.name || MOTION_TEXT_SPAGGIARI));
+  const spec = getMotionDemoSpec(_.toString(req.query.name || MOTION_TEXT_DEMO));
   if (!spec) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_VIDEO_MAU);
   res.json({ success: true, spec });
 };
@@ -145,26 +102,6 @@ export const getMotionEnvironment = async (_req: Request, res: Response): Promis
   } catch (error) {
     fail(res, 500, error);
   }
-};
-export const listMotionLibrary = (_req: Request, res: Response): void => {
-  res.json({ success: true, items: listMotionCharacters() });
-};
-export const createMotionLibraryItem = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, item: saveMotionCharacter(req.body?.item || req.body) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const updateMotionLibraryItem = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, item: saveMotionCharacter(req.body?.item || req.body, req.params.id) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const deleteMotionLibraryItem = (req: Request, res: Response): void => {
-  res.json({ success: deleteMotionCharacter(req.params.id) });
 };
 export const uploadMotionAudio = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -204,7 +141,6 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
       audioId: o.audioId ? path.basename(_.toString(o.audioId)) : undefined,
       audioVolume: _.toNumber(o.audioVolume ?? 1),
       sfxVolume: _.toNumber(o.sfxVolume ?? 0.5),
-      renderMode: o.renderMode === MOTION_TEXT_REAL ? MOTION_TEXT_REAL : o.renderMode === MOTION_TEXT_3D ? MOTION_TEXT_3D : o.renderMode === MOTION_TEXT_2D ? MOTION_TEXT_2D : undefined,
       sfx:
         o.sfx && _.isArray(o.sfx.cues)
           ? {
@@ -291,53 +227,6 @@ export const parseMotionStory = (req: Request, res: Response): void => {
     fail(res, 400, error);
   }
 };
-export const listMotionDesigns = (_req: Request, res: Response): void => {
-  res.json({ success: true, items: _.map(listDesigns(), (d) => _.pick(d, [MOTION_TEXT_ID, MOTION_TEXT_KIND, MOTION_TEXT_NAME, MOTION_TEXT_SCORE, MOTION_TEXT_BRIEF, MOTION_TEXT_CREATEDAT])) });
-};
-export const getMotionDesign = (req: Request, res: Response): void => {
-  const record = _.find(listDesigns(), { id: _.toString(req.params.id) });
-  if (!record) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_THIET_KE);
-  res.json({ success: true, item: record, previews: designPreviews(record.id) });
-};
-export const serveMotionDesignFile = (req: Request, res: Response): void => {
-  const file = designPreviewFile(_.toString(req.query.path));
-  if (!file) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_ANH);
-  res.sendFile(file);
-};
-export const redesignMotionDesign = (req: Request, res: Response): void => {
-  try {
-    const record = _.find(listDesigns(), { id: _.toString(req.params.id) });
-    if (!record) throw new Error(MOTION_TEXT_KHONG_TIM_THAY_THIET_KE);
-    const exec = aiExec(req.body?.aiExecution);
-    const brief = _.truncate(_.toString(req.body?.brief || ""), { length: 500 });
-    const job = startStoryJob(MotionStoryJobKind.DESIGN, async (ctx) => {
-      ctx.progress(0.1, MotionStoryJobKind.DESIGN);
-      const made = await redesign(record, { exec, signal: ctx.signal, log: ctx.log, brief });
-      return { designed: made ? [made.id] : [] };
-    });
-    res.json({ success: true, job });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const deleteMotionDesign = (req: Request, res: Response): void => {
-  res.json({ success: deleteDesign(_.toString(req.params.id)) });
-};
-export const createMotionDesign = (req: Request, res: Response): void => {
-  try {
-    const requests = normalizeDesignRequests(_.castArray(req.body?.items || req.body?.item || req.body));
-    if (!requests.length) throw new Error(MOTION_TEXT_KHONG_CO_YEU_CAU_THIET_KE_HOP_LE);
-    const exec = aiExec(req.body?.aiExecution);
-    const job = startStoryJob(MotionStoryJobKind.DESIGN, async (ctx) => {
-      ctx.progress(0.1, MotionStoryJobKind.DESIGN);
-      const made = await designMissing(requests, { exec, signal: ctx.signal, log: ctx.log });
-      return { designed: _.map(made, MOTION_TEXT_ID) };
-    });
-    res.json({ success: true, job });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
 export const analyzeMotionStory = (req: Request, res: Response): void => {
   try {
     const source = (req.body?.source as MotionStorySource) || parseStorySource(_.toString(req.body?.text));
@@ -349,43 +238,9 @@ export const analyzeMotionStory = (req: Request, res: Response): void => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(`${source.words}`, `${Math.round(source.sourceSeconds / 60)}`));
       const analysis = await analyzeStory(source, { language, length, exec, signal: ctx.signal, log: ctx.log });
-      let added = 0;
-      for (const member of analysis.cast) {
-        if (!member.suggested || !_.isPlainObject(member.suggested)) continue;
-        try {
-          const saved = saveMotionCharacter({ ...member.suggested, name: member.name, tags: _.compact([member.role, MOTION_TEXT_AI_DE_XUAT]) });
-          member.characterId = saved.id;
-          delete member.suggested;
-          added++;
-        } catch {}
-      }
-      if (added) ctx.log(MOTION_TEMPLATE_DA_THEM_NHAN_VAT_MOI_VAO_KHO_NHAN(`${added}`));
-      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_DIEM_CAN_KIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.facts.length}`));
-      const requests = normalizeDesignRequests(analysis.design);
-      delete analysis.design;
-      if (requests.length) {
-        ctx.progress(0.5, MOTION_TEXT_ANALYZE);
-        const made = await designMissing(requests, { exec, signal: ctx.signal, log: ctx.log, story: analysis.logline });
-        analysis.designed = _.map(made, MOTION_TEXT_ID);
-        analysis.places = _.uniq([...analysis.places, ..._.map(_.filter(made, { kind: MOTION_TEXT_ENV_2 }), MOTION_TEXT_ID)]);
-      }
+      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.places.length}`, `${analysis.facts.length}`));
       return analysis;
     });
-    res.json({ success: true, job });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const artMotionStory = (req: Request, res: Response): void => {
-  try {
-    const analysis = req.body?.analysis as MotionStoryAnalysis;
-    const script = req.body?.script as MotionStoryScript;
-    if (!analysis?.cast || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
-    const exec = aiExec(req.body?.aiExecution);
-    const image = (req.body?.image || {}) as MotionImageOptions;
-    const only: string[] = _.map(_.castArray(req.body?.only || []), _.toString);
-    if (req.body?.restart) delete (script as any).art;
-    const job = startStoryJob(MotionStoryJobKind.ART, async (ctx) => illustrateScript(script, analysis, { aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), exec, image, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: ctx.partial, only }));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
@@ -418,35 +273,45 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         ctx.log(MOTION_TEMPLATE_BEAT(`${byChapter[chapter.id].length}`));
         ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) });
       });
-      let script = { title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) };
-      if (req.body?.review !== false) {
-        let ids = _.map(
-          _.filter(script.beats, (b) => _.some(todo, { id: b.chapterId })),
-          MOTION_TEXT_ID,
-        );
-        for (let pass = 1; pass <= 2 && ids.length; pass++) {
-          if (ctx.signal.aborted) throw new Error(MOTION_TEXT_CANCELLED);
-          ctx.progress(0.92, MOTION_TEXT_REVIEW);
-          ctx.log(pass === 1 ? MOTION_TEXT_AI_KIEM_TRA_TUNG_CANH_CO_KHOP_LOI : MOTION_TEMPLATE_KIEM_TRA_LAI_BEAT_VUA_SUA(`${ids.length}`));
-          try {
-            const r = await reviewStoryboard(script, analysis, { aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log, beatIds: ids });
-            script = { ...script, beats: r.beats };
-            ctx.log(r.fixed.length ? MOTION_TEMPLATE_DA_SUA_BEAT_CHO_KHOP_LOI_DAN(`${r.fixed.length}`, `${_.uniq(ids).length}`) : MOTION_TEXT_TAT_CA_CANH_KHOP_LOI_DAN);
-            ctx.partial(script);
-            ids = r.fixed;
-          } catch (error) {
-            if (ctx.signal.aborted) throw error;
-            ctx.log(MOTION_TEMPLATE_BO_QUA_BUOC_KIEM_TRA_HINH(`${_.truncate(_.toString(_.get(error, MOTION_TEXT_MESSAGE, error)), { length: 140 })}`));
-            break;
-          }
-        }
-      }
+      const keepGen = _.isEmpty(only) ? undefined : (req.body?.gen as MotionStoryScript["gen"]);
+      const script: MotionStoryScript = { title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen };
       return script;
     });
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
   }
+};
+export const scenesMotionStory = (req: Request, res: Response): void => {
+  try {
+    const analysis = req.body?.analysis as MotionStoryAnalysis;
+    const script = req.body?.script as MotionStoryScript;
+    if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
+    const exec = aiExec(req.body?.aiExecution);
+    const onlyBeats: string[] = _.map(_.castArray(req.body?.beats || []), _.toString);
+    const onlyLocations: string[] = _.map(_.castArray(req.body?.locations || []), _.toString);
+    const note = _.truncate(_.toString(req.body?.note || ""), { length: 400 });
+    if (req.body?.restart) delete script.gen;
+    if (script.gen && onlyLocations.length) for (const k of onlyLocations) delete (script.gen.locations as Record<string, unknown>)[k];
+    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => buildScenes(script, analysis, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: (r) => r && ctx.partial(r), aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), onlyBeats, onlyLocations, restyle: !!req.body?.restyle, note: note || undefined }));
+    res.json({ success: true, job });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const serveGenPreview = (req: Request, res: Response): void => {
+  const file = resolveGenPreview(_.toString(req.query.path));
+  if (!file) return void res.status(404).end();
+  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_NO_CACHE);
+  res.sendFile(file);
+};
+export const serveMotionAsset = (req: Request, res: Response): void => {
+  const rel = _.toString((req.params as Record<string, string>)[0] || "");
+  const file = resolveMotionAsset(rel);
+  if (!file) return void res.status(404).end();
+  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
+  res.type(MOTION_TEXT_MODEL_GLTF_BINARY);
+  res.sendFile(file);
 };
 export const voiceMotionStory = (req: Request, res: Response): void => {
   try {
@@ -483,7 +348,7 @@ export const compileMotionStory = (req: Request, res: Response): void => {
         uploadedSeconds,
       );
     const compiled = compileStorySpec(script, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent });
-    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, stagingIssues: compiled.stagingIssues });
+    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -495,85 +360,4 @@ export const getMotionStoryStatus = (req: Request, res: Response): void => {
 };
 export const cancelMotionStory = (req: Request, res: Response): void => {
   res.json({ success: true, cancelled: cancelStoryJob(req.body?.jobId ? _.toString(req.body.jobId) : undefined) });
-};
-export const getRealManifest = (_req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, manifest: readRealManifest(), stats: realStats(), defaults: getRealDefaults(), res: REAL_RES });
-  } catch (error) {
-    fail(res, 500, error);
-  }
-};
-export const serveRealFile = (req: Request, res: Response): void => {
-  const rel = _.toString((req.params as Record<string, string>)[0] || "");
-  const file = resolveRealFile(rel);
-  if (!file) return void res.status(404).end();
-  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
-  res.type(realContentType(file));
-  res.sendFile(file);
-};
-export const listRealPolyHaven = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const type = _.includes([MOTION_TEXT_HDRIS, MOTION_TEXT_TEXTURES, MOTION_TEXT_MODELS], req.query.type) ? (req.query.type as "hdris" | "textures" | "models") : MOTION_TEXT_MODELS;
-    const items = await listPolyHaven(type, { category: _.toString(req.query.category || "") || undefined, search: _.toString(req.query.search || "") || undefined, limit: _.clamp(_.toNumber(req.query.limit) || 300, 1, 1000) });
-    res.json({ success: true, items });
-  } catch (error) {
-    fail(res, 502, error);
-  }
-};
-export const downloadRealAssets = (req: Request, res: Response): void => {
-  try {
-    const list = _.filter(_.castArray(req.body?.items || []), (x: any) => _.includes([MOTION_TEXT_HDRIS, MOTION_TEXT_TEXTURES, MOTION_TEXT_MODELS], x?.type) && /^[A-Za-z0-9_.-]{1,80}$/.test(_.toString(x?.id)));
-    if (!list.length) return void fail(res, 400, MOTION_TEXT_CHUA_CHON_TAI_NGUYEN);
-    res.json({ success: true, job: startRealDownloadJob(_.toString(req.body?.label || MOTION_TEXT_TAI_TAI_NGUYEN), list) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const downloadRealStarter = (_req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, job: startRealDownloadJob(MOTION_TEXT_GOI_CHAN_THUC_MAC_DINH, starterPackList()) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const getRealJobStatus = (req: Request, res: Response): void => {
-  const job = getRealJob(_.toString(req.params.jobId));
-  if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TAC_VU);
-  res.json({ success: true, job });
-};
-export const cancelRealJobRequest = (req: Request, res: Response): void => {
-  cancelRealJob(_.toString(req.params.jobId));
-  res.json({ success: true });
-};
-export const importRealAsset = (req: Request, res: Response): void => {
-  try {
-    const b64 = _.toString(req.body?.base64 || "").replace(/^data:[^,]+,/, "");
-    if (!b64) return void fail(res, 400, MOTION_TEXT_THIEU_DU_LIEU_MO_HINH);
-    res.json({ success: true, item: importRealModel(Buffer.from(b64, MOTION_TEXT_BASE64), req.body?.meta || {}) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const updateRealAsset = (req: Request, res: Response): void => {
-  const item = updateRealItem(_.toString(req.params.id), req.body?.item || req.body || {});
-  if (!item) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_MO_HINH);
-  res.json({ success: true, item });
-};
-export const deleteRealAsset = (req: Request, res: Response): void => {
-  res.json({ success: deleteRealItem(_.toString(req.params.id)) });
-};
-export const setRealEnv = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, manifest: setRealEnvOverride(_.toString(req.body?.envId), req.body?.override || null) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const serveRealDraco = (req: Request, res: Response): void => {
-  const name = path.basename(_.toString(req.params.file));
-  if (!/^draco_(decoder\.(js|wasm)|wasm_wrapper\.js)$/.test(name)) return void res.status(404).end();
-  const file = path.join(getMotionEngineDir(), MOTION_TEXT_VENDOR, MOTION_TEXT_DRACO, name);
-  if (!fs.existsSync(file)) return void res.status(404).end();
-  res.type(name.endsWith(MOTION_TEXT_WASM) ? MOTION_TEXT_APPLICATION_WASM : MOTION_TEXT_APPLICATION_JAVASCRIPT);
-  res.sendFile(file);
 };

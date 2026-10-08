@@ -1,42 +1,33 @@
-import { stringifyJson } from "../lib/jsonStringify.js";
 import _ from "lodash";
-import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as ImageIcon, Layers, Loader2, Mic, Monitor, PlayCircle, RefreshCw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Wand2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Loader2, Mic, Monitor, PlayCircle, RefreshCw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { API_ROUTES } from "../constants/apiRoutes.js";
 import {
-  MOTION_TEMPLATE_ART_BADGE,
-  MOTION_TEMPLATE_ART_TOOLTIP,
   MOTION_TEMPLATE_BEATS,
-  MOTION_TEMPLATE_GEMINI_MODEL,
   MOTION_TEMPLATE_JOIN_SPACE,
   MOTION_TEMPLATE_JUNK_GROUP_KEY,
   MOTION_TEMPLATE_JUNK_MORE,
-  MOTION_TEMPLATE_SHOT_TOOLTIP_LINE,
   MOTION_TEMPLATE_SYMBOL,
   MOTION_TEMPLATE_SYMBOL_2,
   MOTION_TEMPLATE_SYMBOL_3,
+  MOTION_TEMPLATE_SYMBOL_4,
+  MOTION_TEMPLATE_SYMBOL_57,
   MOTION_TEMPLATE_SYMBOL_6,
   MOTION_TEMPLATE_SYMBOL_7,
-  MOTION_TEMPLATE_S_2,
   MOTION_TEXT_0,
   MOTION_TEXT_01,
   MOTION_TEXT_02,
   MOTION_TEXT_03,
   MOTION_TEXT_04,
   MOTION_TEXT_05,
+  MOTION_TEXT_10,
   MOTION_TEXT_16_9,
   MOTION_TEXT_1_1,
-  MOTION_TEXT_2D,
-  MOTION_TEXT_3D,
   MOTION_TEXT_4_5,
   MOTION_TEXT_9_16,
   MOTION_TEXT_AI_2,
   MOTION_TEXT_AI_VOICE,
   MOTION_TEXT_ANALYZE,
-  MOTION_TEXT_ART,
-  MOTION_TEXT_ART_FAILED_MARK,
-  MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO,
   MOTION_TEXT_AUDIO,
   MOTION_TEXT_BUTTON,
   MOTION_TEXT_BYTES,
@@ -44,6 +35,7 @@ import {
   MOTION_TEXT_CHAPTERID,
   MOTION_TEXT_CHAPTERS,
   MOTION_TEXT_CHECKBOX,
+  MOTION_TEXT_COLOR,
   MOTION_TEXT_DA_DOC_NGUON,
   MOTION_TEXT_DOAN,
   MOTION_TEXT_EN,
@@ -57,7 +49,6 @@ import {
   MOTION_TEXT_GROUP,
   MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC,
   MOTION_TEXT_LAZY,
-  MOTION_TEXT_LIVE_2_5D_CANVAS,
   MOTION_TEXT_MAX_W_MD,
   MOTION_TEXT_METADATA,
   MOTION_TEXT_MODAL_2XL,
@@ -67,33 +58,30 @@ import {
   MOTION_TEXT_OK,
   MOTION_TEXT_OUTPUT_MP4,
   MOTION_TEXT_PHUT,
-  MOTION_TEXT_PRIMARY,
+  MOTION_TEXT_PLACES,
   MOTION_TEXT_RANGE,
-  MOTION_TEXT_REAL,
   MOTION_TEXT_RENDER,
   MOTION_TEXT_RENDER_VIDEO_MP4,
   MOTION_TEXT_S,
   MOTION_TEXT_SCENE,
+  MOTION_TEXT_SCENES,
   MOTION_TEXT_SCENE_2,
   MOTION_TEXT_SCRIPT,
   MOTION_TEXT_STATS,
   MOTION_TEXT_STATS_2,
   MOTION_TEXT_STOPPING,
-  MOTION_TEXT_SYMBOL,
   MOTION_TEXT_SYMBOL_10,
   MOTION_TEXT_SYMBOL_11,
   MOTION_TEXT_SYMBOL_12,
   MOTION_TEXT_SYMBOL_2,
+  MOTION_TEXT_SYMBOL_21,
+  MOTION_TEXT_SYMBOL_25,
   MOTION_TEXT_SYMBOL_27,
   MOTION_TEXT_SYMBOL_3,
   MOTION_TEXT_SYMBOL_4,
   MOTION_TEXT_SYMBOL_43,
   MOTION_TEXT_SYMBOL_44,
-  MOTION_TEXT_SYMBOL_45,
-  MOTION_TEXT_SYMBOL_46,
   MOTION_TEXT_SYMBOL_5,
-  MOTION_TEXT_SYMBOL_6,
-  MOTION_TEXT_SYMBOL_7,
   MOTION_TEXT_SYMBOL_8,
   MOTION_TEXT_SYMBOL_9,
   MOTION_TEXT_S_2,
@@ -101,9 +89,6 @@ import {
   MOTION_TEXT_TIEU_DE_CAU_CHUYEN,
   MOTION_TEXT_TITLE,
   MOTION_TEXT_TITLE_2,
-  MOTION_TEXT_TOON,
-  MOTION_TEXT_TOON_FLAT,
-  MOTION_TEXT_TOON_LINE,
   MOTION_TEXT_TRANSCRIPT,
   MOTION_TEXT_TU,
   MOTION_TEXT_UNSTYLED,
@@ -113,219 +98,92 @@ import {
   MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL,
   MOTION_TEXT_XOA,
 } from "../constants/motionRuntime.js";
+import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../constants/motionVideoTexts.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
-import { GeminiChatModelName, ImageGeneratorEngine } from "../types.js";
-import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionCharacterDef, type MotionResultItem } from "../types/motionVideo.js";
+import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
-import { formatBytes, formatSeconds, motionRequest } from "./motion-video/motionApi";
-import { MotionLibraryPanel } from "./motion-video/MotionLibraryPanel";
-import { MotionDesignsPanel } from "./motion-video/MotionDesignsPanel";
-import { MotionLazyThumb } from "./motion-video/MotionLivePreview";
-import { realFileUrl } from "./motion-video/motionReal";
-import { MotionRealAssetsPanel } from "./motion-video/MotionRealAssetsPanel";
+import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
+import { ActionBtn, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionProgressBar, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
-import { characterThumb } from "./motion-video/motionThumbs";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { Tooltip } from "./ui/Tooltip";
 import { VoiceSelectionDialog } from "./VoiceSelectionDialog.js";
-const AUDIO_URL = (id?: string) => (id ? `${MOTION_VIDEO_AUDIO_PREFIX}${encodeURIComponent(id)}` : undefined);
-const MOTION_VIDEO_AUDIO_PREFIX = MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO;
 const cardCls = MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P;
 const inputCls = MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL;
-const StepHeader: FC<{
-  n: string;
-  icon: typeof Film;
-  title: string;
-  badge?: string;
-  right?: React.ReactNode;
-}> = ({ n, icon: Icon, title, badge, right }) => (
-  <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
-    <div className="flex items-center gap-2.5 min-w-0">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500 to-pink-600 p-0.5 shadow-xs shadow-purple-500/20 shrink-0">
-        <div className="w-full h-full bg-slate-955 rounded-[6px] flex items-center justify-center">
-          <Icon className="w-4 h-4 text-purple-400" />
-        </div>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="w-5 h-5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-[10px] shadow-2xs">{n}</span>
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5">{title}</h2>
-        {badge && <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[9px] font-mono font-bold tracking-normal">{badge}</span>}
-      </div>
-    </div>
-    {right && <div className="flex items-center gap-2">{right}</div>}
-  </div>
-);
-const ChipButton: FC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-  className?: string;
-}> = ({ active, onClick, children, disabled, className }) => (
-  <button
-    type={MOTION_TEXT_BUTTON}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      "px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer select-none shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
-      active ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.01]" : "border-slate-800 bg-slate-955/80 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-900",
-      className,
-    )}>
-    {children}
-  </button>
-);
-const ActionBtn: FC<{
-  onClick: () => void;
-  disabled?: boolean;
-  busy?: boolean;
-  icon: typeof Film;
-  children: React.ReactNode;
-  className?: string;
-  variant?: "primary" | "secondary" | "danger";
-}> = ({ onClick, disabled, busy, icon: Icon, children, className, variant = MOTION_TEXT_PRIMARY }) => {
-  const styles = {
-    primary: busy ? "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse shadow-md shadow-purple-600/30" : "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-purple-600/25 active:scale-98 border border-purple-400/40",
-    secondary: "bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700",
-    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25",
-  };
-  return (
-    <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={disabled || busy} className={cn("inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed leading-none", styles[variant], className)}>
-      {busy ? <Sparkles className="w-4 h-4 animate-spin text-white shrink-0" /> : <Icon className="w-4 h-4 shrink-0" />}
-      <span>{children}</span>
-    </button>
-  );
-};
-const StopBtn: FC<{
-  onClick: () => void;
-  label: string;
-  stopping?: boolean;
-  className?: string;
-}> = ({ onClick, label, stopping, className }) => (
-  <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={stopping} className={cn("inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25 cursor-pointer disabled:opacity-60", className)}>
-    {stopping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5 fill-current" />}
-    <span>{label}</span>
-  </button>
-);
-const ElapsedLine: FC<{ since: number; label: string; suffix: string }> = ({ since, label, suffix }) => {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="flex items-center gap-2 text-xs font-medium text-purple-400">
-      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-      <span>
-        {label}
-        {MOTION_TEXT_SYMBOL}
-      </span>
-      <span className="font-mono text-slate-400">
-        {suffix} {formatSeconds((now - since) / 1000)}
-      </span>
-    </div>
-  );
-};
 const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_TEXT_VI as Lang }) => {
-  const text = (MOTION_VIDEO_TEXTS as any)[currentLang] || MOTION_VIDEO_TEXTS.vi;
+  const text = MOTION_VIDEO_TEXTS[currentLang] || MOTION_VIDEO_TEXTS.vi;
   const studio = useMotionStudio();
   const [tab, setTab] = useState<MotionWorkspaceTab>(MotionWorkspaceTab.CREATE);
   const [aiOpen, setAiOpen] = useState(false);
   const { state, patch } = studio;
   return (
-    <div className="creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar">
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80">
-        <div className="glass-card rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-sm shadow-purple-500/20 shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400">
-                <Clapperboard className="w-4 h-4" />
+    <div className={MOTION_STYLES.CREATION_WORKSPACE_W_FULL_H_FULL_MIN_H_0_FLEX_FLEX_COL_OVERFLOW_Y_AUTO}>
+      <div className={MOTION_STYLES.BG_GRADIENT_TO_B_FROM_SLATE_900_90_TO_SLATE_950_95_ROUNDED_XL_SM_ROUNDED_2XL_P_4_SM_P_6}>
+        <div className={MOTION_STYLES.GLASS_CARD_ROUNDED_XL_PX_3_PY_2_SM_PX_4_SM_PY_2_5_SHADOW_SM}>
+          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0}>
+            <div className={MOTION_STYLES.W_8_H_8_ROUNDED_XL_BG_GRADIENT_TO_TR_FROM_PURPLE_500_VIA_FUCHSIA_500_TO_PINK_600}>
+              <div className={MOTION_STYLES.W_FULL_H_FULL_BG_SLATE_950_ROUNDED_10PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
+                <Clapperboard className={MOTION_STYLES.W_4_H_4} />
               </div>
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm sm:text-base font-black text-slate-100 tracking-tight uppercase font-sans">{text.TITLE}</h1>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-2xs">
-                  <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+            <div className={MOTION_STYLES.MIN_W_0}>
+              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
+                <h1 className={MOTION_STYLES.TEXT_SM_SM_TEXT_BASE_FONT_BLACK_TEXT_SLATE_100_TRACKING_TIGHT_UPPERCASE_FONT_SANS}>{text.TITLE}</h1>
+                <span className={MOTION_STYLES.PX_2_PY_0_5_ROUNDED_FULL_TEXT_9PX_FONT_MONO_FONT_BOLD_UPPERCASE}>
+                  <Sparkles className={MOTION_STYLES.W_2_5_H_2_5_TEXT_PURPLE_400} />
                   {text.BADGE}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-tight truncate hidden md:block">{text.SUBTITLE}</p>
+              <p className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LEADING_TIGHT_TRUNCATE_HIDDEN_MD_BLOCK}>{text.SUBTITLE}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto ml-auto">
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-955/80 border border-slate-800">
+          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_SELF_START_SM_SELF_AUTO_ML_AUTO}>
+            <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_P_0_5_ROUNDED_XL_BG_SLATE_955_80_BORDER}>
               {_.map(
                 [
                   { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
-                  { id: MotionWorkspaceTab.LIBRARY, label: text.TAB_LIBRARY, icon: Users },
-                  { id: MotionWorkspaceTab.REAL, label: text.TAB_REAL, icon: Box },
-                  { id: MotionWorkspaceTab.DESIGNS, label: text.TAB_DESIGNS, icon: Sparkles },
                   { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
                 ],
                 ({ id, label, icon: Icon }) => (
-                  <button key={id} type={MOTION_TEXT_BUTTON} onClick={() => setTab(id)} className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none", tab === id ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm shadow-purple-500/20" : "text-slate-400 hover:text-slate-100 hover:bg-slate-900")}>
-                    <Icon className="w-3.5 h-3.5" />
+                  <button key={id} type={MOTION_TEXT_BUTTON} onClick={() => setTab(id)} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_LG_TEXT_XS, tab === id ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_TEXT_WHITE_SHADOW_SM_SHADOW_PURPLE_500_20 : MOTION_STYLES.TEXT_SLATE_400_HOVER_TEXT_SLATE_100_HOVER_BG_SLATE_900)}>
+                    <Icon className={MOTION_STYLES.W_3_5_H_3_5} />
                     <span>{label}</span>
                   </button>
                 ),
               )}
             </div>
-            <Tooltip content={text.AI_CONFIG_TOOLTIP || text.AI_CONFIG} align={MOTION_TEXT_END}>
+            <Tooltip content={text.AI_CONFIG} align={MOTION_TEXT_END}>
               <Button
                 variant={MOTION_TEXT_UNSTYLED}
                 type={MOTION_TEXT_BUTTON}
                 onClick={() => setAiOpen(!aiOpen)}
                 disabled={studio.storyBusy}
-                className={cn("group inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none select-none", aiOpen ? "bg-purple-600/15 border-purple-500/50 text-purple-300 shadow-purple-500/10" : "bg-slate-955/80 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-purple-300")}>
-                <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:scale-105 transition-transform" />
-                <span className="inline-flex items-center leading-none text-slate-200 group-hover:text-purple-300 transition-colors">{text.AI_CONFIG}</span>
-                {aiOpen ? <ChevronUp className="w-3.5 h-3.5 text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                className={cn(MOTION_STYLES.GROUP_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_PX_3_5_PY_2, aiOpen ? MOTION_STYLES.BG_PURPLE_600_15_BORDER_PURPLE_500_50_TEXT_PURPLE_300_SHADOW_PURPLE_500_10 : MOTION_STYLES.BG_SLATE_955_80_HOVER_BG_SLATE_900_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TEXT_PURPLE_300)}>
+                <SlidersHorizontal className={MOTION_STYLES.W_3_5_H_3_5_TEXT_PURPLE_400_SHRINK_0_GROUP_HOVER_SCALE_105_TRANSITION_TRANSFORM} />
+                <span className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_SLATE_200_GROUP_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS}>{text.AI_CONFIG}</span>
+                {aiOpen ? <ChevronUp className={MOTION_STYLES.W_3_5_H_3_5_TEXT_PURPLE_400_SHRINK_0} /> : <ChevronDown className={MOTION_STYLES.W_3_5_H_3_5_TEXT_SLATE_400_SHRINK_0} />}
               </Button>
             </Tooltip>
           </div>
         </div>
         {aiOpen && (
-          <fieldset disabled={studio.storyBusy} className="glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800 shadow-xl text-left animate-in fade-in duration-200">
+          <fieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
             <ChatPlanningSettingsBlock provider={state.aiProvider} model={state.aiModel} executionMode={state.aiMode} chromeHeadless={state.aiHeadless} onProviderChange={(v) => patch({ aiProvider: v })} onModelChange={(v) => patch({ aiModel: v })} onExecutionModeChange={(v) => patch({ aiMode: v })} onChromeHeadlessChange={(v) => patch({ aiHeadless: v })} currentLang={currentLang} allowHybrid />
           </fieldset>
         )}
         {studio.engineError && (
-          <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 shadow-xs">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+          <div className={MOTION_STYLES.ROUNDED_XL_BORDER_BORDER_ROSE_500_40_BG_ROSE_500_10_PX_4_PY_3_TEXT_XS}>
+            <AlertTriangle className={MOTION_STYLES.W_4_H_4_SHRINK_0_TEXT_ROSE_500} />
             <span>{studio.engineError}</span>
           </div>
         )}
-        <div className="w-full">
+        <div className={MOTION_STYLES.W_FULL}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
-          {tab === MotionWorkspaceTab.LIBRARY &&
-            (studio.ME && studio.catalog ? (
-              <MotionLibraryPanel ME={studio.ME} catalog={studio.catalog} custom={studio.custom} onCustomChange={studio.updateCustom} text={text} toonStyle={state.toonStyle} onToonStyle={(v) => patch({ toonStyle: v as typeof state.toonStyle })} />
-            ) : (
-              <div className="flex-1 flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-              </div>
-            ))}
-          {tab === MotionWorkspaceTab.REAL &&
-            (studio.ME && studio.catalog ? (
-              <MotionRealAssetsPanel ME={studio.ME} catalog={studio.catalog} custom={studio.custom} envInfo={studio.envInfo} text={text} onCustomChange={() => void studio.reloadCustom()} />
-            ) : (
-              <div className="flex-1 flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-              </div>
-            ))}
-          {tab === MotionWorkspaceTab.DESIGNS &&
-            (studio.ME ? (
-              <MotionDesignsPanel ME={studio.ME} onLibraryChange={() => void studio.reloadCustom()} text={text} />
-            ) : (
-              <div className="flex-1 flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-              </div>
-            ))}
           {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
         </div>
       </div>
@@ -336,53 +194,28 @@ export default MotionVideoCreator;
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
   const { state, patch } = studio;
   const [voiceDialog, setVoiceDialog] = useState(false);
-  const [analysisTab, setAnalysisTab] = useState<"cast" | "chapters" | "facts">(MOTION_TEXT_CAST);
+  const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
+  const [sceneNote, setSceneNote] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const busyKind = studio.storyBusy ? studio.storyJob?.kind : null;
   const storyStopping = studio.storyJob?.stage === MOTION_TEXT_STOPPING;
   const renderStopping = studio.renderJob?.stage === MOTION_TEXT_STOPPING;
   const stopAi = <StopBtn onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />;
   const beatsByChapter = useMemo(() => _.groupBy(state.script?.beats || [], MOTION_TEXT_CHAPTERID), [state.script]);
-  const artItems = useMemo(
-    () =>
-      _.flatMap(state.script?.beats || [], (b) => {
-        const shots = _.take(
-          _.filter(b.shots || [], (sh) => !!sh?.visual),
-          4,
-        );
-        if (shots.length >= 2) return _.compact(_.map(shots, (sh, k) => (sh.art ? { ...sh.art, id: MOTION_TEMPLATE_S_2(`${b.id}`, `${k + 1}`), words: sh.text } : null)));
-        const art = shots.length === 1 ? shots[0].art : b.art;
-        return art ? [{ ...art, id: b.id, words: b.narration }] : [];
-      }),
-    [state.script],
-  );
+  const gen = state.script?.gen;
+  const sceneBeats = useMemo(() => _.filter(state.script?.beats || [], (b) => b.visual === MOTION_TEXT_SCENE), [state.script]);
+  const builtCount = _.size(_.filter(sceneBeats, (b) => !!gen?.staging?.[b.id]));
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => {
     if (!state.script) return;
     patch({ script: { ...state.script, beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat } : b)) } });
   };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
-  const setCast = (key: string, characterId: string) => state.analysis && patch({ analysis: { ...state.analysis, cast: _.map(state.analysis.cast, (c) => (c.key === key ? { ...c, characterId } : c)) } });
-  const saveSuggested = async (key: string) => {
-    const member = _.find(state.analysis?.cast, { key });
-    if (!member?.suggested) return;
-    try {
-      const res = await motionRequest<{ item: MotionCharacterDef }>(API_ROUTES.MOTION_VIDEO_LIBRARY, {
-        item: { ...member.suggested, name: member.name, tags: _.compact([member.role]) },
-      });
-      studio.updateCustom([res.item, ...studio.custom]);
-      setCast(key, res.item.id);
-      toast.success(text.DONE);
-    } catch (e: any) {
-      toast.error(e?.message);
-    }
-  };
-  const allCharacters = useMemo(() => [...studio.custom, ...(studio.catalog?.characters || [])], [studio.custom, studio.catalog]);
   const job = studio.storyJob;
   const rj = studio.renderJob;
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
-      <div className="lg:col-span-2 flex flex-col gap-6 min-w-0">
+    <div className={MOTION_STYLES.GRID_GRID_COLS_1_LG_GRID_COLS_3_GAP_6_ITEMS_START_W_FULL}>
+      <div className={MOTION_STYLES.LG_COL_SPAN_2_FLEX_FLEX_COL_GAP_6_MIN_W_0}>
         <div className={cardCls}>
           <StepHeader
             n={MOTION_TEXT_01}
@@ -390,66 +223,66 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             title={text.STEP_SOURCE}
             badge={MOTION_TEXT_TRANSCRIPT}
             right={
-              <div className="flex items-center gap-2">
-                <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.loadDemo()} disabled={studio.storyBusy} className="px-2.5 py-1 rounded-xl text-[11px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 transition-colors cursor-pointer disabled:opacity-40">
+              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
+                <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.loadDemo()} disabled={studio.storyBusy} className={MOTION_STYLES.PX_2_5_PY_1_ROUNDED_XL_TEXT_11PX_FONT_BOLD_TEXT_PURPLE_300_BG_PURPLE_500_15}>
                   {text.LOAD_DEMO}
                 </button>
                 {state.rawText && (
-                  <button type={MOTION_TEXT_BUTTON} onClick={() => studio.parseSource("")} disabled={studio.storyBusy} className="p-1 rounded-lg text-slate-400 hover:text-rose-500 transition-colors cursor-pointer">
-                    <Trash2 className="w-3.5 h-3.5" />
+                  <button type={MOTION_TEXT_BUTTON} onClick={() => studio.parseSource("")} disabled={studio.storyBusy} className={MOTION_STYLES.P_1_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_TRANSITION_COLORS_CURSOR_POINTER}>
+                    <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
                   </button>
                 )}
               </div>
             }
           />
-          <div className="space-y-3">
-            <textarea value={state.rawText} onChange={(e) => void studio.parseSource(e.target.value)} placeholder={text.SOURCE_PLACEHOLDER} rows={8} className={cn(inputCls, "font-mono text-xs leading-relaxed resize-y min-h-[170px]")} disabled={studio.storyBusy} />
+          <div className={MOTION_STYLES.SPACE_Y_3}>
+            <textarea value={state.rawText} onChange={(e) => void studio.parseSource(e.target.value)} placeholder={text.SOURCE_PLACEHOLDER} rows={8} className={cn(inputCls, MOTION_STYLES.FONT_MONO_TEXT_XS_LEADING_RELAXED_RESIZE_Y_MIN_H_170PX)} disabled={studio.storyBusy} />
             {state.source ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-in fade-in duration-200">
-                <div className="bg-slate-955/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-purple-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-slate-400 font-mono uppercase">{text.WORDS}</div>
-                    <div className="text-xs font-bold text-slate-100 truncate">
+              <div className={MOTION_STYLES.GRID_GRID_COLS_2_SM_GRID_COLS_4_GAP_2_PT_1_ANIMATE_IN_FADE_IN}>
+                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
+                  <FileText className={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_400_SHRINK_0} />
+                  <div className={MOTION_STYLES.MIN_W_0}>
+                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.WORDS}</div>
+                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
                       {state.source.words}
                       {MOTION_TEXT_TU}
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-955/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-slate-400 font-mono uppercase">{text.SEGMENTS}</div>
-                    <div className="text-xs font-bold text-slate-100 truncate">
+                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
+                  <Layers className={MOTION_STYLES.W_4_H_4_TEXT_BLUE_500_DARK_TEXT_BLUE_400_SHRINK_0} />
+                  <div className={MOTION_STYLES.MIN_W_0}>
+                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.SEGMENTS}</div>
+                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
                       {state.source.segments.length}
                       {MOTION_TEXT_DOAN}
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-955/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-slate-400 font-mono uppercase">{text.ESTIMATED}</div>
-                    <div className="text-xs font-bold text-slate-100 truncate">
+                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
+                  <Clock className={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_500_DARK_TEXT_PURPLE_400_SHRINK_0} />
+                  <div className={MOTION_STYLES.MIN_W_0}>
+                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.ESTIMATED}</div>
+                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
                       {MOTION_TEXT_SYMBOL_2}
                       {Math.round(state.source.sourceSeconds / 60)}
                       {MOTION_TEXT_PHUT}
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-955/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2">
-                  <Film className="w-4 h-4 text-pink-500 dark:text-pink-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-slate-400 font-mono uppercase">{MOTION_TEXT_TIEN_TRINH}</div>
-                    <div className="text-xs font-bold text-emerald-500 dark:text-emerald-400 truncate">{MOTION_TEXT_DA_DOC_NGUON}</div>
+                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
+                  <Film className={MOTION_STYLES.W_4_H_4_TEXT_PINK_500_DARK_TEXT_PINK_400_SHRINK_0} />
+                  <div className={MOTION_STYLES.MIN_W_0}>
+                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{MOTION_TEXT_TIEN_TRINH}</div>
+                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_TRUNCATE}>{MOTION_TEXT_DA_DOC_NGUON}</div>
                   </div>
                 </div>
               </div>
             ) : null}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{text.LANGUAGE}</label>
-                <div className="flex gap-2">
+            <div className={MOTION_STYLES.GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_4_PT_2_BORDER_T_BORDER_SLATE_800_80}>
+              <div className={MOTION_STYLES.SPACE_Y_1_5}>
+                <label className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER}>{text.LANGUAGE}</label>
+                <div className={MOTION_STYLES.FLEX_GAP_2}>
                   <ChipButton active={state.language === MOTION_TEXT_VI} onClick={() => patch({ language: MOTION_TEXT_VI })}>
                     {MOTION_TEXT_SYMBOL_3}
                     {text.LANG_VI}
@@ -460,9 +293,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </ChipButton>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{text.LENGTH}</label>
-                <div className="flex gap-1.5 flex-wrap">
+              <div className={MOTION_STYLES.SPACE_Y_1_5}>
+                <label className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER}>{text.LENGTH}</label>
+                <div className={MOTION_STYLES.FLEX_GAP_1_5_FLEX_WRAP}>
                   {_.map(
                     [
                       [MotionStoryLength.FULL, text.LENGTH_FULL],
@@ -480,20 +313,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between pt-2 gap-2 flex-wrap">
-              <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                <input type={MOTION_TEXT_CHECKBOX} checked={state.autoContinue !== false} onChange={(e) => patch({ autoContinue: e.target.checked })} className="accent-purple-500 w-4 h-4 rounded" />
+            <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP}>
+              <label className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_TEXT_XS_TEXT_SLATE_600_DARK_TEXT_SLATE_400_CURSOR_POINTER}>
+                <input type={MOTION_TEXT_CHECKBOX} checked={state.autoContinue !== false} onChange={(e) => patch({ autoContinue: e.target.checked })} className={MOTION_STYLES.ACCENT_PURPLE_500_W_4_H_4_ROUNDED} />
                 <span>{text.AUTO_CONTINUE}</span>
               </label>
               {busyKind === MOTION_TEXT_ANALYZE ? (
-                <div className="flex items-center gap-2">
-                  <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className="px-5 py-2.5">
+                <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
+                  <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className={MOTION_STYLES.PX_5_PY_2_5}>
                     {text.ANALYZING}
                   </ActionBtn>
                   {stopAi}
                 </div>
               ) : (
-                <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className="px-5 py-2.5">
+                <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
                   {state.analysis ? text.REANALYZE_BTN : text.ANALYZE_BTN}
                 </ActionBtn>
               )}
@@ -503,21 +336,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
         {busyKind === MOTION_TEXT_ANALYZE ? (
           <div className={cardCls}>
             <StepHeader n={MOTION_TEXT_02} icon={Users} title={text.STEP_ANALYSIS} badge={text.BADGE_ANALYZING} />
-            <div className="py-14 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="relative flex items-center justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <Sparkles className="w-7 h-7 text-purple-400 animate-spin" />
+            <div className={MOTION_STYLES.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_4}>
+              <div className={MOTION_STYLES.RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
+                <div className={MOTION_STYLES.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20}>
+                  <Sparkles className={MOTION_STYLES.W_7_H_7_TEXT_PURPLE_400_ANIMATE_SPIN} />
                 </div>
-                <div className="absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse" />
+                <div className={MOTION_STYLES.ABSOLUTE_INSET_1_ROUNDED_2XL_BG_PURPLE_500_20_BLUR_MD_Z_10_ANIMATE_PULSE} />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <p className="text-sm font-extrabold text-slate-100">{text.ANALYZING_TITLE}</p>
-                <p className="text-xs text-slate-400 leading-relaxed font-sans">{job?.log?.[job.log.length - 1] || text.LOG_ANALYZING_DEFAULT}</p>
+              <div className={MOTION_STYLES.SPACE_Y_1_MAX_W_SM}>
+                <p className={MOTION_STYLES.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_100}>{text.ANALYZING_TITLE}</p>
+                <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>{job?.log?.[job.log.length - 1] || text.LOG_ANALYZING_DEFAULT}</p>
               </div>
               {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.EXEC_TIME} suffix={text.ELAPSED} />}
-              <div className="w-56 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(15, Math.round((job?.progress || 0.15) * 100))}%` }} />
-              </div>
+              <MotionProgressBar progress={job?.progress} minimum={15} className={MOTION_STYLES.W_56_H_1_5} />
             </div>
           </div>
         ) : state.analysis ? (
@@ -528,68 +359,56 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               title={text.STEP_ANALYSIS}
               badge={MOTION_TEXT_ENTITIES_CAST}
               right={
-                <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-955/80 border border-slate-800 shadow-2xs">
-                  <button type={MOTION_TEXT_BUTTON} onClick={() => setAnalysisTab(MOTION_TEXT_CAST)} className={cn("px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none", analysisTab === MOTION_TEXT_CAST ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs font-black" : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60")}>
-                    {MOTION_TEXT_SYMBOL_5}
-                    {text.CAST}
-                    {MOTION_TEXT_SYMBOL_6}
-                    {state.analysis.cast.length}
-                    {MOTION_TEXT_SYMBOL_7}
-                  </button>
-                  <button type={MOTION_TEXT_BUTTON} onClick={() => setAnalysisTab(MOTION_TEXT_CHAPTERS)} className={cn("px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none", analysisTab === MOTION_TEXT_CHAPTERS ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs font-black" : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60")}>
-                    {MOTION_TEXT_SYMBOL_8}
-                    {text.CHAPTERS}
-                    {MOTION_TEXT_SYMBOL_6}
-                    {state.analysis.chapters.length}
-                    {MOTION_TEXT_SYMBOL_7}
-                  </button>
-                  {!_.isEmpty(state.analysis.facts) && (
-                    <button type={MOTION_TEXT_BUTTON} onClick={() => setAnalysisTab(MOTION_TEXT_FACTS)} className={cn("px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none", analysisTab === MOTION_TEXT_FACTS ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs font-black" : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60")}>
-                      {MOTION_TEXT_SYMBOL_9}
-                      {text.FACTS}
-                    </button>
-                  )}
+                <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_P_0_5_ROUNDED_XL_BG_SLATE_955_80_BORDER_2}>
+                  <MotionAnalysisTabButton active={analysisTab === MOTION_TEXT_CAST} onClick={() => setAnalysisTab(MOTION_TEXT_CAST)} label={text.CAST} prefix={MOTION_TEXT_SYMBOL_5} count={state.analysis.cast.length} />
+                  <MotionAnalysisTabButton active={analysisTab === MOTION_TEXT_PLACES} onClick={() => setAnalysisTab(MOTION_TEXT_PLACES)} label={text.PLACES} count={state.analysis.places.length} />
+                  <MotionAnalysisTabButton active={analysisTab === MOTION_TEXT_CHAPTERS} onClick={() => setAnalysisTab(MOTION_TEXT_CHAPTERS)} label={text.CHAPTERS} prefix={MOTION_TEXT_SYMBOL_8} count={state.analysis.chapters.length} />
+                  {!_.isEmpty(state.analysis.facts) && <MotionAnalysisTabButton active={analysisTab === MOTION_TEXT_FACTS} onClick={() => setAnalysisTab(MOTION_TEXT_FACTS)} label={text.FACTS} prefix={MOTION_TEXT_SYMBOL_9} />}
                 </div>
               }
             />
-            <div className="space-y-3">
-              <input value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, "text-sm font-bold")} />
+            <div className={MOTION_STYLES.SPACE_Y_3}>
+              <input value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
               {analysisTab === MOTION_TEXT_CAST && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                <div className={MOTION_STYLES.GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_3_MAX_H_380PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR}>
                   {_.map(state.analysis.cast, (c) => {
-                    const ch = _.find(allCharacters, { id: c.characterId });
+                    const outfit: any = gen?.cast?.[c.key];
+                    const colors: string[] = _.take(_.compact(_.map(outfit?.layers || [], MOTION_TEXT_COLOR)), 6);
                     return (
-                      <div key={c.key} className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-955/70 p-3 shadow-2xs">
-                        {studio.ME && ch ? (
-                          <MotionLazyThumb load={() => characterThumb(studio.ME!, ch)} deps={[ch]} alt={c.name} className="w-12 h-16 rounded-xl bg-slate-900 shrink-0 object-cover shadow-xs" />
-                        ) : (
-                          <div className="w-12 h-16 rounded-xl bg-slate-900 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5 text-slate-400" />
+                      <div key={c.key} className={MOTION_STYLES.FLEX_ITEMS_START_GAP_3_ROUNDED_2XL_BORDER_BORDER_SLATE_800_BG_SLATE_955_70}>
+                        <div className={MOTION_STYLES.W_12_H_16_ROUNDED_XL_BG_SLATE_900_FLEX_FLEX_COL_ITEMS_CENTER}>{colors.length ? _.map(colors, (col, k) => <span key={k} className={MOTION_STYLES.W_8_H_2_ROUNDED_SM_BORDER_BORDER_WHITE_10} style={{ background: col }} />) : <Users className={MOTION_STYLES.W_5_H_5_TEXT_SLATE_400} />}</div>
+                        <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_1}>
+                          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
+                            <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>{c.name}</span>
+                            <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_300_PX_1_5_PY_0_5_ROUNDED_BG_SLATE_900}>{c.key}</span>
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-100 truncate">{c.name}</span>
-                            <span className="text-[10px] font-mono text-slate-300 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">{c.key}</span>
+                          <p className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_2}>{c.role || c.description}</p>
+                          {c.look && (
+                            <p className={MOTION_STYLES.TEXT_10PX_TEXT_PURPLE_300_90_LINE_CLAMP_2} title={c.look}>
+                              {text.CAST_LOOK}
+                              {MOTION_TEXT_SYMBOL_21}
+                              {c.look}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {analysisTab === MOTION_TEXT_PLACES && (
+                <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_380PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
+                  {_.map(state.analysis.places, (p) => {
+                    const info = gen?.locationInfo?.[p.key];
+                    return (
+                      <div key={p.key} className={MOTION_STYLES.FLEX_ITEMS_START_GAP_3_ROUNDED_XL_BORDER_BORDER_SLATE_800_BG_SLATE_955_70}>
+                        {info?.files?.[0] ? <img src={genPreviewUrl(info.files[0], info.at)} alt={p.key} className={MOTION_STYLES.W_24_H_14_ROUNDED_LG_OBJECT_COVER_SHRINK_0} /> : <div className={MOTION_STYLES.W_24_H_14_ROUNDED_LG_BG_SLATE_900_SHRINK_0} />}
+                        <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_0_5}>
+                          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
+                            <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>{p.name}</span>
+                            <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400}>{p.key}</span>
                           </div>
-                          <p className="text-[10px] text-slate-400 truncate">{c.role || c.description}</p>
-                          <div className="flex items-center gap-1.5">
-                            <select value={c.characterId} onChange={(e) => setCast(c.key, e.target.value)} className={cn(inputCls, "py-1 text-[11px] flex-1")}>
-                              {_.map(allCharacters, (o) => (
-                                <option key={o.id} value={o.id}>
-                                  {o.name}
-                                  {MOTION_TEXT_SYMBOL_6}
-                                  {o.id}
-                                  {MOTION_TEXT_SYMBOL_7}
-                                </option>
-                              ))}
-                            </select>
-                            {c.suggested && (
-                              <button type={MOTION_TEXT_BUTTON} onClick={() => void saveSuggested(c.key)} className="px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 shrink-0 cursor-pointer" title={stringifyJson(c.suggested)}>
-                                {text.SAVE_SUGGESTED}
-                              </button>
-                            )}
-                          </div>
+                          <p className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>{p.description}</p>
                         </div>
                       </div>
                     );
@@ -597,54 +416,54 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </div>
               )}
               {analysisTab === MOTION_TEXT_CHAPTERS && (
-                <div className="space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_380PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                   {_.map(state.analysis.chapters, (c, i) => (
-                    <div key={c.id} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-955/70 p-3 shadow-2xs">
-                      <span className="font-mono text-xs font-bold text-purple-400 w-6 shrink-0 mt-0.5">{String(i + 1).padStart(2, MOTION_TEXT_0)}</span>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-100">{c.title}</span>
-                          <span className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full">
+                    <div key={c.id} className={MOTION_STYLES.FLEX_ITEMS_START_GAP_3_ROUNDED_XL_BORDER_BORDER_SLATE_800_BG_SLATE_955_70}>
+                      <span className={MOTION_STYLES.FONT_MONO_TEXT_XS_FONT_BOLD_TEXT_PURPLE_400_W_6_SHRINK_0_MT_0_5}>{String(i + 1).padStart(2, MOTION_TEXT_0)}</span>
+                      <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_1}>
+                        <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+                          <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100}>{c.title}</span>
+                          <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400_BG_SLATE_900_BORDER_BORDER_SLATE_800_PX_2}>
                             {MOTION_TEXT_SYMBOL_2}
                             {c.targetSeconds}
                             {MOTION_TEXT_S}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">{c.summary}</p>
+                        <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED}>{c.summary}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
               {analysisTab === MOTION_TEXT_FACTS && !_.isEmpty(state.analysis.facts) && (
-                <div className="space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_380PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                   {_.map(state.analysis.facts, (f, i) => (
-                    <div key={i} className="text-xs flex gap-2.5 rounded-xl border border-slate-800 bg-slate-955/70 p-3 shadow-2xs">
+                    <div key={i} className={MOTION_STYLES.TEXT_XS_FLEX_GAP_2_5_ROUNDED_XL_BORDER_BORDER_SLATE_800_BG_SLATE_955_70}>
                       <span
                         className={cn(
-                          "shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase h-fit",
-                          f.status === MOTION_TEXT_OK ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" : f.status === MOTION_TEXT_WRONG ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30" : "bg-purple-500/15 text-purple-300 border border-purple-500/30",
+                          MOTION_STYLES.SHRINK_0_PX_2_PY_0_5_ROUNDED_LG_TEXT_9PX_FONT_BOLD_UPPERCASE,
+                          f.status === MOTION_TEXT_OK ? MOTION_STYLES.BG_EMERALD_500_15_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_BORDER_BORDER_EMERALD_500_30 : f.status === MOTION_TEXT_WRONG ? MOTION_STYLES.BG_ROSE_500_15_TEXT_ROSE_600_DARK_TEXT_ROSE_400_BORDER_BORDER_ROSE_500_30 : MOTION_STYLES.BG_PURPLE_500_15_TEXT_PURPLE_300_BORDER_BORDER_PURPLE_500_30,
                         )}>
                         {f.status === MOTION_TEXT_OK ? text.FACT_OK : f.status === MOTION_TEXT_WRONG ? text.FACT_WRONG : text.FACT_UNCERTAIN}
                       </span>
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <div className="text-slate-100 font-medium">{f.claim}</div>
-                        {f.note && <div className="text-[11px] text-slate-400">{f.note}</div>}
+                      <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_0_5}>
+                        <div className={MOTION_STYLES.TEXT_SLATE_100_FONT_MEDIUM}>{f.claim}</div>
+                        {f.note && <div className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_400}>{f.note}</div>}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="flex justify-end pt-2 gap-2 flex-wrap">
+              <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
                 {busyKind === MOTION_TEXT_SCRIPT ? (
-                  <div className="flex items-center gap-2">
-                    <ActionBtn busy={true} icon={Wand2} onClick={() => {}} className="px-5 py-2.5">
+                  <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
+                    <ActionBtn busy={true} icon={Wand2} onClick={() => {}} className={MOTION_STYLES.PX_5_PY_2_5}>
                       {text.WRITING_SCRIPT}
                     </ActionBtn>
                     {stopAi}
                   </div>
                 ) : (
-                  <ActionBtn icon={Wand2} onClick={() => void studio.writeScript()} disabled={studio.storyBusy} className="px-5 py-2.5">
+                  <ActionBtn icon={Wand2} onClick={() => void studio.writeScript()} disabled={studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
                     {text.SCRIPT_BTN}
                   </ActionBtn>
                 )}
@@ -655,21 +474,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
         {busyKind === MOTION_TEXT_SCRIPT ? (
           <div className={cardCls}>
             <StepHeader n={MOTION_TEXT_03} icon={Film} title={text.STEP_SCRIPT} badge={text.BADGE_SCRIPT_WRITING} />
-            <div className="py-14 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="relative flex items-center justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <Film className="w-7 h-7 text-purple-400 animate-pulse" />
+            <div className={MOTION_STYLES.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_4}>
+              <div className={MOTION_STYLES.RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
+                <div className={MOTION_STYLES.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20}>
+                  <Film className={MOTION_STYLES.W_7_H_7_TEXT_PURPLE_400_ANIMATE_PULSE} />
                 </div>
-                <div className="absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse" />
+                <div className={MOTION_STYLES.ABSOLUTE_INSET_1_ROUNDED_2XL_BG_PURPLE_500_20_BLUR_MD_Z_10_ANIMATE_PULSE} />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <p className="text-sm font-extrabold text-slate-100">{text.SCRIPT_WRITING}</p>
-                <p className="text-xs text-slate-400 leading-relaxed font-sans">{job?.log?.[job.log.length - 1] || text.LOG_SCRIPT_DEFAULT}</p>
+              <div className={MOTION_STYLES.SPACE_Y_1_MAX_W_SM}>
+                <p className={MOTION_STYLES.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_100}>{text.SCRIPT_WRITING}</p>
+                <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>{job?.log?.[job.log.length - 1] || text.LOG_SCRIPT_DEFAULT}</p>
               </div>
               {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCRIPT_TIME} suffix={text.ELAPSED} />}
-              <div className="w-56 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(15, Math.round((job?.progress || 0.15) * 100))}%` }} />
-              </div>
+              <MotionProgressBar progress={job?.progress} minimum={15} className={MOTION_STYLES.W_56_H_1_5} />
             </div>
           </div>
         ) : state.script && state.analysis ? (
@@ -680,76 +497,64 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               title={text.STEP_SCRIPT}
               badge={MOTION_TEMPLATE_BEATS(`${state.script.beats.length}`)}
               right={
-                <span className="text-[10px] font-mono text-slate-400">
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400}>
                   {formatSeconds(estimateTotal)} {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(`${text.ESTIMATED}`) : ""}
                 </span>
               }
             />
-            <div className="space-y-4 max-h-[620px] overflow-y-auto custom-scrollbar pr-1">
+            <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
               {_.map(state.analysis.chapters, (chapter, ci) => (
-                <div key={chapter.id} className="space-y-3">
-                  <div className="flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-slate-800 z-10 shadow-sm">
-                    <div className="text-xs font-black uppercase tracking-wide flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] font-mono font-black shadow-xs">{ci + 1}</span>
-                      <span className="text-purple-400 font-extrabold">{chapter.title}</span>
-                      <span className="text-[10px] font-mono font-bold text-slate-400 lowercase">
+                <div key={chapter.id} className={MOTION_STYLES.SPACE_Y_3}>
+                  <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_STICKY_TOP_0_BG_SLATE_900_95_BACKDROP_BLUR_MD}>
+                    <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2}>
+                      <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER}>{ci + 1}</span>
+                      <span className={MOTION_STYLES.TEXT_PURPLE_400_FONT_EXTRABOLD}>{chapter.title}</span>
+                      <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_LOWERCASE}>
                         {MOTION_TEXT_SYMBOL_43}
                         {chapter.targetSeconds}
                         {MOTION_TEXT_S_2}
                       </span>
                     </div>
-                    <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.writeScript([chapter.id])} disabled={studio.storyBusy} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-955/80 border border-slate-800 text-slate-300 hover:text-slate-100 hover:border-purple-500/40 shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40 transition-all">
-                      <RefreshCw className="w-3 h-3" /> <span>{text.SCRIPT_REGEN_CHAPTER}</span>
+                    <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.writeScript([chapter.id])} disabled={studio.storyBusy} className={MOTION_STYLES.PX_2_5_PY_1_ROUNDED_LG_TEXT_11PX_FONT_BOLD_BG_SLATE_955_80_BORDER}>
+                      <RefreshCw className={MOTION_STYLES.W_3_H_3} /> <span>{text.SCRIPT_REGEN_CHAPTER}</span>
                     </button>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className={MOTION_STYLES.SPACE_Y_2_5}>
                     {_.map(beatsByChapter[chapter.id] || [], (b, bi) => (
-                      <div key={b.id} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3.5 shadow-xs hover:border-purple-500/40 transition-all space-y-2.5">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-purple-500/15 border border-purple-500/30 text-purple-300 shadow-2xs">
+                      <div key={b.id} className={MOTION_STYLES.ROUNDED_2XL_BORDER_BORDER_SLATE_800_BG_SLATE_900_70_P_3_5_SHADOW_XS_HOVER_BORDER_PURPLE_500_40}>
+                        <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP}>
+                          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_5_FLEX_WRAP}>
+                            <span className={MOTION_STYLES.PX_2_PY_0_5_ROUNDED_LG_TEXT_10PX_FONT_MONO_FONT_BLACK_BG_PURPLE_500_15}>
                               {MOTION_TEXT_SYMBOL_44}
                               {bi + 1}
                             </span>
                             <span
                               className={cn(
-                                "text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wide border shadow-2xs flex items-center gap-1",
+                                MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_PX_2_5_PY_0_5_ROUNDED_LG_UPPERCASE,
                                 b.visual === MOTION_TEXT_SCENE
-                                  ? "bg-sky-500/15 border-sky-500/30 text-sky-700 dark:text-sky-300"
+                                  ? MOTION_STYLES.BG_SKY_500_15_BORDER_SKY_500_30_TEXT_SKY_700_DARK_TEXT_SKY_300
                                   : b.visual === MOTION_TEXT_TITLE
-                                    ? "bg-purple-500/15 border-purple-500/30 text-purple-700 dark:text-purple-300"
+                                    ? MOTION_STYLES.BG_PURPLE_500_15_BORDER_PURPLE_500_30_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300
                                     : b.visual === MOTION_TEXT_STATS
-                                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-                                      : "bg-fuchsia-500/15 border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300",
+                                      ? MOTION_STYLES.BG_EMERALD_500_15_BORDER_EMERALD_500_30_TEXT_EMERALD_700_DARK_TEXT_EMERALD_300
+                                      : MOTION_STYLES.BG_FUCHSIA_500_15_BORDER_FUCHSIA_500_30_TEXT_FUCHSIA_700_DARK_TEXT_FUCHSIA_300,
                               )}>
                               {b.visual === MOTION_TEXT_SCENE ? MOTION_TEXT_SCENE_2 : b.visual === MOTION_TEXT_TITLE ? MOTION_TEXT_TITLE_2 : b.visual === MOTION_TEXT_STATS ? MOTION_TEXT_STATS_2 : b.visual}
                             </span>
-                            {b.visual === MOTION_TEXT_SCENE && (b.env || b.time) && (
-                              <span className="text-[10px] font-mono font-medium text-slate-400 bg-slate-955/80 px-2 py-0.5 rounded-lg border border-slate-800 max-w-[240px] truncate" title={MOTION_TEMPLATE_SYMBOL_7(`${b.env || ""}`, `${b.time || ""}`)}>
-                                {MOTION_TEXT_SYMBOL_45}
-                                {b.env}
+                            {b.visual === MOTION_TEXT_SCENE && (b.place || b.time) && (
+                              <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_400_BG_SLATE_955_80_PX_2_PY_0_5} title={MOTION_TEMPLATE_SYMBOL_7(`${b.place || ""}`, `${b.time || ""}`)}>
+                                {b.place}
                                 {b.time ? MOTION_TEMPLATE_SYMBOL_6(`${b.time}`) : ""}
                               </span>
                             )}
-                            {_.size(b.shots) > 1 && (
-                              <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-lg" title={_.map(b.shots, (sh, k) => MOTION_TEMPLATE_SHOT_TOOLTIP_LINE(`${k + 1}`, `${sh.text}`, `${sh.visual}`)).join(MOTION_TEXT_SYMBOL_27)}>
-                                {MOTION_TEXT_SYMBOL_46}
-                                {_.size(b.shots)} {text.SCRIPT_SHOTS}
-                              </span>
-                            )}
+                            {b.visual === MOTION_TEXT_SCENE && gen?.staging?.[b.id] ? <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_400} /> : null}
                           </div>
-                          <button type={MOTION_TEXT_BUTTON} onClick={() => removeBeat(b.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer" title={text.DELETE || MOTION_TEXT_XOA} disabled={studio.storyBusy}>
-                            <Trash2 className="w-3.5 h-3.5" />
+                          <button type={MOTION_TEXT_BUTTON} onClick={() => removeBeat(b.id)} className={MOTION_STYLES.P_1_5_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_HOVER_BG_ROSE_500_10_TRANSITION_ALL_CURSOR_POINTER} title={text.DELETE || MOTION_TEXT_XOA} disabled={studio.storyBusy}>
+                            <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
                           </button>
                         </div>
-                        <textarea
-                          value={b.narration}
-                          onChange={(e) => updateBeat(b.id, { narration: e.target.value })}
-                          rows={2}
-                          placeholder={MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH}
-                          className="w-full bg-slate-955/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder:text-slate-500 focus:bg-slate-955 focus:border-purple-500/80 outline-none resize-y leading-relaxed font-sans font-medium transition-all shadow-2xs"
-                          disabled={studio.storyBusy}
-                        />
+                        <textarea value={b.narration} onChange={(e) => updateBeat(b.id, { narration: e.target.value })} rows={2} placeholder={MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH} className={MOTION_STYLES.W_FULL_BG_SLATE_955_80_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_3_TEXT_XS} disabled={studio.storyBusy} />
+                        {b.visual === MOTION_TEXT_SCENE && <input value={b.action || ""} onChange={(e) => updateBeat(b.id, { action: e.target.value })} className={MOTION_STYLES.W_FULL_BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_LG_PX_2_5_PY_1_5} disabled={studio.storyBusy} />}
                       </div>
                     ))}
                   </div>
@@ -759,90 +564,97 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           </div>
         ) : null}
         <div className={cardCls}>
-          <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={MOTION_TEXT_LIVE_2_5D_CANVAS} />
+          <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
+          {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
           {studio.ME ? (
-            <MotionSpecPlayer ME={studio.ME} spec={studio.compiled?.spec || null} audioUrl={AUDIO_URL(studio.audioId)} />
+            <MotionSpecPlayer ME={studio.ME} spec={studio.compiled?.spec || null} audioUrl={motionAudioUrl(studio.audioId)} />
           ) : (
-            <div className="w-full h-[340px] sm:h-[380px] md:h-[420px] flex items-center justify-center rounded-2xl bg-black border border-slate-800">
-              <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+            <div className={MOTION_STYLES.W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
+              <Loader2 className={MOTION_STYLES.W_8_H_8_TEXT_PURPLE_500_ANIMATE_SPIN} />
             </div>
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-6 min-w-0">
+      <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_6_MIN_W_0}>
         {state.script && state.analysis && (
           <div className={cardCls}>
-            <StepHeader n={MOTION_TEXT_AI_2} icon={ImageIcon} title={text.STEP_ART} badge={artItems.length ? MOTION_TEMPLATE_ART_BADGE(`${_.size(_.filter(artItems, (a) => !!a.image && !a.failed))}`, `${artItems.length}`, `${text.ART_COUNT}`) : undefined} />
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-1.5">
-                <ChipButton active={state.useArt} onClick={() => patch({ useArt: true })} disabled={studio.renderBusy}>
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>{text.ART_MODE_ART}</span>
-                </ChipButton>
-                <ChipButton active={!state.useArt} onClick={() => patch({ useArt: false })} disabled={studio.renderBusy}>
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{text.ART_MODE_DRAWN}</span>
-                </ChipButton>
-              </div>
-              <p className="text-[11px] leading-relaxed text-slate-500">{text.ART_HINT}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider shrink-0">{text.ART_ENGINE}</span>
-                <select value={state.artEngine} onChange={(e) => patch({ artEngine: e.target.value })} className={cn(inputCls, "py-1.5")} disabled={studio.storyBusy}>
-                  <option value={ImageGeneratorEngine.Veo3}>{MOTION_TEMPLATE_GEMINI_MODEL(`${GeminiChatModelName.Flash}`)}</option>
-                  <option value={ImageGeneratorEngine.LabsSandbox}>{MOTION_TEMPLATE_GEMINI_MODEL(`${GeminiChatModelName.FlashLite}`)}</option>
-                </select>
-              </div>
-              <label className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer">
-                <input type={MOTION_TEXT_CHECKBOX} checked={state.artReview} onChange={(e) => patch({ artReview: e.target.checked })} className="accent-purple-500" disabled={studio.storyBusy} />
-                <span>{text.ART_REVIEW}</span>
-              </label>
-              {busyKind === MOTION_TEXT_ART ? (
-                <div className="space-y-3">
-                  <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 p-4 rounded-xl bg-slate-955/60 border border-purple-500/20 animate-in fade-in">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-md">
-                      <Sparkles className="w-5 h-5 text-purple-400 animate-spin" />
+            <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneBeats.length ? MOTION_TEMPLATE_SYMBOL_4(`${builtCount}`, `${sceneBeats.length}`) : undefined} />
+            <div className={MOTION_STYLES.SPACE_Y_3}>
+              <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{text.SCENES_HINT}</p>
+              <input value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.storyBusy} />
+              {busyKind === MOTION_TEXT_SCENES ? (
+                <div className={MOTION_STYLES.SPACE_Y_3}>
+                  <div className={MOTION_STYLES.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_3}>
+                    <div className={MOTION_STYLES.W_10_H_10_ROUNDED_XL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_FLEX}>
+                      <Box className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_400_ANIMATE_PULSE} />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-200">{text.ART_GENERATING}</p>
-                      <p className="text-[11px] text-slate-400 font-mono">{job?.log?.[job.log.length - 1] || text.LOG_ART_DEFAULT}</p>
+                    <div className={MOTION_STYLES.SPACE_Y_1}>
+                      <p className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_200}>{text.SCENES_RUNNING}</p>
+                      <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_400_FONT_MONO}>{job?.log?.[job.log.length - 1] || ""}</p>
                     </div>
-                    {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.ART_TIME} suffix={text.ELAPSED} />}
-                    <div className="w-full max-w-xs h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(10, Math.round((job?.progress || 0.1) * 100))}%` }} />
-                    </div>
+                    {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCENES_TIME} suffix={text.ELAPSED} />}
+                    <MotionProgressBar progress={job?.progress} minimum={6} className={MOTION_STYLES.W_FULL_MAX_W_XS_H_1_5} />
                   </div>
-                  <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+                  <StopBtn className={MOTION_STYLES.W_FULL} onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <ActionBtn icon={Wand2} className="flex-1" onClick={() => void studio.illustrate(false)} disabled={studio.storyBusy}>
-                    {state.script.art ? text.ART_BTN_CONTINUE : text.ART_BTN}
+                <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
+                  <ActionBtn icon={Wand2} className={MOTION_STYLES.FLEX_1} onClick={() => void studio.buildScenes({ note: sceneNote || undefined })} disabled={studio.storyBusy}>
+                    {builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
                   </ActionBtn>
-                  {state.script.art && (
-                    <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.illustrate(true)} disabled={studio.storyBusy} className="text-[10px] font-bold text-slate-500 hover:text-purple-300 flex items-center gap-1 cursor-pointer disabled:opacity-40 shrink-0">
-                      <RefreshCw className="w-3 h-3" /> {text.ART_RESTART}
-                    </button>
+                  {!!builtCount && (
+                    <>
+                      <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ restyle: true, beats: [], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
+                        <Users className={MOTION_STYLES.W_3_H_3} /> {text.SCENES_RESTYLE}
+                      </button>
+                      <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ restart: true, note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
+                        <RefreshCw className={MOTION_STYLES.W_3_H_3} /> {text.SCENES_RESTART}
+                      </button>
+                    </>
                   )}
                 </div>
               )}
-              {!_.isEmpty(state.script.art?.cast) && (
-                <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
-                  {_.map(state.script.art!.cast, (c) => (
-                    <div key={c.key} className="shrink-0 w-14 text-center" title={c.appearance}>
-                      <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">{c.image && <img src={realFileUrl(c.image)} alt={c.key} className="w-full h-full object-cover object-top" loading={MOTION_TEXT_LAZY} />}</div>
-                      <div className="text-[9px] font-mono text-slate-500 truncate mt-0.5">{c.key}</div>
-                    </div>
-                  ))}
+              {!_.isEmpty(gen?.locationInfo) && (
+                <div className={MOTION_STYLES.SPACE_Y_1_5}>
+                  <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>{text.SCENES_LOCATIONS}</div>
+                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_1_5}>
+                    {_.map(gen!.locationInfo, (info, key) => (
+                      <div key={key} className={MOTION_STYLES.RELATIVE_ASPECT_VIDEO_ROUNDED_LG_OVERFLOW_HIDDEN_BORDER_BORDER_SLATE_800_BG_SLATE_900} title={(info.issues || []).join(MOTION_TEXT_SYMBOL_27)}>
+                        {info.files?.[0] && <img src={genPreviewUrl(info.files[0], info.at)} alt={key} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER} loading={MOTION_TEXT_LAZY} />}
+                        <span className={MOTION_STYLES.ABSOLUTE_LEFT_1_BOTTOM_1_PX_1_ROUNDED_BG_BLACK_60_TEXT_8PX}>
+                          {key}
+                          {MOTION_TEXT_SYMBOL_10}
+                          {info.score ?? MOTION_TEXT_SYMBOL_25}
+                          {MOTION_TEXT_10}
+                        </span>
+                        <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ locations: [key], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.ABSOLUTE_RIGHT_1_TOP_1_PX_1_5_PY_0_5_ROUNDED_BG_BLACK_70}>
+                          {text.SCENES_REDO_LOCATION}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {!_.isEmpty(artItems) && (
-                <div className="grid grid-cols-3 gap-1.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
-                  {_.map(artItems, (a) => (
-                    <div key={a.id} className={cn("relative aspect-video rounded-lg overflow-hidden border bg-slate-100 dark:bg-slate-900", a.failed ? "border-rose-500/60" : "border-slate-200 dark:border-slate-800")} title={MOTION_TEMPLATE_ART_TOOLTIP(`${a.id}`, `${a.words}`, `${a.prompt}`, `${a.note || ""}`, `${a.failed || ""}`)}>
-                      {a.image ? <img src={realFileUrl(a.image)} alt={a.id} className="w-full h-full object-cover" loading={MOTION_TEXT_LAZY} /> : <div className="w-full h-full flex items-center justify-center text-[9px] font-mono text-slate-400">{a.failed ? MOTION_TEXT_ART_FAILED_MARK : MOTION_TEXT_SYMBOL}</div>}
-                      <span className="absolute left-1 bottom-1 px-1 rounded bg-black/60 text-[8px] font-mono text-white">{a.id}</span>
-                    </div>
-                  ))}
+              {!!builtCount && (
+                <div className={MOTION_STYLES.SPACE_Y_1_5}>
+                  <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>
+                    {text.SCENES_BEATS}
+                    {gen?.failed?.length ? MOTION_TEMPLATE_SYMBOL_57(`${gen.failed.length}`, `${text.SCENES_FAILED}`) : ""}
+                  </div>
+                  <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_1_5_MAX_H_360PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
+                    {_.map(sceneBeats, (b) => {
+                      const pv = gen?.previews?.[b.id];
+                      const bad = !gen?.staging?.[b.id] || (pv?.score != null && pv.score < 6);
+                      return (
+                        <div key={b.id} className={cn(MOTION_STYLES.RELATIVE_ASPECT_VIDEO_ROUNDED_LG_OVERFLOW_HIDDEN_BORDER_BG_SLATE_900_GROUP, bad ? MOTION_STYLES.BORDER_AMBER_500_60 : MOTION_STYLES.BORDER_SLATE_800)} title={[b.narration, b.action, ...(pv?.issues || []), pv?.note || ""].filter(Boolean).join(MOTION_TEXT_SYMBOL_27)}>
+                          {pv?.file ? <img src={genPreviewUrl(pv.file, pv.at)} alt={b.id} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER} loading={MOTION_TEXT_LAZY} /> : <div className={MOTION_STYLES.W_FULL_H_FULL_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_9PX_FONT_MONO}>{b.id}</div>}
+                          <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ beats: [b.id], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.ABSOLUTE_RIGHT_1_TOP_1_PX_1_5_PY_0_5_ROUNDED_BG_BLACK_70}>
+                            {text.SCENES_REDO}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -850,51 +662,49 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
         )}
         <div className={cardCls}>
           <StepHeader n={MOTION_TEXT_04} icon={Mic} title={text.STEP_VOICE} badge={MOTION_TEXT_AI_VOICE} />
-          <div className="space-y-3">
-            <button type={MOTION_TEXT_BUTTON} onClick={() => setVoiceDialog(true)} className={cn(inputCls, "text-left flex items-center justify-between cursor-pointer py-2.5")}>
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">
-                  <Mic className="w-3.5 h-3.5" />
+          <div className={MOTION_STYLES.SPACE_Y_3}>
+            <button type={MOTION_TEXT_BUTTON} onClick={() => setVoiceDialog(true)} className={cn(inputCls, MOTION_STYLES.TEXT_LEFT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_CURSOR_POINTER_PY_2_5)}>
+              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_MIN_W_0}>
+                <div className={MOTION_STYLES.W_6_H_6_ROUNDED_FULL_BG_PURPLE_500_20_TEXT_PURPLE_400_FLEX_ITEMS_CENTER}>
+                  <Mic className={MOTION_STYLES.W_3_5_H_3_5} />
                 </div>
-                <span className="truncate font-bold text-slate-100">{state.voiceName || text.VOICE_PICK}</span>
+                <span className={MOTION_STYLES.TRUNCATE_FONT_BOLD_TEXT_SLATE_100}>{state.voiceName || text.VOICE_PICK}</span>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+              <ChevronDown className={MOTION_STYLES.W_4_H_4_TEXT_SLATE_400_SHRINK_0} />
             </button>
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px] font-bold text-slate-400">
+            <div className={MOTION_STYLES.SPACE_Y_1}>
+              <div className={MOTION_STYLES.FLEX_JUSTIFY_BETWEEN_TEXT_11PX_FONT_BOLD_TEXT_SLATE_400}>
                 <span>{text.VOICE_SPEED}</span>
-                <span className="font-mono font-bold text-purple-400">
+                <span className={MOTION_STYLES.FONT_MONO_FONT_BOLD_TEXT_PURPLE_400}>
                   {state.voiceSpeed.toFixed(2)}
                   {MOTION_TEXT_SYMBOL_12}
                 </span>
               </div>
-              <input type={MOTION_TEXT_RANGE} min={0.8} max={1.2} step={0.05} value={state.voiceSpeed} onChange={(e) => patch({ voiceSpeed: _.toNumber(e.target.value) })} className="w-full accent-purple-500" />
+              <input type={MOTION_TEXT_RANGE} min={0.8} max={1.2} step={0.05} value={state.voiceSpeed} onChange={(e) => patch({ voiceSpeed: _.toNumber(e.target.value) })} className={MOTION_STYLES.W_FULL_ACCENT_PURPLE_500} />
             </div>
             {busyKind === MOTION_TEXT_VOICE ? (
-              <div className="space-y-3">
-                <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 p-4 rounded-xl bg-slate-955/60 border border-purple-500/20 animate-in fade-in">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shadow-md">
-                    <Mic className="w-5 h-5 text-purple-400 animate-pulse" />
+              <div className={MOTION_STYLES.SPACE_Y_3}>
+                <div className={MOTION_STYLES.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_3}>
+                  <div className={MOTION_STYLES.W_10_H_10_ROUNDED_XL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_FLEX}>
+                    <Mic className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_400_ANIMATE_PULSE} />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-200">{text.VOICE_GENERATING}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">{job?.log?.[job.log.length - 1] || text.LOG_VOICE_DEFAULT}</p>
+                  <div className={MOTION_STYLES.SPACE_Y_1}>
+                    <p className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_200}>{text.VOICE_GENERATING}</p>
+                    <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_400_FONT_MONO}>{job?.log?.[job.log.length - 1] || text.LOG_VOICE_DEFAULT}</p>
                   </div>
                   {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.VOICE_TIME} suffix={text.ELAPSED} />}
-                  <div className="w-full max-w-xs h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse transition-all duration-300" style={{ width: `${Math.max(10, Math.round((job?.progress || 0.1) * 100))}%` }} />
-                  </div>
+                  <MotionProgressBar progress={job?.progress} minimum={10} className={MOTION_STYLES.W_FULL_MAX_W_XS_H_1_5} />
                 </div>
-                <StopBtn className="w-full" onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+                <StopBtn className={MOTION_STYLES.W_FULL} onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
               </div>
             ) : (
-              <ActionBtn icon={Mic} className="w-full" onClick={() => void studio.generateVoice()} disabled={!state.script?.beats?.length || !state.voiceId || studio.storyBusy}>
+              <ActionBtn icon={Mic} className={MOTION_STYLES.W_FULL} onClick={() => void studio.generateVoice()} disabled={!state.script?.beats?.length || !state.voiceId || studio.storyBusy}>
                 {text.VOICE_BTN}
               </ActionBtn>
             )}
             {state.voice && (
-              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 font-bold">
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <div className={MOTION_STYLES.TEXT_11PX_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FLEX_ITEMS_CENTER_GAP_1_5_P_2}>
+                <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_600} />
                 <span>
                   {text.VOICE_READY}
                   {MOTION_TEXT_SYMBOL_10}
@@ -902,21 +712,21 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </span>
               </div>
             )}
-            <div className="border-t border-slate-800 pt-3 flex items-center justify-between">
-              <button type={MOTION_TEXT_BUTTON} onClick={() => fileRef.current?.click()} className="text-xs text-slate-400 hover:text-purple-300 flex items-center gap-1.5 cursor-pointer font-bold transition-colors">
-                <Upload className="w-3.5 h-3.5" />
+            <div className={MOTION_STYLES.BORDER_T_BORDER_SLATE_800_PT_3_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+              <button type={MOTION_TEXT_BUTTON} onClick={() => fileRef.current?.click()} className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1_5_CURSOR_POINTER}>
+                <Upload className={MOTION_STYLES.W_3_5_H_3_5} />
                 <span>{text.VOICE_UPLOAD}</span>
               </button>
-              <input ref={fileRef} type={MOTION_TEXT_FILE} accept={MOTION_TEXT_AUDIO} className="hidden" onChange={(e) => e.target.files?.[0] && void studio.uploadVoice(e.target.files[0])} />
+              <input ref={fileRef} type={MOTION_TEXT_FILE} accept={MOTION_TEXT_AUDIO} className={MOTION_STYLES.HIDDEN} onChange={(e) => e.target.files?.[0] && void studio.uploadVoice(e.target.files[0])} />
             </div>
           </div>
         </div>
         <div className={cardCls}>
           <StepHeader n={MOTION_TEXT_05} icon={Clapperboard} title={text.STEP_RENDER} badge={MOTION_TEXT_OUTPUT_MP4} />
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{text.ASPECT}</label>
-              <div className="grid grid-cols-4 gap-1.5">
+          <div className={MOTION_STYLES.SPACE_Y_4}>
+            <div className={MOTION_STYLES.SPACE_Y_1_5}>
+              <label className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER}>{text.ASPECT}</label>
+              <div className={MOTION_STYLES.GRID_GRID_COLS_4_GAP_1_5}>
                 {_.map(
                   [
                     { aspect: MotionAspect.LANDSCAPE, label: MOTION_TEXT_16_9, icon: Tv },
@@ -925,36 +735,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     { aspect: MotionAspect.FOUR_FIVE, label: MOTION_TEXT_4_5, icon: Monitor },
                   ],
                   ({ aspect, label, icon: Icon }) => (
-                    <ChipButton key={aspect} active={state.aspect === aspect} onClick={() => patch({ aspect })} disabled={studio.renderBusy} className="h-9">
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <ChipButton key={aspect} active={state.aspect === aspect} onClick={() => patch({ aspect })} disabled={studio.renderBusy} className={MOTION_STYLES.H_9}>
+                      <Icon className={MOTION_STYLES.W_3_5_H_3_5_SHRINK_0} />
                       <span>{label}</span>
                     </ChipButton>
                   ),
                 )}
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{text.RENDER_MODE}</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {_.map(
-                  [
-                    [MOTION_TEXT_2D, MOTION_TEXT_TOON_LINE, text.RENDER_MODE_2D],
-                    [MOTION_TEXT_TOON, MOTION_TEXT_TOON_LINE, text.RENDER_MODE_TOON_LINE],
-                    [MOTION_TEXT_TOON, MOTION_TEXT_TOON_FLAT, text.RENDER_MODE_TOON_FLAT],
-                    [MOTION_TEXT_3D, MOTION_TEXT_TOON_LINE, text.RENDER_MODE_3D],
-                    [MOTION_TEXT_REAL, MOTION_TEXT_TOON_LINE, text.RENDER_MODE_REAL],
-                  ] as const,
-                  ([mode, toon, label]) => (
-                    <ChipButton key={label} active={state.renderMode === mode && (mode !== MOTION_TEXT_TOON || state.toonStyle === toon)} onClick={() => patch(mode === MOTION_TEXT_TOON ? { renderMode: mode, toonStyle: toon } : { renderMode: mode })} disabled={studio.renderBusy}>
-                      {label}
-                    </ChipButton>
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{text.QUALITY}</label>
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className={MOTION_STYLES.SPACE_Y_1_5}>
+              <label className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER}>{text.QUALITY}</label>
+              <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_1_5}>
                 {_.map(
                   [
                     [MotionQuality.DRAFT, text.QUALITY_DRAFT],
@@ -970,9 +761,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="space-y-1">
-                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">{text.FPS}</span>
+            <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
+              <label className={MOTION_STYLES.SPACE_Y_1}>
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.FPS}</span>
                 <select value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
                   {_.map([24, 25, 30, 60], (f) => (
                     <option key={f} value={f}>
@@ -982,8 +773,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   ))}
                 </select>
               </label>
-              <label className="space-y-1">
-                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">{text.ENCODER}</span>
+              <label className={MOTION_STYLES.SPACE_Y_1}>
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.ENCODER}</span>
                 <select value={state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy}>
                   <option value={MotionEncoderPreference.AUTO}>{text.ENCODER_AUTO}</option>
                   <option value={MotionEncoderPreference.GPU}>{text.ENCODER_GPU}</option>
@@ -991,13 +782,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </select>
               </label>
             </div>
-            <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-              <input type={MOTION_TEXT_CHECKBOX} checked={state.sfx} onChange={(e) => patch({ sfx: e.target.checked })} className="accent-purple-500 w-4 h-4 rounded" />
+            <label className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_TEXT_XS_TEXT_SLATE_400_CURSOR_POINTER}>
+              <input type={MOTION_TEXT_CHECKBOX} checked={state.sfx} onChange={(e) => patch({ sfx: e.target.checked })} className={MOTION_STYLES.ACCENT_PURPLE_500_W_4_H_4_ROUNDED} />
               <span>{text.SFX}</span>
             </label>
-            <div className="grid grid-cols-[auto_1fr] gap-2 pt-2">
-              <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-800 bg-slate-955/80 text-slate-300 hover:text-white hover:border-purple-500/40 disabled:opacity-40 cursor-pointer transition-all shadow-2xs">
-                {studio.checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanSearch className="w-4 h-4" />}
+            <div className={MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
+              <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
+                {studio.checking ? <Loader2 className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
                 <span>{text.CHECK_BTN}</span>
               </button>
               {studio.renderBusy ? (
@@ -1012,31 +803,24 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
         </div>
         {(job || rj) && (
           <div className={cardCls}>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono">{rj ? MOTION_TEXT_RENDER_VIDEO_MP4 : job?.kind === MOTION_TEXT_ANALYZE ? text.STEP_ANALYSIS : job?.kind === MOTION_TEXT_SCRIPT ? text.STEP_SCRIPT : job?.kind === MOTION_TEXT_ART ? text.STEP_ART : text.STEP_VOICE}</span>
-              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">{rj ? MOTION_TEMPLATE_SYMBOL_3(`${Math.round((rj.progress || 0) * 100)}`) : MOTION_TEMPLATE_SYMBOL_3(`${Math.round((job?.progress || 0) * 100)}`)}</span>
+            <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
+              <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{rj ? MOTION_TEXT_RENDER_VIDEO_MP4 : job?.kind === MOTION_TEXT_ANALYZE ? text.STEP_ANALYSIS : job?.kind === MOTION_TEXT_SCRIPT ? text.STEP_SCRIPT : job?.kind === MOTION_TEXT_SCENES ? text.STEP_SCENES : text.STEP_VOICE}</span>
+              <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{rj ? MOTION_TEMPLATE_SYMBOL_3(`${Math.round((rj.progress || 0) * 100)}`) : MOTION_TEMPLATE_SYMBOL_3(`${Math.round((job?.progress || 0) * 100)}`)}</span>
             </div>
             {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={job.kind === MOTION_TEXT_VOICE ? text.STEP_VOICE : text.WAITING_AI} suffix={text.ELAPSED} />}
-            <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 transition-all duration-300"
-                style={{
-                  width: `${Math.max(8, Math.round(((rj ? rj.progress : job?.progress) || 0) * 100))}%`,
-                }}
-              />
-            </div>
-            <div className="max-h-36 overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-400 bg-slate-955/90 p-2.5 rounded-xl border border-slate-800 space-y-1">
+            <MotionProgressBar progress={rj ? rj.progress : job?.progress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
+            <div className={MOTION_STYLES.MAX_H_36_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_FONT_MONO_TEXT_10PX_TEXT_SLATE_400_BG_SLATE_955_90}>
               {_.map(_.takeRight((rj ? rj.log : job?.log) || [], 15), (l, i) => (
-                <div key={i} className="truncate">
+                <div key={i} className={MOTION_STYLES.TRUNCATE}>
                   {l}
                 </div>
               ))}
             </div>
             {rj?.result && (
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <video src={rj.result.videoUrl} controls className="w-full rounded-xl bg-black shadow-lg" />
-                <a href={rj.result.videoUrl} download={MOTION_TEXT_MOTION_VIDEO_MP4} className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-sm">
-                  <Download className="w-4 h-4" />
+              <div className={MOTION_STYLES.SPACE_Y_2_PT_2_BORDER_T_BORDER_SLATE_800}>
+                <video src={rj.result.videoUrl} controls className={MOTION_STYLES.W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG} />
+                <a href={rj.result.videoUrl} download={MOTION_TEXT_MOTION_VIDEO_MP4} className={MOTION_STYLES.W_FULL_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PY_2_ROUNDED_XL}>
+                  <Download className={MOTION_STYLES.W_4_H_4} />
                   <span>{text.SAVE_AS}</span>
                 </a>
               </div>
@@ -1102,25 +886,25 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
   return (
     <Modal isOpen onClose={() => !busy && onClose()} title={text.JUNK_TITLE} maxWidth={MOTION_TEXT_MODAL_2XL}>
       {!report ? (
-        <div className="py-10 flex items-center justify-center gap-2 text-sm text-slate-500">
-          <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+        <div className={MOTION_STYLES.PY_10_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_TEXT_SM_TEXT_SLATE_500}>
+          <Loader2 className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_500_ANIMATE_SPIN} />
           {text.JUNK_SCANNING}
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="text-xs text-slate-600 dark:text-slate-300">
+        <div className={MOTION_STYLES.SPACE_Y_4}>
+          <div className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_600_DARK_TEXT_SLATE_300}>
             <div>{text.JUNK_STORAGE}</div>
-            <div className="font-mono font-bold text-slate-900 dark:text-slate-100 break-all">{report.storageDir}</div>
+            <div className={MOTION_STYLES.FONT_MONO_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100_BREAK_ALL}>{report.storageDir}</div>
           </div>
           {_.isEmpty(report.groups) ? (
-            <div className="py-6 text-center text-sm text-slate-500">{text.JUNK_EMPTY}</div>
+            <div className={MOTION_STYLES.PY_6_TEXT_CENTER_TEXT_SM_TEXT_SLATE_500}>{text.JUNK_EMPTY}</div>
           ) : (
-            <div className="space-y-2 max-h-[46vh] overflow-y-auto pr-1">
+            <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_46VH_OVERFLOW_Y_AUTO_PR_1}>
               {_.map(report.groups, (g) => (
-                <label key={g.group} className="flex gap-3 items-start rounded-xl border border-slate-200 dark:border-slate-800 p-3 cursor-pointer hover:border-purple-500/40">
+                <label key={g.group} className={MOTION_STYLES.FLEX_GAP_3_ITEMS_START_ROUNDED_XL_BORDER_BORDER_SLATE_200_DARK_BORDER_SLATE_800}>
                   <input
                     type={MOTION_TEXT_CHECKBOX}
-                    className="mt-1 accent-purple-500"
+                    className={MOTION_STYLES.MT_1_ACCENT_PURPLE_500}
                     checked={picked.has(g.group)}
                     onChange={(e) =>
                       setPicked((prev) => {
@@ -1131,14 +915,14 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
                       })
                     }
                   />
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{label(g.group)}</span>
-                      <span className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 shrink-0">{formatBytes(g.bytes)}</span>
+                  <div className={MOTION_STYLES.FLEX_1_MIN_W_0_SPACE_Y_1}>
+                    <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
+                      <span className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100}>{label(g.group)}</span>
+                      <span className={MOTION_STYLES.TEXT_XS_FONT_MONO_FONT_BOLD_TEXT_ROSE_600_DARK_TEXT_ROSE_400_SHRINK_0}>{formatBytes(g.bytes)}</span>
                     </div>
-                    <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 space-y-0.5">
+                    <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_500_DARK_TEXT_SLATE_400_SPACE_Y_0_5}>
                       {_.map(_.take(g.items, 4), (it) => (
-                        <div key={it.path} className="truncate">
+                        <div key={it.path} className={MOTION_STYLES.TRUNCATE}>
                           {it.path}
                           {MOTION_TEXT_SYMBOL_10}
                           {formatBytes(it.bytes)}
@@ -1152,24 +936,24 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
             </div>
           )}
           {!_.isEmpty(failed) && (
-            <div className="text-[11px] text-purple-300">
-              <div className="font-bold">{text.JUNK_FAILED}</div>
+            <div className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
+              <div className={MOTION_STYLES.FONT_BOLD}>{text.JUNK_FAILED}</div>
               {_.map(_.take(failed, 5), (f) => (
-                <div key={f} className="font-mono truncate">
+                <div key={f} className={MOTION_STYLES.FONT_MONO_TRUNCATE}>
                   {f}
                 </div>
               ))}
             </div>
           )}
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{text.JUNK_NOTE}</p>
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{MOTION_TEMPLATE_JOIN_SPACE(text.JUNK_TOTAL, formatBytes(total))}</div>
-            <div className="flex gap-2">
-              <button type={MOTION_TEXT_BUTTON} onClick={onClose} disabled={busy} className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_LEADING_RELAXED}>{text.JUNK_NOTE}</p>
+          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3}>
+            <div className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100}>{MOTION_TEMPLATE_JOIN_SPACE(text.JUNK_TOTAL, formatBytes(total))}</div>
+            <div className={MOTION_STYLES.FLEX_GAP_2}>
+              <button type={MOTION_TEXT_BUTTON} onClick={onClose} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300}>
                 {text.RESULTS_CANCEL}
               </button>
-              <button type={MOTION_TEXT_BUTTON} onClick={() => void run()} disabled={busy || !total} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              <button type={MOTION_TEXT_BUTTON} onClick={() => void run()} disabled={busy || !total} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_4_PY_2_ROUNDED_XL_TEXT_XS}>
+                {busy ? <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
                 <span>{text.JUNK_CLEAN}</span>
               </button>
             </div>
@@ -1184,8 +968,8 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   const [busy, setBusy] = useState(false);
   const [junkOpen, setJunkOpen] = useState(false);
   const junkButton = (
-    <button type={MOTION_TEXT_BUTTON} onClick={() => setJunkOpen(true)} disabled={studio.renderBusy} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-purple-500/40 hover:text-purple-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-      <Sparkles className="w-3.5 h-3.5" />
+    <button type={MOTION_TEXT_BUTTON} onClick={() => setJunkOpen(true)} disabled={studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_ROUNDED_XL_TEXT_XS}>
+      <Sparkles className={MOTION_STYLES.W_3_5_H_3_5} />
       <span>{text.JUNK_BUTTON}</span>
     </button>
   );
@@ -1205,32 +989,32 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   };
   if (_.isEmpty(studio.results)) {
     return (
-      <div className={cn(cardCls, "text-center text-xs text-slate-500 dark:text-slate-400 py-20 flex-1 flex flex-col items-center justify-center gap-2")}>
-        <FolderKanban className="w-10 h-10 text-slate-300 dark:text-slate-700 stroke-1" />
+      <div className={cn(cardCls, MOTION_STYLES.TEXT_CENTER_TEXT_XS_TEXT_SLATE_500_DARK_TEXT_SLATE_400_PY_20_FLEX_1_FLEX)}>
+        <FolderKanban className={MOTION_STYLES.W_10_H_10_TEXT_SLATE_300_DARK_TEXT_SLATE_700_STROKE_1} />
         <span>{text.RESULTS_EMPTY}</span>
-        <div className="pt-3">{junkButton}</div>
+        <div className={MOTION_STYLES.PT_3}>{junkButton}</div>
         {junkDialog}
       </div>
     );
   }
   return (
-    <div className="flex flex-col gap-4 w-full pb-16 text-left">
-      <div className={cn(cardCls, "px-4 py-3 flex items-center justify-between gap-3 flex-wrap")}>
-        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(`${studio.results.length}`, text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</div>
-        <div className="flex gap-2 flex-wrap">
+    <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_4_W_FULL_PB_16_TEXT_LEFT}>
+      <div className={cn(cardCls, MOTION_STYLES.PX_4_PY_3_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX_WRAP)}>
+        <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_800_DARK_TEXT_SLATE_200}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(`${studio.results.length}`, text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</div>
+        <div className={MOTION_STYLES.FLEX_GAP_2_FLEX_WRAP}>
           {junkButton}
-          <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(true)} disabled={studio.renderBusy} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            <Trash2 className="w-3.5 h-3.5" />
+          <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(true)} disabled={studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_ROUNDED_XL_TEXT_XS_2}>
+            <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
             <span>{text.RESULTS_DELETE_ALL}</span>
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 pb-8">
+      <div className={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}>
         {_.map(studio.results, (r) => (
-          <div key={r.id} className={cn(cardCls, "p-4 space-y-3 bg-white/95 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800/80 shadow-md")}>
-            <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className="w-full rounded-xl bg-black max-h-[380px] shadow-md" />
-            <div className="text-xs font-black text-slate-900 dark:text-slate-100 truncate">{r.title}</div>
-            <div className="text-[10px] font-mono font-medium text-slate-600 dark:text-slate-400">
+          <div key={r.id} className={cn(cardCls, MOTION_STYLES.P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80)}>
+            <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MOTION_STYLES.W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD} />
+            <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_TEXT_SLATE_900_DARK_TEXT_SLATE_100_TRUNCATE}>{r.title}</div>
+            <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_600_DARK_TEXT_SLATE_400}>
               {r.width}
               {MOTION_TEXT_SYMBOL_12}
               {r.height}
@@ -1247,13 +1031,13 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               {MOTION_TEXT_RENDER}
               {formatSeconds(r.renderSeconds)}
             </div>
-            <div className="flex gap-2 pt-1 border-t border-slate-200/70 dark:border-slate-800/60">
-              <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.saveResult(r)} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-500/15 border border-purple-500/40 text-purple-300 hover:bg-purple-500/25 transition-colors cursor-pointer shadow-2xs">
-                <Download className="w-3.5 h-3.5" />
+            <div className={MOTION_STYLES.FLEX_GAP_2_PT_1_BORDER_T_BORDER_SLATE_200_70_DARK_BORDER_SLATE_800_60}>
+              <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.saveResult(r)} className={MOTION_STYLES.FLEX_1_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_PX_3_PY_2}>
+                <Download className={MOTION_STYLES.W_3_5_H_3_5} />
                 <span>{text.SAVE_AS}</span>
               </button>
-              <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(r)} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer">
-                <Trash2 className="w-3.5 h-3.5" />
+              <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(r)} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_PX_3_PY_2_ROUNDED_XL}>
+                <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
                 <span>{text.RESULTS_DELETE}</span>
               </button>
             </div>
@@ -1266,21 +1050,21 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
         onClose={() => !busy && setConfirm(null)}
         maxWidth={MOTION_TEXT_MAX_W_MD}
         title={
-          <div className="flex items-center gap-2 uppercase tracking-wider font-extrabold text-slate-900 dark:text-slate-100">
-            <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
-            <span className="uppercase font-extrabold tracking-wider">{text.RESULTS_CONFIRM_TITLE}</span>
+          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_UPPERCASE_TRACKING_WIDER_FONT_EXTRABOLD_TEXT_SLATE_900}>
+            <Trash2 className={MOTION_STYLES.W_4_H_4_TEXT_ROSE_500_SHRINK_0} />
+            <span className={MOTION_STYLES.UPPERCASE_FONT_EXTRABOLD_TRACKING_WIDER}>{text.RESULTS_CONFIRM_TITLE}</span>
           </div>
         }>
-        <div className="space-y-4 text-left">
-          {confirm && confirm !== true && <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{confirm.title}</div>}
-          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{confirm === true ? text.RESULTS_CONFIRM_ALL : text.RESULTS_CONFIRM_ONE}</p>
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-bold leading-relaxed">{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(null)} disabled={busy} className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+        <div className={MOTION_STYLES.SPACE_Y_4_TEXT_LEFT}>
+          {confirm && confirm !== true && <div className={MOTION_STYLES.P_2_5_ROUNDED_XL_BG_SLATE_100_DARK_BG_SLATE_955_BORDER_BORDER_SLATE_200_DARK_BORDER_SLATE_800}>{confirm.title}</div>}
+          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : text.RESULTS_CONFIRM_ONE}</p>
+          <div className={MOTION_STYLES.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK_TEXT_ROSE_400}>{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
+          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4_BORDER_T_BORDER_SLATE_200}>
+            <button type={MOTION_TEXT_BUTTON} onClick={() => setConfirm(null)} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_2}>
               {text.RESULTS_CANCEL}
             </button>
-            <button type={MOTION_TEXT_BUTTON} onClick={() => void runDelete()} disabled={busy} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer transition-all shadow-md shadow-rose-600/20 disabled:opacity-60">
-              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            <button type={MOTION_TEXT_BUTTON} onClick={() => void runDelete()} disabled={busy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_5_PY_2_ROUNDED_XL_TEXT_XS}>
+              {busy ? <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
               <span>{text.RESULTS_CONFIRM_YES}</span>
             </button>
           </div>

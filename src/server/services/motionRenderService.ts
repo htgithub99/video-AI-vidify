@@ -1,5 +1,4 @@
 import { execFile, spawn } from "child_process";
-import { cloneJson } from "../../lib/jsonStringify.js";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import _ from "lodash";
@@ -12,21 +11,19 @@ import {
   MOTION_TEMPLATE_1_A_ARESAMPLE_48000_VOLUME_APAD_ALIMITER_LIMIT,
   MOTION_TEMPLATE_AFADE_T_OUT_ST_D_1_2,
   MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG,
-  MOTION_TEMPLATE_CANH_WEBGL,
+  MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL,
   MOTION_TEMPLATE_FFMPEG,
   MOTION_TEMPLATE_FFMPEG_EXITED,
   MOTION_TEMPLATE_FILE,
   MOTION_TEMPLATE_HOAN_TAT_MB_S,
   MOTION_TEMPLATE_JPG_2,
   MOTION_TEMPLATE_K,
-  MOTION_TEMPLATE_KHONG_TAI_DUOC_TAI_NGUYEN_CAC_PHAN_DO,
   MOTION_TEMPLATE_LOI,
   MOTION_TEMPLATE_PART_MP4,
   MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG,
   MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO,
-  MOTION_TEMPLATE_SYMBOL_18,
-  MOTION_TEMPLATE_SYMBOL_19,
   MOTION_TEMPLATE_SYMBOL_20,
+  MOTION_TEMPLATE_SYMBOL_56,
   MOTION_TEMPLATE_SYMBOL_7,
   MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S,
   MOTION_TEXT_0,
@@ -36,7 +33,6 @@ import {
   MOTION_TEXT_2,
   MOTION_TEXT_2D,
   MOTION_TEXT_3,
-  MOTION_TEXT_3D,
   MOTION_TEXT_48000,
   MOTION_TEXT_AAC_2,
   MOTION_TEXT_ABORT,
@@ -81,8 +77,6 @@ import {
   MOTION_TEXT_DISABLE_RENDERER_BACKGROUNDING,
   MOTION_TEXT_DONE,
   MOTION_TEXT_DRAIN,
-  MOTION_TEXT_DUNG_3D,
-  MOTION_TEXT_DUNG_3D_CHAN_THUC,
   MOTION_TEXT_D_2,
   MOTION_TEXT_ENABLE_GPU_RASTERIZATION,
   MOTION_TEXT_ENABLE_UNSAFE_SWIFTSHADER,
@@ -95,6 +89,7 @@ import {
   MOTION_TEXT_FRAMERATE,
   MOTION_TEXT_FRAMES_V,
   MOTION_TEXT_G,
+  MOTION_TEXT_GEN3D,
   MOTION_TEXT_GLOBAL_QUALITY,
   MOTION_TEXT_H264_AMF,
   MOTION_TEXT_H264_NVENC,
@@ -102,13 +97,12 @@ import {
   MOTION_TEXT_HIDE_BANNER,
   MOTION_TEXT_HIGH,
   MOTION_TEXT_HQ,
-  MOTION_TEXT_HTTPS_MOTION_REAL_LOCAL,
   MOTION_TEXT_I,
   MOTION_TEXT_IGNORE_GPU_BLOCKLIST,
   MOTION_TEXT_IMAGE2PIPE,
   MOTION_TEXT_IMAGE_JPEG,
-  MOTION_TEXT_KHONG_DUNG_DUOC_GPU_3D_SE_CHAM,
-  MOTION_TEXT_KHONG_KHOI_TAO_DUOC_WEBGL_DUNG_DUNG_2D,
+  MOTION_TEXT_KHONG_CO_CANH_3D,
+  MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM,
   MOTION_TEXT_LAVFI,
   MOTION_TEXT_LIBX264,
   MOTION_TEXT_LOAD,
@@ -116,6 +110,7 @@ import {
   MOTION_TEXT_MAP_2,
   MOTION_TEXT_MAXRATE,
   MOTION_TEXT_MJPEG,
+  MOTION_TEXT_MODEL_GLTF_BINARY,
   MOTION_TEXT_MOTION,
   MOTION_TEXT_MOTION_RENDER_ABORTED,
   MOTION_TEXT_MOTION_VIDEO,
@@ -137,14 +132,15 @@ import {
   MOTION_TEXT_QUALITY_2,
   MOTION_TEXT_R,
   MOTION_TEXT_RC,
-  MOTION_TEXT_REAL,
   MOTION_TEXT_RENDER_2,
   MOTION_TEXT_SAFE,
   MOTION_TEXT_SCALE_IN_RANGE_PC_OUT_RANGE_TV_IN,
-  MOTION_TEXT_SCENE3D,
   MOTION_TEXT_SIGKILL,
   MOTION_TEXT_SLOW,
   MOTION_TEXT_SPATIAL_AQ,
+  MOTION_TEXT_STILL_LABEL_BG,
+  MOTION_TEXT_STILL_LABEL_FG,
+  MOTION_TEXT_STILL_LABEL_FONT,
   MOTION_TEXT_STOPPING,
   MOTION_TEXT_SYMBOL_16,
   MOTION_TEXT_SYMBOL_25,
@@ -155,8 +151,6 @@ import {
   MOTION_TEXT_SYMBOL_38,
   MOTION_TEXT_SYMBOL_39,
   MOTION_TEXT_T,
-  MOTION_TEXT_TOON,
-  MOTION_TEXT_TOON_LINE,
   MOTION_TEXT_TUNE,
   MOTION_TEXT_TV,
   MOTION_TEXT_USE_ANGLE_D3D11,
@@ -176,12 +170,12 @@ import {
   MOTION_TEXT_YUV420P,
 } from "../../constants/motionRuntime.js";
 import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../constants/motionVideo.js";
+import { cloneJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionEnvironmentInfo, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../types/motionVideo.js";
 import { buildSfxTrack } from "./motionAudioService.js";
-import { buildMotionRenderHtml } from "./motionEngineService.js";
-import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionCharacters } from "./motionLibraryService.js";
-import { ensureRealForSpec, readRealManifest, realContentType, resolveRealFile } from "./motionRealAssetService.js";
+import { MOTION_ASSET_BASE, buildMotionRenderHtml, resolveMotionAsset } from "./motionEngineService.js";
+import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory } from "./motionLibraryService.js";
 import { getFfmpegPath } from "./shortsPreprocessService.js";
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
@@ -327,13 +321,12 @@ interface WorkerSlice {
   end: number;
   file: string;
 }
-export const REAL_ORIGIN = MOTION_TEXT_HTTPS_MOTION_REAL_LOCAL;
-const attachRealRoute = async (page: Page) => {
-  await page.route(MOTION_TEMPLATE_SYMBOL_18(`${REAL_ORIGIN}`), async (route) => {
+const attachAssetRoute = async (page: Page) => {
+  await page.route(MOTION_TEMPLATE_SYMBOL_56(`${MOTION_ASSET_BASE}`), async (route) => {
     const rel = new URL(route.request().url()).pathname;
-    const file = resolveRealFile(rel);
+    const file = resolveMotionAsset(rel);
     if (!file) return route.fulfill({ status: 404, body: "", headers: { "Access-Control-Allow-Origin": MOTION_TEXT_SYMBOL_34 } });
-    return route.fulfill({ status: 200, body: fs.readFileSync(file), headers: { "Content-Type": realContentType(file), "Access-Control-Allow-Origin": MOTION_TEXT_SYMBOL_34 } });
+    return route.fulfill({ status: 200, body: fs.readFileSync(file), headers: { "Content-Type": MOTION_TEXT_MODEL_GLTF_BINARY, "Access-Control-Allow-Origin": MOTION_TEXT_SYMBOL_34 } });
   });
 };
 const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: number; height: number; fps: number; preset: MotionQualityPreset; encoder: string; signal: AbortSignal; onFrames: (n: number) => void }): Promise<string> => {
@@ -350,7 +343,7 @@ const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: numbe
   ctx.signal.addEventListener(MOTION_TEXT_ABORT, onAbort, { once: true });
   try {
     page = await browser.newPage({ viewport: { width: 640, height: 360 } });
-    await attachRealRoute(page);
+    await attachAssetRoute(page);
     await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
     await page.evaluate(() => (window as any).__fontsReady);
     await page.evaluate(([q, w, h]) => (window as any).__setup(q, w, h), [{ supersample: ctx.preset.supersample, motionBlur: ctx.preset.motionBlur, bloom: ctx.preset.bloom, grain: ctx.preset.grain, layerScale: ctx.preset.layerScale }, ctx.width, ctx.height] as const);
@@ -432,15 +425,8 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
   try {
     job.status = MotionJobStatus.PREPARING;
     job.stage = MOTION_TEXT_PREPARE;
-    const wanted = options.renderMode || spec.renderMode;
-    const renderMode = wanted === MOTION_TEXT_REAL ? MOTION_TEXT_REAL : wanted === MOTION_TEXT_3D ? MOTION_TEXT_3D : wanted === MOTION_TEXT_TOON ? MOTION_TEXT_TOON : MOTION_TEXT_2D;
-    const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps, renderMode }, renderMode === MOTION_TEXT_TOON ? { toonStyle: options.toonStyle || spec.toonStyle || MOTION_TEXT_TOON_LINE } : {});
-    if (renderMode === MOTION_TEXT_REAL) {
-      const r = await ensureRealForSpec(renderSpec, (m) => pushLog(job, m), signal);
-      if (signal.aborted) throw new Error(ABORTED);
-      if (r.failed.length) pushLog(job, MOTION_TEMPLATE_KHONG_TAI_DUOC_TAI_NGUYEN_CAC_PHAN_DO(`${r.failed.length}`));
-    }
-    const html = buildMotionRenderHtml(renderSpec, listMotionCharacters(), { manifest: readRealManifest(), base: MOTION_TEMPLATE_SYMBOL_19(`${REAL_ORIGIN}`), prepare: renderMode === MOTION_TEXT_REAL });
+    const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
+    const html = buildMotionRenderHtml(renderSpec);
     const encoders = await detectEncoders();
     const encoder = pickEncoder(encoders, options.encoder);
     job.encoder = encoder;
@@ -451,24 +437,22 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let is3dSoftware = false;
     try {
       const page = await probe.browser.newPage({ viewport: { width: 320, height: 180 } });
-      await attachRealRoute(page);
+      await attachAssetRoute(page);
       await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
       await page.evaluate(() => (window as any).__fontsReady);
       const probeSpec = cloneJson(await page.evaluate(() => (window as any).__SPEC));
       const probeInfo = await page.evaluate(
-        (motionBrowserTexts) => {
+        (probe) => {
           const ME = (window as any).MotionEngine;
-          const s = ME.normalizeSpec(motionBrowserTexts.spec);
+          const sp = ME.normalizeSpec(probe.spec);
           const gl = ME.T3 && ME.T3.ok ? ME.T3.rendererInfo() : "";
-          return { duration: s.duration, shots3d: s.shots.filter((x: any) => x.template === motionBrowserTexts.MOTION_TEXT_SCENE3D).length, gl };
+          return { duration: sp.duration, shots3d: sp.shots.filter((x: any) => x.template === probe.tpl).length, gl };
         },
-        { MOTION_TEXT_SCENE3D, spec: probeSpec },
+        { tpl: MOTION_TEXT_GEN3D, spec: probeSpec },
       );
       duration = probeInfo.duration;
-      if (renderMode !== MOTION_TEXT_2D && renderMode !== MOTION_TEXT_TOON) {
-        is3dSoftware = !probeInfo.gl || /swiftshader|llvmpipe|software/i.test(probeInfo.gl);
-        pushLog(job, probeInfo.shots3d ? MOTION_TEMPLATE_CANH_WEBGL(`${renderMode === MOTION_TEXT_REAL ? MOTION_TEXT_DUNG_3D_CHAN_THUC : MOTION_TEXT_DUNG_3D}`, `${probeInfo.shots3d}`, `${_.truncate(probeInfo.gl || MOTION_TEXT_SYMBOL_25, { length: 70 })}`, `${is3dSoftware ? MOTION_TEXT_KHONG_DUNG_DUOC_GPU_3D_SE_CHAM : ""}`) : MOTION_TEXT_KHONG_KHOI_TAO_DUOC_WEBGL_DUNG_DUNG_2D);
-      }
+      is3dSoftware = !probeInfo.gl || /swiftshader|llvmpipe|software/i.test(probeInfo.gl);
+      pushLog(job, probeInfo.shots3d ? MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL(`${probeInfo.shots3d}`, `${_.truncate(probeInfo.gl || MOTION_TEXT_SYMBOL_25, { length: 70 })}`, `${is3dSoftware ? MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM : ""}`) : MOTION_TEXT_KHONG_CO_CANH_3D);
     } finally {
       await probe.browser.close().catch(_.noop);
     }
@@ -484,8 +468,8 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     }
     const totalFrames = Math.max(1, Math.round(duration * fps));
     job.framesTotal = totalFrames;
-    const cpuBudget = renderMode !== MOTION_TEXT_2D && renderMode !== MOTION_TEXT_TOON && is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
-    const workers = Math.min(renderMode === MOTION_TEXT_REAL ? (is3dSoftware ? 1 : 2) : 99, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
+    const cpuBudget = is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
+    const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
     job.workers = workers;
     const per = Math.ceil(totalFrames / workers);
     const slices: WorkerSlice[] = _.filter(
@@ -597,11 +581,11 @@ export const cancelMotionJob = (id?: string): boolean => {
   return any;
 };
 export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: number; errors: { t: number; shot: string; error: string }[] }> => {
-  const html = buildMotionRenderHtml(spec, listMotionCharacters(), { manifest: readRealManifest(), base: MOTION_TEMPLATE_SYMBOL_19(`${REAL_ORIGIN}`), prepare: false });
+  const html = buildMotionRenderHtml(spec);
   const { browser } = await launchBrowser();
   try {
     const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
-    await attachRealRoute(page);
+    await attachAssetRoute(page);
     const pageErrors: string[] = [];
     page.on(MOTION_TEXT_PAGEERROR, (e) => pageErrors.push(e.message));
     await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
@@ -609,40 +593,83 @@ export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: num
     const r = await page.evaluate(async () => {
       const w = window as any;
       const d = await w.__setup({ supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.5 }, 480, 270);
-      return { duration: d, errors: w.__R.check(0.2) };
+      return { duration: d, errors: w.__R.check(0.5) };
     });
     return { duration: r.duration, errors: [...r.errors, ..._.map(pageErrors, (e) => ({ t: 0, shot: MOTION_TEXT_PAGE, error: e }))] };
   } finally {
     await browser.close().catch(_.noop);
   }
 };
-export const renderMotionStills = async (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, size: { width: number; height: number } = { width: 768, height: 432 }): Promise<{ id: string; t: number; file: string }[]> => {
-  fs.mkdirSync(dir, { recursive: true });
-  const html = buildMotionRenderHtml({ ...spec, renderMode: spec.renderMode === MOTION_TEXT_TOON ? MOTION_TEXT_TOON : MOTION_TEXT_2D } as MotionSpec, listMotionCharacters(), { manifest: readRealManifest(), base: MOTION_TEMPLATE_SYMBOL_19(`${REAL_ORIGIN}`), prepare: false });
+const STILL_LABEL = { canvasId: MOTION_RENDER_CANVAS_ID, ctx2d: MOTION_TEXT_2D, bg: MOTION_TEXT_STILL_LABEL_BG, fg: MOTION_TEXT_STILL_LABEL_FG, font: MOTION_TEXT_STILL_LABEL_FONT, mime: MOTION_TEXT_IMAGE_JPEG };
+export interface MotionStillSession {
+  render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>;
+  close: () => Promise<void>;
+}
+export const openStillSession = async (): Promise<MotionStillSession> => {
   const { browser } = await launchBrowser();
-  try {
-    const page = await browser.newPage({ viewport: { width: size.width, height: size.height } });
-    await attachRealRoute(page);
-    await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
-    await page.evaluate(() => (window as any).__fontsReady);
-    await page.evaluate(async ([w, h]) => (window as any).__setup({ supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 }, w, h), [size.width, size.height]);
-    const out: { id: string; t: number; file: string }[] = [];
-    for (const pick of picks) {
-      const data = await page.evaluate(
-        ({ t, canvasId, mimeType }) => {
-          const w = window as any;
-          w.__R.drawFrame(t);
-          return (document.getElementById(canvasId) as HTMLCanvasElement).toDataURL(mimeType, 0.82).slice(23);
-        },
-        { t: pick.t, canvasId: MOTION_RENDER_CANVAS_ID, mimeType: MOTION_TEXT_IMAGE_JPEG },
-      );
-      const file = path.join(dir, MOTION_TEMPLATE_JPG_2(`${pick.id.replace(/[^\w-]+/g, MOTION_TEXT_SYMBOL_30)}`));
-      fs.writeFileSync(file, Buffer.from(data, MOTION_TEXT_BASE64));
-      out.push({ ...pick, file });
+  let page: Page | null = null;
+  const errors: string[] = [];
+  const ensurePage = async (w: number, h: number) => {
+    if (page && !page.isClosed()) {
+      await page.setViewportSize({ width: w, height: h });
+      return page;
     }
-    return out;
-  } finally {
-    await browser.close().catch(_.noop);
-  }
+    page = await browser.newPage({ viewport: { width: w, height: h } });
+    page.on(MOTION_TEXT_PAGEERROR, (e) => errors.push(e.message));
+    await attachAssetRoute(page);
+    await page.setContent(buildMotionRenderHtml({ shots: [] } as MotionSpec), { waitUntil: MOTION_TEXT_LOAD });
+    await page.evaluate(() => (window as any).__fontsReady);
+    return page;
+  };
+  let chain: Promise<unknown> = Promise.resolve();
+  const session: MotionStillSession = {
+    render: (spec, picks, dir, opts) => {
+      const run = chain.then(() => doRender(spec, picks, dir, opts));
+      chain = run.catch(_.noop);
+      return run;
+    },
+    close: async () => {
+      await chain.catch(_.noop);
+      await browser.close().catch(_.noop);
+    },
+  };
+  const impl = {
+    async render(spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean } = {}) {
+      const width = opts.width || 960,
+        height = opts.height || 540;
+      fs.mkdirSync(dir, { recursive: true });
+      const p = await ensurePage(width, height);
+      const quality = opts.quality === MOTION_TEXT_HIGH ? { supersample: 1, motionBlur: 1, bloom: true, grain: true, layerScale: 1 } : { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
+      errors.length = 0;
+      await p.evaluate(async ([sp, q, w, h]) => (window as any).__load(sp, q, w, h), [spec, quality, width, height] as const);
+      const out: { id: string; t: number; file: string; issues: string[]; camera?: unknown }[] = [];
+      for (const pick of picks) {
+        const r = await p.evaluate(
+          (arg) => {
+            const res = (window as any).__still(arg.t, 0.86);
+            if (arg.label) {
+              const c = document.getElementById(arg.canvasId) as HTMLCanvasElement;
+              const g = c.getContext(arg.ctx2d) as CanvasRenderingContext2D;
+              g.fillStyle = arg.bg;
+              g.fillRect(0, 0, 14 + arg.label.length * 13, 34);
+              g.fillStyle = arg.fg;
+              g.font = arg.font;
+              g.fillText(arg.label, 8, 25);
+              res.img = c.toDataURL(arg.mime, 0.86).slice(23);
+            }
+            return res;
+          },
+          { t: pick.t, label: opts.label ? pick.id : "", ...STILL_LABEL },
+        );
+        const file = path.join(dir, MOTION_TEMPLATE_JPG_2(`${pick.id.replace(/[^\w-]+/g, MOTION_TEXT_SYMBOL_30)}`));
+        fs.writeFileSync(file, Buffer.from(r.img, MOTION_TEXT_BASE64));
+        const info = (r.info || {})[pick.id] || _.first(_.values(r.info || {})) || {};
+        out.push({ ...pick, file, issues: _.uniq([...(info.issues || []), ...errors.splice(0)]), camera: info.camera });
+      }
+      return out;
+    },
+  };
+  const doRender = impl.render;
+  return session;
 };
 export const execFileText = (cmd: string, args: string[]): Promise<string> => new Promise((resolve, reject) => execFile(cmd, args, { windowsHide: true, encoding: MOTION_TEXT_UTF8 }, (err, stdout) => (err ? reject(err) : resolve(_.trim(stdout)))));

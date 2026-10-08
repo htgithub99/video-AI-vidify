@@ -1,12 +1,13 @@
 import _ from "lodash";
 import { Pause, Play, SkipBack } from "lucide-react";
 import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { MOTION_TEXT_16_9, MOTION_TEXT_3D_3, MOTION_TEXT_AUTO, MOTION_TEXT_BUTTON, MOTION_TEXT_RANGE, MOTION_TEXT_REAL, MOTION_TEXT_SYMBOL_19, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
+import { MOTION_TEXT_16_9, MOTION_TEXT_3D_3, MOTION_TEXT_AUTO, MOTION_TEXT_BUTTON, MOTION_TEXT_RANGE, MOTION_TEXT_SYMBOL_19, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
+import { MOTION_STYLES } from "../../constants/motionStyles.js";
+import { MOTION_PREVIEW_QUALITY, MOTION_PREVIEW_SIZES } from "../../constants/motionVideo.js";
 import { cn } from "../../lib/utils";
 import type { MotionSpec } from "../../types/motionVideo.js";
-import { formatSeconds, type MotionEngineGlobal } from "./motionApi";
-const PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
-const SIZE: Record<string, [number, number]> = { "16:9": [960, 540], "9:16": [405, 720], "1:1": [600, 600], "4:5": [540, 675] };
+import { MotionAspect } from "../../types/motionVideo.js";
+import { formatSeconds, MOTION_ASSET_BASE, type MotionEngineGlobal } from "./motionApi";
 export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; audioUrl?: string; className?: string }> = ({ ME, spec, audioUrl, className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -17,7 +18,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
   const aspect = _.toString(spec?.aspect || MOTION_TEXT_16_9);
-  const [w, h] = SIZE[aspect] || SIZE[MOTION_TEXT_16_9];
+  const [w, h] = MOTION_PREVIEW_SIZES[aspect] || MOTION_PREVIEW_SIZES[MotionAspect.LANDSCAPE];
   const shots = spec?.shots || [];
   const now = () => {
     const a = audioRef.current;
@@ -33,17 +34,16 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     }
     let cancelled = false;
     const t = setTimeout(async () => {
-      const REAL = (ME as any).REAL;
-      if (spec.renderMode === MOTION_TEXT_REAL && REAL?.prepare) {
+      if (ME.GEN?.prepare) {
         setLoading(true);
         try {
-          await REAL.prepare(spec);
+          await ME.GEN.prepare(spec, MOTION_ASSET_BASE);
         } catch {}
         setLoading(false);
         if (cancelled) return;
       }
       try {
-        rendererRef.current = ME.createRenderer(canvas, spec, { width: w, height: h, quality: PREVIEW_QUALITY, preview: true });
+        rendererRef.current = ME.createRenderer(canvas, spec, { width: w, height: h, quality: MOTION_PREVIEW_QUALITY, preview: true });
         setDuration(rendererRef.current.duration);
         const t0 = now();
         rendererRef.current.drawFrame(t0 > 0 ? Math.min(t0, rendererRef.current.duration) : Math.min(1.2, rendererRef.current.duration * 0.5));
@@ -109,39 +109,39 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   };
   const marks = useMemo(() => (duration ? _.map(shots, (s) => (s.start / duration) * 100) : []), [shots, duration]);
   return (
-    <div className={cn("flex flex-col gap-2.5 w-full", className)}>
-      <div className="relative w-full h-[340px] sm:h-[380px] md:h-[420px] flex items-center justify-center rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-slate-800 shadow-md">
-        <canvas ref={canvasRef} className="max-w-full max-h-full object-contain" style={{ aspectRatio: `${w} / ${h}` }} />
+    <div className={cn(MOTION_STYLES.FLEX_FLEX_COL_GAP_2_5_W_FULL, className)}>
+      <div className={MOTION_STYLES.RELATIVE_W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER}>
+        <canvas ref={canvasRef} className={MOTION_STYLES.MAX_W_FULL_MAX_H_FULL_OBJECT_CONTAIN} style={{ aspectRatio: `${w} / ${h}` }} />
         {!spec && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs font-mono text-slate-400 select-none">
-            <Play className="w-8 h-8 text-slate-600 dark:text-slate-700 stroke-1" />
+          <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2}>
+            <Play className={MOTION_STYLES.W_8_H_8_TEXT_SLATE_600_DARK_TEXT_SLATE_700_STROKE_1} />
             <span>{MOTION_TEXT_SYMBOL_19}</span>
           </div>
         )}
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-mono text-purple-400 gap-2 backdrop-blur-xs">
-            <span className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+          <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_60_TEXT_XS}>
+            <span className={MOTION_STYLES.W_4_H_4_ROUNDED_FULL_BORDER_2_BORDER_PURPLE_400_BORDER_T_TRANSPARENT_ANIMATE_SPIN} />
             <span>{MOTION_TEXT_3D_3}</span>
           </div>
         )}
       </div>
-      {audioUrl && <audio ref={audioRef} src={audioUrl} preload={MOTION_TEXT_AUTO} className="hidden" />}
-      <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-955/60 border border-slate-200/80 dark:border-slate-800/80">
-        <button type={MOTION_TEXT_BUTTON} onClick={() => seek(0)} className="p-2 text-slate-500 hover:text-purple-400 dark:text-slate-400 dark:hover:text-purple-400 transition-colors cursor-pointer disabled:opacity-30" disabled={!spec}>
-          <SkipBack className="w-4 h-4" />
+      {audioUrl && <audio ref={audioRef} src={audioUrl} preload={MOTION_TEXT_AUTO} className={MOTION_STYLES.HIDDEN} />}
+      <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_P_2_ROUNDED_XL_BG_SLATE_50_DARK_BG_SLATE_955_60}>
+        <button type={MOTION_TEXT_BUTTON} onClick={() => seek(0)} className={MOTION_STYLES.P_2_TEXT_SLATE_500_HOVER_TEXT_PURPLE_400_DARK_TEXT_SLATE_400_DARK_HOVER_TEXT_PURPLE_400_TRANSITION_COLORS_CURSOR_POINTER} disabled={!spec}>
+          <SkipBack className={MOTION_STYLES.W_4_H_4} />
         </button>
-        <button type={MOTION_TEXT_BUTTON} onClick={() => (playing ? pause() : play())} className="p-2 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer disabled:opacity-30" disabled={!spec}>
-          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+        <button type={MOTION_TEXT_BUTTON} onClick={() => (playing ? pause() : play())} className={MOTION_STYLES.P_2_TEXT_PURPLE_400_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS_CURSOR_POINTER_DISABLED_OPACITY_30} disabled={!spec}>
+          {playing ? <Pause className={MOTION_STYLES.W_4_H_4} /> : <Play className={MOTION_STYLES.W_4_H_4} />}
         </button>
-        <div className="relative flex-1 h-6 flex items-center">
-          <div className="absolute inset-x-0 h-2 rounded-full bg-slate-200 dark:bg-slate-800" />
+        <div className={MOTION_STYLES.RELATIVE_FLEX_1_H_6_FLEX_ITEMS_CENTER}>
+          <div className={MOTION_STYLES.ABSOLUTE_INSET_X_0_H_2_ROUNDED_FULL_BG_SLATE_200_DARK_BG_SLATE_800} />
           {_.map(marks, (m, i) => (
-            <div key={i} className="absolute h-3.5 w-px bg-slate-400 dark:bg-slate-600" style={{ left: `${m}%` }} />
+            <div key={i} className={MOTION_STYLES.ABSOLUTE_H_3_5_W_PX_BG_SLATE_400_DARK_BG_SLATE_600} style={{ left: `${m}%` }} />
           ))}
-          <div className="absolute h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" style={{ width: `${duration ? (time / duration) * 100 : 0}%` }} />
-          <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className="absolute inset-0 w-full opacity-0 cursor-pointer" disabled={!spec} />
+          <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: `${duration ? (time / duration) * 100 : 0}%` }} />
+          <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={!spec} />
         </div>
-        <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 w-24 text-right">
+        <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
           {formatSeconds(time)}
           {MOTION_TEXT_SYMBOL_24}
           {formatSeconds(duration)}

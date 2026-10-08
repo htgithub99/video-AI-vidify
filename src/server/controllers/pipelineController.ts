@@ -6580,18 +6580,24 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SOURCE_FILE, async (req: Request, res: Resp
 router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response) => {
   const items = Array.isArray(req.body?.tracks) ? req.body.tracks : [];
   if (!items.length || items.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_TRACK_COUNT });
-  const availableFiles = await Promise.all(
-    items.map(async (item: any) => {
-      try {
-        return (await fs.promises.stat(item.sourcePath)).isFile();
-      } catch {
-        return false;
-      }
-    }),
-  );
-  if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
   const rankingId = typeof req.body?.projectId === MOTION_TEXT_STRING && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${randomUUID()}`;
+  const planningRun = beginChatPlanningRun(rankingId, Date.now(), undefined, req.body?.provider || AiPlanningFallbackProvider.GeminiChat);
+  const cancelOnDisconnect = () => {
+    if (!res.writableEnded) planningRun.cancel();
+  };
+  res.once("close", cancelOnDisconnect);
   try {
+    const availableFiles = await Promise.all(
+      items.map(async (item: any) => {
+        try {
+          return (await fs.promises.stat(item.sourcePath)).isFile();
+        } catch {
+          return false;
+        }
+      }),
+    );
+    if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
+    planningRun.signal.throwIfAborted();
     const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
     for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
       const requestId = SOURCE_TEMPLATE_SYMBOL_5(`${rankingId}`, `${chunkIndex + 1}`);
@@ -6606,6 +6612,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         model: req.body?.model,
         prompt,
         projectId: rankingId,
+        signal: planningRun.signal,
         chromeHeadless: req.body?.chromeHeadless === true,
         attachments,
         artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT,
@@ -6619,16 +6626,24 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
       const durations = await Promise.all(_.map(chunk, (item: any) => readMediaDurationSeconds(item.sourcePath)));
       scores.push(...parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 })));
     }
+    planningRun.signal.throwIfAborted();
     return res.json({ success: true, scores, roomId: rankingId });
   } catch (error) {
     await closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: rankingId }).catch(() => undefined);
     return res.status(500).json({ success: false, error: String(error) });
+  } finally {
+    res.off("close", cancelOnDisconnect);
+    planningRun.complete();
+    if (planningRun.signal.aborted) {
+      await closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: rankingId }).catch(() => undefined);
+    }
   }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_CANCEL, async (req: Request, res: Response) => {
   const projectId = typeof req.body?.projectId === MOTION_TEXT_STRING ? req.body.projectId : "";
   if (!projectId) return res.status(400).json({ success: false });
-  const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds.filter((value: unknown): value is string => typeof value === MOTION_TEXT_STRING) : [projectId];
+  const projectIds = _.uniq([projectId, ...(Array.isArray(req.body?.projectIds) ? req.body.projectIds.filter((value: unknown): value is string => typeof value === MOTION_TEXT_STRING) : [])]);
+  projectIds.forEach((id) => cancelChatPlanningRun(id));
   await Promise.all(projectIds.map((id) => closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: id }).catch(() => undefined)));
   await closeChatBrowserIfIdle().catch(() => undefined);
   return res.json({ success: true });
@@ -6640,8 +6655,14 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
   const projectId = typeof req.body?.roomId === MOTION_TEXT_STRING && req.body.roomId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.roomId : `${MUSIC_MIXER_SERVER.SEO_RUN_PREFIX}${randomUUID()}`;
   const requestId = SOURCE_TEMPLATE_SEO_4(`${projectId}`);
   const prompt = buildMusicMixerSeoPrompt(titles, requestId);
+  const planningRun = beginChatPlanningRun(projectId, Date.now(), undefined, execution.provider || AiPlanningFallbackProvider.GeminiChat);
+  const cancelOnDisconnect = () => {
+    if (!res.writableEnded) planningRun.cancel();
+  };
+  res.once("close", cancelOnDisconnect);
   try {
-    const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
+    const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, signal: planningRun.signal, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
+    planningRun.signal.throwIfAborted();
     const parsed = parseJson(response.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
     if (parsed.artifactType !== MUSIC_MIXER_SERVER.SEO_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.seoOptions) || parsed.seoOptions.length !== 5) throw new Error(MUSIC_MIXER_SERVER.ERROR_SEO_RESPONSE);
     await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId }).catch(() => undefined);
@@ -6651,6 +6672,9 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
     await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId }).catch(() => undefined);
     await closeChatBrowserIfIdle().catch(() => undefined);
     return res.status(500).json({ success: false, error: String(error) });
+  } finally {
+    res.off("close", cancelOnDisconnect);
+    planningRun.complete();
   }
 });
 const musicMixerZipDestinations = new Map<string, string>();

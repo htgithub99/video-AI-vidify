@@ -479,7 +479,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     }
   };
   const generate = async () => {
-    if (!tracks.length || songsPerResult < 1 || resultCount < 1 || songsPerResult > tracks.length) {
+    if (abortRef.current || !tracks.length || songsPerResult < 1 || resultCount < 1 || songsPerResult > tracks.length) {
       return;
     }
     setBusy(true);
@@ -558,31 +558,25 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       toast.error(message);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerFail, undefined, message);
     } finally {
-      setBusy(false);
-      abortRef.current = null;
       const finishedProjectId = projectIdRef.current;
       const finishedFolderProjectIds = [...folderProjectIdsRef.current];
-      projectIdRef.current = null;
-      folderProjectIdsRef.current = [];
       if (finishedProjectId || finishedFolderProjectIds.length) {
-        void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
+        await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, {
           method: SOURCE_TEXT_POST,
           headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
           body: stringifyJson({ projectIds: finishedFolderProjectIds, projectId: finishedProjectId, provider: seoProvider }),
         }).catch(() => undefined);
       }
+      projectIdRef.current = null;
+      folderProjectIdsRef.current = [];
+      abortRef.current = null;
+      setBusy(false);
     }
   };
   const stopGenerate = () => {
     const controller = abortRef.current;
     if (!controller) return;
     controller.abort();
-    setBusy(false);
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStop);
-    abortRef.current = null;
-    const projectId = projectIdRef.current;
-    projectIdRef.current = null;
-    if (projectId) void fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_CANCEL, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ projectIds: folderProjectIdsRef.current, projectId, provider: seoProvider }) }).catch(() => undefined);
   };
   const downloadAll = async () => {
     if (_.isEmpty(results)) return;
