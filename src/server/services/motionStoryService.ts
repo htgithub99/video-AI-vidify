@@ -5,6 +5,7 @@ import _ from "lodash";
 import path from "path";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
 import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES } from "../../constants/motionGenPrompts.js";
+import { MOTION_GENRE_TEXT, MOTION_GENRES } from "../../constants/motionGenres.js";
 import {
   MOTION_TEMPLATE_2_2,
   MOTION_TEMPLATE_AI_TRA_LOI_KHONG_PHAI_JSON,
@@ -128,9 +129,10 @@ import {
 } from "../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
-import { getMotionErrorMessage } from "../../lib/motionUtils.js";
+import { analysisPreamble, findGenre, genreOf, genrePreamble } from "../../lib/motionGenre.js";
+import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
-import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource } from "../../types/motionVideo.js";
+import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStoryDna, type MotionStorySource } from "../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "./chatUiPlanningService.js";
 import { generateContentWithRetry } from "./geminiService.js";
 import { cancelGlobalBrowserCleanup } from "./imageGeneratorService.js";
@@ -493,9 +495,15 @@ export const analyzeStory = async (source: MotionStorySource, opts: { language: 
   const target = resolveTargetSeconds(source, opts.length);
   const chapterCount = _.clamp(Math.round(target / 150), 1, 10);
   const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
-  const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: TEXT_ONLY_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript: sourceSlice(source) });
+  const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: analysisPreamble(), title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript: sourceSlice(source), genres: MOTION_GENRE_TEXT.ANALYSIS_LIST(), genreIds: _.map(MOTION_GENRES, MOTION_STORY_CONFIG.GENRE_ID_KEY).join(MOTION_STORY_CONFIG.GENRE_ID_JOIN) });
   const raw = await runMotionAi(prompt, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log);
   return normalizeAnalysis(raw, source, target);
+};
+const dnaList = (v: unknown): string[] => _.take(_.compact(_.map(_.castArray(v || []), (s) => normalizeMotionText(s, 90))), 4);
+const normalizeDna = (raw: any): MotionStoryDna | undefined => {
+  if (!raw || !_.isPlainObject(raw)) return undefined;
+  const dna: MotionStoryDna = { tone: normalizeMotionText(raw.tone || "", 120) || undefined, motifs: dnaList(raw.motifs), avoid: dnaList(raw.avoid), keep: normalizeMotionText(raw.keep || "", 200) || undefined };
+  return dna.tone || dna.keep || dna.motifs?.length || dna.avoid?.length ? dna : undefined;
 };
 export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number): MotionStoryAnalysis => {
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({
@@ -535,10 +543,17 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     10,
   );
   if (_.isEmpty(places)) places.push({ key: MOTION_TEXT_MAIN_PLACE, name: source.title, description: _.truncate(_.toString(raw?.logline || source.title), { length: 300 }), interior: false, time: MOTION_TEXT_DAY });
+  const genre = findGenre(_.toString(raw?.genre)) ? _.toString(raw?.genre) : undefined;
+  const genre2 = findGenre(_.toString(raw?.genre2)) && raw?.genre2 !== genre ? _.toString(raw?.genre2) : undefined;
   return {
     title: _.truncate(_.toString(raw?.title || source.title), { length: 120 }),
     logline: _.truncate(_.toString(raw?.logline || ""), { length: 300 }),
-    look: pickEnum(MOTION_GEN_LOOKS, raw?.look, MOTION_TEXT_DOCUMENTARY),
+    genre,
+    genre2,
+    factual: _.isBoolean(raw?.factual) ? raw.factual : genre ? genreOf({ genre }).factual : undefined,
+    genreReason: _.truncate(_.toString(raw?.genreReason || ""), { length: 200 }) || undefined,
+    dna: normalizeDna(raw?.dna),
+    look: pickEnum(MOTION_GEN_LOOKS, raw?.look, genre ? genreOf({ genre }).look : MOTION_TEXT_DOCUMENTARY),
     accent: /^#[0-9a-f]{6}$/i.test(_.toString(raw?.accent)) ? raw.accent : MOTION_TEXT_FFB070,
     era: _.truncate(_.toString(raw?.era || ""), { length: 120 }),
     chapters,
@@ -558,14 +573,18 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   const language = isVi ? MOTION_TEXT_VIETNAMESE : MOTION_TEXT_ENGLISH;
   const unitName = isVi ? MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS : MOTION_TEXT_WORDS;
   const prev = opts.previous?.length ? _.map(_.takeRight(opts.previous, 2), (b) => MOTION_TEMPLATE_SYMBOL_53(`${b.narration}`)).join(MOTION_TEXT_SYMBOL_27) : opts.previousSummary ? MOTION_TEMPLATE_SYMBOL_53(`${opts.previousSummary}`) : "";
+  const genre = findGenre(analysis.genre);
+  const chapterNo = Math.max(0, _.findIndex(analysis.chapters, { id: chapter.id })) + 1;
   const prompt = MOTION_GEN_CHAPTER_PROMPT({
-    preamble: TEXT_ONLY_PREAMBLE,
+    preamble: genrePreamble(analysis, MOTION_STORY_CONFIG.GENRE_PART_STORY),
+    role: genre ? MOTION_GENRE_TEXT.ROLE(genre) : MOTION_STORY_CONFIG.DEFAULT_WRITER_ROLE,
+    genre: genre ? MOTION_GENRE_TEXT.ARC(genre, chapterNo, analysis.chapters.length) : "",
     title: analysis.title,
     logline: analysis.logline,
     chapterId: chapter.id,
     chapterTitle: chapter.title,
     chapterSummary: chapter.summary,
-    languageNote: isVi ? MOTION_TEXT_NATURAL_FLUENT_VIETNAMESE_IN_A_DOCUMENTARY_STORYTELLING_VOICE_2 : MOTION_TEXT_NATURAL_ENGLISH_DOCUMENTARY_NARRATION_SHORT_CLEAR_SENTENCES_2,
+    languageNote: genre ? MOTION_GENRE_TEXT.VOICE(genre, language) : isVi ? MOTION_TEXT_NATURAL_FLUENT_VIETNAMESE_IN_A_DOCUMENTARY_STORYTELLING_VOICE_2 : MOTION_TEXT_NATURAL_ENGLISH_DOCUMENTARY_NARRATION_SHORT_CLEAR_SENTENCES_2,
     language,
     units,
     unitName,

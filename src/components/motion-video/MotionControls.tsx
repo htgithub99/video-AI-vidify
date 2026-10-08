@@ -1,4 +1,4 @@
-import { Film, Loader2, Sparkles, Square } from "lucide-react";
+import { Film, Sparkles, Square } from "lucide-react";
 import { FC, useEffect, useState } from "react";
 import { MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA, MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_2, MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT_2, MOTION_TEXT_BG_SLATE_100_HOVER_BG_SLATE_200_TEXT, MOTION_TEXT_BUTTON, MOTION_TEXT_PRIMARY, MOTION_TEXT_SYMBOL, MOTION_TEXT_SYMBOL_6, MOTION_TEXT_SYMBOL_7 } from "../../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../../constants/motionStyles.js";
@@ -58,7 +58,7 @@ export const ActionBtn: FC<{
   };
   return (
     <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={disabled || busy} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_5_ROUNDED_XL, styles[variant], className)}>
-      {busy ? <Sparkles className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Icon className={MOTION_STYLES.W_4_H_4_SHRINK_0} />}
+      {busy ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Icon className={MOTION_STYLES.W_4_H_4_SHRINK_0} />}
       <span>{children}</span>
     </button>
   );
@@ -70,7 +70,7 @@ export const StopBtn: FC<{
   className?: string;
 }> = ({ onClick, label, stopping, className }) => (
   <button type={MOTION_TEXT_BUTTON} onClick={onClick} disabled={stopping} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_ROUNDED_XL, className)}>
-    {stopping ? <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} /> : <Square className={MOTION_STYLES.W_3_5_H_3_5_FILL_CURRENT} />}
+    {stopping ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Square className={MOTION_STYLES.W_3_5_H_3_5_FILL_CURRENT} />}
     <span>{label}</span>
   </button>
 );
@@ -82,7 +82,7 @@ export const ElapsedLine: FC<{ since: number; label: string; suffix: string }> =
   }, []);
   return (
     <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_TEXT_XS_FONT_MEDIUM_TEXT_PURPLE_400}>
-      <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} />
+      <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} />
       <span>
         {label}
         {MOTION_TEXT_SYMBOL}
@@ -109,5 +109,15 @@ export const MotionAnalysisTabButton: FC<{ active: boolean; onClick: () => void;
 export const MotionProgressBar: FC<{ progress?: number; minimum?: number; className?: string; animated?: boolean }> = ({ progress, minimum = 0, className, animated = true }) => (
   <div className={cn(MOTION_STYLES.ROUNDED_FULL_BG_SLATE_800_OVERFLOW_HIDDEN, className)}>
     <div className={animated ? MOTION_STYLES.H_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA_PINK_500_TO_PURPLE_500_ROUNDED_FULL_ANIMATE_PULSE : MOTION_STYLES.H_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA_FUCHSIA_500_TO_PINK_500_TRANSITION_ALL_DURATION_300} style={{ width: formatMotionProgress(progress, minimum) }} />
+  </div>
+);
+export const MotionLoadingIcon: FC<{ className?: string }> = ({ className = MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0 }) => <Sparkles className={className} aria-hidden={true} />;
+export const MotionStatCard: FC<{ icon: typeof Film; iconClassName: string; label: React.ReactNode; children: React.ReactNode; valueClassName?: string }> = ({ icon: Icon, iconClassName, label, children, valueClassName = MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE }) => (
+  <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
+    <Icon className={iconClassName} />
+    <div className={MOTION_STYLES.MIN_W_0}>
+      <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{label}</div>
+      <div className={valueClassName}>{children}</div>
+    </div>
   </div>
 );

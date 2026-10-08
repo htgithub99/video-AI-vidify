@@ -8,6 +8,7 @@ import { cn } from "../../lib/utils";
 import type { MotionSpec } from "../../types/motionVideo.js";
 import { MotionAspect } from "../../types/motionVideo.js";
 import { formatSeconds, MOTION_ASSET_BASE, type MotionEngineGlobal } from "./motionApi";
+import { MotionLoadingIcon } from "./MotionControls.js";
 export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; audioUrl?: string; className?: string }> = ({ ME, spec, audioUrl, className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -120,7 +121,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
         )}
         {loading && (
           <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_60_TEXT_XS}>
-            <span className={MOTION_STYLES.W_4_H_4_ROUNDED_FULL_BORDER_2_BORDER_PURPLE_400_BORDER_T_TRANSPARENT_ANIMATE_SPIN} />
+            <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} />
             <span>{MOTION_TEXT_3D_3}</span>
           </div>
         )}

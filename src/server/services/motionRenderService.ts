@@ -5,6 +5,7 @@ import _ from "lodash";
 import os from "os";
 import path from "path";
 import { chromium, type Browser, type Page } from "playwright";
+import { API_HEADERS } from "../../constants/apiRoutes.js";
 import {
   MOTION_RENDER_CANVAS_ID,
   MOTION_TEMPLATE_1_A_ARESAMPLE_48000_AFORMAT_CHANNEL_LAYOUTS_MONO,
@@ -110,7 +111,6 @@ import {
   MOTION_TEXT_MAP_2,
   MOTION_TEXT_MAXRATE,
   MOTION_TEXT_MJPEG,
-  MOTION_TEXT_MODEL_GLTF_BINARY,
   MOTION_TEXT_MOTION,
   MOTION_TEXT_MOTION_RENDER_ABORTED,
   MOTION_TEXT_MOTION_VIDEO,
@@ -173,6 +173,7 @@ import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION
 import { cloneJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionEnvironmentInfo, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../types/motionVideo.js";
+import { libraryMime } from "./motionAssetLibraryService.js";
 import { buildSfxTrack } from "./motionAudioService.js";
 import { MOTION_ASSET_BASE, buildMotionRenderHtml, resolveMotionAsset } from "./motionEngineService.js";
 import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory } from "./motionLibraryService.js";
@@ -325,8 +326,8 @@ const attachAssetRoute = async (page: Page) => {
   await page.route(MOTION_TEMPLATE_SYMBOL_56(`${MOTION_ASSET_BASE}`), async (route) => {
     const rel = new URL(route.request().url()).pathname;
     const file = resolveMotionAsset(rel);
-    if (!file) return route.fulfill({ status: 404, body: "", headers: { "Access-Control-Allow-Origin": MOTION_TEXT_SYMBOL_34 } });
-    return route.fulfill({ status: 200, body: fs.readFileSync(file), headers: { "Content-Type": MOTION_TEXT_MODEL_GLTF_BINARY, "Access-Control-Allow-Origin": MOTION_TEXT_SYMBOL_34 } });
+    if (!file) return route.fulfill({ status: 404, body: "", headers: { [API_HEADERS.ACCESS_CONTROL_ALLOW_ORIGIN]: MOTION_TEXT_SYMBOL_34 } });
+    return route.fulfill({ status: 200, body: fs.readFileSync(file), headers: { [API_HEADERS.CONTENT_TYPE]: libraryMime(file), [API_HEADERS.ACCESS_CONTROL_ALLOW_ORIGIN]: MOTION_TEXT_SYMBOL_34 } });
   });
 };
 const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: number; height: number; fps: number; preset: MotionQualityPreset; encoder: string; signal: AbortSignal; onFrames: (n: number) => void }): Promise<string> => {

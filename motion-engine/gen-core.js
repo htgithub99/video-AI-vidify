@@ -7,7 +7,11 @@
   const T = root.THREE || null;
   GEN.T = T;
   GEN.X = (T && T.addons) || {};
-  const SHAPES = [MT.BOX, MT.CYLINDER, MT.SPHERE, MT.CONE, MT.TORUS, MT.CAPSULE, MT.PLANE, MT.DISC, MT.RING, MT.EXTRUDE, MT.LATHE, MT.TUBE, MT.TEXT, MT.GROUP, MT.USE, MT.REPEAT, MT.LIGHT];
+  const SHAPES = [MT.BOX, MT.CYLINDER, MT.SPHERE, MT.CONE, MT.TORUS, MT.CAPSULE, MT.PLANE, MT.DISC, MT.RING, MT.EXTRUDE, MT.LATHE, MT.TUBE, MT.TEXT, MT.GROUP, MT.USE, MT.REPEAT, MT.LIGHT, MT.MODEL, MT.ARROW];
+  GEN.library = GEN.library || {};
+  GEN.setLibrary = (map) => {
+    GEN.library = map || {};
+  };
   const PATTERNS = [MT.NONE, MT.CONCRETE, MT.ASPHALT, MT.TILES, MT.BRICK, MT.WOOD, MT.PLANKS, MT.MARBLE, MT.METAL, MT.FABRIC, MT.GRASS, MT.DIRT, MT.SAND, MT.WATER, MT.STRIPES, MT.CHECKER, MT.CARPET, MT.STONE, MT.PLASTER, MT.PANELS, MT.LEATHER, MT.NOISE, MT.ROAD, MT.GRAVEL, MT.RUST];
   const LIGHT_TYPES = [MT.POINT, MT.SPOT, MT.SUN, MT.HEMI, MT.AMBIENT];
   const LIMITS = { nodes: 900, depth: 7, repeat: 400, instances: 4000, points: 64, lights: 16, defs: 24, materials: 60, text: 60 };
@@ -121,7 +125,8 @@
       if (st.count === LIMITS.nodes + 1) errors.push(MT.TOO_MANY_NODES_MAX + LIMITS.nodes + MT.USE_REPEAT_USE_FOR_COPIES);
       return null;
     }
-    let shape = typeof n.shape === MT.STRING ? n.shape.toLowerCase() : n.children ? MT.GROUP : n.ref ? MT.USE : "";
+    let shape = typeof n.shape === MT.STRING ? n.shape.toLowerCase() : n.children ? MT.GROUP : n.ref ? (MT.MODEL_REF_RE.test(String(n.ref)) ? MT.MODEL : MT.USE) : "";
+    if (shape === MT.USE && MT.MODEL_REF_RE.test(String(n.ref || ""))) shape = MT.MODEL;
     if (shape === MT.CUBE) shape = MT.BOX;
     if (shape === MT.CYLINDER_Y || shape === MT.CYL) shape = MT.CYLINDER;
     if (!SHAPES.includes(shape)) {
@@ -224,14 +229,49 @@
         out.color = color(n.color, MT.FFFFFF);
         if (n.bg || n.background) out.bg = color(n.bg || n.background, undefined);
         if (n.glow) out.glow = true;
+        if (n.billboard || n.face === MT.CAMERA) out.billboard = true;
         out.weight = num(n.weight, 700, 300, 900);
         break;
+      case MT.ARROW: {
+        const from = vec(n.from, null),
+          to = vec(n.to, null);
+        if (!from || !to) {
+          errors.push(where + MT.ARROW_NEEDS);
+          return null;
+        }
+        out.from = from;
+        out.to = to;
+        out.pos = from.slice();
+        delete out.rot;
+        out.radius = num(n.radius, 0.03, 0.005, 1);
+        out.color = color(n.color, MT.ARROW_COLOR);
+        out.glow = n.glow !== false;
+        break;
+      }
       case MT.GROUP: {
         if (!Array.isArray(n.children)) {
           errors.push(where + MT.GROUP_NEEDS_CHILDREN);
           return null;
         }
         out.children = n.children.map((c, i) => cleanNode(c, st, depth + 1, where + MT.CHILDREN + i + MT.SYMBOL_5)).filter(Boolean);
+        break;
+      }
+      case MT.MODEL: {
+        const ref = String(n.ref || n.model || "");
+        const info = GEN.library[ref];
+        const url = typeof n._url === MT.STRING ? n._url : info && info.url;
+        const sz = Array.isArray(n._size) && n._size.length === 3 ? n._size : info && info.size;
+        if (!url || !sz) {
+          errors.push(where + MT.MODEL_REF + ref + MT.IS_NOT_IN_LIBRARY);
+          return null;
+        }
+        out.ref = ref;
+        out._url = url;
+        out._size = sz.map((v) => num(v, 1, 0.01, 2000));
+        if (n.length != null) out.length = num(n.length, out._size[2], 0.05, 2000);
+        if (n.height != null) out.height = num(n.height, out._size[1], 0.05, 2000);
+        if (n.width != null) out.width = num(n.width, out._size[0], 0.05, 2000);
+        if (n.tint) out.tint = color(n.tint, undefined);
         break;
       }
       case MT.USE:
@@ -376,11 +416,38 @@
       if (!a || typeof a !== MT.OBJECT) return;
       const socket = String(a.socket || a.bone || "").toLowerCase();
       if (!GEN.SOCKETS.includes(socket)) return errors.push(MT.ACCESSORIES + i + MT.SOCKET_MUST_BE_ONE_OF + GEN.SOCKETS.join(MT.SYMBOL_19));
-      const nodes = GEN.cleanNodes(Array.isArray(a.nodes) ? a.nodes : a.shape ? [a] : [], st, MT.ACCESSORIES + i + MT.SYMBOL_5);
+      const nodes = GEN.smallNodes(Array.isArray(a.nodes) ? a.nodes : a.shape ? [a] : [], st, MT.ACCESSORIES + i + MT.SYMBOL_5, MT.SOCKET_MAX[socket] || 0.6);
       if (nodes.length) out.accessories.push({ socket, nodes, name: String(a.name || "").slice(0, 40) });
     });
     errors.push(...st.errors);
     return { value: out, errors };
+  };
+  const nodeExtent = (n) => {
+    if (!n) return 0;
+    const sc = Array.isArray(n.scale) ? Math.max(...n.scale.map(Math.abs)) : typeof n.scale === MT.NUMBER ? Math.abs(n.scale) : 1;
+    let e = 0;
+    if (Array.isArray(n.size)) e = Math.max(e, ...n.size);
+    if (n.radius) e = Math.max(e, n.radius * 2);
+    if (n.height) e = Math.max(e, n.height);
+    if (n.depth) e = Math.max(e, n.depth);
+    if (Array.isArray(n.children)) for (const c of n.children) e = Math.max(e, nodeExtent(c) + Math.max(...(c.pos || [0]).map(Math.abs)));
+    return e * sc;
+  };
+  GEN.smallNodes = (raw, st, where, max) => {
+    const keep = [];
+    (Array.isArray(raw) ? raw : []).forEach((n, j) => {
+      if (!n || typeof n !== MT.OBJECT) return;
+      const shape = String(n.shape || "").toLowerCase();
+      const missing = (shape === MT.BOX && !Array.isArray(n.size)) || (MT.ROUND_SHAPES.includes(shape) && !(+n.radius > 0));
+      if (missing) return st.errors.push(where + MT.NODES_2 + j + MT.SMALL_NEEDS_SIZE);
+      keep.push(n);
+    });
+    return GEN.cleanNodes(keep, st, where).filter((n, j) => {
+      const e = nodeExtent(n);
+      if (e <= max) return true;
+      st.errors.push(where + MT.NODES_2 + j + MT.SMALL_IS + e.toFixed(2) + MT.SMALL_TOO_BIG + max + MT.M_2);
+      return false;
+    });
   };
   GEN.ACTIONS = {
     idle: { clip: MT.IDLE_LOOP, src: MT.UAL1, calm: true },
@@ -570,9 +637,10 @@
         }
       }
       if (a.offset != null) o.offset = num(a.offset, 0, 0, 20);
+      if (a.ghost) o.ghost = true;
       if (Array.isArray(a.hold) || (a.hold && typeof a.hold === MT.OBJECT)) {
         const st = newState(L.materials || {});
-        const nodes = GEN.cleanNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD);
+        const nodes = GEN.smallNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD, 2.4);
         errors.push(...st.errors);
         if (nodes.length) o.hold = { hand: a.hand === MT.LEFT || (a.hold && a.hold.hand === MT.LEFT) ? MT.HAND_L : MT.HAND_R, nodes };
       }

@@ -14,9 +14,11 @@ import {
   getMotionDemo,
   getMotionEngineScript,
   getMotionEnvironment,
+  getMotionLibrary,
   getMotionStoryStatus,
   getMotionVideoStatus,
   getStorageJunk,
+  installMotionLibrary,
   listMotionVideoResults,
   parseMotionStory,
   saveMotionVideo,
@@ -36,6 +38,8 @@ router.get(MOTION_VIDEO_API_PATHS.DEMO, getMotionDemo);
 router.get(MOTION_TEMPLATE_SYMBOL_13(`${MOTION_VIDEO_API_PATHS.ASSET}`), serveMotionAsset);
 router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
 router.get(MOTION_VIDEO_API_PATHS.ENVIRONMENT, getMotionEnvironment);
+router.get(MOTION_VIDEO_API_PATHS.LIBRARY, getMotionLibrary);
+router.post(MOTION_VIDEO_API_PATHS.LIBRARY_INSTALL, installMotionLibrary);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);
 router.post(MOTION_VIDEO_API_PATHS.RENDER, startMotionVideoRender);

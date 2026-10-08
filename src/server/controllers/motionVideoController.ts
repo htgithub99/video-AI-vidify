@@ -42,7 +42,6 @@ import {
   MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO,
   MOTION_TEXT_M4A,
   MOTION_TEXT_MESSAGE,
-  MOTION_TEXT_MODEL_GLTF_BINARY,
   MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED,
   MOTION_TEXT_MP3,
   MOTION_TEXT_NO_CACHE,
@@ -66,6 +65,7 @@ import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
+import { ensureMotionLibrary, libraryMime, libraryStatus } from "../services/motionAssetLibraryService.js";
 import { buildAi33VoiceTrack, fitUploadedVoice } from "../services/motionAudioService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
@@ -293,7 +293,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const note = _.truncate(_.toString(req.body?.note || ""), { length: 400 });
     if (req.body?.restart) delete script.gen;
     if (script.gen && onlyLocations.length) for (const k of onlyLocations) delete (script.gen.locations as Record<string, unknown>)[k];
-    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => buildScenes(script, analysis, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: (r) => r && ctx.partial(r), aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), onlyBeats, onlyLocations, restyle: !!req.body?.restyle, note: note || undefined }));
+    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => buildScenes(script, analysis, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: (r) => r && ctx.partial(r), aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), onlyBeats, onlyLocations, restyle: !!req.body?.restyle, note: note || undefined, review: req.body?.review !== false }));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
@@ -310,8 +310,15 @@ export const serveMotionAsset = (req: Request, res: Response): void => {
   const file = resolveMotionAsset(rel);
   if (!file) return void res.status(404).end();
   res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
-  res.type(MOTION_TEXT_MODEL_GLTF_BINARY);
+  res.type(libraryMime(file));
   res.sendFile(file);
+};
+export const getMotionLibrary = (_req: Request, res: Response): void => {
+  res.json({ success: true, ...libraryStatus() });
+};
+export const installMotionLibrary = (_req: Request, res: Response): void => {
+  void ensureMotionLibrary((line) => logger.info(line)).catch((e) => logger.error(e));
+  res.json({ success: true, ...libraryStatus(), installing: true });
 };
 export const voiceMotionStory = (req: Request, res: Response): void => {
   try {

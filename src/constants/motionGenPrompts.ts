@@ -1,3 +1,4 @@
+import { MOTION_GENRE_PREAMBLE_BASE } from "./motionGenres.js";
 export const MOTION_GEN_CONFIG = {
   ARTIFACT_BIBLE: "motion-gen-bible",
   ARTIFACT_LOCATION: "motion-gen-location",
@@ -8,6 +9,11 @@ export const MOTION_GEN_CONFIG = {
   LOCATION_PASS_SCORE: 8,
   STAGING_TRIES: 3,
   STAGING_REVIEW_PASSES: 1,
+  GENRE_PART_VISUAL: "visual" as const,
+  SCORE_KEY: "score",
+  NOTE_KEY: "note",
+  AUTO_FIX_ISSUES: /out of frame|render error|stands inside/,
+  REVIEW_OFF_LOG: "Đã tắt bước AI xem ảnh (Cấu hình AI) – chỉ sửa theo lỗi máy tự phát hiện.",
   BEATS_PER_STAGING_CALL: 8,
   REVIEW_IMAGES_PER_CALL: 6,
   PREVIEW_FOLDER: "gen-preview",
@@ -18,13 +24,12 @@ export const MOTION_GEN_CONFIG = {
   MANNEQUIN_DIR: "mannequin",
   MANNEQUIN_FILES: ["male.glb", "female.glb", "anims_ual1.glb"],
 } as const;
-export const MOTION_GEN_PREAMBLE =
-  "IMPORTANT – TEXT-ONLY TASK: you only write structured JSON data. You are NOT asked to create, render or edit any image, video or audio. A separate 3D program on the user's computer reads your JSON (a list of simple shapes, materials, lights and camera numbers) and renders faceless white mannequin figures in simple 3D sets for an educational documentary. Retell real events factually and neutrally.";
+export const MOTION_GEN_PREAMBLE = MOTION_GENRE_PREAMBLE_BASE + " Retell real events factually and neutrally.";
 export const MOTION_GEN_LOOKS = ["documentary", "noir", "teal_orange", "vintage", "cold_thriller", "warm_story", "clean"];
 export const MOTION_GEN_GRADES = ["neutral", "teal", "cold", "warm", "noir", "bleach", "vintage"];
-export const MOTION_GEN_ANALYSIS_PROMPT = (o: { preamble: string; title: string; seconds: number; language: string; chapters: number; transcript: string }): string =>
+export const MOTION_GEN_ANALYSIS_PROMPT = (o: { preamble: string; title: string; seconds: number; language: string; chapters: number; transcript: string; genres: string; genreIds: string }): string =>
   `${o.preamble}
-ROLE: documentary story editor (YouTube true-story / history storytelling).
+ROLE: story editor for YouTube storytelling videos (history, true crime, mysteries, disasters, biographies, explainers, ghost stories, folk tales, human stories).
 TASK: analyse the story and return the production plan as JSON.
 
 Context:
@@ -34,16 +39,20 @@ Context:
 
 Requirements:
 1. "cast": every important person. "key" = short snake_case ASCII id. "gender": male|female. "look" = what this person wears and carries in ENGLISH, concrete and visual (clothes with colours, uniform, hat, glasses, bag…; era-correct; max 30 words). People are drawn as faceless mannequins, so never describe faces or skin.
-2. "places": every distinct location that appears (street, office, garage, bank vault, courtroom…). "key" = snake_case id, "name" in ${o.language}, "description" in ENGLISH = what it looks like: architecture, era, country, materials, colours, key objects, size (max 60 words). "interior": true/false. "time": day|dusk|night|dawn|overcast|interior|interior_dark (the usual time of the action there). Merge places that look the same. 2–8 places.
+2. "places": every distinct location that appears (street, office, garage, bank vault, courtroom…). "key" = snake_case id, "name" in ${o.language}, "description" in ENGLISH = what it looks like: architecture, era, country, materials, colours, key objects, size (max 60 words). "interior": true/false. "time": day|dusk|night|dawn|overcast|interior|interior_dark (the usual time of the action there, matching the genre mood). Merge places that look the same. 2–8 places.
 3. "era": the period and country of the story in English (e.g. "1976, Nice, France").
 4. "facts": proper names, dates, numbers and places that auto-transcripts often get wrong. status = ok | uncertain | wrong, short "note". Never invent facts. At most 12.
-5. "look": one of ${MOTION_GEN_LOOKS.join(", ")}; "accent": a hex accent colour.
+5. "look": one of ${MOTION_GEN_LOOKS.join(", ")} that suits the genre; "accent": a hex accent colour.
 6. Write "title", "logline", chapter "title"/"summary", cast "name"/"role"/"description", place "name" and fact "claim"/"note" in ${o.language}.
 7. Keep it compact: chapter summary ≤ 35 words, cast description ≤ 20 words.
 8. No gore or explicit violence.
+9. "genre": decide from the SOURCE itself which ONE genre fits best (the video's narration, structure, sets, light and camera will follow it). Choose exactly one id:
+${o.genres}
+   "genre2": optional second genre id when the story clearly mixes two (else ""). "factual": true if the source tells real events, false for legends, fairy tales and fictional or unverified ghost stories. "genreReason": one short sentence in ${o.language} saying why.
+10. "dna" = what makes THIS story unique, in ENGLISH, short: {"tone": how it should feel (≤ 15 words), "motifs": 1–4 visual motifs or objects to repeat and pay off across scenes (e.g. "the brass alarm clock"), "avoid": 0–4 story-specific things to avoid (real victims' names, disputed claims, graphic details…), "keep": one sentence on the narration voice and look to keep identical in every chapter}.
 
 JSON format:
-{"title":"…","logline":"…","look":"documentary","accent":"#ffb070","era":"…",
+{"title":"…","logline":"…","genre":"${o.genreIds}","genre2":"","factual":true,"genreReason":"…","dna":{"tone":"…","motifs":["…"],"avoid":["…"],"keep":"…"},"look":"documentary","accent":"#ffb070","era":"…",
  "chapters":[{"id":"c1","title":"…","summary":"…","from":0,"to":95}],
  "cast":[{"key":"albert","name":"Albert Spaggiari","role":"…","description":"…","gender":"male","look":"tan trench coat over grey suit, dark trousers, brown leather shoes"}],
  "places":[{"key":"bank_vault","name":"…","description":"underground bank vault, 1970s France, steel walls lined with hundreds of small safe-deposit boxes, heavy round vault door, fluorescent ceiling tubes","interior":true,"time":"interior"}],
@@ -83,12 +92,14 @@ export const MOTION_GEN_CHAPTER_PROMPT = (o: {
   lastNote: string;
   previous: string;
   rules: string;
+  role: string;
+  genre: string;
   cast: string;
   places: string;
   transcript: string;
 }): string =>
   `${o.preamble}
-ROLE: documentary scriptwriter. Write the narration and the shot list (JSON) for one chapter.
+ROLE: ${o.role}. Write the narration and the shot list (JSON) for one chapter.
 Story: "${o.title}" — ${o.logline}
 CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
 
@@ -98,6 +109,7 @@ NARRATION:
 - Total ≈ ${o.units} ${o.unitName} (≈${o.seconds} s of speech). HARD LIMIT: never more than ${o.units} ${o.unitName} for all beats together. About ${o.beats} beats, each 1–3 short sentences (≈${o.perBeat} ${o.unitName}).
 - Spell out numbers a TTS voice may misread.${o.firstNote}${o.lastNote}
 ${o.previous}
+${o.genre}
 
 ${o.rules}
 
@@ -129,9 +141,11 @@ SHAPES:
 - extrude {"points":[[x,y],…] (a 2D outline in the XY plane, 3–64 points), "depth", "bevel", "holes":[[[x,y],…]]} – extruded along Z and centred. Best for car bodies (side profile), arches, stairs, signs, roofs, furniture outlines.
 - lathe {"points":[[radius,y],…]} – revolved around Y: bottles, vases, columns, lamp shades, cups, tyres.
 - tube {"path":[[x,y,z],…], "radius"} – pipes, cables, railings, hoses.
-- text {"text":"…","height":0.3,"color":"#fff","bg":"#123" (optional),"glow":true (neon)} – signs, plates, numbers (≤ 60 chars).
+- text {"text":"…","height":0.3,"color":"#fff","bg":"#123" (optional),"glow":true (neon),"billboard":true (always turns to the camera – for floating labels)} – signs, plates, numbers, labels (≤ 60 chars).
+- arrow {"from":[x,y,z],"to":[x,y,z],"radius":0.03,"color":"#ffd34d"} – a glowing pointer arrow (no "pos" needed); with a billboard text it makes an on-screen annotation.
 - group {"children":[nodes]} – children positions are relative to the group; the group's "mat" is inherited.
 - use {"ref":"def_name", "tint":"#hex" (optional)} – a copy of a component from "defs".
+- model {"ref":"<ref from the MODEL LIBRARY list>", "length":4.5 | "height":3 | "width":2 (optional real size in metres – omit to use the listed size), "tint":"#hex" (optional colour tint)} – a ready-made high-quality 3D model (car, building, furniture, tree, boat…). For a model "pos" is the centre of its FOOTPRINT and pos y is the floor it stands on (usually 0); "rot":[0,yaw,0] turns it (yaw 0 = its front faces +Z). Prefer library models for every object that has a good match (vehicles, buildings, furniture, trees, props) – they look far better than shapes; draw with shapes only what the list does not have (walls, floors, rooms, era-specific or unusual objects). Use ONLY refs from the list.
 - repeat {"node":{one node}, "count":[nx,ny,nz], "step":[dx,dy,dz], "jitter":0.3 (optional), "skip":0.2 (optional random gaps)} – rows of pillars, windows, parked cars, trees, seats.
 - light {"type":"point"|"spot"|"sun"|"hemi"|"ambient", "pos", "target" (spot/sun), "color", "intensity" (1 = normal lamp, 3 = strong, 6 = very strong; sun 1–3), "distance", "angle" (spot), "penumbra", "shadow":true (max 2), "flash":{"hz":2,"colors":["#ff2020","#2050ff"],"duty":0.5} (police/alarm lights), "flicker":0.3 (fire, broken neon)}.
 MATERIALS: "materials":{"name":{"color":"#hex","roughness":0..1,"metalness":0..1,"pattern":one of concrete|asphalt|road|gravel|tiles|checker|brick|wood|planks|marble|metal|rust|fabric|carpet|leather|grass|dirt|sand|water|stone|plaster|panels|stripes|noise,"patternColor":"#hex","scale":metres per pattern repeat,"cols":n,"rows":n,"glass":true,"opacity":0..1,"emissive":"#hex","emissiveIntensity":1..5,"clearcoat":0..1 (car paint),"double":true}}. Glass reflects the surroundings, so give glass a dark tint and put something across the street/room for it to reflect. Lamps, screens, neon and car lights use "emissive".
@@ -162,10 +176,11 @@ export const MOTION_GEN_DSL_EXAMPLE = `EXAMPLE (an underground garage – parts 
 "nodes":[{"shape":"box","name":"ceiling","size":[60,0.4,60],"pos":[0,3.6,0],"mat":"conc"},
  {"shape":"repeat","pos":[-12,1.7,-6],"count":[4,1,3],"step":[8,0,8],"node":{"shape":"box","size":[0.75,3.4,0.75],"mat":"conc"}},
  {"shape":"group","name":"police_car","pos":[-4.2,0,1.2],"rot":[0,20,0],"mat":"paint_black","children":[{"shape":"use","ref":"sedan"},{"shape":"use","ref":"police_bar"},{"shape":"light","type":"point","pos":[0.3,1.7,-0.1],"intensity":6,"distance":18,"flash":{"hz":2.2,"colors":["#ff2020"],"duty":0.45}},{"shape":"light","type":"point","pos":[-0.3,1.7,-0.1],"intensity":8,"distance":20,"flash":{"hz":2.2,"colors":["#2050ff"],"phase":0.5,"duty":0.45}}]},
+ {"shape":"model","name":"parked_van","ref":"k:car-kit/van","pos":[6,0,-3],"rot":[0,-90,0],"length":4.9},
  {"shape":"light","type":"spot","pos":[0.5,3.3,1.5],"target":[0.5,0,0.5],"angle":45,"penumbra":0.7,"intensity":2,"color":"#cfdcff","shadow":true}]`;
-export const MOTION_GEN_LOCATION_PROMPT = (o: { preamble: string; guide: string; example: string; era: string; story: string; key: string; name: string; description: string; interior: boolean; time: string; uses: string; style: string; note: string }): string =>
+export const MOTION_GEN_LOCATION_PROMPT = (o: { preamble: string; guide: string; example: string; era: string; story: string; key: string; name: string; description: string; interior: boolean; time: string; uses: string; style: string; note: string; library: string }): string =>
   `${o.preamble}
-ROLE: production designer of a 3D documentary. Draw ONE location as a scene-graph.
+ROLE: production designer of a 3D story video. Draw ONE location as a scene-graph.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}
 LOCATION "${o.key}" (${o.name}): ${o.description}
@@ -176,6 +191,9 @@ VISUAL STYLE: ${o.style}
 ${o.note}
 
 ${o.guide}
+
+MODEL LIBRARY (ref | name | default size width×height×depth in metres) – place with {"shape":"model","ref":…}:
+${o.library}
 
 ${o.example}
 
@@ -188,11 +206,14 @@ It will be used for: ${o.uses}
 Automatic checks: ${o.engineNotes || "none"}
 Judge: does it clearly look like that place (architecture, era, key objects)? Are sizes right compared to the 1.8 m mannequin? Anything floating, cut through, missing or ugly? Is the lighting cinematic and readable (not black, not burnt out)? Is the stage free for the actors?
 Return JSON: {"score":0..10,"issues":["concrete fix instruction with object names and numbers", …]} – max 8 issues, [] if it is already excellent (score ≥ 8).`;
-export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; key: string; description: string; previous: string; issues: string; errors: string }): string =>
+export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string; errors: string }): string =>
   `${o.preamble}
 ROLE: production designer. Improve the 3D location "${o.key}" (${o.description}).
 ${o.errors ? `The previous JSON had format errors – fix them:\n${o.errors}\n` : ""}${o.issues ? `Art director notes – apply ALL of them:\n${o.issues}\n` : ""}
 ${o.guide}
+
+MODEL LIBRARY (ref | name | default size width×height×depth in metres):
+${o.library}
 
 PREVIOUS LOCATION JSON:
 ${o.previous}
@@ -200,7 +221,7 @@ ${o.previous}
 Return JSON: {"location":{ …the full corrected LOCATION JSON… }}`;
 export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; errors: string }): string =>
   `${o.preamble}
-ROLE: costume designer and director of photography for a 3D documentary with faceless mannequin actors.
+ROLE: costume designer and director of photography for a 3D story video with faceless mannequin actors.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}. Film look: ${o.look}.
 CAST:
@@ -239,7 +260,7 @@ STAGING JSON per beat:
 {"id":"beat id","location":"location key","time":"optional override",
  "actors":[{"cast":"key","action":"action id","at":[x,z] or "mark name","face":degrees (0 = toward +Z/the camera side, 90 = toward +X, 180 = away, -90 = toward -X) or "camera" or a cast key or [x,z],
             "moveTo":[x,z] or mark (optional),"moveStart":0..1,"moveEnd":0..1,"then":"action after the move or after thenAt","thenAt":0..1,
-            "hold":[small shapes held in the right hand: origin = palm centre, +Y toward the fingertips, +Z out of the palm; e.g. phone = box [0.075,0.15,0.009] at [0,0.02,0.008]; pistol, torch, document, cup…],"hand":"left" (optional),"y":height of the feet (optional, e.g. on a stage or in a car)}],
+            "hold":[small shapes held in the right hand: origin = palm centre, +Y toward the fingertips, +Z out of the palm; e.g. phone = box [0.075,0.15,0.009] at [0,0.02,0.008]; pistol, torch, document, cup…],"hand":"left" (optional),"y":height of the feet (optional, e.g. on a stage or in a car),"ghost":true (optional: a translucent, softly glowing, floating apparition – only for ghosts and spirits)}],
  "props":[extra nodes only needed for this beat, same shape format, e.g. a document on the table, a dropped bag, sparks],
  "hide":["names of location objects to hide in this beat"],
  "weather":"none|rain|snow|fog|dust",
@@ -247,6 +268,9 @@ STAGING JSON per beat:
 RULES:
 - Show exactly the "action" sentence of each beat: the right people, the right place, the right objects and what happens to them.
 - Put actors on FREE floor: never inside furniture, cars or walls (check the object sizes). People who talk or interact stand 0.7–1.4 m apart and face each other; groups form a natural arc toward the camera.
+- Explaining something: add "props" with an "arrow" and a billboard "text" label pointing at the part the narration talks about (1–3 per beat, labels in the narration language, ≤ 4 words).
+- Ghosts and spirits: an actor with "ghost":true; reveal it slowly (far away, half hidden, in fog or at the end of a corridor) rather than in plain view.
+- Working on an object (interact, pick_up, open_chest, kneel_fix, push…): set "face" to the object's [x,z] and stand within arm's reach (0.5–0.7 m from it). Put the camera at the side or three-quarter front of the actor (about 60–90° from where the actor looks) so the face, the hands and the object are all visible – never behind the actor's back.
 - Movement: "moveTo" with walk/run etc.; distance ≈ speed × time (walk 1.3 m/s, run 5 m/s; a beat lasts ≈ 4–8 s).
 - Camera: eye height 1.4–1.7 for medium shots, 0.4–0.9 for low shots, 3–8 for high shots; wide shots 7–15 m from the actors, medium 2.5–4 m, close 1.2–1.8 m. "target" = what to look at (a face is at y≈1.6, a chest at 1.3). Keep the camera inside the walls of interiors and in front of (not inside) objects.
 - One to three cameras per beat: several cameras = cuts at the "at" times (0..1) – use them for dialogue (shot/reverse shot) and to reveal details. Vary angles between consecutive beats, keep the 180° rule in dialogues, and make it cinematic (foreground objects, depth, motivated light).

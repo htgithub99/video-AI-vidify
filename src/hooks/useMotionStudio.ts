@@ -65,6 +65,7 @@ interface PersistedState {
   aiModel: AiPlanningChatModel;
   aiMode: AiPlanningExecutionMode;
   aiHeadless: boolean;
+  aiReview: boolean;
   activeRenderJobId: string;
   activeStoryJobId: string;
   autoContinue: boolean;
@@ -92,6 +93,7 @@ const DEFAULTS: PersistedState = {
   aiModel: AiPlanningChatModel.GeminiFlash,
   aiMode: AiPlanningExecutionMode.RoomOnly,
   aiHeadless: true,
+  aiReview: true,
   activeRenderJobId: "",
   activeStoryJobId: "",
   autoContinue: true,
@@ -258,7 +260,7 @@ export function useMotionStudio() {
       const analysis = analysisOverride || state.analysis;
       if (!script?.beats?.length || !analysis) return;
       try {
-        const result = (await runStoryJob(API_ROUTES.MOTION_STORY_SCENES, { script, analysis, aspect: state.aspect, aiExecution, ...req }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
+        const result = (await runStoryJob(API_ROUTES.MOTION_STORY_SCENES, { script, analysis, aspect: state.aspect, aiExecution, review: state.aiReview !== false, ...req }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
         patch({ script: result });
         setCompiled(null);
         const failed = result.gen?.failed?.length || 0;
@@ -268,7 +270,7 @@ export function useMotionStudio() {
         reportStoryError(e);
       }
     },
-    [state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
+    [state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiReview, runStoryJob, patch],
   );
   scenesRef.current = buildScenes;
   const generateVoice = useCallback(async () => {
@@ -376,7 +378,7 @@ export function useMotionStudio() {
           audioId,
           audioVolume: 1,
           sfxVolume: state.sfxVolume,
-          sfx: state.sfx ? { cues: c.sfxCues, mood: MOTION_TEXT_DARK } : undefined,
+          sfx: state.sfx ? { cues: c.sfxCues, mood: state.analysis?.genre || MOTION_TEXT_DARK } : undefined,
         },
       });
       setRenderJob(job);

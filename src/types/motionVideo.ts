@@ -157,9 +157,20 @@ export interface MotionFact {
   status: "ok" | "uncertain" | "wrong";
   note?: string;
 }
+export interface MotionStoryDna {
+  tone?: string;
+  motifs?: string[];
+  avoid?: string[];
+  keep?: string;
+}
 export interface MotionStoryAnalysis {
   title: string;
   logline: string;
+  genre?: string;
+  genre2?: string;
+  factual?: boolean;
+  genreReason?: string;
+  dna?: MotionStoryDna;
   look: string;
   accent?: string;
   era?: string;

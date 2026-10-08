@@ -514,6 +514,25 @@
     env.disposables.push(m.geometry, mat, tex);
     return m;
   };
+  const arrowNode = (n, env) => {
+    const g = new T.Group();
+    const dir = new T.Vector3(n.to[0] - n.from[0], n.to[1] - n.from[1], n.to[2] - n.from[2]);
+    const len = dir.length();
+    if (len < 1e-3) return g;
+    const r = n.radius;
+    const head = Math.min(len * 0.45, r * 6);
+    const mat = n.glow ? new T.MeshBasicMaterial({ color: new T.Color(n.color).multiplyScalar(1.6), toneMapped: false }) : new T.MeshStandardMaterial({ color: n.color, roughness: 0.5 });
+    const shaft = new T.Mesh(new T.CylinderGeometry(r, r, len - head, 12), mat);
+    shaft.position.y = (len - head) / 2;
+    const tip = new T.Mesh(new T.ConeGeometry(r * 2.6, head, 16), mat);
+    tip.position.y = len - head / 2;
+    const inner = new T.Group();
+    inner.add(shaft, tip);
+    inner.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir.normalize());
+    g.add(inner);
+    env.disposables.push(shaft.geometry, tip.geometry, mat);
+    return g;
+  };
   GEN.flashColor = (fl, t) => {
     const cyc = t * fl.hz + fl.phase;
     const i = Math.floor(cyc) % fl.colors.length;
@@ -581,6 +600,80 @@
     if (mat.transparent) m.renderOrder = 2;
     return m;
   };
+  GEN.models = GEN.models || {};
+  GEN.loadModels = async (urls, base) => {
+    const X = T.addons;
+    const todo = (urls || []).filter((u) => u && !GEN.models[u]);
+    if (!todo.length) return;
+    const loader = new X.GLTFLoader();
+    if (X.MeshoptDecoder) loader.setMeshoptDecoder(X.MeshoptDecoder);
+    await Promise.all(
+      todo.map(
+        (u) =>
+          new Promise((resolve) => {
+            loader.load(
+              (base || "") + u,
+              (g) => {
+                const scene = g.scene;
+                scene.updateMatrixWorld(true);
+                scene.traverse((o) => {
+                  if (!o.isMesh) return;
+                  o.castShadow = true;
+                  o.receiveShadow = true;
+                  const mats = Array.isArray(o.material) ? o.material : [o.material];
+                  for (const m of mats) if (m && m.map) m.map.anisotropy = 4;
+                });
+                GEN.models[u] = { scene, box: new T.Box3().setFromObject(scene) };
+                resolve();
+              },
+              undefined,
+              () => {
+                GEN.models[u] = { failed: true };
+                resolve();
+              },
+            );
+          }),
+      ),
+    );
+  };
+  const modelNode = (n, env) => {
+    const rec = GEN.models[n._url];
+    const want = n._size || [1, 1, 1];
+    const o = new T.Group();
+    if (!rec || rec.failed || rec.box.isEmpty()) {
+      const h = n.height || want[1];
+      const w = n.width || want[0];
+      const d = n.length || want[2];
+      const m = new T.Mesh(new T.BoxGeometry(w, h, d), resolveMat({}, env));
+      env.disposables.push(m.geometry);
+      m.position.y = h / 2;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      o.add(m);
+      return o;
+    }
+    const size = rec.box.getSize(new T.Vector3());
+    let k;
+    if (n.height) k = n.height / Math.max(1e-6, size.y);
+    else if (n.length) k = n.length / Math.max(1e-6, size.x, size.z);
+    else if (n.width) k = n.width / Math.max(1e-6, Math.min(size.x, size.z));
+    else k = Math.max(want[0], want[1], want[2]) / Math.max(1e-6, size.x, size.y, size.z);
+    const inner = rec.scene.clone(true);
+    if (n.tint) {
+      const tint = new T.Color(n.tint);
+      inner.traverse((c) => {
+        if (!c.isMesh || !c.material) return;
+        c.material = c.material.clone();
+        if (c.material.color) c.material.color.multiply(tint);
+        env.disposables.push(c.material);
+      });
+    }
+    const center = rec.box.getCenter(new T.Vector3());
+    inner.scale.setScalar(k);
+    inner.position.set(-center.x * k, -rec.box.min.y * k, -center.z * k);
+    o.add(inner);
+    return o;
+  };
   const build = (n, env, inheritedMat, depth) => {
     if (n.hidden) return null;
     if (depth > 12) return null;
@@ -643,8 +736,13 @@
           o.add(k);
         }
       }
+    } else if (n.shape === MT.MODEL) {
+      o = modelNode(n, env);
     } else if (n.shape === MT.TEXT) {
       o = textMesh(n, env);
+      if (n.billboard) (env.billboards = env.billboards || []).push(o);
+    } else if (n.shape === MT.ARROW) {
+      o = arrowNode(n, env);
     } else o = meshFor(n, env, inheritedMat);
     if (n.shape === MT.REPEAT) {
       o.position.set(n.pos[0], n.pos[1], n.pos[2]);

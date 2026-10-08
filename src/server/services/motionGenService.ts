@@ -1,6 +1,7 @@
 import fs from "fs";
 import _ from "lodash";
 import path from "path";
+import { MOTION_LIB_TEXT } from "../../constants/motionAssetLibrary.js";
 import { MOTION_GEN_ACTIONS_GUIDE, MOTION_GEN_BIBLE_PROMPT, MOTION_GEN_CONFIG, MOTION_GEN_DSL_EXAMPLE, MOTION_GEN_DSL_GUIDE, MOTION_GEN_GRADES, MOTION_GEN_LOCATION_FIX_PROMPT, MOTION_GEN_LOCATION_PROMPT, MOTION_GEN_LOCATION_REVIEW_PROMPT, MOTION_GEN_PREAMBLE, MOTION_GEN_STAGING_PROMPT, MOTION_GEN_STAGING_REVIEW_PROMPT } from "../../constants/motionGenPrompts.js";
 import {
   MOTION_TEMPLATE_A_2,
@@ -129,8 +130,10 @@ import {
   MOTION_TEXT_WIDE,
 } from "../../constants/motionRuntime.js";
 import { cloneJson, stringifyJson } from "../../lib/jsonStringify.js";
-import { getMotionErrorMessage } from "../../lib/motionUtils.js";
+import { genrePreamble } from "../../lib/motionGenre.js";
+import { getMotionErrorSummary } from "../../lib/motionUtils.js";
 import type { MotionAiExecution, MotionBeat, MotionGenState, MotionPlace, MotionSpec, MotionStoryAnalysis, MotionStoryScript } from "../../types/motionVideo.js";
+import { ensureLibraryModel, ensureMotionLibrary, libraryCandidates, libraryPromptList } from "./motionAssetLibraryService.js";
 import { estimateBeatSeconds } from "./motionDirectorService.js";
 import { genActionIds, validateGenLocation, validateGenOutfit, validateGenStaging } from "./motionEngineService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
@@ -147,6 +150,8 @@ export interface GenOptions {
   onlyLocations?: string[];
   restyle?: boolean;
   note?: string;
+  review?: boolean;
+  preamble?: string;
   ai?: typeof runMotionAi;
   runId?: string;
 }
@@ -166,7 +171,6 @@ export const resolveGenPreview = (rel: string): string | null => {
   return file;
 };
 const runId = (script: MotionStoryScript, o?: GenOptions): string => (o && o.runId) || _.toString(_.get(script, MOTION_TEXT_GEN_RUNID)) || `${Date.now().toString(36)}`;
-const errMsg = (e: unknown): string => getMotionErrorMessage(e, 160);
 const aborted = (o: GenOptions) => {
   if (o.signal?.aborted) throw new Error(MOTION_TEXT_CANCELLED);
 };
@@ -178,8 +182,8 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
   for (let attempt = 0; attempt < 3; attempt++) {
     aborted(o);
     o.log(attempt ? MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN(`${attempt + 1}`) : MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH);
-    const raw = await (o.ai || runMotionAi)(MOTION_GEN_BIBLE_PROMPT({ preamble: MOTION_GEN_PREAMBLE, story: storyLine(analysis), era: analysis.era || "", look: analysis.look, cast: castLines(analysis), errors: errors.join(MOTION_TEXT_SYMBOL_27) }), MOTION_GEN_CONFIG.ARTIFACT_BIBLE, o.exec, o.signal, o.log).catch((e) => {
-      errors = [errMsg(e)];
+    const raw = await (o.ai || runMotionAi)(MOTION_GEN_BIBLE_PROMPT({ preamble: o.preamble || MOTION_GEN_PREAMBLE, story: storyLine(analysis), era: analysis.era || "", look: analysis.look, cast: castLines(analysis), errors: errors.join(MOTION_TEXT_SYMBOL_27) }), MOTION_GEN_CONFIG.ARTIFACT_BIBLE, o.exec, o.signal, o.log).catch((e) => {
+      errors = [getMotionErrorSummary(e)];
       return null;
     });
     if (!raw) continue;
@@ -251,10 +255,43 @@ const renderLocation = async (session: MotionStillSession, gen: MotionGenState, 
   }
   return out;
 };
+const modelRefs = (L: any): string[] => {
+  const refs = new Set<string>();
+  const visit = (list: any[]) =>
+    _.forEach(list, (n: any) => {
+      if (!n) return;
+      if (n.shape === MOTION_LIB_TEXT.MODEL && _.startsWith(n.ref, MOTION_LIB_TEXT.PH_PREFIX)) refs.add(n.ref);
+      if (n.children) visit(n.children);
+      if (n.node) visit([n.node]);
+    });
+  visit(L?.nodes || []);
+  _.forEach(L?.defs || {}, (d: any[]) => visit(d));
+  return [...refs];
+};
+const materializeModels = async (L: any, o: GenOptions): Promise<any> => {
+  const failed = new Set<string>();
+  for (const ref of modelRefs(L)) {
+    aborted(o);
+    try {
+      await ensureLibraryModel(ref, o.log, o.signal);
+    } catch (e) {
+      failed.add(ref);
+      o.log(MOTION_LIB_TEXT.PH_DROPPED(ref, getMotionErrorSummary(e)));
+    }
+  }
+  if (!failed.size) return L;
+  const prune = (list: any[]): any[] => _.compact(_.map(list, (n: any) => (n?.shape === MOTION_LIB_TEXT.MODEL && failed.has(n.ref) ? null : n?.children ? { ...n, children: prune(n.children) } : n)));
+  return { ...L, nodes: prune(L.nodes || []), defs: _.mapValues(L.defs || {}, prune) };
+};
+const libraryFor = (place: MotionPlace, uses: string, era: string): string => {
+  const items = libraryCandidates([place.name, place.description, uses, era].join(MOTION_LIB_TEXT.SPACE));
+  return items.length ? libraryPromptList(items) : MOTION_LIB_TEXT.NO_LIBRARY;
+};
 export const designLocation = async (place: MotionPlace, script: MotionStoryScript, analysis: MotionStoryAnalysis, gen: MotionGenState, session: MotionStillSession, o: GenOptions): Promise<void> => {
   const dir = path.join(previewRoot(), runId(script, o), MOTION_TEMPLATE_LOC(`${place.key}`));
   const uses = usesOf(place.key, script);
   const style = MOTION_TEMPLATE_FILM_LOOK_GRADE(`${analysis.look}`, `${gen.style.notes || ""}`, `${gen.style.grade || MOTION_TEXT_NEUTRAL}`);
+  const library = libraryFor(place, uses, analysis.era || "");
   let raw: any = null;
   let errors: string[] = [];
   let best: { value: any; score: number; files: string[]; issues: string[] } | null = null;
@@ -266,21 +303,45 @@ export const designLocation = async (place: MotionPlace, script: MotionStoryScri
       aborted(o);
       const prompt =
         !raw && !best
-          ? MOTION_GEN_LOCATION_PROMPT({ preamble: MOTION_GEN_PREAMBLE, guide: MOTION_GEN_DSL_GUIDE, example: MOTION_GEN_DSL_EXAMPLE, era: analysis.era || "", story: storyLine(analysis), key: place.key, name: place.name, description: place.description, interior: !!place.interior, time: place.time || MOTION_TEXT_DAY, uses, style, note: o.note ? MOTION_TEMPLATE_USER_NOTE(`${o.note}`) : "" })
-          : MOTION_GEN_LOCATION_FIX_PROMPT({ preamble: MOTION_GEN_PREAMBLE, guide: MOTION_GEN_DSL_GUIDE, key: place.key, description: place.description, previous: stringifyJson(raw || best?.value), issues: _.map(issues, (s) => MOTION_TEMPLATE_SYMBOL_23(`${s}`)).join(MOTION_TEXT_SYMBOL_27), errors: _.map(_.take(errors, 25), (s) => MOTION_TEMPLATE_SYMBOL_23(`${s}`)).join(MOTION_TEXT_SYMBOL_27) });
+          ? MOTION_GEN_LOCATION_PROMPT({
+              preamble: o.preamble || MOTION_GEN_PREAMBLE,
+              guide: MOTION_GEN_DSL_GUIDE,
+              example: MOTION_GEN_DSL_EXAMPLE,
+              era: analysis.era || "",
+              story: storyLine(analysis),
+              key: place.key,
+              name: place.name,
+              description: place.description,
+              interior: !!place.interior,
+              time: place.time || MOTION_TEXT_DAY,
+              uses,
+              style,
+              library,
+              note: o.note ? MOTION_TEMPLATE_USER_NOTE(`${o.note}`) : "",
+            })
+          : MOTION_GEN_LOCATION_FIX_PROMPT({
+              preamble: o.preamble || MOTION_GEN_PREAMBLE,
+              guide: MOTION_GEN_DSL_GUIDE,
+              library,
+              key: place.key,
+              description: place.description,
+              previous: stringifyJson(raw || best?.value),
+              issues: _.map(issues, (s) => MOTION_TEMPLATE_SYMBOL_23(`${s}`)).join(MOTION_TEXT_SYMBOL_27),
+              errors: _.map(_.take(errors, 25), (s) => MOTION_TEMPLATE_SYMBOL_23(`${s}`)).join(MOTION_TEXT_SYMBOL_27),
+            });
       o.log(!raw && !best ? MOTION_TEMPLATE_AI_VE_BOI_CANH(`${place.name}`) : errors.length ? MOTION_TEMPLATE_AI_SUA_LOI_DINH_DANG_BOI_CANH(`${place.name}`) : MOTION_TEMPLATE_AI_CHINH_BOI_CANH_THEO_NHAN_XET(`${place.name}`));
       try {
         const res = await (o.ai || runMotionAi)(prompt, MOTION_GEN_CONFIG.ARTIFACT_LOCATION, o.exec, o.signal, o.log);
         raw = res?.location || res;
       } catch (e) {
         if (o.signal?.aborted) throw e;
-        errors = [errMsg(e)];
+        errors = [getMotionErrorSummary(e)];
         continue;
       }
       const v = validateGenLocation(raw);
       errors = v.errors;
       if (!errors.length || (v.value.nodes?.length && fix === 2)) {
-        value = v.value;
+        value = await materializeModels(v.value, o);
         o.log(MOTION_TEMPLATE_BOI_CANH_KHOI_DEN(`${place.name}`, `${v.stats?.nodes || 0}`, `${v.stats?.lights || 0}`, `${errors.length ? MOTION_TEMPLATE_BO_QUA_LOI(`${errors.length}`) : ""}`));
         break;
       }
@@ -291,18 +352,20 @@ export const designLocation = async (place: MotionPlace, script: MotionStoryScri
     const shots = await renderLocation(session, gen, place.key, value, dir, MOTION_TEMPLATE_R(`${round + 1}`));
     let score = 6;
     issues = [];
-    try {
-      const review = await (o.ai || runMotionAi)(MOTION_GEN_LOCATION_REVIEW_PROMPT({ preamble: MOTION_GEN_PREAMBLE, key: place.key, description: place.description, uses, engineNotes: _.uniq(shots.issues).join(MOTION_TEXT_SYMBOL_41) }), MOTION_GEN_CONFIG.ARTIFACT_LOCATION_REVIEW, o.exec, o.signal, o.log, imagesOf(shots.files));
-      score = _.clamp(_.toNumber(review?.score) || 0, 0, 10);
-      issues = _.take(_.compact(_.map(_.castArray(review?.issues || []), (s) => _.truncate(_.toString(s), { length: 240 }))), 8);
-    } catch (e) {
-      if (o.signal?.aborted) throw e;
-      o.log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_CHAM_BOI_CANH(`${errMsg(e)}`));
-    }
-    o.log(MOTION_TEMPLATE_AI_CHAM_BOI_CANH_10(`${place.name}`, `${score}`, `${issues.length ? MOTION_TEMPLATE_DIEM_CAN_SUA(`${issues.length}`) : ""}`));
+    const reviewOn = o.review !== false;
+    if (reviewOn)
+      try {
+        const review = await (o.ai || runMotionAi)(MOTION_GEN_LOCATION_REVIEW_PROMPT({ preamble: o.preamble || MOTION_GEN_PREAMBLE, key: place.key, description: place.description, uses, engineNotes: _.uniq(shots.issues).join(MOTION_TEXT_SYMBOL_41) }), MOTION_GEN_CONFIG.ARTIFACT_LOCATION_REVIEW, o.exec, o.signal, o.log, imagesOf(shots.files));
+        score = _.clamp(_.toNumber(review?.score) || 0, 0, 10);
+        issues = _.take(_.compact(_.map(_.castArray(review?.issues || []), (s) => _.truncate(_.toString(s), { length: 240 }))), 8);
+      } catch (e) {
+        if (o.signal?.aborted) throw e;
+        o.log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_CHAM_BOI_CANH(`${getMotionErrorSummary(e)}`));
+      }
+    if (reviewOn) o.log(MOTION_TEMPLATE_AI_CHAM_BOI_CANH_10(`${place.name}`, `${score}`, `${issues.length ? MOTION_TEMPLATE_DIEM_CAN_SUA(`${issues.length}`) : ""}`));
     if (!best || score >= best.score) best = { value, score, files: shots.files, issues };
     gen.locations[place.key] = best.value;
-    gen.locationInfo[place.key] = { score: best.score, files: _.map(best.files, genPreviewRel), issues: best.issues, at: new Date().toISOString() };
+    gen.locationInfo[place.key] = { score: reviewOn ? best.score : undefined, files: _.map(best.files, genPreviewRel), issues: best.issues, at: new Date().toISOString() };
     o.partial?.(null);
     if (score >= MOTION_GEN_CONFIG.LOCATION_PASS_SCORE || !issues.length) break;
     raw = value;
@@ -356,6 +419,12 @@ const nodeBounds = (n: any, L: any, depth = 0): [number, number, number, number,
       }
       break;
     }
+    case MOTION_LIB_TEXT.MODEL: {
+      const sz: number[] = n._size || [1, 1, 1];
+      const k = n.height ? n.height / sz[1] : n.length ? n.length / Math.max(sz[0], sz[2]) : n.width ? n.width / Math.min(sz[0], sz[2]) : 1;
+      b = [(-sz[0] * k) / 2, 0, (-sz[2] * k) / 2, (sz[0] * k) / 2, sz[1] * k, (sz[2] * k) / 2];
+      break;
+    }
     default:
       return null;
   }
@@ -378,11 +447,11 @@ const nodeBounds = (n: any, L: any, depth = 0): [number, number, number, number,
 export const locationSummary = (key: string, L: any, place?: MotionPlace): string => {
   const objects = _.compact(
     _.map(
-      _.filter(L.nodes, (n: any) => n.name && n.shape !== MOTION_TEXT_LIGHT),
+      _.filter(L.nodes, (n: any) => (n.name || n.shape === MOTION_LIB_TEXT.MODEL) && n.shape !== MOTION_TEXT_LIGHT),
       (n: any) => {
         const b = nodeBounds(n, L);
         if (!b) return null;
-        return MOTION_TEMPLATE_CENTRE_SIZE_X_Y_Z_TOP_Y(`${n.name}`, `${r2((b[0] + b[3]) / 2)}`, `${r2((b[2] + b[5]) / 2)}`, `${r2(b[3] - b[0])}`, `${r2(b[4] - b[1])}`, `${r2(b[5] - b[2])}`, `${r2(b[4])}`);
+        return MOTION_TEMPLATE_CENTRE_SIZE_X_Y_Z_TOP_Y(`${n.name || n.ref}`, `${r2((b[0] + b[3]) / 2)}`, `${r2((b[2] + b[5]) / 2)}`, `${r2(b[3] - b[0])}`, `${r2(b[4] - b[1])}`, `${r2(b[5] - b[2])}`, `${r2(b[4])}`);
       },
     ),
   );
@@ -429,7 +498,7 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
     const prev = _.findLast(script.beats, (b) => b.visual === MOTION_TEXT_SCENE && !!gen.staging[b.id] && b.id < todo[0].id);
     const continuity = prev ? MOTION_TEMPLATE_CONTINUITY_THE_SHOT_BEFORE_THIS_GROUP_WAS_AT(`${prev.id}`, `${_.get(gen.staging, [prev.id, MOTION_TEXT_LOCATION])}`) : "";
     const prompt = MOTION_GEN_STAGING_PROMPT({
-      preamble: MOTION_GEN_PREAMBLE,
+      preamble: o.preamble || MOTION_GEN_PREAMBLE,
       story: storyLine(analysis),
       actions: MOTION_GEN_ACTIONS_GUIDE(genActionIds()),
       cast: castInfo,
@@ -444,7 +513,7 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
       raw = await (o.ai || runMotionAi)(prompt, MOTION_GEN_CONFIG.ARTIFACT_STAGING, o.exec, o.signal, o.log);
     } catch (e) {
       if (o.signal?.aborted) throw e;
-      o.log(MOTION_TEMPLATE_DAN_DUNG_LOI(`${errMsg(e)}`));
+      o.log(MOTION_TEMPLATE_DAN_DUNG_LOI(`${getMotionErrorSummary(e)}`));
       continue;
     }
     const list = _.castArray(raw?.beats || []);
@@ -497,7 +566,7 @@ export const previewBeats = async (beats: MotionBeat[], script: MotionStoryScrip
       gen.previews[b.id] = { ...(gen.previews[b.id] || {}), file: genPreviewRel(r[0].file), issues: r[0].issues, at: new Date().toISOString() };
     } catch (e) {
       if (o.signal?.aborted) throw e;
-      gen.previews[b.id] = { ...(gen.previews[b.id] || {}), issues: [MOTION_TEMPLATE_RENDER_ERROR(`${errMsg(e)}`)] };
+      gen.previews[b.id] = { ...(gen.previews[b.id] || {}), issues: [MOTION_TEMPLATE_RENDER_ERROR(`${getMotionErrorSummary(e)}`)] };
     }
   }
 };
@@ -510,7 +579,7 @@ export const reviewBeats = async (beats: MotionBeat[], gen: MotionGenState, o: G
     if (!files.length) continue;
     try {
       const res = await (o.ai || runMotionAi)(
-        MOTION_GEN_STAGING_REVIEW_PROMPT({ preamble: MOTION_GEN_PREAMBLE, beats: _.map(chunk, (b) => MOTION_TEMPLATE_NARRATION_ACTION_AUTO_CHECK(`${b.id}`, `${b.narration}`, `${b.action || ""}`, `${(gen.previews[b.id].issues || []).join(MOTION_TEXT_SYMBOL_41) || MOTION_TEXT_OK}`)).join(MOTION_TEXT_SYMBOL_27) }),
+        MOTION_GEN_STAGING_REVIEW_PROMPT({ preamble: o.preamble || MOTION_GEN_PREAMBLE, beats: _.map(chunk, (b) => MOTION_TEMPLATE_NARRATION_ACTION_AUTO_CHECK(`${b.id}`, `${b.narration}`, `${b.action || ""}`, `${(gen.previews[b.id].issues || []).join(MOTION_TEXT_SYMBOL_41) || MOTION_TEXT_OK}`)).join(MOTION_TEXT_SYMBOL_27) }),
         MOTION_GEN_CONFIG.ARTIFACT_STAGING_REVIEW,
         o.exec,
         o.signal,
@@ -526,12 +595,16 @@ export const reviewBeats = async (beats: MotionBeat[], gen: MotionGenState, o: G
       }
     } catch (e) {
       if (o.signal?.aborted) throw e;
-      o.log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_LAI_CANH(`${errMsg(e)}`));
+      o.log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_LAI_CANH(`${getMotionErrorSummary(e)}`));
     }
   }
-  for (const b of withImg) {
-    const auto = _.filter(gen.previews[b.id]?.issues || [], (s) => /out of frame|render error|stands inside/.test(s));
-    if (auto.length && !notes[b.id]) notes[b.id] = auto.join(MOTION_TEXT_SYMBOL_41);
+  return { ...autoNotes(withImg, gen), ...notes };
+};
+const autoNotes = (beats: MotionBeat[], gen: MotionGenState): Record<string, string> => {
+  const notes: Record<string, string> = {};
+  for (const b of beats) {
+    const auto = _.filter(gen.previews[b.id]?.issues || [], (s) => MOTION_GEN_CONFIG.AUTO_FIX_ISSUES.test(s));
+    if (auto.length) notes[b.id] = auto.join(MOTION_TEXT_SYMBOL_41);
   }
   return notes;
 };
@@ -539,9 +612,10 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
   const gen: MotionGenState = _.assign(emptyGen(), cloneJson(script.gen || {}));
   const rid = runId(script, o);
   _.set(gen, MOTION_TEXT_RUNID, rid);
-  o = { ...o, runId: rid };
+  o = { ...o, runId: rid, preamble: o.preamble || genrePreamble(analysis, MOTION_GEN_CONFIG.GENRE_PART_VISUAL) };
   const out: MotionStoryScript = { ...script, gen };
   const emit = () => o.partial?.({ ...out, gen: cloneJson(gen) });
+  await ensureMotionLibrary(o.log, o.signal).catch(_.noop);
   const progress = o.progress || _.noop;
   const sceneBeats = _.filter(script.beats, (b) => b.visual === MOTION_TEXT_SCENE);
   if (!_.isEmpty(sceneBeats) && _.some(sceneBeats, (b) => !b.place)) _.forEach(sceneBeats, (b) => (b.place = b.place || analysis.places[0]?.key));
@@ -581,15 +655,31 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(`${stageList.length}`));
     await previewBeats(stageList, script, gen, session, o);
     emit();
-    for (let pass = 0; pass < MOTION_GEN_CONFIG.STAGING_REVIEW_PASSES; pass++) {
+    let reviewList = stageList;
+    if (o.review === false) {
+      o.log(MOTION_GEN_CONFIG.REVIEW_OFF_LOG);
+      for (const b of stageList) if (gen.previews[b.id]) gen.previews[b.id] = _.omit(gen.previews[b.id], [MOTION_GEN_CONFIG.SCORE_KEY, MOTION_GEN_CONFIG.NOTE_KEY]);
+      const notes = autoNotes(stageList, gen);
+      const bad = _.filter(stageList, (b) => !!notes[b.id]);
+      if (bad.length) {
+        o.log(MOTION_TEMPLATE_SUA_CANH_THEO_NHAN_XET(`${bad.length}`));
+        for (const group of _.chunk(bad, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL)) await stageBeats(group, script, analysis, gen, o, notes);
+        await previewBeats(bad, script, gen, session, o);
+        emit();
+      }
+    }
+    for (let pass = 0; o.review !== false; pass++) {
       progress(0.82, MOTION_TEXT_REVIEW);
       o.log(MOTION_TEXT_AI_XEM_LAI_TUNG_CANH_CO_KHOP_LOI);
-      const notes = await reviewBeats(stageList, gen, o);
-      const bad = _.filter(stageList, (b) => !!notes[b.id]);
+      const notes = await reviewBeats(reviewList, gen, o);
+      emit();
+      const bad = _.filter(reviewList, (b) => !!notes[b.id]);
       if (!bad.length) {
         o.log(MOTION_TEXT_TAT_CA_CANH_DAT);
         break;
       }
+      if (pass >= MOTION_GEN_CONFIG.STAGING_REVIEW_PASSES) break;
+      reviewList = bad;
       o.log(MOTION_TEMPLATE_SUA_CANH_THEO_NHAN_XET(`${bad.length}`));
       for (const group of _.chunk(bad, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL)) await stageBeats(group, script, analysis, gen, o, notes);
       await previewBeats(bad, script, gen, session, o);

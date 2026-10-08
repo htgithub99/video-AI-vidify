@@ -93,6 +93,8 @@ export const API_ROUTES = {
   MOTION_VIDEO_ENGINE: "/api/motion-video/engine",
   MOTION_VIDEO_DEMO: "/api/motion-video/demo",
   MOTION_VIDEO_ASSET: "/api/motion-video/asset/",
+  MOTION_LIBRARY: "/api/motion-video/library",
+  MOTION_LIBRARY_INSTALL: "/api/motion-video/library/install",
   MOTION_GEN_PREVIEW: "/api/motion-video/gen-preview?path=",
   MOTION_VIDEO_AUDIO: "/api/motion-video/audio",
   MOTION_VIDEO_CHECK: "/api/motion-video/check",
@@ -183,6 +185,8 @@ export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
 export const API_HEADERS = {
+  CONTENT_TYPE: "Content-Type",
+  ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin",
   AI33_API_KEY: "x-ai33-api-key",
   GEMINI_API_KEY: "x-gemini-api-key",
   CEREBRAS_API_KEY: "x-cerebras-api-key",
@@ -228,6 +232,8 @@ export const MOTION_VIDEO_API_PATHS = {
   ENGINE: "/engine",
   DEMO: "/demo",
   ASSET: "/asset",
+  LIBRARY: "/library",
+  LIBRARY_INSTALL: "/library/install",
   GEN_PREVIEW: "/gen-preview",
   AUDIO: "/audio",
   CHECK: "/check",

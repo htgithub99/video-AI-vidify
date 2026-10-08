@@ -57,6 +57,10 @@ export const MOTION_VIDEO_CONSTANTS = {
 } as const;
 export const MOTION_GPU_ENCODERS = ["h264_nvenc", "h264_qsv", "h264_amf"] as const;
 export const MOTION_STORY_CONFIG = {
+  GENRE_ID_KEY: "id",
+  GENRE_ID_JOIN: "|",
+  GENRE_PART_STORY: "story" as const,
+  DEFAULT_WRITER_ROLE: "documentary scriptwriter",
   PROJECT_ID_PREFIX: "motion-story-",
   ARTIFACT_ANALYSIS: "motion-story-analysis",
   ARTIFACT_CHAPTER: "motion-story-chapter",

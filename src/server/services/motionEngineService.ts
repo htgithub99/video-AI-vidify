@@ -34,6 +34,7 @@ import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { cloneJson, parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import type { MotionSpec } from "../../types/motionVideo.js";
 import { getStaticResourcePath } from "../utils/paths.js";
+import { libraryEngineMap, resolveLibraryAsset } from "./motionAssetLibraryService.js";
 interface FontEntry {
   family: string;
   weight: number;
@@ -104,7 +105,12 @@ export const loadMotionEngine = (): EngineCache => {
   cache = engineSignature(dir) === signature ? built : null;
   return built;
 };
-const GEN = () => loadMotionEngine().engine?.GEN;
+const GEN = () => {
+  const gen = loadMotionEngine().engine?.GEN;
+  const map = libraryEngineMap();
+  if (gen && gen.library !== map) gen.setLibrary(map);
+  return gen;
+};
 export const validateGenLocation = (raw: unknown): MotionValidation<any> => cloneJson(GEN().validateLocation(cloneJson(raw ?? {})));
 export const validateGenOutfit = (raw: unknown): MotionValidation<any> => cloneJson(GEN().validateOutfit(cloneJson(raw ?? {}), {}));
 export const validateGenStaging = (raw: unknown, ctx: { locations: Record<string, unknown>; cast: string[] }): MotionValidation<any> => cloneJson(GEN().validateStaging(cloneJson(raw ?? {}), cloneJson(ctx)));
@@ -123,6 +129,8 @@ export const buildMotionRenderHtml = (spec: MotionSpec): string => {
   return MOTION_TEMPLATE_DOCTYPE_HTML_HTML_HEAD_META_CHARSET_UTF_8_2(`${engine.fontCss}`, `${engine.script}`, `${safeJson(spec)}`, `${stringifyJson(FONT_PROBES)}`, `${safeJson(MOTION_ASSET_BASE)}`);
 };
 export const resolveMotionAsset = (rel: string): string | null => {
+  const lib = resolveLibraryAsset(rel);
+  if (lib) return lib;
   const clean = path.normalize(_.toString(rel).replace(/^\/+/, "")).replace(/^(\.\.(\/|\\|$))+/, "");
   if (!clean.startsWith(MOTION_GEN_CONFIG.MANNEQUIN_DIR)) return null;
   const file = path.join(getMotionEngineDir(), clean);

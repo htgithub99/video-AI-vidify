@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "crypto";
 import fs from "fs";
 import _ from "lodash";
 import path from "path";
+import { MOTION_SFX_MOODS, MOTION_SFX_SPARKLE_NOTES } from "../../constants/motionGenres.js";
 import {
   MOTION_TEMPLATE_BEAT_LOI_GIONG_THU_LAI,
   MOTION_TEMPLATE_FFMPEG,
@@ -201,16 +202,28 @@ export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audio
 export const buildSfxTrack = async (durationSeconds: number, cues: { t: number; kind: string }[], mood: string = MOTION_TEXT_DARK): Promise<string> => {
   const n = Math.ceil(durationSeconds * SR);
   const out = new Float32Array(n);
-  const root = mood === MOTION_TEXT_WARM ? 65.41 : 55;
-  const chord = mood === MOTION_TEXT_WARM ? [1, 1.25, 1.5] : [1, 1.189, 1.498];
+  const M = MOTION_SFX_MOODS[mood] || MOTION_SFX_MOODS[mood === MOTION_TEXT_WARM ? MOTION_TEXT_WARM : MOTION_TEXT_DARK];
+  const { root, chord } = M;
+  let wind = 0;
+  let seed = 12345;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1;
   for (let i = 0; i < n; i++) {
     const t = i / SR;
     const fade = Math.min(1, t / 4) * Math.min(1, (durationSeconds - t) / 4);
-    const swell = 0.75 + 0.25 * Math.sin((2 * Math.PI * t) / 23);
+    const swell = 0.75 + 0.25 * Math.sin((2 * Math.PI * t) / M.swell);
     let v = 0.018 * Math.sin(2 * Math.PI * root * t);
     v += 0.008 * Math.sin(2 * Math.PI * root * 2 * chord[1] * t + Math.sin(t * 0.3));
     v += 0.006 * Math.sin(2 * Math.PI * root * 2 * chord[2] * t + 1.3);
-    out[i] = v * fade * swell;
+    if (M.shimmer) v += M.shimmer * Math.sin(2 * Math.PI * root * 16 * chord[2] * t) * (0.5 + 0.5 * Math.sin(t * 0.41));
+    if (M.noise) {
+      wind += (rnd() - wind) * 0.02;
+      v += M.noise * wind * 6 * (0.6 + 0.4 * Math.sin(t * 0.17 + 1));
+    }
+    if (M.pulse && M.pulseFreq) {
+      const ph = (t * M.pulseFreq) % 1;
+      v += M.pulse * Math.exp(-ph * 14) * Math.sin(2 * Math.PI * root * 0.9 * ph * 3);
+    }
+    out[i] = v * fade * swell * M.gain;
   }
   const addHit = (t0: number, f: number, len: number, gain: number) => {
     const i0 = Math.max(0, Math.round(t0 * SR));
@@ -232,11 +245,12 @@ export const buildSfxTrack = async (durationSeconds: number, cues: { t: number; 
     }
   };
   for (const c of cues) {
-    if (c.kind === MOTION_TEXT_CHAPTER) addHit(c.t, 46, 2.6, 0.32);
-    else if (c.kind === MOTION_TEXT_HIT) addHit(c.t - 0.05, 48, 2.2, 0.26);
+    if (c.kind === MOTION_TEXT_CHAPTER) addHit(c.t, M.hitFreq, 2.6, 0.32);
+    else if (c.kind === MOTION_TEXT_HIT) addHit(c.t - 0.05, M.hitFreq + 2, 2.2, 0.26);
     else if (c.kind === MOTION_TEXT_CHIME) addChime(c.t, 523.25, 0.06);
   }
-  addChime(Math.max(0, durationSeconds - 3.2), 392, 0.05);
+  if (M.sparkle) for (let t = 6, k = 0; t < durationSeconds - 6; t += 7.5, k++) addChime(t, MOTION_SFX_SPARKLE_NOTES[(k * 3) % MOTION_SFX_SPARKLE_NOTES.length], M.sparkle);
+  addChime(Math.max(0, durationSeconds - 3.2), M.endChime, 0.05);
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(out[i]));
   const norm = peak > 0 ? 0.45 / peak : 1;

@@ -1,7 +1,8 @@
-import { SOURCE_TEMPLATE_SYMBOL_32, SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE, SOURCE_TEXT_HIDDEN, SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2, SOURCE_TEXT_VI, SOURCE_TEXT_VISIBLE } from "../../constants/sourceText";
 import _ from "lodash";
 import { Bot, ChevronDown, Cpu, Eye, Sparkles } from "lucide-react";
+import { CHAT_PLANNING_STYLES } from "../../constants/chatPlanningStyles.js";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
+import { SOURCE_TEMPLATE_SYMBOL_32, SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE, SOURCE_TEXT_HIDDEN, SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2, SOURCE_TEXT_VI, SOURCE_TEXT_VISIBLE } from "../../constants/sourceText";
 import { CINEMATIC_SETUP_TEXTS } from "../../constants/texts";
 import { Lang } from "../../lib/lang";
 import { cn } from "../../lib/utils";
@@ -12,6 +13,15 @@ const CHROME_WINDOW_MODE = {
 } as const;
 const SELECT_BASE_CLASSNAME = SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE;
 const FIELD_BASE_CLASSNAME = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2;
+const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange, disabled = false, fieldDisabled = false, children }: { title: string; icon: typeof Bot; iconClassName: string; value: string; onChange: React.ChangeEventHandler<HTMLSelectElement>; disabled?: boolean; fieldDisabled?: boolean; children: React.ReactNode }) => (
+  <div className={cn(FIELD_BASE_CLASSNAME, fieldDisabled && CHAT_PLANNING_STYLES.DISABLED)} title={title}>
+    <Icon className={iconClassName} />
+    <select disabled={disabled} value={value} onChange={onChange} className={SELECT_BASE_CLASSNAME}>
+      {children}
+    </select>
+    <ChevronDown className={CHAT_PLANNING_STYLES.CHEVRON} />
+  </div>
+);
 interface PlanningTexts {
   readonly GEMINI_CHAT_OPTION: string;
   readonly GROK_CHAT_OPTION: string;
@@ -34,6 +44,7 @@ interface ChatPlanningSettingsBlockProps {
   title?: string;
   note?: string;
   allowHybrid?: boolean;
+  extraControl?: React.ReactNode;
 }
 const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: PlanningTexts): string => {
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return texts.GEMINI_CHAT_OPTION;
@@ -46,7 +57,7 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return SOURCE_TEMPLATE_SYMBOL_32(`${name}`, `${modeText}`);
 };
-export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true }: ChatPlanningSettingsBlockProps) {
+export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, extraControl }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;
@@ -70,73 +81,62 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
   };
   const badgeSummary = resolveBadgeSummary(isApiOnly, resolvedProvider, chromeHeadless, texts);
   return (
-    <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md w-full text-left")}>
-      <div className={cn("flex items-center justify-between gap-3")}>
-        <div className={cn("flex items-center gap-2.5 min-w-0")}>
-          <span className={cn("w-6 h-6 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-violet-500/20 shrink-0")}>
-            <Sparkles className={cn("w-3.5 h-3.5 text-violet-400")} />
+    <div className={CHAT_PLANNING_STYLES.WRAPPER}>
+      <div className={CHAT_PLANNING_STYLES.HEADER}>
+        <div className={CHAT_PLANNING_STYLES.HEADER_INFO}>
+          <span className={CHAT_PLANNING_STYLES.HEADER_ICON_FRAME}>
+            <Sparkles className={CHAT_PLANNING_STYLES.HEADER_ICON} />
           </span>
-          <div className={cn("min-w-0")}>
-            <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} title={title || texts.CHAT_CONFIG_TITLE}>
+          <div className={CHAT_PLANNING_STYLES.MIN_WIDTH}>
+            <h3 className={CHAT_PLANNING_STYLES.TITLE} title={title || texts.CHAT_CONFIG_TITLE}>
               {title || texts.CHAT_CONFIG_TITLE}
             </h3>
-            <p className={cn("text-[11px] text-slate-400 leading-relaxed mt-0.5")} title={note || texts.CHAT_CONFIG_NOTE}>
+            <p className={CHAT_PLANNING_STYLES.NOTE} title={note || texts.CHAT_CONFIG_NOTE}>
               {note || texts.CHAT_CONFIG_NOTE}
             </p>
           </div>
         </div>
-        <div className={cn("header-badge flex items-center gap-2 text-[11px] font-mono font-bold text-slate-300 bg-slate-955/80 border border-slate-800/80 px-3 py-1 rounded-full shrink-0")}>
-          <span className={cn("w-2 h-2 rounded-full", { "bg-slate-600": isApiOnly, "bg-violet-400 animate-pulse": !isApiOnly })} />
-          <span className={cn("font-semibold text-slate-300")}>{badgeSummary}</span>
+        <div className={CHAT_PLANNING_STYLES.BADGE}>
+          <span className={cn(CHAT_PLANNING_STYLES.BADGE_DOT, { [CHAT_PLANNING_STYLES.BADGE_DOT_API]: isApiOnly, [CHAT_PLANNING_STYLES.BADGE_DOT_ROOM]: !isApiOnly })} />
+          <span className={CHAT_PLANNING_STYLES.BADGE_TEXT}>{badgeSummary}</span>
         </div>
       </div>
-      <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3")}>
-        <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.PLANNING_AI_LABEL}>
-          <Bot className={cn("w-3.5 h-3.5 text-violet-400 mr-2 shrink-0")} />
-          <select value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
-            <option value={AiPlanningFallbackProvider.GeminiChat} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.GEMINI_CHAT_OPTION}
+      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
+        <PlanningSelectField title={texts.PLANNING_AI_LABEL} icon={Bot} iconClassName={CHAT_PLANNING_STYLES.PROVIDER_ICON} value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)}>
+          <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.GEMINI_CHAT_OPTION}
+          </option>
+          <option value={AiPlanningFallbackProvider.GrokChat} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.GROK_CHAT_OPTION}
+          </option>
+          <option value={AiPlanningFallbackProvider.ChatGptUi} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.CHATGPT_UI_OPTION}
+          </option>
+          {allowHybrid && (
+            <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
+              {texts.PLANNING_HYBRID}
             </option>
-            <option value={AiPlanningFallbackProvider.GrokChat} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.GROK_CHAT_OPTION}
+          )}
+          <option value={AiPlanningExecutionMode.ApiOnly} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.PLANNING_API_ONLY}
+          </option>
+        </PlanningSelectField>
+        <PlanningSelectField title={texts.PLANNING_MODEL_LABEL} icon={Cpu} iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON} value={model} onChange={(e) => onModelChange(e.target.value as AiPlanningChatModel)} disabled={isApiOnly || _.isEmpty(availableModels)} fieldDisabled={isApiOnly}>
+          {_.map(availableModels, (item) => (
+            <option key={item.value} value={item.value} className={CHAT_PLANNING_STYLES.OPTION}>
+              {item.label}
             </option>
-            <option value={AiPlanningFallbackProvider.ChatGptUi} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.CHATGPT_UI_OPTION}
-            </option>
-            {allowHybrid && (
-              <option value={AiPlanningExecutionMode.Hybrid} className={cn("bg-slate-955 text-slate-200")}>
-                {texts.PLANNING_HYBRID}
-              </option>
-            )}
-            <option value={AiPlanningExecutionMode.ApiOnly} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.PLANNING_API_ONLY}
-            </option>
-          </select>
-          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-        </div>
-        <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_MODEL_LABEL}>
-          <Cpu className={cn("w-3.5 h-3.5 text-purple-400 mr-2 shrink-0")} />
-          <select disabled={isApiOnly || _.isEmpty(availableModels)} value={model} onChange={(e) => onModelChange(e.target.value as AiPlanningChatModel)} className={cn(SELECT_BASE_CLASSNAME)}>
-            {_.map(availableModels, (item) => (
-              <option key={item.value} value={item.value} className={cn("bg-slate-955 text-slate-200")}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-        </div>
-        <div className={cn(FIELD_BASE_CLASSNAME, isApiOnly && "opacity-40")} title={texts.PLANNING_CHROME_LABEL}>
-          <Eye className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
-          <select disabled={isApiOnly} value={chromeHeadless ? CHROME_WINDOW_MODE.HIDDEN : CHROME_WINDOW_MODE.VISIBLE} onChange={(e) => handleChromeModeChange(e.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
-            <option value={CHROME_WINDOW_MODE.HIDDEN} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.PLANNING_CHROME_HIDDEN}
-            </option>
-            <option value={CHROME_WINDOW_MODE.VISIBLE} className={cn("bg-slate-955 text-slate-200")}>
-              {texts.PLANNING_CHROME_VISIBLE}
-            </option>
-          </select>
-          <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
-        </div>
+          ))}
+        </PlanningSelectField>
+        <PlanningSelectField title={texts.PLANNING_CHROME_LABEL} icon={Eye} iconClassName={CHAT_PLANNING_STYLES.CHROME_ICON} value={chromeHeadless ? CHROME_WINDOW_MODE.HIDDEN : CHROME_WINDOW_MODE.VISIBLE} onChange={(e) => handleChromeModeChange(e.target.value)} disabled={isApiOnly} fieldDisabled={isApiOnly}>
+          <option value={CHROME_WINDOW_MODE.HIDDEN} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.PLANNING_CHROME_HIDDEN}
+          </option>
+          <option value={CHROME_WINDOW_MODE.VISIBLE} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.PLANNING_CHROME_VISIBLE}
+          </option>
+        </PlanningSelectField>
+        {extraControl && <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>{extraControl}</div>}
       </div>
     </div>
   );

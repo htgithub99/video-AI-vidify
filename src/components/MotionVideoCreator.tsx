@@ -1,7 +1,8 @@
 import _ from "lodash";
-import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Loader2, Mic, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Wand2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Box, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Mic, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Upload, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MOTION_GENRE_SEP } from "../constants/motionGenres.js";
 import {
   MOTION_TEMPLATE_BEATS,
   MOTION_TEMPLATE_JOIN_SPACE,
@@ -70,6 +71,7 @@ import {
   MOTION_TEXT_STATS,
   MOTION_TEXT_STATS_2,
   MOTION_TEXT_STOPPING,
+  MOTION_TEXT_SWITCH,
   MOTION_TEXT_SYMBOL_10,
   MOTION_TEXT_SYMBOL_11,
   MOTION_TEXT_SYMBOL_12,
@@ -100,12 +102,13 @@ import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../constants/motionVideoTexts.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
+import { findGenre } from "../lib/motionGenre.js";
 import { cn } from "../lib/utils";
 import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
-import { ActionBtn, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionProgressBar, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
+import { ActionBtn, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
@@ -171,7 +174,37 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         </div>
         {aiOpen && (
           <fieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
-            <ChatPlanningSettingsBlock provider={state.aiProvider} model={state.aiModel} executionMode={state.aiMode} chromeHeadless={state.aiHeadless} onProviderChange={(v) => patch({ aiProvider: v })} onModelChange={(v) => patch({ aiModel: v })} onExecutionModeChange={(v) => patch({ aiMode: v })} onChromeHeadlessChange={(v) => patch({ aiHeadless: v })} currentLang={currentLang} allowHybrid />
+            <ChatPlanningSettingsBlock
+              provider={state.aiProvider}
+              model={state.aiModel}
+              executionMode={state.aiMode}
+              chromeHeadless={state.aiHeadless}
+              onProviderChange={(v) => patch({ aiProvider: v })}
+              onModelChange={(v) => patch({ aiModel: v })}
+              onExecutionModeChange={(v) => patch({ aiMode: v })}
+              onChromeHeadlessChange={(v) => patch({ aiHeadless: v })}
+              currentLang={currentLang}
+              allowHybrid
+              extraControl={
+                <div className={MOTION_STYLES.AI_REVIEW_TOGGLE_WRAPPER} title={text.AI_REVIEW_HINT}>
+                  <div className={MOTION_STYLES.AI_REVIEW_TOGGLE_INFO}>
+                    <Sparkles className={MOTION_STYLES.AI_REVIEW_TOGGLE_ICON} />
+                    <span className={MOTION_STYLES.AI_REVIEW_TOGGLE_LABEL}>{text.AI_REVIEW}</span>
+                  </div>
+                  <button
+                    type={MOTION_TEXT_BUTTON}
+                    role={MOTION_TEXT_SWITCH}
+                    aria-checked={state.aiReview !== false}
+                    aria-label={text.AI_REVIEW}
+                    title={text.AI_REVIEW_HINT}
+                    disabled={studio.storyBusy}
+                    onClick={() => patch({ aiReview: state.aiReview === false })}
+                    className={cn(MOTION_STYLES.TOGGLE_SWITCH_BASE, state.aiReview !== false ? MOTION_STYLES.TOGGLE_SWITCH_ACTIVE : MOTION_STYLES.TOGGLE_SWITCH_INACTIVE)}>
+                    <span aria-hidden={true} className={cn(MOTION_STYLES.TOGGLE_THUMB_BASE, state.aiReview !== false ? MOTION_STYLES.TOGGLE_THUMB_ACTIVE : MOTION_STYLES.TOGGLE_THUMB_INACTIVE)} />
+                  </button>
+                </div>
+              }
+            />
           </fieldset>
         )}
         {studio.engineError && (
@@ -237,44 +270,22 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <textarea value={state.rawText} onChange={(e) => void studio.parseSource(e.target.value)} placeholder={text.SOURCE_PLACEHOLDER} rows={8} className={cn(inputCls, MOTION_STYLES.FONT_MONO_TEXT_XS_LEADING_RELAXED_RESIZE_Y_MIN_H_170PX)} disabled={studio.storyBusy} />
             {state.source ? (
               <div className={MOTION_STYLES.GRID_GRID_COLS_2_SM_GRID_COLS_4_GAP_2_PT_1_ANIMATE_IN_FADE_IN}>
-                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
-                  <FileText className={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_400_SHRINK_0} />
-                  <div className={MOTION_STYLES.MIN_W_0}>
-                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.WORDS}</div>
-                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
-                      {state.source.words}
-                      {MOTION_TEXT_TU}
-                    </div>
-                  </div>
-                </div>
-                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
-                  <Layers className={MOTION_STYLES.W_4_H_4_TEXT_BLUE_500_DARK_TEXT_BLUE_400_SHRINK_0} />
-                  <div className={MOTION_STYLES.MIN_W_0}>
-                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.SEGMENTS}</div>
-                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
-                      {state.source.segments.length}
-                      {MOTION_TEXT_DOAN}
-                    </div>
-                  </div>
-                </div>
-                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
-                  <Clock className={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_500_DARK_TEXT_PURPLE_400_SHRINK_0} />
-                  <div className={MOTION_STYLES.MIN_W_0}>
-                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{text.ESTIMATED}</div>
-                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_TRUNCATE}>
-                      {MOTION_TEXT_SYMBOL_2}
-                      {Math.round(state.source.sourceSeconds / 60)}
-                      {MOTION_TEXT_PHUT}
-                    </div>
-                  </div>
-                </div>
-                <div className={MOTION_STYLES.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5_FLEX_ITEMS_CENTER}>
-                  <Film className={MOTION_STYLES.W_4_H_4_TEXT_PINK_500_DARK_TEXT_PINK_400_SHRINK_0} />
-                  <div className={MOTION_STYLES.MIN_W_0}>
-                    <div className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE}>{MOTION_TEXT_TIEN_TRINH}</div>
-                    <div className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_TRUNCATE}>{MOTION_TEXT_DA_DOC_NGUON}</div>
-                  </div>
-                </div>
+                <MotionStatCard icon={FileText} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_400_SHRINK_0} label={text.WORDS}>
+                  {state.source.words}
+                  {MOTION_TEXT_TU}
+                </MotionStatCard>
+                <MotionStatCard icon={Layers} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_BLUE_500_DARK_TEXT_BLUE_400_SHRINK_0} label={text.SEGMENTS}>
+                  {state.source.segments.length}
+                  {MOTION_TEXT_DOAN}
+                </MotionStatCard>
+                <MotionStatCard icon={Clock} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_500_DARK_TEXT_PURPLE_400_SHRINK_0} label={text.ESTIMATED}>
+                  {MOTION_TEXT_SYMBOL_2}
+                  {Math.round(state.source.sourceSeconds / 60)}
+                  {MOTION_TEXT_PHUT}
+                </MotionStatCard>
+                <MotionStatCard icon={Film} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PINK_500_DARK_TEXT_PINK_400_SHRINK_0} label={MOTION_TEXT_TIEN_TRINH} valueClassName={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_TRUNCATE}>
+                  {MOTION_TEXT_DA_DOC_NGUON}
+                </MotionStatCard>
               </div>
             ) : null}
             <div className={MOTION_STYLES.GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_4_PT_2_BORDER_T_BORDER_SLATE_800_80}>
@@ -337,7 +348,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <div className={MOTION_STYLES.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_4}>
               <div className={MOTION_STYLES.RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
                 <div className={MOTION_STYLES.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20}>
-                  <Sparkles className={MOTION_STYLES.W_7_H_7_TEXT_PURPLE_400_ANIMATE_SPIN} />
+                  <MotionLoadingIcon className={MOTION_STYLES.W_7_H_7_TEXT_PURPLE_400_ANIMATE_SPIN} />
                 </div>
                 <div className={MOTION_STYLES.ABSOLUTE_INSET_1_ROUNDED_2XL_BG_PURPLE_500_20_BLUR_MD_Z_10_ANIMATE_PULSE} />
               </div>
@@ -367,6 +378,41 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             />
             <div className={MOTION_STYLES.SPACE_Y_3}>
               <input value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
+              {state.analysis.genre && (
+                <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
+                  <span className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>{text.GENRE}</span>
+                  {_.map(_.compact([state.analysis.genre, state.analysis.genre2]), (id) => (
+                    <span key={id} className={MOTION_STYLES.PX_2_PY_0_5_ROUNDED_LG_TEXT_10PX_FONT_MONO_FONT_BLACK_BG_PURPLE_500_15}>
+                      {findGenre(id)?.label[currentLang === MOTION_TEXT_EN ? MOTION_TEXT_EN : MOTION_TEXT_VI] || id}
+                    </span>
+                  ))}
+                  <span className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>
+                    {state.analysis.factual === false ? text.GENRE_FICTION : text.GENRE_FACTUAL}
+                    {state.analysis.genreReason ? MOTION_GENRE_SEP + state.analysis.genreReason : ""}
+                  </span>
+                </div>
+              )}
+              {state.analysis.dna && (
+                <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_0_5}>
+                  {_.map(
+                    _.filter(
+                      [
+                        [text.DNA_TONE, state.analysis.dna.tone],
+                        [text.DNA_MOTIFS, (state.analysis.dna.motifs || []).join(MOTION_GENRE_SEP)],
+                        [text.DNA_AVOID, (state.analysis.dna.avoid || []).join(MOTION_GENRE_SEP)],
+                      ],
+                      (r) => !!r[1],
+                    ),
+                    ([label, value]) => (
+                      <p key={label} className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>
+                        {label}
+                        {MOTION_TEXT_SYMBOL_21}
+                        {value}
+                      </p>
+                    ),
+                  )}
+                </div>
+              )}
               {analysisTab === MOTION_TEXT_CAST && (
                 <div className={MOTION_STYLES.GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_3_MAX_H_380PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR}>
                   {_.map(state.analysis.cast, (c) => {
@@ -568,7 +614,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <MotionSpecPlayer ME={studio.ME} spec={studio.compiled?.spec || null} audioUrl={motionAudioUrl(studio.audioId)} />
           ) : (
             <div className={MOTION_STYLES.W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
-              <Loader2 className={MOTION_STYLES.W_8_H_8_TEXT_PURPLE_500_ANIMATE_SPIN} />
+              <div className={MOTION_STYLES.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20}>
+                <MotionLoadingIcon className={MOTION_STYLES.W_7_H_7_TEXT_PURPLE_400_ANIMATE_SPIN} />
+              </div>
             </div>
           )}
         </div>
@@ -617,58 +665,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>{text.SCENES_LOCATIONS}</div>
                   <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
                     {_.map(gen!.locationInfo, (info, key) => (
-                      <div
-                        key={key}
-                        className={MOTION_STYLES.LOCATION_CARD_CONTAINER}
-                        title={(info.issues || []).join(MOTION_TEXT_SYMBOL_10)}
-                      >
-                        {info.files?.[0] ? (
-                          <img
-                            src={genPreviewUrl(info.files[0], info.at)}
-                            alt={key}
-                            className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE}
-                            loading={MOTION_TEXT_LAZY}
-                          />
-                        ) : (
-                          <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>
-                            {key}
-                          </div>
-                        )}
-
-                        {/* Gradient overlay on hover/bottom */}
+                      <div key={key} className={MOTION_STYLES.LOCATION_CARD_CONTAINER} title={(info.issues || []).join(MOTION_TEXT_SYMBOL_10)}>
+                        {info.files?.[0] ? <img src={genPreviewUrl(info.files[0], info.at)} alt={key} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE} loading={MOTION_TEXT_LAZY} /> : <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>{key}</div>}
                         <div className={MOTION_STYLES.LOCATION_OVERLAY_GRADIENT} />
-
-                        {/* Location Name & Score Badge */}
                         <div className={MOTION_STYLES.LOCATION_BOTTOM_BADGE_BAR}>
-                          <span className={MOTION_STYLES.LOCATION_NAME_BADGE}>
-                            {key}
-                          </span>
+                          <span className={MOTION_STYLES.LOCATION_NAME_BADGE}>{key}</span>
                           {info.score != null && (
-                            <span
-                              className={cn(
-                                MOTION_STYLES.LOCATION_SCORE_BASE,
-                                info.score >= 8
-                                  ? MOTION_STYLES.SCORE_EMERALD
-                                  : info.score >= 6
-                                  ? MOTION_STYLES.SCORE_PURPLE
-                                  : MOTION_STYLES.SCORE_AMBER
-                              )}
-                            >
-                              {info.score}{MOTION_TEXT_10}
+                            <span className={cn(MOTION_STYLES.LOCATION_SCORE_BASE, info.score >= 8 ? MOTION_STYLES.SCORE_EMERALD : info.score >= 6 ? MOTION_STYLES.SCORE_PURPLE : MOTION_STYLES.SCORE_AMBER)}>
+                              {info.score}
+                              {MOTION_TEXT_10}
                             </span>
                           )}
                         </div>
-
-                        {/* Redraw Button */}
-                        <Button
-                          variant={MOTION_TEXT_UNSTYLED}
-                          type={MOTION_TEXT_BUTTON}
-                          onClick={() => void studio.buildScenes({ locations: [key], note: sceneNote || undefined })}
-                          disabled={studio.storyBusy}
-                          title={text.SCENES_REDO_LOCATION}
-                          aria-label={text.SCENES_REDO_LOCATION}
-                          className={MOTION_STYLES.REDO_CIRCLE_BUTTON}
-                        >
+                        <Button variant={MOTION_TEXT_UNSTYLED} type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ locations: [key], note: sceneNote || undefined })} disabled={studio.storyBusy} title={text.SCENES_REDO_LOCATION} aria-label={text.SCENES_REDO_LOCATION} className={MOTION_STYLES.REDO_CIRCLE_BUTTON}>
                           <RotateCcw className={MOTION_STYLES.REDO_ICON_ROTATING} />
                         </Button>
                       </div>
@@ -687,72 +696,26 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       const pv = gen?.previews?.[b.id];
                       const bad = !gen?.staging?.[b.id] || (pv?.score != null && pv.score < 6);
                       return (
-                        <div
-                          key={b.id}
-                          className={cn(
-                            MOTION_STYLES.SCENE_BEAT_CARD_BASE,
-                            bad
-                              ? MOTION_STYLES.SCENE_BEAT_CARD_BAD
-                              : MOTION_STYLES.SCENE_BEAT_CARD_GOOD
-                          )}
-                          title={[b.narration, b.action, ...(pv?.issues || []), pv?.note || ""].filter(Boolean).join(MOTION_TEXT_SYMBOL_10)}
-                        >
-                          {pv?.file ? (
-                            <img
-                              src={genPreviewUrl(pv.file, pv.at)}
-                              alt={b.id}
-                              className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE}
-                              loading={MOTION_TEXT_LAZY}
-                            />
-                          ) : (
-                            <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>
-                              {b.id}
-                            </div>
-                          )}
-
-                          {/* Gradient overlay on hover/bottom */}
+                        <div key={b.id} className={cn(MOTION_STYLES.SCENE_BEAT_CARD_BASE, bad ? MOTION_STYLES.SCENE_BEAT_CARD_BAD : MOTION_STYLES.SCENE_BEAT_CARD_GOOD)} title={[b.narration, b.action, ...(pv?.issues || []), pv?.note || ""].filter(Boolean).join(MOTION_TEXT_SYMBOL_10)}>
+                          {pv?.file ? <img src={genPreviewUrl(pv.file, pv.at)} alt={b.id} className={MOTION_STYLES.W_FULL_H_FULL_OBJECT_COVER_SCALE} loading={MOTION_TEXT_LAZY} /> : <div className={MOTION_STYLES.LOCATION_EMPTY_PLACEHOLDER}>{b.id}</div>}
                           <div className={MOTION_STYLES.LOCATION_OVERLAY_GRADIENT} />
-
-                          {/* Beat ID & Warning Badge */}
                           <div className={MOTION_STYLES.SCENE_BEAT_TOP_BADGE_BAR}>
-                            <span className={MOTION_STYLES.SCENE_BEAT_ID_BADGE}>
-                              {b.id}
-                            </span>
+                            <span className={MOTION_STYLES.SCENE_BEAT_ID_BADGE}>{b.id}</span>
                             {bad && (
                               <span className={MOTION_STYLES.SCENE_BEAT_WARNING_BADGE}>
                                 <AlertTriangle className={MOTION_STYLES.W_2_5_H_2_5} />
                               </span>
                             )}
                           </div>
-
-                          {/* Beat Score Badge */}
                           {pv?.score != null && (
                             <div className={MOTION_STYLES.SCENE_BEAT_BOTTOM_SCORE_BAR}>
-                              <span
-                                className={cn(
-                                  MOTION_STYLES.LOCATION_SCORE_BASE,
-                                  pv.score >= 8
-                                    ? MOTION_STYLES.SCORE_EMERALD
-                                    : pv.score >= 6
-                                    ? MOTION_STYLES.SCORE_PURPLE
-                                    : MOTION_STYLES.SCORE_AMBER
-                                )}
-                              >
-                                {pv.score}{MOTION_TEXT_10}
+                              <span className={cn(MOTION_STYLES.LOCATION_SCORE_BASE, pv.score >= 8 ? MOTION_STYLES.SCORE_EMERALD : pv.score >= 6 ? MOTION_STYLES.SCORE_PURPLE : MOTION_STYLES.SCORE_AMBER)}>
+                                {pv.score}
+                                {MOTION_TEXT_10}
                               </span>
                             </div>
                           )}
-
-                          {/* Redraw Button */}
-                          <Button
-                            variant={MOTION_TEXT_UNSTYLED}
-                            type={MOTION_TEXT_BUTTON}
-                            onClick={() => void studio.buildScenes({ beats: [b.id], note: sceneNote || undefined })}
-                            disabled={studio.storyBusy}
-                            title={text.SCENES_REDO}
-                            aria-label={text.SCENES_REDO}
-                            className={MOTION_STYLES.REDO_CIRCLE_BUTTON}
-                          >
+                          <Button variant={MOTION_TEXT_UNSTYLED} type={MOTION_TEXT_BUTTON} onClick={() => void studio.buildScenes({ beats: [b.id], note: sceneNote || undefined })} disabled={studio.storyBusy} title={text.SCENES_REDO} aria-label={text.SCENES_REDO} className={MOTION_STYLES.REDO_CIRCLE_BUTTON}>
                             <RotateCcw className={MOTION_STYLES.REDO_ICON_ROTATING} />
                           </Button>
                         </div>
@@ -865,7 +828,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 )}
               </div>
             </div>
-            <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
+            <div className={MOTION_STYLES.GRID_GRID_COLS_1_SM_GRID_COLS_3_GAP_2}>
               <label className={MOTION_STYLES.SPACE_Y_1}>
                 <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.FPS}</span>
                 <select value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
@@ -885,14 +848,33 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
                 </select>
               </label>
+              <div className={MOTION_STYLES.SPACE_Y_1}>
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SFX}</span>
+                <div role={MOTION_TEXT_BUTTON} tabIndex={0} onClick={() => !studio.renderBusy && patch({ sfx: !state.sfx })} className={cn(inputCls, MOTION_STYLES.SFX_TOGGLE_CONTAINER, studio.renderBusy && MOTION_STYLES.SFX_TOGGLE_CONTAINER_DISABLED)}>
+                  <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_5_MIN_W_0}>
+                    <Volume2 className={cn(MOTION_STYLES.W_3_5_H_3_5_SHRINK_0, state.sfx ? MOTION_STYLES.TEXT_PURPLE_400 : MOTION_STYLES.TEXT_SLATE_400)} />
+                    <span className={MOTION_STYLES.TRUNCATE}>{text.SFX}</span>
+                  </div>
+                  <button
+                    type={MOTION_TEXT_BUTTON}
+                    role={MOTION_TEXT_SWITCH}
+                    aria-checked={Boolean(state.sfx)}
+                    aria-label={text.SFX}
+                    title={text.SFX}
+                    disabled={studio.renderBusy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      patch({ sfx: !state.sfx });
+                    }}
+                    className={cn(MOTION_STYLES.TOGGLE_SWITCH_BASE, state.sfx ? MOTION_STYLES.TOGGLE_SWITCH_ACTIVE : MOTION_STYLES.TOGGLE_SWITCH_INACTIVE)}>
+                    <span aria-hidden={true} className={cn(MOTION_STYLES.TOGGLE_THUMB_BASE, state.sfx ? MOTION_STYLES.TOGGLE_THUMB_ACTIVE : MOTION_STYLES.TOGGLE_THUMB_INACTIVE)} />
+                  </button>
+                </div>
+              </div>
             </div>
-            <label className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_TEXT_XS_TEXT_SLATE_400_CURSOR_POINTER}>
-              <input type={MOTION_TEXT_CHECKBOX} checked={state.sfx} onChange={(e) => patch({ sfx: e.target.checked })} className={MOTION_STYLES.ACCENT_PURPLE_500_W_4_H_4_ROUNDED} />
-              <span>{text.SFX}</span>
-            </label>
             <div className={MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
               <button type={MOTION_TEXT_BUTTON} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
-                {studio.checking ? <Loader2 className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
+                {studio.checking ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
                 <span>{text.CHECK_BTN}</span>
               </button>
               {studio.renderBusy ? (
@@ -991,7 +973,7 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
     <Modal isOpen onClose={() => !busy && onClose()} title={text.JUNK_TITLE} maxWidth={MOTION_TEXT_MODAL_2XL}>
       {!report ? (
         <div className={MOTION_STYLES.PY_10_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_TEXT_SM_TEXT_SLATE_500}>
-          <Loader2 className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_500_ANIMATE_SPIN} />
+          <MotionLoadingIcon className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_400_ANIMATE_SPIN_SHRINK_0} />
           {text.JUNK_SCANNING}
         </div>
       ) : (
@@ -1057,7 +1039,7 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
                 {text.RESULTS_CANCEL}
               </button>
               <button type={MOTION_TEXT_BUTTON} onClick={() => void run()} disabled={busy || !total} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_4_PY_2_ROUNDED_XL_TEXT_XS}>
-                {busy ? <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
+                {busy ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
                 <span>{text.JUNK_CLEAN}</span>
               </button>
             </div>
@@ -1168,7 +1150,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               {text.RESULTS_CANCEL}
             </button>
             <button type={MOTION_TEXT_BUTTON} onClick={() => void runDelete()} disabled={busy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_5_PY_2_ROUNDED_XL_TEXT_XS}>
-              {busy ? <Loader2 className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
+              {busy ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
               <span>{text.RESULTS_CONFIRM_YES}</span>
             </button>
           </div>
