@@ -136,7 +136,7 @@ NODE (one object): {"shape":…, "name":"optional_snake_case", "pos":[x,y,z], "r
 SHAPES:
 - box {"size":[w,h,d], "bevel":0.02 (optional rounded edges)}
 - cylinder {"radius", "height", "radiusTop", "radiusBottom", "segments", "arc" (degrees, optional), "open":true (no caps)} – axis is Y; rotate [0,0,90] for wheels/pipes along X.
-- sphere {"radius", "hemisphere":true (optional)}; cone {"radius","height"}; capsule {"radius","height"}; torus {"radius","tube","arc"}
+- sphere {"radius", "hemisphere":true (optional)}; cone {"radius","height"}; capsule {"radius","height"}; torus {"radius","tube","arc"} – stands upright like a wheel (XY plane); rotate [90,0,0] to lay it flat (hat brims, rings on a table)
 - plane {"size":[w,h]} (faces +Z; rotate [-90,0,0] to lie flat); disc {"radius"}; ring {"radius","inner"}
 - extrude {"points":[[x,y],…] (a 2D outline in the XY plane, 3–64 points), "depth", "bevel", "holes":[[[x,y],…]]} – extruded along Z and centred. Best for car bodies (side profile), arches, stairs, signs, roofs, furniture outlines.
 - lathe {"points":[[radius,y],…]} – revolved around Y: bottles, vases, columns, lamp shades, cups, tyres.
@@ -270,6 +270,12 @@ RULES:
 - Put actors on FREE floor: never inside furniture, cars or walls (check the object sizes). People who talk or interact stand 0.7–1.4 m apart and face each other; groups form a natural arc toward the camera.
 - Explaining something: add "props" with an "arrow" and a billboard "text" label pointing at the part the narration talks about (1–3 per beat, labels in the narration language, ≤ 4 words).
 - Ghosts and spirits: an actor with "ghost":true; reveal it slowly (far away, half hidden, in fog or at the end of a corridor) rather than in plain view.
+- CAMERA FIRST: tell the story mainly with the camera and the cuts, not with character movement. Actors hold clear, readable poses (stand, talk, think, look_around, point, phone, arms_crossed, sit, kneel…). Character movement follows the MOVEMENT BUDGET of the genre; every walk is a straight line on free floor, never through or around objects.
+- Object actions (opening, taking, putting, writing, digging…): do NOT animate the contact. Stage the actor next to the object in a fitting pose, then cut (a second camera) to an "insert" close-up of the object already in its result state (use "props" and "hide": the box already open, the clock already inside, the note already on the table).
+- Sitting: use "sit" / "sit_talk" with "at" right next to a chair, sofa or bench of the location – the engine seats the actor on it and turns them with the seat; with no seat nearby it adds a simple chair. Never put a seated actor in the middle of free floor without reason.
+- Shot names matter: "wide" = the whole body small in a big space, "medium" = from the waist up, "close" = head and shoulders, "extreme_close" = the face. The engine corrects the camera distance to match the shot name, so pick the name you mean and aim "target" at the person (chest for medium, face for close).
+- Poses: prefer calm, readable poses; avoid repetitive work actions (kneel_fix, chop, dig, interact) unless the narration is about that work – they play once and then hold.
+- Give (almost) every camera a gentle move: dolly_in / dolly_out 0.2–0.5, orbit_left/right, truck_left/right or crane; use "static" only for a deliberate pause. Use 2–3 cameras per beat that lasts longer than ~5 s.
 - Working on an object (interact, pick_up, open_chest, kneel_fix, push…): set "face" to the object's [x,z] and stand within arm's reach (0.5–0.7 m from it). Put the camera at the side or three-quarter front of the actor (about 60–90° from where the actor looks) so the face, the hands and the object are all visible – never behind the actor's back.
 - Movement: "moveTo" with walk/run etc.; distance ≈ speed × time (walk 1.3 m/s, run 5 m/s; a beat lasts ≈ 4–8 s).
 - Camera: eye height 1.4–1.7 for medium shots, 0.4–0.9 for low shots, 3–8 for high shots; wide shots 7–15 m from the actors, medium 2.5–4 m, close 1.2–1.8 m. "target" = what to look at (a face is at y≈1.6, a chest at 1.3). Keep the camera inside the walls of interiors and in front of (not inside) objects.
@@ -285,4 +291,5 @@ export const MOTION_GEN_STAGING_REVIEW_PROMPT = (o: { preamble: string; beats: s
 ROLE: film editor. The attached images are test renders of these shots, in this order (one image per shot, the shot id is written in the corner):
 ${o.beats}
 For each shot check: does the picture show what the narration/action says (right people, place, objects, action)? Is it readable and well framed (people not cut, not tiny, not hidden behind objects, camera not inside a wall)? People inside furniture or each other?
+The film is staged "camera first": actors mostly hold still poses and the camera moves; an object action may be shown as the actor beside the object plus a close-up of the result. That is intended – never ask for more character movement or for hands to touch objects; judge content, readability and framing only.
 Return JSON: {"beats":[{"id":"…","ok":true|false,"fix":"concrete instruction to fix the staging (positions, facing, camera, props) – empty when ok"}]}`;

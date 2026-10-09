@@ -1,6 +1,7 @@
 import type { MotionStoryDna } from "../types/motionVideo.js";
 export interface MotionGenre {
   id: string;
+  motion: "still" | "light" | "active";
   label: { vi: string; en: string };
   factual: boolean;
   signals: string;
@@ -18,6 +19,7 @@ export interface MotionGenre {
 export const MOTION_GENRES: MotionGenre[] = [
   {
     id: "history",
+    motion: "still",
     label: { vi: "Lịch sử", en: "History" },
     factual: true,
     signals: "real past events, eras, empires, wars, revolutions, inventions, famous turning points told as a story",
@@ -34,6 +36,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "true_crime",
+    motion: "light",
     label: { vi: "Vụ án có thật", en: "True crime" },
     factual: true,
     signals: "a real crime, heist, scam, fraud, kidnapping, escape or investigation with perpetrators, police or court",
@@ -50,6 +53,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "mystery",
+    motion: "still",
     label: { vi: "Bí ẩn", en: "Mystery" },
     factual: true,
     signals: "an unsolved or strange case: disappearances, unexplained events, lost ships or planes, codes, conspiracies, places nobody can explain",
@@ -66,6 +70,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "disaster",
+    motion: "active",
     label: { vi: "Thảm hoạ & sinh tồn", en: "Disaster & survival" },
     factual: true,
     signals: "a real accident or catastrophe: plane crash, shipwreck, fire, earthquake, flood, mine or mountain survival, rescue",
@@ -82,6 +87,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "biography",
+    motion: "still",
     label: { vi: "Tiểu sử nhân vật", en: "Biography" },
     factual: true,
     signals: "the life of one real person: rise and fall, career, inventor, artist, leader, athlete, entrepreneur",
@@ -98,6 +104,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "explainer",
+    motion: "light",
     label: { vi: "Giải thích – kiến thức", en: "Explainer" },
     factual: true,
     signals: "the source explains how or why something works: science, technology, economics, a phenomenon, a process, a comparison, facts and figures",
@@ -114,6 +121,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "horror",
+    motion: "still",
     label: { vi: "Truyện ma – kinh dị", en: "Ghost & horror story" },
     factual: false,
     signals: "a ghost story, haunted place, urban legend, creepy experience, supernatural or horror tale",
@@ -131,6 +139,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "folk_tale",
+    motion: "light",
     label: { vi: "Cổ tích – truyền thuyết", en: "Folk tale & legend" },
     factual: false,
     signals: "a fairy tale, folk tale, fable, myth, legend or religious/folk story with a moral",
@@ -147,6 +156,7 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
   {
     id: "drama",
+    motion: "still",
     label: { vi: "Chuyện đời – cảm động", en: "Human story" },
     factual: true,
     signals: "a real-life personal story: family, love, kindness, overcoming hardship, friendship, an unusual life",
@@ -163,6 +173,11 @@ export const MOTION_GENRES: MotionGenre[] = [
   },
 ];
 export const MOTION_GENRE_DEFAULT = "history";
+export const MOTION_GENRE_MOVEMENT: Record<MotionGenre["motion"], string> = {
+  still: "MOVEMENT BUDGET: almost none. Actors hold poses; at most one short straight walk (≤ 3 m on free floor) in a beat, and only when the narration says someone goes somewhere. The camera creates the motion (slow dolly, orbit, crane, truck) and 2–3 cuts per beat.",
+  light: "MOVEMENT BUDGET: low. Mostly poses; short straight walks (≤ 4 m on free floor) when the story needs them; no chases. The camera creates most of the motion.",
+  active: "MOVEMENT BUDGET: moderate. Short straight walks and runs (≤ 8 m on free floor) are allowed for escapes and rescues, but prefer poses + camera moves; never route a walk around or through objects.",
+};
 export const MOTION_GENRE_PART = { STORY: "story", VISUAL: "visual", NONE: "none" } as const;
 export const MOTION_GENRE_SEP = " · ";
 export const MOTION_GENRE_PREAMBLE_BASE = "IMPORTANT – TEXT-ONLY TASK: you only write structured JSON data. You are NOT asked to create, render or edit any image, video or audio. A separate 3D program on the user's computer reads your JSON (a list of simple shapes, materials, lights and camera numbers) and renders faceless white mannequin figures in simple 3D sets for a storytelling video.";
@@ -170,7 +185,7 @@ export const MOTION_GENRE_TEXT = {
   NEUTRAL: " Retell the source faithfully.",
   FACTUAL: (label: string) => ` GENRE: ${label}. These are real events: retell them factually; never invent facts.`,
   FICTION: (label: string) => ` GENRE: ${label}. This is a traditional or fictional story told for entertainment: retell it faithfully as a story, suitable for a general audience.`,
-  VISUAL: (g: MotionGenre) => `\nGENRE MOOD (follow it in sets, light, weather and camera): ${g.visuals}. Camera: ${g.camera}. Rules: ${g.rules}.`,
+  VISUAL: (g: MotionGenre) => `\nGENRE MOOD (follow it in sets, light, weather and camera): ${g.visuals}. Camera: ${g.camera}. Rules: ${g.rules}.\n${MOTION_GENRE_MOVEMENT[g.motion]}`,
   STORY: (g: MotionGenre) => `\nGENRE STYLE: ${g.label.en}. Rules: ${g.rules}.`,
   DNA: (d: MotionStoryDna) => [d.tone ? `\nSTORY TONE: ${d.tone}.` : "", d.motifs?.length ? `\nVISUAL MOTIFS to repeat and pay off: ${d.motifs.join("; ")}.` : "", d.avoid?.length ? `\nAVOID in this story: ${d.avoid.join("; ")}.` : "", d.keep ? `\nKEEP CONSISTENT: ${d.keep}` : ""].join(""),
   ANALYSIS_LIST: () => MOTION_GENRES.map((g) => `  - ${g.id}: ${g.signals}`).join("\n"),

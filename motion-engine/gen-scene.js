@@ -225,8 +225,11 @@
           const dist = Math.hypot(A.def.moveTo[0] - A.def.at[0], A.def.moveTo[1] - A.def.at[1]);
           const v = dist / Math.max(0.2, (A.def.moveEnd - A.def.moveStart) * A.dur);
           tt = (t - sg.t0) * U.clamp(v / Ad.speed, 0.5, 2.2) + A.phase;
-        } else tt = Ad.once || Ad.hold != null ? t - sg.t0 : t + A.phase;
-        list.push({ id: sg.id, time: tt, weight: w });
+        } else tt = Ad.once || Ad.hold != null || Ad.settle != null ? t - sg.t0 : (t + A.phase) * (Ad.rate || 1);
+        if (Ad.mix && !sg.moving) {
+          list.push({ id: sg.id, time: tt, weight: w * Ad.mix });
+          list.push({ id: Ad.mixWith || MT.IDLE, time: t + A.phase, weight: w * (1 - Ad.mix) });
+        } else list.push({ id: sg.id, time: tt, weight: w });
         total += w;
       }
     });
@@ -277,28 +280,137 @@
     const ray = new T.Raycaster();
     const down = new T.Vector3(0, -1, 0);
     const nm = new T.Matrix3();
-    const floorAt = (x, z, y0) => {
-      ray.set(new T.Vector3(x, y0 + 1.2, z), down);
+    const surfaces = (x, z, top) => {
+      ray.set(new T.Vector3(x, top, z), down);
       ray.far = 4;
-      let best = null;
+      const out = [];
       for (const h of ray.intersectObjects(S.occluders, true)) {
         if (!h.face || !h.object.material || h.object.material.transparent) continue;
         nm.getNormalMatrix(h.object.matrixWorld);
         const n = h.face.normal.clone().applyMatrix3(nm).normalize();
-        if (n.y < 0.6) continue;
-        if (best == null || h.point.y > best) best = h.point.y;
+        if (n.y >= 0.6) out.push(h.point.y);
       }
-      return best;
+      return out;
+    };
+    const broad = (x, z, y) => {
+      let ok = 0;
+      for (const [ox, oz] of [[0.25, 0], [-0.25, 0], [0, 0.25], [0, -0.25]]) if (surfaces(x + ox, z + oz, y + 0.3).some((v) => Math.abs(v - y) < 0.08)) ok++;
+      return ok >= 3;
+    };
+    const floorAt = (x, z, y0) => {
+      const ys = surfaces(x, z, y0 + 1.2).sort((a, b) => b - a);
+      for (const y of ys) if (y <= y0 + 0.12 || broad(x, z, y)) return y;
+      return null;
     };
     S.lift = {};
     for (const A of S.actors) {
       const a = A.def;
+      if (a.seated) continue;
       const y0 = a.y || 0;
       const f = floorAt(a.at[0], a.at[1], y0);
       if (f != null && f > y0 + 0.12 && f < y0 + 1.2) {
         a.y = +f.toFixed(3);
         S.lift[a.cast] = f - y0;
         S.preIssues.push(a.cast + MT.STOOD_INSIDE_GROUND + (f - y0).toFixed(2) + MT.M);
+      }
+    }
+  };
+  const SIT_ACTIONS = [MT.SIT, MT.SIT_TALK, MT.SIT_DOWN, MT.STAND_UP];
+  const backOf = (o, bb) => {
+    const seatTop = bb.min.y + Math.min(0.48, (bb.max.y - bb.min.y) * 0.6) + 0.12;
+    const cx = (bb.min.x + bb.max.x) / 2,
+      cz = (bb.min.z + bb.max.z) / 2;
+    const v = new T.Vector3();
+    let sx = 0,
+      sz = 0,
+      n = 0;
+    o.traverse((m) => {
+      if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return;
+      const pos = m.geometry.attributes.position;
+      const step = Math.max(1, Math.floor(pos.count / 400));
+      for (let i = 0; i < pos.count; i += step) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+        if (v.y < seatTop) continue;
+        sx += v.x;
+        sz += v.z;
+        n++;
+      }
+    });
+    if (n < 12) return null;
+    const dx = cx - sx / n,
+      dz = cz - sz / n;
+    const len = Math.hypot(dx, dz);
+    const size = Math.min(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
+    if (len < Math.max(0.04, size * 0.12)) return null;
+    return new T.Vector3(dx / len, 0, dz / len);
+  };
+  const seatActors = (S, stg) => {
+    const sitters = S.actors.filter((A) => SIT_ACTIONS.includes(A.def.action) && !A.def.moveTo);
+    if (!sitters.length) return;
+    const seats = [];
+    if (S.locRoot) {
+      S.locRoot.updateMatrixWorld(true);
+      const visit = (o, inSeat) => {
+        const label = String(o.name || "") + " " + String((o.userData && o.userData.ref) || "");
+        const isSeat = !inSeat && o !== S.locRoot && MT.SEAT_RE.test(label) && !MT.NOT_SEAT_RE.test(label);
+        if (isSeat && o.visible !== false) {
+          const bb = new T.Box3().setFromObject(o);
+          if (!bb.isEmpty() && bb.max.y - bb.min.y > 0.3 && bb.max.y - bb.min.y < 1.6) {
+            const q = new T.Quaternion();
+            o.getWorldQuaternion(q);
+            let f = new T.Vector3(0, 0, 1).applyQuaternion(q);
+            f.y = 0;
+            if (f.lengthSq() < 1e-4) f.set(0, 0, 1);
+            f.normalize();
+            const back = backOf(o, bb);
+            if (back) f = back;
+            seats.push({ bb, f, used: 0, name: o.name || MT.SEAT });
+          }
+        }
+        for (const c of o.children) visit(c, inSeat || isSeat);
+      };
+      visit(S.locRoot, false);
+    }
+    const camPos = stg.camera && stg.camera.pos;
+    for (const A of sitters) {
+      const a = A.def;
+      let best = null;
+      for (const s of seats) {
+        const cx = (s.bb.min.x + s.bb.max.x) / 2,
+          cz = (s.bb.min.z + s.bb.max.z) / 2;
+        const d = Math.hypot(cx - a.at[0], cz - a.at[1]) + s.used * 0.8;
+        if (d < 1.8 && (!best || d < best.d)) best = { s, d, cx, cz };
+      }
+      if (best) {
+        const { s } = best;
+        const side = new T.Vector3(s.f.z, 0, -s.f.x);
+        const halfW = Math.abs(side.x) * (s.bb.max.x - s.bb.min.x) / 2 + Math.abs(side.z) * (s.bb.max.z - s.bb.min.z) / 2;
+        const halfD = Math.abs(s.f.x) * (s.bb.max.x - s.bb.min.x) / 2 + Math.abs(s.f.z) * (s.bb.max.z - s.bb.min.z) / 2;
+        const lat = U.clamp((a.at[0] - best.cx) * side.x + (a.at[1] - best.cz) * side.z, -Math.max(0, halfW - 0.3), Math.max(0, halfW - 0.3));
+        const sx = best.cx + side.x * lat + s.f.x * halfD * 0.1,
+          sz = best.cz + side.z * lat + s.f.z * halfD * 0.1;
+        const seatY = s.bb.min.y + Math.min(0.48, (s.bb.max.y - s.bb.min.y) * 0.6);
+        a.at = [sx + s.f.x * MT.SIT_HIP_BACK, sz + s.f.z * MT.SIT_HIP_BACK];
+        a.y = +(seatY - MT.SIT_SEAT_H).toFixed(3);
+        a.face = (Math.atan2(s.f.x, s.f.z) * 180) / Math.PI;
+        a.seated = true;
+        delete a.faceAt;
+        delete a.faceActor;
+        s.used++;
+        S.reachIssues.push(a.cast + MT.SEATED_ON + s.name);
+      } else {
+        let yaw = typeof a.face === MT.NUMBER ? a.face * DEG : a.faceAt ? yawTo(a.at, a.faceAt) : camPos ? yawTo(a.at, [camPos[0], camPos[2]]) : 0;
+        a.face = (yaw * 180) / Math.PI;
+        a.seated = true;
+        delete a.faceAt;
+        delete a.faceActor;
+        const fx = Math.sin(yaw),
+          fz = Math.cos(yaw);
+        const sx = a.at[0] - fx * MT.SIT_HIP_BACK,
+          sz = a.at[1] - fz * MT.SIT_HIP_BACK;
+        const chair = { shape: MT.GROUP, name: MT.AUTO_CHAIR, pos: [sx, a.y || 0, sz], rot: [0, a.face, 0], children: MT.CHAIR_NODES };
+        GEN.buildNodes(GEN.cleanNodes([chair], GEN.newState({}), MT.PROPS), S.env, S.locRoot);
+        S.reachIssues.push(a.cast + MT.NO_SEAT_CHAIR_ADDED);
       }
     }
   };
@@ -317,7 +429,8 @@
       S.reachIssues.push(a.cast + MT.MOVED_CLOSER_TO_REACH + Math.abs(d - want).toFixed(2) + MT.M_PAREN);
     }
   };
-  const resolveOverlaps = (S) => {
+  const walkBoxes = (S) => {
+    if (S.walkBoxes) return S.walkBoxes;
     const boxes = [];
     for (const o of S.occluders) {
       const bb = new T.Box3().setFromObject(o);
@@ -327,6 +440,49 @@
       for (let p = o; p && p.name !== MT.LOCATION; p = p.parent) if (p.name) nm = p.name;
       boxes.push({ bb, name: nm || MT.OBJECT });
     }
+    S.walkBoxes = boxes;
+    return boxes;
+  };
+  const checkPaths = (S) => {
+    const boxes = walkBoxes(S);
+    const m = 0.2;
+    const hit = (x, z, y) => boxes.find((b) => y + 0.35 < b.bb.max.y && y + 1.2 > b.bb.min.y && x > b.bb.min.x - m && x < b.bb.max.x + m && z > b.bb.min.z - m && z < b.bb.max.z + m);
+    for (const A of S.actors) {
+      const a = A.def;
+      if (!a.moveTo) continue;
+      const dx = a.moveTo[0] - a.at[0],
+        dz = a.moveTo[1] - a.at[1];
+      const len = Math.hypot(dx, dz);
+      if (len < 0.05) continue;
+      const y = a.y || 0;
+      let free = 0;
+      let blocker = null;
+      for (let d = 0.2; d <= len + 1e-6; d += 0.2) {
+        const k = Math.min(1, d / len);
+        const b = hit(a.at[0] + dx * k, a.at[1] + dz * k, y);
+        if (b) {
+          blocker = b;
+          break;
+        }
+        free = Math.min(d, len);
+      }
+      if (!blocker) continue;
+      if (free < 0.6) {
+        a.faceAt = a.faceAt || a.moveTo.slice();
+        delete a.moveTo;
+        if (LOCOMOTION.includes(a.action)) a.action = a.then || MT.IDLE;
+        A.segs = planActor(a, S.dur);
+        S.preIssues.push(a.cast + MT.PATH_BLOCKED_BY + blocker.name + MT.STAYS_IN_PLACE);
+      } else {
+        const k = (free - 0.1) / len;
+        a.moveTo = [a.at[0] + dx * k, a.at[1] + dz * k];
+        A.segs = planActor(a, S.dur);
+        S.preIssues.push(a.cast + MT.PATH_BLOCKED_BY + blocker.name + MT.WALK_SHORTENED + (len - free + 0.1).toFixed(1) + MT.M);
+      }
+    }
+  };
+  const resolveOverlaps = (S) => {
+    const boxes = walkBoxes(S);
     S.issues = S.issues || [];
     S.preIssues = (S.reachIssues || []).slice();
     for (const A of S.actors) {
@@ -365,6 +521,7 @@
       tops.add(t);
     }
     S.solids = [...tops].map((o) => ({ o, b: new T.Box3().setFromObject(o).expandByScalar(0.35) })).filter((x) => !x.b.isEmpty());
+    for (const b of S.glass || []) S.solids.push({ o: { name: MT.GLASS }, b });
     return S.solids;
   };
   const clearCamera = (S, cam, tgt, issues) => {
@@ -452,7 +609,7 @@
   };
   const inStage = (S, v) => {
     const st = S.L && S.L.stage;
-    return !S.interior || !st || (Math.abs(v.x - st.center[0]) <= st.size[0] / 2 + 0.5 && Math.abs(v.z - st.center[1]) <= st.size[1] / 2 + 0.5);
+    return !S.interior || !st || (Math.abs(v.x - st.center[0]) <= st.size[0] / 2 + 2 && Math.abs(v.z - st.center[1]) <= st.size[1] / 2 + 2);
   };
   const limitPitch = (cam, tgt, shot, issues) => {
     if (shot === MT.HIGH || shot === MT.AERIAL || shot === MT.INSERT) return;
@@ -462,6 +619,57 @@
     if (flat < 0.05 || dy <= flat * max) return;
     cam.position.y = Math.max(0.4, tgt.y + flat * Math.tan(18 * DEG));
     issues.push(MT.CAMERA_LOWERED);
+  };
+  const SHOT_SIZE = { wide: [0.28, 0.42, 0.62], medium: [0.45, 0.6, 0.8], over_shoulder: [0.4, 0.55, 0.8], close: [0.42, 0.55, 0.72], extreme_close: [0.55, 0.7, 0.9] };
+  const sizeShot = (S, cam, tgt, subjects, shot, issues) => {
+    const want = SHOT_SIZE[shot];
+    if (!want || !subjects.length) return;
+    cam.updateMatrixWorld(true);
+    let top = -Infinity,
+      bot = Infinity,
+      headTopY = -Infinity,
+      lowY = Infinity;
+    const v = new T.Vector3();
+    for (const A of subjects) {
+      const b = A.actor.bones;
+      if (!b.Head) continue;
+      const head = b.Head.getWorldPosition(v.clone()).add(new T.Vector3(0, 0.14, 0));
+      const lowBone = shot === MT.WIDE ? b.foot_l : shot === MT.CLOSE || shot === MT.EXTREME_CLOSE ? b.spine_02 : b.pelvis;
+      if (!lowBone) continue;
+      const low = lowBone.getWorldPosition(v.clone());
+      headTopY = Math.max(headTopY, head.y);
+      lowY = Math.min(lowY, low.y);
+      const qh = project(cam, head),
+        ql = project(cam, low);
+      if (qh.z > 1 || ql.z > 1) return;
+      top = Math.max(top, qh.y, ql.y);
+      bot = Math.min(bot, qh.y, ql.y);
+    }
+    if (!isFinite(top)) return;
+    const frac = (top - bot) / 2;
+    if (frac >= want[0] && frac <= want[2]) return;
+    const dir = cam.position.clone().sub(tgt);
+    const d = dir.length();
+    if (d < 1e-3) return;
+    dir.normalize();
+    const goal = U.clamp((d * frac) / want[1], 0.7, 30);
+    const start = cam.position.clone();
+    const stepN = Math.max(1, Math.ceil(Math.abs(goal - d) / 0.2));
+    let done = d;
+    for (let i = 1; i <= stepN; i++) {
+      const dd = d + ((goal - d) * i) / stepN;
+      const p = tgt.clone().addScaledVector(dir, dd);
+      if (S.occluders.length && solidsOf(S).some((x) => x.b.containsPoint(p) && !x.b.containsPoint(tgt))) break;
+      if (inStage(S, start) && !inStage(S, p)) break;
+      done = dd;
+    }
+    if (Math.abs(done - d) < 0.05) return;
+    const midY = (headTopY + lowY) / 2;
+    if (isFinite(midY)) tgt.y = U.lerp(tgt.y, midY, 0.7);
+    cam.position.copy(tgt).addScaledVector(dir, done);
+    cam.lookAt(tgt);
+    cam.updateMatrixWorld(true);
+    issues.push(MT.SHOT_RESIZED + shot + MT.SHOT_RESIZED_2 + (done - d).toFixed(1) + MT.M);
   };
   const framedShare = (cam, pts, m) => {
     cam.updateMatrixWorld(true);
@@ -618,10 +826,13 @@
     reangleCamera(S, cam, pos, tgt, shot, issues);
     cam.lookAt(tgt);
     rescueFraming(S, cam, tgt, subjects, pts, shot, issues);
+    sizeShot(S, cam, tgt, subjects, shot, issues);
     cam.updateMatrixWorld(true);
     for (const A of subjects) {
       const bpts = GEN.actorBounds(A.actor, upper);
-      if (framedShare(cam, bpts, 1) < 0.6) issues.push(A.def.cast + MT.IS_MOSTLY_OUT_OF_FRAME);
+      const tight = shot === MT.CLOSE || shot === MT.EXTREME_CLOSE || shot === MT.INSERT;
+      const headIn = framedShare(cam, [A.actor.bones.Head.getWorldPosition(new T.Vector3())], 1) > 0.5;
+      if (tight ? !headIn && shot !== MT.INSERT : framedShare(cam, bpts, 1) < 0.6) issues.push(A.def.cast + MT.IS_MOSTLY_OUT_OF_FRAME);
       const head = project(cam, A.actor.bones.Head.getWorldPosition(new T.Vector3()));
       const feet = project(cam, A.actor.bones.foot_l.getWorldPosition(new T.Vector3()));
       if (shot === MT.WIDE && Math.abs(head.y - feet.y) < 0.08) issues.push(A.def.cast + MT.LOOKS_VERY_SMALL_IN_THE_WIDE_SHOT);
@@ -706,6 +917,10 @@
         break;
       default:
         pos.addScaledVector(fwd, dist * 0.035 * k);
+    }
+    if (m !== MT.HANDHELD && !S.handheld) {
+      pos.x += U.noise(t * 0.23, 11) * 0.012;
+      pos.y += U.noise(t * 0.19, 13) * 0.008;
     }
     if (m === MT.HANDHELD || S.handheld) {
       pos.x += U.noise(t * 0.8, 3) * 0.035;
@@ -857,6 +1072,11 @@
         const sz = new T.Vector3();
         bb.getSize(sz);
         if (sz.x * o.scale.x > 0.6 || sz.y * o.scale.y > 0.6) S.occluders.push(o);
+      } else if (o.isMesh && o.visible && o.material && o.material.transparent && (o.material.opacity == null || o.material.opacity > 0.1) && o.geometry) {
+        const bb = new T.Box3().setFromObject(o);
+        const sz = new T.Vector3();
+        bb.getSize(sz);
+        if (Math.max(sz.x, sz.y, sz.z) > 0.6 && sz.y > 0.4) (S.glass = S.glass || []).push(bb.expandByScalar(0.2));
       }
     });
     const fill = new T.DirectionalLight(tp.fillColor, tp.fill);
@@ -874,14 +1094,18 @@
         const outfit = castOf(spec, a.cast);
         const actor = GEN.createActor(outfit, { style: S.style, materials: L.materials, seed: U.strHash(a.cast) });
         if (a.hold) actor.hold(a.hold.nodes, a.hold.hand);
+        else if (a.action === MT.LANTERN || a.then === MT.LANTERN) actor.hold(GEN.cleanNodes(MT.LANTERN_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R);
+        else if (a.action === MT.TORCH || a.then === MT.TORCH) actor.hold(GEN.cleanNodes(MT.TORCH_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R);
         if (a.ghost) ghostify(actor, S);
         scene.add(actor.group);
         S.actors.push({ def: a, actor, segs: planActor(a, S.dur), dur: S.dur, phase: (U.strHash(a.cast + stg.location) % 997) / 97 + (a.offset || 0) });
       }
     }
     reachTargets(S);
+    seatActors(S, stg);
     resolveOverlaps(S);
     snapToGround(S);
+    checkPaths(S);
     const cam = new T.PerspectiveCamera(40, W / H, 0.05, 3000);
     S.camera = cam;
     const camDef = stg.camera && stg.camera.pos && stg.camera.target ? { pos: stg.camera.pos, target: stg.camera.target, fov: stg.camera.fov || 38 } : shotCamera(S, stg);

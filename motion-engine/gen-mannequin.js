@@ -696,6 +696,7 @@
           let tt = it.time;
           if (A.hold != null) tt = clip.duration * A.hold - 0.001;
           else if (A.once) tt = U.clamp(tt, 0, clip.duration - 0.001);
+          else if (A.settle != null) tt = tt >= clip.duration * (A.cycles || 1) ? clip.duration * A.settle : U.mod(Math.max(0, tt), clip.duration);
           else tt = U.mod(tt, clip.duration);
           a.time = tt;
           a.setEffectiveWeight(it.weight);

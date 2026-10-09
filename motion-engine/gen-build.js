@@ -640,6 +640,7 @@
     const rec = GEN.models[n._url];
     const want = n._size || [1, 1, 1];
     const o = new T.Group();
+    o.userData.ref = n.ref;
     if (!rec || rec.failed || rec.box.isEmpty()) {
       const h = n.height || want[1];
       const w = n.width || want[0];
