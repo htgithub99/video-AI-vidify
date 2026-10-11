@@ -1,5 +1,73 @@
-import _ from "lodash";
 import {
+  SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_2,
+  SOURCE_TEXT_TEXT_SLATE_400_HOVER_TEXT_SLATE_100,
+  SOURCE_TEXT_BG_WHITE_20_TEXT_WHITE,
+  SOURCE_TEXT_BG_SLATE_800_TEXT_SLATE_400_BORDER,
+  SOURCE_TEXT_BG_PURPLE_500_20_TEXT_PURPLE_300,
+  SOURCE_TEXT_BG_INDIGO_500_20_TEXT_INDIGO_300,
+  SOURCE_TEXT_BG_CYAN_500_20_TEXT_CYAN_300,
+  SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_300,
+  SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD_300,
+  SOURCE_TEXT_BG_ROSE_950_80_BORDER_BORDER_ROSE,
+  SOURCE_TEXT_BG_SLATE_955_80_BORDER_BORDER_SLATE,
+  SOURCE_TEXT_TEXT_ROSE_400,
+  SOURCE_TEXT_TEXT_SLATE_400,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_3,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_16,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_17,
+  SOURCE_TEXT_W_3_H_3_TEXT_AMBER_300,
+  SOURCE_TEXT_W_3_H_3_TEXT_PURPLE_300,
+  SOURCE_TEMPLATE_SYMBOL_170,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5,
+  SOURCE_TEXT_W_8_H_8_ROUNDED_XL_BG_2,
+  SOURCE_TEXT_W_4_H_4,
+  SOURCE_TEXT_FONT_EXTRABOLD_TRACKING_WIDE_TEXT_SM,
+  SOURCE_TEXT_ML_1_TEXT_10PX_FONT_MONO_FONT,
+  SOURCE_TEXT_SPACE_Y_3_5,
+  SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX,
+  SOURCE_TEXT_PX_3_PY_1_5_TEXT_XS,
+  SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3,
+  SOURCE_TEXT_TEXT_9PX_FONT_MONO_PX_1_5,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_SHRINK,
+  SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER,
+  SOURCE_TEXT_APPEARANCE_NONE_BG_SLATE_955_BORDER_BORDER,
+  SOURCE_TEXT_BG_SLATE_900_TEXT_SLATE_100,
+  SOURCE_TEXT_BG_SLATE_900_TEXT_EMERALD_300,
+  SOURCE_TEXT_BG_SLATE_900_TEXT_ROSE_300,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_18,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_PL_2,
+  SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER,
+  SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400,
+  SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER_2,
+  SOURCE_TEXT_MAX_H_MIN_65VH_540PX_OVERFLOW_Y,
+  SOURCE_TEXT_PY_14_PX_4_FLEX_FLEX_COL,
+  SOURCE_TEXT_W_12_H_12_ROUNDED_2XL_BG_2,
+  SOURCE_TEXT_W_6_H_6,
+  SOURCE_TEXT_SPACE_Y_1,
+  SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_100,
+  SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MAX_W,
+  SOURCE_TEXT_GROUP_FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP,
+  SOURCE_TEXT_FLEX_ITEMS_START_GAP_3_MIN_W,
+  SOURCE_TEXT_W_8_H_8_ROUNDED_XL_FLEX,
+  SOURCE_TEXT_MIN_W_0_FLEX_1_SPACE_Y,
+  SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_GAP_2,
+  SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_4,
+  SOURCE_TEXT_W_3_H_3,
+  SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2,
+  SOURCE_TEXT_W_1_H_1_ROUNDED_FULL_BG,
+  SOURCE_TEXT_TEXT_10_5PX_FONT_MONO_TEXT_SLATE,
+  SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200,
+  SOURCE_TEXT_TEXT_9_5PX_TEXT_SLATE_500_HIDDEN,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP,
+  SOURCE_TEXT_BREAK_WORDS_LEADING_SNUG,
+  SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_PX_2_PY,
+  SOURCE_TEXT_P_2_5_ROUNDED_XL_TEXT_11PX,
+  SOURCE_TEXT_W_3_5_H_3_5_SHRINK_4,
+  SOURCE_TEXT_BREAK_WORDS,
+  SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER_3,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_2,
+  SOURCE_TEXT_W_3_5_H_3_5,
   SOURCE_TEMPLATE_SYMBOL_28,
   SOURCE_TEMPLATE_SYMBOL_29,
   SOURCE_TEXT_BG_AMBER_500_20_TEXT_AMBER,
@@ -29,38 +97,19 @@ import {
   SOURCE_TEXT_TEXT_ROSE_200_FONT_BOLD_TEXT,
   SOURCE_TEXT_TEXT_SKY_200_FONT_BOLD_TEXT,
   SOURCE_TEXT_TRUE,
-} from "../constants/sourceText";
+} from "../constants/sourceText.js";
+import _ from "lodash";
 import { useState, useSyncExternalStore } from "react";
-import { AlertCircle, Check, CheckCircle2, ChevronDown, ClipboardList, Copy, Film, Layers, Music2, Shuffle, Sparkles, Square, Trash2, XCircle } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, ChevronDown, ClipboardList, Copy, Globe, Video, Film, Layers, Music2, Shuffle, Sparkles, Square, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT, WORKFLOW_ACTIVITY_TEXT } from "../constants/workflowActivity";
-import { clearWorkflowActivities, getWorkflowActivities, subscribeWorkflowActivity, WorkflowActivity, WorkflowArea, WorkflowEvent } from "../services/workflowActivity";
+import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_TEXT } from "../constants/workflowActivity";
+import { getEventStatusType, summarizeWorkflowActivities, clearWorkflowActivities, getWorkflowActivities, subscribeWorkflowActivity, WorkflowActivity, WorkflowArea, WorkflowEvent } from "../services/workflowActivity";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
-interface WorkflowActivityDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  language: (typeof WORKFLOW_ACTIVITY_CONFIG.LANGUAGES)[keyof typeof WORKFLOW_ACTIVITY_CONFIG.LANGUAGES];
-}
+interface WorkflowActivityDialogProps { isOpen: boolean; onClose: () => void; language: (typeof WORKFLOW_ACTIVITY_CONFIG.LANGUAGES)[keyof typeof WORKFLOW_ACTIVITY_CONFIG.LANGUAGES]; }
 type StatusFilterType = (typeof WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS)[keyof typeof WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS];
-type StatusType = (typeof WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS)[keyof typeof WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS];
-const getEventStatusType = (event: WorkflowEvent): StatusType => {
-  if (event.endsWith(WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.done) || event === WORKFLOW_ACTIVITY_EVENT.musicSave || event === WORKFLOW_ACTIVITY_EVENT.flowFolder || event === WORKFLOW_ACTIVITY_EVENT.flowReference) {
-    return WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.success;
-  }
-  if (event.endsWith(WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail)) {
-    return WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.fail;
-  }
-  if (event.endsWith(WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.stop)) {
-    return WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.stop;
-  }
-  if (event.endsWith(WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.start)) {
-    return WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.running;
-  }
-  return WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.info;
-};
 const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_TEXT)[keyof typeof WORKFLOW_ACTIVITY_TEXT]) => {
   const statusType = getEventStatusType(event);
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.fail) {
@@ -71,7 +120,7 @@ const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_T
       avatarClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE,
       statusBadgeClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_2,
       titleClass: SOURCE_TEXT_TEXT_ROSE_200_FONT_BOLD_TEXT,
-      icon: <XCircle className={cn("w-3.5 h-3.5 text-rose-400 shrink-0")} />,
+      icon: <XCircle className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_3)} />,
     };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.success) {
@@ -82,7 +131,7 @@ const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_T
       avatarClass: SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD,
       statusBadgeClass: SOURCE_TEXT_BG_EMERALD_500_20_TEXT_EMERALD,
       titleClass: SOURCE_TEXT_TEXT_EMERALD_200_FONT_BOLD_TEXT,
-      icon: <CheckCircle2 className={cn("w-3.5 h-3.5 text-emerald-300 shrink-0")} />,
+      icon: <CheckCircle2 className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_16)} />,
     };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.running) {
@@ -93,7 +142,7 @@ const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_T
       avatarClass: SOURCE_TEXT_BG_SKY_500_25_TEXT_SKY,
       statusBadgeClass: SOURCE_TEXT_BG_SKY_500_20_TEXT_SKY,
       titleClass: SOURCE_TEXT_TEXT_SKY_200_FONT_BOLD_TEXT,
-      icon: <Sparkles className={cn("w-3.5 h-3.5 text-sky-300 shrink-0 animate-spin")} />,
+      icon: <Sparkles className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_17)} />,
     };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.stop) {
@@ -104,7 +153,7 @@ const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_T
       avatarClass: SOURCE_TEXT_BG_AMBER_500_25_TEXT_AMBER,
       statusBadgeClass: SOURCE_TEXT_BG_AMBER_500_20_TEXT_AMBER,
       titleClass: SOURCE_TEXT_TEXT_AMBER_200_FONT_BOLD_TEXT,
-      icon: <Square className={cn("w-3 h-3 text-amber-300 shrink-0")} />,
+      icon: <Square className={cn(SOURCE_TEXT_W_3_H_3_TEXT_AMBER_300)} />,
     };
   }
   return {
@@ -114,9 +163,10 @@ const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_T
     avatarClass: SOURCE_TEXT_BG_PURPLE_500_25_TEXT_PURPLE,
     statusBadgeClass: SOURCE_TEXT_BG_PURPLE_500_20_TEXT_PURPLE,
     titleClass: SOURCE_TEXT_TEXT_PURPLE_200_FONT_BOLD_TEXT,
-    icon: <Copy className={cn("w-3 h-3 text-purple-300 shrink-0")} />,
+    icon: <Copy className={cn(SOURCE_TEXT_W_3_H_3_TEXT_PURPLE_300)} />,
   };
 };
+const WORKFLOW_AREA_ICONS = { [WORKFLOW_ACTIVITY_CONFIG.AREAS.music]: Music2, [WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer]: Shuffle, [WORKFLOW_ACTIVITY_CONFIG.AREAS.flow]: Film, [WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy]: Globe, [WORKFLOW_ACTIVITY_CONFIG.AREAS.motion]: Video } as const;
 export default function WorkflowActivityDialog({ isOpen, onClose, language }: WorkflowActivityDialogProps) {
   const entries = useSyncExternalStore(subscribeWorkflowActivity, getWorkflowActivities);
   const [filter, setFilter] = useState<WorkflowArea | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.all>(WORKFLOW_ACTIVITY_CONFIG.AREAS.all);
@@ -136,16 +186,12 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
     }
     return true;
   });
-  const musicCount = _.filter(entries, (e) => e.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.music).length;
-  const mixerCount = _.filter(entries, (e) => e.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer).length;
-  const flowCount = _.filter(entries, (e) => e.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.flow).length;
-  const totalSuccessCount = _.filter(entries, (e) => getEventStatusType(e.event) === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.success).length;
-  const totalErrorCount = _.filter(entries, (e) => getEventStatusType(e.event) === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.fail).length;
+  const summary = summarizeWorkflowActivities(entries);
   const format = (entry: WorkflowActivity) => {
     const date = new Date(entry.at).toLocaleString(WORKFLOW_ACTIVITY_CONFIG.LOCALES[language]);
     const count = entry.count === undefined ? "" : SOURCE_TEMPLATE_SYMBOL_28(`${entry.count}`);
     const detail = entry.detail ? SOURCE_TEMPLATE_SYMBOL_29(`${entry.detail}`) : "";
-    return [date, t[entry.area], `${t.events[entry.event]}${count}${detail}`].join(WORKFLOW_ACTIVITY_CONFIG.COPY_SEPARATOR);
+    return [date, t[entry.area], SOURCE_TEMPLATE_SYMBOL_170(`${t.events[entry.event]}`, `${count}`, `${detail}`)].join(WORKFLOW_ACTIVITY_CONFIG.COPY_SEPARATOR);
   };
   const copy = async (value: string, id: number | typeof WORKFLOW_ACTIVITY_CONFIG.AREAS.all) => {
     try {
@@ -163,48 +209,30 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
     }
   };
   const areaTabs = [
-    {
-      id: WORKFLOW_ACTIVITY_CONFIG.AREAS.all,
-      label: t.all,
-      count: entries.length,
-      icon: Layers,
-    },
-    {
-      id: WORKFLOW_ACTIVITY_CONFIG.AREAS.music,
-      label: t.music,
-      count: musicCount,
-      icon: Music2,
-    },
-    {
-      id: WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer,
-      label: t.mixer,
-      count: mixerCount,
-      icon: Shuffle,
-    },
-    {
-      id: WORKFLOW_ACTIVITY_CONFIG.AREAS.flow,
-      label: t.flow,
-      count: flowCount,
-      icon: Film,
-    },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.all, label: t.all, count: entries.length, icon: Layers, },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.music, label: t.music, count: summary.areas[WORKFLOW_ACTIVITY_CONFIG.AREAS.music], icon: WORKFLOW_AREA_ICONS[WORKFLOW_ACTIVITY_CONFIG.AREAS.music], },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, label: t.mixer, count: summary.areas[WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer], icon: WORKFLOW_AREA_ICONS[WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer], },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, label: t.flow, count: summary.areas[WORKFLOW_ACTIVITY_CONFIG.AREAS.flow], icon: WORKFLOW_AREA_ICONS[WORKFLOW_ACTIVITY_CONFIG.AREAS.flow], },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, label: t.proxy, count: summary.areas[WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy], icon: WORKFLOW_AREA_ICONS[WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy] },
+    { id: WORKFLOW_ACTIVITY_CONFIG.AREAS.motion, label: t.motion, count: summary.areas[WORKFLOW_ACTIVITY_CONFIG.AREAS.motion], icon: WORKFLOW_AREA_ICONS[WORKFLOW_ACTIVITY_CONFIG.AREAS.motion] },
   ] as const;
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={
-        <div className={cn("flex items-center gap-2.5")}>
-          <div className={cn("w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500/20 to-indigo-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-xs shrink-0")}>
-            <ClipboardList className={cn("w-4 h-4")} />
+        <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5)}>
+          <div className={cn(SOURCE_TEXT_W_8_H_8_ROUNDED_XL_BG_2)}>
+            <ClipboardList className={cn(SOURCE_TEXT_W_4_H_4)} />
           </div>
-          <span className={cn("font-extrabold tracking-wide text-sm")}>{t.title}</span>
-          {entries.length > 0 && <span className={cn("ml-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-xs")}>{entries.length}</span>}
+          <span className={cn(SOURCE_TEXT_FONT_EXTRABOLD_TRACKING_WIDE_TEXT_SM)}>{t.title}</span>
+          {entries.length > 0 && <span className={cn(SOURCE_TEXT_ML_1_TEXT_10PX_FONT_MONO_FONT)}>{entries.length}</span>}
         </div>
       }
       maxWidth={WORKFLOW_ACTIVITY_CONFIG.MODAL_MAX_WIDTH}>
-      <div className={cn("space-y-3.5")}>
-        <div className={cn("flex flex-wrap items-center justify-between gap-2.5 p-2 rounded-2xl bg-slate-900/90 border border-slate-800/90 backdrop-blur-md")}>
-          <div className={cn("flex items-center gap-1.5 flex-wrap")} role={WORKFLOW_ACTIVITY_CONFIG.A11Y.ROLE_GROUP} aria-label={t.title}>
+      <div className={cn(SOURCE_TEXT_SPACE_Y_3_5)}>
+        <div className={cn(SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
+          <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX)} role={WORKFLOW_ACTIVITY_CONFIG.A11Y.ROLE_GROUP} aria-label={t.title}>
             {_.map(areaTabs, (tab) => {
               const TabIcon = tab.icon;
               const isActive = filter === tab.id;
@@ -215,84 +243,66 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
                   variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED}
                   aria-pressed={isActive}
                   onClick={() => setFilter(tab.id)}
-                  className={cn("px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all duration-150 cursor-pointer select-none", {
-                    "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white shadow-md shadow-purple-600/30 scale-[1.02]": isActive,
-                    "text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-transparent": !isActive,
-                  })}>
-                  <TabIcon className={cn("w-3.5 h-3.5 shrink-0")} />
+                  className={cn(SOURCE_TEXT_PX_3_PY_1_5_TEXT_XS, { [SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_2]: isActive, [SOURCE_TEXT_TEXT_SLATE_400_HOVER_TEXT_SLATE_100]: !isActive, })}>
+                  <TabIcon className={cn(SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
                   <span>{tab.label}</span>
                   <span
-                    className={cn("text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold", {
-                      "bg-white/20 text-white": isActive,
-                      "bg-slate-800 text-slate-400 border border-slate-700/60": !isActive,
-                    })}>
+                    className={cn(SOURCE_TEXT_TEXT_9PX_FONT_MONO_PX_1_5, { [SOURCE_TEXT_BG_WHITE_20_TEXT_WHITE]: isActive, [SOURCE_TEXT_BG_SLATE_800_TEXT_SLATE_400_BORDER]: !isActive, })}>
                     {tab.count}
                   </span>
                 </Button>
               );
             })}
           </div>
-          <div className={cn("flex items-center gap-2.5 shrink-0")}>
-            <div className={cn("relative flex items-center")}>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)} aria-label={t.statusFilterAriaLabel} className={cn("appearance-none bg-slate-955 border border-slate-800 text-slate-200 text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 outline-none hover:border-purple-500/40 focus:border-purple-500 transition-all cursor-pointer shadow-xs")}>
-                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.all} className="bg-slate-900 text-slate-100">
+          <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_SHRINK)}>
+            <div className={cn(SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER)}>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)} aria-label={t.statusFilterAriaLabel} className={cn(SOURCE_TEXT_APPEARANCE_NONE_BG_SLATE_955_BORDER_BORDER)}>
+                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.all} className={SOURCE_TEXT_BG_SLATE_900_TEXT_SLATE_100}>
                   {t.statusFilter.all}
                   {SOURCE_TEXT_SYMBOL_11}
                   {entries.length}
                   {SOURCE_TEXT_SYMBOL_12}
                 </option>
-                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.success} className="bg-slate-900 text-emerald-300">
+                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.success} className={SOURCE_TEXT_BG_SLATE_900_TEXT_EMERALD_300}>
                   {SOURCE_TEXT_SYMBOL_29}
                   {t.statusFilter.success}
                   {SOURCE_TEXT_SYMBOL_11}
-                  {totalSuccessCount}
+                  {summary.success}
                   {SOURCE_TEXT_SYMBOL_12}
                 </option>
-                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.error} className="bg-slate-900 text-rose-300">
+                <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.error} className={SOURCE_TEXT_BG_SLATE_900_TEXT_ROSE_300}>
                   {SOURCE_TEXT_SYMBOL_30}
                   {t.statusFilter.error}
                   {SOURCE_TEXT_SYMBOL_11}
-                  {totalErrorCount}
+                  {summary.fail}
                   {SOURCE_TEXT_SYMBOL_12}
                 </option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+              <ChevronDown className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_18} />
             </div>
-            <div className={cn("flex items-center gap-2 pl-2 border-l border-slate-800/80")}>
+            <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_PL_2)}>
               <Tooltip content={t.copyAll} align={SOURCE_TEXT_END}>
-                <Button
-                  type={SOURCE_TEXT_BUTTON}
-                  variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED}
-                  aria-label={t.copyAll}
-                  disabled={!shown.length}
-                  onClick={() => void copy(_.map(_.slice(shown).reverse(), format).join(WORKFLOW_ACTIVITY_CONFIG.COPY_NEWLINE), WORKFLOW_ACTIVITY_CONFIG.AREAS.all)}
-                  className={cn("w-6 h-6 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-purple-300 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed p-0 shadow-none outline-none")}>
-                  {hasCopiedAll ? <Check className={cn("w-4 h-4 text-emerald-400")} /> : <Copy className={cn("w-4 h-4")} />}
+                <Button type={SOURCE_TEXT_BUTTON} variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED} aria-label={t.copyAll} disabled={!shown.length} onClick={() => void copy(_.map(_.slice(shown).reverse(), format).join(WORKFLOW_ACTIVITY_CONFIG.COPY_NEWLINE), WORKFLOW_ACTIVITY_CONFIG.AREAS.all)} className={cn(SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER)}>
+                  {hasCopiedAll ? <Check className={cn(SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400)} /> : <Copy className={cn(SOURCE_TEXT_W_4_H_4)} />}
                 </Button>
               </Tooltip>
               <Tooltip content={t.clear} align={SOURCE_TEXT_END}>
-                <Button
-                  type={SOURCE_TEXT_BUTTON}
-                  variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED}
-                  aria-label={t.clear}
-                  disabled={!entries.length}
-                  onClick={clearWorkflowActivities}
-                  className={cn("w-6 h-6 bg-transparent hover:bg-transparent border-0 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed p-0 shadow-none outline-none")}>
-                  <Trash2 className={cn("w-4 h-4")} />
+                <Button type={SOURCE_TEXT_BUTTON} variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED} aria-label={t.clear} disabled={!entries.length} onClick={clearWorkflowActivities} className={cn(SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER_2)}>
+                  <Trash2 className={cn(SOURCE_TEXT_W_4_H_4)} />
                 </Button>
               </Tooltip>
             </div>
           </div>
         </div>
-        <div className={cn("max-h-[min(65vh,540px)] overflow-y-auto space-y-2.5 pr-1 custom-scrollbar")} role={WORKFLOW_ACTIVITY_CONFIG.A11Y.ROLE_LOG} aria-live={WORKFLOW_ACTIVITY_CONFIG.A11Y.ARIA_LIVE_POLITE}>
+        <div className={cn(SOURCE_TEXT_MAX_H_MIN_65VH_540PX_OVERFLOW_Y)} role={WORKFLOW_ACTIVITY_CONFIG.A11Y.ROLE_LOG} aria-live={WORKFLOW_ACTIVITY_CONFIG.A11Y.ARIA_LIVE_POLITE}>
           {!shown.length ? (
-            <div className={cn("py-14 px-4 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40")}>
-              <div className={cn("w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/15 via-indigo-500/15 to-pink-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-inner")}>
-                <ClipboardList className={cn("w-6 h-6")} />
+            <div className={cn(SOURCE_TEXT_PY_14_PX_4_FLEX_FLEX_COL)}>
+              <div className={cn(SOURCE_TEXT_W_12_H_12_ROUNDED_2XL_BG_2)}>
+                <ClipboardList className={cn(SOURCE_TEXT_W_6_H_6)} />
               </div>
-              <div className={cn("space-y-1")}>
-                <p className={cn("text-xs font-bold text-slate-100")}>{t.empty}</p>
-                <p className={cn("text-[11px] text-slate-400 max-w-sm")}>{t.emptySub}</p>
+              <div className={cn(SOURCE_TEXT_SPACE_Y_1)}>
+                <p className={cn(SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_100)}>{t.empty}</p>
+                <p className={cn(SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MAX_W)}>{t.emptySub}</p>
               </div>
             </div>
           ) : (
@@ -301,40 +311,33 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
               const isMusic = entry.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.music;
               const isMixer = entry.area === WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer;
               const isFail = statusMeta.statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.fail;
-              const ModuleIcon = isMusic ? Music2 : isMixer ? Shuffle : Film;
+              const ModuleIcon = WORKFLOW_AREA_ICONS[entry.area];
               return (
-                <div key={entry.id} className={cn("group flex items-start justify-between gap-3 p-3.5 rounded-2xl border transition-all duration-150 backdrop-blur-md", statusMeta.cardClass)}>
-                  <div className={cn("flex items-start gap-3 min-w-0 flex-1")}>
-                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs mt-0.5", statusMeta.avatarClass)}>{statusMeta.icon}</div>
-                    <div className={cn("min-w-0 flex-1 space-y-1.5")}>
-                      <div className={cn("flex flex-wrap items-center gap-2")}>
+                <div key={entry.id} className={cn(SOURCE_TEXT_GROUP_FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP, statusMeta.cardClass)}>
+                  <div className={cn(SOURCE_TEXT_FLEX_ITEMS_START_GAP_3_MIN_W)}>
+                    <div className={cn(SOURCE_TEXT_W_8_H_8_ROUNDED_XL_FLEX, statusMeta.avatarClass)}>{statusMeta.icon}</div>
+                    <div className={cn(SOURCE_TEXT_MIN_W_0_FLEX_1_SPACE_Y)}>
+                      <div className={cn(SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_GAP_2)}>
                         <span
-                          className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold border", {
-                            "bg-purple-500/20 text-purple-300 border-purple-500/40": isMusic,
-                            "bg-indigo-500/20 text-indigo-300 border-indigo-500/40": isMixer,
-                            "bg-cyan-500/20 text-cyan-300 border-cyan-500/40": !isMusic && !isMixer,
-                          })}>
-                          <ModuleIcon className={cn("w-3 h-3")} />
+                          className={cn(SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_4, { [SOURCE_TEXT_BG_PURPLE_500_20_TEXT_PURPLE_300]: isMusic, [SOURCE_TEXT_BG_INDIGO_500_20_TEXT_INDIGO_300]: isMixer, [SOURCE_TEXT_BG_CYAN_500_20_TEXT_CYAN_300]: !isMusic && !isMixer, })}>
+                          <ModuleIcon className={cn(SOURCE_TEXT_W_3_H_3)} />
                           <span>{t[entry.area]}</span>
                         </span>
-                        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border", statusMeta.statusBadgeClass)}>
+                        <span className={cn(SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2, statusMeta.statusBadgeClass)}>
                           <span>{statusMeta.label}</span>
                         </span>
-                        <span className={cn("w-1 h-1 rounded-full bg-slate-600")} aria-hidden={SOURCE_TEXT_TRUE} />
-                        <time className={cn("text-[10.5px] font-mono text-slate-400 flex items-center gap-1.5")} dateTime={new Date(entry.at).toISOString()}>
-                          <span className={cn("font-bold text-slate-200")}>{new Date(entry.at).toLocaleTimeString(WORKFLOW_ACTIVITY_CONFIG.LOCALES[language], WORKFLOW_ACTIVITY_CONFIG.TIME_FORMAT_OPTIONS)}</span>
-                          <span className={cn("text-[9.5px] text-slate-500 hidden sm:inline")}>{new Date(entry.at).toLocaleDateString(WORKFLOW_ACTIVITY_CONFIG.LOCALES[language])}</span>
+                        <span className={cn(SOURCE_TEXT_W_1_H_1_ROUNDED_FULL_BG)} aria-hidden={SOURCE_TEXT_TRUE} />
+                        <time className={cn(SOURCE_TEXT_TEXT_10_5PX_FONT_MONO_TEXT_SLATE)} dateTime={new Date(entry.at).toISOString()}>
+                          <span className={cn(SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200)}>{new Date(entry.at).toLocaleTimeString(WORKFLOW_ACTIVITY_CONFIG.LOCALES[language], WORKFLOW_ACTIVITY_CONFIG.TIME_FORMAT_OPTIONS)}</span>
+                          <span className={cn(SOURCE_TEXT_TEXT_9_5PX_TEXT_SLATE_500_HIDDEN)}>{new Date(entry.at).toLocaleDateString(WORKFLOW_ACTIVITY_CONFIG.LOCALES[language])}</span>
                         </time>
                       </div>
-                      <div className={cn("space-y-1")}>
-                        <div className={cn("flex items-center gap-2 flex-wrap")}>
-                          <p className={cn("break-words leading-snug", statusMeta.titleClass)}>{t.events[entry.event]}</p>
+                      <div className={cn(SOURCE_TEXT_SPACE_Y_1)}>
+                        <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP)}>
+                          <p className={cn(SOURCE_TEXT_BREAK_WORDS_LEADING_SNUG, statusMeta.titleClass)}>{t.events[entry.event]}</p>
                           {entry.count !== undefined && (
                             <span
-                              className={cn("inline-flex items-center px-2 py-0.5 text-[9.5px] font-mono font-bold rounded-md", {
-                                "bg-rose-500/25 text-rose-300 border border-rose-500/50": isFail,
-                                "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50": !isFail,
-                              })}>
+                              className={cn(SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_PX_2_PY, { [SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_300]: isFail, [SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD_300]: !isFail, })}>
                               {WORKFLOW_ACTIVITY_CONFIG.COUNT_PREFIX}
                               {entry.count}
                             </span>
@@ -342,30 +345,19 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
                         </div>
                         {entry.detail && (
                           <div
-                            className={cn("p-2.5 rounded-xl text-[11px] font-mono flex items-start gap-2 leading-relaxed mt-1.5", {
-                              "bg-rose-950/80 border border-rose-500/50 text-rose-200 shadow-inner": isFail,
-                              "bg-slate-955/80 border border-slate-800 text-slate-300": !isFail,
-                            })}>
+                            className={cn(SOURCE_TEXT_P_2_5_ROUNDED_XL_TEXT_11PX, { [SOURCE_TEXT_BG_ROSE_950_80_BORDER_BORDER_ROSE]: isFail, [SOURCE_TEXT_BG_SLATE_955_80_BORDER_BORDER_SLATE]: !isFail, })}>
                             <AlertCircle
-                              className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", {
-                                "text-rose-400": isFail,
-                                "text-slate-400": !isFail,
-                              })}
+                              className={cn(SOURCE_TEXT_W_3_5_H_3_5_SHRINK_4, { [SOURCE_TEXT_TEXT_ROSE_400]: isFail, [SOURCE_TEXT_TEXT_SLATE_400]: !isFail, })}
                             />
-                            <span className={cn("break-words")}>{entry.detail}</span>
+                            <span className={cn(SOURCE_TEXT_BREAK_WORDS)}>{entry.detail}</span>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                   <Tooltip content={t.copy} align={SOURCE_TEXT_END}>
-                    <Button
-                      type={SOURCE_TEXT_BUTTON}
-                      variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED}
-                      aria-label={t.copy}
-                      onClick={() => void copy(format(entry), entry.id)}
-                      className={cn("w-6 h-6 bg-transparent hover:bg-transparent border-0 text-slate-500 hover:text-purple-300 flex items-center justify-center transition-colors shrink-0 cursor-pointer p-0 shadow-none outline-none mt-0.5")}>
-                      {copiedId === entry.id ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5")} />}
+                    <Button type={SOURCE_TEXT_BUTTON} variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED} aria-label={t.copy} onClick={() => void copy(format(entry), entry.id)} className={cn(SOURCE_TEXT_W_6_H_6_BG_TRANSPARENT_HOVER_3)}>
+                      {copiedId === entry.id ? <Check className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_2)} /> : <Copy className={cn(SOURCE_TEXT_W_3_5_H_3_5)} />}
                     </Button>
                   </Tooltip>
                 </div>

@@ -1,3 +1,5 @@
+import { recordWorkflowActivity } from "../services/workflowActivity";
+import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 import {
   SOURCE_TEMPLATE_OPEN_2,
   SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_3,
@@ -430,9 +432,21 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     if (locks.current.has(id)) return;
     locks.current.add(id);
     setPending((state) => ({ ...state, [id]: operation }));
+    const events =
+      operation === SOURCE_TEXT_CHECK
+        ? [WORKFLOW_ACTIVITY_EVENT.proxyCheckStart, WORKFLOW_ACTIVITY_EVENT.proxyCheckDone, WORKFLOW_ACTIVITY_EVENT.proxyCheckFail]
+        : operation === SOURCE_TEXT_CLOSE_2
+          ? [WORKFLOW_ACTIVITY_EVENT.proxyCloseStart, WORKFLOW_ACTIVITY_EVENT.proxyCloseDone, WORKFLOW_ACTIVITY_EVENT.proxyCloseFail]
+          : operation === SOURCE_TEXT_DELETE
+            ? [WORKFLOW_ACTIVITY_EVENT.proxyDeleteStart, WORKFLOW_ACTIVITY_EVENT.proxyDeleteDone, WORKFLOW_ACTIVITY_EVENT.proxyDeleteFail]
+            : [WORKFLOW_ACTIVITY_EVENT.proxyOpenStart, WORKFLOW_ACTIVITY_EVENT.proxyOpenDone, WORKFLOW_ACTIVITY_EVENT.proxyOpenFail];
+    const detail = profiles.find((profile) => profile.id === id)?.name || id;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, events[0], undefined, detail);
     try {
       await task();
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, events[1], undefined, detail);
     } catch (error) {
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, events[2], undefined, detail);
       if (mounted.current) toast.error(getErrorMessage(error, t.loadError));
     } finally {
       await refresh().catch(() => {
@@ -450,7 +464,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   };
   const check = (id: string) =>
     run(id, SOURCE_TEXT_CHECK, async () => {
-      await api<ProxyCheck>(SOURCE_TEMPLATE_CHECK(`${id}`), SOURCE_TEXT_POST);
+      const result = await api<ProxyCheck>(SOURCE_TEMPLATE_CHECK(`${id}`), SOURCE_TEXT_POST);
+      if (result.status !== SOURCE_TEXT_OK) throw new Error(result.error || t.loadError);
     });
   const checkAll = async () => {
     if (checkingAll) return;
@@ -467,15 +482,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   const openEditor = (profile?: ProxyProfile) => {
     setForm(
       profile
-        ? {
-            name: profile.name,
-            protocol: profile.protocol,
-            host: profile.host,
-            port: profile.port,
-            username: profile.username,
-            notes: profile.notes,
-            password: "",
-          }
+        ? { name: profile.name, protocol: profile.protocol, host: profile.host, port: profile.port, username: profile.username, notes: profile.notes, password: "", }
         : emptyForm(),
     );
     setEditor(profile ? { id: profile.id, hasPassword: profile.hasPassword } : {});
@@ -487,6 +494,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     if (saving) return;
     setSaving(true);
     setFormError("");
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxySaveStart);
     try {
       const input = validateProxyInput(form);
       const saved = await api<ProxyProfile>(editor?.id ? SOURCE_TEMPLATE_SYMBOL_76(`${editor.id}`) : "", editor?.id ? SOURCE_TEXT_PUT : SOURCE_TEXT_POST, input);
@@ -495,8 +503,10 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
       setEditor(null);
       setForm(emptyForm());
       toast.success(t.saved);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxySaveDone, 1, saved.name);
     } catch (error) {
       setFormError(getErrorMessage(error, t.loadError));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxySaveFail);
     } finally {
       setSaving(false);
     }
@@ -507,6 +517,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     if (saving || !validCount || validCount !== importRows.length || validCount > 200) return;
     setSaving(true);
     setImportError("");
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxyImportStart, validCount);
     try {
       const saved = await api<ProxyProfile[]>(SOURCE_TEXT_IMPORT, SOURCE_TEXT_POST, { proxies: importRows.map((row) => row.input) });
       await refresh();
@@ -514,8 +525,10 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
       setImportOpen(false);
       setImportText("");
       toast.success(t.imported);
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxyImportDone, saved.length);
     } catch (error) {
       setImportError(getErrorMessage(error, t.loadError));
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy, WORKFLOW_ACTIVITY_EVENT.proxyImportFail, validCount);
     } finally {
       setSaving(false);
     }
@@ -526,12 +539,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   };
   const selected = profiles.find((profile) => profile.id === selectedId);
   const counts = useMemo(
-    () => ({
-      total: profiles.length,
-      ok: profiles.filter((p) => p.check?.status === SOURCE_TEXT_OK).length,
-      open: profiles.filter((p) => p.session !== SOURCE_TEXT_CLOSED).length,
-      issues: profiles.filter((p) => p.check?.status === SOURCE_TEXT_ERROR || !p.check).length,
-    }),
+    () => ({ total: profiles.length, ok: profiles.filter((p) => p.check?.status === SOURCE_TEXT_OK).length, open: profiles.filter((p) => p.session !== SOURCE_TEXT_CLOSED).length, issues: profiles.filter((p) => p.check?.status === SOURCE_TEXT_ERROR || !p.check).length, }),
     [profiles],
   );
   const visible = useMemo(() => {
@@ -671,12 +679,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 </div>
               </div>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_P_1}>
-                {[
-                  { key: SOURCE_TEXT_ALL, label: t.all, count: counts.total },
-                  { key: SOURCE_TEXT_OK, label: t.filterOk, count: counts.ok },
-                  { key: SOURCE_TEXT_OPEN, label: t.filterOpen, count: counts.open },
-                  { key: SOURCE_TEXT_ISSUES, label: t.filterError, count: counts.issues },
-                ].map((tab) => (
+                {[ { key: SOURCE_TEXT_ALL, label: t.all, count: counts.total }, { key: SOURCE_TEXT_OK, label: t.filterOk, count: counts.ok }, { key: SOURCE_TEXT_OPEN, label: t.filterOpen, count: counts.open }, { key: SOURCE_TEXT_ISSUES, label: t.filterError, count: counts.issues }, ].map((tab) => (
                   <Button key={tab.key} variant={SOURCE_TEXT_UNSTYLED} onClick={() => setFilterTab(tab.key as typeof filterTab)} className={cn(SOURCE_TEXT_FLEX_1_PY_1_PX_2_ROUNDED, filterTab === tab.key ? SOURCE_TEXT_BG_PURPLE_600_20_TEXT_PURPLE_300 : SOURCE_TEXT_TEXT_SLATE_400_HOVER_TEXT_SLATE_200)}>
                     <span>{tab.label}</span>
                     <span className={SOURCE_TEXT_ML_1_OPACITY_60_TEXT_9PX_FONT}>

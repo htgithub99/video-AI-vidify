@@ -12,6 +12,7 @@
     "lint": "eslint . --ext .ts,.tsx",
     "test:visual-style": "tsx scripts/verify-visual-style-controls.ts && tsx scripts/verify-image-continuity-lanes.ts",
     "test:proxy": "tsx scripts/verify-proxy-manager.ts && tsx scripts/verify-native-proxy-browser.ts",
+    "test:activity": "tsx scripts/verify-workflow-activity.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",
     "test:suno-style": "tsx scripts/verify-suno-style-application.ts",
     "test:music-seo": "tsx scripts/verify-music-seo-standards.ts",
