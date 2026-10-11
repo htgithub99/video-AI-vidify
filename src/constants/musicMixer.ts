@@ -1,4 +1,8 @@
 import { stringifyJson } from "../lib/jsonStringify.js";
+export const MUSIC_MIXER_UPLOAD_POLICY = {
+  MAX_WAIT_MS: 60 * 60 * 1000,
+  STALL_TIMEOUT_MS: 15 * 60 * 1000,
+} as const;
 export const MUSIC_MIXER_SERVER = {
   SETTINGS_STORAGE_KEY: "music-mixer-settings",
   ROUTE_SELECT_SOURCE: "/music-mixer/select-source",
@@ -29,6 +33,7 @@ export const MUSIC_MIXER_SERVER = {
   ANALYZE_RUN_PREFIX: "music-mixer-rank-",
   SEO_RUN_PREFIX: "music-mixer-seo-",
   MAX_ATTACHMENTS_PER_ROOM_REQUEST: 10,
+  MAX_CONCURRENT_FOLDERS: 2,
   DATABASE_NAME: "music-mixer-storage",
   DATABASE_VERSION: 2,
   RESULTS_STORE_KEY: "current",
@@ -64,7 +69,10 @@ export const MUSIC_MIXER_SERVER = {
   SEO_DIVIDER: "----------------------------------------",
   SEO_TRACK_SEPARATOR: " / ",
 } as const;
-export const buildMusicMixerAnalyzePrompt = (tracks: Array<{ index: number; title: string }>, requestId: string): string =>
+export const buildMusicMixerAnalyzePrompt = (
+  tracks: Array<{ index: number; title: string; }>,
+  requestId: string,
+): string =>
   `Evaluate every supplied audio track without removing any track. Score production quality, musical appeal, clarity, completeness, and opening impact from 0 to 100. Return ONLY one valid JSON object with "artifactType":${stringifyJson(MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT)}, "requestId":${stringifyJson(requestId)}, "scores":[{"index":1,"score":85}]. Copy artifactType and requestId exactly. Include every supplied index exactly once. Do not return SEO, titles, descriptions, hashtags, tags, explanations, or markdown. Track list: ${stringifyJson(tracks)}`;
 export const buildMusicMixerSeoPrompt = (titles: string[], requestId: string): string =>
   `Create exactly five distinct, high-quality YouTube playlist SEO options for a music mix. Use the supplied track titles as the playlist identity and infer only broad, safe mood or listening context from the titles. Do not use generic titles such as Track Collection, Audio List, Complete Audio Track List, or a single track title. Each option must include a compelling natural title, a rich 2 to 4 sentence description that starts with one suitable emoji, 8 to 15 relevant hashtags, 10 to 20 comma-separated keyword tags, and seoScore from 0 to 100. Do not include file extensions, numbering, timestamps, invented artists, exact genres, instruments, vocals, or durations. Do not include a track list in the description; the application adds the accurate timestamped track list separately. Return ONLY one valid JSON object with "artifactType":${stringifyJson(MUSIC_MIXER_SERVER.SEO_ARTIFACT)}, "requestId":${stringifyJson(requestId)}, "seoOptions":[{"title":"...","description":"🎧 ...","hashtags":["#..."],"tags":["..."],"seoScore":80}]. Copy artifactType and requestId exactly. Track titles: ${stringifyJson(titles)}`;

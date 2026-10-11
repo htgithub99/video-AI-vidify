@@ -66,6 +66,7 @@ import licenseRouter from "./src/server/routes/licenseRoutes.js";
 import { getResolvedLicenseKey } from "./src/server/services/apiKeyResolver.js";
 import { closePlaywright, initPlaywright } from "./src/server/services/audioService.js";
 import { closeActiveBrowser } from "./src/server/services/imageGeneratorService.js";
+import { closeProxySessions } from "./src/server/services/proxyService.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "./src/types.js";
@@ -232,7 +233,7 @@ const shutdownGracefully = async () => {
       httpServer.close(() => resolve());
       httpServer.closeAllConnections();
     });
-    await Promise.allSettled([closeHttpServer, viteDevServer?.close(), closePlaywright(), closeActiveBrowser()]);
+    await Promise.allSettled([closeHttpServer, viteDevServer?.close(), closePlaywright(), closeActiveBrowser(), closeProxySessions()]);
   } catch (e) {}
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
     clearTimeout(forcedExitTimer);

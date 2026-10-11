@@ -176,6 +176,7 @@ export enum AppTab {
   AUTO_GENERATOR = "auto-generator",
   CINEMATIC_FILM = "cinematic-film",
   MUSIC_CREATOR = "music-creator",
+  PROXY = "proxy",
   MUSIC_MIXER = "music-mixer",
   VIDEO_CREATOR = "video-creator",
   SHORTS_EXTRACTOR = "shorts-extractor",

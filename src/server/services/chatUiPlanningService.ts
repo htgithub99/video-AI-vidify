@@ -1,11 +1,8 @@
-import { parseJson } from "../../lib/jsonStringify.js";
-import { createHash } from "crypto";
-import _ from "lodash";
-import type { BrowserContext, Locator, Page } from "playwright";
-import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
-import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
-import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
 import {
+  SOURCE_TEMPLATE_SYMBOL_683,
+  SOURCE_TEMPLATE_SYMBOL_75,
+  SOURCE_TEMPLATE_SYMBOL_86,
+  SOURCE_TEXT_ABORT,
   SOURCE_TEXT_0_2,
   SOURCE_TEXT_A,
   SOURCE_TEXT_ALERTDIALOG,
@@ -100,7 +97,15 @@ import {
   SOURCE_TEXT_VISIBLE,
   SOURCE_TEXT_XPATH,
   SOURCE_TEXT_XPATH_2,
-} from "../../constants/sourceText";
+} from "../../constants/sourceText.js";
+import { parseJson } from "../../lib/jsonStringify.js";
+import { createHash } from "crypto";
+import _ from "lodash";
+import type { BrowserContext, Locator, Page } from "playwright";
+import { waitForMusicMixerUploads } from "./musicMixerUploadReadiness.js";
+import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
+import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
+import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { delayAsync } from "../../lib/shared-utils.js";
@@ -108,25 +113,9 @@ import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js"
 import { assessChatComposerContent } from "./chatComposerValidation.js";
 import { closeAppBrowserAfterTask, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
-interface ChatRoomAttachment {
-  name: string;
-  mimeType: string;
-  buffer?: Buffer;
-  path?: string;
-}
-interface ChatResponseSnapshot {
-  identity: string;
-  text: string;
-}
-interface PendingRoomResponse {
-  page: Page;
-  initialCount: number;
-  initialResponseSnapshots: ChatResponseSnapshot[];
-  expectedSceneIds: string[];
-  completionMarker?: string;
-  artifactType?: string;
-  requestId?: string;
-}
+interface ChatRoomAttachment { name: string; mimeType: string; buffer?: Buffer; path?: string; }
+interface ChatResponseSnapshot { identity: string; text: string; }
+interface PendingRoomResponse { page: Page; initialCount: number; initialResponseSnapshots: ChatResponseSnapshot[]; expectedSceneIds: string[]; completionMarker?: string; artifactType?: string; requestId?: string; }
 interface ChatPlanningRequest {
   provider: AiPlanningFallbackProvider;
   model?: AiPlanningChatModel;
@@ -143,25 +132,27 @@ interface ChatPlanningRequest {
   closeRoomOnComplete?: boolean;
   allowDefaultGeminiModel?: boolean;
 }
-export interface ChatPlanningRoomIdentity {
-  provider: AiPlanningFallbackProvider;
-  projectId: string;
-  workerId?: string;
-}
+export interface ChatPlanningRoomIdentity { provider: AiPlanningFallbackProvider; projectId: string; workerId?: string; }
 const planningMutexes = new Map<string, SimpleMutex>();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
 const pendingRoomResponses = new Map<string, PendingRoomResponse>();
+let activeMusicMixerRequests = 0;
+const scheduleChatBrowserCleanup = (): void => {
+  if (activeMusicMixerRequests === 0) scheduleGlobalBrowserCleanup();
+};
 const providerErrorCounts = new Map<string, number>();
 const grokBootstrapMutexes = new WeakMap<BrowserContext, SimpleMutex>();
 const grokReadyContexts = new WeakSet<BrowserContext>();
-interface ActivePlanningController {
-  controller: AbortController;
-  provider: AiPlanningFallbackProvider;
-}
+interface ActivePlanningController { controller: AbortController; provider: AiPlanningFallbackProvider; }
 const activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>();
-export const beginChatPlanningRun = (runId: string, startedAt: number, workerId: string = CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID, provider: AiPlanningFallbackProvider = AiPlanningFallbackProvider.Disabled): { signal: AbortSignal; cancel: () => void; complete: () => void } => {
+export const beginChatPlanningRun = (
+  runId: string,
+  startedAt: number,
+  workerId: string = CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID,
+  provider: AiPlanningFallbackProvider = AiPlanningFallbackProvider.Disabled,
+): { signal: AbortSignal; cancel: () => void; complete: () => void; } => {
   if (_.isEmpty(_.trim(runId)) || startedAt <= 0) {
     const unversionedController = new AbortController();
     unversionedController.abort();
@@ -255,12 +246,12 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity): 
   rooms.delete(roomKey);
   pendingRoomResponses.delete(roomKey);
   if (page && !page.isClosed()) await page.close().catch(() => undefined);
-  if (!hasActiveChatRooms()) scheduleGlobalBrowserCleanup();
+  if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   if (!rooms || _.isEmpty(request.projectId)) return;
-  const prefix = `${request.provider}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}${request.projectId}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`;
+  const prefix = SOURCE_TEMPLATE_SYMBOL_683(`${request.provider}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`, `${request.projectId}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`);
   const roomKeys = _.filter([...rooms.keys()], (key) => _.startsWith(key, prefix));
   await Promise.allSettled(
     _.map(roomKeys, async (key) => {
@@ -283,7 +274,11 @@ const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promis
     timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS,
   });
 };
-const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string } | undefined => {
+const getProviderConversationSelectors = (
+  provider: AiPlanningFallbackProvider,
+):
+  | { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string; }
+  | undefined => {
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat))
     return {
       item: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ITEM_SELECTOR,
@@ -546,7 +541,9 @@ const deleteProviderConversationHistory = async (page: Page, provider: AiPlannin
   }
   return deletedCount;
 };
-export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
+export const clearChatPlanningRooms = async (
+  provider: AiPlanningFallbackProvider,
+): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean; }> => {
   const rooms = getProviderRooms(provider);
   const selectors = getProviderConversationSelectors(provider);
   if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0, deletedAll: false };
@@ -559,7 +556,7 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     });
     if (_.isEmpty(runControllers)) activePlanningControllers.delete(runId);
   });
-  const mutexPrefix = `${provider}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`;
+  const mutexPrefix = SOURCE_TEMPLATE_SYMBOL_75(`${provider}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`);
   _.forEach([...planningMutexes.keys()], (roomKey) => {
     if (_.startsWith(roomKey, mutexPrefix)) planningMutexes.delete(roomKey);
   });
@@ -823,7 +820,8 @@ const setLocalFilePathsViaCdp = async (page: Page, filePaths: string[]): Promise
     await session.detach().catch(() => undefined);
   }
 };
-const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): Promise<void> => {
+const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], artifactType?: string): Promise<void> => {
+  const allowLocalFileFallback = artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING;
   const localFilePaths = _.compact(_.map(attachments, SOURCE_TEXT_PATH));
   const usesOnlyLocalPaths = _.size(localFilePaths) === _.size(attachments);
   const inputFiles = _.map(
@@ -846,7 +844,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
   let lastUploadError: unknown;
   const fileInputs = page.locator(SOURCE_TEXT_INPUT_TYPE_FILE);
   if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
-  else
+  if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
     for (let index = 0; index < (await fileInputs.count().catch(() => 0)); index++) {
       try {
         await fileInputs.nth(index).setInputFiles(inputFiles as any);
@@ -867,7 +865,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
     if (!chooser) {
       const revealedFileInputs = page.locator(SOURCE_TEXT_INPUT_TYPE_FILE);
       if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
-      else
+      if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
         for (let index = 0; index < (await revealedFileInputs.count().catch(() => 0)); index++) {
           try {
             await revealedFileInputs.nth(index).setInputFiles(inputFiles as any);
@@ -894,7 +892,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
     }
     if (chooser && !uploaded) {
       if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
-      else
+      if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
         try {
           await chooser.setFiles(inputFiles);
           uploaded = true;
@@ -903,7 +901,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[]): P
         }
     }
   }
-  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`, `${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, ""))}`).trim());
+  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, ""))}`)).trim());
 };
 const getComposerReadings = async (input: Locator): Promise<string[]> => {
   const value = await input.inputValue().catch(() => "");
@@ -1013,7 +1011,10 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
       throwIfPlanningCancelled(signal);
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_STARTED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
       try {
-        await attachRoomFiles(page, attachments);
+        await attachRoomFiles(page, attachments, artifactType);
+        if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING) {
+          await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+        }
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
       } catch (error) {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_FAILED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length, ...musicErrorDetails(error) });
@@ -1021,7 +1022,7 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
       }
     }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
-    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(`${normalizedPrompt}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`);
+    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${normalizedPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`));
     await input.fill(submittedPrompt);
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
     await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
@@ -1037,6 +1038,10 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
       if (sendButton) {
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+        if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING && !_.isEmpty(attachments)) {
+          await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+          if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+        }
         markPendingSubmission();
         await sendButton.click();
       } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
@@ -1302,7 +1307,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
-  await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
+  await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
   await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
   const response = await submitPrompt(
@@ -1320,7 +1325,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
     request.requestId,
     request.signal,
   );
-  scheduleGlobalBrowserCleanup();
+  scheduleChatBrowserCleanup();
   return response;
 };
 export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
@@ -1377,7 +1382,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
     request.requestId,
     request.signal,
   );
-  scheduleGlobalBrowserCleanup();
+  scheduleChatBrowserCleanup();
   return response;
 };
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
@@ -1400,7 +1405,7 @@ const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<stri
     request.requestId,
     request.signal,
   );
-  scheduleGlobalBrowserCleanup();
+  scheduleChatBrowserCleanup();
   return response;
 };
 const providerNames: Record<AiPlanningFallbackProvider, string> = {
@@ -1414,7 +1419,9 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.GrokChat]: generateWithGrokChat,
   [AiPlanningFallbackProvider.ChatGptUi]: generateWithChatGptUi,
 };
-export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+export const generatePlanningWithChatUi = async (
+  request: ChatPlanningRequest,
+): Promise<{ text: string; provider: AiPlanningFallbackProvider; }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
   throwIfPlanningCancelled(request.signal);
   const roomKey = getPlanningRoomKey(request);
@@ -1423,12 +1430,16 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   const mutexStartedAt = Date.now();
   const release = await planningMutex.acquire();
   const closeCancelledRoom = () => {
-    void closeChatPlanningRoom(request).then(() => closeChatBrowserIfIdle()).catch(() => undefined);
+    void closeChatPlanningRoom(request)
+      .then(() => closeChatBrowserIfIdle())
+      .catch(() => undefined);
   };
-  request.signal?.addEventListener("abort", closeCancelledRoom, { once: true });
+  request.signal?.addEventListener(SOURCE_TEXT_ABORT, closeCancelledRoom, { once: true });
   let responseCompleted = false;
   const diagnosticBase = { runId: request.requestId || request.projectId, workerId: request.workerId, provider: request.provider, model: request.model, stage: request.artifactType || SOURCE_TEXT_PLANNING, attachmentCount: request.attachments?.length || 0 };
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_REQUEST_STARTED, { ...diagnosticBase, elapsedMs: Date.now() - mutexStartedAt });
+  const isMusicMixerRequest = request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING;
+  if (isMusicMixerRequest) activeMusicMixerRequests++;
   try {
     throwIfPlanningCancelled(request.signal);
     appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_QUEUE_ACQUIRED(request.workerId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID, providerNames[request.provider], request.projectId, Date.now() - mutexStartedAt));
@@ -1480,11 +1491,18 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     }
     throw error;
   } finally {
-    request.signal?.removeEventListener("abort", closeCancelledRoom);
-    if (request.signal?.aborted || (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE))) {
-      await closeChatPlanningRoom(request);
+    request.signal?.removeEventListener(SOURCE_TEXT_ABORT, closeCancelledRoom);
+    try {
+      if (request.signal?.aborted || (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE))) {
+        await closeChatPlanningRoom(request);
+      }
+      if (request.signal?.aborted) await closeChatBrowserIfIdle();
+    } finally {
+      release();
+      if (isMusicMixerRequest) {
+        activeMusicMixerRequests--;
+        scheduleChatBrowserCleanup();
+      }
     }
-    release();
-    if (request.signal?.aborted) await closeChatBrowserIfIdle();
   }
 };

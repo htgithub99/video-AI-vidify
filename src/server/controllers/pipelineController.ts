@@ -1,169 +1,9 @@
-import { exec, execFile, spawn } from "child_process";
-import { createHash, randomUUID } from "crypto";
-import express, { NextFunction, Request, Response } from "express";
-import ffmpeg from "fluent-ffmpeg";
-import fs from "fs";
-import JSZip from "jszip";
-import _ from "lodash";
-import path from "path";
-import { pipeline as streamPipeline } from "stream/promises";
 import {
-  ALIGN_CONFIG,
-  API_ROUTES,
-  ASSETS_DIR_NAME,
-  AUDIO_QUALITY_RESPONSE_SCHEMA,
-  BACKEND_MESSAGES,
-  BASE64_DATA_URL_REGEX,
-  CAPCUT_CONFIG,
-  CHAPTER_RESPONSE_SCHEMA,
-  CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
-  CINEMATIC_EDIT_ANALYSIS_CONFIG,
-  CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
-  COMMON_STRINGS,
-  CONTENT_SAFETY_RESPONSE_SCHEMA,
-  CONTENT_TYPES,
-  ENCODING_UTF8,
-  ENGLISH_CHAPTER_RETRY_DIRECTIVE,
-  EN_AUDIENCE_GUIDELINES,
-  EN_GENRE_GUIDELINES,
-  EN_STYLE_GUIDELINES,
-  EXPORT_ZIP_CONFIG,
-  ErrorMessage,
-  FFMPEG_CONFIG,
-  FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
-  FINAL_VIDEO_QA_RESPONSE_SCHEMA,
-  FileEncoding,
-  GENRE_VISUAL_GUIDELINES,
-  HOOK_RESPONSE_SCHEMA,
-  HTTP_HEADERS,
-  HTTP_STATUS_CODES,
-  LogEvent,
-  MUSIC_CREATOR_CONSTANTS,
-  MUSIC_CREATOR_TEXTS,
-  MimeType,
-  PIPELINE_CONTROLLER_MESSAGES,
-  PIPELINE_LOGS,
-  PROJECTS_DIR_NAME,
-  PROMPT_CONTEXT,
-  REFACTOR_CONSTANTS,
-  REGEX_AUTO_MODE_PATH,
-  RESPONSE_CONTRACT_CONFIG,
-  ROUTER_PATHS,
-  SCENE_QA_REFERENCE_DIRECTIVE,
-  SCRIPT_PLAN_RESPONSE_SCHEMA,
-  SCRIPT_PROMPT_CONFIG,
-  SINGLE_QUOTE_REGEX,
-  STYLE_IDENTITY_BOUNDARY,
-  SYSTEM_FETCH_CONFIG,
-  SceneDensity,
-  SplitStrategy,
-  TEMPLATE_CONFIG,
-  TEMPLATE_TMP_CONTENT,
-  THUMBNAIL_IMAGE_REFERENCE_PROMPT,
-  TRANSFER_ENCODINGS,
-  UltraStreamLogType,
-  VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
-  VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
-  VISUAL_BIBLE_REFERENCE_PROMPT,
-  VISUAL_BIBLE_RESPONSE_SCHEMA,
-  VISUAL_QA_RESPONSE_SCHEMA,
-  VI_AUDIENCE_GUIDELINES,
-  VI_GENRE_GUIDELINES,
-  VI_STYLE_GUIDELINES,
-  VOICE_ALIGN_LOGS,
-  VideoGenre,
-  WHITESPACE_REGEX,
-  createCinematicFilmPackageResponseSchema,
-  getAudioQualityPrompt,
-  getBackendMsg,
-  getChapterExpansionPrompt,
-  getChapterWriterPrompt,
-  getCharacterAnalysisPrompt,
-  getCharacterExtractPrompt,
-  getCharacterRewriteBatchPrompt,
-  getCharacterRewriteThumbnailsBatchPrompt,
-  getCombinedScriptPrompt,
-  getContentSafetyPrompt,
-  getDetailedPromptBuilderPrompt,
-  getDurationText,
-  getFinalScriptEditorialPrompt,
-  getGlobalVisualBiblePrompt,
-  getMultiStepHookPrompt,
-  getPipelineLog,
-  getQuickVideoPlanningPrompt,
-  getSceneDetailBatchPrompt,
-  getSceneImageQualityPrompt,
-  getScriptSplitPrompt,
-  getSeoOptimizationPrompt,
-  getStyleRewriteBatchPrompt,
-  getThumbnailContractRepairPrompt,
-  getThumbnailLayoutPrompt,
-  getVideoSceneSelectionPrompt,
-  getVietnameseDiacriticsRestorationPrompt,
-  getVisualPromptQaRepairPrompt,
-  resolveStylePreset,
-  stylePresetsKeywords,
-} from "../../constants";
-import { CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS, CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG, CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_POLICY_CONFIG, CINEMATIC_ROOM_STAGE, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION, createCinematicArtifactRequestId, normalizeCinematicArtifactIdentity, resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
-import {
-  CINEMATIC_DIALOGUE_DIRECTIVES,
-  getCinematicCharacterAnalysisPrompt,
-  getCinematicCharacterProviderRepairPrompt,
-  getCinematicFilmPackagePrompt,
-  getCinematicFilmPackageRepairPrompt,
-  getCinematicFinalVideoQualityPrompt,
-  getCinematicGlobalEditDecisionPrompt,
-  getCinematicSceneImageProviderRepairPrompt,
-  getCinematicSeoPrompt,
-  getCinematicStoryboardRecoveryPrompt,
-  getCinematicThumbnailPrompt,
-  getCinematicThumbnailProviderRepairPrompt,
-  getCinematicThumbnailTechnicalRepairPrompt,
-  getCinematicVideoPlanningPrompt,
-  getCinematicVideoPlanningRepairPrompt,
-  getCinematicVideoPromptPolicyRepairPrompt,
-  getCinematicVideoPromptRepairPrompt,
-} from "../../constants/cinematicPrompts.js";
-import {
-  ADVISORY_QA_CONFIG,
-  BACKGROUND_MODE_CONFIG,
-  CINEMATIC_GENERATION_RECOVERY_CONFIG,
-  CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
-  CONTENT_SAFETY_CONFIG,
-  FACT_RESEARCH_CONFIG,
-  FFMPEG_RENDER_CONSTANTS,
-  FINAL_MULTIMODAL_QA_CONFIG,
-  FLOW_CHARACTER_CONFIG,
-  FLOW_DIRECT_VIDEO_CONFIG,
-  FLOW_VIDEO_MEDIA_CONFIG,
-  FREE_AI_PROVIDER_LOGS,
-  GEMINI_MEDIA_ERRORS,
-  PIPELINE_COMPLETION_CONFIG,
-  PIPELINE_CONFIG,
-  PIPELINE_SERVER_ERRORS,
-  PIPELINE_SERVER_LOGS,
-  PROJECT_ASSET_GROUP,
-  PROJECT_ASSET_INVALID_REQUEST,
-  PROJECT_ASSET_QUERY,
-  PROJECT_ASSET_ROUTE,
-  PROJECT_VISUAL_ASSET_CONFIG,
-  REFERENCE_ASSET_GROUP,
-  RENDER_QUEUE_CONFIG,
-  SCRIPT_PLAN_CONFIG,
-  SCRIPT_SPEECH_RATE_CONFIG,
-  STORYBOARD_FALLBACK_CONFIG,
-  STORYBOARD_QUALITY_CONFIG,
-  STYLE_EXTRACTION_CONFIG,
-  TECHNICAL_RESPONSE_RETRY_CONFIG,
-  TEXT_IN_IMAGE_MODE_CONFIG,
-  VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG,
-} from "../../constants/config.js";
-import { HttpStatus, VideoQuality } from "../../constants/enums.js";
-import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_24, MOTION_TEMPLATE_SYMBOL_25, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEMPLATE_SYMBOL_27, MOTION_TEMPLATE_SYMBOL_28, MOTION_TEMPLATE_SYMBOL_29, MOTION_TEXT_STRING, MOTION_TEXT_SYMBOL_13, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
-import { MUSIC_CREATOR_REGEXES } from "../../constants/musicCreator.js";
-import { MUSIC_MIXER_SERVER, buildMusicMixerAnalyzePrompt, buildMusicMixerSeoPrompt } from "../../constants/musicMixer.js";
-import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
-import {
+  SOURCE_TEMPLATE_SYMBOL_75,
+  SOURCE_TEMPLATE_SYMBOL_86,
+  SOURCE_TEMPLATE_SYMBOL_170,
+  SOURCE_TEXT_CLOSE_2,
+  SOURCE_TEMPLATE_SYMBOL_586,
   SOURCE_TEMPLATE_ADJUST_MASK,
   SOURCE_TEMPLATE_AI_CAPCUT,
   SOURCE_TEMPLATE_ALLOWBACKGROUNDPEOPLE_MUST_BE_BOOLEAN,
@@ -483,7 +323,6 @@ import {
   SOURCE_TEXT_CLEAR_EXPRESSIVE_FACIAL_FEATURES,
   SOURCE_TEXT_CLIMAX,
   SOURCE_TEXT_CLIP_MISSING,
-  SOURCE_TEXT_CLOSE_2,
   SOURCE_TEXT_CODE,
   SOURCE_TEXT_COLLAGE,
   SOURCE_TEXT_COLORMODE,
@@ -997,7 +836,172 @@ import {
   SOURCE_TEXT_WRITINGPRINCIPLES,
   SOURCE_TEXT_WX,
   SOURCE_TEXT_Y,
-} from "../../constants/sourceText";
+} from "../../constants/sourceText.js";
+import { exec, execFile, spawn } from "child_process";
+import { createHash, randomUUID } from "crypto";
+import express, { NextFunction, Request, Response } from "express";
+import ffmpeg from "fluent-ffmpeg";
+import fs from "fs";
+import JSZip from "jszip";
+import _ from "lodash";
+import path from "path";
+import { pipeline as streamPipeline } from "stream/promises";
+import {
+  ALIGN_CONFIG,
+  API_ROUTES,
+  ASSETS_DIR_NAME,
+  AUDIO_QUALITY_RESPONSE_SCHEMA,
+  BACKEND_MESSAGES,
+  BASE64_DATA_URL_REGEX,
+  CAPCUT_CONFIG,
+  CHAPTER_RESPONSE_SCHEMA,
+  CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
+  CINEMATIC_EDIT_ANALYSIS_CONFIG,
+  CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
+  COMMON_STRINGS,
+  CONTENT_SAFETY_RESPONSE_SCHEMA,
+  CONTENT_TYPES,
+  ENCODING_UTF8,
+  ENGLISH_CHAPTER_RETRY_DIRECTIVE,
+  EN_AUDIENCE_GUIDELINES,
+  EN_GENRE_GUIDELINES,
+  EN_STYLE_GUIDELINES,
+  EXPORT_ZIP_CONFIG,
+  ErrorMessage,
+  FFMPEG_CONFIG,
+  FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
+  FINAL_VIDEO_QA_RESPONSE_SCHEMA,
+  FileEncoding,
+  GENRE_VISUAL_GUIDELINES,
+  HOOK_RESPONSE_SCHEMA,
+  HTTP_HEADERS,
+  HTTP_STATUS_CODES,
+  LogEvent,
+  MUSIC_CREATOR_CONSTANTS,
+  MUSIC_CREATOR_TEXTS,
+  MimeType,
+  PIPELINE_CONTROLLER_MESSAGES,
+  PIPELINE_LOGS,
+  PROJECTS_DIR_NAME,
+  PROMPT_CONTEXT,
+  REFACTOR_CONSTANTS,
+  REGEX_AUTO_MODE_PATH,
+  RESPONSE_CONTRACT_CONFIG,
+  ROUTER_PATHS,
+  SCENE_QA_REFERENCE_DIRECTIVE,
+  SCRIPT_PLAN_RESPONSE_SCHEMA,
+  SCRIPT_PROMPT_CONFIG,
+  SINGLE_QUOTE_REGEX,
+  STYLE_IDENTITY_BOUNDARY,
+  SYSTEM_FETCH_CONFIG,
+  SceneDensity,
+  SplitStrategy,
+  TEMPLATE_CONFIG,
+  TEMPLATE_TMP_CONTENT,
+  THUMBNAIL_IMAGE_REFERENCE_PROMPT,
+  TRANSFER_ENCODINGS,
+  UltraStreamLogType,
+  VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
+  VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
+  VISUAL_BIBLE_REFERENCE_PROMPT,
+  VISUAL_BIBLE_RESPONSE_SCHEMA,
+  VISUAL_QA_RESPONSE_SCHEMA,
+  VI_AUDIENCE_GUIDELINES,
+  VI_GENRE_GUIDELINES,
+  VI_STYLE_GUIDELINES,
+  VOICE_ALIGN_LOGS,
+  VideoGenre,
+  WHITESPACE_REGEX,
+  createCinematicFilmPackageResponseSchema,
+  getAudioQualityPrompt,
+  getBackendMsg,
+  getChapterExpansionPrompt,
+  getChapterWriterPrompt,
+  getCharacterAnalysisPrompt,
+  getCharacterExtractPrompt,
+  getCharacterRewriteBatchPrompt,
+  getCharacterRewriteThumbnailsBatchPrompt,
+  getCombinedScriptPrompt,
+  getContentSafetyPrompt,
+  getDetailedPromptBuilderPrompt,
+  getDurationText,
+  getFinalScriptEditorialPrompt,
+  getGlobalVisualBiblePrompt,
+  getMultiStepHookPrompt,
+  getPipelineLog,
+  getQuickVideoPlanningPrompt,
+  getSceneDetailBatchPrompt,
+  getSceneImageQualityPrompt,
+  getScriptSplitPrompt,
+  getSeoOptimizationPrompt,
+  getStyleRewriteBatchPrompt,
+  getThumbnailContractRepairPrompt,
+  getThumbnailLayoutPrompt,
+  getVideoSceneSelectionPrompt,
+  getVietnameseDiacriticsRestorationPrompt,
+  getVisualPromptQaRepairPrompt,
+  resolveStylePreset,
+  stylePresetsKeywords,
+} from "../../constants";
+import { CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS, CINEMATIC_ARTIFACT_TYPE, CINEMATIC_CHARACTER_PACK_CONFIG, CINEMATIC_CHAT_PLANNING_CONFIG, CINEMATIC_POLICY_CONFIG, CINEMATIC_ROOM_STAGE, CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION, createCinematicArtifactRequestId, normalizeCinematicArtifactIdentity, resolveCinematicClipDuration } from "../../constants/cinematicConstants.js";
+import {
+  CINEMATIC_DIALOGUE_DIRECTIVES,
+  getCinematicCharacterAnalysisPrompt,
+  getCinematicCharacterProviderRepairPrompt,
+  getCinematicFilmPackagePrompt,
+  getCinematicFilmPackageRepairPrompt,
+  getCinematicFinalVideoQualityPrompt,
+  getCinematicGlobalEditDecisionPrompt,
+  getCinematicSceneImageProviderRepairPrompt,
+  getCinematicSeoPrompt,
+  getCinematicStoryboardRecoveryPrompt,
+  getCinematicThumbnailPrompt,
+  getCinematicThumbnailProviderRepairPrompt,
+  getCinematicThumbnailTechnicalRepairPrompt,
+  getCinematicVideoPlanningPrompt,
+  getCinematicVideoPlanningRepairPrompt,
+  getCinematicVideoPromptPolicyRepairPrompt,
+  getCinematicVideoPromptRepairPrompt,
+} from "../../constants/cinematicPrompts.js";
+import {
+  ADVISORY_QA_CONFIG,
+  BACKGROUND_MODE_CONFIG,
+  CINEMATIC_GENERATION_RECOVERY_CONFIG,
+  CINEMATIC_SCRIPT_ARTIFACT_CONFIG,
+  CONTENT_SAFETY_CONFIG,
+  FACT_RESEARCH_CONFIG,
+  FFMPEG_RENDER_CONSTANTS,
+  FINAL_MULTIMODAL_QA_CONFIG,
+  FLOW_CHARACTER_CONFIG,
+  FLOW_DIRECT_VIDEO_CONFIG,
+  FLOW_VIDEO_MEDIA_CONFIG,
+  FREE_AI_PROVIDER_LOGS,
+  GEMINI_MEDIA_ERRORS,
+  PIPELINE_COMPLETION_CONFIG,
+  PIPELINE_CONFIG,
+  PIPELINE_SERVER_ERRORS,
+  PIPELINE_SERVER_LOGS,
+  PROJECT_ASSET_GROUP,
+  PROJECT_ASSET_INVALID_REQUEST,
+  PROJECT_ASSET_QUERY,
+  PROJECT_ASSET_ROUTE,
+  PROJECT_VISUAL_ASSET_CONFIG,
+  REFERENCE_ASSET_GROUP,
+  RENDER_QUEUE_CONFIG,
+  SCRIPT_PLAN_CONFIG,
+  SCRIPT_SPEECH_RATE_CONFIG,
+  STORYBOARD_FALLBACK_CONFIG,
+  STORYBOARD_QUALITY_CONFIG,
+  STYLE_EXTRACTION_CONFIG,
+  TECHNICAL_RESPONSE_RETRY_CONFIG,
+  TEXT_IN_IMAGE_MODE_CONFIG,
+  VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG,
+} from "../../constants/config.js";
+import { HttpStatus, VideoQuality } from "../../constants/enums.js";
+import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_24, MOTION_TEMPLATE_SYMBOL_25, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEMPLATE_SYMBOL_27, MOTION_TEMPLATE_SYMBOL_28, MOTION_TEMPLATE_SYMBOL_29, MOTION_TEXT_STRING, MOTION_TEXT_SYMBOL_13, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
+import { MUSIC_CREATOR_REGEXES } from "../../constants/musicCreator.js";
+import { MUSIC_MIXER_SERVER, buildMusicMixerAnalyzePrompt, buildMusicMixerSeoPrompt } from "../../constants/musicMixer.js";
+import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_TEXTS } from "../../constants/sunoAutomation.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
@@ -1198,26 +1202,20 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
   const feature = _.isEqual(generateType, GenerateType.Video) ? FeatureType.VIDEO : FeatureType.IMAGE;
   requireLicense(feature)(req, res, next);
 };
-interface MusicPlanRequestPayload {
-  requestedSongCount: number;
-  style: string;
-  referenceSongs: string[];
-  projectId: string;
-  execution: Record<string, any>;
-  requestId: string;
-  thumbnailReference: string;
-  thumbnailReferenceName: string;
-  thumbnailDescription: string;
-  sunoInspo: string;
-}
+interface MusicPlanRequestPayload { requestedSongCount: number; style: string; referenceSongs: string[]; projectId: string; execution: Record<string, any>; requestId: string; thumbnailReference: string; thumbnailReferenceName: string; thumbnailDescription: string; sunoInspo: string; }
 let activeMusicPlanRuns = 0;
 const activeMusicPlanCleanup = new Map<string, Promise<void>>();
-const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]> }>();
-const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
+const musicPlanCheckpoints = new Map<
+  string,
+  { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]>; }
+>();
+const parseAndValidateMusicPlanRequest = (
+  req: Request,
+): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string; } => {
   const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
   const style = _.trim(_.toString(req.body?.style));
   const referenceSongs = _.compact(_.map(_.castArray(req.body?.referenceSongs || []), (song) => _.trim(_.toString(song))));
-  const projectId = _.toString(req.body?.projectId || `${MUSIC_CREATOR_CONSTANTS.PROJECT_ID_PREFIX}${Date.now()}`);
+  const projectId = _.toString(req.body?.projectId || SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_CREATOR_CONSTANTS.PROJECT_ID_PREFIX}`, `${Date.now()}`));
   const execution = req.body?.aiExecution || {};
   const requestId = _.toString(req.body?.requestId || projectId);
   const thumbnailReference = _.toString(req.body?.thumbnailReference);
@@ -1244,27 +1242,15 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
     },
   };
 };
-const generateMusicThumbnailAsset = async (input: {
-  songs: any[];
-  style: string;
-  styleAnalysis?: unknown;
-  sourceContext?: string;
-  description: string;
-  reference: string;
-  referenceName: string;
-  chromeHeadless: boolean;
-  assetPurpose?: string;
-  showTrackList?: boolean;
-  planningProvider?: AiPlanningFallbackProvider;
-  planningModel?: AiPlanningChatModel;
-  signal?: AbortSignal;
-}): Promise<{ thumbnail: string | null; warning?: string }> => {
+const generateMusicThumbnailAsset = async (
+  input: { songs: any[]; style: string; styleAnalysis?: unknown; sourceContext?: string; description: string; reference: string; referenceName: string; chromeHeadless: boolean; assetPurpose?: string; showTrackList?: boolean; planningProvider?: AiPlanningFallbackProvider; planningModel?: AiPlanningChatModel; signal?: AbortSignal; },
+): Promise<{ thumbnail: string | null; warning?: string; }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
   const imageBrief =
     input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
       ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false, input.styleAnalysis)
       : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext, input.styleAnalysis);
-  const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(`${randomUUID()}`);
+  const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
   const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
   const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
   let prompt = "";
@@ -1308,7 +1294,7 @@ const generateMusicThumbnailAsset = async (input: {
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
     input.signal?.throwIfAborted();
     try {
-      logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(`${attempt + 1}`, `${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`, `${input.songs.length}`, `${!_.isEmpty(input.reference)}`));
+      logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${input.songs.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${!_.isEmpty(input.reference)}`)));
       const result = await generateImageWithPlaywright({
         prompt,
         style: input.style,
@@ -1341,23 +1327,23 @@ const generateMusicThumbnailAsset = async (input: {
       const encodedImage = _.toString(result.base64);
       if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES) {
         lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(`${attempt + 1}`, `${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`, `${encodedImage.length}`));
+        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
         await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
         continue;
       }
       const mimeType = _.startsWith(encodedImage, SUNO_AUTOMATION_CONFIG.JPEG_HEADER_SIGNATURE) ? SUNO_AUTOMATION_CONFIG.MIME_IMAGE_JPEG : SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PNG;
       const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
       if (thumbnail) {
-        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(`${attempt + 1}`, `${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`, `${encodedImage.length}`));
+        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
         return { thumbnail };
       }
       lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-      logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(`${attempt + 1}`, `${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`, `${lastWarning}`));
+      logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
     } catch (error) {
       input.signal?.throwIfAborted();
       logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
       lastWarning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, lastWarning));
-      logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(`${attempt + 1}`, `${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`, `${lastWarning}`));
+      logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
       await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
       if (transientImageError.test(lastWarning)) {
         transientErrorCount += 1;
@@ -1367,7 +1353,7 @@ const generateMusicThumbnailAsset = async (input: {
       if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
     }
   }
-  logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(`${lastWarning}`));
+  logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
   return { thumbnail: null, warning: lastWarning };
 };
 const isRetryableMusicRoomError = (error: unknown): boolean => {
@@ -1419,39 +1405,39 @@ const getMusicStyleAnalysisContractIssues = (parsed: any, requestId: string): st
   if (!_.isEqual(parsed?.requestId, requestId)) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_REQUEST_ID_ISSUE);
   const isText = (value: unknown): boolean => _.isString(value) && !_.isEmpty(_.trim(value));
   const checkText = (key: string, value: unknown): void => {
-    if (!isText(value)) issues.push(SOURCE_TEMPLATE_MUST_BE_NON_EMPTY_TEXT(`${key}`));
+    if (!isText(value)) issues.push(SOURCE_TEMPLATE_MUST_BE_NON_EMPTY_TEXT(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)));
   };
   const checkArray = (key: string, value: unknown, allowEmpty = false): void => {
-    if (!_.isArray(value) || (!allowEmpty && _.isEmpty(value)) || !_.every(value, isText)) issues.push(SOURCE_TEMPLATE_MUST_BE(`${key}`, `${allowEmpty ? SOURCE_TEXT_AN_ARRAY_OF_TEXT : SOURCE_TEXT_A_NON_EMPTY_ARRAY_OF_TEXT}`));
+    if (!_.isArray(value) || (!allowEmpty && _.isEmpty(value)) || !_.every(value, isText)) issues.push(SOURCE_TEMPLATE_MUST_BE(SOURCE_TEMPLATE_SYMBOL_86(`${key}`), SOURCE_TEMPLATE_SYMBOL_86(`${allowEmpty ? SOURCE_TEXT_AN_ARRAY_OF_TEXT : SOURCE_TEXT_A_NON_EMPTY_ARRAY_OF_TEXT}`)));
   };
   const checkConfidence = (key: string, value: unknown): void => {
-    if (!_.isInteger(_.toNumber(value)) || !_.inRange(_.toNumber(value), 0, 101)) issues.push(SOURCE_TEMPLATE_MUST_BE_AN_INTEGER_FROM_0(`${key}`));
+    if (!_.isInteger(_.toNumber(value)) || !_.inRange(_.toNumber(value), 0, 101)) issues.push(SOURCE_TEMPLATE_MUST_BE_AN_INTEGER_FROM_0(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)));
   };
-  for (const key of [SOURCE_TEXT_COUNTRY, SOURCE_TEXT_REGION, SOURCE_TEXT_LANGUAGE, SOURCE_TEXT_DIALECT, SOURCE_TEXT_AUDIENCEAGE, SOURCE_TEXT_LYRICALCHARACTERAGE, SOURCE_TEXT_CONTENTSUITABILITY]) checkText(SOURCE_TEMPLATE_MARKET(`${key}`), parsed?.market?.[key]);
+  for (const key of [SOURCE_TEXT_COUNTRY, SOURCE_TEXT_REGION, SOURCE_TEXT_LANGUAGE, SOURCE_TEXT_DIALECT, SOURCE_TEXT_AUDIENCEAGE, SOURCE_TEXT_LYRICALCHARACTERAGE, SOURCE_TEXT_CONTENTSUITABILITY]) checkText(SOURCE_TEMPLATE_MARKET(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.market?.[key]);
   checkConfidence(SOURCE_TEXT_MARKET_CONFIDENCE, parsed?.market?.confidence);
-  for (const key of [SOURCE_TEXT_SONGWRITINGERA, SOURCE_TEXT_PRODUCTIONERA]) checkText(SOURCE_TEMPLATE_ERA(`${key}`), parsed?.era?.[key]);
+  for (const key of [SOURCE_TEXT_SONGWRITINGERA, SOURCE_TEXT_PRODUCTIONERA]) checkText(SOURCE_TEMPLATE_ERA(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.era?.[key]);
   checkText(SOURCE_TEXT_GENRE_PRIMARY, parsed?.genre?.primary);
   checkArray(SOURCE_TEXT_GENRE_SECONDARY, parsed?.genre?.secondary, true);
   checkArray(SOURCE_TEXT_GENRE_INFLUENCES, parsed?.genre?.influences, true);
-  for (const key of [SOURCE_TEXT_TEMPORANGE, SOURCE_TEXT_RHYTHM, SOURCE_TEXT_HARMONY, SOURCE_TEXT_MELODICLANGUAGE, SOURCE_TEXT_HOOKPLACEMENT, SOURCE_TEXT_VOCALCHARACTER, SOURCE_TEXT_LISTENINGCONTEXT]) checkText(SOURCE_TEMPLATE_MUSICALDNA(`${key}`), parsed?.musicalDna?.[key]);
-  for (const key of [SOURCE_TEXT_SONGFORMS, SOURCE_TEXT_INSTRUMENTATION]) checkArray(SOURCE_TEMPLATE_MUSICALDNA(`${key}`), parsed?.musicalDna?.[key]);
-  for (const key of [SOURCE_TEXT_NARRATIVEVOICE, SOURCE_TEXT_VOCABULARY, SOURCE_TEXT_RHYMEBEHAVIOR]) checkText(SOURCE_TEMPLATE_LYRICALDNA(`${key}`), parsed?.lyricalDna?.[key]);
-  for (const key of [SOURCE_TEXT_THEMES, SOURCE_TEXT_IMAGERY]) checkArray(SOURCE_TEMPLATE_LYRICALDNA(`${key}`), parsed?.lyricalDna?.[key]);
+  for (const key of [SOURCE_TEXT_TEMPORANGE, SOURCE_TEXT_RHYTHM, SOURCE_TEXT_HARMONY, SOURCE_TEXT_MELODICLANGUAGE, SOURCE_TEXT_HOOKPLACEMENT, SOURCE_TEXT_VOCALCHARACTER, SOURCE_TEXT_LISTENINGCONTEXT]) checkText(SOURCE_TEMPLATE_MUSICALDNA(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.musicalDna?.[key]);
+  for (const key of [SOURCE_TEXT_SONGFORMS, SOURCE_TEXT_INSTRUMENTATION]) checkArray(SOURCE_TEMPLATE_MUSICALDNA(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.musicalDna?.[key]);
+  for (const key of [SOURCE_TEXT_NARRATIVEVOICE, SOURCE_TEXT_VOCABULARY, SOURCE_TEXT_RHYMEBEHAVIOR]) checkText(SOURCE_TEMPLATE_LYRICALDNA(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.lyricalDna?.[key]);
+  for (const key of [SOURCE_TEXT_THEMES, SOURCE_TEXT_IMAGERY]) checkArray(SOURCE_TEMPLATE_LYRICALDNA(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.lyricalDna?.[key]);
   if (!_.isArray(parsed?.historicalInfluences)) issues.push(SOURCE_TEXT_HISTORICALINFLUENCES_MUST_BE_AN_ARRAY);
   else
     parsed.historicalInfluences.forEach((item: any, index: number) => {
-      for (const key of [SOURCE_TEXT_NAME, SOURCE_TEXT_ROLE, SOURCE_TEXT_RELEVANCE]) checkText(SOURCE_TEMPLATE_HISTORICALINFLUENCES(`${index}`, `${key}`), item?.[key]);
+      for (const key of [SOURCE_TEXT_NAME, SOURCE_TEXT_ROLE, SOURCE_TEXT_RELEVANCE]) checkText(SOURCE_TEMPLATE_HISTORICALINFLUENCES(SOURCE_TEMPLATE_SYMBOL_86(`${index}`), SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), item?.[key]);
     });
   checkText(SOURCE_TEXT_CREATIVEPROFILE_ROLE, parsed?.creativeProfile?.role);
-  for (const key of [SOURCE_TEXT_STRENGTHS, SOURCE_TEXT_WRITINGPRINCIPLES, SOURCE_TEXT_PRODUCTIONPRINCIPLES]) checkArray(SOURCE_TEMPLATE_CREATIVEPROFILE(`${key}`), parsed?.creativeProfile?.[key]);
+  for (const key of [SOURCE_TEXT_STRENGTHS, SOURCE_TEXT_WRITINGPRINCIPLES, SOURCE_TEXT_PRODUCTIONPRINCIPLES]) checkArray(SOURCE_TEMPLATE_CREATIVEPROFILE(SOURCE_TEMPLATE_SYMBOL_86(`${key}`)), parsed?.creativeProfile?.[key]);
   for (const key of [SOURCE_TEXT_MUSTPRESERVE, SOURCE_TEXT_MUSTVARY, SOURCE_TEXT_MUSTNOTCOPY]) checkArray(key, parsed?.[key]);
   checkArray(SOURCE_TEXT_UNCERTAINTIES, parsed?.uncertainties, true);
   if (!_.isArray(parsed?.evidence) || _.isEmpty(parsed.evidence)) issues.push(SOURCE_TEXT_EVIDENCE_MUST_BE_A_NON_EMPTY);
   else
     parsed.evidence.forEach((item: any, index: number) => {
-      checkText(SOURCE_TEMPLATE_EVIDENCE_CLAIM(`${index}`), item?.claim);
-      checkText(SOURCE_TEMPLATE_EVIDENCE_SOURCECLUE(`${index}`), item?.sourceClue);
-      checkConfidence(SOURCE_TEMPLATE_EVIDENCE_CONFIDENCE(`${index}`), item?.confidence);
+      checkText(SOURCE_TEMPLATE_EVIDENCE_CLAIM(SOURCE_TEMPLATE_SYMBOL_86(`${index}`)), item?.claim);
+      checkText(SOURCE_TEMPLATE_EVIDENCE_SOURCECLUE(SOURCE_TEMPLATE_SYMBOL_86(`${index}`)), item?.sourceClue);
+      checkConfidence(SOURCE_TEMPLATE_EVIDENCE_CONFIDENCE(SOURCE_TEMPLATE_SYMBOL_86(`${index}`)), item?.confidence);
     });
   return issues;
 };
@@ -1460,7 +1446,7 @@ const validateMusicPlanSongContract = (parsed: any, expectedCount: number, start
     return false;
   }
   const invalid = _.find(parsed.songs, (song: any, index: number) => {
-    const hasSongId = _.isEqual(_.trim(_.toString(song?.songId)), SOURCE_TEMPLATE_SONG(`${String(startIndex + index).padStart(3, SOURCE_TEXT_0)}`));
+    const hasSongId = _.isEqual(_.trim(_.toString(song?.songId)), SOURCE_TEMPLATE_SONG(SOURCE_TEMPLATE_SYMBOL_86(`${String(startIndex + index).padStart(3, SOURCE_TEXT_0)}`)));
     const hasTitle = !_.isEmpty(_.trim(_.toString(song?.title)));
     const lyrics = _.trim(_.toString(song?.lyrics));
     const hasCompleteLyrics = lyrics.length >= 300 && /\[[^\]]+\]/.test(lyrics);
@@ -1477,8 +1463,8 @@ const getMusicPlanSongContractIssues = (parsed: any, expectedCount: number, star
   const issues: string[] = [];
   if (!_.isArray(parsed?.songs) || songs.length !== expectedCount) issues.push(SUNO_AUTOMATION_TEXTS.formatSongCountIssue(expectedCount));
   _.forEach(songs, (song, index) => {
-    const label = SOURCE_TEMPLATE_SONG_2(`${index + 1}`);
-    if (!_.isEqual(_.trim(_.toString(song?.songId)), SOURCE_TEMPLATE_SONG(`${String(startIndex + index).padStart(3, SOURCE_TEXT_0)}`))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoIdIssue(label));
+    const label = SOURCE_TEMPLATE_SONG_2(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`));
+    if (!_.isEqual(_.trim(_.toString(song?.songId)), SOURCE_TEMPLATE_SONG(SOURCE_TEMPLATE_SYMBOL_86(`${String(startIndex + index).padStart(3, SOURCE_TEXT_0)}`)))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoIdIssue(label));
     if (_.isEmpty(_.trim(_.toString(song?.title)))) issues.push(SUNO_AUTOMATION_TEXTS.formatSongNoTitleIssue(label));
     const lyrics = _.trim(_.toString(song?.lyrics));
     if (lyrics.length < 300) issues.push(SUNO_AUTOMATION_TEXTS.formatSongLyricsLengthIssue(label, lyrics.length));
@@ -1580,7 +1566,7 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
   const normalizedTitles = _.map(options, (option) => _.toLower(_.trim(_.toString(option?.title))));
   if (_.uniq(normalizedTitles).length !== normalizedTitles.length) issues.push(SOURCE_TEXT_SEO_TITLES_ARE_DUPLICATED);
   _.forEach(options, (option, index) => {
-    const label = SOURCE_TEMPLATE_SEO_OPTION(`${index + 1}`);
+    const label = SOURCE_TEMPLATE_SEO_OPTION(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`));
     const title = _.trim(_.toString(option?.title));
     const description = _.trim(_.toString(option?.description));
     const hashtags = _.castArray(option?.hashtags || []);
@@ -1593,13 +1579,13 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
         return firstLetter === firstLetter.toUpperCase();
       })
     )
-      issues.push(SOURCE_TEMPLATE_TITLE_MUST_CAPITALIZE_EVERY_WORD(`${label}`));
-    if (SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) || SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title)) issues.push(SOURCE_TEMPLATE_TITLE_HAS_DISALLOWED_PUNCTUATION_OR_CLAIM(`${label}`));
+      issues.push(SOURCE_TEMPLATE_TITLE_MUST_CAPITALIZE_EVERY_WORD(SOURCE_TEMPLATE_SYMBOL_86(`${label}`)));
+    if (SUNO_AUTOMATION_PATTERNS.SEO_TITLE_LOUD_PUNCTUATION.test(title) || SUNO_AUTOMATION_PATTERNS.SEO_TITLE_MISLEADING_CLAIMS.test(title)) issues.push(SOURCE_TEMPLATE_TITLE_HAS_DISALLOWED_PUNCTUATION_OR_CLAIM(SOURCE_TEMPLATE_SYMBOL_86(`${label}`)));
     if (_.size(description.match(MUSIC_CREATOR_REGEXES.EMOJI) || []) !== 1 || !MUSIC_CREATOR_REGEXES.EMOJI_PREFIX.test(description)) issues.push(SUNO_AUTOMATION_TEXTS.formatDescriptionEmojiIssue(label));
     if (hashtags.length !== 10) issues.push(SUNO_AUTOMATION_TEXTS.formatHashtagsCountIssue(label));
-    if (!_.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.ASCII_HASHTAG_VALIDATION.test(_.toString(value))) || _.uniq(_.map(hashtags, (value) => _.toLower(_.toString(value)))).length !== hashtags.length) issues.push(SOURCE_TEMPLATE_HASHTAGS_MUST_BE_UNIQUE_ASCII_VALUES(`${label}`));
+    if (!_.every(hashtags, (value) => SUNO_AUTOMATION_PATTERNS.ASCII_HASHTAG_VALIDATION.test(_.toString(value))) || _.uniq(_.map(hashtags, (value) => _.toLower(_.toString(value)))).length !== hashtags.length) issues.push(SOURCE_TEMPLATE_HASHTAGS_MUST_BE_UNIQUE_ASCII_VALUES(SOURCE_TEMPLATE_SYMBOL_86(`${label}`)));
     if (tags.length !== 12) issues.push(SUNO_AUTOMATION_TEXTS.formatTagsCountIssue(label));
-    if (!_.every(tags, (value) => /^[a-z0-9 ]+$/i.test(_.toString(value)) && !_.isEmpty(_.trim(_.toString(value)))) || _.uniq(_.map(tags, (value) => _.toLower(_.toString(value)))).length !== tags.length) issues.push(SOURCE_TEMPLATE_TAGS_MUST_BE_UNIQUE_UNACCENTED_WORDS(`${label}`));
+    if (!_.every(tags, (value) => /^[a-z0-9 ]+$/i.test(_.toString(value)) && !_.isEmpty(_.trim(_.toString(value)))) || _.uniq(_.map(tags, (value) => _.toLower(_.toString(value)))).length !== tags.length) issues.push(SOURCE_TEMPLATE_TAGS_MUST_BE_UNIQUE_UNACCENTED_WORDS(SOURCE_TEMPLATE_SYMBOL_86(`${label}`)));
     if (!_.isInteger(_.toNumber(option?.seoScore))) issues.push(SUNO_AUTOMATION_TEXTS.formatSeoScoreIntegerIssue(label));
   });
   if (!validateMusicPlaylistSeoContract(parsed, [])) issues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_SEO_CHECKS_FAILED_ISSUE);
@@ -1649,7 +1635,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         closeRoomOnComplete: false,
       });
     const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
-    const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(`${requestId}`);
+    const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
@@ -1663,7 +1649,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
         await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STYLE_RESPONSE, { runId: requestId, stage: currentStage, attempt: attempt + 1, responseChars: response.text.length, status: styleAnalysisParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });
-        if (!styleAnalysisParsed) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_JSON_PARSE_FAILED(`${attempt + 1}`, `${response.text.length}`, `${prompt.length}`));
+        if (!styleAnalysisParsed) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_JSON_PARSE_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.text.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${prompt.length}`)));
       } catch (error) {
         await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STYLE_ATTEMPT_FAILED, { runId: requestId, stage: currentStage, attempt: attempt + 1, ...musicErrorDetails(error) });
         if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
@@ -1677,12 +1663,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       }
       styleAnalysisIssues = getMusicStyleAnalysisContractIssues(styleAnalysisParsed, analysisRequestId);
       if (styleAnalysisIssues.length) await writeMusicDiagnostic(SOURCE_TEXT_PLAN_CONTRACT_FAILED, { runId: requestId, stage: currentStage, attempt: attempt + 1, issueCount: styleAnalysisIssues.length, issues: styleAnalysisIssues });
-      if (!_.isEmpty(styleAnalysisIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_CONTRACT_ATTEMPT_ISSUES(`${attempt + 1}`, `${styleAnalysisIssues.join(SOURCE_TEXT_SYMBOL_34)}`));
+      if (!_.isEmpty(styleAnalysisIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_CONTRACT_ATTEMPT_ISSUES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${styleAnalysisIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));
       if (validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) break;
     }
     if (!validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) {
       const failedFields = _.slice(styleAnalysisIssues, 0, 5).join(SOURCE_TEXT_SYMBOL_6);
-      throw createAppError(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}${failedFields ? SOURCE_TEMPLATE_CHI_TIET(`${failedFields}`) : ""}`);
+      throw createAppError(SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}`, `${failedFields ? SOURCE_TEMPLATE_CHI_TIET(SOURCE_TEMPLATE_SYMBOL_86(`${failedFields}`)) : ""}`));
     }
     checkpoint.styleAnalysis = styleAnalysisParsed;
     checkpoint.updatedAt = Date.now();
@@ -1695,7 +1681,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       let batchParsed: any = null;
       let batchIssues: string[] = [];
       let roomWasReloaded = false;
-      const batchRequestId = SOURCE_TEMPLATE_BATCH(`${requestId}`, `${startIndex}`, `${requestSuffix}`);
+      const batchRequestId = SOURCE_TEMPLATE_BATCH(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`), SOURCE_TEMPLATE_SYMBOL_86(`${startIndex}`), SOURCE_TEMPLATE_SYMBOL_86(`${requestSuffix}`));
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         const prompt =
           attempt === 0 || roomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed);
@@ -1724,7 +1710,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
             return batchParsed.songs;
           }
         }
-        if (!_.isEmpty(batchIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SONG_COMPOSITION_CONTRACT_BATCH_ATTEMPT(`${startIndex}`, `${attempt + 1}`, `${batchIssues.join(SOURCE_TEXT_SYMBOL_34)}`));
+        if (!_.isEmpty(batchIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SONG_COMPOSITION_CONTRACT_BATCH_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${startIndex}`), SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${batchIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));
         if (batchIssues.length) await writeMusicDiagnostic(SOURCE_TEXT_PLAN_CONTRACT_FAILED, { runId: requestId, stage: currentStage, batch: startIndex, attempt: attempt + 1, issueCount: batchIssues.length, issues: batchIssues });
       }
       return null;
@@ -1741,7 +1727,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const fallbackSongs: any[] = [];
       for (let offset = 0; offset < batchCount; offset += fallbackBatchSize) {
         const fallbackCount = Math.min(fallbackBatchSize, batchCount - offset);
-        fallbackSongs.push(...(await composeAdaptiveBatch(startIndex + offset, fallbackCount, SOURCE_TEMPLATE_FALLBACK(`${requestSuffix}`, `${fallbackBatchSize}`, `${offset + 1}`), workerId)));
+        fallbackSongs.push(...(await composeAdaptiveBatch(startIndex + offset, fallbackCount, SOURCE_TEMPLATE_FALLBACK(SOURCE_TEMPLATE_SYMBOL_86(`${requestSuffix}`), SOURCE_TEMPLATE_SYMBOL_86(`${fallbackBatchSize}`), SOURCE_TEMPLATE_SYMBOL_86(`${offset + 1}`)), workerId)));
       }
       return fallbackSongs;
     };
@@ -1795,7 +1781,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     if (compositionFailure) throw compositionFailure;
     songs.push(..._.flatten(composedBatchResults));
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-    const rankingRequestId = SOURCE_TEMPLATE_SONG_RANKING(`${requestId}`);
+    const rankingRequestId = SOURCE_TEMPLATE_SONG_RANKING(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_RANKING;
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     let rankingParsed: any = null;
@@ -1815,7 +1801,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     if (!validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const songsById = _.keyBy(songs, (song) => _.trim(_.toString(song?.songId)));
     const rankedSongs = _.map(rankingParsed.orderedSongIds, (songId) => songsById[_.trim(_.toString(songId))]);
-    const sunoSettingsRequestId = SOURCE_TEMPLATE_SUNO_SETTINGS(`${requestId}`);
+    const sunoSettingsRequestId = SOURCE_TEMPLATE_SUNO_SETTINGS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SUNO_SETTINGS;
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     let sunoSettingsParsed: any = null;
@@ -1848,7 +1834,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       };
     }
     if (!hasUsableSunoSettingsResult(sunoSettingsParsed)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
-    const seoRequestId = SOURCE_TEMPLATE_PLAYLIST_SEO(`${requestId}`);
+    const seoRequestId = SOURCE_TEMPLATE_PLAYLIST_SEO(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     const generatePlaylistSeo = async (): Promise<any> => {
       let parsed: any = null;
       let seoIssues: string[] = [];
@@ -1869,10 +1855,10 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         }
         seoIssues = getMusicPlaylistSeoContractIssues(parsed);
         if (!_.isEmpty(seoIssues)) await writeMusicDiagnostic(SOURCE_TEXT_PLAN_SEO_CONTRACT_FAILED, { runId: requestId, attempt: attempt + 1, issues: seoIssues.join(SOURCE_TEXT_SYMBOL_34) });
-        if (!_.isEmpty(seoIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SEO_CONTRACT_ATTEMPT_ISSUES(`${attempt + 1}`, `${seoIssues.join(SOURCE_TEXT_SYMBOL_34)}`));
+        if (!_.isEmpty(seoIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SEO_CONTRACT_ATTEMPT_ISSUES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${seoIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));
         if (validateMusicPlaylistSeoContract(parsed, rankedSongs)) return parsed;
       }
-      throw createAppError(SOURCE_TEMPLATE_SEO_CHUA_DAT_DINH_DANG_YEU(`${seoIssues.join(SOURCE_TEXT_SYMBOL_6)}`));
+      throw createAppError(SOURCE_TEMPLATE_SEO_CHUA_DAT_DINH_DANG_YEU(SOURCE_TEMPLATE_SYMBOL_86(`${seoIssues.join(SOURCE_TEXT_SYMBOL_6)}`)));
     };
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL;
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
@@ -1880,7 +1866,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       .then((parsed) => ({ parsed, warning: undefined as string | undefined }))
       .catch((error) => {
         const warning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR));
-        logger.error(SOURCE_TEMPLATE_MUSICPLAN_NON_FATAL_SEO_FAILURE_REQUESTID(`${requestId}`), error);
+        logger.error(SOURCE_TEMPLATE_MUSICPLAN_NON_FATAL_SEO_FAILURE_REQUESTID(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`)), error);
         void writeMusicDiagnostic(SOURCE_TEXT_PLAN_SEO_FAILED, { runId: requestId, stage: currentStage, ...musicErrorDetails(error) });
         return { parsed: null, warning };
       });
@@ -1907,11 +1893,11 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     });
   } catch (error) {
     const cause = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-    logger.error(SOURCE_TEMPLATE_MUSICPLAN_FAILED_REQUESTID_STAGE_CAUSE(`${requestId}`, `${currentStage}`, `${cause}`), error);
+    logger.error(SOURCE_TEMPLATE_MUSICPLAN_FAILED_REQUESTID_STAGE_CAUSE(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`), SOURCE_TEMPLATE_SYMBOL_86(`${currentStage}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)), error);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_FAILED, { runId: requestId, stage: currentStage, elapsedMs: Date.now() - planStartedAt, ...musicErrorDetails(error) });
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
-      error: SOURCE_TEMPLATE_SYMBOL_40(`${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED}`, `${currentStage}`, `${cause}`),
+      error: SOURCE_TEMPLATE_SYMBOL_40(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED}`), SOURCE_TEMPLATE_SYMBOL_86(`${currentStage}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)),
     });
   } finally {
     try {
@@ -1937,13 +1923,13 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
   const styleAnalysis = req.body?.styleAnalysis;
   const execution = req.body?.aiExecution || {};
   const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
-  const projectId = _.trim(_.toString(req.body?.projectId)) || SOURCE_TEMPLATE_SEO_3(`${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}`, `${Date.now()}`);
-  const requestId = _.trim(_.toString(req.body?.requestId)) || SOURCE_TEMPLATE_REGENERATE(`${projectId}`);
+  const projectId = _.trim(_.toString(req.body?.projectId)) || SOURCE_TEMPLATE_SEO_3(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${Date.now()}`));
+  const requestId = _.trim(_.toString(req.body?.requestId)) || SOURCE_TEMPLATE_REGENERATE(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`));
   if (_.isEmpty(songs)) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.SERVER_VALIDATION_ERROR });
   }
   activeMusicPlanRuns += 1;
-  const planningRun = beginChatPlanningRun(requestId, Date.now(), SOURCE_TEMPLATE_SEO_4(`${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}`), provider);
+  const planningRun = beginChatPlanningRun(requestId, Date.now(), SOURCE_TEMPLATE_SEO_4(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE}`)), provider);
   req.once(SOURCE_TEXT_ABORTED, planningRun.cancel);
   try {
     let parsed: any = null;
@@ -1972,12 +1958,12 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
         parsed = null;
       }
       seoIssues = getMusicPlaylistSeoContractIssues(parsed);
-      if (!_.isEmpty(seoIssues)) logger.warn(SOURCE_TEMPLATE_MUSICSEOREGENERATE_CONTRACT_ATTEMPT_ISSUES(`${attempt + 1}`, `${seoIssues.join(SOURCE_TEXT_SYMBOL_34)}`));
+      if (!_.isEmpty(seoIssues)) logger.warn(SOURCE_TEMPLATE_MUSICSEOREGENERATE_CONTRACT_ATTEMPT_ISSUES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${seoIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));
       if (validateMusicPlaylistSeoContract(parsed, songs)) {
         return res.json({ success: true, playlistSeoOptions: parsed.seoOptions });
       }
     }
-    throw createAppError(SOURCE_TEMPLATE_SYMBOL_16(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}`, `${seoIssues.join(SOURCE_TEXT_SYMBOL_6)}`));
+    throw createAppError(SOURCE_TEMPLATE_SYMBOL_16(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}`), SOURCE_TEMPLATE_SYMBOL_86(`${seoIssues.join(SOURCE_TEXT_SYMBOL_6)}`)));
   } catch (error) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR)) });
   } finally {
@@ -1996,7 +1982,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   if (_.isEmpty(note) || note.length > SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_MAX_CHARACTERS || (reference && (!referenceMatch || !_.startsWith(referenceMatch[1], SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)))) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.IMAGE_NOTE_NORMALIZE_ERROR });
   }
-  const requestId = SOURCE_TEMPLATE_SYMBOL_5(`${SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE}`, `${randomUUID()}`);
+  const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
   const provider = AiPlanningFallbackProvider.GeminiChat;
   const planningRun = beginChatPlanningRun(requestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE, provider);
   req.once(SOURCE_TEXT_ABORTED, planningRun.cancel);
@@ -2041,7 +2027,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
     }
     throw lastError;
   } catch (error) {
-    logger.error(SOURCE_TEMPLATE_MUSICIMAGENOTE_FAILED_REQUESTID(`${requestId}`), error);
+    logger.error(SOURCE_TEMPLATE_MUSICIMAGENOTE_FAILED_REQUESTID(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`)), error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.IMAGE_NOTE_NORMALIZE_ERROR });
   } finally {
     planningRun.complete();
@@ -2095,7 +2081,7 @@ router.post(ROUTER_PATHS.MUSIC_THUMBNAIL, requireLicense(FeatureType.IMAGE), asy
   }
 });
 const createSunoEvaluationPreview = async (wavPath: string): Promise<Buffer> => {
-  const previewPath = path.join(getTempDirectory(), SOURCE_TEMPLATE_VIDIFY_EVALUATION_MP3(`${randomUUID()}`));
+  const previewPath = path.join(getTempDirectory(), SOURCE_TEMPLATE_VIDIFY_EVALUATION_MP3(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`)));
   try {
     await new Promise<void>((resolve, reject) => {
       ffmpeg(wavPath)
@@ -2154,10 +2140,10 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
           }
         }
         const cause = _.toString(_.get(lastError, SOURCE_TEXT_MESSAGE, lastError));
-        logger.error(SOURCE_TEMPLATE_TRACKID_CAUSE(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR}`, `${songId}`, `${cause}`));
+        logger.error(SOURCE_TEMPLATE_TRACKID_CAUSE(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR}`), SOURCE_TEMPLATE_SYMBOL_86(`${songId}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)));
         await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_DOWNLOAD_FAILED, { songId, cause });
         if (_.includes(cause, SOURCE_TEXT_SUNO_DOWNLOAD_HTTP_502)) throw createAppError(SUNO_AUTOMATION_TEXTS.WAV_SOURCE_UNAVAILABLE_ERR);
-        throw createAppError(SOURCE_TEMPLATE_TRACKID(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR}`, `${songId}`, `${cause}`));
+        throw createAppError(SOURCE_TEMPLATE_TRACKID(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR}`), SOURCE_TEMPLATE_SYMBOL_86(`${songId}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)));
       }),
     );
     _.forEach(downloaded, ([songId, buffer]) => {
@@ -2185,17 +2171,14 @@ const readMediaDurationSeconds = async (filePath: string): Promise<number> =>
     command.ffprobe((error, metadata) => finish(error ? 0 : Math.max(0, _.toNumber(metadata?.format?.duration))));
   });
 const selectProfessionalSunoTracks = async (
-  groups: Array<{ title: string; candidates: string[] }>,
+  groups: Array<{ title: string; candidates: string[]; }>,
   style: string,
-  room: {
-    projectId: string;
-    workerId: string;
-    model?: AiPlanningChatModel;
-    signal?: AbortSignal;
-  },
+  room: { projectId: string; workerId: string; model?: AiPlanningChatModel; signal?: AbortSignal; },
   audioBySongId: Map<string, Buffer>,
   styleAnalysis?: unknown,
-): Promise<Array<{ songId: string; title: string; qualityScore: number }>> => {
+): Promise<
+  Array<{ songId: string; title: string; qualityScore: number; }>
+> => {
   if (_.isEmpty(groups) || _.some(groups, (group) => _.size(group.candidates) !== 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
   const createEvaluationSchema = (requestId: string) => ({
     type: SOURCE_TEXT_OBJECT,
@@ -2249,7 +2232,7 @@ const selectProfessionalSunoTracks = async (
           closeRoomOnComplete: false,
           allowDefaultGeminiModel: true,
         });
-        const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+        const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[]; }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         if (!_.isEqual(evaluation.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION) || !_.isEqual(normalizeCinematicArtifactIdentity(evaluation.requestId), normalizeCinematicArtifactIdentity(requestId))) {
           throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         }
@@ -2282,11 +2265,11 @@ const SUNO_CURATED_LOG_PATH = path.join(getLogsDirectory(), SUNO_AUTOMATION_CONF
 const writeSunoCuratedLog = async (event: string, details: Record<string, unknown> = {}): Promise<void> => {
   try {
     await fs.promises.mkdir(path.dirname(SUNO_CURATED_LOG_PATH), { recursive: true });
-    await fs.promises.appendFile(SUNO_CURATED_LOG_PATH, MOTION_TEMPLATE_SYMBOL_24(`${jsonUtils.safeStringify({ timestamp: new Date().toISOString(), event, ...details })}`), SUNO_AUTOMATION_CONFIG.ENCODING_UTF8);
+    await fs.promises.appendFile(SUNO_CURATED_LOG_PATH, MOTION_TEMPLATE_SYMBOL_24(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify({ timestamp: new Date().toISOString(), event, ...details })}`)), SUNO_AUTOMATION_CONFIG.ENCODING_UTF8);
   } catch {}
 };
 router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) => {
-  const runId = SOURCE_TEMPLATE_SUNO_CREATE(`${Date.now()}`);
+  const runId = SOURCE_TEMPLATE_SUNO_CREATE(SOURCE_TEMPLATE_SYMBOL_86(`${Date.now()}`));
   const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
     songId: _.trim(_.toString(song?.songId)),
     title: _.trim(_.toString(song?.title)),
@@ -2324,7 +2307,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   const evaluationProjectId = _.trim(_.toString(req.body?.aiExecution?.projectId));
   const evaluationProvider = req.body?.aiExecution?.provider;
   const evaluationMode = req.body?.aiExecution?.mode;
-  const evaluationRunId = evaluationProjectId || `${SUNO_AUTOMATION_CONFIG.EVALUATION_RUN_ID_PREFIX}${Date.now()}`;
+  const evaluationRunId = evaluationProjectId || SOURCE_TEMPLATE_SYMBOL_75(`${SUNO_AUTOMATION_CONFIG.EVALUATION_RUN_ID_PREFIX}`, `${Date.now()}`);
   let planningRun: ReturnType<typeof beginChatPlanningRun> | undefined;
   let evaluationWorkerIds: string[] = [];
   let evaluationRoomsClosed = false;
@@ -2363,7 +2346,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       tracks = _.map(recoveredSongIds, (songId, index) => {
         const songIndex = Math.floor(index / 2);
         const songNumber = songIndex + 1;
-        const title = songTitles[songIndex] || MOTION_TEMPLATE_SYMBOL_12(`${SUNO_AUTOMATION_CONFIG.DEFAULT_TRACK_LABEL}`, `${songNumber}`);
+        const title = songTitles[songIndex] || MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.DEFAULT_TRACK_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${songNumber}`));
         return { songId, title: SUNO_AUTOMATION_TEXTS.formatSongVariantTitle(songNumber, title, (index % 2) + 1) };
       });
     }
@@ -2396,7 +2379,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         await writeMusicDownloadCheckpoint(checkpoint);
       }
       for (const [songId, filePath] of _.toPairs(checkpoint.downloadedPaths)) {
-        const validLocation = path.dirname(path.resolve(filePath)) === downloadFolder && path.extname(filePath).toLowerCase() === SOURCE_TEMPLATE_SYMBOL_36(`${downloadFormat}`);
+        const validLocation = path.dirname(path.resolve(filePath)) === downloadFolder && path.extname(filePath).toLowerCase() === SOURCE_TEMPLATE_SYMBOL_36(SOURCE_TEMPLATE_SYMBOL_86(`${downloadFormat}`));
         if (!validLocation || !(await fs.promises.stat(filePath).catch(() => null))?.isFile() || (await readMediaDurationSeconds(filePath)) <= 0) {
           delete checkpoint.downloadedPaths[songId];
         }
@@ -2411,7 +2394,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
           wavPath = await readMusicEvaluationWav(audioCacheKey, track.songId);
         }
         if (wavPath) sourceWavPaths[track.songId] = wavPath;
-        else throw createAppError(SOURCE_TEMPLATE_KHONG_THE_PHUC_HOI_WAV_GOC(`${track.title}`));
+        else throw createAppError(SOURCE_TEMPLATE_KHONG_THE_PHUC_HOI_WAV_GOC(SOURCE_TEMPLATE_SYMBOL_86(`${track.title}`)));
       }
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_DOWNLOAD_STARTED, {
         evaluationRunId,
@@ -2464,7 +2447,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       const trackPairs = _.chunk(tracks, 2);
       if (_.some(trackPairs, (pair) => _.size(pair) < 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
       const pairChunks = _.chunk(trackPairs, SUNO_AUTOMATION_CONFIG.EVALUATION_SONGS_PER_CHUNK);
-      evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => SOURCE_TEMPLATE_CHUNK(`${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}`, `${chunkIndex + 1}`));
+      evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => SOURCE_TEMPLATE_CHUNK(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`)));
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, {
         evaluationRunId,
         trackCount: tracks.length,
@@ -2535,12 +2518,20 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       );
       const rejectedEvaluation = _.find(evaluationResults, (result) => _.isEqual(result.status, SOURCE_TEXT_REJECTED)) as PromiseRejectedResult | undefined;
       if (rejectedEvaluation) throw rejectedEvaluation.reason;
-      const selectedTrackChunks = _.map(evaluationResults, (result) => (result as PromiseFulfilledResult<Array<{ songId: string; title: string; qualityScore: number }>>).value);
+      const selectedTrackChunks = _.map(
+        evaluationResults,
+        (result) =>
+          (
+            result as PromiseFulfilledResult<
+              Array<{ songId: string; title: string; qualityScore: number; }>
+            >
+          ).value,
+      );
       const evaluatedTracks = _.flatten(selectedTrackChunks);
       const globallyRankedTracks = _.orderBy(evaluatedTracks, [SOURCE_TEXT_QUALITYSCORE], [SOURCE_TEXT_DESC]);
       const selectedTracksForDownload = _.map(globallyRankedTracks, (track, rank) => ({
         songId: track.songId,
-        title: SOURCE_TEMPLATE_SYMBOL_6(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`, `${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`),
+        title: SOURCE_TEMPLATE_SYMBOL_6(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`)),
         qualityScore: track.qualityScore,
       }));
       if (!_.isEqual(selectedTracksForDownload.length, trackPairs.length) || !_.isEqual(_.uniq(_.map(selectedTracksForDownload, SOURCE_TEXT_SONGID)).length, trackPairs.length)) {
@@ -2640,7 +2631,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
       profileVersion: STYLE_EXTRACTION_CONFIG.PROFILE_VERSION,
       negativeStylePrompt: preset.negativePrompt,
       fingerprint: createHash(SOURCE_TEXT_SHA256)
-        .update(SOURCE_TEMPLATE_SYMBOL_8(`${preset.id}`, `${Date.now()}`))
+        .update(SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${preset.id}`), SOURCE_TEMPLATE_SYMBOL_86(`${Date.now()}`)))
         .digest(SOURCE_TEXT_HEX),
     };
     return res.json(result);
@@ -2774,7 +2765,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const hasStyleRef = hasValidImages(resolvedVisualConfig.styleReferenceImages);
     const hasSceneRef = hasValidImages(resolvedVisualConfig.sceneReferenceImages) || hasValidImages(resolvedVisualConfig.referenceImages);
     const referenceContext = hasStyleRef ? SOURCE_TEXT_A_STYLE_ONLY_REFERENCE_IMAGE_WILL : hasSceneRef ? SOURCE_TEXT_ONE_OR_MORE_SCENE_CONTEXT_REFERENCE : SOURCE_TEXT_NO_REFERENCE_IMAGE_WILL_BE_ATTACHED;
-    const targetStyle = hasStyleRef ? SOURCE_TEXT_STRICT_VISUAL_MATCH_ACCURATELY_FOLLOW_THE : hasSceneRef ? SOURCE_TEMPLATE_STRICT_CHARACTER_MATCH_ACCURATELY_PRESERVE_CHARACTER(`${visualStyle}`) : resolvedVisualBible.visualStyle || visualStyle || SOURCE_TEXT_DYNAMICALLY_CRAFT_THE_VISUAL_ART_STYLE;
+    const targetStyle = hasStyleRef ? SOURCE_TEXT_STRICT_VISUAL_MATCH_ACCURATELY_FOLLOW_THE : hasSceneRef ? SOURCE_TEMPLATE_STRICT_CHARACTER_MATCH_ACCURATELY_PRESERVE_CHARACTER(SOURCE_TEMPLATE_SYMBOL_86(`${visualStyle}`)) : resolvedVisualBible.visualStyle || visualStyle || SOURCE_TEXT_DYNAMICALLY_CRAFT_THE_VISUAL_ART_STYLE;
     let plannedScenes: StoryboardScene[] = _.cloneDeep(sourceScenes);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
     const chunks = isCinematicPlanning ? createCinematicPlanningBatches(planningPayload) : _.chunk(planningPayload, chunkSize);
@@ -2967,15 +2958,15 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           _.filter(_.groupBy(returnedIds), (group) => _.gt(group.length, 1)),
           (group) => group[0],
         );
-        _.forEach(duplicateIds, (id) => issues.push(SOURCE_TEMPLATE_ID_DUPLICATE(`${id || SOURCE_TEXT_UNKNOWN}`)));
-        _.forEach(_.difference(returnedIds, sceneIds), (id) => issues.push(SOURCE_TEMPLATE_ID_UNEXPECTED(`${id || SOURCE_TEXT_UNKNOWN}`)));
-        _.forEach(_.difference(sceneIds, returnedIds), (id) => issues.push(SOURCE_TEMPLATE_RESULT_MISSING_SCENE(`${id}`)));
-        if (!_.isEqual(items.length, chunkItem.length)) issues.push(SOURCE_TEMPLATE_RESULT_WRONG_SCENE_COUNT(`${items.length}`, `${chunkItem.length}`));
+        _.forEach(duplicateIds, (id) => issues.push(SOURCE_TEMPLATE_ID_DUPLICATE(SOURCE_TEMPLATE_SYMBOL_86(`${id || SOURCE_TEXT_UNKNOWN}`))));
+        _.forEach(_.difference(returnedIds, sceneIds), (id) => issues.push(SOURCE_TEMPLATE_ID_UNEXPECTED(SOURCE_TEMPLATE_SYMBOL_86(`${id || SOURCE_TEXT_UNKNOWN}`))));
+        _.forEach(_.difference(sceneIds, returnedIds), (id) => issues.push(SOURCE_TEMPLATE_RESULT_MISSING_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${id}`))));
+        if (!_.isEqual(items.length, chunkItem.length)) issues.push(SOURCE_TEMPLATE_RESULT_WRONG_SCENE_COUNT(SOURCE_TEMPLATE_SYMBOL_86(`${items.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkItem.length}`)));
         if (isCinematicPlanning) {
           _.forEach(items, (item) => {
             const sceneId = _.toString(_.get(item, SOURCE_TEXT_ID));
             if (!_.includes(sceneIds, sceneId)) return;
-            if (_.isEmpty(_.trim(_.toString(_.get(item, SOURCE_TEXT_GENERATIONPROMPT))))) issues.push(SOURCE_TEMPLATE_GENERATIONPROMPT_MISSING(`${sceneId}`));
+            if (_.isEmpty(_.trim(_.toString(_.get(item, SOURCE_TEXT_GENERATIONPROMPT))))) issues.push(SOURCE_TEMPLATE_GENERATIONPROMPT_MISSING(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           });
           return _.uniq(issues);
         }
@@ -2986,48 +2977,48 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           issues.push(...getVisualShotPlanIssues(item, baseScene));
           const optimizedPrompt = _.trim(_.toString(_.get(item, SOURCE_TEXT_PROMPT)));
           if (quickVideoPromptRequired && _.isEmpty(_.trim(_.toString(_.get(item, SOURCE_TEXT_GENERATIONPROMPT))))) {
-            issues.push(SOURCE_TEMPLATE_GENERATIONPROMPT_MISSING(`${sceneId}`));
+            issues.push(SOURCE_TEMPLATE_GENERATIONPROMPT_MISSING(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           }
           const optimizedPromptWordCount = _.size(_.words(optimizedPrompt));
-          if (_.lt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MIN_PROMPT_WORDS) || _.gt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MAX_PROMPT_WORDS)) issues.push(SOURCE_TEMPLATE_PROMPT_INCOMPLETE_OR_OUTSIDE_GLOBAL_LENGTH(`${sceneId}`));
-          if (!VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SENTENCE_END_PATTERN.test(optimizedPrompt) || VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.DANGLING_END_PATTERN.test(optimizedPrompt)) issues.push(SOURCE_TEMPLATE_PROMPT_INCOMPLETE_SENTENCE(`${sceneId}`));
-          if (VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.COMPILER_FALLBACK_PATTERN.test(optimizedPrompt)) issues.push(SOURCE_TEMPLATE_PROMPT_COMPILER_FALLBACK_FORBIDDEN(`${sceneId}`));
+          if (_.lt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MIN_PROMPT_WORDS) || _.gt(optimizedPromptWordCount, VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.MAX_PROMPT_WORDS)) issues.push(SOURCE_TEMPLATE_PROMPT_INCOMPLETE_OR_OUTSIDE_GLOBAL_LENGTH(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (!VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SENTENCE_END_PATTERN.test(optimizedPrompt) || VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.DANGLING_END_PATTERN.test(optimizedPrompt)) issues.push(SOURCE_TEMPLATE_PROMPT_INCOMPLETE_SENTENCE(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.COMPILER_FALLBACK_PATTERN.test(optimizedPrompt)) issues.push(SOURCE_TEMPLATE_PROMPT_COMPILER_FALLBACK_FORBIDDEN(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           _.forEach(QUICK_VISUAL_PLANNING_ENGLISH_FIELDS, (field) => {
             const value = _.trim(_.toString(_.get(item, field)));
-            if (_.isEmpty(value)) issues.push(SOURCE_TEMPLATE_MISSING(`${sceneId}`, `${field}`));
+            if (_.isEmpty(value)) issues.push(SOURCE_TEMPLATE_MISSING(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${field}`)));
           });
-          if (!_.isArray(_.get(item, SOURCE_TEXT_CHARACTERIDS))) issues.push(SOURCE_TEMPLATE_CHARACTERIDS_MUST_BE_ARRAY(`${sceneId}`));
+          if (!_.isArray(_.get(item, SOURCE_TEXT_CHARACTERIDS))) issues.push(SOURCE_TEMPLATE_CHARACTERIDS_MUST_BE_ARRAY(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           const returnedCharacterIds = _.uniq(_.map(_.castArray(_.get(item, SOURCE_TEXT_CHARACTERIDS, [])), _.toString));
           const validCharacterIds = new Set(_.map(characters, SOURCE_TEXT_ID));
           _.forEach(
             _.reject(returnedCharacterIds, (id) => validCharacterIds.has(id)),
-            (id) => issues.push(SOURCE_TEMPLATE_CHARACTERIDS_UNKNOWN(`${sceneId}`, `${id}`)),
+            (id) => issues.push(SOURCE_TEMPLATE_CHARACTERIDS_UNKNOWN(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`))),
           );
           const sourceCharacterIds = _.uniq(_.map(_.defaultTo(baseScene.characterIds, []), _.toString));
           const subjectMayBeOmitted = _.some([_.get(item, SOURCE_TEXT_SHOTROLE), _.get(item, SOURCE_TEXT_SHOTPURPOSE)], (role) => _.includes(VISUAL_PROMPT_GLOBAL_CONTRACT_CONFIG.SUBJECT_OPTIONAL_ROLES, _.toString(role))) && _.isEqual(_.get(item, SOURCE_TEXT_EXPECTEDSUBJECTCOUNT), 0);
-          if (!subjectMayBeOmitted) _.forEach(_.difference(sourceCharacterIds, returnedCharacterIds), (id) => issues.push(SOURCE_TEMPLATE_CHARACTERIDS_MISSING_STORY_SUBJECT(`${sceneId}`, `${id}`)));
+          if (!subjectMayBeOmitted) _.forEach(_.difference(sourceCharacterIds, returnedCharacterIds), (id) => issues.push(SOURCE_TEMPLATE_CHARACTERIDS_MISSING_STORY_SUBJECT(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`))));
           _.forEach(returnedCharacterIds, (id) => {
             const characterName = _.trim(_.toString(_.find(characters, { id })?.name));
-            if (!_.isEmpty(characterName) && !_.includes(_.lowerCase(optimizedPrompt), _.lowerCase(characterName))) issues.push(SOURCE_TEMPLATE_PROMPT_MISSING_NAMED_CHARACTER(`${sceneId}`, `${id}`));
+            if (!_.isEmpty(characterName) && !_.includes(_.lowerCase(optimizedPrompt), _.lowerCase(characterName))) issues.push(SOURCE_TEMPLATE_PROMPT_MISSING_NAMED_CHARACTER(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)));
           });
-          if (!_.isArray(_.get(item, SOURCE_TEXT_PROPIDS))) issues.push(SOURCE_TEMPLATE_PROPIDS_MUST_BE_ARRAY(`${sceneId}`));
+          if (!_.isArray(_.get(item, SOURCE_TEXT_PROPIDS))) issues.push(SOURCE_TEMPLATE_PROPIDS_MUST_BE_ARRAY(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           if (!_.isInteger(_.get(item, SOURCE_TEXT_EXPECTEDSUBJECTCOUNT)) || _.lt(_.get(item, SOURCE_TEXT_EXPECTEDSUBJECTCOUNT), 0)) {
-            issues.push(SOURCE_TEMPLATE_EXPECTEDSUBJECTCOUNT_INVALID(`${sceneId}`));
+            issues.push(SOURCE_TEMPLATE_EXPECTEDSUBJECTCOUNT_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           }
-          if (!_.isBoolean(_.get(item, SOURCE_TEXT_ALLOWBACKGROUNDPEOPLE))) issues.push(SOURCE_TEMPLATE_ALLOWBACKGROUNDPEOPLE_MUST_BE_BOOLEAN(`${sceneId}`));
-          if (!_.includes(QUICK_VISUAL_LAYOUTS, _.get(item, SOURCE_TEXT_LAYOUT) as (typeof QUICK_VISUAL_LAYOUTS)[number])) issues.push(SOURCE_TEMPLATE_LAYOUT_INVALID(`${sceneId}`));
-          if (!_.includes(QUICK_VISUAL_SHOT_PURPOSES, _.get(item, SOURCE_TEXT_SHOTPURPOSE) as (typeof QUICK_VISUAL_SHOT_PURPOSES)[number])) issues.push(SOURCE_TEMPLATE_SHOTPURPOSE_INVALID(`${sceneId}`));
-          if (!_.isBoolean(_.get(item, SOURCE_TEXT_TEXTALLOWED))) issues.push(SOURCE_TEMPLATE_TEXTALLOWED_MUST_BE_BOOLEAN(`${sceneId}`));
-          if (!_.includes([SOURCE_TEXT_ARCHIVAL, SOURCE_TEXT_AI_GENERATED] as string[], _.get(item, SOURCE_TEXT_ASSETSTRATEGY))) issues.push(SOURCE_TEMPLATE_ASSETSTRATEGY_INVALID(`${sceneId}`));
+          if (!_.isBoolean(_.get(item, SOURCE_TEXT_ALLOWBACKGROUNDPEOPLE))) issues.push(SOURCE_TEMPLATE_ALLOWBACKGROUNDPEOPLE_MUST_BE_BOOLEAN(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (!_.includes(QUICK_VISUAL_LAYOUTS, _.get(item, SOURCE_TEXT_LAYOUT) as (typeof QUICK_VISUAL_LAYOUTS)[number])) issues.push(SOURCE_TEMPLATE_LAYOUT_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (!_.includes(QUICK_VISUAL_SHOT_PURPOSES, _.get(item, SOURCE_TEXT_SHOTPURPOSE) as (typeof QUICK_VISUAL_SHOT_PURPOSES)[number])) issues.push(SOURCE_TEMPLATE_SHOTPURPOSE_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (!_.isBoolean(_.get(item, SOURCE_TEXT_TEXTALLOWED))) issues.push(SOURCE_TEMPLATE_TEXTALLOWED_MUST_BE_BOOLEAN(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (!_.includes([SOURCE_TEXT_ARCHIVAL, SOURCE_TEXT_AI_GENERATED] as string[], _.get(item, SOURCE_TEXT_ASSETSTRATEGY))) issues.push(SOURCE_TEMPLATE_ASSETSTRATEGY_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           if (_.isEqual(_.get(item, SOURCE_TEXT_ASSETSTRATEGY), SOURCE_TEXT_ARCHIVAL) && _.isEmpty(_.trim(_.toString(_.get(item, SOURCE_TEXT_ARCHIVALSEARCHQUERY))))) {
-            issues.push(SOURCE_TEMPLATE_ARCHIVALSEARCHQUERY_REQUIRED_FOR_ARCHIVAL(`${sceneId}`));
+            issues.push(SOURCE_TEMPLATE_ARCHIVALSEARCHQUERY_REQUIRED_FOR_ARCHIVAL(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           }
           const textAllowed = _.get(item, SOURCE_TEXT_TEXTALLOWED);
           const textOverlay = _.trim(_.toString(_.get(item, SOURCE_TEXT_TEXTOVERLAY)));
-          if (_.isEqual(textAllowed, true) && _.isEmpty(textOverlay)) issues.push(SOURCE_TEMPLATE_TEXTOVERLAY_REQUIRED_WHEN_TEXT_ALLOWED(`${sceneId}`));
-          if (_.isEqual(textAllowed, false) && !_.isEmpty(textOverlay)) issues.push(SOURCE_TEMPLATE_TEXTOVERLAY_MUST_BE_EMPTY_WHEN_TEXT(`${sceneId}`));
+          if (_.isEqual(textAllowed, true) && _.isEmpty(textOverlay)) issues.push(SOURCE_TEMPLATE_TEXTOVERLAY_REQUIRED_WHEN_TEXT_ALLOWED(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (_.isEqual(textAllowed, false) && !_.isEmpty(textOverlay)) issues.push(SOURCE_TEMPLATE_TEXTOVERLAY_MUST_BE_EMPTY_WHEN_TEXT(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           if (_.isEqual(resolvedVisualConfig.styleTextInImageMode, TextInImageMode.NoText) && !_.isEqual(textAllowed, false)) {
-            issues.push(SOURCE_TEMPLATE_TEXTALLOWED_MUST_BE_FALSE_IN_NO(`${sceneId}`));
+            issues.push(SOURCE_TEMPLATE_TEXTALLOWED_MUST_BE_FALSE_IN_NO(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
           }
         });
         const normalizeSceneMeaning = (item: any): string[] =>
@@ -3048,7 +3039,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           const union = _.union(previousMeaning, currentMeaning);
           const similarity = _.isEmpty(union) ? 1 : _.divide(_.intersection(previousMeaning, currentMeaning).length, union.length);
           if (_.gte(_.min([previousMeaning.length, currentMeaning.length]) || 0, 8) && _.gte(similarity, 0.78)) {
-            issues.push(SOURCE_TEMPLATE_SCENE_MEANING_TOO_SIMILAR_TO(`${_.toString(_.get(currentItem, SOURCE_TEXT_ID))}`, `${_.toString(_.get(previousItem, SOURCE_TEXT_ID))}`));
+            issues.push(SOURCE_TEMPLATE_SCENE_MEANING_TOO_SIMILAR_TO(SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(currentItem, SOURCE_TEXT_ID))}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(previousItem, SOURCE_TEXT_ID))}`)));
           }
         }
         for (let itemIndex = 2; itemIndex < items.length; itemIndex++) {
@@ -3056,9 +3047,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           const shotSizes = _.map(_.slice(items, itemIndex - 2, itemIndex + 1), (item) => _.toLower(_.trim(_.toString(_.get(item, SOURCE_TEXT_SHOTSIZE)))));
           const cameraAngles = _.map(_.slice(items, itemIndex - 2, itemIndex + 1), (item) => _.toLower(_.trim(_.toString(_.get(item, SOURCE_TEXT_CAMERAANGLE)))));
           const sceneId = _.toString(_.get(items[itemIndex], SOURCE_TEXT_ID));
-          if (_.uniq(shotPurposes).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_SHOTPURPOSE_REPEATED_THREE_TIMES(`${sceneId}`));
-          if (_.uniq(shotSizes).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_SHOTSIZE_REPEATED_THREE_TIMES(`${sceneId}`));
-          if (_.uniq(cameraAngles).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_CAMERAANGLE_REPEATED_THREE_TIMES(`${sceneId}`));
+          if (_.uniq(shotPurposes).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_SHOTPURPOSE_REPEATED_THREE_TIMES(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (_.uniq(shotSizes).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_SHOTSIZE_REPEATED_THREE_TIMES(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
+          if (_.uniq(cameraAngles).length === 1) issues.push(SOURCE_TEMPLATE_EDITORIAL_RHYTHM_CAMERAANGLE_REPEATED_THREE_TIMES(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)));
         }
         return _.uniq(issues);
       };
@@ -3077,7 +3068,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       }
       if (!_.isEmpty(planningIssues)) {
         planningWarnings.push(...planningIssues);
-        appWarn(SOURCE_TEMPLATE_CONTINUING_AFTER_FINAL_CORRECTION(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}`, `${_.join(planningIssues, SOURCE_TEXT_SYMBOL_10)}`));
+        appWarn(SOURCE_TEMPLATE_CONTINUING_AFTER_FINAL_CORRECTION(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(planningIssues, SOURCE_TEXT_SYMBOL_10)}`)));
       }
       const returnedById = _.keyBy(parsedItems, (item) => _.toString(item.id));
       const blockingPlanningIssues = planningIssues;
@@ -3125,7 +3116,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const unresolvedCinematicIssues = getCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       const blockingCinematicIssues = getBlockingCinematicStoryboardContractIssues(plannedScenes, clipDurationSeconds, projectLanguage);
       if (!_.isEmpty(unresolvedCinematicIssues)) {
-        appWarn(SOURCE_TEMPLATE_UNRESOLVED_CINEMATIC_CONTRACT(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}`, `${_.join(unresolvedCinematicIssues, SOURCE_TEXT_SYMBOL_10)}`));
+        appWarn(SOURCE_TEMPLATE_UNRESOLVED_CINEMATIC_CONTRACT(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(unresolvedCinematicIssues, SOURCE_TEXT_SYMBOL_10)}`)));
         planningWarnings.push(...unresolvedCinematicIssues);
       }
       if (!_.isEmpty(blockingCinematicIssues)) {
@@ -3264,7 +3255,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
           rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
         }
       } catch (err: any) {
-        logger.error(SOURCE_TEMPLATE_ERROR_REWRITING_BATCH_CHARACTER_THUMBNAILS(`${err.message}`));
+        logger.error(SOURCE_TEMPLATE_ERROR_REWRITING_BATCH_CHARACTER_THUMBNAILS(SOURCE_TEMPLATE_SYMBOL_86(`${err.message}`)));
         throw err;
       }
       for (const rawThumb of updatedThumbnails) {
@@ -3276,7 +3267,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
     }
     return res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (err: any) {
-    logger.error(SOURCE_TEMPLATE_ERROR_IN_REWRITE_THUMBNAILS_CHARACTER(`${err.message}`));
+    logger.error(SOURCE_TEMPLATE_ERROR_IN_REWRITE_THUMBNAILS_CHARACTER(SOURCE_TEMPLATE_SYMBOL_86(`${err.message}`)));
     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: err.message });
   }
 });
@@ -3294,13 +3285,15 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     }
     const requiresCompleteArtifact = Boolean(cinematicMode);
     const prompt = requiresCompleteArtifact ? getCinematicCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext)) : getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext));
-    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] } | undefined;
+    let result:
+      | { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[]; }
+      | undefined;
     let artifactIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
       try {
-        const correctionDirective = _.isEmpty(artifactIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS(`${jsonUtils.safeStringify(artifactIssues)}`);
+        const correctionDirective = _.isEmpty(artifactIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(artifactIssues)}`));
         const response = await generateContentWithRetry({
-          contents: `${prompt}${correctionDirective}`,
+          contents: SOURCE_TEMPLATE_SYMBOL_75(`${prompt}`, `${correctionDirective}`),
           config: {
             responseMimeType: CONTENT_TYPES.JSON,
             responseJsonSchema: requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
@@ -3318,7 +3311,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
             _.isEmpty(characters) && SOURCE_TEXT_CHARACTERS_MISSING,
             characters.length > CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS && SOURCE_TEXT_CHARACTERS_TOO_MANY,
             _.uniq(ids).length !== ids.length && SOURCE_TEXT_CHARACTERS_DUPLICATE_ID,
-            ..._.flatMap(characters, (character, index) => _.map(requiresCompleteArtifact ? [SOURCE_TEXT_ID, SOURCE_TEXT_NAME, SOURCE_TEXT_DESCRIPTION, SOURCE_TEXT_REFERENCEGENERATIONPROMPT] : QUICK_CHARACTER_FIELDS, (field) => _.isEmpty(_.trim(_.toString(character?.[field]))) && SOURCE_TEMPLATE_CHARACTERS_MISSING(`${index}`, `${field}`))),
+            ..._.flatMap(characters, (character, index) => _.map(requiresCompleteArtifact ? [SOURCE_TEXT_ID, SOURCE_TEXT_NAME, SOURCE_TEXT_DESCRIPTION, SOURCE_TEXT_REFERENCEGENERATIONPROMPT] : QUICK_CHARACTER_FIELDS, (field) => _.isEmpty(_.trim(_.toString(character?.[field]))) && SOURCE_TEMPLATE_CHARACTERS_MISSING(SOURCE_TEMPLATE_SYMBOL_86(`${index}`), SOURCE_TEMPLATE_SYMBOL_86(`${field}`)))),
           ]),
         );
         if (_.isEmpty(artifactIssues)) {
@@ -3339,7 +3332,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
         artifactIssues = [getErrorMessage(error, SOURCE_TEXT_INVALID_CHARACTER_ANALYSIS_RESPONSE)];
       }
     }
-    if (!result) throw createAppError(SOURCE_TEMPLATE_CINEMATIC_CHARACTER_ARTIFACT_INVALID(`${_.join(artifactIssues, SOURCE_TEXT_SYMBOL_4)}`));
+    if (!result) throw createAppError(SOURCE_TEMPLATE_CINEMATIC_CHARACTER_ARTIFACT_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(artifactIssues, SOURCE_TEXT_SYMBOL_4)}`)));
     setCache(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, req.body, result);
     return res.json(result);
   } catch (error: any) {
@@ -3485,10 +3478,10 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     });
     const combinedResult = parseAiJsonArtifact<any>(combinedResponse.text, HOOK_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_HOOK_RESPONSE);
     assertResponseContract(combinedResult, ResponseContractName.Hook);
-    logStep(SOURCE_TEMPLATE_TRIGGERS(`${getPipelineLog(SOURCE_TEXT_HOOK_STEP1_DONE, isVi)}`, `${combinedResult.audience || SOURCE_TEXT_GENERAL_AUDIENCE}`, `${(combinedResult.triggers || []).join(SOURCE_TEXT_SYMBOL_10)}`));
+    logStep(SOURCE_TEMPLATE_TRIGGERS(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_HOOK_STEP1_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${combinedResult.audience || SOURCE_TEXT_GENERAL_AUDIENCE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(combinedResult.triggers || []).join(SOURCE_TEXT_SYMBOL_10)}`)));
     if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
     logStep(getPipelineLog(SOURCE_TEXT_HOOK_STEP2, isVi));
-    logStep(SOURCE_TEMPLATE_HOOKS(`${getPipelineLog(SOURCE_TEXT_HOOK_STEP2_DONE, isVi)}`, `${(combinedResult.versions || []).length || 0}`));
+    logStep(SOURCE_TEMPLATE_HOOKS(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_HOOK_STEP2_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${(combinedResult.versions || []).length || 0}`)));
     logStep(getPipelineLog(SOURCE_TEXT_HOOK_STEP3, isVi));
     const versions = combinedResult.versions || [];
     logStep(getPipelineLog(SOURCE_TEXT_HOOK_STEP3_DONE, isVi));
@@ -3552,7 +3545,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS && !contentSafety; attempt++) {
       try {
         const safetyResponse = await generateContentWithRetry({
-          contents: `${getContentSafetyPrompt(originalInput)}${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE : ""}`,
+          contents: SOURCE_TEMPLATE_SYMBOL_75(`${getContentSafetyPrompt(originalInput)}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE : ""}`),
           config: {
             responseMimeType: CONTENT_TYPES.JSON,
             responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
@@ -3586,7 +3579,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         for (let attempt = 0; attempt < TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS && !validHookResult; attempt++) {
           try {
             const hookResponse = await generateContentWithRetry({
-              contents: `${hookPrompt}${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : ""}`,
+              contents: SOURCE_TEMPLATE_SYMBOL_75(`${hookPrompt}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : ""}`),
               config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: HOOK_RESPONSE_SCHEMA, includeRoomSchemaContract: false },
               task: { capability: AiTaskCapability.TextPlanning },
             });
@@ -3604,7 +3597,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         generatedHookVersions = validHookResult.versions;
         const selectedHook = _.find(generatedHookVersions, SOURCE_TEXT_SELECTED);
         activeHookText = selectedHook.content;
-        logStep(SOURCE_TEMPLATE_SYMBOL_41(`${getPipelineLog(SOURCE_TEXT_HOOK_EMBEDDED, isVi)}`, `${activeHookText}`));
+        logStep(SOURCE_TEMPLATE_SYMBOL_41(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_HOOK_EMBEDDED, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${activeHookText}`)));
       } catch (hookError: any) {
         logger.error(LogEvent.ERROR_GENERATING_HOOKS, hookError);
         appWarn(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
@@ -3614,16 +3607,18 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     activeHookText = await ensureHookLanguage(activeHookText, isVi);
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP1, isVi));
     const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
-    const contentControlDirective = isCinematicScript ? "" : SOURCE_TEMPLATE_USER_CONTENT_CONTROLS_INPUT_TYPE_TREAT(`${inputType}`, `${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}`, `${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}`, `${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}`);
+    const contentControlDirective = isCinematicScript
+      ? ""
+      : SOURCE_TEMPLATE_USER_CONTENT_CONTROLS_INPUT_TYPE_TREAT(SOURCE_TEMPLATE_SYMBOL_86(`${inputType}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}`));
     const retentionDirective = isCinematicScript ? "" : createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
     const combinedScriptPrompt = isCinematicScript
       ? ""
       : MOTION_TEMPLATE_SYMBOL_25(
-          `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}`,
-          `${createGenreEditorialDirective(config.genre)}`,
-          `${createAudienceMarketDirective(config.language, config.audience)}`,
-          `${retentionDirective}`,
-          `${contentControlDirective}`,
+          SOURCE_TEMPLATE_SYMBOL_86(`${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}`),
+          SOURCE_TEMPLATE_SYMBOL_86(`${createGenreEditorialDirective(config.genre)}`),
+          SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config.language, config.audience)}`),
+          SOURCE_TEMPLATE_SYMBOL_86(`${retentionDirective}`),
+          SOURCE_TEMPLATE_SYMBOL_86(`${contentControlDirective}`),
         );
     let groundedResearchResponse: any = null;
     if (config.factCheck && contentSafety.trueCase) {
@@ -3748,7 +3743,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
             break;
           }
         }
-        if (!cinematicFilmPackage) throw createAppError(SOURCE_TEMPLATE_CINEMATIC_FILM_PACKAGE_INVALID(`${_.join(latestIssues, SOURCE_TEXT_SYMBOL_4)}`));
+        if (!cinematicFilmPackage) throw createAppError(SOURCE_TEMPLATE_CINEMATIC_FILM_PACKAGE_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(latestIssues, SOURCE_TEXT_SYMBOL_4)}`)));
         await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, SOURCE_TEXT_FILMPACKAGE, cinematicFilmPackage, cinematicSourceSignature);
       }
       scriptResult = {
@@ -3764,7 +3759,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     } else {
       const scriptPlanResponse = await requestValidScriptPlan(
         {
-          contents: groundedResearchResponse ? SOURCE_TEMPLATE_GROUNDED_RESEARCH_EVIDENCE(`${combinedScriptPrompt}`, `${groundedResearchResponse.text}`) : SOURCE_TEMPLATE_FACT_CHECK_MODE_DISABLED_BY_THE(`${combinedScriptPrompt}`),
+          contents: groundedResearchResponse ? SOURCE_TEMPLATE_GROUNDED_RESEARCH_EVIDENCE(SOURCE_TEMPLATE_SYMBOL_86(`${combinedScriptPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${groundedResearchResponse.text}`)) : SOURCE_TEMPLATE_FACT_CHECK_MODE_DISABLED_BY_THE(SOURCE_TEMPLATE_SYMBOL_86(`${combinedScriptPrompt}`)),
           config: {
             responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
             responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
@@ -3782,11 +3777,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     }
     scriptResult.factPack = await validateFactPack(scriptResult.factPack, Boolean(config.factCheck));
     if (!isCinematicScript) assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
-    logStep(SOURCE_TEMPLATE_SPEC(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP1_DONE, isVi)}`, `${(scriptResult.preferredTerms || []).join(SOURCE_TEXT_SYMBOL_10) || SOURCE_TEXT_NONE_2}`, `${scriptResult.characterSpecs || SOURCE_TEXT_NO_CHARACTER_REFERENCE_NEEDED}`));
+    logStep(SOURCE_TEMPLATE_SPEC(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP1_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${(scriptResult.preferredTerms || []).join(SOURCE_TEXT_SYMBOL_10) || SOURCE_TEXT_NONE_2}`), SOURCE_TEMPLATE_SYMBOL_86(`${scriptResult.characterSpecs || SOURCE_TEXT_NO_CHARACTER_REFERENCE_NEEDED}`)));
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2A, isVi));
-    logStep(SOURCE_TEMPLATE_CHAPTERS(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2A_DONE, isVi)}`, `${(scriptResult.chapters || []).length}`));
+    logStep(SOURCE_TEMPLATE_CHAPTERS(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2A_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${(scriptResult.chapters || []).length}`)));
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2B, isVi));
-    logStep(SOURCE_TEMPLATE_SYMBOL_42(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2B_DONE, isVi)}`, `${(scriptResult.chapters || []).length}`));
+    logStep(SOURCE_TEMPLATE_SYMBOL_42(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2B_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${(scriptResult.chapters || []).length}`)));
     if (isCinematicScript) {
       const finalCleanScript = _.trim(_.toString(cinematicFilmPackage?.scriptSegment));
       const finalChapters = _.map(_.castArray<any>(cinematicFilmPackage?.chapters || []), (chapter: any) => ({
@@ -3831,7 +3826,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       let latestUsableSegment = "";
       for (let attemptIndex = 0; attemptIndex < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_GENERATION_ATTEMPTS; attemptIndex++) {
         const response = await generateContentWithRetry({
-          contents: attemptIndex > 0 ? MOTION_TEMPLATE_SYMBOL_26(`${contents}`, `${isVi ? VIETNAMESE_CHAPTER_RETRY_DIRECTIVE : ENGLISH_CHAPTER_RETRY_DIRECTIVE}`) : contents,
+          contents: attemptIndex > 0 ? MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${contents}`), SOURCE_TEMPLATE_SYMBOL_86(`${isVi ? VIETNAMESE_CHAPTER_RETRY_DIRECTIVE : ENGLISH_CHAPTER_RETRY_DIRECTIVE}`)) : contents,
           config: {
             responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
             responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
@@ -3886,7 +3881,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     };
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
-      logStep(SOURCE_TEMPLATE_SYMBOL_43(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP3_PROGRESS, isVi)}`, `${i + 1}`, `${chapters.length}`, `${chapter.title}`));
+      logStep(SOURCE_TEMPLATE_SYMBOL_43(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP3_PROGRESS, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${i + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${chapters.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${chapter.title}`)));
       const splitStrategy = config.splitStrategy || SplitStrategy.LONG_SENTENCE;
       const chapterPrompt = getChapterWriterPrompt(
         chapter.title,
@@ -3905,7 +3900,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           previousChapterSummary,
         }),
       );
-      let cleanedSegment = await requestValidChapterSegment(SOURCE_TEMPLATE_ORIGINAL_CONTEXT_CONCEPT_SHEET_CHAPTER_PROMPT(`${originalInput}`, `${jsonUtils.safeStringify(scriptResult)}`, `${contentControlDirective}`, `${chapterPrompt}`));
+      let cleanedSegment = await requestValidChapterSegment(SOURCE_TEMPLATE_ORIGINAL_CONTEXT_CONCEPT_SHEET_CHAPTER_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${originalInput}`), SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(scriptResult)}`), SOURCE_TEMPLATE_SYMBOL_86(`${contentControlDirective}`), SOURCE_TEMPLATE_SYMBOL_86(`${chapterPrompt}`)));
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       for (let expansionIndex = 0; expansionIndex < REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT && _.size(_.words(cleanedSegment)) < chapterMinimumWords; expansionIndex++) {
@@ -3915,11 +3910,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       }
       const hasCompleteChapterEnding = (value: string): boolean => /[.!?…][\s"')\]]*$/.test(_.trim(value));
       if (!hasCompleteChapterEnding(cleanedSegment)) {
-        const endingRepair = await requestValidChapterSegment(SOURCE_TEMPLATE_THE_REJECTED_ARTIFACT_ENDED_MID_SENTENCE(`${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords, chapterMaximumWords, isVi)}`));
+        const endingRepair = await requestValidChapterSegment(SOURCE_TEMPLATE_THE_REJECTED_ARTIFACT_ENDED_MID_SENTENCE(SOURCE_TEMPLATE_SYMBOL_86(`${getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords, chapterMaximumWords, isVi)}`)));
         if (!_.isEmpty(endingRepair)) cleanedSegment = endingRepair;
       }
       if (_.lt(_.size(_.words(cleanedSegment)), chapterMinimumWords) || !hasCompleteChapterEnding(cleanedSegment)) {
-        const incompleteChapterError: any = createAppError(SOURCE_TEMPLATE_CHAPTER_INCOMPLETE(`${chapter.id || i + 1}`));
+        const incompleteChapterError: any = createAppError(SOURCE_TEMPLATE_CHAPTER_INCOMPLETE(SOURCE_TEMPLATE_SYMBOL_86(`${chapter.id || i + 1}`)));
         incompleteChapterError.retryable = true;
         throw incompleteChapterError;
       }
@@ -3939,9 +3934,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let editorialQa: Record<string, unknown> = {};
     let editorialIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correctionDirective = _.isEmpty(editorialIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_2(`${jsonUtils.safeStringify(editorialIssues)}`);
+      const correctionDirective = _.isEmpty(editorialIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_2(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(editorialIssues)}`));
       const editorialResponse = await generateContentWithRetry({
-        contents: MOTION_TEMPLATE_SYMBOL_27(`${getFinalScriptEditorialPrompt(assembledChapterDraft, config.genre, isVi, targetWordCount)}`, `${retentionDirective}`, `${correctionDirective}`),
+        contents: MOTION_TEMPLATE_SYMBOL_27(SOURCE_TEMPLATE_SYMBOL_86(`${getFinalScriptEditorialPrompt(assembledChapterDraft, config.genre, isVi, targetWordCount)}`), SOURCE_TEMPLATE_SYMBOL_86(`${retentionDirective}`), SOURCE_TEMPLATE_SYMBOL_86(`${correctionDirective}`)),
         config: {
           responseMimeType: CONTENT_TYPES.JSON,
           responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
@@ -3956,8 +3951,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const editorialScoresPass = _.every([SOURCE_TEXT_CONTINUITYSCORE, SOURCE_TEXT_REPETITIONSCORE, SOURCE_TEXT_FACTUALITYSCORE, SOURCE_TEXT_EMOTIONALARCSCORE, SOURCE_TEXT_CONVERSATIONALSCORE, SOURCE_TEXT_HOOKPAYOFFSCORE], (field) => _.gte(_.toNumber(editorialResult[field]), 75));
       editorialIssues = _.compact([
         _.isEmpty(polishedScript) && SOURCE_TEXT_SCRIPTSEGMENT_MISSING,
-        !_.inRange(polishedWordRatio, 0.9, 1.100001) && SOURCE_TEMPLATE_SCRIPTSEGMENT_WORD_RATIO(`${polishedWordRatio.toFixed(2)}`),
-        !languageValidation.valid && SOURCE_TEMPLATE_SCRIPTSEGMENT_LANGUAGE(`${_.join(languageValidation.issues, SOURCE_TEXT_SYMBOL_4)}`),
+        !_.inRange(polishedWordRatio, 0.9, 1.100001) && SOURCE_TEMPLATE_SCRIPTSEGMENT_WORD_RATIO(SOURCE_TEMPLATE_SYMBOL_86(`${polishedWordRatio.toFixed(2)}`)),
+        !languageValidation.valid && SOURCE_TEMPLATE_SCRIPTSEGMENT_LANGUAGE(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(languageValidation.issues, SOURCE_TEXT_SYMBOL_4)}`)),
         !editorialScoresPass && SOURCE_TEXT_QUALITY_SCORES_BELOW_75,
       ]);
       if (_.isEmpty(editorialIssues)) {
@@ -3967,12 +3962,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         if (editorialResponse.rotationLogs) multiStepLogs.push(...editorialResponse.rotationLogs);
         break;
       }
-      multiStepLogs.push(SOURCE_TEMPLATE_FINAL_SCRIPT_EDITOR_OUTPUT_REJECTED(`${_.join(editorialIssues, SOURCE_TEXT_SYMBOL_4)}`));
+      multiStepLogs.push(SOURCE_TEMPLATE_FINAL_SCRIPT_EDITOR_OUTPUT_REJECTED(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(editorialIssues, SOURCE_TEXT_SYMBOL_4)}`)));
       if (editorialResponse.aiMetadata) aiMetrics.push(editorialResponse.aiMetadata);
       if (editorialResponse.rotationLogs) multiStepLogs.push(...editorialResponse.rotationLogs);
     }
     if (_.isEmpty(finalCleanScript)) {
-      const editorialError: any = createAppError(SOURCE_TEMPLATE_FINAL_SCRIPT_EDITOR_REJECTED(`${_.join(editorialIssues, SOURCE_TEXT_SYMBOL_4)}`));
+      const editorialError: any = createAppError(SOURCE_TEMPLATE_FINAL_SCRIPT_EDITOR_REJECTED(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(editorialIssues, SOURCE_TEXT_SYMBOL_4)}`)));
       editorialError.retryable = true;
       throw editorialError;
     }
@@ -4074,9 +4069,9 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
     const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
     let lastIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correction = _.isEmpty(lastIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_WAS_INVALID_RETURN(`${jsonUtils.safeStringify(lastIssues)}`);
+      const correction = _.isEmpty(lastIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_WAS_INVALID_RETURN(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(lastIssues)}`));
       const response = await generateContentWithRetry({
-        contents: `${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}${correction}`,
+        contents: SOURCE_TEMPLATE_SYMBOL_75(`${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}`, `${correction}`),
         config: { responseMimeType: CONTENT_TYPES.JSON },
       });
       const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
@@ -4084,16 +4079,16 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
       lastIssues = _.compact([
         !_.isPlainObject(parsed) && SOURCE_TEXT_RESPONSE_OBJECT_REQUIRED,
         !_.isArray(videoSceneIds) && SOURCE_TEXT_VIDEOSCENEIDS_ARRAY_REQUIRED,
-        _.isArray(videoSceneIds) && _.gt(videoSceneIds.length, maxVideos) && SOURCE_TEMPLATE_VIDEOSCENEIDS_TOO_MANY(`${videoSceneIds.length}`, `${maxVideos}`),
+        _.isArray(videoSceneIds) && _.gt(videoSceneIds.length, maxVideos) && SOURCE_TEMPLATE_VIDEOSCENEIDS_TOO_MANY(SOURCE_TEMPLATE_SYMBOL_86(`${videoSceneIds.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${maxVideos}`)),
         _.isArray(videoSceneIds) && _.uniq(videoSceneIds).length !== videoSceneIds.length && SOURCE_TEXT_VIDEOSCENEIDS_DUPLICATE,
         ..._.map(
           _.reject(_.castArray(videoSceneIds), (sceneId) => _.includes(validSceneIds, sceneId)),
-          (sceneId) => SOURCE_TEMPLATE_VIDEOSCENEIDS_UNKNOWN(`${sceneId}`),
+          (sceneId) => SOURCE_TEMPLATE_VIDEOSCENEIDS_UNKNOWN(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`)),
         ),
       ]);
       if (_.isEmpty(lastIssues)) return res.json({ videoSceneIds });
     }
-    throw createAppError(SOURCE_TEMPLATE_SYMBOL_8(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}`, `${_.join(lastIssues, SOURCE_TEXT_SYMBOL_4)}`));
+    throw createAppError(SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(lastIssues, SOURCE_TEXT_SYMBOL_4)}`)));
   } catch (error: any) {
     logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: error.message, retryable: true, rotationLogs: error.rotationLogs });
@@ -4148,7 +4143,14 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
     const encodedAssets = await readVisualQaAssets(assetUrl);
     if (_.isEmpty(encodedAssets)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
     const qaNarrativeEvidence = _.join(
-      _.compact([sceneScript, visualIntent && SOURCE_TEMPLATE_VISUAL_INTENT(`${visualIntent}`), visibleAction && SOURCE_TEMPLATE_VISIBLE_ACTION(`${visibleAction}`), storyEvidence && SOURCE_TEMPLATE_STORY_EVIDENCE(`${storyEvidence}`), archivalSourceUrl && SOURCE_TEMPLATE_AUTHENTIC_SOURCE_PAGE(`${archivalSourceUrl}`), archivalLicense && SOURCE_TEMPLATE_DECLARED_LICENSE(`${archivalLicense}`)]),
+      _.compact([
+        sceneScript,
+        visualIntent && SOURCE_TEMPLATE_VISUAL_INTENT(SOURCE_TEMPLATE_SYMBOL_86(`${visualIntent}`)),
+        visibleAction && SOURCE_TEMPLATE_VISIBLE_ACTION(SOURCE_TEMPLATE_SYMBOL_86(`${visibleAction}`)),
+        storyEvidence && SOURCE_TEMPLATE_STORY_EVIDENCE(SOURCE_TEMPLATE_SYMBOL_86(`${storyEvidence}`)),
+        archivalSourceUrl && SOURCE_TEMPLATE_AUTHENTIC_SOURCE_PAGE(SOURCE_TEMPLATE_SYMBOL_86(`${archivalSourceUrl}`)),
+        archivalLicense && SOURCE_TEMPLATE_DECLARED_LICENSE(SOURCE_TEMPLATE_SYMBOL_86(`${archivalLicense}`)),
+      ]),
       MOTION_TEXT_SYMBOL_27,
     );
     const parts: any[] = [
@@ -4248,8 +4250,8 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
     }
     const storyboardClipDurationSeconds = resolveCinematicClipDuration(config?.videoDuration);
     const cinematicClipCount = isCinematicStoryboard ? (_.gt(normalizedRequestedClipCount, 0) ? normalizedRequestedClipCount : _.max([1, Math.ceil(_.toNumber(chosenDuration) / storyboardClipDurationSeconds)])) : undefined;
-    let genreVisualGuideline = GENRE_VISUAL_GUIDELINES[genre as VideoGenre] || SOURCE_TEMPLATE_CRITICAL_VISUAL_DIRECTIVE_GENRE_MAINTAIN_CONTEXT(`${genre.toUpperCase()}`, `${genre}`);
-    genreVisualGuideline = MOTION_TEMPLATE_SYMBOL_28(`${genreVisualGuideline}`, `${createGenreEditorialDirective(genre)}`, `${createAudienceMarketDirective(config?.language, config?.audience)}`, `${createStoryboardRetentionDirective(chosenDuration, genre)}`);
+    let genreVisualGuideline = GENRE_VISUAL_GUIDELINES[genre as VideoGenre] || SOURCE_TEMPLATE_CRITICAL_VISUAL_DIRECTIVE_GENRE_MAINTAIN_CONTEXT(SOURCE_TEMPLATE_SYMBOL_86(`${genre.toUpperCase()}`), SOURCE_TEMPLATE_SYMBOL_86(`${genre}`));
+    genreVisualGuideline = MOTION_TEMPLATE_SYMBOL_28(SOURCE_TEMPLATE_SYMBOL_86(`${genreVisualGuideline}`), SOURCE_TEMPLATE_SYMBOL_86(`${createGenreEditorialDirective(genre)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config?.language, config?.audience)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createStoryboardRetentionDirective(chosenDuration, genre)}`));
     const storyboardLogger = new StepLogger();
     const storyboardLogs = storyboardLogger.getLogs();
     const logStoryboardStep = (msg: string) => storyboardLogger.log(msg);
@@ -4302,9 +4304,9 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
       if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
     }
     if (!_.isEmpty(visualBible)) {
-      logStoryboardStep(SOURCE_TEMPLATE_CHARACTER_SPEC_LANDSCAPE_SPEC(`${getPipelineLog(SOURCE_TEXT_STORY_STEP1_DONE, isVi)}`, `${visualBible.colorPalette}`, `${visualBible.characterSpecs}`, `${visualBible.landscapeSpecs}`));
+      logStoryboardStep(SOURCE_TEMPLATE_CHARACTER_SPEC_LANDSCAPE_SPEC(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_STORY_STEP1_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${visualBible.colorPalette}`), SOURCE_TEMPLATE_SYMBOL_86(`${visualBible.characterSpecs}`), SOURCE_TEMPLATE_SYMBOL_86(`${visualBible.landscapeSpecs}`)));
     }
-    logStoryboardStep(SOURCE_TEMPLATE_SYMBOL_44(`${getPipelineLog(SOURCE_TEXT_STORY_STEP2, isVi)}`, `${mappedDensity}`));
+    logStoryboardStep(SOURCE_TEMPLATE_SYMBOL_44(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_STORY_STEP2, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${mappedDensity}`)));
     let allScenes: any[] = [];
     let splitStoryboardQa: Partial<StoryboardQualityReport> | undefined;
     try {
@@ -4451,9 +4453,9 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
     logStoryboardStep(getPipelineLog(SOURCE_TEXT_STORY_STEP3, isVi));
     if (allScenes.length > 0) {
       try {
-        logStoryboardStep(SOURCE_TEMPLATE_PROMPTS(`${getPipelineLog(SOURCE_TEXT_STORY_REFINE_SUCCESS, isVi)}`, `${allScenes.length}`));
+        logStoryboardStep(SOURCE_TEMPLATE_PROMPTS(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_STORY_REFINE_SUCCESS, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${allScenes.length}`)));
       } catch (refineErr: any) {
-        logStoryboardStep(SOURCE_TEMPLATE_SYMBOL_42(`${getPipelineLog(SOURCE_TEXT_STORY_REFINE_ERROR, isVi)}`, `${refineErr.message}`));
+        logStoryboardStep(SOURCE_TEMPLATE_SYMBOL_42(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_STORY_REFINE_ERROR, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${refineErr.message}`)));
       }
     }
     logStoryboardStep(getPipelineLog(SOURCE_TEXT_STORY_DONE_ALL, isVi));
@@ -4509,11 +4511,11 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
         warnings: _.uniq(
           _.compact([
             ...storyboardQaBase.warnings,
-            ..._.map(storyboardQaBase.blockingErrors, (issue) => SOURCE_TEMPLATE_STORYBOARD_AI_ADVISORY(`${issue}`)),
-            cinematicClipCount && data.scenes.length !== cinematicClipCount && SOURCE_TEMPLATE_STORYBOARD_CLIP_COUNT_ADVISORY(`${data.scenes.length}`, `${cinematicClipCount}`),
+            ..._.map(storyboardQaBase.blockingErrors, (issue) => SOURCE_TEMPLATE_STORYBOARD_AI_ADVISORY(SOURCE_TEMPLATE_SYMBOL_86(`${issue}`))),
+            cinematicClipCount && data.scenes.length !== cinematicClipCount && SOURCE_TEMPLATE_STORYBOARD_CLIP_COUNT_ADVISORY(SOURCE_TEMPLATE_SYMBOL_86(`${data.scenes.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${cinematicClipCount}`)),
             !_.isEqual(normalizedStoryboardScript, normalizedSourceScript) && SOURCE_TEXT_STORYBOARD_SCRIPT_PARTITION_ADVISORY,
             _.some(data.scenes, (scene) => !chapterIds.has(_.toString(scene.chapterId))) && SOURCE_TEXT_STORYBOARD_UNKNOWN_CHAPTER_ID_ADVISORY,
-            !_.isEmpty(underfilledSceneIds) && SOURCE_TEMPLATE_STORYBOARD_UNDERFILLED_SCENES_ADVISORY(`${_.join(underfilledSceneIds, SOURCE_TEXT_SYMBOL_4)}`),
+            !_.isEmpty(underfilledSceneIds) && SOURCE_TEMPLATE_STORYBOARD_UNDERFILLED_SCENES_ADVISORY(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(underfilledSceneIds, SOURCE_TEXT_SYMBOL_4)}`)),
             storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
             storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
           ]),
@@ -4564,13 +4566,15 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
     const seoRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.SEO);
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
     const genre = config.genre || req.body?.genre || req.body?.project?.config?.genre;
-    const combinedSeoPrompt = isCinematicSeo ? getCinematicSeoPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre, config.audience, seoRequestId) : MOTION_TEMPLATE_SYMBOL_26(`${getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre)}`, `${createAudienceMarketDirective(config.language, config.audience)}`);
+    const combinedSeoPrompt = isCinematicSeo
+      ? getCinematicSeoPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre, config.audience, seoRequestId)
+      : MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config.language, config.audience)}`));
     let seoResult: any;
     let seoIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correctionDirective = _.isEmpty(seoIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_3(`${jsonUtils.safeStringify(seoIssues)}`);
+      const correctionDirective = _.isEmpty(seoIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_3(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(seoIssues)}`));
       const combinedResponse = await generateContentWithRetry({
-        contents: `${combinedSeoPrompt}${correctionDirective}`,
+        contents: SOURCE_TEMPLATE_SYMBOL_75(`${combinedSeoPrompt}`, `${correctionDirective}`),
         config: {
           responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
           roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
@@ -4584,10 +4588,10 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
       seoIssues = _.compact([
         !_.isPlainObject(candidate) && SOURCE_TEXT_RESPONSE_OBJECT_REQUIRED,
         !_.isEqual(_.sortBy(_.keys(candidate)), _.sortBy(expectedKeys)) && SOURCE_TEXT_RESPONSE_EXACT_KEYS_REQUIRED,
-        !_.isEqual(_.size(candidate?.titles), numTitles) && SOURCE_TEMPLATE_TITLES_WRONG_COUNT(`${_.size(candidate?.titles)}`, `${numTitles}`),
-        !_.isEqual(_.size(candidate?.descriptions), numDescriptions) && SOURCE_TEMPLATE_DESCRIPTIONS_WRONG_COUNT(`${_.size(candidate?.descriptions)}`, `${numDescriptions}`),
-        !_.isEqual(_.size(candidate?.hashtags), numHashtags) && SOURCE_TEMPLATE_HASHTAGS_WRONG_COUNT(`${_.size(candidate?.hashtags)}`, `${numHashtags}`),
-        !_.isEqual(_.size(candidate?.tags), numTags) && SOURCE_TEMPLATE_TAGS_WRONG_COUNT(`${_.size(candidate?.tags)}`, `${numTags}`),
+        !_.isEqual(_.size(candidate?.titles), numTitles) && SOURCE_TEMPLATE_TITLES_WRONG_COUNT(SOURCE_TEMPLATE_SYMBOL_86(`${_.size(candidate?.titles)}`), SOURCE_TEMPLATE_SYMBOL_86(`${numTitles}`)),
+        !_.isEqual(_.size(candidate?.descriptions), numDescriptions) && SOURCE_TEMPLATE_DESCRIPTIONS_WRONG_COUNT(SOURCE_TEMPLATE_SYMBOL_86(`${_.size(candidate?.descriptions)}`), SOURCE_TEMPLATE_SYMBOL_86(`${numDescriptions}`)),
+        !_.isEqual(_.size(candidate?.hashtags), numHashtags) && SOURCE_TEMPLATE_HASHTAGS_WRONG_COUNT(SOURCE_TEMPLATE_SYMBOL_86(`${_.size(candidate?.hashtags)}`), SOURCE_TEMPLATE_SYMBOL_86(`${numHashtags}`)),
+        !_.isEqual(_.size(candidate?.tags), numTags) && SOURCE_TEMPLATE_TAGS_WRONG_COUNT(SOURCE_TEMPLATE_SYMBOL_86(`${_.size(candidate?.tags)}`), SOURCE_TEMPLATE_SYMBOL_86(`${numTags}`)),
         _.some(_.castArray(candidate?.titles), (item) => !_.isPlainObject(item) || _.isEmpty(_.trim(_.toString(item?.text)))) && SOURCE_TEXT_TITLES_INVALID_ITEM,
         _.some(_.castArray(candidate?.descriptions), (item) => !_.isPlainObject(item) || _.isEmpty(_.trim(_.toString(item?.text)))) && SOURCE_TEXT_DESCRIPTIONS_INVALID_ITEM,
         _.some(_.castArray(candidate?.hashtags), (item) => !_.isString(item) || _.isEmpty(_.trim(item))) && SOURCE_TEXT_HASHTAGS_INVALID_ITEM,
@@ -4602,8 +4606,8 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
         break;
       }
     }
-    if (!seoResult) throw createAppError(SOURCE_TEMPLATE_SYMBOL_8(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}`, `${_.join(seoIssues, SOURCE_TEXT_SYMBOL_4)}`));
-    logSeoStep(MOTION_TEMPLATE_SYMBOL_12(`${PIPELINE_LOGS.SEO_STEP1_DONE}`, `${(seoResult.keywords || []).join(SOURCE_TEXT_SYMBOL_10) || SOURCE_TEXT_NONE_2}`));
+    if (!seoResult) throw createAppError(SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(seoIssues, SOURCE_TEXT_SYMBOL_4)}`)));
+    logSeoStep(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_LOGS.SEO_STEP1_DONE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(seoResult.keywords || []).join(SOURCE_TEXT_SYMBOL_10) || SOURCE_TEXT_NONE_2}`)));
     logSeoStep(PIPELINE_LOGS.SEO_STEP2);
     logSeoStep(PIPELINE_LOGS.SEO_STEP2_DONE);
     logSeoStep(PIPELINE_LOGS.SEO_STEP3);
@@ -4689,7 +4693,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
           config.genre || "",
           config.writingStyle || "",
           createGenreEditorialDirective(config.genre || ""),
-          MOTION_TEMPLATE_SYMBOL_29(`${createAudienceMarketDirective(config.language, config.audience)}`, `${createViewerRetentionDirective(config.duration || req.body?.duration || 180, config.genre || "")}`),
+          MOTION_TEMPLATE_SYMBOL_29(SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config.language, config.audience)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createViewerRetentionDirective(config.duration || req.body?.duration || 180, config.genre || "")}`)),
         );
     const thumbParts: any[] = [];
     const thumbRefList = _.take(_.compact(_.concat(_.castArray(visualConfig.thumbnailReferenceImages || []), _.castArray(visualConfig.thumbnailSceneReferenceImages || []))), 3);
@@ -4704,7 +4708,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
         });
       }
     }
-    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>> } = {
+    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>>; } = {
       concepts: [],
       thumbnails: [],
     };
@@ -4740,7 +4744,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
     if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
     let planningIssues = isCinematicThumbnail ? getThumbnailTechnicalPlanningIssues(thumbsResult.thumbnails, thumbnailCount, thumbnailTextMode) : getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
     if (!_.isEmpty(planningIssues)) {
-      thumbLogs.push(MOTION_TEMPLATE_SYMBOL_12(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX}`, `${_.join(planningIssues, SOURCE_TEXT_SYMBOL_10)}`));
+      thumbLogs.push(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(planningIssues, SOURCE_TEXT_SYMBOL_10)}`)));
       const repairResponse = await generateContentWithRetry({
         contents: isCinematicThumbnail ? getCinematicThumbnailTechnicalRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues) : getThumbnailContractRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues),
         config: {
@@ -4768,9 +4772,9 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
         rotationLogs: thumbLogs,
       });
     }
-    logThumbStep(SOURCE_TEMPLATE_LAYOUTS(`${PIPELINE_LOGS.THUMB_STEP1_DONE}`, `${(thumbsResult.concepts || []).length || 0}`));
+    logThumbStep(SOURCE_TEMPLATE_LAYOUTS(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_LOGS.THUMB_STEP1_DONE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(thumbsResult.concepts || []).length || 0}`)));
     logThumbStep(PIPELINE_LOGS.THUMB_STEP2);
-    logThumbStep(SOURCE_TEMPLATE_THUMBNAILS(`${PIPELINE_LOGS.THUMB_STEP2_DONE}`, `${(thumbsResult.thumbnails || []).length || 0}`));
+    logThumbStep(SOURCE_TEMPLATE_THUMBNAILS(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_LOGS.THUMB_STEP2_DONE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(thumbsResult.thumbnails || []).length || 0}`)));
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
     const normalizedThumbnails = normalizeThumbnailIdeas(_.castArray(thumbsResult.thumbnails || []), thumbnailCount, thumbnailTextMode);
@@ -4818,15 +4822,15 @@ const persistProjectVideo = async (localProjectId: string, sceneId: string, base
   if (_.some([safeProjectId, safeSceneId, base64], _.isEmpty)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId);
   const videoDirectory = path.resolve(projectRoot, PROJECT_ASSET_GROUP.VIDEOS);
-  if (!_.startsWith(_.toLower(videoDirectory), _.toLower(`${projectRoot}${path.sep}`))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+  if (!_.startsWith(_.toLower(videoDirectory), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`)))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
   const videoBuffer = Buffer.from(base64, REFACTOR_CONSTANTS.ENCODING_BASE64);
   if (_.lt(videoBuffer.length, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR);
   await fs.promises.mkdir(videoDirectory, { recursive: true });
-  const variantSuffix = _.isNumber(variantIndex) ? `${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}${_.add(variantIndex, FLOW_VIDEO_MEDIA_CONFIG.VARIANT_INDEX_OFFSET)}` : SecurityConstants.EMPTY_STRING;
-  const videoFilename = `${safeSceneId}${variantSuffix}${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`;
+  const variantSuffix = _.isNumber(variantIndex) ? SOURCE_TEMPLATE_SYMBOL_75(`${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`, `${_.add(variantIndex, FLOW_VIDEO_MEDIA_CONFIG.VARIANT_INDEX_OFFSET)}`) : SecurityConstants.EMPTY_STRING;
+  const videoFilename = SOURCE_TEMPLATE_SYMBOL_170(`${safeSceneId}`, `${variantSuffix}`, `${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`);
   const videoPath = path.join(videoDirectory, videoFilename);
   const candidateHash = createHash(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ALGORITHM).update(videoBuffer).digest(FLOW_VIDEO_MEDIA_CONFIG.CONTENT_HASH_ENCODING);
-  const existingSceneVideoFiles = _.filter(await fs.promises.readdir(videoDirectory), (filename) => FLOW_VIDEO_MEDIA_CONFIG.SCENE_VIDEO_FILE_PATTERN.test(filename) && !_.isEqual(filename, videoFilename) && !_.startsWith(filename, `${safeSceneId}${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`));
+  const existingSceneVideoFiles = _.filter(await fs.promises.readdir(videoDirectory), (filename) => FLOW_VIDEO_MEDIA_CONFIG.SCENE_VIDEO_FILE_PATTERN.test(filename) && !_.isEqual(filename, videoFilename) && !_.startsWith(filename, SOURCE_TEMPLATE_SYMBOL_75(`${safeSceneId}`, `${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`)));
   for (const existingFilename of existingSceneVideoFiles) {
     const existingPath = path.join(videoDirectory, existingFilename);
     const existingStats = await fs.promises.stat(existingPath);
@@ -4838,7 +4842,7 @@ const persistProjectVideo = async (localProjectId: string, sceneId: string, base
   await fs.promises.writeFile(videoPath, videoBuffer);
   const persistedSize = (await fs.promises.stat(videoPath)).size;
   if (_.lt(persistedSize, FLOW_VIDEO_MEDIA_CONFIG.MIN_FILE_BYTES)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.PERSISTENCE_ERROR);
-  return SOURCE_TEMPLATE_SYMBOL_45(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${safeProjectId}`, `${PROJECT_ASSET_GROUP.VIDEOS}`, `${videoFilename}`);
+  return SOURCE_TEMPLATE_SYMBOL_45(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${safeProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECT_ASSET_GROUP.VIDEOS}`), SOURCE_TEMPLATE_SYMBOL_86(`${videoFilename}`));
 };
 const persistProjectVideoVariants = async (localProjectId: string, sceneId: string, base64s: string[]): Promise<string[]> => {
   if (_.lt(_.size(base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) throw createAppError(FLOW_VIDEO_MEDIA_CONFIG.INCOMPLETE_OUTPUT_BATCH_ERROR);
@@ -4852,7 +4856,16 @@ const createProjectVideoVariantUrl = (localProjectId: string, sceneId: string, v
   const safeProjectId = path.basename(_.toString(localProjectId));
   const safeSceneId = path.basename(_.toString(sceneId));
   const variantNumber = _.add(variantIndex, FLOW_VIDEO_MEDIA_CONFIG.VARIANT_INDEX_OFFSET);
-  return SOURCE_TEMPLATE_SYMBOL_46(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${safeProjectId}`, `${PROJECT_ASSET_GROUP.VIDEOS}`, `${safeSceneId}`, `${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`, `${variantNumber}`, `${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`);
+  return SOURCE_TEMPLATE_SYMBOL_46(
+    SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${safeProjectId}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${PROJECT_ASSET_GROUP.VIDEOS}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${safeSceneId}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${FLOW_VIDEO_MEDIA_CONFIG.VARIANT_SEPARATOR}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${variantNumber}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${FLOW_VIDEO_MEDIA_CONFIG.FILE_EXTENSION}`),
+  );
 };
 const getPersistedProjectVideoVariantUrl = (localProjectId: string, sceneId: string, variantIndex: number): string | undefined => {
   const candidateUrl = createProjectVideoVariantUrl(localProjectId, sceneId, variantIndex);
@@ -4987,9 +5000,9 @@ router.post(SOURCE_TEXT_PLAN_FLOW_VIDEO_PROMPTS, requireLicense(FeatureType.VIDE
   if (!request || count < 1 || count > 50) return res.status(400).json({ success: false, error: SOURCE_TEXT_HAY_GHI_SO_VIDEO_1_50 });
   const execution = req.body?.execution || {};
   const provider = execution.provider || AiPlanningFallbackProvider.GeminiChat;
-  const requestId = SOURCE_TEMPLATE_FLOW_VIDEO_PROMPTS(`${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+  const requestId = SOURCE_TEMPLATE_FLOW_VIDEO_PROMPTS(SOURCE_TEMPLATE_SYMBOL_86(`${Date.now()}`), SOURCE_TEMPLATE_SYMBOL_86(`${Math.random().toString(36).slice(2)}`));
   const artifactType = SOURCE_TEXT_FLOW_VIDEO_PROMPTS;
-  const prompt = SOURCE_TEMPLATE_WRITE_EXACTLY_DISTINCT_VIDEO_CONCEPTS_FOR(`${count}`, `${stringifyJson(request)}`, `${stringifyJson(requestId)}`, `${stringifyJson(artifactType)}`, `${count}`);
+  const prompt = SOURCE_TEMPLATE_WRITE_EXACTLY_DISTINCT_VIDEO_CONCEPTS_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${count}`), SOURCE_TEMPLATE_SYMBOL_86(`${stringifyJson(request)}`), SOURCE_TEMPLATE_SYMBOL_86(`${stringifyJson(requestId)}`), SOURCE_TEMPLATE_SYMBOL_86(`${stringifyJson(artifactType)}`), SOURCE_TEMPLATE_SYMBOL_86(`${count}`));
   try {
     let raw: string;
     if (execution.mode === AiPlanningExecutionMode.ApiOnly) {
@@ -5031,7 +5044,7 @@ router.post(SOURCE_TEXT_SAVE_FLOW_VIDEOS, requireLicense(FeatureType.VIDEO), asy
     for (const [index, sceneId] of requestedIds.entries()) {
       const scene = _.find(project.storyboard, { id: sceneId });
       const source = resolveLocalProjectAssetPath(_.toString(scene?.assetUrl));
-      if (!source) return res.status(400).json({ success: false, error: SOURCE_TEMPLATE_VIDEO_CHUA_SAN_SANG_DE_LUU(`${index + 1}`) });
+      if (!source) return res.status(400).json({ success: false, error: SOURCE_TEMPLATE_VIDEO_CHUA_SAN_SANG_DE_LUU(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`)) });
       const title = _.filter(
         _.trim(_.toString(scene?.assetName))
           .replace(/[<>:"/\\|?*]/g, "")
@@ -5041,8 +5054,8 @@ router.post(SOURCE_TEXT_SAVE_FLOW_VIDEOS, requireLicense(FeatureType.VIDEO), asy
         .join("")
         .replace(/[. ]+$/g, "")
         .slice(0, 90);
-      const stem = title || SOURCE_TEMPLATE_FLOW_VIDEO(`${sceneId.replace(/[^a-zA-Z0-9_-]/g, SOURCE_TEXT_SYMBOL_25)}`);
-      let destination = path.join(folderPath, SOURCE_TEMPLATE_MP4(`${stem}`));
+      const stem = title || SOURCE_TEMPLATE_FLOW_VIDEO(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId.replace(/[^a-zA-Z0-9_-]/g, SOURCE_TEXT_SYMBOL_25)}`));
+      let destination = path.join(folderPath, SOURCE_TEMPLATE_MP4(SOURCE_TEMPLATE_SYMBOL_86(`${stem}`)));
       for (
         let suffix = 2;
         await fs.promises
@@ -5051,7 +5064,7 @@ router.post(SOURCE_TEXT_SAVE_FLOW_VIDEOS, requireLicense(FeatureType.VIDEO), asy
           .catch(() => false);
         suffix++
       )
-        destination = path.join(folderPath, SOURCE_TEMPLATE_MP4_2(`${stem}`, `${suffix}`));
+        destination = path.join(folderPath, SOURCE_TEMPLATE_MP4_2(SOURCE_TEMPLATE_SYMBOL_86(`${stem}`), SOURCE_TEMPLATE_SYMBOL_86(`${suffix}`)));
       await fs.promises.copyFile(source, destination);
       savedPaths.push(destination);
     }
@@ -5315,7 +5328,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
       knownVideoMediaIds,
     };
     if (!_.isEmpty(persistedFlowProjectId)) {
-      logger.info(SOURCE_TEMPLATE_GOOGLE_FLOW_REUSING_SHARED_ROOM_FOR(`${persistedFlowProjectId}`, `${localProjectId}`));
+      logger.info(SOURCE_TEMPLATE_GOOGLE_FLOW_REUSING_SHARED_ROOM_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${persistedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)));
     }
     let result = await generateImageWithPlaywright({
       prompt,
@@ -5435,7 +5448,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
         flowProjectId: resolvedFlowProjectId,
       };
       await saveProjectDetailToDb(localProject);
-      logger.info(replacedExistingRoom ? SOURCE_TEMPLATE_GOOGLE_FLOW_REPLACED_UNAVAILABLE_SHARED_ROOM(`${resolvedFlowProjectId}`, `${localProjectId}`) : SOURCE_TEMPLATE_GOOGLE_FLOW_CREATED_SHARED_ROOM_FOR(`${resolvedFlowProjectId}`, `${localProjectId}`));
+      logger.info(replacedExistingRoom ? SOURCE_TEMPLATE_GOOGLE_FLOW_REPLACED_UNAVAILABLE_SHARED_ROOM(SOURCE_TEMPLATE_SYMBOL_86(`${resolvedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)) : SOURCE_TEMPLATE_GOOGLE_FLOW_CREATED_SHARED_ROOM_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${resolvedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)));
     }
     if (result && result.success) {
       const feature = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? FeatureType.VIDEO : FeatureType.IMAGE;
@@ -5538,7 +5551,7 @@ router.post(SOURCE_TEXT_MERGE_AUDIO, async (req: Request, res: Response) => {
       const chunkItem = chunks[i];
       if (chunkItem.audioBase64) {
         const buffer = Buffer.from(chunkItem.audioBase64, SOURCE_TEXT_BASE64);
-        const filePath = path.join(tempDir, SOURCE_TEMPLATE_CHUNK_MP3(`${sessionId}`, `${i}`));
+        const filePath = path.join(tempDir, SOURCE_TEMPLATE_CHUNK_MP3(SOURCE_TEMPLATE_SYMBOL_86(`${sessionId}`), SOURCE_TEMPLATE_SYMBOL_86(`${i}`)));
         fs.writeFileSync(filePath, buffer);
         filePaths.push(filePath);
       }
@@ -5546,10 +5559,10 @@ router.post(SOURCE_TEXT_MERGE_AUDIO, async (req: Request, res: Response) => {
     if (_.isEmpty(filePaths)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: SOURCE_TEXT_NO_VALID_BASE64_AUDIO_DATA_FOUND });
     }
-    const listPath = path.join(tempDir, SOURCE_TEMPLATE_LIST_TXT(`${sessionId}`));
-    const fileListContent = _.map(filePaths, (p) => SOURCE_TEMPLATE_FILE(`${p.replace(SINGLE_QUOTE_REGEX, SOURCE_TEXT_SYMBOL_36)}`)).join(MOTION_TEXT_SYMBOL_27);
+    const listPath = path.join(tempDir, SOURCE_TEMPLATE_LIST_TXT(SOURCE_TEMPLATE_SYMBOL_86(`${sessionId}`)));
+    const fileListContent = _.map(filePaths, (p) => SOURCE_TEMPLATE_FILE(SOURCE_TEMPLATE_SYMBOL_86(`${p.replace(SINGLE_QUOTE_REGEX, SOURCE_TEXT_SYMBOL_36)}`))).join(MOTION_TEXT_SYMBOL_27);
     fs.writeFileSync(listPath, fileListContent, FileEncoding.UTF8);
-    const outputPath = path.join(tempDir, SOURCE_TEMPLATE_MERGED_MP3(`${sessionId}`));
+    const outputPath = path.join(tempDir, SOURCE_TEMPLATE_MERGED_MP3(SOURCE_TEMPLATE_SYMBOL_86(`${sessionId}`)));
     ffmpeg()
       .input(listPath)
       .inputOptions(FFMPEG_CONFIG.OPTIONS_CONCAT)
@@ -5591,7 +5604,7 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
   const videoPath = path.resolve(dataRoot, relativePath);
   const isInsideDataRoot = _.startsWith(_.toLower(videoPath), _.toLower(_.join([dataRoot, path.sep], "")));
   if (!isInsideDataRoot || !fs.existsSync(videoPath)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: SOURCE_TEXT_RENDERED_VIDEO_IS_OUTSIDE_THE_VIDIFY });
-  const tempDir = path.join(getTempDirectory(), `${FINAL_MULTIMODAL_QA_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  const tempDir = path.join(getTempDirectory(), SOURCE_TEMPLATE_SYMBOL_75(`${FINAL_MULTIMODAL_QA_CONFIG.TEMP_DIR_PREFIX}`, `${randomUUID()}`));
   fs.mkdirSync(tempDir, { recursive: true });
   try {
     const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : FINAL_MULTIMODAL_QA_CONFIG.FFMPEG_FALLBACK_COMMAND;
@@ -5601,9 +5614,12 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
     const sampleIntervalSeconds = _.max([FINAL_MULTIMODAL_QA_CONFIG.MIN_SAMPLE_INTERVAL_SECONDS, durationSeconds / FINAL_MULTIMODAL_QA_CONFIG.FRAME_COUNT]) || FINAL_MULTIMODAL_QA_CONFIG.DEFAULT_SAMPLE_INTERVAL_SECONDS;
     const frameOutputPattern = path.join(tempDir, FINAL_MULTIMODAL_QA_CONFIG.FRAME_FILE_PATTERN);
     await new Promise<void>((resolve, reject) => {
-      const process = spawn(executable, [SOURCE_TEXT_Y, SOURCE_TEXT_I, videoPath, SOURCE_TEXT_VF, SOURCE_TEMPLATE_FPS_1_SCALE_2(`${sampleIntervalSeconds}`, `${FINAL_MULTIMODAL_QA_CONFIG.FRAME_SCALE_WIDTH}`), SOURCE_TEXT_FRAMES_V, _.toString(FINAL_MULTIMODAL_QA_CONFIG.FRAME_COUNT), frameOutputPattern], { windowsHide: true, stdio: SOURCE_TEXT_IGNORE });
+      const process = spawn(executable, [SOURCE_TEXT_Y, SOURCE_TEXT_I, videoPath, SOURCE_TEXT_VF, SOURCE_TEMPLATE_FPS_1_SCALE_2(SOURCE_TEMPLATE_SYMBOL_86(`${sampleIntervalSeconds}`), SOURCE_TEMPLATE_SYMBOL_86(`${FINAL_MULTIMODAL_QA_CONFIG.FRAME_SCALE_WIDTH}`)), SOURCE_TEXT_FRAMES_V, _.toString(FINAL_MULTIMODAL_QA_CONFIG.FRAME_COUNT), frameOutputPattern], {
+        windowsHide: true,
+        stdio: SOURCE_TEXT_IGNORE,
+      });
       process.once(SOURCE_TEXT_ERROR, reject);
-      process.once(SOURCE_TEXT_EXIT, (code) => (code === 0 ? resolve() : reject(new Error(SOURCE_TEMPLATE_FINAL_QC_FRAME_EXTRACTION_FAILED(`${code}`)))));
+      process.once(SOURCE_TEXT_EXIT, (code) => (code === 0 ? resolve() : reject(new Error(SOURCE_TEMPLATE_FINAL_QC_FRAME_EXTRACTION_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${code}`))))));
     });
     const audioPath = path.join(tempDir, FINAL_MULTIMODAL_QA_CONFIG.AUDIO_FILE_NAME);
     await new Promise<void>((resolve, reject) => {
@@ -5705,14 +5721,14 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   const dataRoot = path.resolve(getDataDirectory());
   const projectRoot = path.resolve(dataRoot, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
   const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
-  const analysisDir = path.join(getTempDirectory(), `${CINEMATIC_EDIT_ANALYSIS_CONFIG.TEMP_DIR_PREFIX}${randomUUID()}`);
+  const analysisDir = path.join(getTempDirectory(), SOURCE_TEMPLATE_SYMBOL_75(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.TEMP_DIR_PREFIX}`, `${randomUUID()}`));
   fs.mkdirSync(analysisDir, { recursive: true });
   const analyzeScene = async (scene: any, includeReviewMedia = false) => {
     const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), SOURCE_TEXT_SYMBOL_21)) || "", SOURCE_TEXT_SYMBOL_37);
     const candidate = path.resolve(dataRoot, relativePath);
-    const isSafe = _.startsWith(_.toLower(candidate), _.toLower(`${projectRoot}${path.sep}`)) && fs.existsSync(candidate);
+    const isSafe = _.startsWith(_.toLower(candidate), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`))) && fs.existsSync(candidate);
     if (!isSafe) return { sceneId: scene.id, sourcePath: "", warnings: [SOURCE_TEXT_CLIP_MISSING], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: SOURCE_TEXT_OMIT, reason: SOURCE_TEXT_CLIP_MISSING };
-    const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean }>((resolve) =>
+    const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean; }>((resolve) =>
       ffmpeg.ffprobe(candidate, (error, metadata) => {
         const videoStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_VIDEO_2));
         const audioStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_AUDIO));
@@ -5732,7 +5748,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const stderr = await new Promise<string>((resolve) => {
       const process = spawn(executable, [SOURCE_TEXT_HIDE_BANNER, SOURCE_TEXT_I, candidate, SOURCE_TEXT_VF, SOURCE_TEXT_BLACKDETECT_D_0_12_PIX_TH, SOURCE_TEXT_AN, SOURCE_TEXT_F, SOURCE_TEXT_NULL, SOURCE_TEXT_SYMBOL_15], { windowsHide: true });
       let output = "";
-      const timeout = setTimeout(() => process.kill(), 30_000);
+      const timeout = setTimeout(() => process.kill(), 30000);
       process.stderr.on(SOURCE_TEXT_DATA_2, (chunk) => {
         output += _.toString(chunk);
       });
@@ -5755,14 +5771,14 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         const height = _.toNumber(match[2]);
         return (mediaInfo.width > 0 && width < mediaInfo.width * 0.97) || (mediaInfo.height > 0 && height < mediaInfo.height * 0.97);
       }),
-      (match) => SOURCE_TEMPLATE_SYMBOL_47(`${match[1]}`, `${match[2]}`, `${match[3]}`, `${match[4]}`),
+      (match) => SOURCE_TEMPLATE_SYMBOL_47(SOURCE_TEMPLATE_SYMBOL_86(`${match[1]}`), SOURCE_TEMPLATE_SYMBOL_86(`${match[2]}`), SOURCE_TEMPLATE_SYMBOL_86(`${match[3]}`), SOURCE_TEMPLATE_SYMBOL_86(`${match[4]}`)),
     );
     const dominantBorderGroup = _.maxBy(_.values(significantCropGroups), (group) => group.length);
     const detectedCrop = _.first(dominantBorderGroup);
     const cropWidth = _.toNumber(detectedCrop?.[1]);
     const cropHeight = _.toNumber(detectedCrop?.[2]);
     const hasEmbeddedBorder = Boolean(detectedCrop) && _.gte(_.size(dominantBorderGroup), 5);
-    const sourceCrop = hasEmbeddedBorder ? SOURCE_TEMPLATE_SYMBOL_47(`${cropWidth}`, `${cropHeight}`, `${detectedCrop?.[3]}`, `${detectedCrop?.[4]}`) : "";
+    const sourceCrop = hasEmbeddedBorder ? SOURCE_TEMPLATE_SYMBOL_47(SOURCE_TEMPLATE_SYMBOL_86(`${cropWidth}`), SOURCE_TEMPLATE_SYMBOL_86(`${cropHeight}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[3]}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[4]}`)) : "";
     const maxEdgeTrim = _.min([1.25, duration * 0.18]) || 0;
     let trimStartSeconds = 0;
     let trimEndSeconds = 0;
@@ -5784,10 +5800,10 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     let contactSheetData = "";
     let contactSheetPath = "";
     if (includeReviewMedia && _.gt(duration, 0)) {
-      contactSheetPath = path.join(analysisDir, SOURCE_TEMPLATE_SYMBOL_5(`${path.basename(_.toString(scene.id))}`, `${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`));
+      contactSheetPath = path.join(analysisDir, SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${path.basename(_.toString(scene.id))}`), SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`)));
       const frameRate = CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / duration;
       const tileRows = Math.ceil(CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS);
-      const contactSheetFilter = SOURCE_TEMPLATE_FPS_SCALE_2_TILE_X(`${frameRate}`, `${Math.floor(CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_WIDTH / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS)}`, `${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS}`, `${tileRows}`);
+      const contactSheetFilter = SOURCE_TEMPLATE_FPS_SCALE_2_TILE_X(SOURCE_TEMPLATE_SYMBOL_86(`${frameRate}`), SOURCE_TEMPLATE_SYMBOL_86(`${Math.floor(CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_WIDTH / CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS)}`), SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_COLUMNS}`), SOURCE_TEMPLATE_SYMBOL_86(`${tileRows}`));
       await new Promise<void>((resolve) => {
         const process = spawn(executable, [SOURCE_TEXT_Y, SOURCE_TEXT_I, candidate, SOURCE_TEXT_VF, contactSheetFilter, SOURCE_TEXT_FRAMES_V, SOURCE_TEXT_1, contactSheetPath], { windowsHide: true, stdio: SOURCE_TEXT_IGNORE });
         const timeout = setTimeout(() => process.kill(), CINEMATIC_EDIT_ANALYSIS_CONFIG.FFMPEG_TIMEOUT_MS);
@@ -5959,7 +5975,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const libraryObservations = _.map(reviewableDecisions, (decision) => _.omit(decision, [SOURCE_TEXT_SOURCEPATH, SOURCE_TEXT_CONTACTSHEETDATA, SOURCE_TEXT_CONTACTSHEETPATH, SOURCE_TEXT_CANDIDATESEGMENTS, SOURCE_TEXT_SHOTBOUNDARIES]));
     const globalEditParts: any[] = [{ text: getCinematicGlobalEditDecisionPrompt(metadata, libraryObservations) }];
     _.forEach(reviewableDecisions, (decision) => {
-      globalEditParts.push({ text: SOURCE_TEMPLATE_SYMBOL_16(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_MEDIA_LABEL_PREFIX}`, `${decision.sceneId}`) });
+      globalEditParts.push({ text: SOURCE_TEMPLATE_SYMBOL_16(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_MEDIA_LABEL_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${decision.sceneId}`)) });
       globalEditParts.push({
         inlineData: {
           mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE,
@@ -6016,7 +6032,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
             const outSeconds = _.clamp(_.toNumber(selectedLibrarySegment.outSeconds), inSeconds, technicalUsableEnd);
             if (_.lt(outSeconds - inSeconds, CINEMATIC_EDIT_ANALYSIS_CONFIG.MIN_USABLE_SECONDS)) return undefined;
             return {
-              segmentId: _.trim(_.toString(selectedLibrarySegment.segmentId)) || SOURCE_TEMPLATE_SEGMENT(`${technical.sceneId}`, `${segmentIndex + 1}`),
+              segmentId: _.trim(_.toString(selectedLibrarySegment.segmentId)) || SOURCE_TEMPLATE_SEGMENT(SOURCE_TEMPLATE_SYMBOL_86(`${technical.sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${segmentIndex + 1}`)),
               inSeconds,
               outSeconds,
               shotRole: segment.shotRole,
@@ -6096,7 +6112,7 @@ router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => 
               role: SOURCE_TEXT_USER,
               parts: [
                 {
-                  text: `${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : ""}`,
+                  text: SOURCE_TEMPLATE_SYMBOL_75(`${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}`, `${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : ""}`),
                 },
                 { inlineData: { mimeType: _.startsWith(audioBase64, SOURCE_TEXT_UKLGR) ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, data: audioBase64 } },
               ],
@@ -6136,9 +6152,9 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
       fs.mkdirSync(tempDir, { recursive: true });
     }
     const sessionId = randomUUID();
-    const audioPath = path.join(tempDir, `${ALIGN_CONFIG.AUDIO_PREFIX}${sessionId}${ALIGN_CONFIG.WAV_EXT}`);
-    const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
-    const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
+    const audioPath = path.join(tempDir, SOURCE_TEMPLATE_SYMBOL_170(`${ALIGN_CONFIG.AUDIO_PREFIX}`, `${sessionId}`, `${ALIGN_CONFIG.WAV_EXT}`));
+    const scenesPath = path.join(tempDir, SOURCE_TEMPLATE_SYMBOL_170(`${ALIGN_CONFIG.SCENES_PREFIX}`, `${sessionId}`, `${ALIGN_CONFIG.JSON_EXT}`));
+    const outputPath = path.join(tempDir, SOURCE_TEMPLATE_SYMBOL_170(`${ALIGN_CONFIG.OUTPUT_PREFIX}`, `${sessionId}`, `${ALIGN_CONFIG.JSON_EXT}`));
     const removeTempAlignDirectoryIfEmpty = () => {
       try {
         if (fs.existsSync(tempDir) && _.isEmpty(fs.readdirSync(tempDir))) fs.rmdirSync(tempDir);
@@ -6161,7 +6177,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
         const installCmd = ALIGN_CONFIG.INSTALL_FASTER_WHISPER_CMD.replace(SOURCE_TEXT_0_2, pyCmd);
         exec(installCmd, (installError, _installStdout, _installStderr) => {
           if (installError) {
-            logger.error(SOURCE_TEMPLATE_FAILED_TO_INSTALL_FASTER_WHISPER(`${installError.message}`));
+            logger.error(SOURCE_TEMPLATE_FAILED_TO_INSTALL_FASTER_WHISPER(SOURCE_TEMPLATE_SYMBOL_86(`${installError.message}`)));
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
@@ -6183,7 +6199,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
     const runAligner = async () => {
       let folderName = projectId || (projectName ? getSafeFolderName(projectName) : SOURCE_TEXT_DEFAULT_PROJECT);
       const pyCmd = getPythonCommand();
-      let cmd = SOURCE_TEMPLATE_SYMBOL_48(`${pyCmd}`, `${scriptPath}`, `${audioPath}`, `${scenesPath}`, `${outputPath}`);
+      let cmd = SOURCE_TEMPLATE_SYMBOL_48(SOURCE_TEMPLATE_SYMBOL_86(`${pyCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${scriptPath}`), SOURCE_TEMPLATE_SYMBOL_86(`${audioPath}`), SOURCE_TEMPLATE_SYMBOL_86(`${scenesPath}`), SOURCE_TEMPLATE_SYMBOL_86(`${outputPath}`));
       if (segment && projectId) {
         const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
         if (!fs.existsSync(outputDir)) {
@@ -6204,7 +6220,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           },
         );
       }
-      logger.log(SOURCE_TEMPLATE_RUNNING_VOICE_ALIGNER_COMMAND(`${cmd}`));
+      logger.log(SOURCE_TEMPLATE_RUNNING_VOICE_ALIGNER_COMMAND(SOURCE_TEMPLATE_SYMBOL_86(`${cmd}`)));
       exec(cmd, async (error, stdout, stderr) => {
         const cleanup = () => {
           try {
@@ -6219,9 +6235,9 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
         };
         if (error) {
           cleanup();
-          logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
-          if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
-          if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
+          logger.error(SOURCE_TEMPLATE_SYMBOL_75(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}`, `${error.message}`));
+          if (stdout) logger.error(SOURCE_TEMPLATE_SYMBOL_75(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}`, `${stdout}`));
+          if (stderr) logger.error(SOURCE_TEMPLATE_SYMBOL_75(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}`, `${stderr}`));
           const pythonError = stderr || stdout;
           return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
             success: false,
@@ -6240,11 +6256,11 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
             const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
               return new Promise<void>((resolve) => {
                 const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
-                const ffmpegCmd = fs.existsSync(ffmpegBinary) ? SOURCE_TEMPLATE_SYMBOL_49(`${ffmpegBinary}`) : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
-                const cmdRun = SOURCE_TEMPLATE_Y_SS_TO_I(`${ffmpegCmd}`, `${start}`, `${end}`, `${src}`, `${dest}`);
+                const ffmpegCmd = fs.existsSync(ffmpegBinary) ? SOURCE_TEMPLATE_SYMBOL_49(SOURCE_TEMPLATE_SYMBOL_86(`${ffmpegBinary}`)) : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
+                const cmdRun = SOURCE_TEMPLATE_Y_SS_TO_I(SOURCE_TEMPLATE_SYMBOL_86(`${ffmpegCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${start}`), SOURCE_TEMPLATE_SYMBOL_86(`${end}`), SOURCE_TEMPLATE_SYMBOL_86(`${src}`), SOURCE_TEMPLATE_SYMBOL_86(`${dest}`));
                 exec(cmdRun, (err) => {
                   if (err) {
-                    logger.error(SOURCE_TEMPLATE_ERROR_CUTTING_SEGMENT(`${cmdRun}`), err);
+                    logger.error(SOURCE_TEMPLATE_ERROR_CUTTING_SEGMENT(SOURCE_TEMPLATE_SYMBOL_86(`${cmdRun}`)), err);
                   }
                   resolve();
                 });
@@ -6256,7 +6272,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               if (!_.isNil(startVal) && !_.isNil(endVal)) {
                 const idStr = String(align.id);
                 const cleanId = _.startsWith(idStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? idStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : idStr;
-                const fileName = SOURCE_TEMPLATE_SYMBOL_50(`${ALIGN_CONFIG.SEGMENT_PREFIX}`, `${sessionId}`, `${cleanId}`, `${ALIGN_CONFIG.WAV_EXT}`);
+                const fileName = SOURCE_TEMPLATE_SYMBOL_50(SOURCE_TEMPLATE_SYMBOL_86(`${ALIGN_CONFIG.SEGMENT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${sessionId}`), SOURCE_TEMPLATE_SYMBOL_86(`${cleanId}`), SOURCE_TEMPLATE_SYMBOL_86(`${ALIGN_CONFIG.WAV_EXT}`));
                 const outPath = path.join(tempDir, fileName);
                 await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
                 if (fs.existsSync(outPath)) {
@@ -6271,7 +6287,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           return res.json(result);
         } catch (err: any) {
           cleanup();
-          logger.error(SOURCE_TEMPLATE_ERROR_PARSING_PYTHON_SCRIPTS_VOICE_ALIGNER(`${err.message}`));
+          logger.error(SOURCE_TEMPLATE_ERROR_PARSING_PYTHON_SCRIPTS_VOICE_ALIGNER(SOURCE_TEMPLATE_SYMBOL_86(`${err.message}`)));
           if (fs.existsSync(outputPath)) {
             try {
               fs.unlinkSync(outputPath);
@@ -6306,12 +6322,12 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
   }
   const tempOutputPath = filePath + SOURCE_TEXT_ULTRA_TMP;
   const uniqueId = randomUUID().substring(0, 8);
-  const optsJsonPath = path.join(getTempDirectory(), SOURCE_TEMPLATE_ULTRA_OPTS_JSON(`${uniqueId}`));
+  const optsJsonPath = path.join(getTempDirectory(), SOURCE_TEMPLATE_ULTRA_OPTS_JSON(SOURCE_TEMPLATE_SYMBOL_86(`${uniqueId}`)));
   let finalProjectName = projectName;
   if (_.isEmpty(_.trim(finalProjectName))) {
     const d = new Date();
     const pad = (n: number) => _.padStart(n.toString(), 2, SOURCE_TEXT_0);
-    finalProjectName = SOURCE_TEMPLATE_AI_CAPCUT(`${pad(d.getHours())}`, `${pad(d.getMinutes())}`, `${pad(d.getDate())}`, `${pad(d.getMonth() + 1)}`, `${d.getFullYear().toString().substring(2)}`);
+    finalProjectName = SOURCE_TEMPLATE_AI_CAPCUT(SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getHours())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getMinutes())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getDate())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getMonth() + 1)}`), SOURCE_TEMPLATE_SYMBOL_86(`${d.getFullYear().toString().substring(2)}`));
   }
   let realTemplateId = templateId || "";
   if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
@@ -6350,7 +6366,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
     const pyCmd = getPythonCommand();
     const scriptPath = getStaticResourcePath(SOURCE_TEXT_PYTHON_SCRIPTS_CAPCUT_ULTRA_TOOL_PY);
     const safeFilePath = filePath || CAPCUT_CONFIG.AUTO_MODE_INPUT_PATH;
-    logger.log(SOURCE_TEMPLATE_U(`${getBackendMsg(SOURCE_TEXT_ULTRA_SPAWN_LOG, isVi)}`, `${pyCmd}`, `${scriptPath}`, `${safeFilePath}`, `${tempOutputPath}`, `${optsJsonPath}`));
+    logger.log(SOURCE_TEMPLATE_U(SOURCE_TEMPLATE_SYMBOL_86(`${getBackendMsg(SOURCE_TEXT_ULTRA_SPAWN_LOG, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${pyCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${scriptPath}`), SOURCE_TEMPLATE_SYMBOL_86(`${safeFilePath}`), SOURCE_TEMPLATE_SYMBOL_86(`${tempOutputPath}`), SOURCE_TEMPLATE_SYMBOL_86(`${optsJsonPath}`)));
     const pythonProcess = spawn(pyCmd, [SOURCE_TEXT_U, scriptPath, safeFilePath, tempOutputPath, optsJsonPath]);
     pythonProcess.stdout.on(SOURCE_TEXT_DATA_2, (data) => {
       _.forEach(_.split(data.toString(), MOTION_TEXT_SYMBOL_27), (line) => {
@@ -6379,7 +6395,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
         try {
           if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
         } catch (cleanupErr) {}
-        logger.error(SOURCE_TEMPLATE_CAPCUT_ULTRA_PROCESS_FAILED_WITH_EXIT(`${code}`));
+        logger.error(SOURCE_TEMPLATE_CAPCUT_ULTRA_PROCESS_FAILED_WITH_EXIT(SOURCE_TEMPLATE_SYMBOL_86(`${code}`)));
         res.write(
           jsonUtils.safeStringify({
             success: false,
@@ -6406,7 +6422,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
               fs.unlinkSync(lockFilePath);
               logger.log(getBackendMsg(SOURCE_TEXT_ULTRA_CLEANED_LOCK, isVi));
             } catch (lockErr: any) {
-              logger.error(SOURCE_TEMPLATE_FAILED_TO_DELETE_LOCKED(`${lockErr.message}`));
+              logger.error(SOURCE_TEMPLATE_FAILED_TO_DELETE_LOCKED(SOURCE_TEMPLATE_SYMBOL_86(`${lockErr.message}`)));
             }
           }
           if (fs.existsSync(metaFilePath)) {
@@ -6419,7 +6435,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
               fs.writeFileSync(metaFilePath, jsonUtils.safeStringify(metaObj), FileEncoding.UTF8 as any);
               logger.log(getBackendMsg(SOURCE_TEXT_ULTRA_UPDATED_META, isVi));
             } catch (metaErr: any) {
-              logger.error(SOURCE_TEMPLATE_FAILED_TO_UPDATE_DRAFT_META_INFO(`${metaErr.message}`));
+              logger.error(SOURCE_TEMPLATE_FAILED_TO_UPDATE_DRAFT_META_INFO(SOURCE_TEMPLATE_SYMBOL_86(`${metaErr.message}`)));
             }
           }
         }
@@ -6430,7 +6446,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
           }) + MOTION_TEXT_SYMBOL_27,
         );
       } catch (fsErr: any) {
-        logger.error(SOURCE_TEMPLATE_FILE_COPY_RENAME_UPDATE_FAILED(`${fsErr.message}`));
+        logger.error(SOURCE_TEMPLATE_FILE_COPY_RENAME_UPDATE_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${fsErr.message}`)));
         res.write(
           jsonUtils.safeStringify({
             success: false,
@@ -6461,7 +6477,7 @@ router.post(ROUTER_PATHS.SELECT_FILE, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(SOURCE_TEXT_PYTHON_SCRIPTS_CAPCUT_ULTRA_TOOL_PY);
-  const cmd = SOURCE_TEMPLATE_SELECT_FILE(`${pyCmd}`, `${scriptPath}`);
+  const cmd = SOURCE_TEMPLATE_SELECT_FILE(SOURCE_TEMPLATE_SYMBOL_86(`${pyCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${scriptPath}`));
   logger.log(getBackendMsg(SOURCE_TEXT_ULTRA_RUN_SELECT_FILE, isVi).replace(SOURCE_TEXT_0_2, cmd));
   exec(cmd, (error, stdout, _stderr) => {
     if (error) {
@@ -6475,7 +6491,7 @@ router.post(ROUTER_PATHS.SELECT_FOLDER, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(SOURCE_TEXT_PYTHON_SCRIPTS_CAPCUT_ULTRA_TOOL_PY);
-  const cmd = SOURCE_TEMPLATE_SELECT_FOLDER(`${pyCmd}`, `${scriptPath}`);
+  const cmd = SOURCE_TEMPLATE_SELECT_FOLDER(SOURCE_TEMPLATE_SYMBOL_86(`${pyCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${scriptPath}`));
   logger.log(getBackendMsg(SOURCE_TEXT_ULTRA_RUN_SELECT_FOLDER, isVi).replace(SOURCE_TEXT_0_2, cmd));
   exec(cmd, (error, stdout, _stderr) => {
     if (error) {
@@ -6495,11 +6511,11 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
       return res.json({ success: false });
     }
     const audioPattern = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
-    const scan = async (directory: string, files: string[]): Promise<void> => {
+    const scan = async (directory: string, files: string[], recursive = true): Promise<void> => {
       try {
         for (const entry of await fs.promises.readdir(directory, { withFileTypes: true })) {
           const fullPath = path.join(directory, entry.name);
-          if (entry.isDirectory()) await scan(fullPath, files);
+          if (entry.isDirectory() && recursive) await scan(fullPath, files);
           else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
         }
       } catch (err: any) {
@@ -6510,6 +6526,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
       const selectedPaths = parseJson(stdout.trim());
       if (!Array.isArray(selectedPaths) || !_.every(selectedPaths, (folderPath) => typeof folderPath === MOTION_TEXT_STRING)) throw new Error(MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING);
       const folderPaths: string[] = [];
+      const directOnlyFolderPaths = new Set<string>();
       for (const folderPath of selectedPaths) {
         const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
         const hasDirectAudio = _.some(entries, (e) => e.isFile() && audioPattern.test(e.name));
@@ -6520,37 +6537,43 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
         if (subDirs.length === 0) {
           folderPaths.push(folderPath);
         } else {
-          if (hasDirectAudio) folderPaths.push(folderPath);
+          if (hasDirectAudio) {
+            folderPaths.push(folderPath);
+            directOnlyFolderPaths.add(path.resolve(folderPath));
+          }
           folderPaths.push(...subDirs);
         }
       }
       const folders = _.filter(
         await Promise.all(
-          _.map(folderPaths, async (folderPath: string) => {
-            const files: string[] = [];
-            await scan(folderPath, files);
-            const token = randomUUID();
-            musicMixerSources.set(token, files);
-            files.forEach((filePath) => musicMixerAllowedSources.add(path.resolve(filePath)));
-            setTimeout(() => {
-              musicMixerSources.delete(token);
-              files.forEach((filePath) => musicMixerAllowedSources.delete(path.resolve(filePath)));
-            }, MUSIC_MIXER_SOURCE_TTL_MS).unref();
-            return {
-              folderPath,
-              files: await Promise.all(
-                _.map(files, async (filePath, index) => ({
-                  name: path.basename(filePath),
-                  relativePath: path.relative(folderPath, filePath),
-                  sourcePath: filePath,
-                  size: (await fs.promises.stat(filePath)).size,
-                  type: path.extname(filePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG,
-                  index,
-                  url: SOURCE_TEMPLATE_SYMBOL_33(`${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}`, `${token}`, `${index}`),
-                })),
-              ),
-            };
-          }),
+          _.map(
+            _.uniqBy(folderPaths, (folderPath) => path.resolve(folderPath).toLowerCase()),
+            async (folderPath: string) => {
+              const files: string[] = [];
+              await scan(folderPath, files, !directOnlyFolderPaths.has(path.resolve(folderPath)));
+              const token = randomUUID();
+              musicMixerSources.set(token, files);
+              files.forEach((filePath) => musicMixerAllowedSources.add(path.resolve(filePath)));
+              setTimeout(() => {
+                musicMixerSources.delete(token);
+                files.forEach((filePath) => musicMixerAllowedSources.delete(path.resolve(filePath)));
+              }, MUSIC_MIXER_SOURCE_TTL_MS).unref();
+              return {
+                folderPath,
+                files: await Promise.all(
+                  _.map(files, async (filePath, index) => ({
+                    name: path.basename(filePath),
+                    relativePath: path.relative(folderPath, filePath),
+                    sourcePath: filePath,
+                    size: (await fs.promises.stat(filePath)).size,
+                    type: path.extname(filePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG,
+                    index,
+                    url: SOURCE_TEMPLATE_SYMBOL_33(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SOURCE_URL_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${token}`), SOURCE_TEMPLATE_SYMBOL_86(`${index}`)),
+                  })),
+                ),
+              };
+            },
+          ),
         ),
         (folder) => folder.files.length > 0,
       );
@@ -6580,12 +6603,12 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SOURCE_FILE, async (req: Request, res: Resp
 router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response) => {
   const items = Array.isArray(req.body?.tracks) ? req.body.tracks : [];
   if (!items.length || items.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_TRACK_COUNT });
-  const rankingId = typeof req.body?.projectId === MOTION_TEXT_STRING && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : `${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}${randomUUID()}`;
+  const rankingId = typeof req.body?.projectId === MOTION_TEXT_STRING && req.body.projectId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.projectId : SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}`, `${randomUUID()}`);
   const planningRun = beginChatPlanningRun(rankingId, Date.now(), undefined, req.body?.provider || AiPlanningFallbackProvider.GeminiChat);
   const cancelOnDisconnect = () => {
     if (!res.writableEnded) planningRun.cancel();
   };
-  res.once("close", cancelOnDisconnect);
+  res.once(SOURCE_TEXT_CLOSE_2, cancelOnDisconnect);
   try {
     const availableFiles = await Promise.all(
       items.map(async (item: any) => {
@@ -6598,11 +6621,11 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
     );
     if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
     planningRun.signal.throwIfAborted();
-    const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
+    const scores: Array<{ index: number; score: number; durationSeconds: number; }> = [];
     for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
-      const requestId = SOURCE_TEMPLATE_SYMBOL_5(`${rankingId}`, `${chunkIndex + 1}`);
+      const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${rankingId}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`));
       const offset = chunkIndex * MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST;
-      const attachments = _.map(chunk, (item: any, index: number) => ({ name: SOURCE_TEMPLATE_SYMBOL_51(`${offset + index + 1}`, `${path.basename(item.sourcePath)}`), mimeType: path.extname(item.sourcePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, path: item.sourcePath }));
+      const attachments = _.map(chunk, (item: any, index: number) => ({ name: SOURCE_TEMPLATE_SYMBOL_51(SOURCE_TEMPLATE_SYMBOL_86(`${offset + index + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${path.basename(item.sourcePath)}`)), mimeType: path.extname(item.sourcePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, path: item.sourcePath }));
       const prompt = buildMusicMixerAnalyzePrompt(
         _.map(chunk, (item: any, index: number) => ({ index: offset + index + 1, title: item.title })),
         requestId,
@@ -6632,7 +6655,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
     await closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: rankingId }).catch(() => undefined);
     return res.status(500).json({ success: false, error: String(error) });
   } finally {
-    res.off("close", cancelOnDisconnect);
+    res.off(SOURCE_TEXT_CLOSE_2, cancelOnDisconnect);
     planningRun.complete();
     if (planningRun.signal.aborted) {
       await closeChatPlanningRoomsForProject({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, projectId: rankingId }).catch(() => undefined);
@@ -6652,14 +6675,14 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
   const titles = Array.isArray(req.body?.titles) ? req.body.titles.map((value: unknown) => String(value).trim()).filter(Boolean) : [];
   if (!titles.length || titles.length > 100) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_PLAYLIST });
   const execution = req.body?.aiExecution || {};
-  const projectId = typeof req.body?.roomId === MOTION_TEXT_STRING && req.body.roomId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.roomId : `${MUSIC_MIXER_SERVER.SEO_RUN_PREFIX}${randomUUID()}`;
-  const requestId = SOURCE_TEMPLATE_SEO_4(`${projectId}`);
+  const projectId = typeof req.body?.roomId === MOTION_TEXT_STRING && req.body.roomId.startsWith(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX) ? req.body.roomId : SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.SEO_RUN_PREFIX}`, `${randomUUID()}`);
+  const requestId = SOURCE_TEMPLATE_SEO_4(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`));
   const prompt = buildMusicMixerSeoPrompt(titles, requestId);
   const planningRun = beginChatPlanningRun(projectId, Date.now(), undefined, execution.provider || AiPlanningFallbackProvider.GeminiChat);
   const cancelOnDisconnect = () => {
     if (!res.writableEnded) planningRun.cancel();
   };
-  res.once("close", cancelOnDisconnect);
+  res.once(SOURCE_TEXT_CLOSE_2, cancelOnDisconnect);
   try {
     const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, signal: planningRun.signal, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
     planningRun.signal.throwIfAborted();
@@ -6673,7 +6696,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
     await closeChatBrowserIfIdle().catch(() => undefined);
     return res.status(500).json({ success: false, error: String(error) });
   } finally {
-    res.off("close", cancelOnDisconnect);
+    res.off(SOURCE_TEXT_CLOSE_2, cancelOnDisconnect);
     planningRun.complete();
   }
 });
@@ -6719,7 +6742,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
       })),
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
-    const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
+    const result = await new Promise<{ success: boolean; path?: string; error?: string; }>((resolve) => {
       execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true }, (error, stdout, stderr) => {
         if (error) {
           return resolve({ success: false, error: error.message || stderr || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
@@ -6748,7 +6771,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Respon
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
   musicMixerZipDestinations.delete(token);
-  const temp = SOURCE_TEMPLATE_PARTIAL(`${target}`, `${randomUUID()}`);
+  const temp = SOURCE_TEMPLATE_PARTIAL(SOURCE_TEMPLATE_SYMBOL_86(`${target}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
   try {
     await streamPipeline(req, fs.createWriteStream(temp, { flags: SOURCE_TEXT_WX }));
     const stat = await fs.promises.stat(temp);
@@ -6767,7 +6790,7 @@ router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {
   const dataMatch = _.toString(req.body?.dataUrl).match(SUNO_AUTOMATION_PATTERNS.DATA_URL_BASE64);
   if (!dataMatch) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: SUNO_AUTOMATION_TEXTS.INVALID_FILE_DATA_ERR });
   const temporaryDirectory = await fs.promises.mkdtemp(path.join(getTempDirectory(), SUNO_AUTOMATION_CONFIG.SAVE_FILE_TEMP_PREFIX));
-  const temporaryPath = path.join(temporaryDirectory, `${SUNO_AUTOMATION_CONFIG.SAVE_FILE_PAYLOAD_NAME}${extension}`);
+  const temporaryPath = path.join(temporaryDirectory, SOURCE_TEMPLATE_SYMBOL_75(`${SUNO_AUTOMATION_CONFIG.SAVE_FILE_PAYLOAD_NAME}`, `${extension}`));
   try {
     await fs.promises.writeFile(temporaryPath, Buffer.from(dataMatch[2], SUNO_AUTOMATION_CONFIG.ENCODING_BASE64 as BufferEncoding));
     const savedPath = await new Promise<string>((resolve, reject) => {
@@ -6817,11 +6840,11 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
       const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> =>
         new Promise((resolve, reject) => {
           const ffmpegBinary = getStaticResourcePath(SOURCE_TEXT_FFMPEG_EXE);
-          const ffmpegCmd = fs.existsSync(ffmpegBinary) ? SOURCE_TEMPLATE_SYMBOL_49(`${ffmpegBinary}`) : SOURCE_TEXT_FFMPEG;
-          const cmd = SOURCE_TEMPLATE_Y_SS_TO_I(`${ffmpegCmd}`, `${start}`, `${end}`, `${src}`, `${dest}`);
+          const ffmpegCmd = fs.existsSync(ffmpegBinary) ? SOURCE_TEMPLATE_SYMBOL_49(SOURCE_TEMPLATE_SYMBOL_86(`${ffmpegBinary}`)) : SOURCE_TEXT_FFMPEG;
+          const cmd = SOURCE_TEMPLATE_Y_SS_TO_I(SOURCE_TEMPLATE_SYMBOL_86(`${ffmpegCmd}`), SOURCE_TEMPLATE_SYMBOL_86(`${start}`), SOURCE_TEMPLATE_SYMBOL_86(`${end}`), SOURCE_TEMPLATE_SYMBOL_86(`${src}`), SOURCE_TEMPLATE_SYMBOL_86(`${dest}`));
           exec(cmd, (err) => {
             if (err) {
-              logger.error(SOURCE_TEMPLATE_ERROR_CUTTING_SEGMENT_FOR_ZIP(`${cmd}`), err);
+              logger.error(SOURCE_TEMPLATE_ERROR_CUTTING_SEGMENT_FOR_ZIP(SOURCE_TEMPLATE_SYMBOL_86(`${cmd}`)), err);
               reject(new Error(EXPORT_ZIP_CONFIG.ERR_AUDIO_SPLIT_FAILED));
               return;
             }
@@ -6836,57 +6859,57 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
         }
         const scIdStr = String(sc.id);
         const cleanId = _.startsWith(scIdStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? scIdStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : scIdStr;
-        const outPath = path.join(voicesDir, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`);
+        const outPath = path.join(voicesDir, SOURCE_TEMPLATE_SYMBOL_170(`${EXPORT_ZIP_CONFIG.SCENE_PREFIX}`, `${cleanId}`, `${EXPORT_ZIP_CONFIG.WAV_EXT}`));
         const slash = COMMON_STRINGS.SLASH_PREFIX;
-        sc.audioUrl = `${slash}${ASSETS_DIR_NAME}${slash}${PROJECTS_DIR_NAME}${slash}${projectId}${slash}${EXPORT_ZIP_CONFIG.VOICES_DIR}${slash}${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+        sc.audioUrl = SOURCE_TEMPLATE_SYMBOL_586(`${slash}`, `${ASSETS_DIR_NAME}`, `${slash}`, `${PROJECTS_DIR_NAME}`, `${slash}`, `${projectId}`, `${slash}`, `${EXPORT_ZIP_CONFIG.VOICES_DIR}`, `${slash}`, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}`, `${cleanId}`, `${EXPORT_ZIP_CONFIG.WAV_EXT}`);
         await cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
       }
     }
     const zip = new JSZip();
-    const folderKey = SOURCE_TEMPLATE_SYMBOL_37(`${CAPCUT_CONFIG.ACTIVE_FOLDER_UUID}`);
+    const folderKey = SOURCE_TEMPLATE_SYMBOL_37(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.ACTIVE_FOLDER_UUID}`));
     zip.folder(folderKey);
-    zip.folder(SOURCE_TEMPLATE_ADJUST_MASK(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_COMMON_ATTACHMENT(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_MATTING(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_QR_UPLOAD(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_RESOURCES(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_RESOURCES_VOICES(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_SYMBOL(`${folderKey}`, `${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`));
-    zip.folder(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_SMART_CROP(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_SUBDRAFT(`${folderKey}`));
-    zip.folder(SOURCE_TEMPLATE_TIMELINES(`${folderKey}`));
+    zip.folder(SOURCE_TEMPLATE_ADJUST_MASK(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_COMMON_ATTACHMENT(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_MATTING(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_QR_UPLOAD(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_RESOURCES(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_RESOURCES_VOICES(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`)));
+    zip.folder(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_SMART_CROP(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_SUBDRAFT(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
+    zip.folder(SOURCE_TEMPLATE_TIMELINES(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`)));
     const coverBuffer = fs.readFileSync(coverPath);
     zip.file(CAPCUT_CONFIG.COVER_FILENAME, coverBuffer);
-    zip.file(SOURCE_TEMPLATE_SYMBOL(`${folderKey}`, `${CAPCUT_CONFIG.COVER_FILENAME}`), coverBuffer);
+    zip.file(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.COVER_FILENAME}`)), coverBuffer);
     _.forEach(sceneAssetPaths, (sceneAssetPath, index) => {
-      const filename = SOURCE_TEMPLATE_IMAGE_JPG(`${index + 1}`);
+      const filename = SOURCE_TEMPLATE_IMAGE_JPG(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`));
       const imgBuffer = fs.readFileSync(sceneAssetPath!);
-      zip.file(SOURCE_TEMPLATE_SYMBOL_33(`${folderKey}`, `${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`, `${filename}`), imgBuffer);
-      zip.file(SOURCE_TEMPLATE_SYMBOL(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`, `${filename}`), imgBuffer);
-      zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_2(`${folderKey}`, `${filename}`), imgBuffer);
-      zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_3(`${filename}`), imgBuffer);
+      zip.file(SOURCE_TEMPLATE_SYMBOL_33(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), imgBuffer);
+      zip.file(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), imgBuffer);
+      zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_2(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), imgBuffer);
+      zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_3(SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), imgBuffer);
     });
     _.forEach(scenes, (sc, index) => {
-      const filename = SOURCE_TEMPLATE_VOICE_WAV(`${index + 1}`);
+      const filename = SOURCE_TEMPLATE_VOICE_WAV(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`));
       if (sc.audioUrl) {
         const relativePath = _.startsWith(sc.audioUrl, SOURCE_TEXT_SYMBOL) ? sc.audioUrl.slice(1) : sc.audioUrl;
         const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const audioBuffer = fs.readFileSync(fullPath);
-          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICES_2(`${folderKey}`, `${filename}`), audioBuffer);
-          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICES_3(`${filename}`), audioBuffer);
-          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_2(`${folderKey}`, `${filename}`), audioBuffer);
-          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_3(`${filename}`), audioBuffer);
+          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICES_2(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), audioBuffer);
+          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICES_3(SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), audioBuffer);
+          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_2(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), audioBuffer);
+          zip.file(SOURCE_TEMPLATE_RESOURCES_VOICE_IMAGES_3(SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)), audioBuffer);
         }
       }
     });
     const fullAudioBuffer = fs.readFileSync(fullAudioPath);
-    zip.file(SOURCE_TEMPLATE_SYMBOL(`${folderKey}`, `${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`), fullAudioBuffer);
+    zip.file(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`)), fullAudioBuffer);
     zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, fullAudioBuffer);
-    zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_2(`${folderKey}`, `${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`), fullAudioBuffer);
-    zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_3(`${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`), fullAudioBuffer);
+    zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_2(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`)), fullAudioBuffer);
+    zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_3(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`)), fullAudioBuffer);
     const capcutMaterials: any = {
       audios: [],
       beats: [],
@@ -6937,17 +6960,17 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     _.forEach(sceneRanges, (scRange, idx) => {
       const startUs = Math.round(scRange.start * 1000000);
       const durationUs = Math.round(scRange.duration * 1000000);
-      const filename = SOURCE_TEMPLATE_VOICE_WAV(`${idx + 1}`);
-      const materialId = SOURCE_TEMPLATE_MATERIAL_AUDIO_SCENE(`${scRange.id}`);
+      const filename = SOURCE_TEMPLATE_VOICE_WAV(SOURCE_TEMPLATE_SYMBOL_86(`${idx + 1}`));
+      const materialId = SOURCE_TEMPLATE_MATERIAL_AUDIO_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${scRange.id}`));
       capcutMaterials.audios.push({
         id: materialId,
         type: SOURCE_TEXT_AUDIO,
         duration: durationUs,
         source_platform: CAPCUT_CONFIG.SOURCE_PLATFORM_TTS,
-        local_material_path: SOURCE_TEMPLATE_RESOURCES_VOICES_4(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`, `${folderKey}`, `${filename}`),
+        local_material_path: SOURCE_TEMPLATE_RESOURCES_VOICES_4(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)),
       });
       audioTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_AUDIO_SCENE(`${scRange.id}`),
+        id: SOURCE_TEMPLATE_SEG_AUDIO_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${scRange.id}`)),
         material_id: materialId,
         source_timerange: {
           duration: durationUs,
@@ -6962,17 +6985,17 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
       });
     });
     _.forEach(sceneRanges, (timing, index) => {
-      const imgMatId = SOURCE_TEMPLATE_MATERIAL_IMAGE(`${timing.id}`);
+      const imgMatId = SOURCE_TEMPLATE_MATERIAL_IMAGE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`));
       const timingDurationUs = Math.round(timing.duration * 1000000);
       const timingStartUs = Math.round(timing.start * 1000000);
       capcutMaterials.images.push({
         id: imgMatId,
         type: SOURCE_TEXT_IMAGE,
         duration: timingDurationUs,
-        local_material_path: SOURCE_TEMPLATE_IMAGE_JPG_2(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`, `${folderKey}`, `${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`, `${index + 1}`),
+        local_material_path: SOURCE_TEMPLATE_IMAGE_JPG_2(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`), SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`)),
       });
       videoTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_BACKUP_VIDEO_SLIDE(`${timing.id}`),
+        id: SOURCE_TEMPLATE_SEG_BACKUP_VIDEO_SLIDE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)),
         material_id: imgMatId,
         source_timerange: {
           duration: timingDurationUs,
@@ -6987,7 +7010,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
           transition_effect: timing.transition,
         },
       });
-      const textMatId = SOURCE_TEMPLATE_MATERIAL_TEXT(`${timing.id}`);
+      const textMatId = SOURCE_TEMPLATE_MATERIAL_TEXT(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`));
       capcutMaterials.texts.push({
         id: textMatId,
         type: SOURCE_TEXT_TEXT,
@@ -7002,7 +7025,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
         }),
       });
       subtitleTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_SUBTITLE(`${timing.id}`),
+        id: SOURCE_TEMPLATE_SEG_SUBTITLE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)),
         material_id: textMatId,
         source_timerange: null,
         target_timerange: {
@@ -7041,7 +7064,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     const draftContentStr = jsonUtils.safeStringify(draftContentObj, null, 2);
     const writeDraftFile = (name: string, content: string) => {
       zip.file(name, content);
-      zip.file(SOURCE_TEMPLATE_SYMBOL(`${folderKey}`, `${name}`), content);
+      zip.file(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${name}`)), content);
     };
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_FILENAME, draftContentStr);
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_BAK_FILENAME, draftContentStr);
@@ -7088,7 +7111,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     });
     res.setHeader(SOURCE_TEXT_CONTENT_TYPE, SOURCE_TEXT_APPLICATION_ZIP);
     const safeFileName = encodeURIComponent(project.name.replace(WHITESPACE_REGEX, SOURCE_TEXT_SYMBOL_25));
-    res.setHeader(SOURCE_TEXT_CONTENT_DISPOSITION, SOURCE_TEMPLATE_ATTACHMENT_FILENAME_CAPCUT_PROJECT_BUNDLE_ZIP(`${safeFileName}`));
+    res.setHeader(SOURCE_TEXT_CONTENT_DISPOSITION, SOURCE_TEMPLATE_ATTACHMENT_FILENAME_CAPCUT_PROJECT_BUNDLE_ZIP(SOURCE_TEMPLATE_SYMBOL_86(`${safeFileName}`)));
     return res.send(content);
   } catch (error: any) {
     logger.error(EXPORT_ZIP_CONFIG.LOG_EXPORT_FAILED, error);
@@ -7169,14 +7192,14 @@ router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) =
     _.forEach(_.take(_.castArray(req.body?.images), 10), (image, index) => {
       const match = _.toString(image).match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);
       if (!match) {
-        if (_.startsWith(_.toString(image), SOURCE_TEMPLATE_SYMBOL_52(`${ASSETS_DIR_NAME}`))) assets.push(_.toString(image));
+        if (_.startsWith(_.toString(image), SOURCE_TEMPLATE_SYMBOL_52(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`)))) assets.push(_.toString(image));
         return;
       }
       const extension = _.includes(match[1], SOURCE_TEXT_PNG) ? SOURCE_TEXT_PNG : _.includes(match[1], SOURCE_TEXT_WEBP) ? SOURCE_TEXT_WEBP : SOURCE_TEXT_JPG;
-      const filename = SOURCE_TEMPLATE_REF(`${index + 1}`, `${createHash(SOURCE_TEXT_SHA256).update(match[2]).digest(SOURCE_TEXT_HEX).slice(0, 12)}`, `${extension}`);
+      const filename = SOURCE_TEMPLATE_REF(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${createHash(SOURCE_TEXT_SHA256).update(match[2]).digest(SOURCE_TEXT_HEX).slice(0, 12)}`), SOURCE_TEMPLATE_SYMBOL_86(`${extension}`));
       const filePath = path.join(directory, filename);
       if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, Buffer.from(match[2], SOURCE_TEXT_BASE64));
-      assets.push(SOURCE_TEMPLATE_REFERENCES(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${projectId}`, `${group}`, `${filename}`));
+      assets.push(SOURCE_TEMPLATE_REFERENCES(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${group}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)));
     });
     return res.json({ success: true, assets });
   } catch (error: any) {
@@ -7191,21 +7214,21 @@ router.post(SOURCE_TEXT_DELETE_ASSET_FILE, async (req: Request, res: Response) =
   }
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
   let cleanAssetPath = assetUrl;
-  const projectPrefix = SOURCE_TEMPLATE_SYMBOL_53(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${projectId}`);
+  const projectPrefix = SOURCE_TEMPLATE_SYMBOL_53(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`));
   if (_.startsWith(cleanAssetPath, projectPrefix)) {
     cleanAssetPath = cleanAssetPath.slice(projectPrefix.length);
-  } else if (_.includes(cleanAssetPath, SOURCE_TEMPLATE_SYMBOL_54(`${projectId}`))) {
-    cleanAssetPath = cleanAssetPath.slice(cleanAssetPath.indexOf(SOURCE_TEMPLATE_SYMBOL_54(`${projectId}`)) + projectId.length + 1);
+  } else if (_.includes(cleanAssetPath, SOURCE_TEMPLATE_SYMBOL_54(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`)))) {
+    cleanAssetPath = cleanAssetPath.slice(cleanAssetPath.indexOf(SOURCE_TEMPLATE_SYMBOL_54(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`))) + projectId.length + 1);
   }
   const targetPath = path.resolve(projectRoot, cleanAssetPath);
-  if (_.startsWith(_.toLower(targetPath), _.toLower(`${projectRoot}${path.sep}`))) {
+  if (_.startsWith(_.toLower(targetPath), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`)))) {
     try {
       if (fs.existsSync(targetPath)) {
         fs.unlinkSync(targetPath);
-        logger.info(SOURCE_TEMPLATE_ASSET_CLEANUP_DELETED_ASSET_FILE(`${targetPath}`));
+        logger.info(SOURCE_TEMPLATE_ASSET_CLEANUP_DELETED_ASSET_FILE(SOURCE_TEMPLATE_SYMBOL_86(`${targetPath}`)));
       }
     } catch (e: any) {
-      logger.warn(SOURCE_TEMPLATE_ASSET_CLEANUP_FAILED_TO_UNLINK_FILE(`${targetPath}`), e?.message);
+      logger.warn(SOURCE_TEMPLATE_ASSET_CLEANUP_FAILED_TO_UNLINK_FILE(SOURCE_TEMPLATE_SYMBOL_86(`${targetPath}`)), e?.message);
     }
   }
   try {
@@ -7228,16 +7251,16 @@ router.post(SOURCE_TEXT_DELETE_ASSET_FILE, async (req: Request, res: Response) =
       project.visualConfig.thumbnailSceneReferenceImages = filterOut(project.visualConfig.thumbnailSceneReferenceImages) || [];
       if (changed) {
         await saveProjectDetailToDb(project);
-        logger.info(SOURCE_TEMPLATE_ASSET_CLEANUP_CLEANED_UP_DELETED_REFERENCE(`${projectId}`));
+        logger.info(SOURCE_TEMPLATE_ASSET_CLEANUP_CLEANED_UP_DELETED_REFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`)));
       }
     }
     return res.json({ success: true });
   } catch (error: any) {
-    logger.error(SOURCE_TEMPLATE_ASSET_CLEANUP_ERROR_UPDATING_DB_FOR(`${projectId}`), error);
+    logger.error(SOURCE_TEMPLATE_ASSET_CLEANUP_ERROR_UPDATING_DB_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`)), error);
     return res.json({ success: true, warning: error.message });
   }
 });
-router.delete(SOURCE_TEMPLATE_PROJECTID_GROUP_FILENAME(`${ROUTER_PATHS.REFERENCE_ASSETS}`), async (req: Request, res: Response) => {
+router.delete(SOURCE_TEMPLATE_PROJECTID_GROUP_FILENAME(SOURCE_TEMPLATE_SYMBOL_86(`${ROUTER_PATHS.REFERENCE_ASSETS}`)), async (req: Request, res: Response) => {
   const projectId = path.basename(_.toString(req.params.projectId));
   const group = _.toString(req.params.group);
   const filename = path.basename(_.toString(req.params.filename));
@@ -7247,13 +7270,13 @@ router.delete(SOURCE_TEMPLATE_PROJECTID_GROUP_FILENAME(`${ROUTER_PATHS.REFERENCE
   }
   const filePath = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, SOURCE_TEXT_REFERENCES, group, filename);
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
-  if (!_.startsWith(_.toLower(filePath), _.toLower(`${projectRoot}${path.sep}`))) {
+  if (!_.startsWith(_.toLower(filePath), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`)))) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   }
   try {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      logger.info(SOURCE_TEMPLATE_REFERENCE_ASSET_DELETED_FILE(`${filePath}`));
+      logger.info(SOURCE_TEMPLATE_REFERENCE_ASSET_DELETED_FILE(SOURCE_TEMPLATE_SYMBOL_86(`${filePath}`)));
     }
     return res.json({ success: true });
   } catch (error: any) {
@@ -7282,7 +7305,7 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
       const assetUrls = _.uniq(_.compact([targetScene.assetUrl, ..._.defaultTo(targetScene.assetUrls, []), ..._.map(_.defaultTo(targetScene.assetRevisions, []), SOURCE_TEXT_ASSETURL)]));
       _.forEach(assetUrls, (assetUrl) => {
         const assetPath = resolveLocalProjectAssetPath(assetUrl);
-        if (!assetPath || !_.startsWith(_.toLower(assetPath), _.toLower(`${videoDirectory}${path.sep}`))) return;
+        if (!assetPath || !_.startsWith(_.toLower(assetPath), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${videoDirectory}`, `${path.sep}`)))) return;
         fs.rmSync(assetPath, { force: true });
       });
       await saveProjectDetailToDb(clearProjectSceneOutput(project, sceneId));
@@ -7291,7 +7314,7 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
     const targetGroups = _.isEqual(group, PROJECT_ASSET_GROUP.VISUALS) ? [PROJECT_ASSET_GROUP.IMAGES, PROJECT_VISUAL_ASSET_CONFIG.THUMBNAILS_DIRECTORY, PROJECT_ASSET_GROUP.VIDEOS, path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.CHARACTER), path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.UPSCALED)] : [group];
     _.forEach(targetGroups, (targetGroup) => {
       const targetDirectory = path.resolve(projectRoot, targetGroup);
-      if (!_.startsWith(_.toLower(targetDirectory), _.toLower(`${projectRoot}${path.sep}`))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+      if (!_.startsWith(_.toLower(targetDirectory), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`)))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
       fs.rmSync(targetDirectory, { recursive: true, force: true });
       if (!_.includes([path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.CHARACTER), path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.UPSCALED)], targetGroup)) {
         fs.mkdirSync(targetDirectory, { recursive: true });
@@ -7334,7 +7357,7 @@ router.post(SOURCE_TEXT_FFMPEG_RENDER, express.json({ limit: SecurityConstants.L
       if (_.isEmpty(value) || _.startsWith(value, SOURCE_TEXT_DATA)) return value;
       const relativePath = _.trimStart(_.split(value, SOURCE_TEXT_SYMBOL_21)[0], SOURCE_TEXT_SYMBOL_37);
       const candidate = path.resolve(dataRoot, relativePath);
-      return _.startsWith(_.toLower(candidate), _.toLower(`${projectRoot}${path.sep}`)) && fs.existsSync(candidate) ? value : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+      return _.startsWith(_.toLower(candidate), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`))) && fs.existsSync(candidate) ? value : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
     };
     const recoverSceneAsset = (scene: any): any => {
       if (!_.isEmpty(resolveExistingAsset(scene?.imageUrl)) || !_.isEmpty(scene?.imageBase64)) return scene;
@@ -7343,12 +7366,12 @@ router.post(SOURCE_TEXT_FFMPEG_RENDER, express.json({ limit: SecurityConstants.L
       const candidateDirectories = _.isEqual(assetType, GenerateType.Video) ? [SOURCE_TEXT_VIDEOS, SOURCE_TEXT_IMAGES] : [SOURCE_TEXT_IMAGES, SOURCE_TEXT_VIDEOS];
       const candidateExtensions = _.isEqual(assetType, GenerateType.Video) ? [SOURCE_TEXT_MP4, SOURCE_TEXT_WEBM, SOURCE_TEXT_MOV, SOURCE_TEXT_JPG, SOURCE_TEXT_JPEG, SOURCE_TEXT_PNG, SOURCE_TEXT_WEBP] : [SOURCE_TEXT_JPG, SOURCE_TEXT_JPEG, SOURCE_TEXT_PNG, SOURCE_TEXT_WEBP, SOURCE_TEXT_MP4, SOURCE_TEXT_WEBM, SOURCE_TEXT_MOV];
       const recoveredPath = _.find(
-        _.flatMap(candidateDirectories, (directory) => _.map(candidateExtensions, (extension) => path.join(projectRoot, directory, SOURCE_TEMPLATE_SYMBOL_15(`${sceneId}`, `${extension}`)))),
+        _.flatMap(candidateDirectories, (directory) => _.map(candidateExtensions, (extension) => path.join(projectRoot, directory, SOURCE_TEMPLATE_SYMBOL_15(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${extension}`))))),
         (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
       );
       if (_.isEmpty(recoveredPath)) return scene;
-      const recoveredUrl = SOURCE_TEMPLATE_SYMBOL_55(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${safeProjectId}`, `${path.relative(projectRoot, recoveredPath!).replace(/\\/g, SOURCE_TEXT_SYMBOL)}`);
-      logger.warn(SOURCE_TEMPLATE_RENDER_RECOVERED_MISSING_VISUAL_ASSET_FOR(`${sceneId}`, `${recoveredUrl}`));
+      const recoveredUrl = SOURCE_TEMPLATE_SYMBOL_55(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${safeProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${path.relative(projectRoot, recoveredPath!).replace(/\\/g, SOURCE_TEXT_SYMBOL)}`));
+      logger.warn(SOURCE_TEMPLATE_RENDER_RECOVERED_MISSING_VISUAL_ASSET_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId}`), SOURCE_TEMPLATE_SYMBOL_86(`${recoveredUrl}`)));
       return { ...scene, imageUrl: recoveredUrl };
     };
     const recoveredScenes = _.map(_.castArray(scenes), recoverSceneAsset);
@@ -7371,7 +7394,7 @@ router.post(SOURCE_TEXT_FFMPEG_RENDER, express.json({ limit: SecurityConstants.L
     };
     const preflight = validateFFmpegRenderOptions(renderPayload);
     if (!preflight.ready) {
-      logger.warn(SOURCE_TEMPLATE_RENDER_PREFLIGHT_REJECTED(`${safeProjectId || SOURCE_TEXT_UNKNOWN_PROJECT}`, `${preflight.issues.join(SOURCE_TEXT_SYMBOL_4)}`));
+      logger.warn(SOURCE_TEMPLATE_RENDER_PREFLIGHT_REJECTED(SOURCE_TEMPLATE_SYMBOL_86(`${safeProjectId || SOURCE_TEXT_UNKNOWN_PROJECT}`), SOURCE_TEMPLATE_SYMBOL_86(`${preflight.issues.join(SOURCE_TEXT_SYMBOL_4)}`)));
       return res.status(HTTP_STATUS_CODES.UNPROCESSABLE_ENTITY).json({
         success: false,
         error: SOURCE_TEXT_RENDER_PREFLIGHT_FAILED,
@@ -7411,10 +7434,10 @@ router.post(ROUTER_PATHS.REFERENCE_AUDIO, async (req: Request, res: Response) =>
   if (!_.startsWith(_.toLower(directory), _.toLower(_.join([projectRoot, path.sep], "")))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   fs.mkdirSync(directory, { recursive: true });
   const extension = _.includes(match[1], SOURCE_TEXT_WAV) ? SOURCE_TEXT_WAV : _.includes(match[1], SOURCE_TEXT_OGG) ? SOURCE_TEXT_OGG : SOURCE_TEXT_MP3;
-  const filename = SOURCE_TEMPLATE_MUSIC_2(`${createHash(SOURCE_TEXT_SHA256).update(match[2]).digest(SOURCE_TEXT_HEX).slice(0, 12)}`, `${extension}`);
+  const filename = SOURCE_TEMPLATE_MUSIC_2(SOURCE_TEMPLATE_SYMBOL_86(`${createHash(SOURCE_TEXT_SHA256).update(match[2]).digest(SOURCE_TEXT_HEX).slice(0, 12)}`), SOURCE_TEMPLATE_SYMBOL_86(`${extension}`));
   const filePath = path.join(directory, filename);
   if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, Buffer.from(match[2], SOURCE_TEXT_BASE64));
-  return res.json({ success: true, assetUrl: SOURCE_TEMPLATE_REFERENCES(`${ASSETS_DIR_NAME}`, `${PROJECTS_DIR_NAME}`, `${projectId}`, `${REFERENCE_ASSET_GROUP.AUDIO}`, `${filename}`) });
+  return res.json({ success: true, assetUrl: SOURCE_TEMPLATE_REFERENCES(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${PROJECTS_DIR_NAME}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${REFERENCE_ASSET_GROUP.AUDIO}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)) });
 });
 router.post(RENDER_QUEUE_CONFIG.CANCEL_ROUTE, async (req: Request, res: Response) => {
   const cancelled = await renderQueueService.cancelJob(req.params.jobId);

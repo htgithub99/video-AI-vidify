@@ -1,5 +1,29 @@
+import {
+  SOURCE_TEMPLATE_SYMBOL_86,
+  SOURCE_TEMPLATE_SYMBOL_75,
+  SOURCE_TEXT_APP_SHELL_H_SCREEN_W_SCREEN_MAX,
+  SOURCE_TEXT_FLEX_1_MIN_W_0_H_FULL,
+  SOURCE_TEXT_APP_MAIN_FLEX_1_MIN_H_0,
+  SOURCE_TEXT_TAB_LOADING_OVERLAY_SELECT_NONE,
+  SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0,
+  SOURCE_TEXT_HIDDEN,
+  SOURCE_TEXT_W_FULL_H_FULL_MIN_H_FULL,
+  SOURCE_TEXT_W_FULL_H_FULL,
+  SOURCE_TEMPLATE_AUTO,
+  SOURCE_TEMPLATE_FILM,
+  SOURCE_TEMPLATE_PARENT,
+  SOURCE_TEMPLATE_SYMBOL,
+  SOURCE_TEMPLATE_SYMBOL_2,
+  SOURCE_TEMPLATE_SYMBOL_3,
+  SOURCE_TEXT_AUTO,
+  SOURCE_TEXT_CINEMATIC_AI_EPISODE,
+  SOURCE_TEXT_CINEMATIC_PHOTOREAL,
+  SOURCE_TEXT_FILM,
+  SOURCE_TEXT_SINGLE,
+  SOURCE_TEXT_TOP_RIGHT,
+} from "./constants/sourceText.js";
 import _ from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
@@ -17,7 +41,6 @@ import { PageLoadingSpinner } from "./components/ui/Skeleton.tsx";
 import VideoExporter from "./components/VideoExporter.tsx";
 import { API_ROUTES, CINEMATIC_CONFIG, COMMON_STRINGS, CONTENT_TYPE_HEADER, CONTENT_TYPES, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, ErrorMessage, HTTP_METHODS, LOADING_CONFIG, PROJECT_LIST_CONSTANTS, REFACTOR_CONSTANTS, STORAGE_KEYS, STYLE_PRESET_CONFIG, THEME_VALUES } from "./constants";
 import { AppTab, VideoGenre } from "./constants/enums";
-import { SOURCE_TEMPLATE_AUTO, SOURCE_TEMPLATE_FILM, SOURCE_TEMPLATE_PARENT, SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_2, SOURCE_TEMPLATE_SYMBOL_3, SOURCE_TEXT_AUTO, SOURCE_TEXT_CINEMATIC_AI_EPISODE, SOURCE_TEXT_CINEMATIC_PHOTOREAL, SOURCE_TEXT_FILM, SOURCE_TEXT_SINGLE, SOURCE_TEXT_TOP_RIGHT } from "./constants/sourceText";
 import { jsonUtils } from "./lib/json";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
@@ -26,6 +49,7 @@ import { storageUtils } from "./lib/storage";
 import { cn } from "./lib/utils";
 import { AgeGroup, AspectRatio, AssetsMode, AudioType, Gender, GenerateType, HookPosition, ImageGenerationMode, ImageGeneratorEngine, ProjectInputType, ProjectKind, ProjectLanguage, PromptInputMethod, VideoProject } from "./types.js";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
+const ProxyManager = lazy(() => import("./components/ProxyManager.tsx"));
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
   if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
   if (_.isEqual(tab, AppTab.CINEMATIC_FILM)) return ProjectKind.Cinematic;
@@ -105,7 +129,7 @@ export default function App() {
         clearTimeout(timeout);
         const proj = _.find(projectsRef.current, { id });
         if (proj) {
-          fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${id}`), {
+          fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), {
             method: HTTP_METHODS.PUT,
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: jsonUtils.safeStringify(proj),
@@ -156,7 +180,7 @@ export default function App() {
           const hasProj = _.some(list, (p: any) => _.isEqual(p.id, cachedId));
           if (hasProj) {
             try {
-              const detailRes = await fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${cachedId}`));
+              const detailRes = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${cachedId}`)));
               if (detailRes.ok) {
                 const detailText = await detailRes.text();
                 const detailData = jsonUtils.safeParse(detailText, null);
@@ -216,13 +240,13 @@ export default function App() {
             creatingChildRef.current[childKey] = true;
             const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
             const randomStr = generateRandomString();
-            const childId = SOURCE_TEMPLATE_SYMBOL_2(`${COMMON_STRINGS.PROJECT_PREFIX}`, `${projectSlug}`, `${isFilmWorkspace ? SOURCE_TEXT_FILM : SOURCE_TEXT_AUTO}`, `${randomStr}`);
+            const childId = SOURCE_TEMPLATE_SYMBOL_2(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${isFilmWorkspace ? SOURCE_TEXT_FILM : SOURCE_TEXT_AUTO}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr}`));
             const childProject: VideoProject = {
               ...activeProj,
               id: childId,
               parentId: activeProj.id,
               projectKind: isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto,
-              name: `${activeProj.name}${targetSuffix}`,
+              name: SOURCE_TEMPLATE_SYMBOL_75(`${activeProj.name}`, `${targetSuffix}`),
               input: isFilmWorkspace ? { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING } : activeProj.input,
               config: isFilmWorkspace
                 ? {
@@ -280,7 +304,7 @@ export default function App() {
     const project = _.find(projectsRef.current, { id });
     if (project && !project.input) {
       try {
-        const res = await fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${id}`));
+        const res = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)));
         if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
         const detailText = await res.text();
         const detailData = jsonUtils.safeParse(detailText, null);
@@ -324,7 +348,7 @@ export default function App() {
   const handleCreateProject = async (name: string, desc: string) => {
     const projectSlug = convertToSlug(name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
     const randomStr = () => generateRandomString();
-    const parentId = SOURCE_TEMPLATE_PARENT(`${COMMON_STRINGS.PROJECT_PREFIX}`, `${projectSlug}`, `${randomStr()}`);
+    const parentId = SOURCE_TEMPLATE_PARENT(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr()}`));
     const parentProject: VideoProject = {
       id: parentId,
       projectKind: ProjectKind.Container,
@@ -381,23 +405,23 @@ export default function App() {
       },
       creditsUsed: 0,
     };
-    const autoChildId = SOURCE_TEMPLATE_AUTO(`${COMMON_STRINGS.PROJECT_PREFIX}`, `${projectSlug}`, `${randomStr()}`);
+    const autoChildId = SOURCE_TEMPLATE_AUTO(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr()}`));
     const autoChildProject: VideoProject = {
       ...parentProject,
       id: autoChildId,
       parentId: parentId,
       projectKind: ProjectKind.Auto,
-      name: `${parentProject.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`,
+      name: SOURCE_TEMPLATE_SYMBOL_75(`${parentProject.name}`, `${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    const filmChildId = SOURCE_TEMPLATE_FILM(`${COMMON_STRINGS.PROJECT_PREFIX}`, `${projectSlug}`, `${randomStr()}`);
+    const filmChildId = SOURCE_TEMPLATE_FILM(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr()}`));
     const filmChildProject: VideoProject = {
       ...parentProject,
       id: filmChildId,
       parentId,
       projectKind: ProjectKind.Cinematic,
-      name: `${parentProject.name}${COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX}`,
+      name: SOURCE_TEMPLATE_SYMBOL_75(`${parentProject.name}`, `${COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX}`),
       input: { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING },
       config: {
         ...parentProject.config,
@@ -435,13 +459,13 @@ export default function App() {
     if (pendingSavesRef.current[updated.id]) clearTimeout(pendingSavesRef.current[updated.id]);
     const doSave = async () => {
       try {
-        const response = await fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${updated.id}`), {
+        const response = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${updated.id}`)), {
           method: HTTP_METHODS.PUT,
           headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
           body: jsonUtils.safeStringify(updated),
         });
         if (!response.ok) {
-          throw new Error(SOURCE_TEMPLATE_SYMBOL_3(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}`, `${response.status}`, `${response.statusText}`));
+          throw new Error(SOURCE_TEMPLATE_SYMBOL_3(SOURCE_TEMPLATE_SYMBOL_86(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.status}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.statusText}`)));
         }
         const savedProject = (await response.json()) as VideoProject;
         setProjects((prev) => _.map(prev, (project) => (_.isEqual(project.id, savedProject.id) ? savedProject : project)));
@@ -462,7 +486,7 @@ export default function App() {
   }, []);
   const handleDeleteProject = async (id: string) => {
     try {
-      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${id}`), { method: HTTP_METHODS.DELETE });
+      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), { method: HTTP_METHODS.DELETE });
       if (res.ok) {
         setProjects((prev) => _.filter(prev, (p) => !_.isEqual(p.id, id)));
         if (_.isEqual(selectedProjectId, id)) {
@@ -488,6 +512,7 @@ export default function App() {
       const targetWorkspaceProject = findProjectForWorkspaceTab(projectsRef.current, selectedProjectId, tab);
       if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD, AppTab.SETTINGS], tab as AppTab)) {
         setSelectedProjectId(null);
+      } else if (_.isEqual(tab, AppTab.PROXY)) {
       } else if (targetWorkspaceProject) {
         setSelectedProjectId(targetWorkspaceProject.id);
       } else if (_.isEmpty(selectedProjectId) && !_.isEmpty(projectsRef.current)) {
@@ -514,7 +539,7 @@ export default function App() {
     const updated = { ...projToUpdate, name, description, updatedAt: new Date().toISOString() };
     setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
     try {
-      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(`${API_ROUTES.PROJECTS}`, `${id}`), {
+      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), {
         method: HTTP_METHODS.PUT,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: jsonUtils.safeStringify(updated),
@@ -533,63 +558,70 @@ export default function App() {
     }
   };
   return (
-    <div className={cn("app-shell h-screen w-screen max-h-screen max-w-screen flex flex-row font-sans antialiased text-slate-205 bg-slate-955 overflow-hidden")}>
+    <div className={cn(SOURCE_TEXT_APP_SHELL_H_SCREEN_W_SCREEN_MAX)}>
       <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
-      <div className={cn("flex-1 min-w-0 h-full flex flex-col min-h-0 overflow-hidden relative")}>
+      <div className={cn(SOURCE_TEXT_FLEX_1_MIN_W_0_H_FULL)}>
         <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} />
         <Toaster position={SOURCE_TEXT_TOP_RIGHT} theme={theme as any} richColors />
-        <main className={cn("app-main flex-1 min-h-0 h-full w-full overflow-hidden relative bg-slate-955 self-stretch")}>
+        <main className={cn(SOURCE_TEXT_APP_MAIN_FLEX_1_MIN_H_0)}>
           {isTabSwitching && (
-            <div className={cn("tab-loading-overlay select-none")}>
+            <div className={cn(SOURCE_TEXT_TAB_LOADING_OVERLAY_SELECT_NONE)}>
               <PageLoadingSpinner />
             </div>
           )}
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.DASHBOARD) && "hidden")}>
+          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.DASHBOARD) && SOURCE_TEXT_HIDDEN)}>
             <DashboardView currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={handleSelectProject} onNavigateToProjects={() => handleActiveTabChange(AppTab.PROJECTS)} />
           </div>
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.PROJECTS) && "hidden")}>
-            <div className={cn("w-full h-full min-h-full flex-1 flex flex-col overflow-y-auto p-4 sm:p-6")}>
+          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.PROJECTS) && SOURCE_TEXT_HIDDEN)}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_FULL)}>
               <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
             </div>
           </div>
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && "hidden")}>
+          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && SOURCE_TEXT_HIDDEN)}>
             <AutoVideoGenerator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
           </div>
-          <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade", !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && "hidden")}>
+          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && SOURCE_TEXT_HIDDEN)}>
             <CinematicFilmStudio currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
           </div>
           {_.isEqual(activeTab, AppTab.MUSIC_CREATOR) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <MusicCreator currentLang={currentLang} />
             </div>
           )}
+          {_.isEqual(activeTab, AppTab.PROXY) && (
+            <div className={SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0}>
+              <Suspense fallback={<PageLoadingSpinner className={SOURCE_TEXT_W_FULL_H_FULL} />}>
+                <ProxyManager currentLang={currentLang} />
+              </Suspense>
+            </div>
+          )}
           {_.isEqual(activeTab, AppTab.MUSIC_MIXER) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <MusicMixer currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.VIDEO_CREATOR) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <FlowVideoCreator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.SHORTS_EXTRACTOR) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <ShortsExtractor currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.VIDEO_EXPORT) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <VideoExporter currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.MOTION_VIDEO) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <MotionVideoCreator currentLang={currentLang} />
             </div>
           )}
           {_.isEqual(activeTab, AppTab.SETTINGS) && (
-            <div className={cn("w-full h-full min-h-0 flex-1 flex flex-col tab-content-fade")}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />
             </div>
           )}
