@@ -1,4 +1,3 @@
-import * as MR from "./motionRuntime.js";
 export const MOTION_STYLES = {
   CREATION_WORKSPACE_W_FULL_H_FULL_MIN_H_0_FLEX_FLEX_COL_OVERFLOW_Y_AUTO: "creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar",
   BG_GRADIENT_TO_B_FROM_SLATE_900_90_TO_SLATE_950_95_ROUNDED_XL_SM_ROUNDED_2XL_P_4_SM_P_6: "bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80",
@@ -116,7 +115,7 @@ export const MOTION_STYLES = {
   BG_FUCHSIA_500_15_BORDER_FUCHSIA_500_30_TEXT_FUCHSIA_700_DARK_TEXT_FUCHSIA_300: "bg-fuchsia-500/15 border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300",
   TEXT_10PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_400_BG_SLATE_955_80_PX_2_PY_0_5: "text-[10px] font-mono font-medium text-slate-400 bg-slate-955/80 px-2 py-0.5 rounded-lg border border-slate-800 max-w-[240px] truncate",
   W_3_5_H_3_5_TEXT_EMERALD_400: "w-3.5 h-3.5 text-emerald-400",
-  P_1_5_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_HOVER_BG_ROSE_500_10_TRANSITION_ALL_CURSOR_POINTER: "p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer",
+  P_1_5_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_HOVER_BG_ROSE_500_10_TRANSITION_ALL_CURSOR_POINTER: "p-1.5 rounded-lg bg-transparent hover:bg-transparent text-slate-400 hover:text-rose-500 transition-colors cursor-pointer border-none shadow-none inline-flex items-center justify-center",
   W_FULL_BG_SLATE_955_80_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_3_TEXT_XS: "w-full bg-slate-955/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder:text-slate-500 focus:bg-slate-955 focus:border-purple-500/80 outline-none resize-y leading-relaxed font-sans font-medium transition-all shadow-2xs",
   W_FULL_BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_LG_PX_2_5_PY_1_5: "w-full bg-slate-955/60 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 focus:border-purple-500/60 outline-none",
   TEXT_11PX_TEXT_AMBER_400: "text-[11px] text-amber-400",
@@ -264,7 +263,7 @@ export const MOTION_STYLES = {
   SCORE_PURPLE: "bg-purple-500/20 text-purple-300 border-purple-500/40",
   SCORE_AMBER: "bg-amber-500/20 text-amber-300 border-amber-500/40",
   REDO_CIRCLE_BUTTON:
-    "btn-icon-tiny absolute top-1.5 right-1.5 z-10 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-full bg-slate-950/80 hover:bg-purple-600 text-purple-200 hover:text-white backdrop-blur-md border border-white/20 hover:border-purple-300 shadow-md hover:shadow-purple-500/50 flex items-center justify-center transition-all duration-200 cursor-pointer hover:scale-110 active:scale-90 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 disabled:opacity-40 shrink-0",
+    "btn-icon-tiny absolute top-1.5 right-1.5 z-10 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-full bg-transparent hover:bg-transparent text-white/90 hover:text-purple-300 border-none shadow-none flex items-center justify-center transition-all duration-200 cursor-pointer hover:scale-110 active:scale-90 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 disabled:opacity-40 shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
   REDO_ICON_ROTATING: "w-3.5 h-3.5 shrink-0 transform-gpu transition-transform duration-300 group-active:-rotate-90",
   SCENE_BEAT_CARD_BASE: "group relative aspect-video rounded-xl overflow-hidden border bg-slate-900 shadow-md transition-all duration-300 hover:shadow-purple-500/10",
   SCENE_BEAT_CARD_BAD: "border-amber-500/60 hover:border-amber-400 ring-1 ring-amber-500/20",
@@ -312,7 +311,12 @@ export const MOTION_STYLES = {
   STUDIO_PROGRESS_CARD: "glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/30 bg-purple-950/20 shadow-xl space-y-3.5 animate-in fade-in duration-200",
 } as const;
 export const MOTION_RULE_STYLES = {
-  mustPreserve: { card: MR.MOTION_TEXT_ROUNDED_XL_BORDER_BORDER_EMERALD_800_40_BG_EMERALD_950_20_P_3_5_S, heading: MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_TEXT_XS_FONT_BOLD_TEXT_EMERALD_400, list: MR.MOTION_TEXT_SPACE_Y_1_5_TEXT_XS_TEXT_EMERALD_200_90_LEADING_RELAXED, bullet: MR.MOTION_TEXT_TEXT_EMERALD_400_FONT_BOLD_MT_0_5 },
-  mustVary: { card: MR.MOTION_TEXT_ROUNDED_XL_BORDER_BORDER_CYAN_800_40_BG_CYAN_950_20_P_3_5_SPACE_Y, heading: MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_TEXT_XS_FONT_BOLD_TEXT_CYAN_400, list: MR.MOTION_TEXT_SPACE_Y_1_5_TEXT_XS_TEXT_CYAN_200_90_LEADING_RELAXED, bullet: MR.MOTION_TEXT_TEXT_CYAN_400_FONT_BOLD_MT_0_5 },
-  mustNotCopy: { card: MR.MOTION_TEXT_ROUNDED_XL_BORDER_BORDER_ROSE_800_40_BG_ROSE_950_20_P_3_5_SPACE_Y, heading: MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_TEXT_XS_FONT_BOLD_TEXT_ROSE_400, list: MR.MOTION_TEXT_SPACE_Y_1_5_TEXT_XS_TEXT_ROSE_200_90_LEADING_RELAXED, bullet: MR.MOTION_TEXT_TEXT_ROSE_400_FONT_BOLD_MT_0_5 },
+  mustPreserve: {
+    card: "p-3.5 rounded-xl bg-[#f0fdf4] dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-500/30 space-y-1.5 shadow-2xs",
+    heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-[#166534] dark:text-emerald-400",
+    content: "text-[11px] text-[#14532d] dark:text-slate-200 leading-relaxed font-normal",
+    empty: "text-xs italic text-[#166534] dark:text-emerald-400",
+  },
+  mustVary: { card: "p-3.5 rounded-xl bg-[#fffbeb] dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 space-y-1.5 shadow-2xs", heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-[#92400e] dark:text-amber-400", content: "text-[11px] text-[#78350f] dark:text-slate-200 leading-relaxed font-normal", empty: "text-xs italic text-[#92400e] dark:text-amber-400" },
+  mustNotCopy: { card: "p-3.5 rounded-xl bg-[#fff1f2] dark:bg-rose-950/20 border border-rose-300 dark:border-rose-500/30 space-y-1.5 shadow-2xs", heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-[#9f1239] dark:text-rose-400", content: "text-[11px] text-[#881337] dark:text-slate-200 leading-relaxed font-normal", empty: "text-xs italic text-[#9f1239] dark:text-rose-400" },
 } as const;

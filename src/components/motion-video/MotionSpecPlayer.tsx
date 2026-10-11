@@ -2,7 +2,7 @@ import * as MR from "../../constants/motionRuntime.js";
 import _ from "lodash";
 import { Pause, Play, SkipBack } from "lucide-react";
 import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { MOTION_TEXT_16_9, MOTION_TEXT_3D_3, MOTION_TEXT_AUTO, MOTION_TEXT_RANGE, MOTION_TEXT_SYMBOL_19, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
+import { MOTION_TEXT_16_9, MOTION_TEXT_AUTO, MOTION_TEXT_RANGE, MOTION_TEXT_SYMBOL_19, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../../constants/motionStyles.js";
 import { MOTION_PREVIEW_QUALITY, MOTION_PREVIEW_SIZES } from "../../constants/motionVideo.js";
 import { cn } from "../../lib/utils";
@@ -11,10 +11,10 @@ import { MotionAspect } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
 import { formatSeconds, MOTION_ASSET_BASE, type MotionEngineGlobal } from "./motionApi";
 import { MotionLoadingIcon } from "./MotionControls.js";
-export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; audioUrl?: string; className?: string; }> = ({ ME, spec, audioUrl, className }) => {
+export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; audioUrl?: string; className?: string }> = ({ ME, spec, audioUrl, className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const rendererRef = useRef<{ duration: number; drawFrame: (t: number) => void; } | null>(null);
+  const rendererRef = useRef<{ duration: number; drawFrame: (t: number) => void } | null>(null);
   const clock = useRef({ playing: false, base: 0, startedAt: 0 });
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -63,9 +63,21 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
           </div>
         )}
         {loading && (
-          <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_60_TEXT_XS}>
-            <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} />
-            <span>{MOTION_TEXT_3D_3}</span>
+          <div className={MR.MOTION_TEXT_ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_75_BAC}>
+            <div className={MR.MOTION_TEXT_PX_6_PY_5_ROUNDED_2XL_BG_SLATE_900_90_BORDER_BORDER_PURPLE_500_40}>
+              <div className={MR.MOTION_TEXT_RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
+                <div className={MR.MOTION_TEXT_W_12_H_12_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_30_VIA_FU}>
+                  <MotionLoadingIcon className={MR.MOTION_TEXT_W_6_H_6_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} />
+                </div>
+              </div>
+              <div className={MR.MOTION_TEXT_SPACE_Y_1}>
+                <p className={MR.MOTION_TEXT_TEXT_XS_FONT_EXTRABOLD_TEXT_SLATE_100_TRACKING_TIGHT}>{MR.MOTION_TEXT_DANG_TAI_KHONG_GIAN_3D}</p>
+                <p className={MR.MOTION_TEXT_TEXT_10PX_TEXT_PURPLE_300_80_FONT_MEDIUM}>{MR.MOTION_TEXT_CHUAN_BI_WEBGL_ENGINE_SHADER}</p>
+              </div>
+              <div className={MR.MOTION_TEXT_W_36_H_1_ROUNDED_FULL_BG_SLATE_800_OVERFLOW_HIDDEN}>
+                <div className={MR.MOTION_TEXT_H_FULL_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA_FUCHSIA_} />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -82,7 +94,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
           {_.map(marks, (m, i) => (
             <div key={i} className={MOTION_STYLES.ABSOLUTE_H_3_5_W_PX_BG_SLATE_400_DARK_BG_SLATE_600} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
           ))}
-          <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: MR.MOTION_TEMPLATE_SYMBOL_49(duration ? (time / duration) * 100 : 0) }} />
+          <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: MR.MOTION_TEMPLATE_SYMBOL_48(duration ? (time / duration) * 100 : 0) }} />
           <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={!spec} />
         </div>
         <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>

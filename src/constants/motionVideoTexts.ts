@@ -78,7 +78,7 @@ export const MOTION_VIDEO_TEXTS = {
     ENCODER_CPU: "CPU (x264)",
     ENCODER_GPU: "GPU",
     SFX: "Âm thanh nền & Hiệu ứng",
-    VIDEO_DNA_TITLE: "Video DNA Profile",
+    VIDEO_DNA_TITLE: "Phân tích DNA",
     VIDEO_DNA_INTENT: "Mục tiêu",
     VIDEO_DNA_FORMAT: "Định dạng",
     VIDEO_DNA_AUDIENCE_PROFILE: "Khán giả mục tiêu",
@@ -352,7 +352,7 @@ export const MOTION_VIDEO_TEXTS = {
     LOG_VOICE_DEFAULT: "Synthesizing voice audio...",
   },
 } as const;
-export type MotionVideoTexts = { readonly [Key in keyof (typeof MOTION_VIDEO_TEXTS)["vi"]]: string; };
+export type MotionVideoTexts = { readonly [Key in keyof (typeof MOTION_VIDEO_TEXTS)["vi"]]: string };
 export const MOTION_SEO_TEXTS = {
   vi: {
     title: "SEO YouTube",
@@ -373,8 +373,8 @@ export const MOTION_SEO_TEXTS = {
     chapters: "Chương (YouTube chapters)",
     empty: "Chưa có SEO.",
     thumb: "Thumbnail",
-    thumbMake: "Tạo thumbnail",
-    thumbMakeAll: "Tạo tất cả thumbnail",
+    thumbMake: "Tạo ảnh bìa",
+    thumbMakeAll: "Tạo tất cả ảnh bìa",
     thumbHint: "Tạo ảnh bìa YouTube theo Video DNA và tiêu đề của phương án (dùng lượt tạo ảnh nên chỉ chạy khi bạn bấm).",
     thumbFor: "theo phương án",
     download: "Tải ảnh",
@@ -411,3 +411,4 @@ export const MOTION_SEO_TEXTS = {
     regenerateCover: "Regenerate cover",
   },
 } as const;
+export type MotionSeoTexts = { readonly [Key in keyof (typeof MOTION_SEO_TEXTS)["vi"]]: string };
