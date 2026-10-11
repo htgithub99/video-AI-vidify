@@ -6,60 +6,17 @@ import { MOTION_LIB_CONFIG as C, MOTION_LIB_EXCLUDE_WORDS, MOTION_LIB_KENNEY_PAC
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { getMotionErrorSummary } from "../../lib/motionUtils.js";
 import { getDataDirectory } from "../utils/paths.js";
-export interface MotionLibItem {
-  id: string;
-  src: string;
-  name: string;
-  cat: string;
-  tags: string[];
-  size: [number, number, number];
-  file?: string;
-  pack?: string;
-  desc?: string;
-}
-interface MotionLibCatalog {
-  version: number;
-  items: MotionLibItem[];
-  packs: Record<string, number>;
-}
+export interface MotionLibItem { id: string; src: string; name: string; cat: string; tags: string[]; size: [number, number, number]; file?: string; pack?: string; desc?: string; }
+interface MotionLibCatalog { version: number; items: MotionLibItem[]; packs: Record<string, number>; }
 type Log = (line: string) => void;
-const libRoot = (): string => {
-  const dir = path.join(getDataDirectory(), C.ROOT);
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
-};
+const libRoot = (): string => { const dir = path.join(getDataDirectory(), C.ROOT); fs.mkdirSync(dir, { recursive: true }); return dir; };
 const catalogFile = (): string => path.join(libRoot(), C.CATALOG_FILE);
 let heavy: Set<string> | null = null;
 const heavyFile = (): string => path.join(libRoot(), C.PH_HEAVY_FILE);
-const heavySet = (): Set<string> => {
-  if (heavy) return heavy;
-  try {
-    heavy = new Set(_.map(parseJson(fs.readFileSync(heavyFile(), T.UTF8)) as string[], _.toString));
-  } catch {
-    heavy = new Set();
-  }
-  return heavy;
-};
-const markHeavy = (ref: string): void => {
-  heavySet().add(ref);
-  fs.mkdirSync(path.dirname(heavyFile()), { recursive: true });
-  fs.writeFileSync(heavyFile(), stringifyJson([...heavySet()]));
-  engineMap = { catalog: null, map: {} };
-};
-const dirBytes = (dir: string): number => {
-  if (!fs.existsSync(dir)) return 0;
-  let n = 0;
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) n += e.isDirectory() ? dirBytes(path.join(dir, e.name)) : fs.statSync(path.join(dir, e.name)).size;
-  return n;
-};
-const scanHeavy = (): void => {
-  const root = path.join(libRoot(), C.PH_DIR);
-  if (!fs.existsSync(root)) return;
-  for (const id of fs.readdirSync(root)) {
-    const ref = T.PH_PREFIX + id;
-    if (!heavySet().has(ref) && dirBytes(path.join(root, id)) > C.PH_MAX_BYTES) markHeavy(ref);
-  }
-};
+const heavySet = (): Set<string> => { if (heavy) return heavy; try { heavy = new Set(_.map(parseJson(fs.readFileSync(heavyFile(), T.UTF8)) as string[], _.toString)); } catch { heavy = new Set(); } return heavy; };
+const markHeavy = (ref: string): void => { heavySet().add(ref); fs.mkdirSync(path.dirname(heavyFile()), { recursive: true }); fs.writeFileSync(heavyFile(), stringifyJson([...heavySet()])); engineMap = { catalog: null, map: {} }; };
+const dirBytes = (dir: string): number => { if (!fs.existsSync(dir)) return 0; let n = 0; for (const e of fs.readdirSync(dir, { withFileTypes: true })) n += e.isDirectory() ? dirBytes(path.join(dir, e.name)) : fs.statSync(path.join(dir, e.name)).size; return n; };
+const scanHeavy = (): void => { const root = path.join(libRoot(), C.PH_DIR); if (!fs.existsSync(root)) return; for (const id of fs.readdirSync(root)) { const ref = T.PH_PREFIX + id; if (!heavySet().has(ref) && dirBytes(path.join(root, id)) > C.PH_MAX_BYTES) markHeavy(ref); } };
 let cached: MotionLibCatalog | null = null;
 let installing: Promise<void> | null = null;
 const request = async (url: string, signal?: AbortSignal): Promise<Response> => {
@@ -78,11 +35,7 @@ const request = async (url: string, signal?: AbortSignal): Promise<Response> => 
 };
 type Mat = number[];
 const IDENTITY: Mat = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-const multiply = (a: Mat, b: Mat): Mat => {
-  const out = new Array(16).fill(0);
-  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) out[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k];
-  return out;
-};
+const multiply = (a: Mat, b: Mat): Mat => { const out = new Array(16).fill(0); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) out[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k]; return out; };
 const localMatrix = (node: any): Mat => {
   if (Array.isArray(node.matrix) && node.matrix.length === 16) return node.matrix;
   const [x, y, z, w] = node.rotation || [0, 0, 0, 1];
@@ -91,8 +44,7 @@ const localMatrix = (node: any): Mat => {
   return [(1 - 2 * (y * y + z * z)) * sx, 2 * (x * y + z * w) * sx, 2 * (x * z - y * w) * sx, 0, 2 * (x * y - z * w) * sy, (1 - 2 * (x * x + z * z)) * sy, 2 * (y * z + x * w) * sy, 0, 2 * (x * z + y * w) * sz, 2 * (y * z - x * w) * sz, (1 - 2 * (x * x + y * y)) * sz, 0, tx, ty, tz, 1];
 };
 export const gltfSize = (json: any): [number, number, number] | null => {
-  const lo = [Infinity, Infinity, Infinity],
-    hi = [-Infinity, -Infinity, -Infinity];
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   const visit = (index: number, parent: Mat, depth: number) => {
     const node = json.nodes?.[index];
     if (!node || depth > 64) return;
@@ -117,11 +69,7 @@ export const gltfSize = (json: any): [number, number, number] | null => {
   if (!Number.isFinite(lo[0])) return null;
   return [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]].map((v) => Math.round(v * 1000) / 1000) as [number, number, number];
 };
-export const glbSize = (buf: Buffer): [number, number, number] | null => {
-  if (buf.length < 20 || buf.readUInt32LE(0) !== T.GLB_MAGIC) return null;
-  const len = buf.readUInt32LE(12);
-  return gltfSize(parseJson(buf.subarray(20, 20 + len).toString(T.UTF8)));
-};
+export const glbSize = (buf: Buffer): [number, number, number] | null => { if (buf.length < 20 || buf.readUInt32LE(0) !== T.GLB_MAGIC) return null; const len = buf.readUInt32LE(12); return gltfSize(parseJson(buf.subarray(20, 20 + len).toString(T.UTF8))); };
 const installKenney = async (slug: string, log: Log, signal?: AbortSignal): Promise<void> => {
   const dir = path.join(libRoot(), C.KENNEY_DIR, slug);
   if (fs.existsSync(path.join(dir, C.DONE))) return;
@@ -147,15 +95,7 @@ const installKenney = async (slug: string, log: Log, signal?: AbortSignal): Prom
   log(T.INSTALLED(slug, count));
 };
 const words = (s: string): string[] => _.uniq(_.compact(_.toLower(s).split(T.WORD_SPLIT)));
-const walk = (dir: string, out: string[] = []): string[] => {
-  if (!fs.existsSync(dir)) return out;
-  for (const f of fs.readdirSync(dir)) {
-    const p = path.join(dir, f);
-    if (fs.statSync(p).isDirectory()) walk(p, out);
-    else if (T.EXT_GLB.test(f)) out.push(p);
-  }
-  return out;
-};
+const walk = (dir: string, out: string[] = []): string[] => { if (!fs.existsSync(dir)) return out; for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walk(p, out); else if (T.EXT_GLB.test(f)) out.push(p); } return out; };
 const toPosix = (p: string): string => p.split(path.sep).join(T.SLASH);
 const kenneyItems = (): MotionLibItem[] => {
   const items: MotionLibItem[] = [];
@@ -179,11 +119,7 @@ const kenneyItems = (): MotionLibItem[] => {
 };
 const phCatalog = async (signal?: AbortSignal): Promise<Record<string, any>> => {
   const file = path.join(libRoot(), C.PH_CACHE);
-  if (fs.existsSync(file)) {
-    try {
-      return parseJson(fs.readFileSync(file, T.UTF8));
-    } catch {}
-  }
+  if (fs.existsSync(file)) { try { return parseJson(fs.readFileSync(file, T.UTF8)); } catch {} }
   const data = await (await request(C.PH_API + T.ASSETS_MODELS, signal)).json();
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, stringifyJson(data));
@@ -220,14 +156,7 @@ export const rebuildLibraryCatalog = async (signal?: AbortSignal): Promise<Motio
   cached = catalog;
   return catalog;
 };
-export const getLibraryCatalog = (): MotionLibCatalog => {
-  if (cached) return cached;
-  try {
-    const data = parseJson(fs.readFileSync(catalogFile(), T.UTF8)) as MotionLibCatalog;
-    if (data.version === C.CATALOG_VERSION) cached = data;
-  } catch {}
-  return cached || { version: C.CATALOG_VERSION, items: [], packs: {} };
-};
+export const getLibraryCatalog = (): MotionLibCatalog => { if (cached) return cached; try { const data = parseJson(fs.readFileSync(catalogFile(), T.UTF8)) as MotionLibCatalog; if (data.version === C.CATALOG_VERSION) cached = data; } catch {} return cached || { version: C.CATALOG_VERSION, items: [], packs: {} }; };
 export const ensureMotionLibrary = (log: Log = _.noop, signal?: AbortSignal): Promise<void> => {
   if (installing) return installing;
   installing = (async () => {
@@ -262,24 +191,14 @@ export const ensureLibraryModel = async (ref: string, log: Log = _.noop, signal?
   const dir = path.join(libRoot(), C.PH_DIR, id);
   const name = id + T.UNDERSCORE + C.PH_RES + T.GLTF;
   const rel = toPosix(path.join(C.PH_DIR, id, name));
-  if (fs.existsSync(path.join(dir, name))) {
-    const bytes = dirBytes(dir);
-    if (bytes > C.PH_MAX_BYTES) {
-      markHeavy(item.id);
-      throw new Error(T.PH_HEAVY(id, bytes / T.MB));
-    }
-    return C.ASSET_PREFIX + rel;
-  }
+  if (fs.existsSync(path.join(dir, name))) { const bytes = dirBytes(dir); if (bytes > C.PH_MAX_BYTES) { markHeavy(item.id); throw new Error(T.PH_HEAVY(id, bytes / T.MB)); } return C.ASSET_PREFIX + rel; }
   log(T.PH_FETCH(id));
   try {
     const files = await (await request(C.PH_API + T.FILES + encodeURIComponent(id), signal)).json();
     const entry = files?.[T.GLTF_KEY]?.[C.PH_RES]?.[T.GLTF_KEY];
     if (!entry?.url) throw new Error(T.NO_GLTF);
     const total = (_.toNumber(entry.size) || 0) + _.sumBy(Object.values<any>(entry.include || {}), (inc) => _.toNumber(inc?.size) || 0);
-    if (total > C.PH_MAX_BYTES) {
-      markHeavy(item.id);
-      throw new Error(T.PH_HEAVY(id, total / T.MB));
-    }
+    if (total > C.PH_MAX_BYTES) { markHeavy(item.id); throw new Error(T.PH_HEAVY(id, total / T.MB)); }
     const tmp = path.join(dir, T.TMP_DIR);
     fs.mkdirSync(tmp, { recursive: true });
     for (const [incRel, inc] of Object.entries<any>(entry.include || {})) {
@@ -296,22 +215,18 @@ export const ensureLibraryModel = async (ref: string, log: Log = _.noop, signal?
   }
   return C.ASSET_PREFIX + rel;
 };
-export const resolveLibraryAsset = (rel: string): string | null => {
-  const clean = _.toString(rel).replace(T.LEADING_SLASH, "");
-  if (!clean.startsWith(C.ASSET_PREFIX)) return null;
-  const root = path.resolve(libRoot());
-  const file = path.resolve(root, clean.slice(C.ASSET_PREFIX.length));
-  if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return null;
-  return file;
-};
+export const resolveLibraryAsset = (rel: string): string | null => { const clean = _.toString(rel).replace(T.LEADING_SLASH, ""); if (!clean.startsWith(C.ASSET_PREFIX)) return null; const root = path.resolve(libRoot()); const file = path.resolve(root, clean.slice(C.ASSET_PREFIX.length)); if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return null; return file; };
 export const libraryMime = (file: string): string => MOTION_LIB_MIME[path.extname(file).toLowerCase()] || MOTION_LIB_MIME[T.DEFAULT_MIME];
 const allowed = (it: MotionLibItem): boolean => !heavySet().has(it.id) && !_.some(words(it.name), (w) => MOTION_LIB_EXCLUDE_WORDS.includes(w));
 const phUrl = (id: string): string => C.ASSET_PREFIX + C.PH_DIR + T.SLASH + id + T.SLASH + id + T.UNDERSCORE + C.PH_RES + T.GLTF;
-let engineMap: { catalog: MotionLibCatalog | null; map: Record<string, { url: string; size: number[] }> } = { catalog: null, map: {} };
-export const libraryEngineMap = (): Record<string, { url: string; size: number[] }> => {
+let engineMap: { catalog: MotionLibCatalog | null; map: Record< string, { url: string; size: number[]; } >; } = { catalog: null, map: {} };
+export const libraryEngineMap = (): Record<
+  string,
+  { url: string; size: number[]; }
+> => {
   const catalog = getLibraryCatalog();
   if (engineMap.catalog === catalog) return engineMap.map;
-  const map: Record<string, { url: string; size: number[] }> = {};
+  const map: Record< string, { url: string; size: number[]; } > = {};
   for (const it of catalog.items) if (allowed(it)) map[it.id] = { url: it.file ? C.ASSET_PREFIX + it.file : phUrl(it.id.slice(T.PH_PREFIX.length)), size: it.size };
   engineMap = { catalog, map };
   return map;
@@ -324,23 +239,8 @@ export const libraryCandidates = (text: string, limit: number = C.CANDIDATES): M
   const query = _.map(words(text), stem);
   const expanded = _.uniq([...query, ..._.flatMap(query, (w) => _.map(MOTION_LIB_SYNONYMS[w] || [], stem))]).filter((w) => w.length >= 3);
   const labels: Record<string, string[]> = _.fromPairs(_.map(MOTION_LIB_KENNEY_PACKS, (p) => [p.slug, _.map(words(p.label), stem)]));
-  const scored = _.map(items, (it) => {
-    const nameWords = _.map(words(it.name), stem);
-    const tags = _.map(it.tags, stem);
-    const label = it.pack ? labels[it.pack] || [] : [];
-    let score = 0;
-    for (const w of expanded) {
-      if (nameWords.includes(w)) score += 3;
-      else if (label.includes(w)) score += 2;
-      else if (tags.includes(w)) score += 1;
-    }
-    return { it, score };
-  });
-  const ranked = _.orderBy(
-    _.filter(scored, (s) => s.score > 0),
-    [T.SCORE],
-    [T.DESC],
-  );
+  const scored = _.map(items, (it) => { const nameWords = _.map(words(it.name), stem); const tags = _.map(it.tags, stem); const label = it.pack ? labels[it.pack] || [] : []; let score = 0; for (const w of expanded) { if (nameWords.includes(w)) score += 3; else if (label.includes(w)) score += 2; else if (tags.includes(w)) score += 1; } return { it, score }; });
+  const ranked = _.orderBy( _.filter(scored, (s) => s.score > 0), [T.SCORE], [T.DESC], );
   const perPack: Record<string, number> = {};
   const out: MotionLibItem[] = [];
   for (const { it } of ranked) {
@@ -351,8 +251,4 @@ export const libraryCandidates = (text: string, limit: number = C.CANDIDATES): M
     if (out.length >= limit) break;
   }
   return out;
-};
-export const libraryStatus = () => {
-  const c = getLibraryCatalog();
-  return { items: c.items.length, packs: c.packs, installing: !!installing };
 };

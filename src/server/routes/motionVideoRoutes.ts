@@ -1,3 +1,4 @@
+import * as MR from "../../constants/motionRuntime.js";
 import express from "express";
 import { MOTION_VIDEO_API_PATHS } from "../../constants/apiRoutes.js";
 import { MOTION_TEMPLATE_SYMBOL_13 } from "../../constants/motionRuntime.js";
@@ -13,16 +14,15 @@ import {
   deleteMotionVideoResult,
   getMotionDemo,
   getMotionEngineScript,
-  getMotionEnvironment,
-  getMotionLibrary,
   getMotionStoryStatus,
   getMotionVideoStatus,
   getStorageJunk,
-  installMotionLibrary,
   listMotionVideoResults,
   parseMotionStory,
   saveMotionVideo,
   scenesMotionStory,
+  seoMotionStory,
+  thumbnailMotionStory,
   scriptMotionStory,
   selectMotionSaveDestination,
   serveGenPreview,
@@ -35,11 +35,8 @@ import { requireLicense } from "../middlewares/requireLicense.js";
 const router = express.Router();
 router.get(MOTION_VIDEO_API_PATHS.ENGINE, getMotionEngineScript);
 router.get(MOTION_VIDEO_API_PATHS.DEMO, getMotionDemo);
-router.get(MOTION_TEMPLATE_SYMBOL_13(`${MOTION_VIDEO_API_PATHS.ASSET}`), serveMotionAsset);
+router.get(MOTION_TEMPLATE_SYMBOL_13(MR.MOTION_TEMPLATE_SYMBOL_97(MOTION_VIDEO_API_PATHS.ASSET)), serveMotionAsset);
 router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
-router.get(MOTION_VIDEO_API_PATHS.ENVIRONMENT, getMotionEnvironment);
-router.get(MOTION_VIDEO_API_PATHS.LIBRARY, getMotionLibrary);
-router.post(MOTION_VIDEO_API_PATHS.LIBRARY_INSTALL, installMotionLibrary);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);
 router.post(MOTION_VIDEO_API_PATHS.RENDER, startMotionVideoRender);
@@ -56,6 +53,8 @@ router.post(MOTION_VIDEO_API_PATHS.STORY_PARSE, parseMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_ANALYZE, analyzeMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_SCRIPT, scriptMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_SCENES, scenesMotionStory);
+router.post(MOTION_VIDEO_API_PATHS.STORY_SEO, seoMotionStory);
+router.post(MOTION_VIDEO_API_PATHS.STORY_THUMBNAIL, requireLicense(FeatureType.IMAGE), thumbnailMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_VOICE, requireLicense(FeatureType.VOICE), voiceMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_COMPILE, compileMotionStory);
 router.get(MOTION_VIDEO_API_PATHS.STORY_STATUS, getMotionStoryStatus);

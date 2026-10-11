@@ -93,8 +93,6 @@ export const API_ROUTES = {
   MOTION_VIDEO_ENGINE: "/api/motion-video/engine",
   MOTION_VIDEO_DEMO: "/api/motion-video/demo",
   MOTION_VIDEO_ASSET: "/api/motion-video/asset/",
-  MOTION_LIBRARY: "/api/motion-video/library",
-  MOTION_LIBRARY_INSTALL: "/api/motion-video/library/install",
   MOTION_GEN_PREVIEW: "/api/motion-video/gen-preview?path=",
   MOTION_VIDEO_AUDIO: "/api/motion-video/audio",
   MOTION_VIDEO_CHECK: "/api/motion-video/check",
@@ -106,10 +104,11 @@ export const API_ROUTES = {
   MOTION_STORAGE_CLEAN: "/api/motion-video/storage/clean",
   MOTION_VIDEO_SELECT_SAVE_DESTINATION: "/api/motion-video/select-save-destination",
   MOTION_VIDEO_SAVE_VIDEO: "/api/motion-video/save-video",
-  MOTION_VIDEO_ENVIRONMENT: "/api/motion-video/environment",
   MOTION_STORY_PARSE: "/api/motion-video/story/parse",
   MOTION_STORY_ANALYZE: "/api/motion-video/story/analyze",
   MOTION_STORY_SCRIPT: "/api/motion-video/story/script",
+  MOTION_STORY_SEO: "/api/motion-video/story/seo",
+  MOTION_STORY_THUMBNAIL: "/api/motion-video/story/thumbnail",
   MOTION_STORY_VOICE: "/api/motion-video/story/voice",
   MOTION_STORY_COMPILE: "/api/motion-video/story/compile",
   MOTION_STORY_STATUS: "/api/motion-video/story/status/",
@@ -184,56 +183,14 @@ export const IMAGES_DIR_NAME = "images";
 export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
-export const API_HEADERS = {
-  CONTENT_TYPE: "Content-Type",
-  ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin",
-  AI33_API_KEY: "x-ai33-api-key",
-  GEMINI_API_KEY: "x-gemini-api-key",
-  CEREBRAS_API_KEY: "x-cerebras-api-key",
-  GROQ_API_KEY: "x-groq-api-key",
-  LICENSE_KEY: "x-license-key",
-} as const;
-export const SERVER_ROUTES = {
-  PROJECTS: "/projects",
-  PROJECTS_ID: "/projects/:id",
-  PRESETS: "/presets",
-  PRESETS_ID: "/presets/:id",
-  VOICES: "/voices",
-  SETTINGS: "/settings",
-  SHORTS: "/shorts",
-  VIDEO_EXPORT: "/video-export",
-  MOTION_VIDEO: "/motion-video",
-} as const;
-export const SHORTS_API_PATHS = {
-  BASE: "/shorts",
-  METADATA: "/metadata",
-  GENERATE: "/generate",
-  EXPORT_ZIP: "/export-zip",
-  CANCEL: "/cancel",
-  SELECT_SAVE_DESTINATION: "/select-save-destination",
-  SAVE_VIDEO: "/save-video",
-  BUILD_ZIP: "/build-zip",
-  STREAM_SOURCE: "/stream-source",
-} as const;
-export const VIDEO_EXPORT_API_PATHS = {
-  BASE: "/video-export",
-  SELECT_SOURCE: "/select-source",
-  MEDIA: "/media/:token/:kind/:index",
-  PREVIEW: "/preview",
-  RENDER: "/render",
-  STATUS: "/status/:jobId",
-  CANCEL: "/cancel",
-  SELECT_SAVE_DESTINATION: "/select-save-destination",
-  SAVE_VIDEO: "/save-video",
-  CAPCUT_CATALOG: "/capcut-catalog",
-  CAPCUT_PROJECT: "/capcut-project",
-} as const;
+export const API_HEADERS = { CONTENT_TYPE: "Content-Type", ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin", AI33_API_KEY: "x-ai33-api-key", GEMINI_API_KEY: "x-gemini-api-key", CEREBRAS_API_KEY: "x-cerebras-api-key", GROQ_API_KEY: "x-groq-api-key", LICENSE_KEY: "x-license-key", } as const;
+export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video", } as const;
+export const SHORTS_API_PATHS = { BASE: "/shorts", METADATA: "/metadata", GENERATE: "/generate", EXPORT_ZIP: "/export-zip", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", BUILD_ZIP: "/build-zip", STREAM_SOURCE: "/stream-source", } as const;
+export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project", } as const;
 export const MOTION_VIDEO_API_PATHS = {
   ENGINE: "/engine",
   DEMO: "/demo",
   ASSET: "/asset",
-  LIBRARY: "/library",
-  LIBRARY_INSTALL: "/library/install",
   GEN_PREVIEW: "/gen-preview",
   AUDIO: "/audio",
   CHECK: "/check",
@@ -246,20 +203,16 @@ export const MOTION_VIDEO_API_PATHS = {
   STORAGE_CLEAN: "/storage/clean",
   SELECT_SAVE_DESTINATION: "/select-save-destination",
   SAVE_VIDEO: "/save-video",
-  ENVIRONMENT: "/environment",
   STORY_PARSE: "/story/parse",
   STORY_ANALYZE: "/story/analyze",
   STORY_SCRIPT: "/story/script",
+  STORY_SEO: "/story/seo",
+  STORY_THUMBNAIL: "/story/thumbnail",
   STORY_VOICE: "/story/voice",
   STORY_SCENES: "/story/scenes",
   STORY_COMPILE: "/story/compile",
   STORY_STATUS: "/story/status/:jobId",
   STORY_CANCEL: "/story/cancel",
 } as const;
-export const SETTINGS_API_PATHS = {
-  GAS_CONFIG: "/gas-config",
-  API_KEYS: "/api-keys",
-  ACCOUNTS: "/accounts",
-  ACCOUNTS_STATUS: "/accounts/status",
-} as const;
+export const SETTINGS_API_PATHS = { GAS_CONFIG: "/gas-config", API_KEYS: "/api-keys", ACCOUNTS: "/accounts", ACCOUNTS_STATUS: "/accounts/status", } as const;
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;

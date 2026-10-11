@@ -20,12 +20,11 @@
     overcast: { sun: MT.E8ECF0, sunI: 0.9, elev: 55, az: -20, hemiSky: MT.D4DAE0, hemiGround: MT.VALUE_5F5C58, hemiI: 1.35, fill: 0.2, fillColor: MT.EEF2F6, exposure: 1.0, top: MT.VALUE_8A949E, horizon: MT.C8CED4, fog: MT.B9C0C6, envI: 0.9 },
     night: { sun: MT.VALUE_9FB4E6, sunI: 0.38, elev: 42, az: 30, hemiSky: MT.VALUE_2B3858, hemiGround: MT.VALUE_0B0D12, hemiI: 0.55, fill: 0.62, fillColor: MT.B8C8FF, exposure: 1.2, top: MT.VALUE_03050C, horizon: MT.VALUE_121A2C, fog: MT.VALUE_0E1420, envI: 0.55 },
     interior: { sun: null, hemiSky: MT.F2E6D4, hemiGround: MT.VALUE_3C3128, hemiI: 0.55, fill: 0.28, fillColor: MT.FFF0DC, exposure: 1.0, background: MT.VALUE_151310, fog: MT.VALUE_2A2622, envI: 0.8 },
-    interior_dark: { sun: null, hemiSky: MT.VALUE_3A4662, hemiGround: MT.VALUE_0D0E12, hemiI: 0.3, fill: 0.5, fillColor: MT.C8D4FF, exposure: 1.25, background: MT.VALUE_050608, fog: MT.VALUE_0A0C10, envI: 0.5 },
+    interior_dark: { sun: null, hemiSky: MT.VALUE_3A4662, hemiGround: MT.VALUE_0D0E12, hemiI: 0.26, fill: 0.36, fillColor: MT.C8D4FF, exposure: 1.0, background: MT.VALUE_050608, fog: MT.VALUE_0A0C10, envI: 0.42 },
   };
   GEN.TIME = TIME;
   const skyDome = (L, tp, time) => {
-    const top = new T.Color((L.sky && L.sky.top) || tp.top || MT.VALUE_000000),
-      hz = new T.Color((L.sky && L.sky.horizon) || tp.horizon || MT.VALUE_202020);
+    const top = new T.Color((L.sky && L.sky.top) || tp.top || MT.VALUE_000000), hz = new T.Color((L.sky && L.sky.horizon) || tp.horizon || MT.VALUE_202020);
     const sunDir = new T.Vector3();
     sunDir.setFromSphericalCoords(1, (90 - (tp.elev || 30)) * DEG, (tp.az || 0) * DEG);
     const mat = new T.ShaderMaterial({
@@ -45,8 +44,7 @@
     const r = U.rng(seed);
     const pts = [];
     for (let i = 0; i < n; i++) {
-      const a = r() * Math.PI * 2,
-        e = 0.08 + r() * 1.35;
+      const a = r() * Math.PI * 2, e = 0.08 + r() * 1.35;
       pts.push(Math.cos(a) * Math.cos(e) * 1400, Math.sin(e) * 1400, Math.sin(a) * Math.cos(e) * 1400);
     }
     const g = new T.BufferGeometry();
@@ -57,8 +55,7 @@
     if (kind !== MT.RAIN && kind !== MT.SNOW && kind !== MT.DUST) return null;
     const n = kind === MT.RAIN ? 6000 : 2500;
     const r = U.rng(5);
-    const pos = new Float32Array(n * 3),
-      base = new Float32Array(n * 3);
+    const pos = new Float32Array(n * 3), base = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       base[i * 3] = center[0] + (r() - 0.5) * 40;
       base[i * 3 + 1] = r() * 14;
@@ -74,8 +71,7 @@
   };
   const updateWeather = (m, t) => {
     if (!m) return;
-    const p = m.geometry.attributes.position.array,
-      b = m.userData.base;
+    const p = m.geometry.attributes.position.array, b = m.userData.base;
     const sp = m.userData.kind === MT.RAIN ? 11 : m.userData.kind === MT.DUST ? 0.3 : 1.1;
     for (let i = 0; i < p.length; i += 3) {
       p[i + 1] = U.mod(b[i + 1] - t * sp, 14);
@@ -83,14 +79,7 @@
     }
     m.geometry.attributes.position.needsUpdate = true;
   };
-  const DEFAULT_OUTFIT = {
-    body: MT.MALE,
-    layers: [
-      { kind: MT.SHIRT, color: MT.VALUE_6A6F78 },
-      { kind: MT.TROUSERS, color: MT.VALUE_2A2C30 },
-      { kind: MT.SHOES, color: MT.VALUE_151515 },
-    ],
-  };
+  const DEFAULT_OUTFIT = { body: MT.MALE, layers: [ { kind: MT.SHIRT, color: MT.VALUE_6A6F78 }, { kind: MT.TROUSERS, color: MT.VALUE_2A2C30 }, { kind: MT.SHOES, color: MT.VALUE_151515 }, ], };
   const cleanGen = (spec) => {
     const G = spec.gen || (spec.gen = {});
     if (G.__clean) return G.__clean;
@@ -101,75 +90,32 @@
     return C;
   };
   GEN.cleanGen = cleanGen;
-  const castOf = (spec, key) => cleanGen(spec).cast[key] || GEN.validateOutfit(DEFAULT_OUTFIT).value;
+  const castOf = (spec, key) => {
+    const outfit = cleanGen(spec).cast[key];
+    const drawn = spec.gen && (spec.gen.characterMode === MT.DRAWN || (spec.gen.videoDna && spec.gen.videoDna.settings.characterMode === MT.DRAWN));
+    if (drawn && (!outfit || (!outfit.customDesign && !(outfit.drawnBody && outfit.drawnBody.length)))) throw new Error(MT.CUSTOM_CHARACTER_DESIGN_MISSING_FOR + key + MT.REBUILD_CHARACTERS_BEFORE_RENDERING);
+    return outfit || GEN.validateOutfit(DEFAULT_OUTFIT).value;
+  };
   const yawTo = (from, to) => Math.atan2(to[0] - from[0], to[1] - from[1]);
-  const easeMove = (k) => {
-    k = U.clamp(k);
-    const a = 0.18;
-    if (k < a) return (k * k) / (2 * a * (1 - a));
-    if (k > 1 - a) return 1 - ((1 - k) * (1 - k)) / (2 * a * (1 - a));
-    return (k - a / 2) / (1 - a);
+  const fixedAction = (action) => {
+    const a = String(action || MT.IDLE).toLowerCase();
+    if (LOCOMOTION.includes(a) || /jump|roll|dance|celebrate|climb|get_up|stand_up/.test(a)) return MT.STAND;
+    if (/sit_down|sit_talk/.test(a)) return MT.SIT;
+    if (/punch|hit|restrain|block/.test(a)) return MT.ARMS_CROSSED;
+    if (/knocked|cover|cry/.test(a)) return MT.COVER_FACE;
+    if (/fall_dead|die|dead/.test(a)) return MT.LIE;
+    if (/shoot|fire|gun/.test(a)) return MT.AIM;
+    return action || MT.IDLE;
   };
-  const planActor = (a, dur, all) => {
-    const segs = [];
-    const isLoco = LOCOMOTION.includes(a.action);
-    if (a.moveTo) {
-      const t0 = a.moveStart * dur,
-        t1 = a.moveEnd * dur;
-      const move = isLoco ? a.action : MT.WALK;
-      if (t0 > 0.05) segs.push({ id: isLoco ? MT.IDLE : a.action, t0: 0, t1: t0 });
-      segs.push({ id: move, t0, t1, moving: true });
-      segs.push({ id: a.then || MT.IDLE, t0: t1, t1: Math.max(dur, t1) + 30 });
-    } else if (a.then) {
-      const tt = (a.thenAt || 0.6) * dur;
-      segs.push({ id: a.action, t0: 0, t1: tt });
-      segs.push({ id: a.then, t0: tt, t1: dur + 30 });
-    } else segs.push({ id: a.action, t0: 0, t1: dur + 30 });
-    return segs;
-  };
-  const actorState = (A, t) => {
-    const a = A.def,
-      dur = A.dur;
-    let pos = a.at;
-    let moving = false,
-      dir = null;
-    if (a.moveTo) {
-      const t0 = a.moveStart * dur,
-        t1 = a.moveEnd * dur;
-      const k = easeMove((t - t0) / Math.max(0.01, t1 - t0));
-      pos = [U.lerp(a.at[0], a.moveTo[0], k), U.lerp(a.at[1], a.moveTo[1], k)];
-      moving = t > t0 && t < t1;
-      dir = yawTo(a.at, a.moveTo);
-    }
-    return { pos, moving, dir };
-  };
+  const planActor = (a, dur) => [{ id: fixedAction(a.action), t0: 0, t1: dur + 30 }];
+  const actorState = (A, t) => { return { pos: A.def.at, moving: false, dir: null }; };
   const faceYaw = (A, S, t, cam) => {
     const a = A.def;
     const st = actorState(A, t);
     let base;
     if (a.face === MT.CAMERA && cam) base = yawTo(st.pos, [cam.position.x, cam.position.z]);
-    else if (typeof a.face === MT.NUMBER) base = a.face * DEG;
-    else if (a.faceAt) base = yawTo(st.pos, a.faceAt);
-    else if (a.faceActor) {
-      const o = S.actors.find((x) => x.def.cast === a.faceActor && x !== A);
-      base = o ? yawTo(st.pos, actorState(o, t).pos) : 0;
-    } else if (a.moveTo) base = yawTo(a.at, a.moveTo);
-    else base = cam ? yawTo(st.pos, [cam.position.x, cam.position.z]) * 0.35 : 0;
-    if (a.moveTo) {
-      const t0 = a.moveStart * A.dur,
-        t1 = a.moveEnd * A.dur,
-        dirY = yawTo(a.at, a.moveTo);
-      const kIn = U.smooth((t - t0 + 0.25) / 0.5),
-        kOut = U.smooth((t - t1 + 0.1) / 0.6);
-      const finalYaw = a.face != null || a.faceAt || a.faceActor ? base : dirY;
-      const pre = a.face != null || a.faceAt || a.faceActor ? base : dirY;
-      return lerpAngle(lerpAngle(pre, dirY, kIn), finalYaw, kOut);
-    }
+    else if (typeof a.face === MT.NUMBER) base = a.face * DEG; else if (a.faceAt) base = yawTo(st.pos, a.faceAt); else if (a.faceActor) { const o = S.actors.find((x) => x.def.cast === a.faceActor && x !== A); base = o ? yawTo(st.pos, actorState(o, t).pos) : 0; } else base = cam ? yawTo(st.pos, [cam.position.x, cam.position.z]) * 0.35 : 0;
     return base;
-  };
-  const lerpAngle = (a, b, k) => {
-    let d = U.mod(b - a + Math.PI, Math.PI * 2) - Math.PI;
-    return a + d * k;
   };
   const ghostify = (actor, S) => {
     const mats = [];
@@ -177,35 +123,20 @@
     actor.group.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = false;
-      const conv = (m) => {
-        const c = m.clone();
-        c.transparent = true;
-        c.opacity = 0.4;
-        c.depthWrite = false;
-        if (c.color) c.color.lerp(tint, 0.55);
-        if (c.emissive) {
-          c.emissive.copy(tint);
-          c.emissiveIntensity = 0.65;
-        }
-        mats.push(c);
-        S.disposables.push(c);
-        return c;
-      };
+      const conv = (m) => { const c = m.clone(); c.transparent = true; c.opacity = 0.4; c.depthWrite = false; if (c.color) c.color.lerp(tint, 0.55); if (c.emissive) { c.emissive.copy(tint); c.emissiveIntensity = 0.65; } mats.push(c); S.disposables.push(c); return c; };
       o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
     });
     actor.ghostMats = mats;
   };
-  const updateGhost = (A, S, t) => {
-    const g = A.actor;
-    g.group.position.y += 0.08 + Math.sin(t * 1.7 + A.phase) * 0.05;
-    const k = U.clamp((t - S.t0) / 0.9) * (0.82 + 0.18 * Math.sin(t * 7.3 + A.phase));
-    for (const m of g.ghostMats || []) m.opacity = 0.4 * k;
-  };
   const updateActor = (A, S, t, cam) => {
+    if (A.poseLocked) return;
+    t = 0.75;
+    A.phase = 0;
+    cam = { position: { x: S.L.camera.pos[0], z: S.L.camera.pos[2] } };
     const st = actorState(A, t);
     const actor = A.actor;
     actor.group.position.set(st.pos[0], A.def.y || 0, st.pos[1]);
-    if (A.def.ghost) updateGhost(A, S, t);
+    if (A.def.ghost) for (const m of actor.ghostMats || []) m.opacity = 0.4;
     actor.group.rotation.y = faceYaw(A, S, t, cam);
     actor.group.updateMatrixWorld(true);
     const list = [];
@@ -213,42 +144,35 @@
     let total = 0;
     A.segs.forEach((sg, i) => {
       let w = 0;
-      if (t >= sg.t0 - (i ? fade / 2 : 0) && t < sg.t1 + fade / 2) {
-        const kin = i === 0 ? 1 : U.smooth((t - (sg.t0 - fade / 2)) / fade);
-        const kout = i === A.segs.length - 1 ? 1 : 1 - U.smooth((t - (sg.t1 - fade / 2)) / fade);
-        w = Math.min(kin, kout);
-      }
+      if (t >= sg.t0 - (i ? fade / 2 : 0) && t < sg.t1 + fade / 2) { const kin = i === 0 ? 1 : U.smooth((t - (sg.t0 - fade / 2)) / fade); const kout = i === A.segs.length - 1 ? 1 : 1 - U.smooth((t - (sg.t1 - fade / 2)) / fade); w = Math.min(kin, kout); }
       if (w > 0.001) {
         const Ad = GEN.ACTIONS[sg.id] || {};
         let tt;
-        if (sg.moving && Ad.speed) {
-          const dist = Math.hypot(A.def.moveTo[0] - A.def.at[0], A.def.moveTo[1] - A.def.at[1]);
-          const v = dist / Math.max(0.2, (A.def.moveEnd - A.def.moveStart) * A.dur);
-          tt = (t - sg.t0) * U.clamp(v / Ad.speed, 0.5, 2.2) + A.phase;
-        } else tt = Ad.once || Ad.hold != null || Ad.settle != null ? t - sg.t0 : (t + A.phase) * (Ad.rate || 1);
-        if (Ad.mix && !sg.moving) {
-          list.push({ id: sg.id, time: tt, weight: w * Ad.mix });
-          list.push({ id: Ad.mixWith || MT.IDLE, time: t + A.phase, weight: w * (1 - Ad.mix) });
-        } else list.push({ id: sg.id, time: tt, weight: w });
+        if (sg.moving && Ad.speed) { const dist = Math.hypot(A.def.moveTo[0] - A.def.at[0], A.def.moveTo[1] - A.def.at[1]); const v = dist / Math.max(0.2, (A.def.moveEnd - A.def.moveStart) * A.dur); tt = (t - sg.t0) * U.clamp(v / Ad.speed, 0.5, 2.2) + A.phase; } else tt = Ad.once || Ad.hold != null || Ad.settle != null ? t - sg.t0 : (t + A.phase) * (Ad.rate || 1);
+        if (Ad.mix && !sg.moving) { list.push({ id: sg.id, time: tt, weight: w * Ad.mix }); list.push({ id: Ad.mixWith || MT.IDLE, time: t + A.phase, weight: w * (1 - Ad.mix) }); } else list.push({ id: sg.id, time: tt, weight: w });
         total += w;
       }
     });
-    if (!list.length) list.push({ id: MT.IDLE, time: t + A.phase, weight: 1 });
-    else if (total > 0) list.forEach((x) => (x.weight /= total));
+    if (!list.length) list.push({ id: MT.IDLE, time: t + A.phase, weight: 1 }); else if (total > 0) list.forEach((x) => (x.weight /= total));
     actor.pose(list, t);
     for (const x of list) {
       const Ad = GEN.ACTIONS[x.id] || {};
       if (Ad.pose || Ad.headDown || Ad.look) GEN.applyPose(actor, Ad.pose, x.weight, t, { headDown: Ad.headDown ? Ad.headDown * x.weight : 0, look: Ad.look && x.weight > 0.5 });
     }
+    actor.group.updateMatrixWorld(true);
+    if (GEN.staticWardrobe) GEN.staticWardrobe(actor);
+    A.poseLocked = true;
   };
-  const SHOT_DIST = { wide: 1.0, medium: 0.55, close: 0.3, extreme_close: 0.18, over_shoulder: 0.45, low: 0.6, high: 0.8, aerial: 2.4, insert: 0.22, pov: 0.5 };
+  const propBounds = (S, wanted) => { if (!wanted) return null; let object = null; S.scene.traverseVisible((o) => { if (!object && o.name === wanted) object = o; }); if (!object) return null; object.updateWorldMatrix(true, true); const bounds = new T.Box3().setFromObject(object); return bounds.isEmpty() ? null : bounds; };
   const shotCamera = (S, stg) => {
     const L = S.L;
     const cam = stg.camera || {};
     const focus = cam.focus ? S.actors.filter((a) => a.def.cast === cam.focus) : S.actors;
-    const pts = focus.length ? focus.map((a) => a.def.at) : [L.stage.center];
-    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length,
-      cz = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const bounds = propBounds(S, cam.focusProp);
+    const propPoint = bounds ? bounds.getCenter(new T.Vector3()).toArray() : null;
+    const anchor = propPoint || (!focus.length && cam.target ? cam.target : null);
+    const pts = anchor ? [[anchor[0], anchor[2]]] : focus.length ? focus.map((a) => a.def.at) : [L.stage.center];
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cz = pts.reduce((s, p) => s + p[1], 0) / pts.length;
     let spread = 0;
     for (const p of pts) spread = Math.max(spread, Math.hypot(p[0] - cx, p[1] - cz));
     const shot = cam.shot || MT.MEDIUM;
@@ -259,7 +183,7 @@
     const fov = cam.fov || (shot === MT.CLOSE || shot === MT.EXTREME_CLOSE || shot === MT.INSERT ? 32 : shot === MT.WIDE || shot === MT.AERIAL ? 45 : 38);
     const span = shot === MT.WIDE ? Math.max(6, spread * 2 + 5) : shot === MT.AERIAL ? Math.max(14, spread * 2 + 10) : shot === MT.MEDIUM ? Math.max(2.4, spread * 2 + 1.6) : shot === MT.CLOSE ? 1.1 : shot === MT.EXTREME_CLOSE ? 0.6 : shot === MT.INSERT ? 0.8 : Math.max(2.2, spread * 2 + 1.2);
     const d = span / 2 / Math.tan((fov / 2) * DEG) + 0.4;
-    const ty = shot === MT.CLOSE || shot === MT.EXTREME_CLOSE ? 1.55 : shot === MT.INSERT ? 1.0 : shot === MT.WIDE ? 1.2 : 1.35;
+    const ty = anchor ? anchor[1] : shot === MT.CLOSE || shot === MT.EXTREME_CLOSE ? 1.55 : shot === MT.INSERT ? 1.0 : shot === MT.WIDE ? 1.2 : 1.35;
     let py = ty + (shot === MT.LOW ? -0.9 : shot === MT.HIGH ? 3.5 : shot === MT.AERIAL ? d * 0.8 : 0.15);
     if (shot === MT.OVER_SHOULDER && focus.length && S.actors.length > 1) {
       const A = focus[0];
@@ -269,166 +193,14 @@
       const p = new T.Vector3(B.def.at[0], 1.65, B.def.at[1]).addScaledVector(v, 0.9).addScaledVector(side, 0.45);
       return { pos: p.toArray(), target: [A.def.at[0], 1.5, A.def.at[1]], fov: 36 };
     }
-    const yawOff = shot === MT.WIDE ? 0 : 12 * DEG;
+    const requestedAngle = Number.isFinite(Number(cam.angle)) ? Number(cam.angle) : shot === MT.WIDE ? 0 : 12;
+    const yawOff = requestedAngle * DEG;
     dir.applyAxisAngle(new T.Vector3(0, 1, 0), yawOff);
     return { pos: [cx + dir.x * d, py, cz + dir.z * d], target: [cx, ty, cz], fov };
   };
   const project = (cam, v) => v.clone().project(cam);
   const SEATED = [MT.SIT, MT.SIT_TALK, MT.SIT_DOWN, MT.STAND_UP, MT.DRIVE, MT.LIE, MT.FALL_DEAD, MT.GET_UP, MT.SWIM, MT.TREAD_WATER, MT.CLIMB, MT.KNEEL_FIX];
-  const snapToGround = (S) => {
-    if (!S.occluders.length) return;
-    const ray = new T.Raycaster();
-    const down = new T.Vector3(0, -1, 0);
-    const nm = new T.Matrix3();
-    const surfaces = (x, z, top) => {
-      ray.set(new T.Vector3(x, top, z), down);
-      ray.far = 4;
-      const out = [];
-      for (const h of ray.intersectObjects(S.occluders, true)) {
-        if (!h.face || !h.object.material || h.object.material.transparent) continue;
-        nm.getNormalMatrix(h.object.matrixWorld);
-        const n = h.face.normal.clone().applyMatrix3(nm).normalize();
-        if (n.y >= 0.6) out.push(h.point.y);
-      }
-      return out;
-    };
-    const broad = (x, z, y) => {
-      let ok = 0;
-      for (const [ox, oz] of [[0.25, 0], [-0.25, 0], [0, 0.25], [0, -0.25]]) if (surfaces(x + ox, z + oz, y + 0.3).some((v) => Math.abs(v - y) < 0.08)) ok++;
-      return ok >= 3;
-    };
-    const floorAt = (x, z, y0) => {
-      const ys = surfaces(x, z, y0 + 1.2).sort((a, b) => b - a);
-      for (const y of ys) if (y <= y0 + 0.12 || broad(x, z, y)) return y;
-      return null;
-    };
-    S.lift = {};
-    for (const A of S.actors) {
-      const a = A.def;
-      if (a.seated) continue;
-      const y0 = a.y || 0;
-      const f = floorAt(a.at[0], a.at[1], y0);
-      if (f != null && f > y0 + 0.12 && f < y0 + 1.2) {
-        a.y = +f.toFixed(3);
-        S.lift[a.cast] = f - y0;
-        S.preIssues.push(a.cast + MT.STOOD_INSIDE_GROUND + (f - y0).toFixed(2) + MT.M);
-      }
-    }
-  };
-  const SIT_ACTIONS = [MT.SIT, MT.SIT_TALK, MT.SIT_DOWN, MT.STAND_UP];
-  const backOf = (o, bb) => {
-    const seatTop = bb.min.y + Math.min(0.48, (bb.max.y - bb.min.y) * 0.6) + 0.12;
-    const cx = (bb.min.x + bb.max.x) / 2,
-      cz = (bb.min.z + bb.max.z) / 2;
-    const v = new T.Vector3();
-    let sx = 0,
-      sz = 0,
-      n = 0;
-    o.traverse((m) => {
-      if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return;
-      const pos = m.geometry.attributes.position;
-      const step = Math.max(1, Math.floor(pos.count / 400));
-      for (let i = 0; i < pos.count; i += step) {
-        v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
-        if (v.y < seatTop) continue;
-        sx += v.x;
-        sz += v.z;
-        n++;
-      }
-    });
-    if (n < 12) return null;
-    const dx = cx - sx / n,
-      dz = cz - sz / n;
-    const len = Math.hypot(dx, dz);
-    const size = Math.min(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
-    if (len < Math.max(0.04, size * 0.12)) return null;
-    return new T.Vector3(dx / len, 0, dz / len);
-  };
-  const seatActors = (S, stg) => {
-    const sitters = S.actors.filter((A) => SIT_ACTIONS.includes(A.def.action) && !A.def.moveTo);
-    if (!sitters.length) return;
-    const seats = [];
-    if (S.locRoot) {
-      S.locRoot.updateMatrixWorld(true);
-      const visit = (o, inSeat) => {
-        const label = String(o.name || "") + " " + String((o.userData && o.userData.ref) || "");
-        const isSeat = !inSeat && o !== S.locRoot && MT.SEAT_RE.test(label) && !MT.NOT_SEAT_RE.test(label);
-        if (isSeat && o.visible !== false) {
-          const bb = new T.Box3().setFromObject(o);
-          if (!bb.isEmpty() && bb.max.y - bb.min.y > 0.3 && bb.max.y - bb.min.y < 1.6) {
-            const q = new T.Quaternion();
-            o.getWorldQuaternion(q);
-            let f = new T.Vector3(0, 0, 1).applyQuaternion(q);
-            f.y = 0;
-            if (f.lengthSq() < 1e-4) f.set(0, 0, 1);
-            f.normalize();
-            const back = backOf(o, bb);
-            if (back) f = back;
-            seats.push({ bb, f, used: 0, name: o.name || MT.SEAT });
-          }
-        }
-        for (const c of o.children) visit(c, inSeat || isSeat);
-      };
-      visit(S.locRoot, false);
-    }
-    const camPos = stg.camera && stg.camera.pos;
-    for (const A of sitters) {
-      const a = A.def;
-      let best = null;
-      for (const s of seats) {
-        const cx = (s.bb.min.x + s.bb.max.x) / 2,
-          cz = (s.bb.min.z + s.bb.max.z) / 2;
-        const d = Math.hypot(cx - a.at[0], cz - a.at[1]) + s.used * 0.8;
-        if (d < 1.8 && (!best || d < best.d)) best = { s, d, cx, cz };
-      }
-      if (best) {
-        const { s } = best;
-        const side = new T.Vector3(s.f.z, 0, -s.f.x);
-        const halfW = Math.abs(side.x) * (s.bb.max.x - s.bb.min.x) / 2 + Math.abs(side.z) * (s.bb.max.z - s.bb.min.z) / 2;
-        const halfD = Math.abs(s.f.x) * (s.bb.max.x - s.bb.min.x) / 2 + Math.abs(s.f.z) * (s.bb.max.z - s.bb.min.z) / 2;
-        const lat = U.clamp((a.at[0] - best.cx) * side.x + (a.at[1] - best.cz) * side.z, -Math.max(0, halfW - 0.3), Math.max(0, halfW - 0.3));
-        const sx = best.cx + side.x * lat + s.f.x * halfD * 0.1,
-          sz = best.cz + side.z * lat + s.f.z * halfD * 0.1;
-        const seatY = s.bb.min.y + Math.min(0.48, (s.bb.max.y - s.bb.min.y) * 0.6);
-        a.at = [sx + s.f.x * MT.SIT_HIP_BACK, sz + s.f.z * MT.SIT_HIP_BACK];
-        a.y = +(seatY - MT.SIT_SEAT_H).toFixed(3);
-        a.face = (Math.atan2(s.f.x, s.f.z) * 180) / Math.PI;
-        a.seated = true;
-        delete a.faceAt;
-        delete a.faceActor;
-        s.used++;
-        S.reachIssues.push(a.cast + MT.SEATED_ON + s.name);
-      } else {
-        let yaw = typeof a.face === MT.NUMBER ? a.face * DEG : a.faceAt ? yawTo(a.at, a.faceAt) : camPos ? yawTo(a.at, [camPos[0], camPos[2]]) : 0;
-        a.face = (yaw * 180) / Math.PI;
-        a.seated = true;
-        delete a.faceAt;
-        delete a.faceActor;
-        const fx = Math.sin(yaw),
-          fz = Math.cos(yaw);
-        const sx = a.at[0] - fx * MT.SIT_HIP_BACK,
-          sz = a.at[1] - fz * MT.SIT_HIP_BACK;
-        const chair = { shape: MT.GROUP, name: MT.AUTO_CHAIR, pos: [sx, a.y || 0, sz], rot: [0, a.face, 0], children: MT.CHAIR_NODES };
-        GEN.buildNodes(GEN.cleanNodes([chair], GEN.newState({}), MT.PROPS), S.env, S.locRoot);
-        S.reachIssues.push(a.cast + MT.NO_SEAT_CHAIR_ADDED);
-      }
-    }
-  };
   const reaches = (a) => !!a.faceAt && !a.moveTo && !SEATED.includes(a.action) && [a.action, a.then].some((x) => MT.REACH_ACTIONS.includes(x));
-  const reachTargets = (S) => {
-    S.reachIssues = [];
-    for (const A of S.actors) {
-      const a = A.def;
-      if (!reaches(a)) continue;
-      const dx = a.at[0] - a.faceAt[0],
-        dz = a.at[1] - a.faceAt[1];
-      const d = Math.hypot(dx, dz);
-      if (d < 1e-3 || (d >= 0.35 && d <= 0.85)) continue;
-      const want = d > 0.85 ? 0.6 : 0.45;
-      a.at = [a.faceAt[0] + (dx / d) * want, a.faceAt[1] + (dz / d) * want];
-      S.reachIssues.push(a.cast + MT.MOVED_CLOSER_TO_REACH + Math.abs(d - want).toFixed(2) + MT.M_PAREN);
-    }
-  };
   const walkBoxes = (S) => {
     if (S.walkBoxes) return S.walkBoxes;
     const boxes = [];
@@ -443,87 +215,7 @@
     S.walkBoxes = boxes;
     return boxes;
   };
-  const checkPaths = (S) => {
-    const boxes = walkBoxes(S);
-    const m = 0.2;
-    const hit = (x, z, y) => boxes.find((b) => y + 0.35 < b.bb.max.y && y + 1.2 > b.bb.min.y && x > b.bb.min.x - m && x < b.bb.max.x + m && z > b.bb.min.z - m && z < b.bb.max.z + m);
-    for (const A of S.actors) {
-      const a = A.def;
-      if (!a.moveTo) continue;
-      const dx = a.moveTo[0] - a.at[0],
-        dz = a.moveTo[1] - a.at[1];
-      const len = Math.hypot(dx, dz);
-      if (len < 0.05) continue;
-      const y = a.y || 0;
-      let free = 0;
-      let blocker = null;
-      for (let d = 0.2; d <= len + 1e-6; d += 0.2) {
-        const k = Math.min(1, d / len);
-        const b = hit(a.at[0] + dx * k, a.at[1] + dz * k, y);
-        if (b) {
-          blocker = b;
-          break;
-        }
-        free = Math.min(d, len);
-      }
-      if (!blocker) continue;
-      if (free < 0.6) {
-        a.faceAt = a.faceAt || a.moveTo.slice();
-        delete a.moveTo;
-        if (LOCOMOTION.includes(a.action)) a.action = a.then || MT.IDLE;
-        A.segs = planActor(a, S.dur);
-        S.preIssues.push(a.cast + MT.PATH_BLOCKED_BY + blocker.name + MT.STAYS_IN_PLACE);
-      } else {
-        const k = (free - 0.1) / len;
-        a.moveTo = [a.at[0] + dx * k, a.at[1] + dz * k];
-        A.segs = planActor(a, S.dur);
-        S.preIssues.push(a.cast + MT.PATH_BLOCKED_BY + blocker.name + MT.WALK_SHORTENED + (len - free + 0.1).toFixed(1) + MT.M);
-      }
-    }
-  };
-  const resolveOverlaps = (S) => {
-    const boxes = walkBoxes(S);
-    S.issues = S.issues || [];
-    S.preIssues = (S.reachIssues || []).slice();
-    for (const A of S.actors) {
-      if (SEATED.includes(A.def.action)) continue;
-      for (const key of [MT.AT_2, MT.MOVETO_2]) {
-        const p = A.def[key];
-        if (!p) continue;
-        for (const b of boxes) {
-          const m = 0.22;
-          if (p[0] > b.bb.min.x - m && p[0] < b.bb.max.x + m && p[1] > b.bb.min.z - m && p[1] < b.bb.max.z + m) {
-            const opts = [
-              [b.bb.min.x - m - 0.05 - p[0], 0],
-              [b.bb.max.x + m + 0.05 - p[0], 0],
-              [0, b.bb.min.z - m - 0.05 - p[1]],
-              [0, b.bb.max.z + m + 0.05 - p[1]],
-            ].sort((u, v) => Math.hypot(u[0], u[1]) - Math.hypot(v[0], v[1]));
-            const d = opts[0];
-            if (Math.hypot(d[0], d[1]) > 1.6) {
-              S.preIssues.push(A.def.cast + MT.STANDS_INSIDE + b.name + MT.SYMBOL_16);
-              continue;
-            }
-            A.def[key] = [p[0] + d[0], p[1] + d[1]];
-            S.preIssues.push(A.def.cast + MT.WAS_INSIDE + b.name + MT.MOVED + Math.hypot(d[0], d[1]).toFixed(2) + MT.M);
-            break;
-          }
-        }
-      }
-    }
-  };
-  const solidsOf = (S) => {
-    if (S.solids) return S.solids;
-    const tops = new Set();
-    for (const o of S.occluders) {
-      let t = o;
-      while (t.parent && t.parent !== S.locRoot) t = t.parent;
-      tops.add(t);
-    }
-    S.solids = [...tops].map((o) => ({ o, b: new T.Box3().setFromObject(o).expandByScalar(0.35) })).filter((x) => !x.b.isEmpty());
-    for (const b of S.glass || []) S.solids.push({ o: { name: MT.GLASS }, b });
-    return S.solids;
-  };
+  const solidsOf = (S) => { if (S.solids) return S.solids; S.solids = S.occluders.map((o) => ({ o, b: new T.Box3().setFromObject(o).expandByScalar(0.08) })).filter((x) => !x.b.isEmpty()); for (const b of S.glass || []) S.solids.push({ o: { name: MT.GLASS }, b }); return S.solids; };
   const clearCamera = (S, cam, tgt, issues) => {
     if (!S.occluders.length) return;
     const boxes = solidsOf(S).filter((x) => !x.b.containsPoint(tgt));
@@ -537,10 +229,7 @@
     let best = null;
     for (let d = 0.15; d < total - 0.6; d += 0.15) {
       const v = start.clone().addScaledVector(dir, d);
-      if (!blocked(v)) {
-        best = v;
-        break;
-      }
+      if (!blocked(v)) { best = v; break; }
     }
     let up = start.clone();
     for (let i = 0; i < 6; i++) {
@@ -556,13 +245,7 @@
     cam.lookAt(tgt);
     cam.updateMatrixWorld(true);
   };
-  const rayClear = (S, from, to) => {
-    const d = to.clone().sub(from);
-    const len = d.length();
-    if (len < 1e-3) return true;
-    const ray = new T.Raycaster(from, d.normalize(), 0.3, len);
-    return !ray.intersectObjects(S.occluders, true).some((h) => h.object.material && !h.object.material.transparent);
-  };
+  const rayClear = (S, from, to) => { const d = to.clone().sub(from); const len = d.length(); if (len < 1e-3) return true; const ray = new T.Raycaster(from, d.normalize(), 0.3, len); return !ray.intersectObjects(S.occluders, true).some((h) => h.object.material && !h.object.material.transparent); };
   const reangleCamera = (S, cam, want, tgt, shot, issues) => {
     if (!S.occluders.length) return;
     const wantDist = want.distanceTo(tgt);
@@ -596,21 +279,14 @@
         }
         const turn = Math.min(i, 24 - i) / 12;
         const score = Math.min(len, flat) - turn * 0.6;
-        if (len >= 0.8 && score > bestScore) {
-          bestScore = score;
-          const r = Math.min(flat, len);
-          best = new T.Vector3(tgt.x + Math.sin(a) * r, want.y, tgt.z + Math.cos(a) * r);
-        }
+        if (len >= 0.8 && score > bestScore) { bestScore = score; const r = Math.min(flat, len); best = new T.Vector3(tgt.x + Math.sin(a) * r, want.y, tgt.z + Math.cos(a) * r); }
       }
     }
     if (!best) return;
     cam.position.copy(best);
     issues.push(MT.CAMERA_WAS_BEHIND + MT.GEOMETRY + MT.MOVED_IN_FRONT);
   };
-  const inStage = (S, v) => {
-    const st = S.L && S.L.stage;
-    return !S.interior || !st || (Math.abs(v.x - st.center[0]) <= st.size[0] / 2 + 2 && Math.abs(v.z - st.center[1]) <= st.size[1] / 2 + 2);
-  };
+  const inStage = (S, v) => { const st = S.L && S.L.stage; return !S.interior || !st || (Math.abs(v.x - st.center[0]) <= st.size[0] / 2 + 2 && Math.abs(v.z - st.center[1]) <= st.size[1] / 2 + 2); };
   const limitPitch = (cam, tgt, shot, issues) => {
     if (shot === MT.HIGH || shot === MT.AERIAL || shot === MT.INSERT) return;
     const flat = Math.hypot(cam.position.x - tgt.x, cam.position.z - tgt.z);
@@ -625,10 +301,7 @@
     const want = SHOT_SIZE[shot];
     if (!want || !subjects.length) return;
     cam.updateMatrixWorld(true);
-    let top = -Infinity,
-      bot = Infinity,
-      headTopY = -Infinity,
-      lowY = Infinity;
+    let top = -Infinity, bot = Infinity, headTopY = -Infinity, lowY = Infinity;
     const v = new T.Vector3();
     for (const A of subjects) {
       const b = A.actor.bones;
@@ -639,8 +312,7 @@
       const low = lowBone.getWorldPosition(v.clone());
       headTopY = Math.max(headTopY, head.y);
       lowY = Math.min(lowY, low.y);
-      const qh = project(cam, head),
-        ql = project(cam, low);
+      const qh = project(cam, head), ql = project(cam, low);
       if (qh.z > 1 || ql.z > 1) return;
       top = Math.max(top, qh.y, ql.y);
       bot = Math.min(bot, qh.y, ql.y);
@@ -671,15 +343,7 @@
     cam.updateMatrixWorld(true);
     issues.push(MT.SHOT_RESIZED + shot + MT.SHOT_RESIZED_2 + (done - d).toFixed(1) + MT.M);
   };
-  const framedShare = (cam, pts, m) => {
-    cam.updateMatrixWorld(true);
-    let n = 0;
-    for (const p of pts) {
-      const q = project(cam, p);
-      if (q.z < 1 && Math.abs(q.x) <= m && Math.abs(q.y) <= m) n++;
-    }
-    return pts.length ? n / pts.length : 1;
-  };
+  const framedShare = (cam, pts, m) => { cam.updateMatrixWorld(true); let n = 0; for (const p of pts) { const q = project(cam, p); if (q.z < 1 && Math.abs(q.x) <= m && Math.abs(q.y) <= m) n++; } return pts.length ? n / pts.length : 1; };
   const rescueFraming = (S, cam, tgt, subjects, pts, shot, issues) => {
     if (!subjects.length || !pts.length) return;
     const share0 = framedShare(cam, pts, 1);
@@ -713,11 +377,7 @@
         const score = share - (Math.abs(Math.abs(off) - ideal) / Math.PI) * 0.3 - Math.abs(d - dists[0]) * 0.02;
         if (!best || score > best.score) best = { v, score, share };
       }
-    if (best && (away ? best.share >= Math.max(0.85, share0 - 0.05) : best.share > share0)) {
-      cam.position.copy(best.v);
-      tgt.copy(look);
-      issues.push(MT.CAMERA_REFRAMED_ON + subjects[0].def.cast);
-    } else cam.position.copy(save);
+    if (best && (away ? best.share >= Math.max(0.85, share0 - 0.05) : best.share > share0)) { cam.position.copy(best.v); tgt.copy(look); issues.push(MT.CAMERA_REFRAMED_ON + subjects[0].def.cast); } else cam.position.copy(save);
     cam.lookAt(tgt);
     const fov0 = cam.fov;
     while (framedShare(cam, pts, 1) < 0.85 && cam.fov < 68) {
@@ -739,22 +399,98 @@
       light.getWorldPosition(wp);
       let d = Infinity;
       for (const p of pts) d = Math.min(d, p.distanceTo(wp));
-      if (d >= 1.2) continue;
-      const f = Math.max(0.1, (d / 1.2) * (d / 1.2));
-      light.userData.dim = f;
+      if (d >= 1.8) continue;
+      const f = Math.max(0.02, (d / 1.8) * (d / 1.8));
+      light.userData.dim = (light.userData.dim || 1) * f;
       light.intensity *= f;
     }
   };
+  const cameraSightClear = (S, from, to) => {
+    const delta = to.clone().sub(from), distance = delta.length();
+    if (distance < 0.25) return false;
+    const ray = new T.Raycaster(from, delta.normalize(), 0.05, distance - 0.18);
+    const detail = (S.stg.camera || {}).focusProp || (S.stg.camera || {}).shot === MT.INSERT;
+    const roots = detail ? S.scene.children : S.scene.children.filter((o) => !S.actors.some((A) => A.actor.group === o));
+    return !ray.intersectObjects(roots, true).some((h) => { if (!h.object.material || h.object.material.transparent) return false; for (let o = h.object; o && o !== S.scene; o = o.parent) if (!o.visible) return false; return true; });
+  };
+  const interiorCameraFree = (S, pos, target) => !solidsOf(S).some((x) => x.b.containsPoint(pos)) && cameraSightClear(S, pos, target);
+  const fitInteriorCamera = (S, cam, requested, target, issues) => {
+    for (const A of S.actors) updateActor(A, S, S.t0, cam);
+    const definition = S.stg.camera || {}, shot = definition.shot || MT.MEDIUM;
+    const subjects = definition.focus ? S.actors.filter((A) => A.def.cast === definition.focus) : S.actors;
+    const detail = definition.focusProp || shot === MT.INSERT;
+    const points = [], sightPoints = [];
+    const bounds = detail && propBounds(S, definition.focusProp);
+    if (bounds) for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) points.push(new T.Vector3(x, y, z));
+    for (const A of detail ? [] : subjects) {
+      const head = A.actor.bones.Head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0, 0.1, 0));
+      const chest = A.actor.bones[MT.SPINE_03].getWorldPosition(new T.Vector3());
+      sightPoints.push(head, head.clone().lerp(chest, 0.45), chest);
+      points.push(...GEN.actorBounds(A.actor, shot !== MT.WIDE));
+    }
+    if (subjects.length && !detail && !definition.target) { target.set(0, 0, 0); const anchors = shot === MT.CLOSE || shot === MT.EXTREME_CLOSE ? sightPoints.filter((_, i) => i % 3 === 0) : sightPoints; for (const p of anchors) target.add(p); target.divideScalar(anchors.length); if (shot === MT.WIDE) target.y -= 0.25; }
+    if (!sightPoints.length || detail) { sightPoints.length = 0; sightPoints.push(target.clone()); }
+    const yaw = Math.atan2(requested.x - target.x, requested.z - target.z);
+    const minimum = shot === MT.WIDE ? 2.2 : shot === MT.MEDIUM ? 1.1 : 0.6;
+    const preferred = Math.max(minimum, requested.distanceTo(target));
+    const candidates = [requested.clone(), new T.Vector3(...S.L.camera.pos)];
+    const distances = [preferred, 0.85, 1.2, 1.6, 2.2, 3, 4, 5.5];
+    for (const distance of distances)
+      for (let i = 0; i < 16; i++) {
+        const angle = yaw + ((Math.ceil(i / 2) * Math.PI) / 8) * (i % 2 ? 1 : -1);
+        for (const height of [target.y + 0.1, target.y + 0.4]) {
+          candidates.push(new T.Vector3(target.x + Math.sin(angle) * distance, Math.max(0.5, height), target.z + Math.cos(angle) * distance));
+        }
+      }
+    let best = null;
+    const originalFov = cam.fov;
+    for (const pos of candidates) {
+      if (pos.distanceTo(target) < minimum) continue;
+      if (solidsOf(S).some((x) => x.b.containsPoint(pos))) continue;
+      const visible = sightPoints.filter((p) => cameraSightClear(S, pos, p)).length / sightPoints.length;
+      if (visible < 0.5) continue;
+      for (const fov of [originalFov, Math.max(originalFov, 48), Math.max(originalFov, 60)]) {
+        cam.fov = fov;
+        cam.updateProjectionMatrix();
+        cam.position.copy(pos);
+        cam.lookAt(target);
+        const share = framedShare(cam, points, 0.92);
+        const turn = Math.acos(U.clamp(Math.cos(Math.atan2(pos.x - target.x, pos.z - target.z) - yaw), -1, 1));
+        const projected = points.map((p) => project(cam, p));
+        const size = projected.length ? (Math.max(...projected.map((p) => p.y)) - Math.min(...projected.map((p) => p.y))) / 2 : 0;
+        const desiredSize = shot === MT.WIDE ? 0.42 : shot === MT.MEDIUM ? 0.6 : 0.72;
+        const sizingPenalty = points.length ? Math.abs(size - desiredSize) * 2 : 0;
+        let facingScore = 0;
+        if (!detail && subjects.length && definition.view !== MT.REAR && shot !== MT.OVER_SHOULDER) {
+          for (const A of subjects) {
+            const g = A.actor.group, direction = pos.clone().sub(g.position);
+            direction.y = 0;
+            direction.normalize();
+            facingScore += direction.x * Math.sin(g.rotation.y) + direction.z * Math.cos(g.rotation.y);
+          }
+          facingScore /= subjects.length;
+          facingScore = definition.view === MT.PROFILE ? -Math.abs(facingScore) : Math.min(0, facingScore);
+        }
+        const score = visible * 8 + share * 3 + facingScore * 3 - sizingPenalty - Math.abs(pos.distanceTo(target) - preferred) * 0.15 - turn * 0.6 - (fov - originalFov) * 0.015;
+        if (!best || score > best.score) best = { pos: pos.clone(), fov, score, visible };
+      }
+    }
+    if (best) { cam.position.copy(best.pos); cam.fov = best.fov; if (best.pos.distanceTo(requested) > 0.1) issues.push(MT.INTERIOR_CAMERA_RELOCATED_FOR_CLEAR_SUBJECT_VISIBILITY); } else { cam.position.copy(requested); cam.fov = originalFov; issues.push(MT.NO_UNOBSTRUCTED_INTERIOR_CAMERA_FOUND_STAGING_REQUIRES_REVIEW); }
+    cam.updateProjectionMatrix();
+    cam.lookAt(target);
+    cam.updateMatrixWorld(true);
+    return { pos: cam.position.clone(), tgt: target, issues };
+  };
   const fitCamera = (S, camDef, sampleTimes) => {
     const cam = S.camera;
-    const pos = new T.Vector3(...camDef.pos),
-      tgt = new T.Vector3(...camDef.target);
+    const pos = new T.Vector3(...camDef.pos), tgt = new T.Vector3(...camDef.target);
     cam.fov = camDef.fov;
     cam.position.copy(pos);
     cam.lookAt(tgt);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld(true);
     const issues = [];
+    if (S.interior) return fitInteriorCamera(S, cam, pos, tgt, issues);
     clearCamera(S, cam, tgt, issues);
     if (!S.actors.length) return { pos: cam.position.clone(), tgt, issues };
     const focusKey = (S.stg.camera || {}).focus;
@@ -768,16 +504,7 @@
     }
     for (const A of subjects) if (reaches(A.def)) pts.push(new T.Vector3(A.def.faceAt[0], 1.0, A.def.faceAt[1]));
     const margin = shot === MT.CLOSE || shot === MT.EXTREME_CLOSE || shot === MT.INSERT ? 1.15 : 0.9;
-    const outside = () => {
-      cam.updateMatrixWorld(true);
-      let worst = 0;
-      for (const p of pts) {
-        const q = project(cam, p);
-        if (q.z > 1) worst = Math.max(worst, 5);
-        else worst = Math.max(worst, Math.abs(q.x) - margin, (q.y > 0 ? q.y : -q.y) - margin);
-      }
-      return worst;
-    };
+    const outside = () => { cam.updateMatrixWorld(true); let worst = 0; for (const p of pts) { const q = project(cam, p); if (q.z > 1) worst = Math.max(worst, 5); else worst = Math.max(worst, Math.abs(q.x) - margin, (q.y > 0 ? q.y : -q.y) - margin); } return worst; };
     const back = pos.clone().sub(tgt).normalize();
     let steps = 0;
     if (shot !== MT.CLOSE && shot !== MT.EXTREME_CLOSE && shot !== MT.INSERT) {
@@ -793,18 +520,12 @@
     for (const A of S.actors) {
       const h = A.actor.bones.Head.getWorldPosition(new T.Vector3());
       const dd = cam.position.distanceTo(h);
-      if (dd < 0.7) {
-        cam.position.addScaledVector(back, 0.8 - dd);
-        issues.push(MT.CAMERA_TOO_CLOSE_TO + A.def.cast);
-      }
+      if (dd < 0.7) { cam.position.addScaledVector(back, 0.8 - dd); issues.push(MT.CAMERA_TOO_CLOSE_TO + A.def.cast); }
       for (const bn of [MT.SPINE_03, MT.PELVIS]) {
         const bp = A.actor.bones[bn] && A.actor.bones[bn].getWorldPosition(new T.Vector3());
         if (!bp) continue;
         const db = cam.position.distanceTo(bp);
-        if (db < 0.6) {
-          cam.position.addScaledVector(back, 0.7 - db);
-          issues.push(MT.CAMERA_TOO_CLOSE_TO + A.def.cast);
-        }
+        if (db < 0.6) { cam.position.addScaledVector(back, 0.7 - db); issues.push(MT.CAMERA_TOO_CLOSE_TO + A.def.cast); }
       }
     }
     if (cam.position.y < 0.15) cam.position.y = 0.15;
@@ -815,11 +536,7 @@
       ray.set(tgt, dirToCam.normalize());
       ray.far = dist;
       const hits = ray.intersectObjects(S.occluders, true).filter((h) => h.object.material && !h.object.material.transparent && h.distance > 0.3);
-      if (hits.length) {
-        const h = hits[0];
-        cam.position.copy(tgt).addScaledVector(dirToCam, Math.max(0.8, h.distance - 0.25));
-        issues.push(MT.CAMERA_WAS_BEHIND + (h.object.parent && h.object.parent.name ? h.object.parent.name : h.object.name || MT.GEOMETRY) + MT.MOVED_IN_FRONT);
-      }
+      if (hits.length) { const h = hits[0]; cam.position.copy(tgt).addScaledVector(dirToCam, Math.max(0.8, h.distance - 0.25)); issues.push(MT.CAMERA_WAS_BEHIND + (h.object.parent && h.object.parent.name ? h.object.parent.name : h.object.name || MT.GEOMETRY) + MT.MOVED_IN_FRONT); }
     }
     limitPitch(cam, tgt, shot, issues);
     clearCamera(S, cam, tgt, issues);
@@ -837,14 +554,7 @@
       const feet = project(cam, A.actor.bones.foot_l.getWorldPosition(new T.Vector3()));
       if (shot === MT.WIDE && Math.abs(head.y - feet.y) < 0.08) issues.push(A.def.cast + MT.LOOKS_VERY_SMALL_IN_THE_WIDE_SHOT);
     }
-    if (S.actors.length > 1) {
-      for (let i = 0; i < S.actors.length; i++)
-        for (let j = i + 1; j < S.actors.length; j++) {
-          const a = S.actors[i].def,
-            b = S.actors[j].def;
-          if (!a.moveTo && !b.moveTo && Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]) < 0.45) issues.push(a.cast + MT.AND + b.cast + MT.STAND_INSIDE_EACH_OTHER_CLOSER_THAN_0);
-        }
-    }
+    if (S.actors.length > 1) { for (let i = 0; i < S.actors.length; i++) for (let j = i + 1; j < S.actors.length; j++) { const a = S.actors[i].def, b = S.actors[j].def; if (!a.moveTo && !b.moveTo && Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]) < 0.45) issues.push(a.cast + MT.AND + b.cast + MT.STAND_INSIDE_EACH_OTHER_CLOSER_THAN_0); } }
     return { pos: cam.position.clone(), tgt, issues };
   };
   const moveCamera = (S, u, t) => {
@@ -853,8 +563,7 @@
     const m = (S.stg.camera || {}).move || MT.STATIC;
     const amt = (S.stg.camera || {}).amount == null ? 1 : S.stg.camera.amount;
     const k = U.ease(u);
-    const pos = c.pos.clone(),
-      tgt = c.tgt.clone();
+    const pos = c.pos.clone(), tgt = c.tgt.clone();
     const fwd = tgt.clone().sub(pos);
     const dist = fwd.length();
     fwd.normalize();
@@ -901,16 +610,7 @@
       case MT.FOLLOW: {
         const key = S.stg.camera.follow || (S.actors[0] && S.actors[0].def.cast);
         const A = S.actors.find((x) => x.def.cast === key);
-        if (A) {
-          const p0 = actorState(A, S.t0).pos,
-            p1 = actorState(A, t).pos;
-          const dx = p1[0] - p0[0],
-            dz = p1[1] - p0[1];
-          pos.x += dx;
-          pos.z += dz;
-          tgt.x += dx;
-          tgt.z += dz;
-        }
+        if (A) { const p0 = actorState(A, S.t0).pos, p1 = actorState(A, t).pos; const dx = p1[0] - p0[0], dz = p1[1] - p0[1]; pos.x += dx; pos.z += dz; tgt.x += dx; tgt.z += dz; }
         break;
       }
       case MT.HANDHELD:
@@ -918,16 +618,10 @@
       default:
         pos.addScaledVector(fwd, dist * 0.035 * k);
     }
-    if (m !== MT.HANDHELD && !S.handheld) {
-      pos.x += U.noise(t * 0.23, 11) * 0.012;
-      pos.y += U.noise(t * 0.19, 13) * 0.008;
-    }
-    if (m === MT.HANDHELD || S.handheld) {
-      pos.x += U.noise(t * 0.8, 3) * 0.035;
-      pos.y += U.noise(t * 0.9, 5) * 0.025;
-      tgt.x += U.noise(t * 0.6, 7) * 0.05;
-      tgt.y += U.noise(t * 0.7, 9) * 0.03;
-    }
+    if (m !== MT.HANDHELD && !S.handheld) { pos.x += U.noise(t * 0.23, 11) * 0.012; pos.y += U.noise(t * 0.19, 13) * 0.008; }
+    if (m === MT.HANDHELD || S.handheld) { pos.x += U.noise(t * 0.8, 3) * 0.035; pos.y += U.noise(t * 0.9, 5) * 0.025; tgt.x += U.noise(t * 0.6, 7) * 0.05; tgt.y += U.noise(t * 0.7, 9) * 0.03; }
+    if (S.interior && !interiorCameraFree(S, pos, tgt)) { const desired = pos.clone(); pos.copy(c.pos); for (let i = 1; i <= 12; i++) { const candidate = c.pos.clone().lerp(desired, i / 12); if (!interiorCameraFree(S, candidate, tgt)) break; pos.copy(candidate); } }
+    if (cam.isOrthographicCamera) { cam.zoom = c.pos.distanceTo(c.tgt) / Math.max(0.1, pos.distanceTo(tgt)); cam.updateProjectionMatrix(); }
     cam.position.copy(pos);
     cam.lookAt(tgt);
     cam.updateMatrixWorld(true);
@@ -942,14 +636,9 @@
     bleach: { tint: [1.0, 1.0, 0.98], lift: [0.02, 0.02, 0.02], sat: 0.55, con: 1.15 },
     vintage: { tint: [1.05, 0.98, 0.86], lift: [0.04, 0.03, 0.02], sat: 0.75, con: 0.98 },
   };
-  GEN.GRADES = Object.keys(GRADE);
   const gradePass = (name) => {
     const G = GRADE[name] || GRADE.neutral;
-    return new X.ShaderPass({
-      uniforms: { tDiffuse: { value: null }, uTint: { value: new T.Vector3(...G.tint) }, uLift: { value: new T.Vector3(...G.lift) }, uSat: { value: G.sat }, uCon: { value: G.con } },
-      vertexShader: MT.VARYING_VEC2_VUV_VOID_MAIN_VUV_UV,
-      fragmentShader: MT.UNIFORM_SAMPLER2D_TDIFFUSE_UNIFORM_VEC3_UTINT_UNIFORM,
-    });
+    return new X.ShaderPass({ uniforms: { tDiffuse: { value: null }, uTint: { value: new T.Vector3(...G.tint) }, uLift: { value: new T.Vector3(...G.lift) }, uSat: { value: G.sat }, uCon: { value: G.con } }, vertexShader: MT.VARYING_VEC2_VUV_VOID_MAIN_VUV_UV, fragmentShader: MT.UNIFORM_SAMPLER2D_TDIFFUSE_UNIFORM_VEC3_UTINT_UNIFORM, });
   };
   const envFor = (S, renderer) => {
     const key = S.locKey + MT.SYMBOL_20 + S.time + MT.SYMBOL_20 + S.stg.props.length + MT.SYMBOL_20 + (S.stg.hide || []).join(MT.SYMBOL_14);
@@ -959,10 +648,7 @@
     cc.position.set(S.L.stage.center[0], 1.6, S.L.stage.center[1]);
     const hidden = [];
     for (const A of S.actors) {
-      if (A.actor.group.visible) {
-        A.actor.group.visible = false;
-        hidden.push(A.actor.group);
-      }
+      if (A.actor.group.visible) { A.actor.group.visible = false; hidden.push(A.actor.group); }
     }
     cc.update(renderer, S.scene);
     for (const h of hidden) h.visible = true;
@@ -970,15 +656,7 @@
     const tex = pm.fromCubemap(rt.texture).texture;
     pm.dispose();
     rt.dispose();
-    if (envCache.size > 12) {
-      const first = envCache.keys().next().value;
-      try {
-        envCache.get(first).dispose();
-      } catch (e) {
-        void e;
-      }
-      envCache.delete(first);
-    }
+    if (envCache.size > 12) { const first = envCache.keys().next().value; try { envCache.get(first).dispose(); } catch (e) { void e; } envCache.delete(first); }
     envCache.set(key, tex);
     return tex;
   };
@@ -989,72 +667,28 @@
     const C = cleanGen(spec);
     const L = C.locations[stg.location];
     if (!L) throw new Error(MT.GEN3D_LOCATION + stg.location + MT.MISSING);
-    if (!stg.__clean) {
-      const v = GEN.validateStaging(stg, { locations: C.locations, cast: Object.keys(G.cast || {}) }).value;
-      Object.defineProperty(v, MT.CLEAN, { value: true, enumerable: false });
-      stg = v;
-    }
+    if (!stg.__clean) { const v = GEN.validateStaging(stg, { locations: C.locations, cast: Object.keys(G.cast || {}) }).value; Object.defineProperty(v, MT.CLEAN, { value: true, enumerable: false }); stg = v; }
     const time = stg.time || L.time || MT.DAY;
     const tp = Object.assign({}, TIME[time] || TIME.day);
     const interior = L.interior || time === MT.INTERIOR || time === MT.INTERIOR_DARK;
-    const W = ctx.W,
-      H = ctx.H;
+    const W = ctx.W, H = ctx.H;
     const renderer = ME.T3.renderer(W, H, { shadows: true });
     const scene = new T.Scene();
     const S = { locRoot: null, L, stg, scene, time, tp, interior, locKey: stg.location, actors: [], occluders: [], disposables: [], dur: stg.beatDur || ctx.dur || 5, t0: stg.tOffset || 0, shotDur: ctx.dur || 5, style: G.style || {} };
     const env = GEN.newBuildEnv({ materials: L.materials, defs: L.defs, root: scene, shadowBudget: ctx.preview ? 1 : 3 });
     S.env = env;
-    if (interior) scene.background = new T.Color(L.background || tp.background || MT.VALUE_101010);
-    else {
-      const dome = skyDome(L, tp, time);
-      scene.add(dome);
-      S.disposables.push(dome.geometry, dome.material);
-      if (time === MT.NIGHT && (!L.sky || L.sky.stars !== false)) {
-        const st = stars(900, 7);
-        scene.add(st);
-        S.disposables.push(st.geometry, st.material);
-      }
-    }
+    if (interior) scene.background = new T.Color(L.background || tp.background || MT.VALUE_101010); else { const dome = skyDome(L, tp, time); scene.add(dome); S.disposables.push(dome.geometry, dome.material); if (time === MT.NIGHT && (!L.sky || L.sky.stars !== false)) { const st = stars(900, 7); scene.add(st); S.disposables.push(st.geometry, st.material); } }
     const fogCol = new T.Color((L.fog && L.fog.color) || tp.fog || MT.VALUE_888888);
     scene.fog = new T.FogExp2(fogCol, L.fog ? L.fog.density : 0.008);
     const hasOwnSun = (L.nodes || []).some((n) => n.shape === MT.LIGHT && n.type === MT.SUN);
     const hasOwnHemi = (L.nodes || []).some((n) => n.shape === MT.LIGHT && (n.type === MT.HEMI || n.type === MT.AMBIENT));
-    if (!hasOwnHemi) {
-      const hemi = new T.HemisphereLight(tp.hemiSky, tp.hemiGround, tp.hemiI * (L.ambient == null ? 1 : L.ambient));
-      scene.add(hemi);
-    }
-    if (tp.sun && !hasOwnSun && !interior) {
-      const sun = new T.DirectionalLight(tp.sun, tp.sunI);
-      const sp = new T.Vector3().setFromSphericalCoords(60, (90 - tp.elev) * DEG, tp.az * DEG);
-      const c = L.stage.center;
-      sun.position.set(c[0] + sp.x, sp.y, c[1] + sp.z);
-      sun.target.position.set(c[0], 0, c[1]);
-      scene.add(sun.target);
-      sun.castShadow = true;
-      env.sun = sun;
-      scene.add(sun);
-    }
+    if (!hasOwnHemi) { const hemi = new T.HemisphereLight(tp.hemiSky, tp.hemiGround, tp.hemiI * (L.ambient == null ? 1 : L.ambient)); scene.add(hemi); }
+    if (tp.sun && !hasOwnSun && !interior) { const sun = new T.DirectionalLight(tp.sun, tp.sunI); const sp = new T.Vector3().setFromSphericalCoords(60, (90 - tp.elev) * DEG, tp.az * DEG); const c = L.stage.center; sun.position.set(c[0] + sp.x, sp.y, c[1] + sp.z); sun.target.position.set(c[0], 0, c[1]); scene.add(sun.target); sun.castShadow = true; env.sun = sun; scene.add(sun); }
     {
       const sun = env.sun;
-      if (sun) {
-        const ext = Math.max(L.stage.size[0], L.stage.size[1]) * 0.75 + 8;
-        sun.shadow.mapSize.set(ctx.preview ? 1024 : 2048, ctx.preview ? 1024 : 2048);
-        const sc = sun.shadow.camera;
-        sc.left = -ext;
-        sc.right = ext;
-        sc.top = ext;
-        sc.bottom = -ext;
-        sc.near = 1;
-        sc.far = 200;
-        sun.shadow.bias = -0.0004;
-        sun.shadow.normalBias = 0.025;
-        sun.shadow.radius = 3;
-      }
+      if (sun) { const ext = Math.max(L.stage.size[0], L.stage.size[1]) * 0.75 + 8; sun.shadow.mapSize.set(ctx.preview ? 1024 : 2048, ctx.preview ? 1024 : 2048); const sc = sun.shadow.camera; sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 1; sc.far = 200; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.025; sun.shadow.radius = 3; }
     }
-    if (!L.ground.none) {
-      const gm = { shape: MT.PLANE, size: L.ground.size, pos: [L.stage.center[0], 0, L.stage.center[1]], rot: [-90, 0, 0], mat: L.ground.mat };
-      GEN.buildNodes([gm], env, scene);
-    }
+    if (!L.ground.none) { const gm = { shape: MT.PLANE, size: L.ground.size, pos: [L.stage.center[0], 0, L.stage.center[1]], rot: [-90, 0, 0], mat: L.ground.mat }; GEN.buildNodes([gm], env, scene); }
     const locRoot = new T.Group();
     locRoot.name = MT.LOCATION;
     S.locRoot = locRoot;
@@ -1066,66 +700,93 @@
     locRoot.updateMatrixWorld(true);
     locRoot.traverse((o) => {
       if (o.isMesh && o.visible && o.geometry && o.material && !o.material.transparent) {
-        if (o.isInstancedMesh) o.computeBoundingBox();
-        else o.geometry.computeBoundingBox();
+        if (o.isInstancedMesh) o.computeBoundingBox(); else o.geometry.computeBoundingBox();
         const bb = o.isInstancedMesh ? o.boundingBox : o.geometry.boundingBox;
         const sz = new T.Vector3();
         bb.getSize(sz);
         if (sz.x * o.scale.x > 0.6 || sz.y * o.scale.y > 0.6) S.occluders.push(o);
-      } else if (o.isMesh && o.visible && o.material && o.material.transparent && (o.material.opacity == null || o.material.opacity > 0.1) && o.geometry) {
-        const bb = new T.Box3().setFromObject(o);
-        const sz = new T.Vector3();
-        bb.getSize(sz);
-        if (Math.max(sz.x, sz.y, sz.z) > 0.6 && sz.y > 0.4) (S.glass = S.glass || []).push(bb.expandByScalar(0.2));
-      }
+      } else if (o.isMesh && o.visible && o.material && o.material.transparent && (o.material.opacity == null || o.material.opacity > 0.1) && o.geometry) { const bb = new T.Box3().setFromObject(o); const sz = new T.Vector3(); bb.getSize(sz); if (Math.max(sz.x, sz.y, sz.z) > 0.6 && sz.y > 0.4) (S.glass = S.glass || []).push(bb.expandByScalar(0.2)); }
     });
     const fill = new T.DirectionalLight(tp.fillColor, tp.fill);
     scene.add(fill);
     scene.add(fill.target);
     S.fill = fill;
-    if (interior && !(L.nodes || []).some((n) => n.shape === MT.LIGHT && (n.type === MT.POINT || n.type === MT.SPOT))) {
-      const key = new T.PointLight(MT.FFE8CC, 30, 22, 2);
-      key.position.set(L.stage.center[0], 3.2, L.stage.center[1] + 1);
-      key.castShadow = !ctx.preview;
-      scene.add(key);
-    }
+    if (interior && !(L.nodes || []).some((n) => n.shape === MT.LIGHT && (n.type === MT.POINT || n.type === MT.SPOT))) { const key = new T.PointLight(MT.FFE8CC, 30, 22, 2); key.position.set(L.stage.center[0], 3.2, L.stage.center[1] + 1); key.castShadow = !ctx.preview; scene.add(key); }
     if (!opts.noActors) {
       for (const a of stg.actors || []) {
         const outfit = castOf(spec, a.cast);
         const actor = GEN.createActor(outfit, { style: S.style, materials: L.materials, seed: U.strHash(a.cast) });
-        if (a.hold) actor.hold(a.hold.nodes, a.hold.hand);
-        else if (a.action === MT.LANTERN || a.then === MT.LANTERN) actor.hold(GEN.cleanNodes(MT.LANTERN_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R);
-        else if (a.action === MT.TORCH || a.then === MT.TORCH) actor.hold(GEN.cleanNodes(MT.TORCH_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R);
+        if (interior) actor.model.traverse((o) => { if (o.material) o.material.envMapIntensity = 0.25; });
+        if (a.hold) actor.hold(a.hold.nodes, a.hold.hand); else if (a.action === MT.LANTERN || a.then === MT.LANTERN) actor.hold(GEN.cleanNodes(MT.LANTERN_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R); else if (a.action === MT.TORCH || a.then === MT.TORCH) actor.hold(GEN.cleanNodes(MT.TORCH_NODES, GEN.newState({}), MT.HOLD), MT.HAND_R);
         if (a.ghost) ghostify(actor, S);
         scene.add(actor.group);
         S.actors.push({ def: a, actor, segs: planActor(a, S.dur), dur: S.dur, phase: (U.strHash(a.cast + stg.location) % 997) / 97 + (a.offset || 0) });
       }
     }
-    reachTargets(S);
-    seatActors(S, stg);
-    resolveOverlaps(S);
-    snapToGround(S);
-    checkPaths(S);
-    const cam = new T.PerspectiveCamera(40, W / H, 0.05, 3000);
+    S.preIssues = [];
+    S.lift = {};
+    let cam = new T.PerspectiveCamera(40, W / H, 0.05, 3000);
     S.camera = cam;
     const camDef = stg.camera && stg.camera.pos && stg.camera.target ? { pos: stg.camera.pos, target: stg.camera.target, fov: stg.camera.fov || 38 } : shotCamera(S, stg);
+    const focusedBounds = propBounds(S, (stg.camera || {}).focusProp);
+    if ( focusedBounds && !focusedBounds .clone() .expandByScalar(0.08) .containsPoint(new T.Vector3(...camDef.target)) ) { camDef.target = focusedBounds.getCenter(new T.Vector3()).toArray(); stg.camera = Object.assign({}, stg.camera, { target: camDef.target }); }
     if (stg.camera && stg.camera.fov) camDef.fov = stg.camera.fov;
     const liftKey = (stg.camera || {}).focus;
     const lift = liftKey && S.lift[liftKey] != null ? S.lift[liftKey] : Math.max(0, ...Object.values(S.lift || {}));
-    if (lift > 0 && stg.camera && stg.camera.pos) {
-      camDef.pos = [camDef.pos[0], camDef.pos[1] + lift, camDef.pos[2]];
-      camDef.target = [camDef.target[0], camDef.target[1] + lift, camDef.target[2]];
-    }
+    if (lift > 0 && stg.camera && stg.camera.pos) { camDef.pos = [camDef.pos[0], camDef.pos[1] + lift, camDef.pos[2]]; camDef.target = [camDef.target[0], camDef.target[1] + lift, camDef.target[2]]; }
     const fit = fitCamera(S, camDef, [S.t0, S.t0 + S.shotDur * 0.5, S.t0 + S.shotDur]);
+    if (interior) for (const light of S.env.lights || []) { if (light.isPointLight || light.isSpotLight) { light.userData.dim = 0.22; light.intensity *= 0.22; } }
     dimNearActors(S, [S.t0, S.t0 + S.shotDur * 0.5, S.t0 + S.shotDur]);
+    S.flatDrawing = G.drawingMode === MT.VALUE_2D;
+    if (S.flatDrawing) {
+      const halfHeight = fit.pos.distanceTo(fit.tgt) * Math.tan((cam.fov * DEG) / 2);
+      cam = new T.OrthographicCamera((-halfHeight * W) / H, (halfHeight * W) / H, halfHeight, -halfHeight, 0.05, 3000);
+      cam.position.copy(fit.pos);
+      cam.lookAt(fit.tgt);
+      S.camera = cam;
+      scene.fog = null;
+      const flatMaterials = new Map();
+      const meshes = [];
+      scene.traverse((o) => {
+        if (o.isMesh) meshes.push(o);
+      });
+      for (const mesh of meshes) {
+        const flatten = (source) => {
+          if (!source || source.isShaderMaterial || source.isMeshBasicMaterial) return source;
+          if (flatMaterials.has(source)) return flatMaterials.get(source);
+          const flat = new T.MeshBasicMaterial({
+            color: source.color || 0xffffff,
+            map: source.map || null,
+            alphaMap: source.alphaMap || null,
+            alphaTest: source.alphaTest || 0,
+            transparent: source.transparent,
+            opacity: source.opacity,
+            side: source.side,
+            vertexColors: source.vertexColors,
+            depthWrite: source.depthWrite,
+            polygonOffset: source.polygonOffset,
+            polygonOffsetFactor: source.polygonOffsetFactor,
+            polygonOffsetUnits: source.polygonOffsetUnits,
+            toneMapped: false,
+          });
+          flatMaterials.set(source, flat);
+          S.disposables.push(flat);
+          return flat;
+        };
+        mesh.material = Array.isArray(mesh.material) ? mesh.material.map(flatten) : flatten(mesh.material);
+        const inActor = S.actors.some((a) => { let parent = mesh; while (parent) { if (parent === a.actor.group) return true; parent = parent.parent; } return false; });
+        if (!inActor && !mesh.isInstancedMesh && !mesh.isSkinnedMesh && mesh.geometry?.attributes.position?.count < 12000 && mesh.material?.side !== T.BackSide) {
+          const edges = new T.EdgesGeometry(mesh.geometry, 35);
+          const ink = new T.LineBasicMaterial({ color: 0x263342, transparent: true, opacity: 0.35, toneMapped: false });
+          mesh.add(new T.LineSegments(edges, ink));
+          S.disposables.push(edges, ink);
+        }
+      }
+    }
     S.cam0 = { pos: fit.pos, tgt: fit.tgt };
     S.issues = (S.preIssues || []).concat(fit.issues);
     const wx = weatherFx(stg.weather, L.stage.center);
-    if (wx) {
-      scene.add(wx);
-      S.weather = wx;
-      S.disposables.push(wx.geometry, wx.material);
-    }
+    if (wx) { scene.add(wx); S.weather = wx; S.disposables.push(wx.geometry, wx.material); }
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = (L.exposure || 1) * tp.exposure;
     renderer.shadowMap.enabled = true;
@@ -1133,26 +794,16 @@
     scene.environment = envFor(S, renderer);
     scene.environmentIntensity = tp.envI;
     const q = ctx.quality || {};
-    const useFx = X.EffectComposer && !opts.noFx;
+    const useFx = X.EffectComposer && !opts.noFx && !S.flatDrawing;
     if (useFx) {
       const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, samples: ctx.preview ? 0 : q.supersample > 1 ? 4 : 2 });
       const comp = new X.EffectComposer(renderer, rt);
       comp.setPixelRatio(1);
       comp.setSize(W, H);
       comp.addPass(new X.RenderPass(scene, cam));
-      if (!ctx.preview && X.GTAOPass && q.ao !== false) {
-        const ao = new X.GTAOPass(scene, cam, W, H);
-        ao.blendIntensity = 0.85;
-        ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1 });
-        comp.addPass(ao);
-        S.ao = ao;
-      }
+      if (!ctx.preview && X.GTAOPass && q.ao !== false) { const ao = new X.GTAOPass(scene, cam, W, H); ao.blendIntensity = 0.85; ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1 }); comp.addPass(ao); S.ao = ao; }
       const dof = stg.camera && stg.camera.dof;
-      if (!ctx.preview && X.BokehPass && dof) {
-        const bk = new X.BokehPass(scene, cam, { focus: 5, aperture: 0.0016 * dof, maxblur: 0.008 * dof });
-        comp.addPass(bk);
-        S.bokeh = bk;
-      }
+      if (!ctx.preview && X.BokehPass && dof) { const bk = new X.BokehPass(scene, cam, { focus: 5, aperture: 0.0016 * dof, maxblur: 0.008 * dof }); comp.addPass(bk); S.bokeh = bk; }
       const night = time === MT.NIGHT || time === MT.INTERIOR_DARK || time === MT.DUSK;
       if (X.UnrealBloomPass) comp.addPass(new X.UnrealBloomPass(new T.Vector2(W / 2, H / 2), night ? 0.42 : 0.22, 0.55, night ? 0.86 : 0.94));
       comp.addPass(new X.OutputPass());
@@ -1171,13 +822,7 @@
     GEN.animateLights(S.env, t);
     updateWeather(S.weather, t);
     const cam = S.camera;
-    if (S.env.billboards) {
-      const q = new T.Quaternion();
-      for (const b of S.env.billboards) {
-        b.parent.getWorldQuaternion(q);
-        b.quaternion.copy(q.invert().multiply(cam.quaternion));
-      }
-    }
+    if (S.env.billboards) { const q = new T.Quaternion(); for (const b of S.env.billboards) { b.parent.getWorldQuaternion(q); b.quaternion.copy(q.invert().multiply(cam.quaternion)); } }
     const fd = new T.Vector3();
     cam.getWorldDirection(fd);
     S.fill.position
@@ -1187,9 +832,10 @@
     S.fill.target.position.copy(cam.position).addScaledVector(fd, 10);
     if (S.bokeh) S.bokeh.uniforms.focus.value = S.focusDist || 5;
     const renderer = ME.T3.renderer(ctx.W, ctx.H, { shadows: true });
-    renderer.toneMappingExposure = (S.L.exposure || 1) * S.tp.exposure;
-    if (S.composer) S.composer.render();
-    else renderer.render(S.scene, cam);
+    renderer.toneMapping = S.flatDrawing ? T.NoToneMapping : T.ACESFilmicToneMapping;
+    renderer.shadowMap.enabled = !S.flatDrawing;
+    renderer.toneMappingExposure = S.flatDrawing ? 1 : (S.L.exposure || 1) * S.tp.exposure;
+    if (S.composer) S.composer.render(); else renderer.render(S.scene, cam);
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(renderer.domElement, 0, 0, ctx.W, ctx.H);
@@ -1206,20 +852,8 @@
         void e;
       }
     }
-    if (S.composer) {
-      try {
-        S.composer.dispose();
-      } catch (e) {
-        void e;
-      }
-    }
-    if (S.ao) {
-      try {
-        S.ao.dispose();
-      } catch (e) {
-        void e;
-      }
-    }
+    if (S.composer) { try { S.composer.dispose(); } catch (e) { void e; } }
+    if (S.ao) { try { S.ao.dispose(); } catch (e) { void e; } }
   };
   ME.registerTemplate(MT.GEN3D, {
     name: MT.AI_3D_SCENE,
@@ -1248,10 +882,8 @@
     for (const sh of spec.shots || []) {
       if (sh.template !== MT.GEN3D) continue;
       for (const a of (sh.params && sh.params.actors) || []) {
-        const act = GEN.actionId(a.action) || MT.IDLE;
+        const act = fixedAction(GEN.actionId(a.action) || MT.IDLE);
         ids.add(act);
-        if (a.then && GEN.actionId(a.then)) ids.add(GEN.actionId(a.then));
-        if (a.moveTo || a.to) ids.add(LOCOMOTION.includes(act) ? act : MT.WALK);
       }
     }
     return [...ids].filter((id) => GEN.ACTIONS[id]);
@@ -1259,14 +891,7 @@
   GEN.needsMannequin = (spec) => (spec.shots || []).some((sh) => sh.template === MT.GEN3D && sh.params && (sh.params.actors || []).length);
   GEN.modelsOfSpec = (spec) => {
     const urls = new Set();
-    const visit = (list) => {
-      for (const n of list || []) {
-        if (!n || typeof n !== MT.OBJECT) continue;
-        if (n._url && (n.shape === MT.MODEL || MT.MODEL_REF_RE.test(String(n.ref || "")))) urls.add(n._url);
-        if (n.children) visit(n.children);
-        if (n.node) visit([n.node]);
-      }
-    };
+    const visit = (list) => { for (const n of list || []) { if (!n || typeof n !== MT.OBJECT) continue; if (n._url && (n.shape === MT.MODEL || MT.MODEL_REF_RE.test(String(n.ref || "")))) urls.add(n._url); if (n.children) visit(n.children); if (n.node) visit([n.node]); } };
     const G = spec.gen || {};
     for (const L of Object.values(G.locations || {})) {
       if (!L) continue;

@@ -19,24 +19,11 @@
   GEN.PATTERNS = PATTERNS;
   GEN.LIMITS = LIMITS;
   const isNum = (v) => typeof v === MT.NUMBER && isFinite(v);
-  const num = (v, d, a = -1e6, b = 1e6) => {
-    const n = typeof v === MT.STRING && v.trim() !== "" ? Number(v) : v;
-    return isNum(n) ? U.clamp(n, a, b) : d;
-  };
-  const vec = (v, d, n = 3, a = -1e4, b = 1e4) => {
-    if (!Array.isArray(v)) return d ? d.slice() : null;
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(num(v[i], d ? d[i] : 0, a, b));
-    return out;
-  };
+  const num = (v, d, a = -1e6, b = 1e6) => { const n = typeof v === MT.STRING && v.trim() !== "" ? Number(v) : v; return isNum(n) ? U.clamp(n, a, b) : d; };
+  const vec = (v, d, n = 3, a = -1e4, b = 1e4) => { if (!Array.isArray(v)) return d ? d.slice() : null; const out = []; for (let i = 0; i < n; i++) out.push(num(v[i], d ? d[i] : 0, a, b)); return out; };
   const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
   const NAMED = { white: MT.F2F2F2, black: MT.VALUE_111111, red: MT.C0262D, blue: MT.VALUE_2456B8, green: MT.VALUE_2F7D3A, yellow: MT.E8C33A, orange: MT.E07A26, grey: MT.VALUE_808080, gray: MT.VALUE_808080, silver: MT.B9BCC0, gold: MT.C9A24A, brown: MT.VALUE_6B4A2E, navy: MT.VALUE_1C2A4A, beige: MT.D8C8A8, cream: MT.EFE6D0, pink: MT.E59AB0, purple: MT.VALUE_6B3FA0, teal: MT.VALUE_2A7F80 };
-  const color = (v, d) => {
-    if (typeof v !== MT.STRING) return d;
-    const s = v.trim().toLowerCase();
-    if (COLOR_RE.test(s)) return s.length === 4 ? MT.SYMBOL_2 + s[1] + s[1] + s[2] + s[2] + s[3] + s[3] : s;
-    return NAMED[s] || d;
-  };
+  const color = (v, d) => { if (typeof v !== MT.STRING) return d; const s = v.trim().toLowerCase(); if (COLOR_RE.test(s)) return s.length === 4 ? MT.SYMBOL_2 + s[1] + s[1] + s[2] + s[2] + s[3] + s[3] : s; return NAMED[s] || d; };
   GEN.num = num;
   GEN.vec = vec;
   GEN.color = color;
@@ -44,27 +31,17 @@
   GEN.idOk = idOk;
   const cleanMaterial = (m, errors, key) => {
     if (typeof m === MT.STRING) m = { color: m };
-    if (!m || typeof m !== MT.OBJECT) {
-      errors.push(MT.MATERIAL + key + MT.IS_NOT_AN_OBJECT);
-      return { color: MT.VALUE_9A9A9A, roughness: 0.8, metalness: 0 };
-    }
-    const out = {
-      color: color(m.color, MT.VALUE_9A9A9A),
-      roughness: num(m.roughness, m.glass ? 0.05 : 0.75, 0, 1),
-      metalness: num(m.metalness, 0, 0, 1),
-    };
+    if (!m || typeof m !== MT.OBJECT) { errors.push(MT.MATERIAL + key + MT.IS_NOT_AN_OBJECT); return { color: MT.VALUE_9A9A9A, roughness: 0.8, metalness: 0 }; }
+    const out = { color: color(m.color, MT.VALUE_9A9A9A), roughness: num(m.roughness, m.glass ? 0.05 : 0.75, 0, 1), metalness: num(m.metalness, 0, 0, 1), };
     const pattern = typeof m.pattern === MT.STRING ? m.pattern.toLowerCase() : MT.NONE;
-    if (pattern !== MT.NONE) {
-      if (PATTERNS.includes(pattern)) out.pattern = pattern;
-      else errors.push(MT.MATERIAL + key + MT.UNKNOWN_PATTERN + m.pattern + MT.USE_ONE_OF + PATTERNS.join(MT.SYMBOL_19) + MT.SYMBOL_17);
-    }
+    if (pattern !== MT.NONE) { if (PATTERNS.includes(pattern)) out.pattern = pattern; else errors.push(MT.MATERIAL + key + MT.UNKNOWN_PATTERN + m.pattern + MT.USE_ONE_OF + PATTERNS.join(MT.SYMBOL_19) + MT.SYMBOL_17); }
     if (m.patternColor) out.patternColor = color(m.patternColor, undefined);
     if (m.scale != null) out.scale = num(m.scale, 1, 0.02, 50);
     if (m.cols != null) out.cols = Math.round(num(m.cols, 4, 1, 40));
     if (m.rows != null) out.rows = Math.round(num(m.rows, 4, 1, 40));
     if (m.opacity != null && num(m.opacity, 1, 0, 1) < 1) out.opacity = num(m.opacity, 1, 0.02, 1);
     if (m.emissive) out.emissive = color(m.emissive, undefined);
-    if (m.emissiveIntensity != null) out.emissiveIntensity = num(m.emissiveIntensity, 1, 0, 40);
+    if (m.emissiveIntensity != null) out.emissiveIntensity = num(m.emissiveIntensity, 1, 0, 0.85);
     if (m.glass) out.glass = true;
     if (m.clearcoat != null) out.clearcoat = num(m.clearcoat, 0, 0, 1);
     if (m.double || m.side === MT.DOUBLE) out.double = true;
@@ -78,81 +55,36 @@
     const type = LIGHT_TYPES.includes(l.type) ? l.type : MT.POINT;
     if (!LIGHT_TYPES.includes(l.type)) errors.push(where + MT.LIGHT_TYPE_MUST_BE_ONE_OF + LIGHT_TYPES.join(MT.SYMBOL_19));
     const out = { shape: MT.LIGHT, type, color: color(l.color, MT.FFF4E0), intensity: num(l.intensity, type === MT.SUN ? 2.5 : type === MT.HEMI || type === MT.AMBIENT ? 0.6 : 3, 0, 60) };
-    if (type === MT.POINT || type === MT.SPOT) {
-      out.pos = vec(l.pos || l.position, [0, 3, 0]);
-      out.distance = num(l.distance, type === MT.SPOT ? 30 : 14, 0, 300);
-    }
+    if (type === MT.POINT || type === MT.SPOT) { out.pos = vec(l.pos || l.position, [0, 3, 0]); out.distance = num(l.distance, type === MT.SPOT ? 30 : 14, 0, 300); }
     if (type === MT.SPOT || type === MT.SUN) out.target = vec(l.target, [0, 0, 0]);
     if (type === MT.SUN) out.pos = vec(l.pos || l.position, [-20, 30, 15]);
-    if (type === MT.SPOT) {
-      out.angle = num(l.angle, 35, 2, 89);
-      out.penumbra = num(l.penumbra, 0.5, 0, 1);
-    }
+    if (type === MT.SPOT) { out.angle = num(l.angle, 35, 2, 89); out.penumbra = num(l.penumbra, 0.5, 0, 1); }
     if (type === MT.HEMI) out.ground = color(l.ground, MT.VALUE_3A3530);
     if (l.shadow) out.shadow = true;
-    if (l.flash && typeof l.flash === MT.OBJECT) {
-      const cols = Array.isArray(l.flash.colors)
-        ? l.flash.colors
-            .map((c) => color(c, null))
-            .filter(Boolean)
-            .slice(0, 4)
-        : [];
-      out.flash = { hz: num(l.flash.hz, 2, 0.1, 12), colors: cols.length ? cols : [out.color], phase: num(l.flash.phase, 0, 0, 1), duty: num(l.flash.duty, 0.5, 0.05, 0.95) };
-    }
+    if (l.flash && typeof l.flash === MT.OBJECT) { const cols = Array.isArray(l.flash.colors) ? l.flash.colors .map((c) => color(c, null)) .filter(Boolean) .slice(0, 4) : []; out.flash = { hz: num(l.flash.hz, 2, 0.1, 12), colors: cols.length ? cols : [out.color], phase: num(l.flash.phase, 0, 0, 1), duty: num(l.flash.duty, 0.5, 0.05, 0.95) }; }
     if (l.flicker) out.flicker = num(l.flicker, 0.2, 0, 1);
     if (l.volume) out.volume = num(l.volume, 0.25, 0, 1);
     return out;
   };
-  const cleanPoints2 = (pts, errors, where, min = 3) => {
-    if (!Array.isArray(pts) || pts.length < min) {
-      errors.push(where + MT.NEEDS_AT_LEAST + min + MT.X_Y_POINTS);
-      return null;
-    }
-    return pts.slice(0, LIMITS.points).map((p) => [num(Array.isArray(p) ? p[0] : 0, 0, -500, 500), num(Array.isArray(p) ? p[1] : 0, 0, -500, 500)]);
-  };
+  const cleanPoints2 = (pts, errors, where, min = 3) => { if (!Array.isArray(pts) || pts.length < min) { errors.push(where + MT.NEEDS_AT_LEAST + min + MT.X_Y_POINTS); return null; } return pts.slice(0, LIMITS.points).map((p) => [num(Array.isArray(p) ? p[0] : 0, 0, -500, 500), num(Array.isArray(p) ? p[1] : 0, 0, -500, 500)]); };
   const cleanNode = (n, st, depth, where) => {
     const errors = st.errors;
-    if (!n || typeof n !== MT.OBJECT || Array.isArray(n)) {
-      errors.push(where + MT.NODE_MUST_BE_AN_OBJECT);
-      return null;
-    }
-    if (depth > LIMITS.depth) {
-      errors.push(where + MT.NESTED_TOO_DEEP);
-      return null;
-    }
+    if (!n || typeof n !== MT.OBJECT || Array.isArray(n)) { errors.push(where + MT.NODE_MUST_BE_AN_OBJECT); return null; }
+    if (depth > LIMITS.depth) { errors.push(where + MT.NESTED_TOO_DEEP); return null; }
     st.count++;
-    if (st.count > LIMITS.nodes) {
-      if (st.count === LIMITS.nodes + 1) errors.push(MT.TOO_MANY_NODES_MAX + LIMITS.nodes + MT.USE_REPEAT_USE_FOR_COPIES);
-      return null;
-    }
+    if (st.count > LIMITS.nodes) { if (st.count === LIMITS.nodes + 1) errors.push(MT.TOO_MANY_NODES_MAX + LIMITS.nodes + MT.USE_REPEAT_USE_FOR_COPIES); return null; }
     let shape = typeof n.shape === MT.STRING ? n.shape.toLowerCase() : n.children ? MT.GROUP : n.ref ? (MT.MODEL_REF_RE.test(String(n.ref)) ? MT.MODEL : MT.USE) : "";
     if (shape === MT.USE && MT.MODEL_REF_RE.test(String(n.ref || ""))) shape = MT.MODEL;
     if (shape === MT.CUBE) shape = MT.BOX;
     if (shape === MT.CYLINDER_Y || shape === MT.CYL) shape = MT.CYLINDER;
-    if (!SHAPES.includes(shape)) {
-      errors.push(where + MT.UNKNOWN_SHAPE_2 + n.shape + MT.ALLOWED + SHAPES.join(MT.SYMBOL_19) + MT.SYMBOL_17);
-      return null;
-    }
-    if (shape === MT.LIGHT) {
-      st.lights++;
-      if (st.lights > LIMITS.lights) {
-        errors.push(MT.TOO_MANY_LIGHTS_MAX + LIMITS.lights + MT.SYMBOL_17);
-        return null;
-      }
-      return cleanLight(n, errors, where);
-    }
+    if (!SHAPES.includes(shape)) { errors.push(where + MT.UNKNOWN_SHAPE_2 + n.shape + MT.ALLOWED + SHAPES.join(MT.SYMBOL_19) + MT.SYMBOL_17); return null; }
+    if (shape === MT.LIGHT) { st.lights++; if (st.lights > LIMITS.lights) { errors.push(MT.TOO_MANY_LIGHTS_MAX + LIMITS.lights + MT.SYMBOL_17); return null; } return cleanLight(n, errors, where); }
     const out = { shape };
     if (n.name && typeof n.name === MT.STRING) out.name = n.name.slice(0, 40);
     out.pos = vec(n.pos || n.position, [0, 0, 0]);
     if (n.rot || n.rotation) out.rot = vec(n.rot || n.rotation, [0, 0, 0], 3, -720, 720);
     if (n.scale != null) out.scale = Array.isArray(n.scale) ? vec(n.scale, [1, 1, 1], 3, 0.01, 100) : [num(n.scale, 1, 0.01, 100), num(n.scale, 1, 0.01, 100), num(n.scale, 1, 0.01, 100)];
-    if (n.mat != null || n.material != null) {
-      const m = n.mat != null ? n.mat : n.material;
-      if (typeof m === MT.STRING && st.materials[m]) out.mat = m;
-      else if (typeof m === MT.STRING && color(m, null)) out.mat = { color: color(m) };
-      else if (m && typeof m === MT.OBJECT) out.mat = cleanMaterial(m, errors, where);
-      else errors.push(where + MT.MATERIAL_2 + m + MT.IS_NOT_DEFINED_IN_MATERIALS);
-    }
+    if (n.mat != null || n.material != null) { const m = n.mat != null ? n.mat : n.material; if (typeof m === MT.STRING && st.materials[m]) out.mat = m; else if (typeof m === MT.STRING && color(m, null)) out.mat = { color: color(m) }; else if (m && typeof m === MT.OBJECT) out.mat = cleanMaterial(m, errors, where); else errors.push(where + MT.MATERIAL_2 + m + MT.IS_NOT_DEFINED_IN_MATERIALS); }
     if (n.shadow === false) out.noShadow = true;
     if (n.hidden) out.hidden = true;
     const size3 = (d) => vec(n.size, d, 3, 0.001, 2000);
@@ -201,11 +133,7 @@
         if (!out.points) return null;
         out.depth = num(n.depth, 0.2, 0.001, 500);
         if (n.bevel) out.bevel = num(n.bevel, 0.01, 0, 2);
-        if (Array.isArray(n.holes))
-          out.holes = n.holes
-            .slice(0, 12)
-            .map((h, i) => cleanPoints2(h, errors, where + MT.HOLES + i + MT.SYMBOL_5))
-            .filter(Boolean);
+        if (Array.isArray(n.holes)) out.holes = n.holes .slice(0, 12) .map((h, i) => cleanPoints2(h, errors, where + MT.HOLES + i + MT.SYMBOL_5)) .filter(Boolean);
         if (n.smooth) out.smooth = true;
         break;
       case MT.LATHE:
@@ -215,10 +143,7 @@
         out.segments = Math.round(num(n.segments, 32, 3, 96));
         break;
       case MT.TUBE:
-        if (!Array.isArray(n.path) || n.path.length < 2) {
-          errors.push(where + MT.TUBE_NEEDS_PATH_WITH_AT_LEAST_2);
-          return null;
-        }
+        if (!Array.isArray(n.path) || n.path.length < 2) { errors.push(where + MT.TUBE_NEEDS_PATH_WITH_AT_LEAST_2); return null; }
         out.path = n.path.slice(0, LIMITS.points).map((p) => vec(p, [0, 0, 0]));
         out.radius = num(n.radius, 0.03, 0.001, 50);
         if (n.closed) out.closed = true;
@@ -233,12 +158,8 @@
         out.weight = num(n.weight, 700, 300, 900);
         break;
       case MT.ARROW: {
-        const from = vec(n.from, null),
-          to = vec(n.to, null);
-        if (!from || !to) {
-          errors.push(where + MT.ARROW_NEEDS);
-          return null;
-        }
+        const from = vec(n.from, null), to = vec(n.to, null);
+        if (!from || !to) { errors.push(where + MT.ARROW_NEEDS); return null; }
         out.from = from;
         out.to = to;
         out.pos = from.slice();
@@ -249,10 +170,7 @@
         break;
       }
       case MT.GROUP: {
-        if (!Array.isArray(n.children)) {
-          errors.push(where + MT.GROUP_NEEDS_CHILDREN);
-          return null;
-        }
+        if (!Array.isArray(n.children)) { errors.push(where + MT.GROUP_NEEDS_CHILDREN); return null; }
         out.children = n.children.map((c, i) => cleanNode(c, st, depth + 1, where + MT.CHILDREN + i + MT.SYMBOL_5)).filter(Boolean);
         break;
       }
@@ -261,10 +179,7 @@
         const info = GEN.library[ref];
         const url = typeof n._url === MT.STRING ? n._url : info && info.url;
         const sz = Array.isArray(n._size) && n._size.length === 3 ? n._size : info && info.size;
-        if (!url || !sz) {
-          errors.push(where + MT.MODEL_REF + ref + MT.IS_NOT_IN_LIBRARY);
-          return null;
-        }
+        if (!url || !sz) { errors.push(where + MT.MODEL_REF + ref + MT.IS_NOT_IN_LIBRARY); return null; }
         out.ref = ref;
         out._url = url;
         out._size = sz.map((v) => num(v, 1, 0.01, 2000));
@@ -275,29 +190,20 @@
         break;
       }
       case MT.USE:
-        if (!st.defs[n.ref]) {
-          errors.push(where + MT.USE_REF + n.ref + MT.IS_NOT_IN_DEFS);
-          return null;
-        }
+        if (!st.defs[n.ref]) { errors.push(where + MT.USE_REF + n.ref + MT.IS_NOT_IN_DEFS); return null; }
         out.ref = n.ref;
         if (n.tint) out.tint = color(n.tint, undefined);
         break;
       case MT.REPEAT: {
         const counts = vec(n.count, [1, 1, 1], 3, 1, 200).map((v) => Math.round(v));
         const total = counts[0] * counts[1] * counts[2];
-        if (total > LIMITS.repeat) {
-          errors.push(where + MT.REPEAT_COUNT_TOO_LARGE_MAX + LIMITS.repeat + MT.COPIES);
-          return null;
-        }
+        if (total > LIMITS.repeat) { errors.push(where + MT.REPEAT_COUNT_TOO_LARGE_MAX + LIMITS.repeat + MT.COPIES); return null; }
         out.count = counts;
         out.step = vec(n.step, [1, 1, 1], 3, -500, 500);
         if (n.jitter) out.jitter = num(n.jitter, 0, 0, 10);
         if (n.skip) out.skip = num(n.skip, 0, 0, 0.95);
         const inner = n.node || n.item || (Array.isArray(n.children) ? { shape: MT.GROUP, children: n.children } : null);
-        if (!inner) {
-          errors.push(where + MT.REPEAT_NEEDS_NODE);
-          return null;
-        }
+        if (!inner) { errors.push(where + MT.REPEAT_NEEDS_NODE); return null; }
         out.node = cleanNode(inner, st, depth + 1, where + MT.NODE);
         if (!out.node) return null;
         st.instances += total;
@@ -309,18 +215,7 @@
   GEN.cleanNodes = (list, st, where) => (Array.isArray(list) ? list : []).map((n, i) => cleanNode(n, st, 0, where + MT.SYMBOL_9 + i + MT.SYMBOL_5)).filter(Boolean);
   const newState = (materials) => ({ errors: [], warnings: [], count: 0, lights: 0, instances: 0, materials: materials || {}, defs: {} });
   GEN.newState = newState;
-  const cleanMaterials = (raw, st) => {
-    const out = {};
-    if (raw && typeof raw === MT.OBJECT && !Array.isArray(raw)) {
-      Object.keys(raw)
-        .slice(0, LIMITS.materials)
-        .forEach((k) => {
-          if (!idOk(k)) return st.errors.push(MT.MATERIAL_NAME + k + MT.INVALID_LETTERS_DIGITS_ONLY);
-          out[k] = cleanMaterial(raw[k], st.errors, k);
-        });
-    }
-    return out;
-  };
+  const cleanMaterials = (raw, st) => { const out = {}; if (raw && typeof raw === MT.OBJECT && !Array.isArray(raw)) { Object.keys(raw) .slice(0, LIMITS.materials) .forEach((k) => { if (!idOk(k)) return st.errors.push(MT.MATERIAL_NAME + k + MT.INVALID_LETTERS_DIGITS_ONLY); out[k] = cleanMaterial(raw[k], st.errors, k); }); } return out; };
   GEN.cleanMaterials = cleanMaterials;
   const TIMES = [MT.DAY, MT.DUSK, MT.NIGHT, MT.DAWN, MT.OVERCAST, MT.INTERIOR, MT.INTERIOR_DARK];
   GEN.TIMES = TIMES;
@@ -360,15 +255,7 @@
     out.exposure = num(L.exposure, 1, 0.2, 4);
     out.ambient = num(L.ambient, 1, 0, 4);
     const marks = {};
-    if (L.marks && typeof L.marks === MT.OBJECT) {
-      Object.keys(L.marks)
-        .slice(0, 40)
-        .forEach((k) => {
-          if (!idOk(k)) return;
-          const v = vec(L.marks[k], null, Array.isArray(L.marks[k]) && L.marks[k].length >= 3 ? 3 : 2, -2000, 2000);
-          if (v) marks[k] = v.length === 3 ? [v[0], v[2]] : v;
-        });
-    }
+    if (L.marks && typeof L.marks === MT.OBJECT) { Object.keys(L.marks) .slice(0, 40) .forEach((k) => { if (!idOk(k)) return; const v = vec(L.marks[k], null, Array.isArray(L.marks[k]) && L.marks[k].length >= 3 ? 3 : 2, -2000, 2000); if (v) marks[k] = v.length === 3 ? [v[0], v[2]] : v; }); }
     out.marks = marks;
     const stage = L.stage && typeof L.stage === MT.OBJECT ? L.stage : {};
     out.stage = { center: vec(stage.center, [0, 0], 2, -2000, 2000), size: vec(stage.size, [10, 8], 2, 1, 400) };
@@ -378,14 +265,9 @@
     if (!out.nodes.length) st.errors.push(MT.NODES_IS_EMPTY_DRAW_THE_LOCATION);
     return { value: out, errors: st.errors, warnings: st.warnings, stats: { nodes: st.count, lights: st.lights, instances: st.instances } };
   };
-  GEN.validateProps = (list, materials) => {
-    const st = newState(materials || {});
-    const value = GEN.cleanNodes(list, st, MT.PROPS);
-    return { value, errors: st.errors };
-  };
   GEN.CLOTH_KINDS = [MT.TSHIRT, MT.SHIRT, MT.POLO, MT.SWEATER, MT.HOODIE, MT.JACKET, MT.BLAZER, MT.COAT, MT.VEST, MT.TANK, MT.UNIFORM_TOP, MT.TROUSERS, MT.JEANS, MT.SHORTS, MT.SKIRT, MT.DRESS, MT.SHOES, MT.BOOTS, MT.SNEAKERS, MT.GLOVES, MT.HAIR, MT.CAP, MT.BEANIE, MT.BELT, MT.SOCKS];
   GEN.CLOTH_PATTERNS = [MT.PLAIN, MT.STRIPES, MT.CHECK, MT.DENIM, MT.KNIT, MT.LEATHER, MT.CAMO, MT.DOTS];
-  GEN.SOCKETS = [MT.HEAD, MT.FACE, MT.NECK, MT.CHEST, MT.BACK, MT.WAIST, MT.HAND_R, MT.HAND_L, MT.FOREARM_R, MT.FOREARM_L, MT.UPPERARM_R, MT.UPPERARM_L, MT.THIGH_R, MT.THIGH_L, MT.FOOT_R, MT.FOOT_L];
+  GEN.SOCKETS = [MT.HEAD, MT.FACE, MT.NECK, MT.CHEST, MT.BACK, MT.WAIST, MT.HAND_R, MT.HAND_L, MT.FOREARM_R, MT.FOREARM_L, MT.UPPERARM_R, MT.UPPERARM_L, MT.THIGH_R, MT.THIGH_L, MT.CALF_R, MT.CALF_L, MT.FOOT_R, MT.FOOT_L];
   GEN.validateOutfit = (raw, materials) => {
     const errors = [];
     const o = raw && typeof raw === MT.OBJECT ? raw : {};
@@ -394,6 +276,7 @@
     out.height = num(o.height, out.body === MT.FEMALE ? 1.66 : 1.78, 1.0, 2.2);
     out.build = num(o.build, 0, -1, 1);
     out.skin = color(o.skin, undefined);
+    if (o.customDesign != null) { if (o.customDesign?.anatomy !== MT.SCULPTED_RIG_V1) errors.push(MT.CUSTOMDESIGN_REQUIRES_ANATOMY_SCULPTED_RIG_V1); else out.customDesign = { anatomy: MT.SCULPTED_RIG_V1, headWidth: num(o.customDesign.headWidth, 1, 0.92, 1.08), headDepth: num(o.customDesign.headDepth, 1, 0.92, 1.08) }; }
     out.layers = [];
     (Array.isArray(o.layers) ? o.layers : []).slice(0, 10).forEach((l, i) => {
       if (!l || typeof l !== MT.OBJECT) return;
@@ -419,6 +302,18 @@
       const nodes = GEN.smallNodes(Array.isArray(a.nodes) ? a.nodes : a.shape ? [a] : [], st, MT.ACCESSORIES + i + MT.SYMBOL_5, MT.SOCKET_MAX[socket] || 0.6);
       if (nodes.length) out.accessories.push({ socket, nodes, name: String(a.name || "").slice(0, 40) });
     });
+    if (o.drawnBody != null) {
+      out.drawnBody = [];
+      const required = [MT.HEAD, MT.NECK, MT.CHEST, MT.WAIST, MT.UPPERARM_R, MT.UPPERARM_L, MT.FOREARM_R, MT.FOREARM_L, MT.HAND_R, MT.HAND_L, MT.THIGH_R, MT.THIGH_L, MT.CALF_R, MT.CALF_L, MT.FOOT_R, MT.FOOT_L];
+      for (const part of (Array.isArray(o.drawnBody) ? o.drawnBody : []).slice(0, 20)) {
+        if (!part || !required.includes(part.socket)) { errors.push(MT.DRAWNBODY_UNKNOWN_BODY_SOCKET); continue; }
+        if (out.drawnBody.some((p) => p.socket === part.socket)) { errors.push(MT.DRAWNBODY_DUPLICATE_SOCKET + part.socket); continue; }
+        const nodes = GEN.smallNodes(part.nodes || [], st, MT.DRAWNBODY + part.socket, 1.2);
+        if (nodes.some((n) => [MT.LIGHT, MT.TEXT, MT.ARROW].includes(n.shape))) { errors.push(MT.DRAWNBODY_REQUIRES_GEOMETRY_NOT_LIGHTS_OR_ANNOTATIONS); continue; }
+        if (nodes.length) out.drawnBody.push({ socket: part.socket, nodes });
+      }
+      for (const socket of required) if (!out.drawnBody.some((p) => p.socket === socket)) errors.push(MT.DRAWNBODY_MISSING + socket);
+    }
     errors.push(...st.errors);
     return { value: out, errors };
   };
@@ -442,12 +337,7 @@
       if (missing) return st.errors.push(where + MT.NODES_2 + j + MT.SMALL_NEEDS_SIZE);
       keep.push(n);
     });
-    return GEN.cleanNodes(keep, st, where).filter((n, j) => {
-      const e = nodeExtent(n);
-      if (e <= max) return true;
-      st.errors.push(where + MT.NODES_2 + j + MT.SMALL_IS + e.toFixed(2) + MT.SMALL_TOO_BIG + max + MT.M_2);
-      return false;
-    });
+    return GEN.cleanNodes(keep, st, where).filter((n, j) => { const e = nodeExtent(n); if (e <= max) return true; st.errors.push(where + MT.NODES_2 + j + MT.SMALL_IS + e.toFixed(2) + MT.SMALL_TOO_BIG + max + MT.M_2); return false; });
   };
   GEN.ACTIONS = {
     idle: { clip: MT.IDLE_LOOP, src: MT.UAL1, calm: true },
@@ -569,10 +459,7 @@
     type: MT.SIT_TALK,
   };
   GEN.actionId = (v) => {
-    const s = String(v || "")
-      .toLowerCase()
-      .trim()
-      .replace(/[\s-]+/g, MT.SYMBOL_10);
+    const s = String(v || "") .toLowerCase() .trim() .replace(/[\s-]+/g, MT.SYMBOL_10);
     if (GEN.ACTIONS[s]) return s;
     if (ACTION_ALIAS[s]) return ACTION_ALIAS[s];
     const hit = GEN.ACTION_IDS.find((k) => s.includes(k));
@@ -591,15 +478,7 @@
     const L = locs[out.location] || { marks: {}, materials: {} };
     if (s.time && TIMES.includes(s.time)) out.time = s.time;
     const castKeys = (ctx && ctx.cast) || [];
-    const point2 = (v, where) => {
-      if (typeof v === MT.STRING) {
-        if (L.marks && L.marks[v]) return L.marks[v].slice();
-        errors.push(where + MT.MARK + v + MT.DOES_NOT_EXIST_IN_THE_LOCATION);
-        return null;
-      }
-      const p = vec(v, null, Array.isArray(v) && v.length >= 3 ? 3 : 2, -2000, 2000);
-      return p ? (p.length === 3 ? [p[0], p[2]] : p) : null;
-    };
+    const point2 = (v, where) => { if (typeof v === MT.STRING) { if (L.marks && L.marks[v]) return L.marks[v].slice(); errors.push(where + MT.MARK + v + MT.DOES_NOT_EXIST_IN_THE_LOCATION); return null; } const p = vec(v, null, Array.isArray(v) && v.length >= 3 ? 3 : 2, -2000, 2000); return p ? (p.length === 3 ? [p[0], p[2]] : p) : null; };
     out.actors = [];
     (Array.isArray(s.actors) ? s.actors : []).slice(0, 8).forEach((a, i) => {
       if (!a || typeof a !== MT.OBJECT) return;
@@ -610,58 +489,27 @@
       const at = point2(a.at != null ? a.at : a.pos, MT.ACTORS + i + MT.AT) || [0, 0];
       const o = { cast, action, at };
       if (a.y != null) o.y = num(a.y, 0, -50, 200);
-      if (a.face != null) {
-        if (typeof a.face === MT.NUMBER || (typeof a.face === MT.STRING && /^-?\d+(\.\d+)?$/.test(a.face))) o.face = num(a.face, 0, -720, 720);
-        else if (a.face === MT.CAMERA) o.face = MT.CAMERA;
-        else if (typeof a.face === MT.STRING && castKeys.includes(a.face)) o.faceActor = a.face;
-        else {
-          const fp = point2(a.face, MT.ACTORS + i + MT.FACE_2);
-          if (fp) o.faceAt = fp;
-        }
-      }
-      if (a.moveTo != null || a.to != null) {
-        const mt = point2(a.moveTo != null ? a.moveTo : a.to, MT.ACTORS + i + MT.MOVETO);
-        if (mt) {
-          o.moveTo = mt;
-          o.moveStart = num(a.moveStart, 0, 0, 0.95);
-          o.moveEnd = num(a.moveEnd, 1, o.moveStart + 0.05, 1);
-          const then = a.then ? GEN.actionId(a.then) : null;
-          if (then) o.then = then;
-        }
-      }
-      if (a.then && !o.then) {
-        const then = GEN.actionId(a.then);
-        if (then) {
-          o.then = then;
-          o.thenAt = num(a.thenAt, 0.6, 0.05, 0.98);
-        }
-      }
+      if (a.face != null) { if (typeof a.face === MT.NUMBER || (typeof a.face === MT.STRING && /^-?\d+(\.\d+)?$/.test(a.face))) o.face = num(a.face, 0, -720, 720); else if (a.face === MT.CAMERA) o.face = MT.CAMERA; else if (typeof a.face === MT.STRING && castKeys.includes(a.face)) o.faceActor = a.face; else { const fp = point2(a.face, MT.ACTORS + i + MT.FACE_2); if (fp) o.faceAt = fp; } }
+      if (a.moveTo != null || a.to != null) { const mt = point2(a.moveTo != null ? a.moveTo : a.to, MT.ACTORS + i + MT.MOVETO); if (mt) { o.moveTo = mt; o.moveStart = num(a.moveStart, 0, 0, 0.95); o.moveEnd = num(a.moveEnd, 1, o.moveStart + 0.05, 1); const then = a.then ? GEN.actionId(a.then) : null; if (then) o.then = then; } }
+      if (a.then && !o.then) { const then = GEN.actionId(a.then); if (then) { o.then = then; o.thenAt = num(a.thenAt, 0.6, 0.05, 0.98); } }
       if (a.offset != null) o.offset = num(a.offset, 0, 0, 20);
       if (a.ghost) o.ghost = true;
-      if (Array.isArray(a.hold) || (a.hold && typeof a.hold === MT.OBJECT)) {
-        const st = newState(L.materials || {});
-        const nodes = GEN.smallNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD, 2.4);
-        errors.push(...st.errors);
-        if (nodes.length) o.hold = { hand: a.hand === MT.LEFT || (a.hold && a.hold.hand === MT.LEFT) ? MT.HAND_L : MT.HAND_R, nodes };
-      }
+      if (Array.isArray(a.hold) || (a.hold && typeof a.hold === MT.OBJECT)) { const st = newState(L.materials || {}); const nodes = GEN.smallNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD, 2.4); errors.push(...st.errors); if (nodes.length) o.hold = { hand: a.hand === MT.LEFT || (a.hold && a.hold.hand === MT.LEFT) ? MT.HAND_L : MT.HAND_R, nodes }; }
       out.actors.push(o);
     });
     const st = newState(L.materials || {});
-    out.props = GEN.cleanNodes(s.props, st, MT.PROPS);
+    const withoutCallouts = (nodes) => (Array.isArray(nodes) ? nodes : []) .filter((n) => n && n.shape !== MT.ARROW && !(n.shape === MT.TEXT && n.billboard)) .map((n) => { const copy = Object.assign({}, n); if (n.children) copy.children = withoutCallouts(n.children); if (n.node) copy.node = withoutCallouts([n.node])[0]; return copy; }) .filter((n) => n.shape !== MT.REPEAT || n.node);
+    out.props = GEN.cleanNodes(withoutCallouts(s.props), st, MT.PROPS);
     out.hide = Array.isArray(s.hide) ? s.hide.filter((x) => typeof x === MT.STRING).slice(0, 20) : [];
     errors.push(...st.errors);
     const cleanCam = (cam) => {
       cam = cam && typeof cam === MT.OBJECT ? cam : {};
-      const c = {
-        shot: GEN.SHOTS.includes(cam.shot) ? cam.shot : MT.MEDIUM,
-        move: GEN.MOVES.includes(cam.move) ? cam.move : MT.STATIC,
-        amount: num(cam.amount, 1, 0, 4),
-        fov: num(cam.fov, 0, 0, 100) || undefined,
-        at: num(cam.at, 0, 0, 0.95),
-      };
+      const c = { shot: GEN.SHOTS.includes(cam.shot) ? cam.shot : MT.MEDIUM, move: GEN.MOVES.includes(cam.move) ? cam.move : MT.STATIC, amount: num(cam.amount, 1, 0, 4), angle: num(cam.angle, 0, -180, 180), fov: num(cam.fov, 0, 0, 100) || undefined, at: num(cam.at, 0, 0, 0.95), };
       if (cam.pos) c.pos = vec(cam.pos, [0, 1.6, 8]);
       if (cam.target) c.target = vec(cam.target, [0, 1.2, 0]);
       if (cam.focus && castKeys.includes(cam.focus)) c.focus = cam.focus;
+      if (cam.focusProp && typeof cam.focusProp === MT.STRING) c.focusProp = cam.focusProp.slice(0, 40);
+      if ([MT.FRONT, MT.PROFILE, MT.REAR].includes(cam.view)) c.view = cam.view;
       if (cam.follow && castKeys.includes(cam.follow)) c.follow = cam.follow;
       if (cam.dof != null) c.dof = num(cam.dof, 0.4, 0, 1);
       return c;

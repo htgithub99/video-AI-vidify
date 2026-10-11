@@ -1,9 +1,4 @@
-export interface MotionKenneyPack {
-  slug: string;
-  cat: string;
-  label: string;
-  unit: number;
-}
+export interface MotionKenneyPack { slug: string; cat: string; label: string; unit: number; }
 export const MOTION_LIB_KENNEY_PACKS: MotionKenneyPack[] = [
   { slug: "car-kit", cat: "vehicle", label: "cars, police car, taxi, ambulance, van, trucks, firetruck, delivery, garbage truck", unit: 1.4 },
   { slug: "city-kit-commercial", cat: "building", label: "city buildings, shops, skyscrapers, offices", unit: 8 },
@@ -28,7 +23,6 @@ export const MOTION_LIB_CONFIG = {
   PH_RES: "1k",
   KENNEY_PAGE: "https://kenney.nl/assets/",
   KENNEY_HOST: "https://kenney.nl",
-  KENNEY_GLB_DIR: "GLB format/",
   DONE: ".done",
   ASSET_PREFIX: "lib/",
   CANDIDATES: 70,
@@ -41,16 +35,7 @@ export const MOTION_LIB_CONFIG = {
 } as const;
 export const MOTION_LIB_ZIP_LINK = /\/media\/pages\/assets\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9_.-]+\.zip/i;
 export const MOTION_LIB_MODEL_DIR = /(?:^|\/)(?:GLB|GLTF) format\//i;
-export const MOTION_LIB_MIME: Record<string, string> = {
-  ".glb": "model/gltf-binary",
-  ".gltf": "model/gltf+json",
-  ".bin": "application/octet-stream",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  default: "application/octet-stream",
-};
+export const MOTION_LIB_MIME: Record<string, string> = { ".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", default: "application/octet-stream", };
 export const MOTION_LIB_SYNONYMS: Record<string, string[]> = {
   car: ["sedan", "hatchback", "suv", "taxi", "police", "vehicle", "coupe"],
   cars: ["sedan", "hatchback", "suv", "taxi", "vehicle"],
@@ -113,7 +98,6 @@ export const MOTION_LIB_EXCLUDE_WORDS = ["debris", "kart", "astronaut", "astrona
 export const MOTION_LIB_TEXT = {
   ABORT: "abort",
   UA_HEADER: "User-Agent",
-  MESSAGE: "message",
   GLB_MAGIC: 0x46546c67,
   DOTDOT: "..",
   NODEBUFFER: "nodebuffer" as const,

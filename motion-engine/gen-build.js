@@ -9,12 +9,7 @@
   const DEG = Math.PI / 180;
   const texCache = new Map();
   const rng = (seed) => U.rng(seed);
-  const shade = (hex, k) => {
-    const c = new T.Color(hex);
-    if (k >= 0) c.lerp(new T.Color(1, 1, 1), k);
-    else c.multiplyScalar(1 + k);
-    return MT.SYMBOL_2 + c.getHexString();
-  };
+  const shade = (hex, k) => { const c = new T.Color(hex); if (k >= 0) c.lerp(new T.Color(1, 1, 1), k); else c.multiplyScalar(1 + k); return MT.SYMBOL_2 + c.getHexString(); };
   GEN.shade = shade;
   const noiseFill = (g, w, h, seed, amt, size) => {
     const r = rng(seed);
@@ -29,9 +24,7 @@
   const blotches = (g, w, h, seed, n, alpha) => {
     const r = rng(seed);
     for (let i = 0; i < n; i++) {
-      const x = r() * w,
-        y = r() * h,
-        rad = 10 + r() * w * 0.18;
+      const x = r() * w, y = r() * h, rad = 10 + r() * w * 0.18;
       const gr = g.createRadialGradient(x, y, 0, x, y, rad);
       const dark = r() > 0.45;
       gr.addColorStop(0, dark ? MT.RGBA_0_0_0_2 + alpha + MT.SYMBOL_17 : MT.RGBA_255_255_255 + alpha * 0.7 + MT.SYMBOL_17);
@@ -97,10 +90,8 @@
       noiseFill(g, w, h, 9, 0.05, 2);
     },
     brick(g, w, h, m) {
-      const rows = m.rows || 8,
-        cols = m.cols || 4;
-      const bh = h / rows,
-        bw = w / cols;
+      const rows = m.rows || 8, cols = m.cols || 4;
+      const bh = h / rows, bw = w / cols;
       const r = rng(21);
       g.fillStyle = m.patternColor || MT.RGBA_220_215_205_0_9;
       g.fillRect(0, 0, w, h);
@@ -144,8 +135,7 @@
       for (let i = 0; i < 14; i++) {
         g.strokeStyle = MT.RGBA_90_90_100 + (0.06 + r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 0.6 + r() * 2.2;
-        let x = r() * w,
-          y = 0;
+        let x = r() * w, y = 0;
         g.beginPath();
         g.moveTo(x, y);
         while (y < h) {
@@ -191,8 +181,7 @@
         const v = r();
         g.strokeStyle = v > 0.5 ? MT.RGBA_200_230_120 + (0.08 + r() * 0.12).toFixed(3) + MT.SYMBOL_17 : MT.RGBA_0_30_0 + (0.08 + r() * 0.15).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1;
-        const x = r() * w,
-          y = r() * h;
+        const x = r() * w, y = r() * h;
         g.beginPath();
         g.moveTo(x, y);
         g.lineTo(x + (r() - 0.5) * 4, y - 3 - r() * 7);
@@ -222,9 +211,7 @@
       for (let i = 0; i < 260; i++) {
         g.strokeStyle = MT.RGBA_255_255_255 + (r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1 + r() * 2;
-        const x = r() * w,
-          y = r() * h,
-          l = 10 + r() * 40;
+        const x = r() * w, y = r() * h, l = 10 + r() * 40;
         g.beginPath();
         g.moveTo(x, y);
         g.quadraticCurveTo(x + l / 2, y - 3, x + l, y);
@@ -256,8 +243,7 @@
       noiseFill(g, w, h, 103, 0.06, 2);
     },
     panels(g, w, h, m) {
-      const cols = m.cols || 4,
-        rows = m.rows || 4;
+      const cols = m.cols || 4, rows = m.rows || 4;
       g.strokeStyle = m.patternColor || MT.RGBA_0_0_0_0_5;
       g.lineWidth = Math.max(3, w / 120);
       for (let i = 0; i <= cols; i++) {
@@ -326,56 +312,24 @@
     } else if (m.glass) {
       mat = new T.MeshPhysicalMaterial(Object.assign(params, { roughness: Math.min(params.roughness, 0.12), metalness: Math.max(params.metalness, 0.1), transparent: true, opacity: m.opacity == null ? 0.42 : m.opacity, envMapIntensity: 1.6, clearcoat: 1, clearcoatRoughness: 0.03, reflectivity: 0.9, ior: 1.5 }));
       mat.depthWrite = false;
-    } else if (m.clearcoat) {
-      mat = new T.MeshPhysicalMaterial(Object.assign(params, { clearcoat: m.clearcoat, clearcoatRoughness: 0.08 }));
-    } else mat = new T.MeshStandardMaterial(params);
-    if (m.pattern && !m.unlit) {
-      mat.map = patternTex(m);
-      if (m.bump !== 0 && mat.isMeshStandardMaterial) {
-        mat.bumpMap = bumpTex(m);
-        mat.bumpScale = m.bump == null ? 0.6 : m.bump;
-      }
-      mat.color = new T.Color(MT.FFFFFF);
-      mat.userData.uvScale = m.scale || DEFAULT_SCALE[m.pattern] || 2;
-    }
-    if (m.emissive) {
-      mat.emissive = new T.Color(m.emissive);
-      mat.emissiveIntensity = m.emissiveIntensity == null ? 1.5 : m.emissiveIntensity;
-      mat.toneMapped = true;
-    }
-    if (m.opacity != null && !m.glass) {
-      mat.transparent = true;
-      mat.opacity = m.opacity;
-      mat.depthWrite = m.opacity > 0.85;
-    }
+    } else if (m.clearcoat) { mat = new T.MeshPhysicalMaterial(Object.assign(params, { clearcoat: m.clearcoat, clearcoatRoughness: 0.08 })); } else mat = new T.MeshStandardMaterial(params);
+    if (m.pattern && !m.unlit) { mat.map = patternTex(m); if (m.bump !== 0 && mat.isMeshStandardMaterial) { mat.bumpMap = bumpTex(m); mat.bumpScale = m.bump == null ? 0.6 : m.bump; } mat.color = new T.Color(MT.FFFFFF); mat.userData.uvScale = m.scale || DEFAULT_SCALE[m.pattern] || 2; }
+    if (m.emissive) { mat.emissive = new T.Color(m.emissive); mat.emissiveIntensity = m.emissiveIntensity == null ? 1.5 : m.emissiveIntensity; mat.toneMapped = true; }
+    if (m.opacity != null && !m.glass) { mat.transparent = true; mat.opacity = m.opacity; mat.depthWrite = m.opacity > 0.85; }
     if (m.double) mat.side = T.DoubleSide;
     if (m.flat) mat.flatShading = true;
     mat.userData.def = m;
     return mat;
   };
   const boxUV = (geo, scale) => {
-    const pos = geo.attributes.position,
-      nor = geo.attributes.normal;
+    const pos = geo.attributes.position, nor = geo.attributes.normal;
     if (!pos || !nor) return geo;
     const uv = new Float32Array(pos.count * 2);
     for (let i = 0; i < pos.count; i++) {
-      const nx = Math.abs(nor.getX(i)),
-        ny = Math.abs(nor.getY(i)),
-        nz = Math.abs(nor.getZ(i));
-      const x = pos.getX(i),
-        y = pos.getY(i),
-        z = pos.getZ(i);
+      const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
       let u, v;
-      if (ny >= nx && ny >= nz) {
-        u = x;
-        v = z;
-      } else if (nx >= nz) {
-        u = z;
-        v = y;
-      } else {
-        u = x;
-        v = y;
-      }
+      if (ny >= nx && ny >= nz) { u = x; v = z; } else if (nx >= nz) { u = z; v = y; } else { u = x; v = y; }
       uv[i * 2] = u / scale;
       uv[i * 2 + 1] = v / scale;
     }
@@ -384,26 +338,10 @@
   };
   GEN.boxUV = boxUV;
   const geoCache = new Map();
-  const shapeFrom = (pts, holes) => {
-    const sh = new T.Shape();
-    sh.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
-    sh.closePath();
-    for (const h of holes || []) {
-      const p = new T.Path();
-      p.moveTo(h[0][0], h[0][1]);
-      for (let i = 1; i < h.length; i++) p.lineTo(h[i][0], h[i][1]);
-      p.closePath();
-      sh.holes.push(p);
-    }
-    return sh;
-  };
+  const shapeFrom = (pts, holes) => { const sh = new T.Shape(); sh.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]); sh.closePath(); for (const h of holes || []) { const p = new T.Path(); p.moveTo(h[0][0], h[0][1]); for (let i = 1; i < h.length; i++) p.lineTo(h[i][0], h[i][1]); p.closePath(); sh.holes.push(p); } return sh; };
   const roundedBox = (w, h, d, r) => {
     const sh = new T.Shape();
-    const x = -w / 2 + r,
-      y = -h / 2 + r,
-      W = w - 2 * r,
-      H = h - 2 * r;
+    const x = -w / 2 + r, y = -h / 2 + r, W = w - 2 * r, H = h - 2 * r;
     sh.moveTo(x, y - r);
     sh.lineTo(x + W, y - r);
     sh.quadraticCurveTo(x + W + r, y - r, x + W + r, y);
@@ -464,11 +402,7 @@
         );
         break;
       case MT.TUBE: {
-        const curve = new T.CatmullRomCurve3(
-          n.path.map((p) => new T.Vector3(p[0], p[1], p[2])),
-          !!n.closed,
-          MT.CENTRIPETAL,
-        );
+        const curve = new T.CatmullRomCurve3( n.path.map((p) => new T.Vector3(p[0], p[1], p[2])), !!n.closed, MT.CENTRIPETAL, );
         g = new T.TubeGeometry(curve, Math.max(8, n.path.length * 8), n.radius, 10, !!n.closed);
         break;
       }
@@ -478,14 +412,7 @@
     geoCache.set(key, g);
     return g;
   };
-  const uvGeo = (geo, scale) => {
-    const key = geo.uuid + MT.SYMBOL_20 + scale;
-    let g = geoCache.get(key);
-    if (g) return g;
-    g = boxUV(geo.clone(), scale);
-    geoCache.set(key, g);
-    return g;
-  };
+  const uvGeo = (geo, scale) => { const key = geo.uuid + MT.SYMBOL_20 + scale; let g = geoCache.get(key); if (g) return g; g = boxUV(geo.clone(), scale); geoCache.set(key, g); return g; };
   const textMesh = (n, env) => {
     const px = 128;
     const c0 = ME.makeCanvas(8, 8).getContext(MT.VALUE_2D);
@@ -494,10 +421,7 @@
     const tw = Math.max(px, c0.measureText(n.text).width + px * 0.5);
     const c = ME.makeCanvas(Math.ceil(tw), Math.ceil(px * 1.4));
     const g = c.getContext(MT.VALUE_2D);
-    if (n.bg) {
-      g.fillStyle = n.bg;
-      g.fillRect(0, 0, c.width, c.height);
-    }
+    if (n.bg) { g.fillStyle = n.bg; g.fillRect(0, 0, c.width, c.height); }
     g.font = font;
     g.fillStyle = n.color;
     g.textAlign = MT.CENTER;
@@ -506,8 +430,7 @@
     const tex = new T.CanvasTexture(c);
     tex.colorSpace = T.SRGBColorSpace;
     tex.anisotropy = 8;
-    const h = n.height,
-      w = (h * c.width) / c.height;
+    const h = n.height, w = (h * c.width) / c.height;
     const mat = n.glow ? new T.MeshBasicMaterial({ map: tex, transparent: !n.bg, toneMapped: false }) : new T.MeshStandardMaterial({ map: tex, transparent: !n.bg, roughness: 0.6, emissive: new T.Color(MT.FFFFFF), emissiveMap: tex, emissiveIntensity: 0.25 });
     if (n.glow) mat.color = new T.Color(1.8, 1.8, 1.8);
     const m = new T.Mesh(new T.PlaneGeometry(w, h), mat);
@@ -556,39 +479,14 @@
       light.target.position.set(n.target[0], n.target[1], n.target[2]);
       env.root.add(light.target);
       env.sun = light;
-    } else if (n.type === MT.HEMI) {
-      light = new T.HemisphereLight(col, new T.Color(n.ground || MT.VALUE_333333), n.intensity);
-    } else light = new T.AmbientLight(col, n.intensity);
-    if (n.shadow && (light.isSpotLight || light.isDirectionalLight || light.isPointLight) && env.shadowBudget > 0) {
-      env.shadowBudget--;
-      light.castShadow = true;
-      light.shadow.mapSize.set(light.isPointLight ? 512 : 1024, light.isPointLight ? 512 : 1024);
-      light.shadow.bias = -0.0008;
-      light.shadow.normalBias = 0.03;
-    }
+    } else if (n.type === MT.HEMI) { light = new T.HemisphereLight(col, new T.Color(n.ground || MT.VALUE_333333), n.intensity); } else light = new T.AmbientLight(col, n.intensity);
+    if (n.shadow && (light.isSpotLight || light.isDirectionalLight || light.isPointLight) && env.shadowBudget > 0) { env.shadowBudget--; light.castShadow = true; light.shadow.mapSize.set(light.isPointLight ? 512 : 1024, light.isPointLight ? 512 : 1024); light.shadow.bias = -0.0008; light.shadow.normalBias = 0.03; }
     if (n.flash || n.flicker) env.animated.push({ light, def: n, base: n.intensity, baseColor: col.clone() });
     env.lights.push(light);
     return light;
   };
-  const applyTransform = (o, n) => {
-    o.position.set(n.pos[0], n.pos[1], n.pos[2]);
-    if (n.rot) o.rotation.set(n.rot[0] * DEG, n.rot[1] * DEG, n.rot[2] * DEG, MT.YXZ);
-    if (n.scale) o.scale.set(n.scale[0], n.scale[1], n.scale[2]);
-  };
-  const resolveMat = (n, env, inherited) => {
-    let def;
-    if (n.mat == null) def = inherited || env.defaultMat;
-    else if (typeof n.mat === MT.STRING) def = env.materials[n.mat] || env.defaultMat;
-    else def = n.mat;
-    const key = JSON.stringify(def);
-    let m = env.matCache.get(key);
-    if (!m) {
-      m = GEN.makeMaterial(def, env);
-      env.matCache.set(key, m);
-      env.disposables.push(m);
-    }
-    return m;
-  };
+  const applyTransform = (o, n) => { o.position.set(n.pos[0], n.pos[1], n.pos[2]); if (n.rot) o.rotation.set(n.rot[0] * DEG, n.rot[1] * DEG, n.rot[2] * DEG, MT.YXZ); if (n.scale) o.scale.set(n.scale[0], n.scale[1], n.scale[2]); };
+  const resolveMat = (n, env, inherited) => { let def; if (n.mat == null) def = inherited || env.defaultMat; else if (typeof n.mat === MT.STRING) def = env.materials[n.mat] || env.defaultMat; else def = n.mat; const key = JSON.stringify(def); let m = env.matCache.get(key); if (!m) { m = GEN.makeMaterial(def, env); env.matCache.set(key, m); env.disposables.push(m); } return m; };
   const meshFor = (n, env, inheritedMat) => {
     const mat = resolveMat(n, env, inheritedMat);
     let geo = geometryFor(n);
@@ -641,34 +539,12 @@
     const want = n._size || [1, 1, 1];
     const o = new T.Group();
     o.userData.ref = n.ref;
-    if (!rec || rec.failed || rec.box.isEmpty()) {
-      const h = n.height || want[1];
-      const w = n.width || want[0];
-      const d = n.length || want[2];
-      const m = new T.Mesh(new T.BoxGeometry(w, h, d), resolveMat({}, env));
-      env.disposables.push(m.geometry);
-      m.position.y = h / 2;
-      m.castShadow = true;
-      m.receiveShadow = true;
-      o.add(m);
-      return o;
-    }
+    if (!rec || rec.failed || rec.box.isEmpty()) { const h = n.height || want[1]; const w = n.width || want[0]; const d = n.length || want[2]; const m = new T.Mesh(new T.BoxGeometry(w, h, d), resolveMat({}, env)); env.disposables.push(m.geometry); m.position.y = h / 2; m.castShadow = true; m.receiveShadow = true; o.add(m); return o; }
     const size = rec.box.getSize(new T.Vector3());
     let k;
-    if (n.height) k = n.height / Math.max(1e-6, size.y);
-    else if (n.length) k = n.length / Math.max(1e-6, size.x, size.z);
-    else if (n.width) k = n.width / Math.max(1e-6, Math.min(size.x, size.z));
-    else k = Math.max(want[0], want[1], want[2]) / Math.max(1e-6, size.x, size.y, size.z);
+    if (n.height) k = n.height / Math.max(1e-6, size.y); else if (n.length) k = n.length / Math.max(1e-6, size.x, size.z); else if (n.width) k = n.width / Math.max(1e-6, Math.min(size.x, size.z)); else k = Math.max(want[0], want[1], want[2]) / Math.max(1e-6, size.x, size.y, size.z);
     const inner = rec.scene.clone(true);
-    if (n.tint) {
-      const tint = new T.Color(n.tint);
-      inner.traverse((c) => {
-        if (!c.isMesh || !c.material) return;
-        c.material = c.material.clone();
-        if (c.material.color) c.material.color.multiply(tint);
-        env.disposables.push(c.material);
-      });
-    }
+    if (n.tint) { const tint = new T.Color(n.tint); inner.traverse((c) => { if (!c.isMesh || !c.material) return; c.material = c.material.clone(); if (c.material.color) c.material.color.multiply(tint); env.disposables.push(c.material); }); }
     const center = rec.box.getCenter(new T.Vector3());
     inner.scale.setScalar(k);
     inner.position.set(-center.x * k, -rec.box.min.y * k, -center.z * k);
@@ -706,8 +582,7 @@
         for (let j = 0; j < ny; j++)
           for (let k = 0; k < nz; k++) {
             if (n.skip && r() < n.skip) continue;
-            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0,
-              jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
+            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0, jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
             offs.push([i * n.step[0] + jx, j * n.step[1], k * n.step[2] + jz]);
           }
       if (simple && offs.length > 3) {
@@ -737,19 +612,8 @@
           o.add(k);
         }
       }
-    } else if (n.shape === MT.MODEL) {
-      o = modelNode(n, env);
-    } else if (n.shape === MT.TEXT) {
-      o = textMesh(n, env);
-      if (n.billboard) (env.billboards = env.billboards || []).push(o);
-    } else if (n.shape === MT.ARROW) {
-      o = arrowNode(n, env);
-    } else o = meshFor(n, env, inheritedMat);
-    if (n.shape === MT.REPEAT) {
-      o.position.set(n.pos[0], n.pos[1], n.pos[2]);
-      if (n.rot) o.rotation.set(n.rot[0] * DEG, n.rot[1] * DEG, n.rot[2] * DEG, MT.YXZ);
-      if (n.scale) o.scale.set(n.scale[0], n.scale[1], n.scale[2]);
-    } else applyTransform(o, n);
+    } else if (n.shape === MT.MODEL) { o = modelNode(n, env); } else if (n.shape === MT.TEXT) { o = textMesh(n, env); if (n.billboard) (env.billboards = env.billboards || []).push(o); } else if (n.shape === MT.ARROW) { o = arrowNode(n, env); } else o = meshFor(n, env, inheritedMat);
+    if (n.shape === MT.REPEAT) { o.position.set(n.pos[0], n.pos[1], n.pos[2]); if (n.rot) o.rotation.set(n.rot[0] * DEG, n.rot[1] * DEG, n.rot[2] * DEG, MT.YXZ); if (n.scale) o.scale.set(n.scale[0], n.scale[1], n.scale[2]); } else applyTransform(o, n);
     if (n.name) o.name = n.name;
     return o;
   };
@@ -780,17 +644,10 @@
       const d = a.def;
       let k = 1;
       if (d.flicker) k *= 1 - d.flicker * (0.5 + 0.5 * U.noise(t * 9, U.strHash(a.light.uuid) % 97));
-      if (d.flash) {
-        const f = GEN.flashColor(d.flash, t);
-        a.light.color.set(f.color);
-        k *= f.on ? 1 : 0.04;
-      }
+      if (d.flash) { const f = GEN.flashColor(d.flash, t); a.light.color.set(f.color); k *= f.on ? 1 : 0.04; }
       const base = a.light.isPointLight ? a.base * 10 : a.light.isSpotLight ? a.base * 25 : a.base;
       a.light.intensity = base * k * (a.light.userData.dim || 1);
-      if (a.glow) {
-        a.glow.material.color.copy(a.light.color);
-        a.glow.material.opacity = 0.9 * k;
-      }
+      if (a.glow) { a.glow.material.color.copy(a.light.color); a.glow.material.opacity = 0.9 * k * Math.sqrt(a.light.userData.dim || 1); }
     }
   };
   GEN.addLightGlows = (env) => {

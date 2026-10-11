@@ -1,32 +1,12 @@
 import { MotionAspect, MotionQuality } from "../types/motionVideo.js";
-export interface MotionQualityPreset {
-  id: MotionQuality;
-  scale: number;
-  fps: number;
-  supersample: number;
-  motionBlur: number;
-  layerScale: number;
-  bloom: boolean;
-  grain: boolean;
-  jpegQuality: number;
-  crf: number;
-  x264Preset: string;
-  gpuCq: number;
-  audioBitrate: string;
-  maxBpp: number;
-}
+export interface MotionQualityPreset { id: MotionQuality; scale: number; fps: number; supersample: number; motionBlur: number; layerScale: number; bloom: boolean; grain: boolean; jpegQuality: number; crf: number; x264Preset: string; gpuCq: number; audioBitrate: string; maxBpp: number; }
 export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> = {
   [MotionQuality.DRAFT]: { id: MotionQuality.DRAFT, scale: 2 / 3, fps: 24, supersample: 1, motionBlur: 1, layerScale: 0.75, bloom: false, grain: true, jpegQuality: 0.85, crf: 24, x264Preset: "veryfast", gpuCq: 26, audioBitrate: "160k", maxBpp: 0.12 },
   [MotionQuality.STANDARD]: { id: MotionQuality.STANDARD, scale: 1, fps: 30, supersample: 1, motionBlur: 1, layerScale: 1, bloom: true, grain: true, jpegQuality: 0.9, crf: 19, x264Preset: "fast", gpuCq: 21, audioBitrate: "192k", maxBpp: 0.2 },
   [MotionQuality.HIGH]: { id: MotionQuality.HIGH, scale: 1, fps: 30, supersample: 1.5, motionBlur: 2, layerScale: 1.25, bloom: true, grain: true, jpegQuality: 0.94, crf: 17, x264Preset: "medium", gpuCq: 18, audioBitrate: "256k", maxBpp: 0.3 },
   [MotionQuality.ULTRA]: { id: MotionQuality.ULTRA, scale: 2, fps: 30, supersample: 1, motionBlur: 3, layerScale: 1.5, bloom: true, grain: true, jpegQuality: 0.95, crf: 16, x264Preset: "slow", gpuCq: 17, audioBitrate: "320k", maxBpp: 0.18 },
 };
-export const MOTION_ASPECT_BASE: Record<string, { w: number; h: number }> = {
-  [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 },
-  [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 },
-  [MotionAspect.SQUARE]: { w: 1080, h: 1080 },
-  [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 },
-};
+export const MOTION_ASPECT_BASE: Record< string, { w: number; h: number; } > = { [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 }, [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 }, [MotionAspect.SQUARE]: { w: 1080, h: 1080 }, [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 }, };
 export const MOTION_VIDEO_CONSTANTS = {
   ENGINE_DIR: "motion-engine",
   ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "gen-core.js", "gen-build.js", "gen-mannequin.js", "gen-scene.js"],
@@ -51,23 +31,18 @@ export const MOTION_VIDEO_CONSTANTS = {
   JOB_TTL_MS: 60 * 60 * 1000,
   SAVE_TOKEN_TTL_MS: 10 * 60 * 1000,
   BROWSER_CHANNELS: ["chrome", "msedge"],
-  SETTINGS_STORAGE_KEY: "motion_video_settings_v1",
   POLL_INTERVAL_MS: 1000,
   PREVIEW_WIDTH: 960,
 } as const;
 export const MOTION_GPU_ENCODERS = ["h264_nvenc", "h264_qsv", "h264_amf"] as const;
 export const MOTION_STORY_CONFIG = {
-  GENRE_ID_KEY: "id",
-  GENRE_ID_JOIN: "|",
-  GENRE_PART_STORY: "story" as const,
-  DEFAULT_WRITER_ROLE: "documentary scriptwriter",
   PROJECT_ID_PREFIX: "motion-story-",
   ARTIFACT_ANALYSIS: "motion-story-analysis",
   ARTIFACT_CHAPTER: "motion-story-chapter",
   VI_SYLLABLES_PER_SECOND: 4.3,
   EN_WORDS_PER_SECOND: 2.5,
   TARGET_BEAT_SECONDS: 7,
-  LENGTH_SAFETY: 0.85,
+  LENGTH_SAFETY: 0.92,
   LEAD_SECONDS: 0.3,
   BEAT_GAP_SECONDS: 0.28,
   CHAPTER_GAP_SECONDS: 0.7,
@@ -75,7 +50,7 @@ export const MOTION_STORY_CONFIG = {
   MIN_SHOT_SECONDS: 2.4,
   TTS_CONCURRENCY: 3,
   TTS_MAX_CHARS: 900,
-  SUBTITLE_MAX_CHARS: 84,
+  SUBTITLE_MAX_CHARS: 64,
   STORY_STORAGE_KEY: "motion_story_state_v1",
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   AI_PARALLEL: 2,

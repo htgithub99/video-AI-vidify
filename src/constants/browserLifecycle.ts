@@ -1,0 +1,1 @@
+export const BROWSER_LIFECYCLE_TEXTS = { urlSeparator: ", ", idleChromeClosed: "[Chrome] Tác vụ AI đã xong, chỉ còn tab chat/trống – đóng Chrome tự động.", busyChromeRetained: (urls: string): string => `[Chrome] Giữ Chrome mở vì còn tab đang dùng: ${urls}` } as const;

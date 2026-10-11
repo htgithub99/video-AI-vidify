@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import vm from "node:vm";
+const source = fs.readFileSync(new URL("../motion-engine/gen-scene.js", import.meta.url), "utf8");
+const actorCode = source.slice(source.indexOf("  const fixedAction ="), source.indexOf("  const SHOT_DIST ="));
+const MT = new Proxy({}, { get: (_, key) => String(key).toLowerCase() });
+const calls = [];
+const GEN = { ACTIONS: { stand: { calm: true }, point: { pose: "point" }, lie: { hold: 1 } }, applyPose: (...args) => calls.push(["apply", args[1], args[3]]), };
+const context = { MT, GEN, LOCOMOTION: ["walk", "run", "carry"], DEG: Math.PI / 180, yawTo: (a, b) => Math.atan2(b[0] - a[0], b[1] - a[1]), U: { smooth: (x) => x, clamp: (x) => x, mod: (x, n) => ((x % n) + n) % n }, T: {}, api: null };
+vm.createContext(context);
+vm.runInContext(`${actorCode}\napi = { updateActor, planActor, actorState, fixedAction };`, context);
+const { updateActor, planActor, fixedAction } = context.api;
+assert.equal(fixedAction("run"), "stand");
+assert.equal(fixedAction("sit_down"), "sit");
+assert.equal(fixedAction("shoot"), "aim");
+const scene = { L: { camera: { pos: [0, 2, 9] } }, actors: [] };
+for (const action of ["run", "point", "lie"]) {
+  let evaluations = 0;
+  const group = { position: { set(x, y, z) { this.xyz = [x, y, z]; }, }, rotation: {}, updateMatrixWorld() {}, };
+  const def = { cast: action, action, at: [2, -3], y: 0.4, face: "camera", moveTo: [20, 20], then: "walk" };
+  const actor = { group, pose(list, time) { evaluations++; calls.push(["pose", list.map((x) => [x.id, x.time]), time]); }, };
+  const A = { def, actor, segs: planActor(def, 12), dur: 12, phase: 7.3 };
+  scene.actors.push(A);
+  updateActor(A, scene, 0, { position: { x: 100, z: 100 } });
+  const before = JSON.stringify({ pos: group.position.xyz, yaw: group.rotation.y, calls });
+  for (const t of [0.5, 4, 12, 20, 0]) updateActor(A, scene, t, { position: { x: -t * 10, z: t } });
+  assert.equal(evaluations, 1, `${action}: skeleton must evaluate only once`);
+  assert.equal(JSON.stringify({ pos: group.position.xyz, yaw: group.rotation.y, calls }), before);
+  assert.deepEqual(group.position.xyz, [2, 0.4, -3]);
+}
+console.log("Static cast passed: planted coordinates, frozen skeleton, stable facing across time and camera changes.");

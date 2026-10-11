@@ -24,12 +24,7 @@
     MAP[MT.DEF_FOOT + S] = MT.FOOT + s;
     MAP[MT.DEF_TOE + S] = MT.BALL + s;
   }
-  const loadGLB = (url) =>
-    new Promise((res, rej) => {
-      const L = new X.GLTFLoader();
-      if (X.MeshoptDecoder) L.setMeshoptDecoder(X.MeshoptDecoder);
-      L.load(url, res, undefined, (e) => rej(new Error(MT.MANNEQUIN_LOAD_FAILED + url + MT.SYMBOL_3 + (e && e.message ? e.message : e))));
-    });
+  const loadGLB = (url) => new Promise((res, rej) => { const L = new X.GLTFLoader(); if (X.MeshoptDecoder) L.setMeshoptDecoder(X.MeshoptDecoder); L.load(url, res, undefined, (e) => rej(new Error(MT.MANNEQUIN_LOAD_FAILED + url + MT.SYMBOL_3 + (e && e.message ? e.message : e)))); });
   GEN.loadMannequin = (base) => {
     if (MQ.ready && MQ.base === base) return Promise.resolve(MQ);
     if (MQ.loading && MQ.base === base) return MQ.loading;
@@ -60,8 +55,7 @@
     scene.updateMatrixWorld(true);
     scene.traverse((o) => {
       if (!o.isBone && o.name !== MT.ROOT) return;
-      const wq = new T.Quaternion(),
-        wp = new T.Vector3();
+      const wq = new T.Quaternion(), wp = new T.Vector3();
       o.getWorldQuaternion(wq);
       o.getWorldPosition(wp);
       info.bones[o.name] = { wq, wp, lq: o.quaternion.clone(), lp: o.position.clone(), ls: o.scale.clone(), parent: o.parent ? o.parent.name : null };
@@ -77,11 +71,7 @@
     const rest = MQ.rest;
     const srcRest = {};
     scene.traverse((o) => {
-      if (MAP[o.name]) {
-        const q = new T.Quaternion();
-        o.getWorldQuaternion(q);
-        srcRest[o.name] = q;
-      }
+      if (MAP[o.name]) { const q = new T.Quaternion(); o.getWorldQuaternion(q); srcRest[o.name] = q; }
     });
     const mixer = new T.AnimationMixer(scene);
     const action = mixer.clipAction(clip);
@@ -92,19 +82,13 @@
     const tgtNames = rest.order;
     const inv = {};
     for (const k of Object.keys(MAP)) inv[MAP[k]] = k;
-    const qv = {},
-      pelvisPos = new Float32Array(n * 3),
-      rootPos = new Float32Array(n * 3);
+    const qv = {}, pelvisPos = new Float32Array(n * 3), rootPos = new Float32Array(n * 3);
     for (const b of tgtNames) if (inv[b]) qv[b] = new Float32Array(n * 4);
     const srcNodes = {};
     scene.traverse((o) => {
       if (MAP[o.name]) srcNodes[o.name] = o;
     });
-    const tmpQ = new T.Quaternion(),
-      tmpP = new T.Vector3(),
-      worldNow = {},
-      rootM = new T.Matrix4(),
-      invRoot = new T.Matrix4();
+    const tmpQ = new T.Quaternion(), tmpP = new T.Vector3(), worldNow = {}, rootM = new T.Matrix4(), invRoot = new T.Matrix4();
     for (let i = 0; i < n; i++) {
       const t = Math.min(clip.duration, i / fps);
       times[i] = t;
@@ -115,12 +99,7 @@
         const parentW = R.parent && worldNow[R.parent] ? worldNow[R.parent] : new T.Quaternion();
         const sName = inv[b];
         let w;
-        if (sName && srcNodes[sName]) {
-          srcNodes[sName].getWorldQuaternion(tmpQ);
-          w = tmpQ.clone().multiply(srcRest[sName].clone().invert()).multiply(R.wq);
-          const local = parentW.clone().invert().multiply(w);
-          qv[b].set([local.x, local.y, local.z, local.w], i * 4);
-        } else w = parentW.clone().multiply(R.lq);
+        if (sName && srcNodes[sName]) { srcNodes[sName].getWorldQuaternion(tmpQ); w = tmpQ.clone().multiply(srcRest[sName].clone().invert()).multiply(R.wq); const local = parentW.clone().invert().multiply(w); qv[b].set([local.x, local.y, local.z, local.w], i * 4); } else w = parentW.clone().multiply(R.lq);
         worldNow[b] = w;
       }
       const sr = srcNodes.root;
@@ -139,26 +118,13 @@
     tracks.push(new T.VectorKeyframeTrack(MT.ROOT_POSITION, times, rootPos));
     return new T.AnimationClip(name, clip.duration, tracks);
   };
-  const inPlace = (clip) => {
-    for (const tr of clip.tracks) {
-      if (tr.name !== MT.ROOT_POSITION) continue;
-      const v = tr.values;
-      for (let i = 0; i < v.length; i += 3) {
-        v[i] = 0;
-        v[i + 1] = 0;
-      }
-    }
-    return clip;
-  };
+  const inPlace = (clip) => { for (const tr of clip.tracks) { if (tr.name !== MT.ROOT_POSITION) continue; const v = tr.values; for (let i = 0; i < v.length; i += 3) { v[i] = 0; v[i + 1] = 0; } } return clip; };
   GEN.clipFor = (actionId) => {
     const A = GEN.ACTIONS[actionId] || GEN.ACTIONS.idle;
     const key = A.src + MT.SYMBOL_15 + A.clip;
     if (MQ.clips[key]) return MQ.clips[key];
     let clip = null;
-    if (A.src === MT.UAL2) {
-      const c = MQ.ual2Clips[A.clip];
-      if (c) clip = c.clone();
-    } else clip = bakeUal1(A.clip);
+    if (A.src === MT.UAL2) { const c = MQ.ual2Clips[A.clip]; if (c) clip = c.clone(); } else clip = bakeUal1(A.clip);
     if (!clip) clip = MQ.clips[MT.UAL1_IDLE_LOOP] || bakeUal1(MT.IDLE_LOOP);
     clip = inPlace(clip);
     MQ.clips[key] = clip;
@@ -167,24 +133,7 @@
   GEN.prebake = (actionIds) => {
     for (const id of actionIds) GEN.clipFor(id);
   };
-  const domBone = (geo, skeleton) => {
-    const si = geo.attributes.skinIndex,
-      sw = geo.attributes.skinWeight;
-    const out = new Int16Array(si.count);
-    for (let i = 0; i < si.count; i++) {
-      let best = 0,
-        bw = -1;
-      for (let k = 0; k < 4; k++) {
-        const w = sw.getComponent(i, k);
-        if (w > bw) {
-          bw = w;
-          best = si.getComponent(i, k);
-        }
-      }
-      out[i] = best;
-    }
-    return out;
-  };
+  const domBone = (geo, skeleton) => { const si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight; const out = new Int16Array(si.count); for (let i = 0; i < si.count; i++) { let best = 0, bw = -1; for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; best = si.getComponent(i, k); } } out[i] = best; } return out; };
   const SEG_CHILD = {
     pelvis: MT.SPINE_01,
     spine_01: MT.SPINE_02,
@@ -207,43 +156,15 @@
     foot_r: MT.BALL_R,
   };
   const FINGERS = [MT.INDEX, MT.MIDDLE, MT.PINKY, MT.RING, MT.THUMB_2];
-  const both = (rules) => {
-    const out = [];
-    for (const r of rules) {
-      if (r[0].endsWith(MT.X)) {
-        out.push([r[0].replace(MT.X, MT.L_4)].concat(r.slice(1)));
-        out.push([r[0].replace(MT.X, MT.R_3)].concat(r.slice(1)));
-      } else out.push(r);
-    }
-    return out;
-  };
+  const both = (rules) => { const out = []; for (const r of rules) { if (r[0].endsWith(MT.X)) { out.push([r[0].replace(MT.X, MT.L_4)].concat(r.slice(1))); out.push([r[0].replace(MT.X, MT.R_3)].concat(r.slice(1))); } else out.push(r); } return out; };
   const ALL = [-9, 9];
-  const TORSO = [
-    [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06] }],
-    [MT.SPINE_02, ...ALL],
-    [MT.SPINE_03, ...ALL],
-    [MT.CLAVICLE_X, ...ALL],
-    [MT.NECK_01, -9, 0.25],
-  ];
+  const TORSO = [ [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06] }], [MT.SPINE_02, ...ALL], [MT.SPINE_03, ...ALL], [MT.CLAVICLE_X, ...ALL], [MT.NECK_01, -9, 0.25], ];
   const regionRules = (layer) => {
     const k = layer.kind;
     const sleeves = layer.sleeves || (k === MT.TSHIRT || k === MT.POLO ? MT.SHORT : k === MT.TANK || k === MT.VEST ? MT.NONE : MT.LONG);
-    const arm =
-      sleeves === MT.NONE
-        ? []
-        : sleeves === MT.SHORT
-          ? [[MT.UPPERARM_X, -9, 0.62]]
-          : [
-              [MT.UPPERARM_X, ...ALL],
-              [MT.LOWERARM_X, -9, 0.97],
-            ];
+    const arm = sleeves === MT.NONE ? [] : sleeves === MT.SHORT ? [[MT.UPPERARM_X, -9, 0.62]] : [ [MT.UPPERARM_X, ...ALL], [MT.LOWERARM_X, -9, 0.97], ];
     const untucked = layer.style === MT.UNTUCKED || k === MT.SWEATER || k === MT.HOODIE || k === MT.POLO;
-    const hip = untucked
-      ? [
-          [MT.PELVIS, -9, 9, { yminRel: [MT.PELVIS, -0.06] }],
-          [MT.SPINE_01, ...ALL],
-        ]
-      : [];
+    const hip = untucked ? [ [MT.PELVIS, -9, 9, { yminRel: [MT.PELVIS, -0.06] }], [MT.SPINE_01, ...ALL], ] : [];
     const coatLen = layer.length === MT.KNEE || layer.length === MT.LONG ? 0.62 : layer.length === MT.THIGH ? 0.35 : 0;
     switch (k) {
       case MT.TSHIRT:
@@ -254,11 +175,7 @@
       case MT.UNIFORM_TOP:
         return both([...TORSO, ...arm, ...hip]);
       case MT.TANK:
-        return both([
-          [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06] }],
-          [MT.SPINE_02, ...ALL],
-          [MT.SPINE_03, ...ALL],
-        ]);
+        return both([ [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06] }], [MT.SPINE_02, ...ALL], [MT.SPINE_03, ...ALL], ]);
       case MT.VEST:
         return both([...TORSO, [MT.PELVIS, -9, 9, { yminRel: [MT.PELVIS, 0.0] }]]);
       case MT.JACKET:
@@ -269,46 +186,20 @@
         return both([...TORSO, ...arm, [MT.SPINE_01, ...ALL], [MT.PELVIS, ...ALL]]);
       case MT.TROUSERS:
       case MT.JEANS:
-        return both([
-          [MT.PELVIS, ...ALL],
-          [MT.SPINE_01, -9, 9, { ymaxRel: [MT.PELVIS, 0.1] }],
-          [MT.THIGH_X, ...ALL],
-          [MT.CALF_X, -9, layer.length === MT.SHORT ? 0.6 : 0.95],
-        ]);
+        return both([ [MT.PELVIS, ...ALL], [MT.SPINE_01, -9, 9, { ymaxRel: [MT.PELVIS, 0.1] }], [MT.THIGH_X, ...ALL], [MT.CALF_X, -9, layer.length === MT.SHORT ? 0.6 : 0.95], ]);
       case MT.SHORTS:
-        return both([
-          [MT.PELVIS, ...ALL],
-          [MT.SPINE_01, -9, 9, { ymaxRel: [MT.PELVIS, 0.1] }],
-          [MT.THIGH_X, -9, layer.length === MT.LONG ? 0.85 : 0.55],
-        ]);
+        return both([ [MT.PELVIS, ...ALL], [MT.SPINE_01, -9, 9, { ymaxRel: [MT.PELVIS, 0.1] }], [MT.THIGH_X, -9, layer.length === MT.LONG ? 0.85 : 0.55], ]);
       case MT.SKIRT:
         return [];
       case MT.SHOES:
       case MT.SNEAKERS:
-        return both([
-          [MT.FOOT_X, ...ALL],
-          [MT.BALL_X, ...ALL],
-          [MT.BALL_LEAF_X, ...ALL],
-          [MT.CALF_X, 0.94, 9],
-        ]);
+        return both([ [MT.FOOT_X, ...ALL], [MT.BALL_X, ...ALL], [MT.BALL_LEAF_X, ...ALL], [MT.CALF_X, 0.94, 9], ]);
       case MT.BOOTS:
-        return both([
-          [MT.FOOT_X, ...ALL],
-          [MT.BALL_X, ...ALL],
-          [MT.BALL_LEAF_X, ...ALL],
-          [MT.CALF_X, layer.length === MT.SHORT ? 0.8 : 0.45, 9],
-        ]);
+        return both([ [MT.FOOT_X, ...ALL], [MT.BALL_X, ...ALL], [MT.BALL_LEAF_X, ...ALL], [MT.CALF_X, layer.length === MT.SHORT ? 0.8 : 0.45, 9], ]);
       case MT.SOCKS:
-        return both([
-          [MT.FOOT_X, ...ALL],
-          [MT.BALL_X, ...ALL],
-          [MT.CALF_X, 0.75, 9],
-        ]);
+        return both([ [MT.FOOT_X, ...ALL], [MT.BALL_X, ...ALL], [MT.CALF_X, 0.75, 9], ]);
       case MT.GLOVES: {
-        const r = [
-          [MT.HAND_X, ...ALL],
-          [MT.LOWERARM_X, 0.93, 9],
-        ];
+        const r = [ [MT.HAND_X, ...ALL], [MT.LOWERARM_X, 0.93, 9], ];
         for (const f of FINGERS) for (const n of [MT.VALUE_01, MT.VALUE_02, MT.VALUE_03, MT.VALUE_04_LEAF]) r.push([f + MT.SYMBOL_10 + n + MT.X, ...ALL]);
         return both(r);
       }
@@ -317,18 +208,14 @@
         const cut = st === MT.BUZZ ? 0.185 : st === MT.BALD ? 99 : 0.165;
         const r = [[MT.HEAD_2, -9, 9, { yminRel: [MT.HEAD_2, cut] }]];
         if (st !== MT.BALD) r.push([MT.HEAD_2, -9, 9, { zmaxRel: [MT.HEAD_2, 0.04], yminRel: [MT.HEAD_2, st === MT.BUZZ ? 0.14 : 0.12] }]);
-        if (st === MT.BOB || st === MT.LONG || st === MT.PONYTAIL || st === MT.BUN) r.push([MT.HEAD_2, -9, 9, { zmaxRel: [MT.HEAD_2, -0.02], yminRel: [MT.HEAD_2, st === MT.BOB || st === MT.LONG ? -0.02 : 0.05] }]);
-        else r.push([MT.HEAD_2, -9, 9, { zmaxRel: [MT.HEAD_2, -0.03], yminRel: [MT.HEAD_2, 0.06] }]);
+        if (st === MT.BOB || st === MT.LONG || st === MT.PONYTAIL || st === MT.BUN) r.push([MT.HEAD_2, -9, 9, { zmaxRel: [MT.HEAD_2, -0.02], yminRel: [MT.HEAD_2, st === MT.BOB || st === MT.LONG ? -0.02 : 0.05] }]); else r.push([MT.HEAD_2, -9, 9, { zmaxRel: [MT.HEAD_2, -0.03], yminRel: [MT.HEAD_2, 0.06] }]);
         return r;
       }
       case MT.CAP:
       case MT.BEANIE:
         return [[MT.HEAD_2, -9, 9, { yminRel: [MT.HEAD_2, k === MT.CAP ? 0.13 : 0.11] }]];
       case MT.BELT:
-        return both([
-          [MT.PELVIS, -9, 9, { yminRel: [MT.PELVIS, 0.06], ymaxRel: [MT.PELVIS, 0.115] }],
-          [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06], ymaxRel: [MT.PELVIS, 0.115] }],
-        ]);
+        return both([ [MT.PELVIS, -9, 9, { yminRel: [MT.PELVIS, 0.06], ymaxRel: [MT.PELVIS, 0.115] }], [MT.SPINE_01, -9, 9, { yminRel: [MT.PELVIS, 0.06], ymaxRel: [MT.PELVIS, 0.115] }], ]);
     }
     return [];
   };
@@ -336,7 +223,7 @@
   const PATTERN_ID = { plain: 0, stripes: 1, check: 2, denim: 3, knit: 4, leather: 5, camo: 6, dots: 7 };
   const clothMaterial = (layer, style) => {
     const pat = PATTERN_ID[layer.pattern] || (layer.kind === MT.JEANS ? 3 : 0);
-    const params = { color: new T.Color(layer.color), roughness: pat === 5 ? 0.38 : layer.roughness == null ? 0.85 : layer.roughness, metalness: 0 };
+    const params = { color: new T.Color(layer.color), roughness: pat === 5 ? 0.38 : Math.max(0.72, layer.roughness == null ? 0.85 : layer.roughness), metalness: 0 };
     const mat = layer.kind === MT.HAIR ? new T.MeshStandardMaterial(Object.assign(params, { roughness: 0.55 })) : pat === 5 || layer.kind === MT.BOOTS || layer.kind === MT.SHOES ? new T.MeshPhysicalMaterial(Object.assign(params, { clearcoat: 0.35, clearcoatRoughness: 0.4 })) : new T.MeshStandardMaterial(params);
     const c2 = new T.Color(layer.color2 || (pat === 3 ? MT.VALUE_9FB3C8 : pat === 6 ? MT.VALUE_3E4A32 : MT.F0F0F0));
     mat.onBeforeCompile = (sh) => {
@@ -350,8 +237,7 @@
   };
   const buildShell = (srcMesh, rules, rest, thickness, mat, name, paint) => {
     const geo = srcMesh.geometry;
-    const pos = geo.attributes.position,
-      nor = geo.attributes.normal;
+    const pos = geo.attributes.position, nor = geo.attributes.normal;
     const dom = domBone(geo, srcMesh.skeleton);
     const boneNames = srcMesh.skeleton.bones.map((b) => b.name);
     const bind = srcMesh.bindMatrix;
@@ -379,13 +265,8 @@
       const len2 = ab ? Math.max(1e-6, ab.lengthSq()) : 1;
       for (let i = 0; i < n; i++) {
         if (dom[i] !== bi) continue;
-        const x = world[i * 3],
-          y = world[i * 3 + 1],
-          z = world[i * 3 + 2];
-        if (ab) {
-          const t = ((x - a.x) * ab.x + (y - a.y) * ab.y + (z - a.z) * ab.z) / len2;
-          if (t < r[1] || t > r[2]) continue;
-        }
+        const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
+        if (ab) { const t = ((x - a.x) * ab.x + (y - a.y) * ab.y + (z - a.z) * ab.z) / len2; if (t < r[1] || t > r[2]) continue; }
         if (opt.yminRel && y < bp(opt.yminRel[0]).y + opt.yminRel[1]) continue;
         if (opt.ymaxRel && y > bp(opt.ymaxRel[0]).y + opt.ymaxRel[1]) continue;
         if (opt.zmaxRel && z > bp(opt.zmaxRel[0]).z + opt.zmaxRel[1]) continue;
@@ -396,31 +277,18 @@
     const triCount = idx ? idx.length / 3 : n / 3;
     const tris = [];
     for (let t = 0; t < triCount; t++) {
-      const a = idx ? idx[t * 3] : t * 3,
-        b = idx ? idx[t * 3 + 1] : t * 3 + 1,
-        c = idx ? idx[t * 3 + 2] : t * 3 + 2;
+      const a = idx ? idx[t * 3] : t * 3, b = idx ? idx[t * 3 + 1] : t * 3 + 1, c = idx ? idx[t * 3 + 2] : t * 3 + 2;
       if (keep[a] + keep[b] + keep[c] >= 1) tris.push(a, b, c);
     }
     if (!tris.length) return null;
-    if (paint) {
-      const col = paint.geometry.attributes.color;
-      for (let i = 0; i < tris.length; i++) col.setXYZ(tris[i], paint.color.r, paint.color.g, paint.color.b);
-      col.needsUpdate = true;
-    }
+    if (paint) { const col = paint.geometry.attributes.color; for (let i = 0; i < tris.length; i++) col.setXYZ(tris[i], paint.color.r, paint.color.g, paint.color.b); col.needsUpdate = true; }
     const scale = new T.Vector3();
     bind.decompose(new T.Vector3(), new T.Quaternion(), scale);
     const local = thickness / (scale.x || 1);
     const remap = new Map();
-    const P = [],
-      N = [],
-      R = [],
-      SI = [],
-      SW = [],
-      I = [];
-    const si = geo.attributes.skinIndex,
-      sw = geo.attributes.skinWeight;
-    const v = new T.Vector3(),
-      nn = new T.Vector3();
+    const P = [], N = [], R = [], SI = [], SW = [], I = [];
+    const si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
+    const v = new T.Vector3(), nn = new T.Vector3();
     for (const id of tris) {
       let k = remap.get(id);
       if (k == null) {
@@ -458,14 +326,10 @@
     return m;
   };
   const cullCovered = (inner, keep) => {
-    const src = inner.userData.tris,
-      rm = inner.userData.remap;
-    const left = [],
-      I = [];
+    const src = inner.userData.tris, rm = inner.userData.remap;
+    const left = [], I = [];
     for (let t = 0; t < src.length; t += 3) {
-      const a = src[t],
-        b = src[t + 1],
-        c = src[t + 2];
+      const a = src[t], b = src[t + 1], c = src[t + 2];
       if (keep[a] && keep[b] && keep[c]) continue;
       left.push(a, b, c);
       I.push(rm.get(a), rm.get(b), rm.get(c));
@@ -487,12 +351,15 @@
     upperarm_l: [MT.UPPERARM_L, [0, 0, 0]],
     thigh_r: [MT.THIGH_R, [0, 0, 0]],
     thigh_l: [MT.THIGH_L, [0, 0, 0]],
+    calf_r: [MT.CALF_R, [0, 0, 0]],
+    calf_l: [MT.CALF_L, [0, 0, 0]],
     foot_r: [MT.FOOT_R, [0, 0, 0]],
     foot_l: [MT.FOOT_L, [0, 0, 0]],
+    hand_r: [MT.HAND_R, [0, 0, 0]],
+    hand_l: [MT.HAND_L, [0, 0, 0]],
   };
   const handBasis = (rest, side) => {
-    const h = rest.bones[MT.HAND + side].wp,
-      mid = rest.bones[MT.MIDDLE_01 + side].wp;
+    const h = rest.bones[MT.HAND + side].wp, mid = rest.bones[MT.MIDDLE_01 + side].wp;
     const y = new T.Vector3().subVectors(mid, h).normalize();
     const z = new T.Vector3(0, -1, 0);
     const x = new T.Vector3().crossVectors(y, z).normalize();
@@ -502,9 +369,9 @@
     const p = h.clone().addScaledVector(y, 0.075).addScaledVector(z, 0.025);
     return { q, p };
   };
-  const addSocket = (model, rest, bones, socket) => {
+  const addSocket = (model, rest, bones, socket, bodyPart = false) => {
     let boneName, off, restQ;
-    if (socket === MT.HAND_R || socket === MT.HAND_L) {
+    if (!bodyPart && (socket === MT.HAND_R || socket === MT.HAND_L)) {
       const side = socket.slice(-1);
       boneName = MT.HAND + side;
       const hb = handBasis(rest, side);
@@ -515,6 +382,10 @@
       boneName = d[0];
       restQ = new T.Quaternion();
       off = rest.bones[boneName].wp.clone().add(new T.Vector3(d[1][0], d[1][1], d[1][2]));
+      if (bodyPart) {
+        const next = { upperarm_r: MT.LOWERARM_R, upperarm_l: MT.LOWERARM_L, forearm_r: MT.HAND_R, forearm_l: MT.HAND_L, hand_r: MT.MIDDLE_01_R, hand_l: MT.MIDDLE_01_L, thigh_r: MT.CALF_R, thigh_l: MT.CALF_L, calf_r: MT.FOOT_R, calf_l: MT.FOOT_L }[socket];
+        if (next && rest.bones[next]) { const direction = rest.bones[next].wp.clone().sub(rest.bones[boneName].wp).normalize(); restQ.setFromUnitVectors(new T.Vector3(0, -1, 0), direction); }
+      }
     }
     const bone = bones[boneName];
     const R = rest.bones[boneName];
@@ -524,17 +395,13 @@
     s.position.copy(off.clone().sub(R.wp).applyQuaternion(invBone));
     const bs = new T.Vector3();
     bone.matrixWorld.decompose(new T.Vector3(), new T.Quaternion(), bs);
-    if (bs.x && Math.abs(bs.x - 1) > 1e-3) {
-      s.position.divideScalar(bs.x);
-      s.scale.setScalar(1 / bs.x);
-    }
+    if (bs.x && Math.abs(bs.x - 1) > 1e-3) { s.position.divideScalar(bs.x); s.scale.setScalar(1 / bs.x); }
     bone.add(s);
     return s;
   };
   const skirtMesh = (layer, rest, mat) => {
     const len = { mini: 0.28, short: 0.3, knee: 0.48, midi: 0.62, long: 0.82, ankle: 0.86 }[layer.length || MT.KNEE] || 0.48;
-    const top = 0.17,
-      bot = 0.17 + len * 0.42;
+    const top = 0.17, bot = 0.17 + len * 0.42;
     const pts = [];
     for (let i = 0; i <= 8; i++) {
       const k = i / 8;
@@ -554,9 +421,161 @@
   };
   const bodyMaterial = (style, main) => {
     const col = new T.Color((style && style.skin) || MT.EBE8E3);
+    const lum = 0.2126 * col.r + 0.7152 * col.g + 0.0722 * col.b;
+    if (lum < 0.58) col.lerp(new T.Color(MT.E9EAEC), 0.72);
     if (!main) col.multiplyScalar(0.9);
-    const gloss = style && style.gloss != null ? style.gloss : 0.5;
+    const gloss = U.clamp(style && style.gloss != null ? style.gloss : 0.28, 0.15, 0.42);
     return new T.MeshPhysicalMaterial({ color: col, vertexColors: true, roughness: U.lerp(0.75, 0.22, gloss), metalness: 0, clearcoat: gloss, clearcoatRoughness: U.lerp(0.5, 0.12, gloss), sheen: 0.2, sheenColor: new T.Color(MT.FFFFFF) });
+  };
+  GEN.staticWardrobe = (actor) => {
+    if (actor.outfit.drawnBody && actor.outfit.drawnBody.length) return;
+    if (actor.wardrobeBuilt) return;
+    actor.wardrobeBuilt = true;
+    const tops = [MT.TSHIRT, MT.SHIRT, MT.POLO, MT.UNIFORM_TOP, MT.SWEATER, MT.HOODIE, MT.VEST, MT.JACKET, MT.BLAZER, MT.COAT];
+    const layers = actor.outfit.layers || [];
+    const top = layers.filter((l) => tops.includes(l.kind)).pop();
+    if (!top) return;
+    actor.group.updateMatrixWorld(true);
+    const point = (name) => actor.group.worldToLocal(actor.bones[name].getWorldPosition(new T.Vector3()));
+    const cloth = new T.Group();
+    cloth.name = MT.STATICWARDROBE;
+    actor.group.add(cloth);
+    const mat = clothMaterial(top, actor.style);
+    actor.disposables.push(mat);
+    const mesh = (geo, material = mat) => { if (!geo.attributes[MT.AREST]) geo.setAttribute(MT.AREST, geo.attributes.position.clone()); const o = new T.Mesh(geo, material); o.castShadow = true; o.receiveShadow = true; cloth.add(o); actor.disposables.push(geo); return o; };
+    const pelvis = point(MT.PELVIS), neck = point(MT.NECK_01);
+    if (neck.y - pelvis.y < 0.25) { actor.group.remove(cloth); return; }
+    const left = point(MT.UPPERARM_L), right = point(MT.UPPERARM_R);
+    const center = left.clone().add(right).multiplyScalar(0.5);
+    const shoulder = Math.max(0.25, left.distanceTo(right) * 0.5 + 0.06);
+    const longCoat = top.kind === MT.COAT && [MT.KNEE, MT.LONG, MT.THIGH].includes(top.length);
+    const bottom = pelvis.y - (longCoat ? 0.35 : 0.08);
+    const height = Math.max(0.3, neck.y + 0.035 - bottom);
+    const P = [], I = [], UV = [];
+    const radial = 40;
+    const rings = [ [0, 0.88], [0.18, 0.9], [0.48, 0.86], [0.78, 1], [0.94, 1.02], [1, 0.4], ];
+    rings.forEach(([v, width], row) => {
+      for (let i = 0; i <= radial; i++) {
+        const a = (i / radial) * Math.PI * 2;
+        P.push(center.x + Math.sin(a) * shoulder * width, bottom + v * height, center.z + Math.cos(a) * shoulder * width * 0.66);
+        UV.push(i / radial, v);
+        if (row && i) { const c = row * (radial + 1) + i; I.push(c, c - 1, c - radial - 1, c - 1, c - radial - 2, c - radial - 1); }
+      }
+    });
+    const g = new T.BufferGeometry();
+    g.setAttribute(MT.POSITION, new T.Float32BufferAttribute(P, 3));
+    g.setAttribute(MT.UV, new T.Float32BufferAttribute(UV, 2));
+    g.setAttribute(MT.AREST, new T.Float32BufferAttribute(P, 3));
+    g.setIndex(I);
+    g.computeVertexNormals();
+    mesh(g);
+    const sleeve = (a, b, radius) => { const delta = b.clone().sub(a); const geo = new T.CapsuleGeometry(radius, Math.max(0.01, delta.length() - radius * 2), 8, 24); const o = mesh(geo); o.position.copy(a).add(b).multiplyScalar(0.5); o.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), delta.normalize()); geo.setAttribute(MT.AREST, geo.attributes.position.clone()); };
+    const sleeves = top.sleeves || ([MT.TSHIRT, MT.POLO].includes(top.kind) ? MT.SHORT : top.kind === MT.VEST ? MT.NONE : MT.LONG);
+    if (sleeves !== MT.NONE)
+      for (const side of [MT.L_3, MT.R_2]) {
+        const upper = point(MT.UPPERARM + side), elbow = point(MT.LOWERARM + side), hand = point(MT.HAND + side);
+        if (sleeves === MT.SHORT) sleeve(upper, upper.clone().lerp(elbow, 0.65), 0.095); else { const start = upper.clone().lerp(center, 0.12); const curve = new T.CatmullRomCurve3([start, elbow, elbow.clone().lerp(hand, 0.96)]); const tube = new T.TubeGeometry(curve, 24, 0.085, 20, false); tube.setAttribute(MT.AREST, tube.attributes.position.clone()); mesh(tube); }
+      }
+    const trousers = layers.filter((l) => [MT.TROUSERS, MT.JEANS].includes(l.kind)).pop();
+    if (trousers) {
+      const legMat = clothMaterial(trousers, actor.style);
+      actor.disposables.push(legMat);
+      const hip = mesh(new T.SphereGeometry(1, 32, 24), legMat);
+      hip.position.copy(pelvis).add(new T.Vector3(0, -0.035, 0));
+      hip.scale.set(0.18, 0.15, 0.13);
+      for (const side of [MT.L_3, MT.R_2]) {
+        const thigh = point(MT.THIGH + MT.SYMBOL_10 + side), knee = point(MT.CALF + side), ankle = point(MT.FOOT + side);
+        const curve = new T.CatmullRomCurve3([thigh.clone().lerp(pelvis, 0.12), knee, knee.clone().lerp(ankle, 0.98)]);
+        mesh(new T.TubeGeometry(curve, 32, 0.085, 24, false), legMat);
+      }
+    }
+    actor.model.traverse((o) => {
+      if (!o.isSkinnedMesh || o.userData.keep) return;
+      const dom = domBone(o.geometry, o.skeleton);
+      const covered = new Set([MT.SPINE_01, MT.SPINE_02, MT.SPINE_03, MT.PELVIS, MT.CLAVICLE_L, MT.CLAVICLE_R, MT.HEAD_2, MT.NECK_01]);
+      if (sleeves === MT.LONG) { covered.add(MT.UPPERARM_L); covered.add(MT.UPPERARM_R); covered.add(MT.LOWERARM_L); covered.add(MT.LOWERARM_R); }
+      if (trousers) for (const side of [MT.L_3, MT.R_2]) { covered.add(MT.THIGH + MT.SYMBOL_10 + side); covered.add(MT.CALF + side); }
+      const index = o.geometry.index.array, remaining = [];
+      for (let i = 0; i < index.length; i += 3) {
+        const ids = [index[i], index[i + 1], index[i + 2]];
+        if (ids.some((v) => covered.has(o.skeleton.bones[dom[v]].name))) continue;
+        remaining.push(...ids);
+      }
+      o.geometry.setIndex(remaining);
+    });
+    actor.model.traverse((o) => {
+      if (o.isSkinnedMesh && (tops.includes(o.name) || o.name === MT.HAIR || (trousers && [MT.TROUSERS, MT.JEANS].includes(o.name)))) o.visible = false;
+    });
+    const skin = bodyMaterial(actor.style, true);
+    skin.vertexColors = false;
+    actor.disposables.push(skin);
+    const head = point(MT.HEAD_2).add(new T.Vector3(0, 0.09, 0));
+    const face = mesh(new T.SphereGeometry(1, 40, 28));
+    face.material = skin;
+    const design = actor.outfit.customDesign || {};
+    face.scale.set(0.105 * (design.headWidth || 1), 0.135, 0.11 * (design.headDepth || 1));
+    face.position.copy(head);
+    const collarY = bottom + height * 0.94, chinY = head.y - 0.105;
+    const neckMesh = mesh(new T.CylinderGeometry(0.048, 0.054, Math.max(0.06, chinY - collarY), 28));
+    neckMesh.material = skin;
+    neckMesh.position.set(head.x, (collarY + chinY) * 0.5, head.z);
+    const hair = layers.find((l) => l.kind === MT.HAIR);
+    if (hair) { const hairMat = new T.MeshStandardMaterial({ color: hair.color, roughness: 0.86 }); actor.disposables.push(hairMat); const cap = mesh(new T.SphereGeometry(1, 40, 20, 0, Math.PI * 2, 0, Math.PI * 0.38)); cap.material = hairMat; cap.position.copy(head); cap.scale.set(0.108, 0.139, 0.114); }
+    const trim = new T.MeshStandardMaterial({ color: MT.DDD8CC, roughness: 0.86 });
+    actor.disposables.push(trim);
+    if ([MT.SHIRT, MT.UNIFORM_TOP, MT.JACKET, MT.BLAZER, MT.COAT].includes(top.kind)) {
+      const frontZ = (v, x) => { let row = 1; while (row < rings.length - 1 && rings[row][0] < v) row++; const lo = rings[row - 1], hi = rings[row]; const radius = shoulder * U.lerp(lo[1], hi[1], (v - lo[0]) / (hi[0] - lo[0])); return center.z + Math.sqrt(Math.max(0, radius * radius - x * x)) * 0.66 + 0.006; };
+      const panel = (points, material) => {
+        const geo = new T.BufferGeometry();
+        const vertices = [], subdivisions = 12;
+        for (let k = 1; k < points.length - 1; k++) {
+          const a = points[0], b = points[k], c = points[k + 1];
+          const vertex = (i, j) => { const x = a[0] + ((b[0] - a[0]) * i) / subdivisions + ((c[0] - a[0]) * j) / subdivisions; const v = a[1] + ((b[1] - a[1]) * i) / subdivisions + ((c[1] - a[1]) * j) / subdivisions; vertices.push(center.x + x, bottom + height * v, frontZ(v, x)); };
+          for (let i = 0; i < subdivisions; i++)
+            for (let j = 0; j < subdivisions - i; j++) {
+              vertex(i, j);
+              vertex(i + 1, j);
+              vertex(i, j + 1);
+              if (i + j < subdivisions - 1) { vertex(i + 1, j); vertex(i + 1, j + 1); vertex(i, j + 1); }
+            }
+        }
+        geo.setAttribute(MT.POSITION, new T.Float32BufferAttribute(vertices, 3));
+        geo.computeVertexNormals();
+        const o = mesh(geo);
+        o.material = material;
+        material.side = T.DoubleSide;
+        return o;
+      };
+      const tailored = [MT.BLAZER, MT.COAT, MT.VEST].includes(top.kind);
+      if (tailored) { const under = layers.filter((l) => [MT.SHIRT, MT.TSHIRT, MT.UNIFORM_TOP].includes(l.kind)).pop(); const shirtMat = new T.MeshStandardMaterial({ color: under?.color || MT.DED8CA, roughness: 0.9 }); actor.disposables.push(shirtMat); panel( [ [-0.07, 0.94], [0.07, 0.94], [0, 0.57], ], shirtMat, ); }
+      panel(
+        [
+          [-0.006, 0.12],
+          [0.006, 0.12],
+          [0.006, tailored ? 0.56 : 0.91],
+          [-0.006, tailored ? 0.56 : 0.91],
+        ],
+        mat,
+      );
+      for (let i = 0; i < 4; i++) {
+        const button = mesh(new T.SphereGeometry(0.008, 10, 8));
+        button.material = trim;
+        const v = 0.2 + i * (tailored ? 0.1 : 0.18);
+        button.position.set(center.x, bottom + height * v, frontZ(v, 0) + 0.008);
+      }
+      const lapelMat = new T.MeshStandardMaterial({ color: new T.Color(top.color).multiplyScalar(1.18), roughness: 0.88 });
+      actor.disposables.push(lapelMat);
+      for (const sign of [-1, 1]) {
+        panel(
+          [
+            [sign * 0.075, 0.94],
+            [sign * 0.12, 0.84],
+            [sign * 0.035, tailored ? 0.57 : 0.81],
+          ],
+          lapelMat,
+        );
+      }
+    }
   };
   GEN.createActor = (outfit, opts) => {
     opts = opts || {};
@@ -567,8 +586,7 @@
     const group = new T.Group();
     const disposables = [];
     const style = Object.assign({}, opts.style || {}, outfit.skin ? { skin: outfit.skin } : {});
-    const bodyMain = bodyMaterial(style, true),
-      bodyJoint = bodyMaterial(style, false);
+    const bodyMain = bodyMaterial(style, true), bodyJoint = bodyMaterial(style, false);
     disposables.push(bodyMain, bodyJoint);
     const bones = {};
     const skinned = [];
@@ -589,8 +607,29 @@
       }
     });
     bones.root = model.getObjectByName(MT.ROOT);
+    if (outfit.customDesign) {
+      for (const source of skinned) {
+        const surface = source.clone(false);
+        surface.name = MT.GENERATEDANATOMY + source.name;
+        surface.geometry = source.geometry.clone();
+        const position = surface.geometry.attributes.position;
+        const indices = surface.geometry.attributes.skinIndex, weights = surface.geometry.attributes.skinWeight;
+        const head = source.skeleton.bones.findIndex((b) => b.name === MT.HEAD_2);
+        for (let i = 0; i < position.count; i++) {
+          let influence = 0;
+          for (let k = 0; k < 4; k++) if (indices.getComponent(i, k) === head) influence += weights.getComponent(i, k);
+          position.setX(i, position.getX(i) * U.lerp(1, outfit.customDesign.headWidth, influence));
+          position.setZ(i, position.getZ(i) * U.lerp(1, outfit.customDesign.headDepth, influence));
+        }
+        surface.geometry.computeBoundingBox();
+        surface.material = bodyMain;
+        source.visible = false;
+        source.parent.add(surface);
+        disposables.push(surface.geometry);
+      }
+    }
     model.updateMatrixWorld(true);
-    const layers = (outfit.layers || []).slice();
+    const layers = (outfit.drawnBody && outfit.drawnBody.length ? [] : outfit.layers || []).slice();
     const order = [MT.SOCKS, MT.TSHIRT, MT.TANK, MT.SHIRT, MT.POLO, MT.UNIFORM_TOP, MT.DRESS, MT.TROUSERS, MT.JEANS, MT.SHORTS, MT.SKIRT, MT.BELT, MT.SWEATER, MT.HOODIE, MT.VEST, MT.BLAZER, MT.JACKET, MT.COAT, MT.GLOVES, MT.SHOES, MT.SNEAKERS, MT.BOOTS, MT.HAIR, MT.BEANIE, MT.CAP];
     layers.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
     const used = {};
@@ -601,57 +640,63 @@
       let thick = THICK[layer.kind] || 0.012;
       used[layer.kind] = (used[layer.kind] || 0) + 1;
       if ([MT.JACKET, MT.BLAZER, MT.COAT, MT.VEST, MT.SWEATER, MT.HOODIE].includes(layer.kind) && (used.jacket || 0) + (used.blazer || 0) + (used.coat || 0) + (used.vest || 0) + (used.sweater || 0) + (used.hoodie || 0) > 1) thick += 0.006;
-      if (layer.kind === MT.SKIRT || (layer.kind === MT.DRESS && layer.length !== MT.NONE)) {
-        const sk = skirtMesh(layer, rest, mat);
-        const sock = addSocket(model, rest, bones, MT.WAIST);
-        sk.position.y = layer.kind === MT.DRESS ? 0.02 : 0.03;
-        sock.add(sk);
-        disposables.push(sk.geometry);
-        if (layer.kind === MT.SKIRT) continue;
-      }
+      if (layer.kind === MT.SKIRT || (layer.kind === MT.DRESS && layer.length !== MT.NONE)) { const sk = skirtMesh(layer, rest, mat); const sock = addSocket(model, rest, bones, MT.WAIST); sk.position.y = layer.kind === MT.DRESS ? 0.02 : 0.03; sock.add(sk); disposables.push(sk.geometry); if (layer.kind === MT.SKIRT) continue; }
       const rules = regionRules(layer);
       if (!rules.length) continue;
       for (const sm of skinned) {
         const shell = buildShell(sm, rules, rest, sm.material === bodyJoint ? thick * 1.5 : thick, mat, layer.kind, { geometry: sm.geometry, color: new T.Color(layer.color).multiplyScalar(0.55) });
-        if (shell) {
-          const prev = shellsOf.get(sm) || [];
-          if (layer.kind !== MT.HAIR) for (const inner of prev) cullCovered(inner, shell.userData.keep);
-          prev.push(shell);
-          shellsOf.set(sm, prev);
-          sm.parent.add(shell);
-          disposables.push(shell.geometry);
-        }
+        if (shell) { const prev = shellsOf.get(sm) || []; if (layer.kind !== MT.HAIR) for (const inner of prev) cullCovered(inner, shell.userData.keep); prev.push(shell); shellsOf.set(sm, prev); sm.parent.add(shell); disposables.push(shell.geometry); }
       }
-      if (layer.kind === MT.CAP) {
-        const brim = new T.Mesh(new T.CylinderGeometry(0.11, 0.11, 0.012, 24, 1, false, -Math.PI / 2 - 0.9, 1.8), mat);
-        brim.scale.set(1, 1, 1.25);
-        brim.position.set(0, 0.035, 0.075);
-        brim.rotation.x = -0.12;
-        addSocket(model, rest, bones, MT.HEAD).add(brim);
-        disposables.push(brim.geometry);
-      }
+      if (layer.kind === MT.CAP) { const brim = new T.Mesh(new T.CylinderGeometry(0.11, 0.11, 0.012, 24, 1, false, -Math.PI / 2 - 0.9, 1.8), mat); brim.scale.set(1, 1, 1.25); brim.position.set(0, 0.035, 0.075); brim.rotation.x = -0.12; addSocket(model, rest, bones, MT.HEAD).add(brim); disposables.push(brim.geometry); }
       if (layer.kind === MT.HAIR && (layer.style === MT.LONG || layer.style === MT.PONYTAIL || layer.style === MT.BUN)) {
         const hm = layer.style === MT.BUN ? new T.Mesh(new T.SphereGeometry(0.055, 16, 12), mat) : new T.Mesh(new T.CapsuleGeometry(layer.style === MT.PONYTAIL ? 0.035 : 0.09, layer.style === MT.PONYTAIL ? 0.16 : 0.2, 4, 12), mat);
-        if (layer.style === MT.LONG) {
-          hm.scale.set(1.25, 1, 0.45);
-          hm.position.set(0, -0.12, -0.085);
-        } else if (layer.style === MT.PONYTAIL) hm.position.set(0, -0.06, -0.12);
-        else hm.position.set(0, 0.04, -0.1);
+        if (layer.style === MT.LONG) { hm.scale.set(1.25, 1, 0.45); hm.position.set(0, -0.12, -0.085); } else if (layer.style === MT.PONYTAIL) hm.position.set(0, -0.06, -0.12); else hm.position.set(0, 0.04, -0.1);
         addSocket(model, rest, bones, MT.HEAD).add(hm);
         disposables.push(hm.geometry);
       }
-      if (layer.kind === MT.BELT) {
-        const bk = new T.Mesh(new T.BoxGeometry(0.06, 0.045, 0.012), new T.MeshStandardMaterial({ color: MT.B9B4A8, metalness: 0.9, roughness: 0.3 }));
-        const s = addSocket(model, rest, bones, MT.WAIST);
-        bk.position.set(0, -0.005, 0.135);
-        s.add(bk);
-        disposables.push(bk.geometry, bk.material);
-      }
+      if (layer.kind === MT.BELT) { const bk = new T.Mesh(new T.BoxGeometry(0.06, 0.045, 0.012), new T.MeshStandardMaterial({ color: MT.B9B4A8, metalness: 0.9, roughness: 0.3 })); const s = addSocket(model, rest, bones, MT.WAIST); bk.position.set(0, -0.005, 0.135); s.add(bk); disposables.push(bk.geometry, bk.material); }
     }
     const env = GEN.newBuildEnv({ materials: opts.materials || {}, shadowBudget: 0 });
     for (const acc of outfit.accessories || []) {
       const s = addSocket(model, rest, bones, acc.socket);
       GEN.buildNodes(acc.nodes, env, s);
+    }
+    if (outfit.drawnBody && outfit.drawnBody.length) {
+      model.traverse((o) => {
+        if (o.isMesh) o.visible = false;
+      });
+      for (const part of outfit.drawnBody) {
+        const socket = addSocket(model, rest, bones, part.socket, true);
+        socket.name = MT.DRAWNBODY_2 + part.socket;
+        GEN.buildNodes(part.nodes, env, socket);
+        const successor = { upperarm_r: MT.LOWERARM_R, upperarm_l: MT.LOWERARM_L, forearm_r: MT.HAND_R, forearm_l: MT.HAND_L, thigh_r: MT.CALF_R, thigh_l: MT.CALF_L, calf_r: MT.FOOT_R, calf_l: MT.FOOT_L }[part.socket];
+        if (successor) {
+          model.updateMatrixWorld(true);
+          const inverse = socket.matrixWorld.clone().invert(), bounds = new T.Box3();
+          socket.traverse((o) => {
+            if (o.isMesh && o.geometry) { o.geometry.computeBoundingBox(); bounds.union(o.geometry.boundingBox.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld))); }
+          });
+          const length = rest.bones[successor].wp.distanceTo(rest.bones[SOCKET_DEF[part.socket][0]].wp);
+          if (!bounds.isEmpty() && bounds.max.y - bounds.min.y > 0.01) { const fit = (length + 0.024) / (bounds.max.y - bounds.min.y); for (const child of socket.children) { child.position.y = child.position.y * fit + 0.012 - bounds.max.y * fit; child.scale.y *= fit; } }
+        }
+        if (part.socket === MT.CHEST) {
+          model.updateMatrixWorld(true);
+          const bounds = new T.Box3();
+          socket.traverse((o) => {
+            if (o.isMesh && o.geometry) { o.geometry.computeBoundingBox(); const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); bounds.union(box); }
+          });
+          if (!bounds.isEmpty()) {
+            const top = rest.bones[MT.NECK_01].wp.y + 0.025;
+            const bottom = rest.bones[MT.PELVIS].wp.y + 0.08;
+            const span = bounds.max.y - bounds.min.y;
+            const fit = span > 0.01 ? (top - bottom) / span : 1;
+            for (const child of socket.children) {
+              child.position.y = child.position.y * fit + (bottom - bounds.min.y * fit + socket.getWorldPosition(new T.Vector3()).y * (fit - 1));
+              child.scale.y *= fit;
+            }
+          }
+        }
+      }
     }
     const holdSockets = {};
     const scaleK = (outfit.height || 1.78) / 1.83;
@@ -660,18 +705,10 @@
     group.add(model);
     const mixer = new T.AnimationMixer(model);
     const actions = {};
-    const actionFor = (id) => {
-      if (!actions[id]) {
-        const a = mixer.clipAction(GEN.clipFor(id));
-        a.enabled = true;
-        a.setEffectiveWeight(0);
-        a.play();
-        a.paused = true;
-        actions[id] = a;
-      }
-      return actions[id];
-    };
+    const actionFor = (id) => { if (!actions[id]) { const a = mixer.clipAction(GEN.clipFor(id)); a.enabled = true; a.setEffectiveWeight(0); a.play(); a.paused = true; actions[id] = a; } return actions[id]; };
     const actor = {
+      outfit,
+      style,
       group,
       model,
       bones,
@@ -694,10 +731,7 @@
           const clip = a.getClip();
           const A = GEN.ACTIONS[it.id] || {};
           let tt = it.time;
-          if (A.hold != null) tt = clip.duration * A.hold - 0.001;
-          else if (A.once) tt = U.clamp(tt, 0, clip.duration - 0.001);
-          else if (A.settle != null) tt = tt >= clip.duration * (A.cycles || 1) ? clip.duration * A.settle : U.mod(Math.max(0, tt), clip.duration);
-          else tt = U.mod(tt, clip.duration);
+          if (A.hold != null) tt = clip.duration * A.hold - 0.001; else if (A.once) tt = U.clamp(tt, 0, clip.duration - 0.001); else if (A.settle != null) tt = tt >= clip.duration * (A.cycles || 1) ? clip.duration * A.settle : U.mod(Math.max(0, tt), clip.duration); else tt = U.mod(tt, clip.duration);
           a.time = tt;
           a.setEffectiveWeight(it.weight);
         }
@@ -722,11 +756,7 @@
     };
     return actor;
   };
-  const vA = new T.Vector3(),
-    vB = new T.Vector3(),
-    qA = new T.Quaternion(),
-    qB = new T.Quaternion(),
-    qC = new T.Quaternion();
+  const vA = new T.Vector3(), vB = new T.Vector3(), qA = new T.Quaternion(), qB = new T.Quaternion(), qC = new T.Quaternion();
   const aimBone = (bone, child, dirWorld, w) => {
     if (!bone || !child || w <= 0) return;
     bone.getWorldPosition(vA);
@@ -747,8 +777,7 @@
     hand.getWorldPosition(vA);
     b[MT.MIDDLE_01 + side].getWorldPosition(vB);
     const y0 = vB.clone().sub(vA).normalize();
-    const pi = b[MT.INDEX_01 + side].getWorldPosition(new T.Vector3()),
-      pp = b[MT.PINKY_01 + side].getWorldPosition(new T.Vector3());
+    const pi = b[MT.INDEX_01 + side].getWorldPosition(new T.Vector3()), pp = b[MT.PINKY_01 + side].getWorldPosition(new T.Vector3());
     const across = pi.sub(pp).normalize();
     let z0 = new T.Vector3().crossVectors(across, y0).normalize();
     if (side === MT.R_2) z0.negate();
@@ -756,10 +785,8 @@
     const y1 = fingerDir.clone().normalize();
     const x1 = new T.Vector3().crossVectors(y1, palmDir).normalize();
     const z1 = new T.Vector3().crossVectors(x1, y1).normalize();
-    const m0 = new T.Matrix4().makeBasis(x0, y0, z0),
-      m1 = new T.Matrix4().makeBasis(x1, y1, z1);
-    const q0 = new T.Quaternion().setFromRotationMatrix(m0),
-      q1 = new T.Quaternion().setFromRotationMatrix(m1);
+    const m0 = new T.Matrix4().makeBasis(x0, y0, z0), m1 = new T.Matrix4().makeBasis(x1, y1, z1);
+    const q0 = new T.Quaternion().setFromRotationMatrix(m0), q1 = new T.Quaternion().setFromRotationMatrix(m1);
     const delta = q1.multiply(q0.invert());
     if (w < 1) delta.slerp(new T.Quaternion(), 1 - w);
     hand.getWorldQuaternion(qB);
@@ -769,14 +796,12 @@
     hand.updateMatrixWorld(true);
   };
   const tiltHead = (actor, pitch, yaw, w) => {
-    const neck = actor.bones.neck_01,
-      head = actor.bones.Head;
+    const neck = actor.bones.neck_01, head = actor.bones.Head;
     if (!neck || !head || w <= 0) return;
     const q = new T.Quaternion();
     const gq = new T.Quaternion();
     actor.group.getWorldQuaternion(gq);
-    const axisX = new T.Vector3(1, 0, 0).applyQuaternion(gq),
-      axisY = new T.Vector3(0, 1, 0).applyQuaternion(gq);
+    const axisX = new T.Vector3(1, 0, 0).applyQuaternion(gq), axisY = new T.Vector3(0, 1, 0).applyQuaternion(gq);
     for (const [bone, k] of [
       [neck, 0.45],
       [head, 0.55],

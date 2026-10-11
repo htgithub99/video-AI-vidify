@@ -1,10 +1,8 @@
 (function (root) {
   "use strict";
-  const MT = root.MotionEngineText,
-    MF = root.MotionEngineTemplate;
+  const MT = root.MotionEngineText, MF = root.MotionEngineTemplate;
   const ME = root.MotionEngine;
-  const U = ME.util,
-    C = ME.color;
+  const U = ME.util, C = ME.color;
   const PI = Math.PI;
   const dust = (g, W, H, t, unit, alpha = 0.35) => {
     g.fillStyle = MF.RGBA_255_236_200(`${alpha}`);
@@ -38,9 +36,7 @@
     g.fillRect(0, 0, ctx.W, ctx.H);
     dust(g, ctx.W, ctx.H, ctx.t, ctx.unit, 0.25);
   };
-  const bgDispose = (st) => {
-    if (st && ME.GEN && ME.GEN.disposeShot) ME.GEN.disposeShot(st);
-  };
+  const bgDispose = (st) => { if (st && ME.GEN && ME.GEN.disposeShot) ME.GEN.disposeShot(st); };
   const accentOf = (ctx) => ctx.params.accent || (ctx.spec && ctx.spec.accent) || MT.FFB070;
   ME.registerTemplate(MT.TITLE, {
     name: MT.TIEU_DE_MO_DAU,
@@ -51,11 +47,7 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.5);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const portrait = H > W;
@@ -63,9 +55,7 @@
       const size = (p.size || (portrait ? 118 : 132)) * un;
       const lines = ME.wrap(g, p.title || "", W * (portrait ? 0.86 : 0.8), ME.font(700, size, MT.HEAD));
       const cy = H * (portrait ? 0.44 : 0.5) - ((lines.length - 1) * size * 1.02) / 2;
-      if (p.kicker) {
-        ME.text(g, String(p.kicker).toUpperCase(), W / 2, cy - size * 0.95, { size: size * 0.2, weight: 700, align: MT.CENTER, tracking: 0.42, color: acc, progress: U.clamp(t / 1.2), shadow: false });
-      }
+      if (p.kicker) { ME.text(g, String(p.kicker).toUpperCase(), W / 2, cy - size * 0.95, { size: size * 0.2, weight: 700, align: MT.CENTER, tracking: 0.42, color: acc, progress: U.clamp(t / 1.2), shadow: false }); }
       const lw = W * 0.18 * U.easeOut(U.clamp((t - 0.2) / 1.2));
       g.fillStyle = C.rgba(acc, 0.9);
       g.fillRect(W / 2 - lw / 2, cy - size * 0.8, lw, 2 * un);
@@ -78,10 +68,7 @@
         ME.text(g, ln.toUpperCase(), 0, size * 0.35, { size, family: MT.HEAD, weight: 700, align: MT.CENTER, tracking: 0.03, progress: k, reveal: MT.RISE, shadowBlur: 0.25 });
         g.restore();
       });
-      if (p.subtitle) {
-        const sy = cy + (lines.length - 1) * size * 1.02 + size * 0.95;
-        ME.text(g, p.subtitle, W / 2, sy, { size: size * 0.24, weight: 500, align: MT.CENTER, tracking: 0.08, color: MT.E6DFD2, progress: U.clamp((t - 1.1) / 1.2) });
-      }
+      if (p.subtitle) { const sy = cy + (lines.length - 1) * size * 1.02 + size * 0.95; ME.text(g, p.subtitle, W / 2, sy, { size: size * 0.24, weight: 500, align: MT.CENTER, tracking: 0.08, color: MT.E6DFD2, progress: U.clamp((t - 1.1) / 1.2) }); }
     },
   });
   ME.registerTemplate(MT.CHAPTER, {
@@ -93,17 +80,12 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.62);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const portrait = H > W;
-      const x = portrait ? W * 0.1 : W * 0.12,
-        y = H * (portrait ? 0.46 : 0.52);
+      const x = portrait ? W * 0.1 : W * 0.12, y = H * (portrait ? 0.46 : 0.52);
       const n = String(p.number == null ? "" : p.number).padStart(2, MT.VALUE_0);
       g.save();
       g.globalAlpha = 0.9 * U.clamp(t / 0.8);
@@ -129,11 +111,7 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.62);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
@@ -179,11 +157,7 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.66);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
@@ -195,8 +169,7 @@
         const delay = 0.3 + i * (p.stagger == null ? 0.55 : p.stagger);
         const k = U.clamp((t - delay) / (p.countDuration || 1.6));
         const grid = portrait && n > 2;
-        const cx = grid ? W * (i % 2 ? 0.72 : 0.28) : portrait ? W / 2 : W * ((i + 0.5) / n),
-          cy = grid ? H * (0.36 + Math.floor(i / 2) * 0.2) : portrait ? H * (0.34 + (i + 0.5) * (0.36 / n)) : H * 0.52;
+        const cx = grid ? W * (i % 2 ? 0.72 : 0.28) : portrait ? W / 2 : W * ((i + 0.5) / n), cy = grid ? H * (0.36 + Math.floor(i / 2) * 0.2) : portrait ? H * (0.34 + (i + 0.5) * (0.36 / n)) : H * 0.52;
         const val = (it.value || 0) * U.expoOut(k);
         const dec = it.decimals || 0;
         const txt = (it.prefix || "") + (dec ? val.toFixed(dec).replace(MT.SYMBOL_8, MT.SYMBOL_14) : Math.round(val).toLocaleString(MT.VI_VN)) + (it.suffix || "");
@@ -226,23 +199,15 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.6);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const k = U.clamp((t - 0.3) / Math.max(0.5, ctx.dur - 1.2));
-      const from = p.from || 0,
-        to = p.to == null ? 100 : p.to;
+      const from = p.from || 0, to = p.to == null ? 100 : p.to;
       const v = U.lerp(from, to, p.ease === MT.LINEAR ? k : U.smooth(k));
       let txt;
-      if (p.format === MT.CLOCK) {
-        const m = Math.floor(v) % (24 * 60);
-        txt = String(Math.floor(m / 60)).padStart(2, MT.VALUE_0) + MT.SYMBOL_15 + String(m % 60).padStart(2, MT.VALUE_0);
-      } else txt = String(Math.round(v)).padStart(p.pad || 1, MT.VALUE_0);
+      if (p.format === MT.CLOCK) { const m = Math.floor(v) % (24 * 60); txt = String(Math.floor(m / 60)).padStart(2, MT.VALUE_0) + MT.SYMBOL_15 + String(m % 60).padStart(2, MT.VALUE_0); } else txt = String(Math.round(v)).padStart(p.pad || 1, MT.VALUE_0);
       const size = (H > W ? 220 : 240) * un;
       g.save();
       g.font = ME.font(700, size, MT.HEAD);
@@ -253,48 +218,26 @@
       g.restore();
       ME.text(g, txt, W / 2, H * 0.47 + size * 0.35, { size, family: MT.HEAD, weight: 700, align: MT.CENTER, color: p.color || MT.F6EFE2 });
       if (p.label) ME.text(g, String(p.label).toUpperCase(), W / 2, H * 0.47 + size * 0.8, { size: 30 * un, weight: 700, align: MT.CENTER, tracking: 0.35, color: acc, progress: U.clamp(t / 1) });
-      if (p.tick) {
-        const pulse = 1 - (t % 1);
-        g.fillStyle = C.rgba(acc, 0.5 * pulse);
-        g.beginPath();
-        g.arc(W / 2, H * 0.47 - size * 0.62, 8 * un, 0, PI * 2);
-        g.fill();
-      }
+      if (p.tick) { const pulse = 1 - (t % 1); g.fillStyle = C.rgba(acc, 0.5 * pulse); g.beginPath(); g.arc(W / 2, H * 0.47 - size * 0.62, 8 * un, 0, PI * 2); g.fill(); }
     },
   });
-  const landShape = (seed) => {
-    const pts = [];
-    for (let i = 0; i < 64; i++) {
-      const a = (i / 64) * PI * 2;
-      const r = 0.36 + U.fbm(i * 0.21, seed) * 0.12 + 0.05 * Math.sin(a * 3 + seed);
-      pts.push([0.5 + Math.cos(a) * r * 1.25, 0.5 + Math.sin(a) * r]);
-    }
-    return pts;
-  };
+  const landShape = (seed) => { const pts = []; for (let i = 0; i < 64; i++) { const a = (i / 64) * PI * 2; const r = 0.36 + U.fbm(i * 0.21, seed) * 0.12 + 0.05 * Math.sin(a * 3 + seed); pts.push([0.5 + Math.cos(a) * r * 1.25, 0.5 + Math.sin(a) * r]); } return pts; };
   ME.registerTemplate(MT.MAP, {
     name: MT.BAN_DO_SO_DO_MINH_HOA,
     category: MT.INFOGRAPHIC,
     description: MT.BAN_DO_SO_DO_KHONG_PHAI_BAN_DO,
     init: (ctx) => ({ land: landShape(ctx.params.seed || 3) }),
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit,
-        u = ctx.u;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit, u = ctx.u;
       const acc = accentOf(ctx);
       g.fillStyle = p.sea || MT.VALUE_0D1B2A;
       g.fillRect(0, 0, W, H);
       const fz = p.focus ? U.smooth(U.inv(p.focus.at || 0.3, (p.focus.at || 0.3) + 0.4, u)) : 0;
       const zoom = U.lerp(1, p.focus ? p.focus.zoom || 2 : 1, fz);
-      const fx = p.focus ? U.lerp(0.5, p.focus.x, fz) : 0.5,
-        fy = p.focus ? U.lerp(0.5, p.focus.y, fz) : 0.5;
+      const fx = p.focus ? U.lerp(0.5, p.focus.x, fz) : 0.5, fy = p.focus ? U.lerp(0.5, p.focus.y, fz) : 0.5;
       const S = Math.min(W, H) * 1.05 * zoom;
-      const ox = W / 2 - fx * S * (W > H ? 1.3 : 1),
-        oy = H / 2 - fy * S;
-      const X = (x) => ox + x * S * (W > H ? 1.3 : 1),
-        Y = (y) => oy + y * S;
+      const ox = W / 2 - fx * S * (W > H ? 1.3 : 1), oy = H / 2 - fy * S;
+      const X = (x) => ox + x * S * (W > H ? 1.3 : 1), Y = (y) => oy + y * S;
       g.strokeStyle = MT.RGBA_120_160_200_0_08;
       g.lineWidth = 1 * un;
       for (let i = 0; i <= 20; i++) {
@@ -328,13 +271,11 @@
       const pts = {};
       (p.points || []).forEach((pt, i) => (pts[pt.id || i] = pt));
       for (const r of p.routes || []) {
-        const a = pts[r.from],
-          b = pts[r.to];
+        const a = pts[r.from], b = pts[r.to];
         if (!a || !b) continue;
         const k = U.clamp(U.inv(r.at || 0.2, (r.at || 0.2) + (r.dur || 0.3), u));
         if (k <= 0) continue;
-        const mx = (a.x + b.x) / 2 + (r.bend || 0.06),
-          my = (a.y + b.y) / 2 - (r.bend || 0.06);
+        const mx = (a.x + b.x) / 2 + (r.bend || 0.06), my = (a.y + b.y) / 2 - (r.bend || 0.06);
         g.save();
         g.strokeStyle = r.color || acc;
         g.lineWidth = 3 * un;
@@ -344,8 +285,7 @@
         const N = 40;
         for (let i = 0; i <= N * k; i++) {
           const s = i / N;
-          const x = (1 - s) * (1 - s) * a.x + 2 * (1 - s) * s * mx + s * s * b.x,
-            y = (1 - s) * (1 - s) * a.y + 2 * (1 - s) * s * my + s * s * b.y;
+          const x = (1 - s) * (1 - s) * a.x + 2 * (1 - s) * s * mx + s * s * b.x, y = (1 - s) * (1 - s) * a.y + 2 * (1 - s) * s * my + s * s * b.y;
           i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y));
         }
         g.stroke();
@@ -378,12 +318,7 @@
           g.globalAlpha = 1;
         }
         g.restore();
-        if (pt.label) {
-          const lx = X(pt.x) + 26 * un,
-            ly = Y(pt.y) - 40 * un;
-          ME.text(g, pt.label, lx, ly, { size: 30 * un, weight: 700, family: MT.HEAD, tracking: 0.06, progress: k, color: MT.F4EFE6 });
-          if (pt.sub) ME.text(g, pt.sub, lx, ly + 30 * un, { size: 20 * un, weight: 500, tracking: 0.08, progress: k, color: MT.C9C2B6 });
-        }
+        if (pt.label) { const lx = X(pt.x) + 26 * un, ly = Y(pt.y) - 40 * un; ME.text(g, pt.label, lx, ly, { size: 30 * un, weight: 700, family: MT.HEAD, tracking: 0.06, progress: k, color: MT.F4EFE6 }); if (pt.sub) ME.text(g, pt.sub, lx, ly + 30 * un, { size: 20 * un, weight: 500, tracking: 0.08, progress: k, color: MT.C9C2B6 }); }
       });
       if (p.title) ME.text(g, String(p.title).toUpperCase(), W * 0.06, H * 0.12, { size: 34 * un, family: MT.HEAD, weight: 700, tracking: 0.1, progress: U.clamp(t / 1) });
       ME.text(g, p.note || MT.SO_DO_MINH_HOA, W * 0.94, H * 0.94, { size: 18 * un, weight: 500, align: MT.RIGHT, tracking: 0.2, color: MT.RGBA_230_230_230_0_6, shadow: false });
@@ -404,12 +339,7 @@
     description: MT.CAC_MOC_THOI_GIAN_CHAY_LAN_LUOT_NAM,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit,
-        u = ctx.u;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit, u = ctx.u;
       drawBg(g, ctx, null);
       const acc = accentOf(ctx);
       const ev = p.events || [];
@@ -420,41 +350,126 @@
       g.strokeStyle = MT.RGBA_255_255_255_0_18;
       g.lineWidth = 3 * un;
       g.beginPath();
-      if (portrait) {
-        g.moveTo(W * 0.2, H * 0.22);
-        g.lineTo(W * 0.2, H * 0.9);
-      } else {
-        g.moveTo(W * 0.08, H * 0.52);
-        g.lineTo(W * 0.92, H * 0.52);
-      }
+      if (portrait) { g.moveTo(W * 0.2, H * 0.22); g.lineTo(W * 0.2, H * 0.9); } else { g.moveTo(W * 0.08, H * 0.52); g.lineTo(W * 0.92, H * 0.52); }
       g.stroke();
       g.strokeStyle = acc;
       g.beginPath();
-      if (portrait) {
-        g.moveTo(W * 0.2, H * 0.22);
-        g.lineTo(W * 0.2, H * (0.22 + 0.68 * prog));
-      } else {
-        g.moveTo(W * 0.08, H * 0.52);
-        g.lineTo(W * (0.08 + 0.84 * prog), H * 0.52);
-      }
+      if (portrait) { g.moveTo(W * 0.2, H * 0.22); g.lineTo(W * 0.2, H * (0.22 + 0.68 * prog)); } else { g.moveTo(W * 0.08, H * 0.52); g.lineTo(W * (0.08 + 0.84 * prog), H * 0.52); }
       g.stroke();
       ev.forEach((e, i) => {
         const pos = (i + 0.5) / n;
         const k = U.clamp((prog - pos * 0.98) / 0.08);
-        const x = portrait ? W * 0.2 : W * (0.08 + 0.84 * pos),
-          y = portrait ? H * (0.22 + 0.68 * pos) : H * 0.52;
+        const x = portrait ? W * 0.2 : W * (0.08 + 0.84 * pos), y = portrait ? H * (0.22 + 0.68 * pos) : H * 0.52;
         g.fillStyle = k > 0 ? acc : MT.RGBA_255_255_255_0_3;
         g.beginPath();
         g.arc(x, y, (8 + 4 * U.back(k)) * un, 0, PI * 2);
         g.fill();
         if (k <= 0) return;
         const up = !portrait && i % 2 === 0;
-        const tx = portrait ? x + 40 * un : x,
-          ty = portrait ? y + 12 * un : up ? y - 60 * un : y + 90 * un;
+        const tx = portrait ? x + 40 * un : x, ty = portrait ? y + 12 * un : up ? y - 60 * un : y + 90 * un;
         ME.text(g, e.label || "", tx, ty, { size: 46 * un, family: MT.HEAD, weight: 700, align: portrait ? MT.LEFT : MT.CENTER, progress: k, reveal: MT.RISE });
         const lines = ME.wrap(g, e.text || "", portrait ? W * 0.68 : (W * 0.84) / n - 20 * un, ME.font(500, 22 * un));
         lines.slice(0, 3).forEach((ln, j) => ME.text(g, ln, tx, ty + (34 + j * 28) * un, { size: 22 * un, weight: 500, align: portrait ? MT.LEFT : MT.CENTER, color: MT.D8D1C4, progress: k }));
       });
+    },
+  });
+  ME.registerTemplate(MT.STARMAP, {
+    name: MT.BAN_DO_SAO,
+    category: MT.INFOGRAPHIC,
+    description: MT.BAN_DO_SAO,
+    init: () => ({}),
+    draw(g, ctx) {
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit, u = ctx.u;
+      const acc = accentOf(ctx);
+      const sky = g.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+      sky.addColorStop(0, MT.VALUE_0D1530);
+      sky.addColorStop(1, MT.VALUE_02030A);
+      g.fillStyle = sky;
+      g.fillRect(0, 0, W, H);
+      const drift = 1 + 0.04 * u;
+      for (let i = 0; i < 260; i++) {
+        const x = W / 2 + (U.hash(i + 7) - 0.5) * W * drift, y = H / 2 + (U.hash(i + 91) - 0.5) * H * drift;
+        g.globalAlpha = 0.25 + 0.6 * U.hash(i + 13) * (0.75 + 0.25 * Math.sin(t * (1 + U.hash(i)) + i));
+        g.fillStyle = MT.FFFFFF;
+        g.beginPath();
+        g.arc(x, y, (0.5 + 1.3 * U.hash(i + 29)) * un, 0, PI * 2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      const portrait = H > W;
+      const X = (x) => W * (0.08 + 0.84 * U.clamp(x)), Y = (y) => H * ((portrait ? 0.2 : 0.22) + (portrait ? 0.66 : 0.66) * U.clamp(y));
+      if (p.title) ME.text(g, String(p.title).toUpperCase(), W / 2, H * 0.12, { size: 30 * un, weight: 700, align: MT.CENTER, tracking: 0.3, color: acc, progress: U.clamp(t / 1) });
+      const stars = p.stars || [];
+      const byId = {};
+      stars.forEach((s, i) => (byId[s.id] = s));
+      (p.links || []).forEach((l, i) => {
+        const a = byId[l.from], b = byId[l.to];
+        if (!a || !b) return;
+        const k = U.clamp(U.inv(l.at, l.at + 0.25, u));
+        if (k <= 0) return;
+        const ax = X(a.x), ay = Y(a.y), bx = X(b.x), by = Y(b.y);
+        g.save();
+        g.strokeStyle = C.rgba(acc, 0.85);
+        g.lineWidth = 2.5 * un;
+        g.setLineDash([10 * un, 8 * un]);
+        g.lineDashOffset = -t * 24 * un;
+        g.beginPath();
+        g.moveTo(ax, ay);
+        g.lineTo(U.lerp(ax, bx, k), U.lerp(ay, by, k));
+        g.stroke();
+        g.restore();
+        if (l.label && k > 0.6) ME.text(g, l.label, (ax + bx) / 2, (ay + by) / 2 - 16 * un, { size: 22 * un, weight: 700, align: MT.CENTER, color: MT.FFE9C4, progress: U.clamp((k - 0.6) / 0.4) });
+      });
+      stars.forEach((s) => {
+        const k = U.clamp(U.inv(s.at, s.at + 0.12, u));
+        if (k <= 0) return;
+        const x = X(s.x), y = Y(s.y);
+        const r = (s.center ? 13 : 8) * un * U.back(k);
+        const halo = g.createRadialGradient(x, y, 0, x, y, r * 4.5);
+        halo.addColorStop(0, C.rgba(s.center ? acc : MT.BFE3FF, 0.55 * k));
+        halo.addColorStop(1, C.rgba(s.center ? acc : MT.BFE3FF, 0));
+        g.fillStyle = halo;
+        g.beginPath();
+        g.arc(x, y, r * 4.5 * (1 + 0.08 * Math.sin(t * 3)), 0, PI * 2);
+        g.fill();
+        g.fillStyle = MT.FFFFFF;
+        g.beginPath();
+        g.arc(x, y, r, 0, PI * 2);
+        g.fill();
+        if (s.label) ME.text(g, s.label, x, y + r + 34 * un, { size: 26 * un, family: MT.HEAD, weight: 700, align: MT.CENTER, progress: k, reveal: MT.RISE });
+        if (s.sub) ME.text(g, s.sub, x, y + r + 62 * un, { size: 19 * un, weight: 500, align: MT.CENTER, color: MT.D8D1C4, progress: k });
+      });
+    },
+  });
+  ME.registerTemplate(MT.BITMAP, {
+    name: MT.LUOI_DIEM_ANH,
+    category: MT.INFOGRAPHIC,
+    description: MT.LUOI_DIEM_ANH,
+    init: () => ({}),
+    draw(g, ctx) {
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit, u = ctx.u;
+      drawBg(g, ctx, null);
+      const acc = accentOf(ctx);
+      const rows = p.rows || [];
+      const nr = rows.length || 1, nc = Math.max(1, ...rows.map((r) => r.length));
+      if (p.title) ME.text(g, String(p.title).toUpperCase(), W / 2, H * 0.12, { size: 30 * un, weight: 700, align: MT.CENTER, tracking: 0.3, color: acc, progress: U.clamp(t / 1) });
+      const boxW = W * 0.8, boxH = H * (p.caption ? 0.62 : 0.7);
+      const cell = Math.min(boxW / nc, boxH / nr);
+      const ox = (W - cell * nc) / 2, oy = H * 0.18 + (boxH - cell * nr) / 2;
+      const prog = U.clamp(u * 1.25) * nr;
+      g.fillStyle = MT.RGBA_255_255_255_0_05;
+      g.fillRect(ox - 6 * un, oy - 6 * un, cell * nc + 12 * un, cell * nr + 12 * un);
+      rows.forEach((row, r) => {
+        const k = U.clamp(prog - r);
+        if (k <= 0) return;
+        for (let c = 0; c < row.length; c++) {
+          const on = row[c] !== MT.VALUE_0 && row[c] !== " " && row[c] !== MT.SYMBOL_8;
+          if (!on) continue;
+          g.fillStyle = r === Math.floor(prog) ? MT.FFFFFF : C.rgba(acc, 0.35 + 0.65 * k);
+          g.fillRect(ox + c * cell + cell * 0.08, oy + r * cell + cell * 0.08, cell * 0.84, cell * 0.84);
+        }
+      });
+      if (p.caption) ME.text(g, p.caption, W / 2, H * 0.9, { size: 24 * un, weight: 500, align: MT.CENTER, color: MT.D8D1C4, progress: U.clamp((u - 0.5) / 0.2) });
     },
   });
   ME.registerTemplate(MT.HEADLINE, {
@@ -463,16 +478,11 @@
     description: MT.TRANG_BAO_MINH_HOA_CHUNG_CHUNG_KHONG_GIA,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       g.fillStyle = MT.VALUE_0A0A0A;
       g.fillRect(0, 0, W, H);
       const k = U.easeOut(U.clamp(t / 1.2));
-      const pw = Math.min(W, H / 1.3) * 0.82,
-        ph = pw * 1.3;
+      const pw = Math.min(W, H / 1.3) * 0.82, ph = pw * 1.3;
       const push = U.smooth(U.clamp((ctx.u - 0.25) / 0.75));
       g.save();
       g.translate(W / 2, H / 2 + ph * 0.17 * push);
@@ -508,11 +518,7 @@
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
-      const p = ctx.params,
-        W = ctx.W,
-        H = ctx.H,
-        t = ctx.t,
-        un = ctx.unit;
+      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, un = ctx.unit;
       drawBg(g, ctx, ctx.state.bg, 0.55);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const size = (H > W ? 54 : 58) * un;
