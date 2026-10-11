@@ -3389,3 +3389,21 @@ export const SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_300 = "bg-rose-500/25 text-ros
 export const SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD_300 = "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50" as const;
 export const SOURCE_TEXT_BG_ROSE_950_80_BORDER_BORDER_ROSE = "bg-rose-950/80 border border-rose-500/50 text-rose-200 shadow-inner" as const;
 export const SOURCE_TEXT_BG_SLATE_955_80_BORDER_BORDER_SLATE = "bg-slate-955/80 border border-slate-800 text-slate-300" as const;
+
+export const SOURCE_TEXT_P_1_ROUNDED_2XL_BG_SLATE_900_90 = "p-1 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-inner flex items-center gap-1 overflow-x-auto custom-scrollbar" as const;
+export const SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA = "bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white shadow-md shadow-purple-600/30 border border-purple-400/40" as const;
+export const SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP = "flex flex-wrap items-center justify-between gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md" as const;
+export const SOURCE_TEXT_BG_PURPLE_600_20_TEXT_PURPLE_200_BORDER = "bg-purple-600/20 text-purple-200 border-purple-500/50 shadow-xs" as const;
+export const SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD_200_BORDER = "bg-emerald-500/15 text-emerald-200 border-emerald-500/40 shadow-xs" as const;
+export const SOURCE_TEXT_BG_ROSE_500_15_TEXT_ROSE_200_BORDER = "bg-rose-500/15 text-rose-200 border-rose-500/40 shadow-xs" as const;
+export const SOURCE_TEXT_BG_SLATE_900_80_BORDER_SLATE_800_TEXT = "bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700" as const;
+export const SOURCE_TEXT_BG_WHITE_10 = "bg-white/10" as const;
+export const SOURCE_TEXT_PX_2_5_PY_1_5_ROUNDED_LG = "px-2.5 py-1.5 rounded-lg border border-slate-700/80 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" as const;
+export const SOURCE_TEXT_HIDDEN_SM_INLINE = "hidden sm:inline" as const;
+export const SOURCE_TEXT_PX_2_5_PY_1_5_ROUNDED_LG_2 = "px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" as const;
+export const SOURCE_TEXT_W_3_5_H_3_5_TEXT_ROSE = "w-3.5 h-3.5 text-rose-400" as const;
+
+export const SOURCE_TEXT_ACTIVITY_TAB = "px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all duration-150 cursor-pointer select-none whitespace-nowrap shrink-0" as const;
+export const SOURCE_TEXT_TEXT_WHITE = "text-white" as const;
+export const SOURCE_TEXT_ACTIVITY_COUNT = "text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold" as const;
+export const SOURCE_TEXT_STATUS_BUTTON = "px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer select-none" as const;
