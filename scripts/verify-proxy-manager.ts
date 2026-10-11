@@ -1,4 +1,21 @@
 import {
+  SOURCE_TEXT_127_0_0_2,
+  SOURCE_TEXT_HTTP_127_0_0_1_12345,
+  SOURCE_TEMPLATE_CHROME_LAUNCH_TIMEOUT_20000MS_EXCEEDED_CREDENTIALS,
+  SOURCE_TEXT_ROUTE_VERIFIED,
+  SOURCE_TEXT_DISABLE_HTTP2,
+  SOURCE_TEXT_DISABLE_QUIC,
+  SOURCE_TEXT_OK,
+  SOURCE_TEXT_LOGS,
+  SOURCE_TEXT_PROXY_DIAGNOSTICS_JSONL,
+  SOURCE_TEXT_UTF8,
+  SOURCE_TEXT_SYMBOL_56,
+  SOURCE_TEXT_OPEN_SUCCESS,
+  SOURCE_TEXT_MANUAL_CHROME,
+  SOURCE_TEXT_CHECK_SUCCESS,
+  SOURCE_TEXT_LAUNCH_FAILED,
+  SOURCE_TEXT_REDACTED,
+  SOURCE_TEXT_PASS_MANUAL_PROXY_SESSION_REUSE_ISOLATED_PROFILES,
   SOURCE_TEXT_VIDIFY_PROXY_TEST,
   SOURCE_TEXT_TEST_PASSWORD_123,
   SOURCE_TEXT_PROXY_EXAMPLE_COM_8080_ALICE_P_A,
@@ -25,7 +42,6 @@ import {
   SOURCE_TEXT_BROWSER,
   SOURCE_TEXT_KEEP_LOGIN_DIRECTORY_ON_REOPEN,
   SOURCE_TEXT_YOUTUBE_02,
-  SOURCE_TEXT_127_0_0_2,
   SOURCE_TEXT_BROKEN,
   SOURCE_TEXT_CLOSED,
   SOURCE_TEXT_HTTPS_EVIL_EXAMPLE,
@@ -58,7 +74,8 @@ import path from "node:path";
 import os from "node:os";
 import { EventEmitter } from "node:events";
 import http from "node:http";
-import { chromium, type BrowserContext, type LaunchOptions } from "playwright";
+import { chromium, type LaunchOptions } from "playwright";
+import { nativeProxyChromeArgs, type NativeProxyBrowserFactory, type NativeProxySession } from "../src/server/services/nativeProxyBrowser";
 import { ProxyService } from "../src/server/services/proxyService";
 import { transformProxySecret } from "../src/server/services/proxySecretStore";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../src/lib/proxyValidation";
@@ -79,33 +96,47 @@ assert.throws(() => validateProxyInput({ ...parsed[0].input, port: 65536 }));
 assert.throws(() => validateProxyInput({ ...parsed[0].input, host: SOURCE_TEXT_HTTP_EVIL }));
 assert.throws(() => validateProxyInput({ ...parsed[0].input, protocol: SOURCE_TEXT_SOCKS5 }));
 let failNavigation = false;
-const launches: { profilePath: string; options: LaunchOptions; }[] = [];
-const contexts: (BrowserContext & { closed: boolean; })[] = [];
+let timeoutLaunch = false;
+const checkLaunches: LaunchOptions[] = [];
+const launches: { profilePath: string; options: LaunchOptions }[] = [];
+const contexts: (NativeProxySession & { closed: boolean })[] = [];
 const engine = {
   ...chromium,
-  launchPersistentContext: async (profilePath: string, options: LaunchOptions) => {
-    launches.push({ profilePath, options });
-    const emitter = new EventEmitter();
-    const context = Object.assign(emitter, {
-      closed: false,
-      pages: () => [],
-      newPage: async () => ({
-        goto: async () => {
-          if (failNavigation) throw new Error(SOURCE_TEXT_NET_ERR_PROXY_CONNECTION_FAILED);
-        },
-        close: async () => {},
-        bringToFront: async () => {},
-      }),
-      close: async () => {
-        context.closed = true;
-        emitter.emit(SOURCE_TEXT_CLOSE_2);
-      },
-    }) as unknown as BrowserContext & { closed: boolean; };
-    contexts.push(context);
-    return context;
+  launch: async (options: LaunchOptions) => {
+    checkLaunches.push(options);
+    return {
+      newContext: async () => ({ newPage: async () => ({ goto: async () => ({ ok: () => true, status: () => 200, json: async () => ({ ip: SOURCE_TEXT_127_0_0_2 }) }) }) }),
+      close: async () => {},
+    };
   },
 } as unknown as Pick<typeof chromium, "launch" | "launchPersistentContext">;
-const service = new ProxyService(directory, transformProxySecret, engine);
+const openBrowser: NativeProxyBrowserFactory = async (profilePath, proxy, url, diagnostics) => {
+  const options = { proxy, args: nativeProxyChromeArgs(profilePath, SOURCE_TEXT_HTTP_127_0_0_1_12345, url) };
+  launches.push({ profilePath, options });
+  if (timeoutLaunch) throw new Error(SOURCE_TEMPLATE_CHROME_LAUNCH_TIMEOUT_20000MS_EXCEEDED_CREDENTIALS(`${options.proxy?.username}`, `${options.proxy?.password}`));
+  const emitter = new EventEmitter();
+  const context = Object.assign(emitter, {
+    closed: false,
+    ip: SOURCE_TEXT_127_0_0_2,
+    open: async () => {
+      if (failNavigation) throw new Error(SOURCE_TEXT_NET_ERR_PROXY_CONNECTION_FAILED);
+    },
+    close: async () => {
+      context.closed = true;
+      emitter.emit(SOURCE_TEXT_CLOSE_2);
+    },
+  }) as NativeProxySession & { closed: boolean };
+  contexts.push(context);
+  diagnostics.event(SOURCE_TEXT_ROUTE_VERIFIED, { ip: context.ip });
+  try {
+    await context.open(url);
+  } catch (error) {
+    await context.close();
+    throw error;
+  }
+  return context;
+};
+const service = new ProxyService(directory, transformProxySecret, engine, openBrowser);
 try {
   const input = { name: SOURCE_TEXT_YOUTUBE_01, protocol: SOURCE_BROWSER_TEXT_HTTP, host: SOURCE_TEXT_127_0_0_1, port: 8080, username: SOURCE_TEXT_ALICE, password: secret, notes: SOURCE_TEXT_SEPARATE_PROFILE };
   const profile = await service.save(input);
@@ -118,6 +149,8 @@ try {
   await service.openSession(profile.id, SOURCE_TEXT_STUDIO);
   assert.equal(launches[0].options.proxy?.password, secret);
   assert.equal(launches[0].options.proxy?.server, SOURCE_TEXT_HTTP_127_0_0_1_8080);
+  assert.ok(launches[0].options.args?.includes(SOURCE_TEXT_DISABLE_HTTP2));
+  assert.ok(launches[0].options.args?.includes(SOURCE_TEXT_DISABLE_QUIC));
   assert.equal((await service.list())[0].session, SOURCE_TEXT_OPEN);
   await assert.rejects(service.save(input, profile.id), /Đóng phiên/);
   await assert.rejects(service.remove(profile.id), /Đóng phiên/);
@@ -137,6 +170,42 @@ try {
   assert.equal(contexts[3].closed, true);
   assert.equal((await service.list()).find((item) => item.id === third.id)?.session, SOURCE_TEXT_CLOSED);
   await assert.rejects(service.openSession(third.id, SOURCE_TEXT_HTTPS_EVIL_EXAMPLE), /không hợp lệ/);
+  failNavigation = false;
+  assert.equal((await service.check(third.id)).status, SOURCE_TEXT_OK);
+  assert.ok(checkLaunches[0].args?.includes(SOURCE_TEXT_DISABLE_HTTP2));
+  assert.ok(checkLaunches[0].args?.includes(SOURCE_TEXT_DISABLE_QUIC));
+  assert.deepEqual(await service.openSession(third.id, SOURCE_TEXT_YOUTUBE), {});
+  assert.equal(contexts.at(-1)?.closed, false);
+  assert.equal((await service.list()).find((item) => item.id === third.id)?.session, SOURCE_TEXT_OPEN);
+  assert.equal((await service.list()).find((item) => item.id === third.id)?.check?.status, SOURCE_TEXT_OK);
+  const launchCount = launches.length;
+  await service.openSession(third.id, SOURCE_TEXT_STUDIO);
+  assert.equal(launches.length, launchCount);
+  failNavigation = true;
+  await assert.rejects(service.openSession(third.id, SOURCE_TEXT_YOUTUBE), /Không tải được trang/);
+  assert.equal(contexts.at(-1)?.closed, false);
+  failNavigation = false;
+  await service.closeSession(third.id);
+  timeoutLaunch = true;
+  await assert.rejects(service.openSession(third.id, SOURCE_TEXT_BROWSER), /Khởi động trình duyệt hết thời gian chờ/);
+  assert.equal((await service.list()).find((item) => item.id === third.id)?.session, SOURCE_TEXT_CLOSED);
+  timeoutLaunch = false;
+  await service.closeSession(profile.id);
+  timeoutLaunch = true;
+  await assert.rejects(service.openSession(profile.id, SOURCE_TEXT_BROWSER), /Khởi động trình duyệt hết thời gian chờ/);
+  timeoutLaunch = false;
+  const diagnosticText = await readFile(path.join(directory, SOURCE_TEXT_LOGS, SOURCE_TEXT_PROXY_DIAGNOSTICS_JSONL), SOURCE_TEXT_UTF8);
+  assert.equal(diagnosticText.includes(secret), false);
+  assert.equal(diagnosticText.includes(SOURCE_TEXT_ALICE), false);
+  const diagnosticEntries = diagnosticText
+    .trim()
+    .split(SOURCE_TEXT_SYMBOL_56)
+    .map((line) => JSON.parse(line));
+  assert.ok(diagnosticEntries.some((entry) => entry.stage === SOURCE_TEXT_OPEN_SUCCESS && entry.mode === SOURCE_TEXT_MANUAL_CHROME));
+  assert.ok(diagnosticEntries.some((entry) => entry.stage === SOURCE_TEXT_CHECK_SUCCESS && entry.ip === SOURCE_TEXT_127_0_0_2));
+  assert.ok(diagnosticEntries.some((entry) => entry.stage === SOURCE_TEXT_LAUNCH_FAILED && entry.error.includes(SOURCE_TEXT_REDACTED)));
+  assert.ok(diagnosticEntries.every((entry) => entry.operationId && entry.profileId && entry.elapsedMs >= 0));
+  process.stdout.write(SOURCE_TEXT_PASS_MANUAL_PROXY_SESSION_REUSE_ISOLATED_PROFILES);
   await service.closeSession(profile.id);
   await service.save({ ...input, username: "", password: "", clearPassword: true }, profile.id);
   assert.equal((await service.list()).find((item) => item.id === profile.id)?.hasPassword, false);

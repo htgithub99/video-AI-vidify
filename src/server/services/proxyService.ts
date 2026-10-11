@@ -1,9 +1,26 @@
 import {
+  SOURCE_TEXT_CHECK,
+  SOURCE_TEXT_CREDENTIALS,
+  SOURCE_TEXT_LAUNCH,
+  SOURCE_TEXT_LAUNCH_START,
+  SOURCE_TEXT_CHROMIUM,
+  SOURCE_TEXT_LAUNCH_READY,
+  SOURCE_TEXT_PAGE,
+  SOURCE_TEXT_NAVIGATION,
+  SOURCE_TEXT_NAVIGATION_START,
+  SOURCE_TEXT_CHECK_SUCCESS,
+  SOURCE_TEMPLATE_FAILED,
+  SOURCE_TEXT_OPEN,
+  SOURCE_TEXT_OPEN_START,
+  SOURCE_TEXT_CHUA_CAU_HINH_PROXY_CHO_PHIEN_TRINH,
+  SOURCE_TEXT_SESSION_CLOSED,
+  SOURCE_TEXT_OPEN_SUCCESS,
+  SOURCE_TEXT_MANUAL_CHROME,
+  SOURCE_TEXT_KHOI_DONG_TRINH_DUYET_HET_THOI_GIAN,
+  SOURCE_TEMPLATE_KHONG_KHOI_DONG_DUOC_TRINH_DUYET_CHO,
+  SOURCE_TEMPLATE_KHONG_TAI_DUOC_TRANG_QUA_PROXY,
   SOURCE_TEXT_HTTPS_WWW_YOUTUBE_COM,
   SOURCE_TEXT_HTTPS_STUDIO_YOUTUBE_COM,
-  SOURCE_TEXT_FORCE_WEBRTC_IP_HANDLING_POLICY_DISABLE_NON,
-  SOURCE_TEXT_DISABLE_QUIC,
-  SOURCE_TEXT_PROXY_BYPASS_LIST_LOOPBACK,
   SOURCE_TEXT_PROXY_TU_CHOI_XAC_THUC_KIEM_TRA,
   SOURCE_TEXT_KET_NOI_PROXY_HET_THOI_GIAN_CHO,
   SOURCE_TEXT_CHUA_TIM_THAY_TRINH_DUYET_HAY_CAI,
@@ -12,7 +29,6 @@ import {
   SOURCE_TEXT_PRAGMA_JOURNAL_MODE_WAL_CREATE_TABLE_IF,
   SOURCE_TEXT_OPENING,
   SOURCE_TEXT_CLOSING,
-  SOURCE_TEXT_OPEN,
   SOURCE_TEXT_CLOSED,
   SOURCE_TEXT_ID_PROXY_KHONG_HOP_LE,
   SOURCE_TEXT_SELECT_DATA_FROM_PROXY_PROFILES_WHERE_ID,
@@ -42,8 +58,6 @@ import {
   SOURCE_TEXT_CHECKING,
   SOURCE_TEXT_HTTPS_API_IPIFY_ORG_FORMAT_JSON,
   SOURCE_TEXT_DOMCONTENTLOADED,
-  SOURCE_TEMPLATE_HTTP_2,
-  SOURCE_TEXT_INVALID_IP_RESPONSE,
   SOURCE_TEXT_OK,
   SOURCE_TEXT_ERROR,
   SOURCE_TEXT_TRANG_MO_KHONG_HOP_LE,
@@ -52,27 +66,30 @@ import {
 } from "../../constants/sourceText.js";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { isIP } from "node:net";
+import { readProxyExitIp, isProxyTimeout } from "./proxyNetwork.js";
+import { getErrorMessage } from "../../utils/errorUtils.js";
+import { PROXY_NETWORK_ARGS } from "../../constants/proxy.js";
 import sqlite3 from "sqlite3";
 import { open, type Database } from "sqlite";
 import { chromium, type BrowserContext, type LaunchOptions } from "playwright";
 import { getProxyIdentity, proxyServer, validateProxyInput } from "../../lib/proxyValidation.js";
-import type { ProxyCheck, ProxyProfile, ProxyWorkspaceSnapshot } from "../../types/proxy.js";
+import type { ProxyCheck, ProxyOpenResult, ProxyProfile, ProxyWorkspaceSnapshot } from "../../types/proxy.js";
 import { getDataDirectory } from "../utils/paths.js";
 import { transformProxySecret } from "./proxySecretStore.js";
-type StoredProfile = Omit<ProxyProfile, "session" | "hasPassword"> & { encryptedPassword: string; };
+import { createProxyDiagnostics } from "./proxyDiagnostics.js";
+import { launchNativeProxyBrowser, NativeProxyRouteError, type NativeProxyBrowserFactory, type NativeProxySession } from "./nativeProxyBrowser.js";
+type StoredProfile = Omit<ProxyProfile, "session" | "hasPassword"> & { encryptedPassword: string };
 const DESTINATIONS = { browser: SOURCE_TEXT_HTTPS_WWW_YOUTUBE_COM, youtube: SOURCE_TEXT_HTTPS_WWW_YOUTUBE_COM, studio: SOURCE_TEXT_HTTPS_STUDIO_YOUTUBE_COM } as const;
-const NETWORK_ARGS = [SOURCE_TEXT_FORCE_WEBRTC_IP_HANDLING_POLICY_DISABLE_NON, SOURCE_TEXT_DISABLE_QUIC, SOURCE_TEXT_PROXY_BYPASS_LIST_LOOPBACK];
 export function proxyFailure(error: unknown): string {
-  const message = error instanceof Error ? error.message : "";
+  const message = getErrorMessage(error, "");
   if (/407|INVALID_AUTH|AUTH_UNSUPPORTED|credentials/i.test(message)) return SOURCE_TEXT_PROXY_TU_CHOI_XAC_THUC_KIEM_TRA;
-  if (/timeout|timed out/i.test(message)) return SOURCE_TEXT_KET_NOI_PROXY_HET_THOI_GIAN_CHO;
+  if (isProxyTimeout(error)) return SOURCE_TEXT_KET_NOI_PROXY_HET_THOI_GIAN_CHO;
   if (/Executable doesn't exist|distribution.*not found/i.test(message)) return SOURCE_TEXT_CHUA_TIM_THAY_TRINH_DUYET_HAY_CAI;
   return SOURCE_TEXT_KHONG_THE_KET_NOI_QUA_PROXY_KIEM;
 }
 export class ProxyService {
   private dbPromise?: Promise<Database>;
-  private contexts = new Map<string, BrowserContext>();
+  private contexts = new Map<string, NativeProxySession>();
   private busy = new Map<string, "opening" | "closing" | "checking" | "saving">();
   private checkBrowsers = new Set<Awaited<ReturnType<typeof chromium.launch>>>();
   private stopping = false;
@@ -81,6 +98,7 @@ export class ProxyService {
     private directory = getDataDirectory(),
     private secret = transformProxySecret,
     private engine: Pick<typeof chromium, "launch" | "launchPersistentContext"> = chromium,
+    private openBrowser: NativeProxyBrowserFactory = launchNativeProxyBrowser,
   ) {}
   private db(): Promise<Database> {
     if (!this.dbPromise)
@@ -196,7 +214,7 @@ export class ProxyService {
     try {
       return await task(SOURCE_TEXT_CHROME);
     } catch (error) {
-      if (!/Executable doesn't exist|distribution.*not found/i.test(error instanceof Error ? error.message : "")) throw error;
+      if (!/Executable doesn't exist|distribution.*not found/i.test(getErrorMessage(error, ""))) throw error;
       return task(undefined);
     }
   }
@@ -204,22 +222,33 @@ export class ProxyService {
     return this.exclusive(id, SOURCE_TEXT_CHECKING, async () => {
       const record = await this.stored(id);
       const started = Date.now();
+      const diagnostics = createProxyDiagnostics(this.directory, id, SOURCE_TEXT_CHECK);
+      let stage: string = SOURCE_TEXT_CREDENTIALS;
       let context: BrowserContext | undefined;
       let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
       let result: ProxyCheck;
       try {
         const proxy = await this.connection(record);
-        browser = await this.launch((channel) => this.engine.launch({ channel, headless: true, proxy, args: NETWORK_ARGS, timeout: 15000 }));
+        diagnostics.protect(proxy?.username, proxy?.password, record.encryptedPassword);
+        stage = SOURCE_TEXT_LAUNCH;
+        browser = await this.launch((channel) => {
+          diagnostics.event(SOURCE_TEXT_LAUNCH_START, { channel: channel || SOURCE_TEXT_CHROMIUM, proxy: proxy?.server, timeoutMs: 15000, http2: false, quic: false });
+          return this.engine.launch({ channel, headless: true, proxy, args: [...PROXY_NETWORK_ARGS], timeout: 15000 });
+        });
+        diagnostics.event(SOURCE_TEXT_LAUNCH_READY);
         this.checkBrowsers.add(browser);
         if (this.stopping) throw new Error(SOURCE_TEXT_DICH_VU_PROXY_DANG_DONG);
+        stage = SOURCE_TEXT_PAGE;
         context = await browser.newContext();
         const page = await context.newPage();
+        stage = SOURCE_TEXT_NAVIGATION;
+        diagnostics.event(SOURCE_TEXT_NAVIGATION_START, { destination: SOURCE_TEXT_HTTPS_API_IPIFY_ORG_FORMAT_JSON, timeoutMs: 20000 });
         const response = await page.goto(SOURCE_TEXT_HTTPS_API_IPIFY_ORG_FORMAT_JSON, { timeout: 20000, waitUntil: SOURCE_TEXT_DOMCONTENTLOADED });
-        if (!response?.ok()) throw new Error(SOURCE_TEMPLATE_HTTP_2(`${response?.status()}`));
-        const data = await response.json();
-        if (typeof data.ip !== "string" || !isIP(data.ip)) throw new Error(SOURCE_TEXT_INVALID_IP_RESPONSE);
-        result = { status: SOURCE_TEXT_OK, ip: data.ip, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() };
+        const ip = await readProxyExitIp(response);
+        result = { status: SOURCE_TEXT_OK, ip, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() };
+        diagnostics.event(SOURCE_TEXT_CHECK_SUCCESS, { ip, httpStatus: response.status() });
       } catch (error) {
+        diagnostics.event(SOURCE_TEMPLATE_FAILED(`${stage}`), {}, error);
         result = { status: SOURCE_TEXT_ERROR, error: proxyFailure(error), checkedAt: new Date().toISOString() };
       } finally {
         await browser?.close().catch(() => {});
@@ -230,37 +259,45 @@ export class ProxyService {
       return result;
     });
   }
-  async openSession(id: string, destination: string): Promise<void> {
+  async openSession(id: string, destination: string): Promise<ProxyOpenResult> {
     if (!(destination in DESTINATIONS) || !Object.hasOwn(DESTINATIONS, destination)) throw new Error(SOURCE_TEXT_TRANG_MO_KHONG_HOP_LE);
-    await this.exclusive(id, SOURCE_TEXT_OPENING, async () => {
+    return this.exclusive(id, SOURCE_TEXT_OPENING, async () => {
       const record = await this.stored(id);
       let context = this.contexts.get(id);
       const created = !context;
+      const diagnostics = createProxyDiagnostics(this.directory, id, SOURCE_TEXT_OPEN);
+      let stage: string = SOURCE_TEXT_CREDENTIALS;
+      diagnostics.event(SOURCE_TEXT_OPEN_START, { destination, reused: !created, lastCheck: record.check?.status, checkedAt: record.check?.checkedAt });
       try {
+        const proxy = await this.connection(record);
+        if (!proxy) throw new Error(SOURCE_TEXT_CHUA_CAU_HINH_PROXY_CHO_PHIEN_TRINH);
+        diagnostics.protect(proxy.username, proxy.password, record.encryptedPassword);
         if (!context) {
-          const proxy = await this.connection(record);
-          context = await this.launch((channel) => this.engine.launchPersistentContext(path.join(this.directory, SOURCE_TEXT_PROXY_BROWSER_PROFILES, id), { channel, headless: false, proxy, viewport: null, args: NETWORK_ARGS, timeout: 20000 }));
+          stage = SOURCE_TEXT_LAUNCH;
+          context = await this.openBrowser(path.join(this.directory, SOURCE_TEXT_PROXY_BROWSER_PROFILES, id), proxy, DESTINATIONS[destination as keyof typeof DESTINATIONS], diagnostics);
           if (this.stopping) throw new Error(SOURCE_TEXT_DICH_VU_PROXY_DANG_DONG);
           this.contexts.set(id, context);
           const current = context;
           context.on(SOURCE_TEXT_CLOSE_2, () => {
+            diagnostics.event(SOURCE_TEXT_SESSION_CLOSED);
             if (this.contexts.get(id) === current) this.contexts.delete(id);
           });
+        } else {
+          stage = SOURCE_TEXT_NAVIGATION;
+          await context.open(DESTINATIONS[destination as keyof typeof DESTINATIONS]);
         }
-        const page = created ? context.pages()[0] || (await context.newPage()) : await context.newPage();
-        try {
-          await page.goto(DESTINATIONS[destination as keyof typeof DESTINATIONS], { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: 30000 });
-          await page.bringToFront();
-        } catch (error) {
-          await page.close().catch(() => {});
-          throw error;
-        }
+        diagnostics.event(SOURCE_TEXT_OPEN_SUCCESS, { mode: SOURCE_TEXT_MANUAL_CHROME, ip: context.ip });
+        return {};
       } catch (error) {
+        diagnostics.event(SOURCE_TEMPLATE_FAILED(`${stage}`), {}, error);
         if (created) {
           await context?.close().catch(() => {});
           this.contexts.delete(id);
         }
-        throw new Error(proxyFailure(error));
+        const reason = proxyFailure(error);
+        if (error instanceof NativeProxyRouteError) throw error;
+        const launchReason = isProxyTimeout(error) ? SOURCE_TEXT_KHOI_DONG_TRINH_DUYET_HET_THOI_GIAN : SOURCE_TEMPLATE_KHONG_KHOI_DONG_DUOC_TRINH_DUYET_CHO(`${reason}`);
+        throw new Error(stage === SOURCE_TEXT_LAUNCH ? launchReason : stage === SOURCE_TEXT_NAVIGATION ? SOURCE_TEMPLATE_KHONG_TAI_DUOC_TRANG_QUA_PROXY(`${reason}`) : reason);
       }
     });
   }

@@ -1,4 +1,84 @@
 import {
+  SOURCE_TEMPLATE_OPEN_2,
+  SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_3,
+  SOURCE_TEXT_BG_WHITE_20_TEXT_WHITE_BORDER_WHITE,
+  SOURCE_TEXT_TEXT_PURPLE_100,
+  SOURCE_TEXT_TEXT_PURPLE_100_HOVER_TEXT_WHITE,
+  SOURCE_TEXT_BORDER_WHITE_20_TEXT_PURPLE_100,
+  SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_WHITE_FLEX,
+  SOURCE_TEXT_TEXT_WHITE_TRANSLATE_X_0_5,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_10,
+  SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2,
+  SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_3,
+  SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_4,
+  SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_5,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5,
+  SOURCE_TEXT_W_8_H_8_ROUNDED_XL_BG,
+  SOURCE_TEXT_W_4_H_4,
+  SOURCE_TEXT_MIN_W_0_TEXT_LEFT,
+  SOURCE_TEXT_TEXT_SM_FONT_BLACK_TRACKING_WIDER_TEXT,
+  SOURCE_TEXT_TEXT_10PX_FONT_MEDIUM_TEXT_SLATE_400_2,
+  SOURCE_TEXT_CAP_NHAT_CAU_HINH_KET_NOI_PROXY,
+  SOURCE_TEXT_THEM_CAU_HINH_PROXY_MOI_VAO_HE,
+  SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN,
+  SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT,
+  SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK,
+  SOURCE_BROWSER_TEXT_SYMBOL,
+  SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2,
+  SOURCE_TEXT_TEN_GOI_NHO,
+  SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_3,
+  SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_2,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_11,
+  SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_3,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_2,
+  SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_4,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_12,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_13,
+  SOURCE_TEXT_TUY_CHON,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_14,
+  SOURCE_TEXT_TEXT_10PX_TEXT_EMERALD_400_FONT_SEMIBOLD,
+  SOURCE_TEXT_W_3_H_3,
+  SOURCE_TEXT_DA_LUU_BAO_MAT,
+  SOURCE_TEXT_OPACITY_40_CURSOR_NOT_ALLOWED,
+  SOURCE_TEXT_ABSOLUTE_RIGHT_2_5_TOP_1_2,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_ENTER,
+  SOURCE_TEXT_SYMBOL_52,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_3,
+  SOURCE_TEXT_BORDER_PINK_500_50_BG_GRADIENT_TO,
+  SOURCE_TEXT_BORDER_SLATE_800_80_BG_SLATE_900,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN,
+  SOURCE_TEXT_W_8_H_8_ROUNDED_LG_FLEX,
+  SOURCE_TEXT_BG_PINK_500_20_TEXT_PINK_300,
+  SOURCE_TEXT_BG_SLATE_800_TEXT_SLATE_400,
+  SOURCE_TEXT_TEXT_XS_FONT_BOLD_TRANSITION_COLORS,
+  SOURCE_TEXT_TEXT_PINK_200,
+  SOURCE_TEXT_TEXT_SLATE_200,
+  SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400,
+  SOURCE_TEXT_MAT_KHAU_HIEN_TAI_SE_BI_XOA,
+  SOURCE_TEXT_DE_TRONG_O_MAT_KHAU_O_TREN,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_SHRINK_0,
+  SOURCE_TEXT_CHECKBOX,
+  SOURCE_TEXT_SR_ONLY,
+  SOURCE_TEXT_SWITCH,
+  SOURCE_TEXT_TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE,
+  SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600,
+  SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700,
+  SOURCE_TEXT_TOGGLE_SWITCH_THUMB_SHADOW_MD_TRANSITION_TRANSFORM,
+  SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE,
+  SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300,
+  SOURCE_TEXT_W_3_5_H_3_5_TEXT_15,
+  SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_AMBER_500_30,
+  SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400_2,
+  SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_ROSE_500_30_3,
+  SOURCE_TEXT_W_4_H_4_TEXT_ROSE_400_2,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2,
+  SOURCE_TEXT_PX_5_PY_2_5_TEXT_XS,
+  SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_2,
+  SOURCE_TEXT_W_3_5_H_3_5_SHRINK_2,
+  SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_3,
   SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_BORDER_BORDER_SLATE,
   SOURCE_TEXT_W_FULL_ROUNDED_XL_BORDER_BORDER_SLATE,
   SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP,
@@ -52,10 +132,8 @@ import {
   SOURCE_TEXT_ANTI_DETECT_ISOLATED,
   SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MT_0,
   SOURCE_TEXT_PX_3_5_PY_2,
-  SOURCE_TEXT_W_4_H_4,
   SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400,
   SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400,
-  SOURCE_TEXT_ANIMATE_SPIN,
   SOURCE_TEXT_P_2,
   SOURCE_TEXT_W_3_5_H_3_5,
   SOURCE_TEXT_GRID_GRID_COLS_2_LG_GRID_COLS,
@@ -86,7 +164,6 @@ import {
   SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2,
   SOURCE_TEXT_TEXT_SM_FONT_BLACK_UPPERCASE_TRACKING_WIDER,
-  SOURCE_TEXT_W_3_5_H_3_5_TEXT,
   SOURCE_TEXT_PX_2_PY_0_2_ROUNDED_FULL,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_P_1,
   SOURCE_TEXT_FLEX_1_PY_1_PX_2_ROUNDED,
@@ -110,11 +187,9 @@ import {
   SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_2,
   SOURCE_TEXT_FONT_MONO_TEXT_11PX_TEXT_SLATE_400,
-  SOURCE_TEXT_BUTTON,
   SOURCE_TEMPLATE_SYMBOL_78,
   SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800,
   SOURCE_TEXT_W_3_H_3_TEXT_EMERALD_400,
-  SOURCE_TEXT_W_3_H_3,
   SOURCE_TEXT_MT_2_5_PT_2_BORDER_T,
   SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_CYAN_300,
   SOURCE_TEXT_W_1_5_H_1_5_ROUNDED,
@@ -122,7 +197,6 @@ import {
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_TEXT_SLATE,
   SOURCE_TEXT_AUTH,
   SOURCE_TEXT_W_3_5_H_3_5_TRANSITION,
-  SOURCE_TEXT_TEXT_PURPLE_400_TRANSLATE_X_0_5,
   SOURCE_TEXT_TEXT_SLATE_600,
   SOURCE_TEXT_FLEX_1_FLEX_FLEX_COL_ITEMS_CENTER,
   SOURCE_TEXT_W_9_H_9_TEXT_SLATE_600,
@@ -160,13 +234,11 @@ import {
   SOURCE_TEXT_SELECTED_HOST,
   SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800_2,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_2,
-  SOURCE_TEXT_W_3_5_H_3_5_TEXT_2,
   SOURCE_TEXT_BORDER_ROSE_500_30_BG_ROSE_500,
   SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_PURPLE_500_30,
   SOURCE_TEXT_W_4_H_4_TEXT_CYAN_400,
   SOURCE_TEXT_TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDER,
   SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5,
-  SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_FLEX,
   SOURCE_TEXT_PX_4_PY_2_5_TEXT_XS,
   SOURCE_TEXT_BROWSER,
@@ -179,7 +251,6 @@ import {
   SOURCE_TEXT_BORDER_ROSE_500_40_BG_ROSE_500,
   SOURCE_TEXT_CLOSE_2,
   SOURCE_TEMPLATE_CLOSE,
-  SOURCE_TEXT_TEXT_XS_TEXT_PURPLE_300_FLEX_ITEMS,
   SOURCE_TEXT_W_3_5_H_3_5_ANIMATE,
   SOURCE_TEXT_TEXT_11PX_TEXT_AMBER_300_90_FONT,
   SOURCE_TEXT_GRID_GRID_COLS_2_SM_GRID_COLS,
@@ -230,19 +301,14 @@ import {
   SOURCE_TEXT_W_3_5_H_3_5_SHRINK,
   SOURCE_TEXT_XL,
   SOURCE_TEXT_SPACE_Y_4,
-  SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE,
-  SOURCE_BROWSER_TEXT_SYMBOL,
   SOURCE_TEXT_YOUTUBE_STUDIO_01,
-  SOURCE_TEXT_GRID_GRID_COLS_3_GAP_3,
   SOURCE_BROWSER_TEXT_HTTP,
   SOURCE_TEXT_HTTP_2,
   SOURCE_TEXT_HTTPS_2,
   SOURCE_TEXT_HTTPS_3,
   SOURCE_TEXT_SOCKS5,
   SOURCE_TEXT_SOCKS5_2,
-  SOURCE_TEXT_COL_SPAN_2_BLOCK_TEXT_XS_TEXT,
   SOURCE_TEXT_PROXY_EXAMPLE_COM,
-  SOURCE_TEXT_GRID_GRID_COLS_2_GAP_3,
   SOURCE_TEXT_NUMBER,
   SOURCE_TEXT_8080,
   SOURCE_TEXT_OFF,
@@ -251,11 +317,6 @@ import {
   SOURCE_TEXT_PASSWORD,
   SOURCE_TEXT_PR_11,
   SOURCE_TEXT_SYMBOL_49,
-  SOURCE_TEXT_ABSOLUTE_RIGHT_3_TOP_3_TEXT_SLATE,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_TEXT_XS,
-  SOURCE_TEXT_CHECKBOX,
-  SOURCE_TEXT_ROUNDED_BORDER_SLATE_700_ACCENT_PURPLE_500,
-  SOURCE_TEXT_TEXT_XS_TEXT_AMBER_300_LEADING_RELAXED,
   SOURCE_TEXT_TEXT_XS_TEXT_ROSE_300_FONT_BOLD,
   SOURCE_TEXT_FLEX_JUSTIFY_END_GAP_2_PT_2,
   SOURCE_TEXT_SUBMIT,
@@ -289,11 +350,11 @@ import { requestProxyApi as api } from "../services/proxyApi";
 import { ProxyConnectionBadge } from "./proxy/ProxyConnectionBadge";
 import { getErrorMessage } from "../utils/errorUtils";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowUpRight, Check, CheckCircle2, ChevronRight, Clapperboard, Copy, Download, Eye, EyeOff, Globe, KeyRound, Layers, Loader2, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, Check, CheckCircle2, ChevronRight, Clapperboard, Copy, Download, Eye, EyeOff, FileText, Globe, KeyRound, Layers, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PROXY_TEXTS } from "../constants/proxy";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../lib/proxyValidation";
-import type { ProxyCheck, ProxyInput, ProxyProfile } from "../types/proxy";
+import type { ProxyCheck, ProxyInput, ProxyOpenResult, ProxyProfile } from "../types/proxy";
 import type { Lang } from "../lib/lang";
 import { cn } from "../lib/utils";
 import { emptyProxyForm } from "../lib/proxyWorkspace";
@@ -488,9 +549,12 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   const locked = selected ? Boolean(pending[selected.id]) || selected.session === SOURCE_TEXT_OPENING || selected.session === SOURCE_TEXT_CLOSING : false;
   const launch = (destination: string) =>
     selected &&
-    run(selected.id, SOURCE_TEXT_OPEN, async () => {
-      await api(SOURCE_TEMPLATE_OPEN(`${selected.id}`), SOURCE_TEXT_POST, { destination });
-      if (mounted.current) toast.success(t.opened);
+    run(selected.id, SOURCE_TEMPLATE_OPEN_2(`${destination}`), async () => {
+      const result = await api<ProxyOpenResult>(SOURCE_TEMPLATE_OPEN(`${selected.id}`), SOURCE_TEXT_POST, { destination });
+      if (mounted.current) {
+        if (result?.warning) toast.warning(result.warning, { duration: 10000 });
+        else toast.success(t.opened);
+      }
     });
   if (!workspaceReady) {
     return (
@@ -506,7 +570,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
           </>
         ) : (
           <>
-            <Loader2 className={SOURCE_TEXT_W_7_H_7_ANIMATE_SPIN_TEXT} />
+            <Sparkles className={SOURCE_TEXT_W_7_H_7_ANIMATE_SPIN_TEXT} />
             <p role={SOURCE_TEXT_STATUS} className={SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_300}>
               {t.recovering}
             </p>
@@ -553,7 +617,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               <span>{t.import}</span>
             </Button>
             <Button variant={SOURCE_TEXT_UNSTYLED} className={actionBtnClass} disabled={checkingAll || !profiles.length} onClick={checkAll}>
-              <RefreshCw className={cn(SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400, checkingAll && SOURCE_TEXT_ANIMATE_SPIN)} />
+              {checkingAll ? <Sparkles className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_3} /> : <RefreshCw className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400} />}
               <span>{t.checkAll}</span>
             </Button>
             <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_P_2)} aria-label={t.refresh} onClick={() => refresh().catch(() => setLoadError(t.loadError))}>
@@ -591,7 +655,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
         )}
         {loading ? (
           <div className={cn(panelClass, SOURCE_TEXT_P_16_FLEX_FLEX_COL_ITEMS_CENTER)}>
-            <Loader2 aria-label={t.working} className={SOURCE_TEXT_W_8_H_8_ANIMATE_SPIN_TEXT} />
+            <Sparkles aria-label={t.working} className={SOURCE_TEXT_W_8_H_8_ANIMATE_SPIN_TEXT} />
             <p className={SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_400}>{t.working}</p>
           </div>
         ) : (
@@ -642,12 +706,12 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                       <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                         <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W}>
                           <span className={cn(SOURCE_TEXT_TEXT_XS_FONT_BLACK_TRUNCATE, isSelected ? SOURCE_TEXT_TEXT_PURPLE_200 : SOURCE_TEXT_TEXT_SLATE_100_GROUP_HOVER_TEXT_PURPLE)}>{profile.name}</span>
-                          <span className={SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED}>{profile.protocol}</span>
+                          <span className={cn(SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED, isSelected && SOURCE_TEXT_BG_WHITE_20_TEXT_WHITE_BORDER_WHITE)}>{profile.protocol}</span>
                         </div>
                         {<ProxyConnectionBadge profile={profile} checking={pending[profile.id] === SOURCE_TEXT_CHECK} texts={t} />}
                       </div>
                       <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_2}>
-                        <span className={SOURCE_TEXT_FONT_MONO_TEXT_11PX_TEXT_SLATE_400}>{serverStr}</span>
+                        <span className={cn(SOURCE_TEXT_FONT_MONO_TEXT_11PX_TEXT_SLATE_400, isSelected && SOURCE_TEXT_TEXT_PURPLE_100)}>{serverStr}</span>
                         <Button
                           variant={SOURCE_TEXT_UNSTYLED}
                           type={SOURCE_TEXT_BUTTON}
@@ -656,32 +720,32 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                             handleCopy(SOURCE_TEMPLATE_SYMBOL_78(`${profile.host}`, `${profile.port}`), profile.id);
                           }}
                           title={t.copyHostPort}
-                          className={SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800}>
+                          className={cn(SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800, isSelected && SOURCE_TEXT_TEXT_PURPLE_100_HOVER_TEXT_WHITE)}>
                           {copiedKey === profile.id ? <Check className={SOURCE_TEXT_W_3_H_3_TEXT_EMERALD_400} /> : <Copy className={SOURCE_TEXT_W_3_H_3} />}
                         </Button>
                       </div>
-                      <div className={SOURCE_TEXT_MT_2_5_PT_2_BORDER_T}>
+                      <div className={cn(SOURCE_TEXT_MT_2_5_PT_2_BORDER_T, isSelected && SOURCE_TEXT_BORDER_WHITE_20_TEXT_PURPLE_100)}>
                         <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
                           {isSessionActive ? (
-                            <span className={SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_CYAN_300}>
+                            <span className={isSelected ? SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_WHITE_FLEX : SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_CYAN_300}>
                               <span className={SOURCE_TEXT_W_1_5_H_1_5_ROUNDED} />
                               <Monitor className={SOURCE_TEXT_W_3_H_3} />
                               {sessionText(profile)}
                             </span>
                           ) : (
-                            <span className={SOURCE_TEXT_TEXT_SLATE_500_FLEX_ITEMS_CENTER_GAP}>
+                            <span className={cn(SOURCE_TEXT_TEXT_SLATE_500_FLEX_ITEMS_CENTER_GAP, isSelected && SOURCE_TEXT_TEXT_PURPLE_100)}>
                               <Monitor className={SOURCE_TEXT_W_3_H_3} />
                               {t.closed}
                             </span>
                           )}
                           {(profile.username || profile.hasPassword) && (
-                            <span className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_TEXT_SLATE} title={t.hasAuth}>
+                            <span className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_TEXT_SLATE, isSelected && SOURCE_TEXT_TEXT_PURPLE_100)} title={t.hasAuth}>
                               <KeyRound className={SOURCE_TEXT_W_2_5_H_2_5_TEXT} />
                               <span>{profile.username || SOURCE_TEXT_AUTH}</span>
                             </span>
                           )}
                         </div>
-                        <ChevronRight className={cn(SOURCE_TEXT_W_3_5_H_3_5_TRANSITION, isSelected ? SOURCE_TEXT_TEXT_PURPLE_400_TRANSLATE_X_0_5 : SOURCE_TEXT_TEXT_SLATE_600)} />
+                        <ChevronRight className={cn(SOURCE_TEXT_W_3_5_H_3_5_TRANSITION, isSelected ? SOURCE_TEXT_TEXT_WHITE_TRANSLATE_X_0_5 : SOURCE_TEXT_TEXT_SLATE_600)} />
                       </div>
                     </div>
                   );
@@ -792,8 +856,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                     <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_2}>
                       {<ProxyConnectionBadge profile={selected} checking={pending[selected.id] === SOURCE_TEXT_CHECK} texts={t} />}
                       <Button variant={SOURCE_TEXT_UNSTYLED} className={actionBtnClass} disabled={locked} onClick={() => check(selected.id)} title={t.check}>
-                        <Activity className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_2, pending[selected.id] === SOURCE_TEXT_CHECK && SOURCE_TEXT_ANIMATE_SPIN)} />
-                        <span>{t.check}</span>
+                        {pending[selected.id] === SOURCE_TEXT_CHECK ? <Sparkles className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_10} /> : <Activity className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_2} />}
+                        <span>{pending[selected.id] === SOURCE_TEXT_CHECK ? t.checking : t.check}</span>
                       </Button>
                       <Button variant={SOURCE_TEXT_UNSTYLED} className={actionBtnClass} disabled={locked || selected.session !== SOURCE_TEXT_CLOSED} onClick={() => openEditor(selected)} title={selected.session !== SOURCE_TEXT_CLOSED ? t.busyHint : t.edit}>
                         <Pencil className={SOURCE_TEXT_W_3_5_H_3_5} />
@@ -821,17 +885,17 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                     <p className={SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400}>{t.launchDesc}</p>
                     <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_FLEX}>
                       <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, primaryBtnClass, SOURCE_TEXT_PX_4_PY_2_5_TEXT_XS)} disabled={locked} onClick={() => launch(SOURCE_TEXT_BROWSER)}>
-                        <Monitor className={SOURCE_TEXT_W_4_H_4} />
-                        <span>{t.open}</span>
-                        <ArrowUpRight className={SOURCE_TEXT_W_3_5_H_3_5_ML} />
+                        {pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_BROWSER}`) || pending[selected.id] === SOURCE_TEXT_OPEN ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2} /> : <Monitor className={SOURCE_TEXT_W_4_H_4} />}
+                        <span>{pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_BROWSER}`) || pending[selected.id] === SOURCE_TEXT_OPEN ? t.working : t.open}</span>
+                        {!(pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_BROWSER}`) || pending[selected.id] === SOURCE_TEXT_OPEN) && <ArrowUpRight className={SOURCE_TEXT_W_3_5_H_3_5_ML} />}
                       </Button>
                       <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_PX_3_5_PY_2_5)} disabled={locked} onClick={() => launch(SOURCE_TEXT_YOUTUBE)}>
-                        <Play className={SOURCE_TEXT_W_4_H_4_TEXT_ROSE_400} />
-                        <span>{t.youtube}</span>
+                        {pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_YOUTUBE}`) ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_3} /> : <Play className={SOURCE_TEXT_W_4_H_4_TEXT_ROSE_400} />}
+                        <span>{pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_YOUTUBE}`) ? t.working : t.youtube}</span>
                       </Button>
                       <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_PX_3_5_PY_2_5)} disabled={locked} onClick={() => launch(SOURCE_TEXT_STUDIO)}>
-                        <Clapperboard className={SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400} />
-                        <span>{t.studio}</span>
+                        {pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_STUDIO}`) ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_4} /> : <Clapperboard className={SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400} />}
+                        <span>{pending[selected.id] === SOURCE_TEMPLATE_OPEN_2(`${SOURCE_TEXT_STUDIO}`) ? t.working : t.studio}</span>
                       </Button>
                       {selected.session === SOURCE_TEXT_OPEN && (
                         <Button
@@ -844,17 +908,11 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                               if (mounted.current) toast.success(t.sessionClosed);
                             })
                           }>
-                          <X className={SOURCE_TEXT_W_4_H_4} />
-                          <span>{t.close}</span>
+                          {pending[selected.id] === SOURCE_TEXT_CLOSE_2 ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_5} /> : <X className={SOURCE_TEXT_W_4_H_4} />}
+                          <span>{pending[selected.id] === SOURCE_TEXT_CLOSE_2 ? t.working : t.close}</span>
                         </Button>
                       )}
                     </div>
-                    {pending[selected.id] && (
-                      <div role={SOURCE_TEXT_STATUS} className={SOURCE_TEXT_TEXT_XS_TEXT_PURPLE_300_FLEX_ITEMS}>
-                        <Loader2 className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE} />
-                        <span>{pending[selected.id] === SOURCE_TEXT_CHECK ? t.checking : t.working}</span>
-                      </div>
-                    )}
                     {selected.session !== SOURCE_TEXT_CLOSED && <p className={SOURCE_TEXT_TEXT_11PX_TEXT_AMBER_300_90_FONT}>{t.busyHint}</p>}
                   </div>
                   <div className={SOURCE_TEXT_GRID_GRID_COLS_2_SM_GRID_COLS}>
@@ -930,7 +988,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
         )}
         <div className={SOURCE_TEXT_PT_2_BORDER_T_BORDER_SLATE_800_2}>
           <div role={SOURCE_TEXT_STATUS} className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2, draftStatus === SOURCE_TEXT_ERROR ? SOURCE_TEXT_TEXT_ROSE_300 : draftStatus === SOURCE_TEXT_SAVING ? SOURCE_TEXT_TEXT_PURPLE_300 : SOURCE_TEXT_TEXT_SLATE_500)}>
-            {draftStatus === SOURCE_TEXT_SAVING ? <Loader2 className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE} /> : <ShieldCheck className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_2} />}
+            {draftStatus === SOURCE_TEXT_SAVING ? <Sparkles className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE} /> : <ShieldCheck className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_2} />}
             <span>{draftStatus === SOURCE_TEXT_SAVED ? t.draftSaved : draftStatus === SOURCE_TEXT_SAVING ? t.draftSaving : t.draftError}</span>
             {draftStatus === SOURCE_TEXT_ERROR && (
               <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_PY_0_5_PX_2_TEXT_10PX)} onClick={retrySave}>
@@ -952,69 +1010,160 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
             setForm(emptyForm());
           }
         }}
-        title={editor?.id ? t.editTitle : t.add}
+        title={
+          <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5}>
+            <div className={SOURCE_TEXT_W_8_H_8_ROUNDED_XL_BG}>{editor?.id ? <Pencil className={SOURCE_TEXT_W_4_H_4} /> : <Plus className={SOURCE_TEXT_W_4_H_4} />}</div>
+            <div className={SOURCE_TEXT_MIN_W_0_TEXT_LEFT}>
+              <span className={SOURCE_TEXT_TEXT_SM_FONT_BLACK_TRACKING_WIDER_TEXT}>{editor?.id ? t.editTitle : t.add}</span>
+              <p className={SOURCE_TEXT_TEXT_10PX_FONT_MEDIUM_TEXT_SLATE_400_2}>{editor?.id ? SOURCE_TEXT_CAP_NHAT_CAU_HINH_KET_NOI_PROXY : SOURCE_TEXT_THEM_CAU_HINH_PROXY_MOI_VAO_HE}</p>
+            </div>
+          </div>
+        }
         maxWidth={SOURCE_TEXT_XL}>
         <form onSubmit={save} className={SOURCE_TEXT_SPACE_Y_4}>
-          <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-            <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>
-              {t.name} {SOURCE_BROWSER_TEXT_SYMBOL}
-            </span>
+          <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
+            <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <Globe className={SOURCE_TEXT_W_3_5_H_3_5_TEXT} />
+                <span>{t.name}</span>
+                <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
+              </span>
+              <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TEN_GOI_NHO}</span>
+            </div>
             <input autoFocus required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={controlClass} placeholder={SOURCE_TEXT_YOUTUBE_STUDIO_01} />
           </label>
-          <div className={SOURCE_TEXT_GRID_GRID_COLS_3_GAP_3}>
-            <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>{t.protocol}</span>
+          <div className={SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_3}>
+            <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_2}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <Layers className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_11} />
+                <span>{t.protocol}</span>
+                <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
+              </span>
               <select className={controlClass} value={form.protocol} onChange={(event) => setForm({ ...form, protocol: event.target.value as ProxyInput["protocol"] })}>
                 <option value={SOURCE_BROWSER_TEXT_HTTP}>{SOURCE_TEXT_HTTP_2}</option>
                 <option value={SOURCE_TEXT_HTTPS_2}>{SOURCE_TEXT_HTTPS_3}</option>
                 <option value={SOURCE_TEXT_SOCKS5}>{SOURCE_TEXT_SOCKS5_2}</option>
               </select>
             </label>
-            <label className={SOURCE_TEXT_COL_SPAN_2_BLOCK_TEXT_XS_TEXT}>
-              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>
-                {t.host} {SOURCE_BROWSER_TEXT_SYMBOL}
+            <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_3}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <Monitor className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_2} />
+                <span>{t.host}</span>
+                <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
               <input required maxLength={253} className={controlClass} value={form.host} onChange={(event) => setForm({ ...form, host: event.target.value })} placeholder={SOURCE_TEXT_PROXY_EXAMPLE_COM} />
             </label>
           </div>
-          <div className={SOURCE_TEXT_GRID_GRID_COLS_2_GAP_3}>
-            <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>
-                {t.port} {SOURCE_BROWSER_TEXT_SYMBOL}
+          <div className={SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_4}>
+            <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <Activity className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_12} />
+                <span>{t.port}</span>
+                <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
               <input required type={SOURCE_TEXT_NUMBER} min={1} max={65535} className={controlClass} value={form.port || ""} onChange={(event) => setForm({ ...form, port: Number(event.target.value) })} placeholder={SOURCE_TEXT_8080} />
             </label>
-            <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>{t.username}</span>
+            <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
+              <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+                <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                  <KeyRound className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_13} />
+                  <span>{t.username}</span>
+                </span>
+                <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TUY_CHON}</span>
+              </div>
               <input autoComplete={SOURCE_TEXT_OFF} maxLength={512} className={controlClass} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder={t.optional} />
             </label>
           </div>
-          <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-            <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>{t.password}</span>
+          <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
+            <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <Shield className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_14} />
+                <span>{t.password}</span>
+              </span>
+              {editor?.hasPassword && !form.clearPassword && (
+                <span className={SOURCE_TEXT_TEXT_10PX_TEXT_EMERALD_400_FONT_SEMIBOLD}>
+                  <ShieldCheck className={SOURCE_TEXT_W_3_H_3} />
+                  <span>{SOURCE_TEXT_DA_LUU_BAO_MAT}</span>
+                </span>
+              )}
+            </div>
             <div className={SOURCE_TEXT_RELATIVE}>
-              <input autoComplete={SOURCE_TEXT_NEW_PASSWORD} type={showPassword ? SOURCE_TEXT_TEXT : SOURCE_TEXT_PASSWORD} disabled={form.clearPassword} maxLength={2048} className={cn(controlClass, SOURCE_TEXT_PR_11)} value={form.password || ""} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder={editor?.hasPassword ? t.savedPassword : SOURCE_TEXT_SYMBOL_49} />
-              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} aria-label={showPassword ? t.hidePassword : t.showPassword} onClick={() => setShowPassword(!showPassword)} className={SOURCE_TEXT_ABSOLUTE_RIGHT_3_TOP_3_TEXT_SLATE}>
+              <input
+                autoComplete={SOURCE_TEXT_NEW_PASSWORD}
+                type={showPassword ? SOURCE_TEXT_TEXT : SOURCE_TEXT_PASSWORD}
+                disabled={form.clearPassword}
+                maxLength={2048}
+                className={cn(controlClass, SOURCE_TEXT_PR_11, form.clearPassword && SOURCE_TEXT_OPACITY_40_CURSOR_NOT_ALLOWED)}
+                value={form.password || ""}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                placeholder={editor?.hasPassword ? t.savedPassword : SOURCE_TEXT_SYMBOL_49}
+              />
+              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} aria-label={showPassword ? t.hidePassword : t.showPassword} onClick={() => setShowPassword(!showPassword)} className={SOURCE_TEXT_ABSOLUTE_RIGHT_2_5_TOP_1_2}>
                 {showPassword ? <EyeOff className={SOURCE_TEXT_W_4_H_4} /> : <Eye className={SOURCE_TEXT_W_4_H_4} />}
               </Button>
             </div>
           </label>
           {editor?.hasPassword && (
-            <label className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_TEXT_XS}>
-              <input type={SOURCE_TEXT_CHECKBOX} checked={Boolean(form.clearPassword)} onChange={(event) => setForm({ ...form, clearPassword: event.target.checked, password: "" })} className={SOURCE_TEXT_ROUNDED_BORDER_SLATE_700_ACCENT_PURPLE_500} />
-              <span>{t.clearPassword}</span>
-            </label>
+            <div
+              role={SOURCE_TEXT_BUTTON}
+              tabIndex={0}
+              onClick={() => setForm({ ...form, clearPassword: !form.clearPassword, password: "" })}
+              onKeyDown={(e) => {
+                if (e.key === SOURCE_TEXT_ENTER || e.key === SOURCE_TEXT_SYMBOL_52) {
+                  e.preventDefault();
+                  setForm({ ...form, clearPassword: !form.clearPassword, password: "" });
+                }
+              }}
+              className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_3, form.clearPassword ? SOURCE_TEXT_BORDER_PINK_500_50_BG_GRADIENT_TO : SOURCE_TEXT_BORDER_SLATE_800_80_BG_SLATE_900)}>
+              <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN}>
+                <div className={cn(SOURCE_TEXT_W_8_H_8_ROUNDED_LG_FLEX, form.clearPassword ? SOURCE_TEXT_BG_PINK_500_20_TEXT_PINK_300 : SOURCE_TEXT_BG_SLATE_800_TEXT_SLATE_400)}>
+                  <KeyRound className={SOURCE_TEXT_W_4_H_4} />
+                </div>
+                <div className={SOURCE_TEXT_MIN_W_0_TEXT_LEFT}>
+                  <p className={cn(SOURCE_TEXT_TEXT_XS_FONT_BOLD_TRANSITION_COLORS, form.clearPassword ? SOURCE_TEXT_TEXT_PINK_200 : SOURCE_TEXT_TEXT_SLATE_200)}>{t.clearPassword}</p>
+                  <p className={SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400}>{form.clearPassword ? SOURCE_TEXT_MAT_KHAU_HIEN_TAI_SE_BI_XOA : SOURCE_TEXT_DE_TRONG_O_MAT_KHAU_O_TREN}</p>
+                </div>
+              </div>
+              <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_SHRINK_0}>
+                <input type={SOURCE_TEXT_CHECKBOX} className={SOURCE_TEXT_SR_ONLY} checked={Boolean(form.clearPassword)} onChange={(e) => setForm({ ...form, clearPassword: e.target.checked, password: "" })} tabIndex={-1} />
+                <button
+                  type={SOURCE_TEXT_BUTTON}
+                  role={SOURCE_TEXT_SWITCH}
+                  aria-checked={Boolean(form.clearPassword)}
+                  aria-label={t.clearPassword}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setForm({ ...form, clearPassword: !form.clearPassword, password: "" });
+                  }}
+                  className={cn(SOURCE_TEXT_TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE, form.clearPassword ? SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600 : SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}>
+                  <span aria-hidden={true} className={cn(SOURCE_TEXT_TOGGLE_SWITCH_THUMB_SHADOW_MD_TRANSITION_TRANSFORM, form.clearPassword ? SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE : SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300)} />
+                </button>
+              </div>
+            </div>
           )}
-          <label className={SOURCE_TEXT_BLOCK_TEXT_XS_TEXT_SLATE_400_SPACE}>
-            <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_300}>{t.notes}</span>
+          <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
+            <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
+              <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
+                <FileText className={SOURCE_TEXT_W_3_5_H_3_5_TEXT_15} />
+                <span>{t.notes}</span>
+              </span>
+              <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TUY_CHON}</span>
+            </div>
             <textarea maxLength={2000} rows={3} className={controlClass} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t.notesPlaceholder} />
           </label>
-          {form.protocol === SOURCE_TEXT_SOCKS5 && <p className={SOURCE_TEXT_TEXT_XS_TEXT_AMBER_300_LEADING_RELAXED}>{t.socksHint}</p>}
-          {formError && (
-            <p role={SOURCE_TEXT_ALERT} className={SOURCE_TEXT_TEXT_XS_TEXT_ROSE_300_FONT_BOLD}>
-              {formError}
-            </p>
+          {form.protocol === SOURCE_TEXT_SOCKS5 && (
+            <div className={SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_AMBER_500_30}>
+              <AlertTriangle className={SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400_2} />
+              <span>{t.socksHint}</span>
+            </div>
           )}
-          <div className={SOURCE_TEXT_FLEX_JUSTIFY_END_GAP_2_PT_2}>
+          {formError && (
+            <div role={SOURCE_TEXT_ALERT} className={SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_ROSE_500_30_3}>
+              <AlertTriangle className={SOURCE_TEXT_W_4_H_4_TEXT_ROSE_400_2} />
+              <span>{formError}</span>
+            </div>
+          )}
+          <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2}>
             <Button
               variant={SOURCE_TEXT_UNSTYLED}
               type={SOURCE_TEXT_BUTTON}
@@ -1026,8 +1175,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               }}>
               {t.cancel}
             </Button>
-            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_SUBMIT} className={cn(actionBtnClass, primaryBtnClass)} disabled={saving}>
-              {saving && <Loader2 className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE} />}
+            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_SUBMIT} className={cn(actionBtnClass, primaryBtnClass, SOURCE_TEXT_PX_5_PY_2_5_TEXT_XS)} disabled={saving}>
+              {saving ? <Sparkles className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_2} /> : <Check className={SOURCE_TEXT_W_3_5_H_3_5_SHRINK_2} />}
               <span>{t.save}</span>
             </Button>
           </div>
@@ -1069,7 +1218,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               <span className={SOURCE_TEXT_FONT_MONO}>
                 <span className={SOURCE_TEXT_TEXT_EMERALD_400}>
                   {validCount} {t.valid}
-                </span>{" "}
+                </span>
+                {SOURCE_TEXT_SYMBOL_52}
                 {SOURCE_TEXT_SYMBOL_50}
                 <span className={SOURCE_TEXT_TEXT_ROSE_400}>
                   {importRows.length - validCount} {t.invalid}
@@ -1111,7 +1261,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               {t.cancel}
             </Button>
             <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, primaryBtnClass)} disabled={saving || !validCount || validCount !== importRows.length || validCount > 200} onClick={importList}>
-              {saving && <Loader2 className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE} />}
+              {saving && <Sparkles className={SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_3} />}
               <span>{t.importConfirm}</span>
             </Button>
           </div>
