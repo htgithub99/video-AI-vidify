@@ -1,13 +1,12 @@
+import * as SF from "./sunoStyleFixtures.js";
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
-import { SUNO_AUTOMATION_PATTERNS } from "../src/constants/sunoAutomation.js";
-
-const source = resolveSourceTextConstants(fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8"));
-const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
-
+import { configureAdvancedOnce, ensureAdvancedMode, findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
+import { SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_SELECTORS } from "../src/constants/sunoAutomation.js";
+const source = resolveSourceTextConstants(fs.readFileSync(SF.TEXT_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS, SF.TEXT_UTF8));
+const constants = resolveSourceTextConstants(fs.readFileSync(SF.TEXT_SRC_CONSTANTS_SUNOAUTOMATION_TS, SF.TEXT_UTF8));
 assert.match(source, /const ensureSunoStyle = async/);
 assert.match(source, /const configureAdvancedOnce[\s\S]*await ensureSunoStyle\(page, style\)/);
 assert.match(constants, /placeholder\*="style" i\]:not\(\[placeholder\*="exclude" i\]\)/);
@@ -33,8 +32,8 @@ assert.doesNotMatch(source, /if \(!\(await labelLocator\.isVisible\(\)\.catch\(\
 assert.doesNotMatch(source, /if \(excludeInput\) await fillEditable/);
 assert.equal((source.match(/await selectInspoPlaylist\(page, inspo\)/g) || []).length, 1);
 assert.match(source, /await verifySunoAccount\(page\);[\s\S]*await ensureAdvancedMode\(page\);[\s\S]*await selectInspoPlaylist\(page, inspo\);[\s\S]*await configureAdvancedOnce\(page, style, aiSettings, hasInspo\)/);
-assert.ok(SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test("https://studio-api-prod.suno.com/api/playlist/create/"));
-assert.ok(!SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test("https://studio-api-prod.suno.com/api/playlist/update_clips/"));
+assert.ok(SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(SF.TEXT_HTTPS_STUDIO_API_PROD_SUNO_COM_API_PLAYLIST_CREATE));
+assert.ok(!SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(SF.TEXT_HTTPS_STUDIO_API_PROD_SUNO_COM_API_PLAYLIST_UPDATE_CLIPS));
 assert.match(source, /suno_playlist_create_response/);
 assert.match(source, /getByRole\("link", \{ name: playlistName, exact: true \}\)/);
 assert.match(source, /_\.intersection\(uniqueSongIds, await collectSongIds\(page\)\)/);
@@ -44,75 +43,66 @@ assert.doesNotMatch(constants, /'input\[placeholder\*="Search" i\]'/);
 assert.match(source, /INSPO_APPLIED_CONDITION/);
 assert.match(source, /INSPO_APPLIED_TRACK/);
 assert.match(constants, /\[role="dialog"\] input\[placeholder="Search"\]/);
-
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
-  await page.setContent('<nav>Home Explore Create Studio Library musicaivietnam</nav><button>Simple</button><button>Advanced</button><main>Sounds v6-mini Audio Voice Image</main>');
+  await page.setContent(SF.ACCOUNT_WORKSPACE_HTML);
   await verifySunoAccount(page);
-  await page.setContent('<nav>Home Explore Create Studio Library another-workspace</nav><button>Simple</button><button>Advanced</button>');
+  await page.setContent(SF.INCORRECT_WORKSPACE_HTML);
   await assert.rejects(verifySunoAccount(page), /chưa đăng nhập đúng workspace Suno/);
-  await page.setContent(`
-    <textarea placeholder="Exclude styles">wrong existing exclusion</textarea>
-    <section><div><h3>Styles</h3><div><textarea placeholder="Add a style">wrong existing music style</textarea></div></div></section>
-  `);
+  await page.setContent(SF.SEPARATE_STYLES_HTML);
   const styleInput = await findSunoStyleInput(page);
-  assert.ok(styleInput, "Main Suno Styles input was not found");
-  await styleInput.fill("authentic vietnamese bolero, 76 bpm");
-  assert.equal(await page.locator('textarea[placeholder="Add a style"]').inputValue(), "authentic vietnamese bolero, 76 bpm");
-  assert.equal(await page.locator('textarea[placeholder="Exclude styles"]').inputValue(), "wrong existing exclusion");
-
-  const inspoName = "BOLERO_HAI_NGOAI";
-  await page.setContent(`
-    <input placeholder="Search clips">
-    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">+ Inspo</button>
-    <div id="inspo-dialog" role="dialog" hidden>
-      <input placeholder="Search" oninput="setTimeout(() => {
-        const row = document.querySelector('#inspo-result');
-        row.hidden = false;
-      }, 1500)">
-      <div id="inspo-result" class="cursor-pointer" hidden onclick="
-        document.querySelector('#inspo-button').remove();
-        document.querySelector('#selected-inspo').hidden = false;
-        document.querySelector('#inspo-dialog').hidden = true;
-      "><span>${inspoName}</span></div>
-    </div>
-    <div id="selected-inspo" hidden><button aria-label="Change condition type from Inspo">Inspo</button><button aria-label="Remove selected track">Remove</button></div>
-  `);
+  assert.ok(styleInput, SF.TEXT_MAIN_SUNO_STYLES_INPUT_WAS_NOT_FOUND);
+  await styleInput.fill(SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM);
+  assert.equal(await page.locator(SF.TEXT_TEXTAREA_PLACEHOLDER_ADD_A_STYLE).inputValue(), SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM);
+  assert.equal(await page.locator(SF.TEXT_TEXTAREA_PLACEHOLDER_EXCLUDE_STYLES).inputValue(), SF.TEXT_WRONG_EXISTING_EXCLUSION);
+  await page.setContent(SF.ADVANCED_FORM_HTML);
+  await ensureAdvancedMode(page);
+  await ensureAdvancedMode(page);
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, {
+    excludeStyles: SF.TEXT_EDM_DISTORTED_GUITARS,
+    vocalGender: SF.TEXT_MALE,
+    duration: SF.TEXT_AUTO,
+    maxMode: false,
+    weirdness: 30,
+    styleInfluence: 80,
+    audioInfluence: 50,
+    variety: 75,
+    personalize: false,
+  });
+  const lyricsEditor = page.locator(SUNO_AUTOMATION_SELECTORS.LYRICS_INPUT[0]).locator(SF.TEXT_VISIBLE_TRUE);
+  await lyricsEditor.fill(SF.TEXT_VERSE_LOI_HAT_TIENG_VIET_CHORUS_MOT_CAU_HAT_MOI);
+  assert.deepEqual((await lyricsEditor.innerText()).split(/\n+/), [SF.TEXT_VERSE, SF.TEXT_LOI_HAT_TIENG_VIET, SF.TEXT_CHORUS, SF.TEXT_MOT_CAU_HAT_MOI]);
+  assert.equal(await page.locator(SF.TEXT_STYLES_WRAPPER_TEXTAREA).inputValue(), SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM);
+  assert.equal(await page.locator(SF.TEXT_DIV_HIDDEN_TEXTAREA).first().inputValue(), SF.TEXT_HIDDEN_STYLE);
+  assert.equal(await page.getByLabel(SF.TEXT_COWRITER_PROMPT).inputValue(), SF.TEXT_KEEP_COWRITER);
+  assert.equal(await page.getByPlaceholder(SF.TEXT_EXCLUDE_STYLES).inputValue(), SF.TEXT_EDM_DISTORTED_GUITARS);
+  assert.equal(await page.locator(SF.TEXT_MORE_OPTIONS_ARIA_LABEL_WEIRDNESS).getAttribute(SF.TEXT_ARIA_VALUENOW), SF.TEXT_30);
+  assert.equal(await page.locator(SF.TEXT_MORE_OPTIONS_ARIA_LABEL_STYLE_INFLUENCE).getAttribute(SF.TEXT_ARIA_VALUENOW), SF.TEXT_80);
+  assert.equal(await page.locator(SF.TEXT_MORE_OPTIONS_ARIA_LABEL_VARIETY).getAttribute(SF.TEXT_ARIA_VALUENOW), SF.TEXT_3);
+  assert.equal(
+    await page
+      .locator(SF.TEXT_MORE_OPTIONS_BUTTON_DATA_SELECTED_TRUE)
+      .allTextContents()
+      .then((values) => values.join(SF.COMMA_SEPARATOR)),
+    SF.TEXT_MALE_AUTO_OFF_OFF,
+  );
+  const inspoName = SF.TEXT_BOLERO_HAI_NGOAI;
+  await page.setContent(SF.appliedInspoHtml(inspoName));
   await selectInspoPlaylist(page, inspoName);
-  assert.equal(await page.locator('#selected-inspo button[aria-label^="Remove "]').count(), 1);
-  assert.equal(await page.locator('input[placeholder="Search clips"]').inputValue(), "");
-
-  await page.setContent(`
-    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
-    <div id="inspo-dialog" role="dialog" hidden>
-      <input placeholder="Search">
-      <div class="cursor-pointer" onclick="document.querySelector('#inspo-dialog').hidden = true"><span>${inspoName}</span></div>
-    </div>
-  `);
+  assert.equal(await page.locator(SF.TEXT_SELECTED_INSPO_BUTTON_ARIA_LABEL_REMOVE).count(), 1);
+  assert.equal(await page.locator(SF.TEXT_INPUT_PLACEHOLDER_SEARCH_CLIPS).inputValue(), SF.EMPTY_TEXT);
+  await page.setContent(SF.unappliedInspoHtml(inspoName));
   await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
-  assert.equal(await page.locator("#inspo-button").textContent(), "Inspo");
-
-  await page.setContent(`
-    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
-    <div id="inspo-dialog" role="dialog" hidden>
-      <input placeholder="Search">
-      <button type="button">${inspoName}</button>
-    </div>
-  `);
+  assert.equal(await page.locator(SF.TEXT_INSPO_BUTTON).textContent(), SF.TEXT_INSPO);
+  await page.setContent(SF.unselectableInspoHtml(inspoName));
   await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
-
-  await page.setContent(`
-    <button id="inspo-button" aria-label="Add inspiration from a playlist" type="button" onclick="document.querySelector('#inspo-dialog').hidden = false">Inspo</button>
-    <div id="inspo-dialog" role="dialog" hidden><input placeholder="Search"></div>
-  `);
+  await page.setContent(SF.EMPTY_INSPO_DIALOG_HTML);
   await assert.rejects(selectInspoPlaylist(page, inspoName), /chưa chọn playlist Inspo/);
-
-  await page.setContent('<button type="button">Create</button>');
-  await selectInspoPlaylist(page, "");
-  assert.equal(await page.getByRole("button", { name: "Create" }).count(), 1);
+  await page.setContent(SF.CREATE_BUTTON_HTML);
+  await selectInspoPlaylist(page, SF.EMPTY_TEXT);
+  assert.equal(await page.getByRole(SF.TEXT_BUTTON, { name: SF.TEXT_CREATE }).count(), 1);
 } finally {
   await browser.close();
 }
-
-process.stdout.write("BOLERO is applied only to Suno Styles, never to Exclude styles.\n");
+process.stdout.write(SF.TEXT_BOLERO_IS_APPLIED_ONLY_TO_SUNO_STYLES_NEVER_TO_EXCLUDE_STYLES);
