@@ -101,6 +101,7 @@ import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../constants/motionVi
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
+import { needsAuthoredCharacters } from "../lib/motionVideoDna.js";
 import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
@@ -241,9 +242,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
-    if (spec?.gen && (spec.gen.characterMode || MR.MOTION_TEXT_MANNEQUIN) !== (state.customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN)) return null;
+    if (needsAuthoredCharacters(state.script)) return null;
+    if (spec?.gen && spec.gen.characterMode && spec.gen.characterMode !== MR.MOTION_TEXT_DRAWN) return null;
     return spec ? { ...spec, gen: spec.gen ? { ...spec.gen, drawingMode: state.drawingMode } : undefined } : null;
-  }, [studio.compiled, state.drawingMode, state.customCharacters]);
+  }, [studio.compiled, state.drawingMode, state.script]);
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => { if (!state.script) return; patch({ script: { ...state.script, beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat } : b)) } }); };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
@@ -374,26 +376,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </div>
                     <span aria-hidden={MR.MOTION_TEXT_TRUE} className={cn(MOTION_STYLES.TOGGLE_SWITCH_BASE, state.subtitles !== false ? MOTION_STYLES.TOGGLE_SWITCH_ACTIVE : MOTION_STYLES.TOGGLE_SWITCH_INACTIVE)}>
                       <span className={cn(MOTION_STYLES.TOGGLE_THUMB_BASE, state.subtitles !== false ? MOTION_STYLES.TOGGLE_THUMB_ACTIVE : MOTION_STYLES.TOGGLE_THUMB_INACTIVE)} />
-                    </span>
-                  </Button>
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.CUSTOM_CHARACTERS}</span>
-                  <Button
-                    variant={MR.MOTION_TEXT_UNSTYLED}
-                    role={MR.MOTION_TEXT_SWITCH}
-                    aria-checked={state.customCharacters === true}
-                    aria-label={text.CUSTOM_CHARACTERS}
-                    title={text.CUSTOM_CHARACTERS_HINT}
-                    disabled={studio.storyBusy}
-                    onClick={() => patch({ customCharacters: !state.customCharacters })}
-                    className={cn(MOTION_STYLES.RENDER_CONTROL_CARD, studio.storyBusy && MOTION_STYLES.SFX_TOGGLE_CONTAINER_DISABLED)}>
-                    <div className={MOTION_STYLES.RENDER_CONTROL_INFO}>
-                      <Users className={cn(MOTION_STYLES.W_3_5_H_3_5_SHRINK_0, state.customCharacters ? MOTION_STYLES.TEXT_PURPLE_400 : MOTION_STYLES.TEXT_SLATE_400)} />
-                      <span className={MOTION_STYLES.RENDER_CONTROL_LABEL}>{state.customCharacters ? text.CUSTOM_CHARACTERS_ON : text.CUSTOM_CHARACTERS_OFF}</span>
-                    </div>
-                    <span aria-hidden={MR.MOTION_TEXT_TRUE} className={cn(MOTION_STYLES.TOGGLE_SWITCH_BASE, state.customCharacters ? MOTION_STYLES.TOGGLE_SWITCH_ACTIVE : MOTION_STYLES.TOGGLE_SWITCH_INACTIVE)}>
-                      <span className={cn(MOTION_STYLES.TOGGLE_THUMB_BASE, state.customCharacters ? MOTION_STYLES.TOGGLE_THUMB_ACTIVE : MOTION_STYLES.TOGGLE_THUMB_INACTIVE)} />
                     </span>
                   </Button>
                 </div>

@@ -41,7 +41,7 @@ Context:
 - "sfxMood": the background sound mood that fits the Video DNA soundBed, one of: ${Object.keys(MOTION_SFX_MOODS).join(", ")}.
 
 Requirements:
-1. "cast": every important person. "key" = short snake_case ASCII id. "gender": male|female. "look" = what this person wears and carries in ENGLISH, concrete and visual (clothes with colours, uniform, hat, glasses, bag…; era-correct; max 30 words). Follow the user-selected character mode: mannequins have blank faces; custom characters may use simple original features, skin and hair appropriate to the input. Do not force people into object-only inputs.
+1. "cast": every important person. "key" = short snake_case ASCII id. "gender": male|female. "look" = what this person wears and carries in ENGLISH, concrete and visual (clothes with colours, uniform, hat, glasses, bag…; era-correct; max 30 words). Design original character features, skin, hair and clothing from the input-derived visual language. Do not force people into object-only inputs.
 2. "places": only environments needed by this input, including abstract spaces when appropriate. "key" = snake_case id, "name" in ${o.language}, "description" in ENGLISH = concrete layout, scale, materials, palette, relevant objects, usable subject stations and motivated light (max 120 words), following the Video DNA. "interior": true/false. "time": day|dusk|night|dawn|overcast|interior|interior_dark, as appropriate to the input. Merge equivalent environments. Do not invent extra rooms or people to meet a count.
 3. "era": the period and country of the story in English (e.g. "1976, Nice, France").
 4. "facts": proper names, dates, numbers and places that auto-transcripts often get wrong. status = ok | uncertain | wrong, short "note". Never invent facts. At most 12.
@@ -220,39 +220,17 @@ PREVIOUS LOCATION JSON:
 ${o.previous}
 
 Return JSON: {"location":{ …the full corrected LOCATION JSON… }}`;
-export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; errors: string; customCharacters?: boolean }): string =>
-  o.customCharacters
-    ? `${o.preamble}
-USER CHARACTER MODE: custom drawn characters. Build original complete character geometry, not outfits over the shared visible mannequin. The internal human rig is used only to hold static poses; its original surface is hidden. Follow the input-derived appearance and visual language. Faces may have simple original features if appropriate. Do not copy a real person's identity.
+export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; errors: string }): string => `${o.preamble}
+ROLE: character artist. Derive all visible geometry, proportions, face features, clothing, colours and materials from the project visual direction. Do not use a mannequin surface, template clothing or a fixed aesthetic. The hidden skeleton supplies pose anchors only.
 STORY: ${o.story}
-ERA / COUNTRY: ${o.era}. Render look: ${o.look}.
+ERA / COUNTRY: ${o.era}. Visual direction: ${o.look}.
 CAST: ${o.cast}
 ${o.errors ? `Correct these failures: ${o.errors}` : ""}
-Return JSON {"style":{"grade":"neutral","skin":"#e9eaec","gloss":0.25,"notes":"project visual direction"},"cast":{"each_cast_key":{"body":"male|female","height":1.55..1.95,"build":-1..1,"skin":"#hex","customDesign":{"anatomy":"sculpted-rig-v1","headWidth":0.92..1.08,"headDepth":0.92..1.08},"layers":[...],"accessories":[...]}}}.
-Design each character through anatomically connected sculpted surfaces and fitted clothing. Do not return drawnBody or sixteen disconnected primitives. The renderer builds independent sculpted meshes from a weighted anatomy template, preserving safe joints and proportions. Height, build, head dimensions, skin, hair, clothing and small authored geometry distinguish characters; reuse the same design across scenes.
-Specify hair style and colour when the source does not call for a bald character or covered head. Keep cloth matte and naturally textured; reserve glossy materials for leather, metal and glass.
-Layers: kind tshirt|shirt|polo|sweater|hoodie|uniform_top|tank|vest|jacket|blazer|coat|dress|trousers|jeans|shorts|skirt|belt|shoes|sneakers|boots|gloves|socks|hair|cap|beanie; color #hex; pattern plain|stripes|check|denim|knit|leather|camo|dots; color2 #hex; sleeves none|short|long; length hip|thigh|knee|mini|midi|long|short; roughness 0..1; hair style short|buzz|bob|long|ponytail|bun. Layer from inside to outside. Include trousers/skirt/dress and footwear, and appropriate clothing for the input. Choose materials and colours from actual cast appearance, not a universal preset.
-Accessories {socket:head|face|neck|chest|back|waist|hand_r|hand_l,name,nodes:[small complete geometry]}. Head origin is head centre; face origin is front of face (z positive). Chest origin is upper chest front; a tie lies down from that point. Use these only for small distinguishing features, buttons, collar detail, badges, glasses or face features appropriate to the source visual language. No lights, arrows or explanatory text.
-Small geometry nodes support shape box (size [w,h,d], bevel), sphere (radius, scale), cylinder (radius,height), capsule (radius,total height), torus (radius,tube), or group (children). Every node uses pos [x,y,z], optional rot [degreesX,degreesY,degreesZ], name, and INLINE mat {color:'#hex',roughness:0..1,metalness:0..1}. Never use a named material reference such as leather_mat, never add location architecture/lights, and never return a location JSON. Accessories are local to sockets and must remain small.
-Return only style and cast as the specified character schema.`
-    : `${o.preamble}
-ROLE: costume designer and director of photography for the selected drawing mode with faceless mannequin actors.
-STORY: ${o.story}
-ERA / COUNTRY: ${o.era}. Film look: ${o.look}.
-CAST:
-${o.cast}
-${o.errors ? `The previous answer had errors – fix them:\n${o.errors}\n` : ""}
-1. "style": {"grade": one of ${MOTION_GEN_GRADES.join(", ")}, "skin": mannequin colour (pale porcelain like "#e9eaec", or warmer "#efe6da" / colder "#e4ebf0"), "gloss": 0.15..0.38, "notes": one sentence about the film look}. Keep faces intentionally blank porcelain, with readable rim light and no black featureless faces caused by under-lighting.
-2. "cast": for EVERY key an outfit: {"body":"male"|"female","height":1.55..1.95,"build":-1..1 (slim..heavy),
-   "layers":[{"kind": one of tshirt|shirt|polo|sweater|hoodie|uniform_top|tank|vest|jacket|blazer|coat|dress|trousers|jeans|shorts|skirt|belt|shoes|sneakers|boots|gloves|socks|hair|cap|beanie,
-              "color":"#hex","pattern":plain|stripes|check|denim|knit|leather|camo|dots,"color2":"#hex" (second colour of the pattern),
-              "sleeves":none|short|long, "length":hip|thigh|knee|mini|midi|long|short, "style": for hair short|buzz|bob|long|ponytail|bun, for shirts "untucked"}],
-   "accessories":[{"socket": head|face|neck|chest|back|waist|hand_r|hand_l|forearm_r|forearm_l, "name":"…", "nodes":[small shapes in metres]}]}.
-   Layers are worn from inside to outside: e.g. shirt + trousers + belt + shoes, then jacket/coat over them. Always give trousers/skirt and shoes.
-   Accessory coordinates: origin at the socket, +Y up, +Z forward (the way the person faces), +X the person's LEFT. Head socket origin = centre of the head (head radius ≈ 0.1, top of head at y≈0.12); face socket = front of the face (glasses go at y≈0.02, z≈0.01); chest socket = front of the chest (badges, ties: tie = box [0.07,0.42,0.01] at [0,-0.2,0.02]); waist socket = belt line (holster at x=-0.18).
-   Hats: police cap = cylinder radius 0.105 height 0.08 at y 0.07 + visor (box [0.2,0.012,0.09] at [0,0.04,0.13]); fedora = cylinder 0.1/0.11 h 0.11 + brim disc 0.17 at y 0.03. Glasses = two torus radius 0.025 tube 0.004 at x ±0.035.
-   Use era-correct, story-correct clothes (police uniforms, suits, workers' overalls…). Distinguish the cast clearly by silhouette, layered clothing, restrained colours and one or two small accessories; avoid identical white mannequins or random neon outfits.
-Return JSON: {"style":{…},"cast":{"key":{…},…}}`;
+Return JSON {"style":{"grade":"neutral","notes":"project-specific visual direction"},"cast":{"each_cast_key":{"body":"male|female","height":1.0..2.2,"build":-1..1,"layers":[],"drawnBody":[{"socket":"head","nodes":[...]}]}}}.
+For each character author all sixteen pose anchors: head, neck, chest, waist, upperarm_r, upperarm_l, forearm_r, forearm_l, hand_r, hand_l, thigh_r, thigh_l, calf_r, calf_l, foot_r, foot_l. Each anchor has one or more original geometry nodes, including its visible skin/clothing. These are attachment anchors, not prescribed shapes. Use groups and multiple shapes to express the source style; do not substitute sixteen identical blocks. Face features belong in the head nodes when appropriate to the project. Clothing is part of these authored nodes, not a separate preset layer. Do not return customDesign.
+Coordinates are in metres, local to each anchor, +Y up, +Z forward. Head origin is its centre; neck origin is at its base; chest origin is upper chest front and torso extends downward; waist is at pelvis height. Limb segments extend along local -Y from their proximal joint to the next joint; hands and feet extend from wrist/ankle. Keep joints connected; do not draw architecture or lights inside characters.
+Nodes support box (size [w,h,d], bevel), sphere (radius, scale), cylinder (radius,height), capsule (radius,total height), torus (radius,tube), and group (children). Use pos [x,y,z], optional rot in degrees, name, and INLINE mat {color:'#hex',roughness:0..1,metalness:0..1}. Use source-derived palette and material treatment. The schema constrains rendering syntax, not visual style.
+Return only style and cast.`;
 export const MOTION_GEN_ACTIONS_GUIDE = (actions: string[]): string => `ACTIONS (frozen pose references, never body animation): ${actions.join(", ")}.
 - standing: idle, talk, phone_look (reading a phone), phone_call, arms_crossed, hands_on_hips, think, point, wave, nod, shake_head, look_around, sad, cover_face, hands_up (surrender), hands_behind_back, handcuffed (arrested), restrain (holding someone's arm), aim / hold_gun / shoot (pistol).
 - walking/running actions are disabled: use stand or idle with a separate named prop for carried objects. Never emit moveTo, then, moveStart, moveEnd or thenAt.

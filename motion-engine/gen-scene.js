@@ -79,7 +79,6 @@
     }
     m.geometry.attributes.position.needsUpdate = true;
   };
-  const DEFAULT_OUTFIT = { body: MT.MALE, layers: [ { kind: MT.SHIRT, color: MT.VALUE_6A6F78 }, { kind: MT.TROUSERS, color: MT.VALUE_2A2C30 }, { kind: MT.SHOES, color: MT.VALUE_151515 }, ], };
   const cleanGen = (spec) => {
     const G = spec.gen || (spec.gen = {});
     if (G.__clean) return G.__clean;
@@ -92,9 +91,8 @@
   GEN.cleanGen = cleanGen;
   const castOf = (spec, key) => {
     const outfit = cleanGen(spec).cast[key];
-    const drawn = spec.gen && (spec.gen.characterMode === MT.DRAWN || (spec.gen.videoDna && spec.gen.videoDna.settings.characterMode === MT.DRAWN));
-    if (drawn && (!outfit || (!outfit.customDesign && !(outfit.drawnBody && outfit.drawnBody.length)))) throw new Error(MT.CUSTOM_CHARACTER_DESIGN_MISSING_FOR + key + MT.REBUILD_CHARACTERS_BEFORE_RENDERING);
-    return outfit || GEN.validateOutfit(DEFAULT_OUTFIT).value;
+    if (!outfit || !outfit.drawnBody || !outfit.drawnBody.length) throw new Error(MT.CUSTOM_CHARACTER_DESIGN_MISSING_FOR + key + MT.REBUILD_CHARACTERS_BEFORE_RENDERING);
+    return outfit;
   };
   const yawTo = (from, to) => Math.atan2(to[0] - from[0], to[1] - from[1]);
   const fixedAction = (action) => {

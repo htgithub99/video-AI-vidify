@@ -2,7 +2,7 @@ import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../serv
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../constants/workflowActivity";
 import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
-import { bindVideoDnaSettings, reconcileCharacterMode, sceneExecutionKey } from "../lib/motionVideoDna.js";
+import { bindVideoDnaSettings, needsAuthoredCharacters, sceneExecutionKey } from "../lib/motionVideoDna.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadMotionEngineClient, motionJobStatusUrl, motionRequest, pollMotionJob, readFileBase64, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
@@ -14,8 +14,6 @@ import {
   MOTION_TEMPLATE_S,
   MOTION_TEMPLATE_SYMBOL_4,
   MOTION_TEXT_AI_ERROR,
-  MOTION_TEXT_ARTENGINE,
-  MOTION_TEXT_ARTREVIEW,
   MOTION_TEXT_BEATS,
   MOTION_TEXT_CANCELLED,
   MOTION_TEXT_DARK,
@@ -26,11 +24,8 @@ import {
   MOTION_TEXT_MOTION,
   MOTION_TEXT_NARRATION,
   MOTION_TEXT_OK_2,
-  MOTION_TEXT_RENDERMODE,
   MOTION_TEXT_SYMBOL_26,
   MOTION_TEXT_SYMBOL_27,
-  MOTION_TEXT_TOONSTYLE,
-  MOTION_TEXT_USEART,
   MOTION_TEXT_VI,
 } from "../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_VIDEO_CONSTANTS } from "../constants/motionVideo.js";
@@ -67,7 +62,6 @@ interface PersistedState {
   encoder: MotionEncoderPreference;
   look: string;
   sfx: boolean;
-  customCharacters: boolean;
   drawingMode: "2d" | "3d";
   subtitles?: boolean;
   sfxVolume: number;
@@ -101,7 +95,6 @@ const DEFAULTS: PersistedState = {
   encoder: MotionEncoderPreference.AUTO,
   look: "",
   sfx: true,
-  customCharacters: false,
   drawingMode: MR.MOTION_TEXT_3D,
   subtitles: true,
   sfxVolume: 0.5,
@@ -142,9 +135,8 @@ export function useMotionStudio() {
           next.voice = null;
           if (changedInput) next.source = null;
         } else if (next.analysis?.videoDna) {
-          next.analysis = bindVideoDnaSettings(next.analysis, { language: next.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, length: next.length, drawingMode: next.drawingMode, characterMode: next.customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN, aspect: next.aspect });
+          next.analysis = bindVideoDnaSettings(next.analysis, { language: next.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, length: next.length, drawingMode: next.drawingMode, characterMode: MR.MOTION_TEXT_DRAWN, aspect: next.aspect });
         }
-        next.script = reconcileCharacterMode(next.script, next.customCharacters);
         return next;
       }),
     [],
@@ -154,8 +146,7 @@ export function useMotionStudio() {
     (async () => {
       const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
       if (!mounted.current) return;
-      const restored = { ...DEFAULTS, ...(_.omit(saved || {}, [MOTION_TEXT_RENDERMODE, MOTION_TEXT_TOONSTYLE, MOTION_TEXT_USEART, MOTION_TEXT_ARTENGINE, MOTION_TEXT_ARTREVIEW]) as Partial<PersistedState>) };
-      restored.script = reconcileCharacterMode(restored.script, restored.customCharacters);
+      const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>) };
       setState(restored);
       setHydrated(true);
     })();
@@ -306,7 +297,7 @@ export function useMotionStudio() {
   const analyze = useCallback(async () => {
     if (!state.source) return;
     try {
-      const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, { source: state.source, language: state.language, length: state.length, drawingMode: state.drawingMode, customCharacters: state.customCharacters, aspect: state.aspect, aiExecution })) as MotionStoryAnalysis;
+      const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, { source: state.source, language: state.language, length: state.length, drawingMode: state.drawingMode, aspect: state.aspect, aiExecution })) as MotionStoryAnalysis;
       patch({ analysis, script: null, voice: null, seo: null, thumbnail: null, look: analysis.look || state.look });
       setCompiled(null);
       toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(MR.MOTION_TEMPLATE_SYMBOL_58(analysis.chapters.length), MR.MOTION_TEMPLATE_SYMBOL_59(analysis.cast.length)));
@@ -314,7 +305,7 @@ export function useMotionStudio() {
     } catch (e: any) {
       reportStoryError(e);
     }
-  }, [state.source, state.language, state.length, state.drawingMode, state.customCharacters, state.aspect, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
+  }, [state.source, state.language, state.length, state.drawingMode, state.aspect, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
     async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false) => {
       const analysis = analysisOverride || state.analysis;
@@ -322,7 +313,7 @@ export function useMotionStudio() {
       try {
         const script = (await runStoryJob(
           API_ROUTES.MOTION_STORY_SCRIPT,
-          { source: state.source, analysis, language: state.language, length: state.length, customCharacters: state.customCharacters, drawingMode: state.drawingMode, aiExecution, chapterIds, beats: analysisOverride ? [] : state.script?.beats || [], gen: chapterIds?.length ? state.script?.gen : undefined, aspect: state.aspect, resume, },
+          { source: state.source, analysis, language: state.language, length: state.length, drawingMode: state.drawingMode, aiExecution, chapterIds, beats: analysisOverride ? [] : state.script?.beats || [], gen: chapterIds?.length ? state.script?.gen : undefined, aspect: state.aspect, resume, },
           (partial) => partial?.beats && patch({ script: partial }),
         )) as MotionStoryScript;
         patch({ script, seo: null });
@@ -335,7 +326,7 @@ export function useMotionStudio() {
         reportStoryError(e);
       }
     },
-    [state.source, state.analysis, state.language, state.length, state.autoContinue, state.customCharacters, state.drawingMode, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
+    [state.source, state.analysis, state.language, state.length, state.autoContinue, state.drawingMode, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
   );
   writeScriptRef.current = writeScript;
   const seoRef = useRef<((scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis, quiet?: boolean) => Promise<void>) | null>(null);
@@ -376,7 +367,7 @@ export function useMotionStudio() {
       const analysis = analysisOverride || state.analysis;
       if (!script?.beats?.length || !analysis) return;
       try {
-        const result = (await runStoryJob(API_ROUTES.MOTION_STORY_SCENES, { script, analysis, aspect: state.aspect, aiExecution, customCharacters: state.customCharacters === true, drawingMode: state.drawingMode, review: state.aiReview !== false, ...req }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
+        const result = (await runStoryJob(API_ROUTES.MOTION_STORY_SCENES, { script, analysis, aspect: state.aspect, aiExecution, drawingMode: state.drawingMode, review: state.aiReview !== false, ...req }, (partial) => partial?.beats && patch({ script: partial }))) as MotionStoryScript;
         patch({ script: result });
         setCompiled(null);
         const failed = result.gen?.failed?.length || 0;
@@ -387,7 +378,7 @@ export function useMotionStudio() {
         reportStoryError(e);
       }
     },
-    [state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiReview, state.customCharacters, state.drawingMode, runStoryJob, patch],
+    [state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiReview, state.drawingMode, runStoryJob, patch],
   );
   scenesRef.current = buildScenes;
   const generateVoice = useCallback(async () => {
@@ -501,9 +492,8 @@ export function useMotionStudio() {
     let renderRequested = false;
     try {
       let c = compiled;
-      const requestedMode = state.customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN;
       const changedScenePlan = !!state.analysis?.videoDna && state.script?.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && state.script?.gen?.scenePlanKeys?.[beat.id] !== sceneExecutionKey(beat));
-      if (state.script && state.analysis && (changedScenePlan || (state.script.gen?.characterMode || MR.MOTION_TEXT_MANNEQUIN) !== requestedMode || (state.script.gen?.drawingMode || MR.MOTION_TEXT_3D) !== state.drawingMode)) {
+      if (state.script && state.analysis && (changedScenePlan || needsAuthoredCharacters(state.script) || (state.script.gen?.characterMode || MR.MOTION_TEXT_DRAWN) !== MR.MOTION_TEXT_DRAWN || (state.script.gen?.drawingMode || MR.MOTION_TEXT_3D) !== state.drawingMode)) {
         const rebuilt = await buildScenes({});
         if (!rebuilt || rebuilt.gen?.failed?.length) return;
         c = await compile(rebuilt);
@@ -532,7 +522,7 @@ export function useMotionStudio() {
       if (renderRequested) logMotionActivity(MOTION_ACTIVITY_PREFIX.render, WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail, getMotionErrorMessage(e));
       toast.error(e?.message);
     }
-  }, [compiled, compile, buildScenes, state.customCharacters, state.drawingMode, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch]);
+  }, [compiled, compile, buildScenes, state.drawingMode, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch]);
   const cancelRender = useCallback(async () => {
     await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: renderJob?.id }).catch(_.noop);
   }, [renderJob]);

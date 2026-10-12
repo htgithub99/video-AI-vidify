@@ -31,7 +31,7 @@ const rawDna = (style: string) => ({
 const source = parseStorySource("Explain colour mixing through two pastel objects. No people, clear overhead composition and detailed views.");
 const raw = { title: "Mixing", logline: "Compare two objects", cast: [], places: [{ key: "studio", name: "Tabletop", description: "Two forms" }], chapters: [{ title: "Comparison", summary: "Compare objects" }] };
 const prompts: string[] = [];
-const analysis = await analyzeStory(source, { language: "en", length: MotionStoryLength.ONE, drawingMode: "2d", customCharacters: true, aspect: "9:16", exec: {} as any, ai: async (prompt) => { prompts.push(prompt); return { ...raw, videoDna: rawDna("Pastel forms") }; }, });
+const analysis = await analyzeStory(source, { language: "en", length: MotionStoryLength.ONE, drawingMode: "2d", aspect: "9:16", exec: {} as any, ai: async (prompt) => { prompts.push(prompt); return { ...raw, videoDna: rawDna("Pastel forms") }; }, });
 assert.ok(analysis?.videoDna);
 assert.equal(prompts.length, 1);
 assert.deepEqual(analysis.videoDna.settings, { language: "en", length: MotionStoryLength.ONE, targetSeconds: 60, drawingMode: "2d", characterMode: "drawn", aspect: "9:16" });
@@ -46,7 +46,6 @@ const other = await analyzeStory(parseStorySource("Teach safe workshop observati
   language: "vi",
   length: MotionStoryLength.FIVE,
   drawingMode: "3d",
-  customCharacters: false,
   exec: {} as any,
   ai: async (prompt) => {
     corrections++;
@@ -144,7 +143,7 @@ const compiled = compileStorySpec(script, analysis, { aspect: "9:16" }).spec;
 assert.equal(compiled.gen?.videoDna?.version, 1);
 assert.equal(compiled.fadeIn, 0);
 assert.deepEqual(compiled.shots[0].transition, { type: "cut", duration: 0 });
-const bound = bindVideoDnaSettings(analysis, { drawingMode: "3d", characterMode: "mannequin" });
+const bound = bindVideoDnaSettings(analysis, { drawingMode: "3d", characterMode: "drawn" });
 assert.equal(bound.videoDna?.settings.drawingMode, "3d");
 assert.equal(analysis.videoDna.settings.drawingMode, "2d", "Binding must not mutate previous analysis");
 assert.deepEqual(prepareMotionGen(gen, bound).locations, {}, "Changed DNA invalidates assets and their reviews");

@@ -512,8 +512,7 @@
     const head = point(MT.HEAD_2).add(new T.Vector3(0, 0.09, 0));
     const face = mesh(new T.SphereGeometry(1, 40, 28));
     face.material = skin;
-    const design = actor.outfit.customDesign || {};
-    face.scale.set(0.105 * (design.headWidth || 1), 0.135, 0.11 * (design.headDepth || 1));
+    face.scale.set(0.105, 0.135, 0.11);
     face.position.copy(head);
     const collarY = bottom + height * 0.94, chinY = head.y - 0.105;
     const neckMesh = mesh(new T.CylinderGeometry(0.048, 0.054, Math.max(0.06, chinY - collarY), 28));
@@ -607,27 +606,6 @@
       }
     });
     bones.root = model.getObjectByName(MT.ROOT);
-    if (outfit.customDesign) {
-      for (const source of skinned) {
-        const surface = source.clone(false);
-        surface.name = MT.GENERATEDANATOMY + source.name;
-        surface.geometry = source.geometry.clone();
-        const position = surface.geometry.attributes.position;
-        const indices = surface.geometry.attributes.skinIndex, weights = surface.geometry.attributes.skinWeight;
-        const head = source.skeleton.bones.findIndex((b) => b.name === MT.HEAD_2);
-        for (let i = 0; i < position.count; i++) {
-          let influence = 0;
-          for (let k = 0; k < 4; k++) if (indices.getComponent(i, k) === head) influence += weights.getComponent(i, k);
-          position.setX(i, position.getX(i) * U.lerp(1, outfit.customDesign.headWidth, influence));
-          position.setZ(i, position.getZ(i) * U.lerp(1, outfit.customDesign.headDepth, influence));
-        }
-        surface.geometry.computeBoundingBox();
-        surface.material = bodyMain;
-        source.visible = false;
-        source.parent.add(surface);
-        disposables.push(surface.geometry);
-      }
-    }
     model.updateMatrixWorld(true);
     const layers = (outfit.drawnBody && outfit.drawnBody.length ? [] : outfit.layers || []).slice();
     const order = [MT.SOCKS, MT.TSHIRT, MT.TANK, MT.SHIRT, MT.POLO, MT.UNIFORM_TOP, MT.DRESS, MT.TROUSERS, MT.JEANS, MT.SHORTS, MT.SKIRT, MT.BELT, MT.SWEATER, MT.HOODIE, MT.VEST, MT.BLAZER, MT.JACKET, MT.COAT, MT.GLOVES, MT.SHOES, MT.SNEAKERS, MT.BOOTS, MT.HAIR, MT.BEANIE, MT.CAP];

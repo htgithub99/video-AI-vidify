@@ -446,7 +446,7 @@ export const buildSourceLedger = async (
 };
 export const analyzeStory = async (
   source: MotionStorySource,
-  opts: { language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; customCharacters?: boolean; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; },
+  opts: { language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; },
 ): Promise<MotionStoryAnalysis> => {
   const target = resolveTargetSeconds(source, opts.length);
   const settings: MotionVideoDnaSettings = {
@@ -455,7 +455,7 @@ export const analyzeStory = async (
     language: opts.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI,
     aspect: opts.aspect || MR.MOTION_TEXT_16_9,
     drawingMode: opts.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
-    characterMode: opts.customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN,
+    characterMode: MR.MOTION_TEXT_DRAWN,
   };
   const chapterCount = _.clamp(Math.round(target / 150), 1, 24);
   const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;

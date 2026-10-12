@@ -276,7 +276,6 @@
     out.height = num(o.height, out.body === MT.FEMALE ? 1.66 : 1.78, 1.0, 2.2);
     out.build = num(o.build, 0, -1, 1);
     out.skin = color(o.skin, undefined);
-    if (o.customDesign != null) { if (o.customDesign?.anatomy !== MT.SCULPTED_RIG_V1) errors.push(MT.CUSTOMDESIGN_REQUIRES_ANATOMY_SCULPTED_RIG_V1); else out.customDesign = { anatomy: MT.SCULPTED_RIG_V1, headWidth: num(o.customDesign.headWidth, 1, 0.92, 1.08), headDepth: num(o.customDesign.headDepth, 1, 0.92, 1.08) }; }
     out.layers = [];
     (Array.isArray(o.layers) ? o.layers : []).slice(0, 10).forEach((l, i) => {
       if (!l || typeof l !== MT.OBJECT) return;

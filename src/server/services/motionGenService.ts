@@ -49,20 +49,14 @@ import {
   MOTION_TEMPLATE_SYMBOL_50,
   MOTION_TEMPLATE_SYMBOL_51,
   MOTION_TEMPLATE_SYMBOL_52,
-  MOTION_TEMPLATE_TRANG_PHUC_CON_LOI_NHO_DA_TU_BO,
   MOTION_TEMPLATE_USER_NOTE,
   MOTION_TEMPLATE_VE_BOI_CANH,
-  MOTION_TEXT_141414,
-  MOTION_TEXT_151515,
   MOTION_TEXT_16_9,
-  MOTION_TEXT_2A2C30,
-  MOTION_TEXT_6A6F78,
   MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH,
   MOTION_TEXT_AI_XEM_LAI_TUNG_CANH_CO_KHOP_LOI,
   MOTION_TEXT_BEATS,
   MOTION_TEXT_BIBLE,
   MOTION_TEXT_BODY,
-  MOTION_TEXT_BOOTS,
   MOTION_TEXT_BOX,
   MOTION_TEXT_CANCELLED,
   MOTION_TEXT_CAPSULE,
@@ -74,7 +68,6 @@ import {
   MOTION_TEXT_DAY,
   MOTION_TEXT_DONE,
   MOTION_TEXT_DRAFT,
-  MOTION_TEXT_DRESS,
   MOTION_TEXT_E9EAEC,
   MOTION_TEXT_END,
   MOTION_TEXT_ESTABLISHING_SHOTS,
@@ -88,7 +81,6 @@ import {
   MOTION_TEXT_HIGH,
   MOTION_TEXT_ID,
   MOTION_TEXT_IMAGE_JPEG,
-  MOTION_TEXT_JEANS,
   MOTION_TEXT_LIGHT,
   MOTION_TEXT_LOCATION,
   MOTION_TEXT_LOCATIONS,
@@ -100,18 +92,12 @@ import {
   MOTION_TEXT_NONE_NAMED,
   MOTION_TEXT_OK,
   MOTION_TEXT_PLACE,
-  MOTION_TEXT_PLAIN,
   MOTION_TEXT_PLANE,
   MOTION_TEXT_PREVIEW,
   MOTION_TEXT_REPEAT,
   MOTION_TEXT_REVIEW,
   MOTION_TEXT_RUNID,
   MOTION_TEXT_SCENE,
-  MOTION_TEXT_SHIRT,
-  MOTION_TEXT_SHOES,
-  MOTION_TEXT_SHORTS,
-  MOTION_TEXT_SKIRT,
-  MOTION_TEXT_SNEAKERS,
   MOTION_TEXT_SPHERE,
   MOTION_TEXT_STAGING,
   MOTION_TEXT_SYMBOL_14,
@@ -123,7 +109,6 @@ import {
   MOTION_TEXT_TAT_CA_CANH_DAT,
   MOTION_TEXT_THIS_BEAT_WAS_MISSING_FROM_YOUR_ANSWER,
   MOTION_TEXT_TOON_CAT_INTERIOR,
-  MOTION_TEXT_TROUSERS,
   MOTION_TEXT_USE,
   MOTION_TEXT_WIDE,
 } from "../../constants/motionRuntime.js";
@@ -149,7 +134,6 @@ export interface GenOptions {
   restyle?: boolean;
   note?: string;
   review?: boolean;
-  customCharacters?: boolean;
   drawingMode?: "2d" | "3d";
   openingBeatId?: string;
   preamble?: string;
@@ -158,10 +142,10 @@ export interface GenOptions {
   locationRounds?: number;
 }
 export const emptyGen = (): MotionGenState => ({ style: {}, cast: {}, locations: {}, locationInfo: {}, staging: {}, previews: {}, failed: [] });
-export const prepareMotionGen = (previous: MotionGenState | undefined, analysis: MotionStoryAnalysis, customCharacters = false, drawingMode: "2d" | "3d" = MR.MOTION_TEXT_3D): MotionGenState => {
-  const characterMode = customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN;
-  const signature = createHash(MR.MOTION_TEXT_SHA256) .update(JSON.stringify({ previewVersion: 2, blueprint: analysis.videoDna || analysis.creativeBlueprint, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look, characterMode, drawingMode })) .digest(MR.MOTION_TEXT_HEX);
-  const compatible = previous?.creativeSignature === signature || (!analysis.videoDna && !analysis.creativeBlueprint && !previous?.creativeSignature && (previous?.characterMode || MR.MOTION_TEXT_MANNEQUIN) === characterMode && (previous?.drawingMode || MR.MOTION_TEXT_3D) === drawingMode);
+export const prepareMotionGen = (previous: MotionGenState | undefined, analysis: MotionStoryAnalysis, drawingMode: "2d" | "3d" = MR.MOTION_TEXT_3D): MotionGenState => {
+  const characterMode = MR.MOTION_TEXT_DRAWN;
+  const signature = createHash(MR.MOTION_TEXT_SHA256) .update(JSON.stringify({ previewVersion: 3, blueprint: analysis.videoDna || analysis.creativeBlueprint, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look, characterMode, drawingMode })) .digest(MR.MOTION_TEXT_HEX);
+  const compatible = previous?.creativeSignature === signature || (!analysis.videoDna && !analysis.creativeBlueprint && !previous?.creativeSignature && (previous?.characterMode || MR.MOTION_TEXT_DRAWN) === characterMode && (previous?.drawingMode || MR.MOTION_TEXT_3D) === drawingMode);
   return { ...emptyGen(), ...(compatible ? cloneJson(previous || {}) : {}), creativeSignature: signature, characterMode, drawingMode, videoDna: analysis.videoDna };
 };
 const previewRoot = (): string => { const dir = path.join(getMotionRootDirectory(), MOTION_GEN_CONFIG.PREVIEW_FOLDER); fs.mkdirSync(dir, { recursive: true }); return dir; };
@@ -178,7 +162,7 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
     aborted(o);
     o.log(attempt ? MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN(MR.MOTION_TEMPLATE_SYMBOL_146(attempt + 1)) : MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH);
     const raw = await (o.ai || runMotionAi)(
-      MOTION_GEN_BIBLE_PROMPT({ preamble: MR.MOTION_TEMPLATE_SYMBOL_147(o.preamble || MOTION_GEN_PREAMBLE, planningPrompt(analysis), MOTION_PRODUCTION_BRIEF), story: storyLine(analysis), era: analysis.era || "", look: analysis.look, cast: castLines(analysis), errors: errors.join(MOTION_TEXT_SYMBOL_27), customCharacters: o.customCharacters === true }),
+      MOTION_GEN_BIBLE_PROMPT({ preamble: MR.MOTION_TEMPLATE_SYMBOL_147(o.preamble || MOTION_GEN_PREAMBLE, planningPrompt(analysis), MOTION_PRODUCTION_BRIEF), story: storyLine(analysis), era: analysis.era || "", look: analysis.look, cast: castLines(analysis), errors: errors.join(MOTION_TEXT_SYMBOL_27) }),
       MOTION_GEN_CONFIG.ARTIFACT_BIBLE,
       o.exec,
       o.signal,
@@ -204,19 +188,14 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
       const inlineMaterials = (nodes: any[]) => (nodes || []).map((node) => ({ ...node, ...(typeof node.mat === MR.MOTION_TEXT_STRING && materials[node.mat] ? { mat: materials[node.mat] } : {}), ...(node.children ? { children: inlineMaterials(node.children) } : {}), ...(node.node ? { node: inlineMaterials([node.node])[0] } : {}) }));
       if (selected.accessories) selected.accessories = selected.accessories.map((a: any) => ({ ...a, nodes: inlineMaterials(a.nodes) }));
       if (selected.drawnBody) selected.drawnBody = selected.drawnBody.map((p: any) => ({ ...p, nodes: inlineMaterials(p.nodes) }));
-      if (!o.customCharacters) { delete selected.drawnBody; delete selected.customDesign; }
       const v = validateGenOutfit(selected);
-      if (o.customCharacters && ((!v.value.drawnBody?.length && !v.value.customDesign) || v.errors.length)) { errors.push(MR.MOTION_TEMPLATE_COMPLETE_VALID_CUSTOM_CHARACTER_DESIGN_REQUIRED(c.key, v.errors.join(MR.MOTION_TEXT_SYMBOL_41))); continue; }
+      if (!v.value.drawnBody?.length || v.errors.length) { errors.push(MR.MOTION_TEMPLATE_COMPLETE_VALID_CUSTOM_CHARACTER_DESIGN_REQUIRED(c.key, v.errors.join(MR.MOTION_TEXT_SYMBOL_41))); continue; }
       if (v.errors.length) o.log(MOTION_TEMPLATE_CAST_2(MR.MOTION_TEMPLATE_SYMBOL_149(c.key), MR.MOTION_TEMPLATE_SYMBOL_150(_.take(v.errors, 3).join(MOTION_TEXT_SYMBOL_41))));
-      if (!_.some(v.value.layers, (l: any) => _.includes([MOTION_TEXT_TROUSERS, MOTION_TEXT_JEANS, MOTION_TEXT_SHORTS, MOTION_TEXT_SKIRT, MOTION_TEXT_DRESS], l.kind))) v.value.layers.push({ kind: MOTION_TEXT_TROUSERS, color: MOTION_TEXT_2A2C30, pattern: MOTION_TEXT_PLAIN, roughness: 0.85 });
-      if (!_.some(v.value.layers, (l: any) => _.includes([MOTION_TEXT_SHOES, MOTION_TEXT_SNEAKERS, MOTION_TEXT_BOOTS], l.kind))) v.value.layers.push({ kind: MOTION_TEXT_SHOES, color: MOTION_TEXT_141414, pattern: MOTION_TEXT_PLAIN, roughness: 0.45 });
       gen.cast[c.key] = v.value;
     }
-    if (!errors.length || (attempt === 2 && !o.customCharacters)) { if (errors.length) o.log(MOTION_TEMPLATE_TRANG_PHUC_CON_LOI_NHO_DA_TU_BO(MR.MOTION_TEMPLATE_SYMBOL_151(errors.length))); return; }
+    if (!errors.length) return;
   }
-  if (o.customCharacters) throw new Error(MR.MOTION_TEMPLATE_CANNOT_BUILD_CUSTOM_CHARACTERS(errors.join(MR.MOTION_TEXT_SYMBOL_41)));
-  for (const c of analysis.cast)
-    if (!gen.cast[c.key]) gen.cast[c.key] = validateGenOutfit({ body: c.gender, layers: [ { kind: MOTION_TEXT_SHIRT, color: MOTION_TEXT_6A6F78 }, { kind: MOTION_TEXT_TROUSERS, color: MOTION_TEXT_2A2C30 }, { kind: MOTION_TEXT_SHOES, color: MOTION_TEXT_151515 }, ], }).value;
+  throw new Error(MR.MOTION_TEMPLATE_CANNOT_BUILD_CUSTOM_CHARACTERS(errors.join(MR.MOTION_TEXT_SYMBOL_41)));
 };
 const beatSeconds = (b: MotionBeat, lang: string): number => _.clamp(b.duration || estimateBeatSeconds(b, lang) + 0.4, 2.5, 14);
 const usesOf = (key: string, script: MotionStoryScript): string => _.map( _.take( _.filter(script.beats, (b) => b.visual === MOTION_TEXT_SCENE && b.place === key), 10, ), (b) => MOTION_TEMPLATE_SYMBOL_23(MR.MOTION_TEMPLATE_SYMBOL_152(b.action || b.narration, scenePlanPrompt(b.scenePlan))), ).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_ESTABLISHING_SHOTS;
@@ -608,8 +587,8 @@ export const reviewBeats = async (
 };
 const autoNotes = (beats: MotionBeat[], gen: MotionGenState): Record<string, string> => { const notes: Record<string, string> = {}; for (const b of beats) { const auto = _.filter(gen.previews[b.id]?.issues || [], (s) => MOTION_GEN_CONFIG.AUTO_FIX_ISSUES.test(s)); if (auto.length) notes[b.id] = auto.join(MOTION_TEXT_SYMBOL_41); } return notes; };
 export const buildScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, o: GenOptions): Promise<MotionStoryScript> => {
-  analysis = bindVideoDnaSettings(analysis, { drawingMode: o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, characterMode: o.customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN, aspect: o.aspect || MR.MOTION_TEXT_16_9 });
-  const gen = prepareMotionGen(script.gen, analysis, o.customCharacters === true, o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D);
+  analysis = bindVideoDnaSettings(analysis, { drawingMode: o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, characterMode: MR.MOTION_TEXT_DRAWN, aspect: o.aspect || MR.MOTION_TEXT_16_9 });
+  const gen = prepareMotionGen(script.gen, analysis, o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D);
   const rid = runId(script, o);
   _.set(gen, MOTION_TEXT_RUNID, rid);
   o = {
@@ -643,7 +622,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
       if (changedPlaces.has(beat.place || "")) { delete gen.staging[beat.id]; delete gen.previews[beat.id]; }
   }
   const focusBeats = o.onlyBeats?.length ? _.filter(sceneBeats, (b) => _.includes(o.onlyBeats, b.id)) : null;
-  const castMissing = _.some(analysis.cast, (c) => !gen.cast[c.key] || (o.customCharacters && !(gen.cast[c.key] as any).customDesign));
+  const castMissing = _.some(analysis.cast, (c) => !gen.cast[c.key] || !((gen.cast[c.key] as any).drawnBody?.length));
   if (o.restyle || castMissing || _.isEmpty(gen.style)) { progress(0.03, MOTION_TEXT_BIBLE); await designBible(analysis, gen, o); emit(); }
   const session = await openStillSession();
   try {

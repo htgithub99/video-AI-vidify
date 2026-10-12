@@ -125,9 +125,4 @@ export const scenePlanStagingErrors = (plan: MotionScenePlan | undefined, stagin
   for (const actor of staging?.actors || []) for (const node of actor.hold?.nodes || []) visit(node, 0);
   return plan.requiredProps.filter((name) => !names.has(name)).map((name) => MR.MOTION_TEMPLATE_SCENEPLAN_REQUIRES_NAMED_PROP_BUT_NO_SUCH_NODE_WAS_STAGED_CREATE_(name));
 };
-export const reconcileCharacterMode = (script: MotionStoryScript | null, customCharacters: boolean): MotionStoryScript | null => {
-  if (!script?.gen) return script;
-  const mode = customCharacters ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN;
-  const invalidDesign = customCharacters && Object.values(script.gen.cast || {}).some((outfit: any) => !outfit.customDesign && !outfit.drawnBody?.length);
-  return (script.gen.characterMode || MR.MOTION_TEXT_MANNEQUIN) !== mode || invalidDesign ? { ...script, gen: undefined } : script;
-};
+export const needsAuthoredCharacters = (script: MotionStoryScript | null): boolean => !!script && (!script.gen || Object.values(script.gen.cast || {}).some((outfit: any) => !outfit.drawnBody?.length));

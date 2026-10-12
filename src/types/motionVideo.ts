@@ -30,7 +30,7 @@ export enum MotionWorkspaceTab {
 }
 export interface MotionShot { id?: string; start: number; end: number; template: string; params?: Record<string, unknown>; transition?: { type: string; duration?: number; direction?: string; }; overlays?: Record<string, unknown>[]; }
 export type MotionDrawingMode = "2d" | "3d";
-export interface MotionGenSpec { characterMode?: "mannequin" | "drawn"; videoDna?: MotionVideoDna; drawingMode?: MotionDrawingMode; style?: MotionGenStyle; cast?: Record<string, unknown>; locations?: Record<string, unknown>; }
+export interface MotionGenSpec { characterMode?: "drawn"; videoDna?: MotionVideoDna; drawingMode?: MotionDrawingMode; style?: MotionGenStyle; cast?: Record<string, unknown>; locations?: Record<string, unknown>; }
 export interface MotionSpec { fadeIn?: number; fadeOut?: number; title?: string; aspect?: MotionAspect | string; fps?: number; look?: string; accent?: string; letterbox?: boolean; subtitleStyle?: string; gen?: MotionGenSpec; shots: MotionShot[]; subtitles?: { start: number; end: number; text: string; }[]; duration?: number; audio?: { id?: string; volume?: number; }; }
 export interface MotionRenderOptions { quality: MotionQuality; aspect: MotionAspect | string; fps?: number; encoder: MotionEncoderPreference; title?: string; audioId?: string; audioVolume?: number; sfxId?: string; sfxVolume?: number; sfx?: { cues: { t: number; kind: string; }[]; mood?: string; }; }
 export interface MotionJobState { id: string; status: MotionJobStatus; progress: number; stage?: string; framesDone: number; framesTotal: number; fpsRender?: number; etaSeconds?: number; workers?: number; encoder?: string; browser?: string; error?: string; result?: MotionResultItem; startedAt: number; log: string[]; }
@@ -55,7 +55,7 @@ export interface MotionCreativeBlueprint {
 }
 export interface MotionStoryAnalysis { title: string; logline: string; genre?: string; genre2?: string; factual?: boolean; genreReason?: string; creativeBlueprint?: MotionCreativeBlueprint; videoDna?: MotionVideoDna; sfxMood?: string; look: string; accent?: string; era?: string; chapters: MotionChapter[]; cast: MotionCastMember[]; places: MotionPlace[]; facts: MotionFact[]; }
 export interface MotionBeat { id: string; chapterId: string; narration: string; visual: string; place?: string; time?: string; weather?: string; shot?: string; cast?: string[]; action?: string; label?: string; emphasis?: boolean; data?: Record<string, unknown>; duration?: number; audioFile?: string; scenePlan?: MotionScenePlan; }
-export interface MotionVideoDnaSettings { length: MotionStoryLength; targetSeconds: number; language: "vi" | "en"; aspect: string; drawingMode: MotionDrawingMode; characterMode: "mannequin" | "drawn"; }
+export interface MotionVideoDnaSettings { length: MotionStoryLength; targetSeconds: number; language: "vi" | "en"; aspect: string; drawingMode: MotionDrawingMode; characterMode: "drawn"; }
 export interface MotionVideoDna extends MotionCreativeBlueprint {
   version: 1;
   sourceKey: string;
@@ -80,7 +80,7 @@ export interface MotionGenPreview { file?: string; files?: string[]; issues?: st
 export interface MotionGenState {
   videoDna?: MotionVideoDna;
   drawingMode?: MotionDrawingMode;
-  characterMode?: "mannequin" | "drawn";
+  characterMode?: "drawn";
   creativeSignature?: string;
   scenePlanKeys?: Record<string, string>;
   style: MotionGenStyle;

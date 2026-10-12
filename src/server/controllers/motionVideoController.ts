@@ -183,7 +183,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(MR.MOTION_TEMPLATE_SYMBOL_83(source.words), MR.MOTION_TEMPLATE_SYMBOL_84(Math.round(source.sourceSeconds / 60))));
-      const analysis = await analyzeStory(source, { language, length, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, customCharacters: req.body?.customCharacters === true, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
+      const analysis = await analyzeStory(source, { language, length, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(MR.MOTION_TEMPLATE_SYMBOL_85(analysis.chapters.length), MR.MOTION_TEMPLATE_SYMBOL_86(analysis.cast.length), MR.MOTION_TEMPLATE_SYMBOL_87(analysis.places.length), MR.MOTION_TEMPLATE_SYMBOL_88(analysis.facts.length)));
       return analysis;
     });
@@ -207,7 +207,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         language: language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI,
         aspect: _.toString(req.body?.aspect || analysis.videoDna.settings.aspect),
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
-        characterMode: req.body?.customCharacters === true ? MR.MOTION_TEXT_DRAWN : MR.MOTION_TEXT_MANNEQUIN,
+        characterMode: MR.MOTION_TEXT_DRAWN,
       });
     }
     const exec = aiExec(req.body?.aiExecution);
@@ -320,7 +320,6 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         restyle: !!req.body?.restyle,
         note: note || undefined,
         review: req.body?.review !== false,
-        customCharacters: req.body?.customCharacters === true,
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
       }),
     );

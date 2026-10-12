@@ -30,14 +30,9 @@ try {
       if (pose === "idle") { const bounds = new T.Box3().setFromObject(actor.model.getObjectByName("drawnBody_chest")); const neck = actor.bones.neck_01.getWorldPosition(new T.Vector3()).y; result.push({ pose, torsoTop: bounds.max.y, neck }); }
     }
     actor.dispose();
-    const sculpted = G.createActor({ body: "male", height: 1.8, layers: [], customDesign: { anatomy: "sculpted-rig-v1", headWidth: 1.06, headDepth: 0.96 } }, {});
-    let generated = 0, originalVisible = 0, boneCount = 0;
-    sculpted.model.traverse((o: any) => {
-      if (o.isBone) boneCount++;
-      if (o.isSkinnedMesh) { if (o.name.startsWith("generatedAnatomy_")) generated++; else if (o.visible) originalVisible++; }
-    });
-    result.push({ generated, originalVisible, boneCount, expectedBones: Object.keys(sculpted.bones).length });
-    sculpted.dispose();
+    let originalVisible = 0, authoredMeshes = 0;
+    actor.model.traverse((o: any) => { if (o.isSkinnedMesh && o.visible) originalVisible++; if (o.isMesh && o.visible && !o.isSkinnedMesh) authoredMeshes++; });
+    result.push({ originalVisible, authoredMeshes });
     const renderer = new T.WebGLRenderer({ antialias: false });
     renderer.setSize(320, 240);
     const target = new T.WebGLRenderTarget(320, 240);
@@ -45,7 +40,7 @@ try {
     camera.position.set(2, 1.5, 3);
     camera.lookAt(0, 1, 0);
     const renderActor = (custom: boolean) => {
-      const a = G.createActor( { body: "male", height: 1.8, layers: [ { kind: "jacket", color: "#28446a", sleeves: "long" }, { kind: "trousers", color: "#ac9471" }, ], ...(custom ? { customDesign: { anatomy: "sculpted-rig-v1", headWidth: 1, headDepth: 1 } } : {}), }, {}, );
+      const a = G.createActor({ ...outfit, drawnBody: outfit.drawnBody.map(part => ({ ...part, nodes: part.nodes.map(node => ({ ...node, mat: { color: custom ? "#d35428" : "#28446a" } })) })) }, {});
       const scene = new T.Scene();
       scene.background = new T.Color("#cccccc");
       scene.add(a.group, new T.HemisphereLight("#ffffff", "#888888", 2));
@@ -65,13 +60,14 @@ try {
     let different = 0;
     for (let i = 0; i < custom.length; i += 4) if (Math.abs(custom[i] - reference[i]) + Math.abs(custom[i + 1] - reference[i + 1]) + Math.abs(custom[i + 2] - reference[i + 2]) > 60) different++;
     result.push({ renderDifference: different / (320 * 240) });
+    actor.dispose();
     renderer.dispose();
     target.dispose();
     return result;
   });
   for (const check of checks) {
     if (check.alignment !== undefined) assert.ok(check.alignment > 0.98, JSON.stringify(check));
-    else if (check.generated !== undefined) { assert.ok(check.generated > 0); assert.equal(check.originalVisible, 0); assert.equal(check.boneCount, check.expectedBones); } else if (check.renderDifference !== undefined) assert.ok(check.renderDifference < 0.08, JSON.stringify(check)); else assert.ok(check.torsoTop >= check.neck - 0.035, JSON.stringify(check));
+    else if (check.authoredMeshes !== undefined) { assert.ok(check.authoredMeshes > 0); assert.equal(check.originalVisible, 0); } else if (check.renderDifference !== undefined) assert.ok(check.renderDifference > 0.01, JSON.stringify(check)); else assert.ok(check.torsoTop >= check.neck - 0.035, JSON.stringify(check));
   }
   console.log("Drawn rig passed: eight limb axes follow the actual posed bones in standing and sitting; torso reaches the neck.");
 } finally {
