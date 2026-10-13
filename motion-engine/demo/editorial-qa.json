@@ -6,106 +6,572 @@
   "duration": 9,
   "gen": {
     "style": {
-      "skin": "#e9eaec",
-      "gloss": 0.25,
       "grade": "neutral"
     },
     "cast": {
       "person0": {
-        "body": "male",
-        "height": 1.8,
-        "build": 0,
-        "layers": [
+        "parts": [
           {
-            "kind": "shirt",
-            "color": "#ddd6c9",
-            "sleeves": "long",
-            "style": "untucked"
+            "id": "body",
+            "pos": [0, 0.97, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.44, 0.54, 0.22],
+                "pos": [0, 0, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.03, 0.5, 0.03],
+                "pos": [0, 0, 0.13],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "blazer",
-            "color": "#84452d",
-            "sleeves": "long",
-            "length": "hip"
+            "id": "head",
+            "parent": "body",
+            "pos": [0, 0.5, 0],
+            "nodes": [
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0, 0],
+                "scale": [1, 1, 0.65],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [-0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.06, 0.02, 0.02],
+                "pos": [0, -0.1, 0.19],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0.11, -0.03],
+                "scale": [1.01, 0.64, 0.7],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "trousers",
-            "color": "#24272d"
+            "id": "arm_left",
+            "parent": "body",
+            "pos": [-0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
           },
           {
-            "kind": "shoes",
-            "color": "#161616"
+            "id": "leg_left",
+            "pos": [-0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "hair",
-            "color": "#252019",
-            "style": "short"
+            "id": "arm_right",
+            "parent": "body",
+            "pos": [0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "leg_right",
+            "pos": [0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           }
-        ]
+        ],
+        "anchors": {
+          "head": "head",
+          "body": "body",
+          "hand_l": "arm_left",
+          "hand_r": "arm_right"
+        },
+        "poses": {
+          "idle": {},
+          "stand": {},
+          "sit": {
+            "body": {
+              "pos": [0, 0.8, 0]
+            },
+            "leg_left": {
+              "rot": [-70, 0, 0]
+            },
+            "leg_right": {
+              "rot": [-70, 0, 0]
+            }
+          }
+        }
       },
       "person1": {
-        "body": "male",
-        "height": 1.8,
-        "build": 0,
-        "layers": [
+        "parts": [
           {
-            "kind": "shirt",
-            "color": "#ddd6c9",
-            "sleeves": "long",
-            "style": "untucked"
+            "id": "body",
+            "pos": [0, 0.97, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.44, 0.54, 0.22],
+                "pos": [0, 0, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.03, 0.5, 0.03],
+                "pos": [0, 0, 0.13],
+                "mat": {
+                  "color": "#79766b"
+                }
+              }
+            ]
           },
           {
-            "kind": "coat",
-            "color": "#59636c",
-            "sleeves": "long",
-            "length": "knee"
+            "id": "head",
+            "parent": "body",
+            "pos": [0, 0.5, 0],
+            "nodes": [
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0, 0],
+                "scale": [1, 1, 0.65],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [-0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#79766b"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#79766b"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.06, 0.02, 0.02],
+                "pos": [0, -0.1, 0.19],
+                "mat": {
+                  "color": "#79766b"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0.11, -0.03],
+                "scale": [1.01, 0.64, 0.7],
+                "mat": {
+                  "color": "#79766b"
+                }
+              }
+            ]
           },
           {
-            "kind": "trousers",
-            "color": "#24272d"
+            "id": "arm_left",
+            "parent": "body",
+            "pos": [-0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
           },
           {
-            "kind": "shoes",
-            "color": "#161616"
+            "id": "leg_left",
+            "pos": [-0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#79766b"
+                }
+              }
+            ]
           },
           {
-            "kind": "hair",
-            "color": "#79766b",
-            "style": "short"
+            "id": "arm_right",
+            "parent": "body",
+            "pos": [0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "leg_right",
+            "pos": [0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#79766b"
+                }
+              }
+            ]
           }
-        ]
+        ],
+        "anchors": {
+          "head": "head",
+          "body": "body",
+          "hand_l": "arm_left",
+          "hand_r": "arm_right"
+        },
+        "poses": {
+          "idle": {},
+          "stand": {},
+          "sit": {
+            "body": {
+              "pos": [0, 0.8, 0]
+            },
+            "leg_left": {
+              "rot": [-70, 0, 0]
+            },
+            "leg_right": {
+              "rot": [-70, 0, 0]
+            }
+          }
+        }
       },
       "person2": {
-        "body": "male",
-        "height": 1.8,
-        "build": 0,
-        "layers": [
+        "parts": [
           {
-            "kind": "shirt",
-            "color": "#ddd6c9",
-            "sleeves": "long",
-            "style": "untucked"
+            "id": "body",
+            "pos": [0, 0.97, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.44, 0.54, 0.22],
+                "pos": [0, 0, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.03, 0.5, 0.03],
+                "pos": [0, 0, 0.13],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "blazer",
-            "color": "#252f41",
-            "sleeves": "long",
-            "length": "hip"
+            "id": "head",
+            "parent": "body",
+            "pos": [0, 0.5, 0],
+            "nodes": [
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0, 0],
+                "scale": [1, 1, 0.65],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [-0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.04,
+                "pos": [0.09, 0.05, 0.17],
+                "scale": [1, 1.5, 0.4],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.06, 0.02, 0.02],
+                "pos": [0, -0.1, 0.19],
+                "mat": {
+                  "color": "#252019"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.28,
+                "pos": [0, 0.11, -0.03],
+                "scale": [1.01, 0.64, 0.7],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "trousers",
-            "color": "#24272d"
+            "id": "arm_left",
+            "parent": "body",
+            "pos": [-0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
           },
           {
-            "kind": "shoes",
-            "color": "#161616"
+            "id": "leg_left",
+            "pos": [-0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           },
           {
-            "kind": "hair",
-            "color": "#252019",
-            "style": "short"
+            "id": "arm_right",
+            "parent": "body",
+            "pos": [0.28, 0.18, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.13, 0.46, 0.16],
+                "pos": [0, -0.23, 0],
+                "mat": {
+                  "color": "#ddd6c9"
+                }
+              },
+              {
+                "shape": "sphere",
+                "radius": 0.07,
+                "pos": [0, -0.49, 0],
+                "mat": {
+                  "color": "#ddd8c9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "leg_right",
+            "pos": [0.12, 0.69, 0],
+            "nodes": [
+              {
+                "shape": "box",
+                "size": [0.16, 0.6, 0.16],
+                "pos": [0, -0.3, 0],
+                "mat": {
+                  "color": "#24272d"
+                }
+              },
+              {
+                "shape": "box",
+                "size": [0.18, 0.09, 0.26],
+                "pos": [0, -0.65, 0.04],
+                "mat": {
+                  "color": "#252019"
+                }
+              }
+            ]
           }
-        ]
+        ],
+        "anchors": {
+          "head": "head",
+          "body": "body",
+          "hand_l": "arm_left",
+          "hand_r": "arm_right"
+        },
+        "poses": {
+          "idle": {},
+          "stand": {},
+          "sit": {
+            "body": {
+              "pos": [0, 0.8, 0]
+            },
+            "leg_left": {
+              "rot": [-70, 0, 0]
+            },
+            "leg_right": {
+              "rot": [-70, 0, 0]
+            }
+          }
+        }
       }
     },
     "locations": {
@@ -153,236 +619,113 @@
         },
         "defs": {},
         "ground": {
-          "size": [
-            20,
-            20
-          ],
+          "size": [20, 20],
           "mat": "floor"
         },
         "nodes": [
           {
             "shape": "box",
             "name": "back",
-            "size": [
-              12,
-              4,
-              0.25
-            ],
-            "pos": [
-              0,
-              2,
-              -2.6
-            ],
+            "size": [12, 4, 0.25],
+            "pos": [0, 2, -2.6],
             "mat": "wall"
           },
           {
             "shape": "box",
             "name": "wainscot",
-            "size": [
-              12,
-              1.4,
-              0.1
-            ],
-            "pos": [
-              0,
-              0.7,
-              -2.42
-            ],
+            "size": [12, 1.4, 0.1],
+            "pos": [0, 0.7, -2.42],
             "mat": "wood"
           },
           {
             "shape": "box",
             "name": "dado",
-            "size": [
-              12,
-              0.08,
-              0.16
-            ],
-            "pos": [
-              0,
-              1.4,
-              -2.35
-            ],
+            "size": [12, 0.08, 0.16],
+            "pos": [0, 1.4, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel0",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              -5,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [-5, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel1",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              -4,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [-4, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel2",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              -3,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [-3, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel3",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              -2,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [-2, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel4",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              -1,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [-1, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel5",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              0,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [0, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel6",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              1,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [1, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel7",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              2,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [2, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel8",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              3,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [3, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel9",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              4,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [4, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "box",
             "name": "panel10",
-            "size": [
-              0.06,
-              3.8,
-              0.14
-            ],
-            "pos": [
-              5,
-              1.9,
-              -2.35
-            ],
+            "size": [0.06, 3.8, 0.14],
+            "pos": [5, 1.9, -2.35],
             "mat": "trim"
           },
           {
             "shape": "light",
             "type": "spot",
-            "pos": [
-              -3,
-              3.5,
-              3
-            ],
-            "target": [
-              0,
-              1.3,
-              0
-            ],
+            "pos": [-3, 3.5, 3],
+            "target": [0, 1.3, 0],
             "color": "#ffe4c4",
             "intensity": 3,
             "distance": 14,
@@ -393,16 +736,8 @@
           {
             "shape": "light",
             "type": "spot",
-            "pos": [
-              3,
-              3.6,
-              -1.4
-            ],
-            "target": [
-              0,
-              1.3,
-              0
-            ],
+            "pos": [3, 3.6, -1.4],
+            "target": [0, 1.3, 0],
             "color": "#b9d3ea",
             "intensity": 1.5,
             "distance": 12,
@@ -412,27 +747,13 @@
           }
         ],
         "stage": {
-          "center": [
-            0,
-            0
-          ],
-          "size": [
-            10,
-            8
-          ]
+          "center": [0, 0],
+          "size": [10, 8]
         },
         "marks": {},
         "camera": {
-          "pos": [
-            0,
-            1.6,
-            8
-          ],
-          "target": [
-            0,
-            1.2,
-            0
-          ],
+          "pos": [0, 1.6, 8],
+          "target": [0, 1.2, 0],
           "fov": 40
         }
       }
@@ -450,44 +771,27 @@
           {
             "cast": "person0",
             "action": "stand",
-            "at": [
-              -1.4,
-              0
-            ],
+            "at": [-1.4, 0],
             "face": 0
           },
           {
             "cast": "person1",
             "action": "stand",
-            "at": [
-              0,
-              0
-            ],
+            "at": [0, 0],
             "face": 0
           },
           {
             "cast": "person2",
             "action": "stand",
-            "at": [
-              1.4,
-              0
-            ],
+            "at": [1.4, 0],
             "face": 0
           }
         ],
         "cameras": [
           {
             "shot": "wide",
-            "pos": [
-              0,
-              1.6,
-              7.5
-            ],
-            "target": [
-              0,
-              1.15,
-              0
-            ],
+            "pos": [0, 1.6, 7.5],
+            "target": [0, 1.15, 0],
             "fov": 40,
             "move": "static"
           }
@@ -505,28 +809,19 @@
           {
             "cast": "person0",
             "action": "stand",
-            "at": [
-              -1.4,
-              0
-            ],
+            "at": [-1.4, 0],
             "face": 0
           },
           {
             "cast": "person1",
             "action": "stand",
-            "at": [
-              0,
-              0
-            ],
+            "at": [0, 0],
             "face": 0
           },
           {
             "cast": "person2",
             "action": "stand",
-            "at": [
-              1.4,
-              0
-            ],
+            "at": [1.4, 0],
             "face": 0
           }
         ],
@@ -534,16 +829,8 @@
           {
             "shot": "medium",
             "focus": "person1",
-            "pos": [
-              2.2,
-              1.5,
-              4
-            ],
-            "target": [
-              0,
-              1.35,
-              0
-            ],
+            "pos": [2.2, 1.5, 4],
+            "target": [0, 1.35, 0],
             "fov": 38,
             "move": "static"
           }
@@ -561,28 +848,19 @@
           {
             "cast": "person0",
             "action": "stand",
-            "at": [
-              -1.4,
-              0
-            ],
+            "at": [-1.4, 0],
             "face": 0
           },
           {
             "cast": "person1",
             "action": "stand",
-            "at": [
-              0,
-              0
-            ],
+            "at": [0, 0],
             "face": 0
           },
           {
             "cast": "person2",
             "action": "stand",
-            "at": [
-              1.4,
-              0
-            ],
+            "at": [1.4, 0],
             "face": 0
           }
         ],
@@ -590,16 +868,8 @@
           {
             "shot": "close",
             "focus": "person1",
-            "pos": [
-              1,
-              1.65,
-              2.8
-            ],
-            "target": [
-              0,
-              1.65,
-              0
-            ],
+            "pos": [1, 1.65, 2.8],
+            "target": [0, 1.65, 0],
             "fov": 32,
             "move": "static"
           }

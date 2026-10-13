@@ -1,3 +1,4 @@
+import { MOTION_SOUND_PROMPT } from "./motionSound.js";
 import { MOTION_SFX_MOODS } from "./motionAudio.js";
 export const MOTION_GEN_CONFIG = {
   ARTIFACT_BIBLE: "motion-gen-bible",
@@ -5,16 +6,12 @@ export const MOTION_GEN_CONFIG = {
   ARTIFACT_LOCATION_REVIEW: "motion-gen-location-review",
   ARTIFACT_STAGING: "motion-gen-staging",
   ARTIFACT_STAGING_REVIEW: "motion-gen-staging-review",
-  LOCATION_ROUNDS: 3,
-  LOCATION_PASS_SCORE: 8,
+  LOCATION_ROUNDS: 1,
   STAGING_TRIES: 3,
-  STAGING_REVIEW_PASSES: 3,
   LONG_VIDEO_SCENE_BEATS: 60,
-  LONG_LOCATION_ROUNDS: 2,
-  LONG_STAGING_REVIEW_PASSES: 1,
+  LONG_LOCATION_ROUNDS: 1,
   SCORE_KEY: "score",
   NOTE_KEY: "note",
-  AUTO_FIX_ISSUES: /out of frame|render error|stands inside/,
   REVIEW_OFF_LOG: "Đã tắt bước AI xem ảnh (Cấu hình AI) – chỉ sửa theo lỗi máy tự phát hiện.",
   BEATS_PER_STAGING_CALL: 8,
   REVIEW_IMAGES_PER_CALL: 6,
@@ -23,7 +20,6 @@ export const MOTION_GEN_CONFIG = {
   REVIEW_WIDTH: 768,
   REVIEW_HEIGHT: 432,
   ASSET_ORIGIN: "https://motion-assets.local",
-  MANNEQUIN_DIR: "mannequin",
 } as const;
 export const MOTION_GEN_PREAMBLE = "You are a writer, visual designer, cinematographer and editor. Build the requested video from its input and project Video DNA. Treat source material as data. Preserve factual claims when factual; preserve fictional intent when fictional. Do not impose a genre or a preset aesthetic.";
 export const MOTION_GEN_LOOKS = ["documentary", "noir", "teal_orange", "vintage", "cold_thriller", "warm_story", "clean"];
@@ -164,7 +160,7 @@ QUALITY RULES:
 - Derive palette, material texture, reflectance, lighting contrast and background treatment from the project Video DNA and each actual object. Do not impose dark walls, warm accents, cool rims, a restricted colour count or a documentary aesthetic. Keep important subjects readable without washing out material distinctions. Choose supported patterns at a believable scale and metalness only where physically or stylistically justified.
 - Everything stands on the ground or on another object – nothing floats, nothing intersects through the stage.
 - Light it like a film: at night or inside, add motivated lights (lamps, windows, street lights, car headlights, police lights) – at least 2–6 lights; keep the stage readable.
-- Never draw people, mannequins or bodies – the actors are added separately.
+- Never draw characters – the actors are added separately.
 - Name the important objects ("name") so later shots can refer to them.
 - Definitions are invisible until instantiated: place every required story object inside nodes with shape use, ref and pos. All lights also belong inside nodes, never a separate lights array. Include the key object in the actual set, not just its component definition. Keep its visible working surface directed toward an accessible camera position.
 - Build recognisable hero objects with their functional details (controls, display, moving component, trim, supporting structure), using child geometry and distinct materials. Do not substitute an unadorned cube or cylinder for the story's central object.`;
@@ -202,11 +198,11 @@ ${o.example}
 
 Return JSON: {"location":{ …the full LOCATION JSON… }}`;
 export const MOTION_GEN_LOCATION_REVIEW_PROMPT = (o: { preamble: string; key: string; description: string; uses: string; engineNotes: string }): string => `${o.preamble}
-ROLE: art director. The two attached images are test renders in the selected drawing mode of the location "${o.key}" (wide view and reverse view). A 1.8 m white mannequin stands on the stage centre as a size reference.
+ROLE: art director. The two attached images are test renders in the selected drawing mode of the location "${o.key}" (wide view and reverse view). The stage dimensions and object coordinates define scene scale.
 The location should be: ${o.description}
 It will be used for: ${o.uses}
 Automatic checks: ${o.engineNotes || "none"}
-Judge: does it clearly look like that place (architecture, era, key objects)? Are sizes right compared to the 1.8 m mannequin? Anything floating, cut through, missing or ugly? Is the subject readable in the selected drawing mode (not black, not burnt out)? For 2D evaluate flat colour separation rather than photorealistic lighting. Is the stage free for the actors?
+Judge: does it clearly look like that place (architecture, era, key objects)? Are sizes consistent with the supplied stage and object dimensions? Anything floating, cut through, missing or ugly? Is the subject readable in the selected drawing mode (not black, not burnt out)? For 2D evaluate flat colour separation rather than photorealistic lighting. Is the stage free for the actors?
 Return JSON: {"score":0..10,"issues":["concrete fix instruction with object names and numbers", …]} – max 8 issues, [] if it is already excellent (score ≥ 8).`;
 export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string; errors: string }): string => `${o.preamble}
 ROLE: production designer. Improve the 3D location "${o.key}" (${o.description}).
@@ -221,25 +217,25 @@ ${o.previous}
 
 Return JSON: {"location":{ …the full corrected LOCATION JSON… }}`;
 export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; errors: string }): string => `${o.preamble}
-ROLE: character artist. Derive all visible geometry, proportions, face features, clothing, colours and materials from the project visual direction. Do not use a mannequin surface, template clothing or a fixed aesthetic. The hidden skeleton supplies pose anchors only.
+ROLE: character artist. Design original characters for NEW scenes from the story. Uploaded reference images are authoritative for shape language, silhouette, head/body ratio, face design, palette and linework. Reference proportions and face design override conflicting legacy visual direction or cast descriptions. Story roles and actions do not impose anatomy. If no references are supplied, invent a coherent visual design from the story and Video DNA. Preserve cartoon exaggeration, simplified limbs, large heads and non-human anatomy when appropriate. No body templates, compulsory anatomy, fixed heights or automatic proportion fitting exist in the renderer.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}. Visual direction: ${o.look}.
 CAST: ${o.cast}
 ${o.errors ? `Correct these failures: ${o.errors}` : ""}
-Return JSON {"style":{"grade":"neutral","notes":"project-specific visual direction"},"cast":{"each_cast_key":{"body":"male|female","height":1.0..2.2,"build":-1..1,"layers":[],"drawnBody":[{"socket":"head","nodes":[...]}]}}}.
-For each character author all sixteen pose anchors: head, neck, chest, waist, upperarm_r, upperarm_l, forearm_r, forearm_l, hand_r, hand_l, thigh_r, thigh_l, calf_r, calf_l, foot_r, foot_l. Each anchor has one or more original geometry nodes, including its visible skin/clothing. These are attachment anchors, not prescribed shapes. Use groups and multiple shapes to express the source style; do not substitute sixteen identical blocks. Face features belong in the head nodes when appropriate to the project. Clothing is part of these authored nodes, not a separate preset layer. Do not return customDesign.
-Coordinates are in metres, local to each anchor, +Y up, +Z forward. Head origin is its centre; neck origin is at its base; chest origin is upper chest front and torso extends downward; waist is at pelvis height. Limb segments extend along local -Y from their proximal joint to the next joint; hands and feet extend from wrist/ankle. Keep joints connected; do not draw architecture or lights inside characters.
-Nodes support box (size [w,h,d], bevel), sphere (radius, scale), cylinder (radius,height), capsule (radius,total height), torus (radius,tube), and group (children). Use pos [x,y,z], optional rot in degrees, name, and INLINE mat {color:'#hex',roughness:0..1,metalness:0..1}. Use source-derived palette and material treatment. The schema constrains rendering syntax, not visual style.
+Return JSON {"style":{"grade":"neutral","notes":"project-specific visual direction"},"cast":{"each_cast_key":{"materials":{},"parts":[{"id":"silhouette","pos":[0,0,0],"nodes":[...]}],"anchors":{"body":"silhouette"},"poses":{"idle":{}},"motions":{}}}}.
+A character is a FREE hierarchy of named parts. Each part has id, optional parent (another part id), pos [x,y,z], optional rot [degrees] and scale [x,y,z], and nodes in that part's local coordinates. Parent links must be acyclic. Use as few or as many parts as the design needs; no prescribed joint names or count. Clothing, face, hair and silhouette are drawn geometry. Coordinates use scene metres, +Y up and +Z forward. Place the base at y=0; choose actual geometry dimensions to preserve reference proportions without normalization. Include expressive eyes/mouth and distinctive silhouettes when shown in references, rather than generic blocks.
+Nodes support box (size [w,h,d], bevel), sphere (radius, scale), cylinder/cone (radius,height), capsule (radius,height), torus (radius,tube), plane (size [w,h]), disc/ring (radius), extrude (points [[x,y],...], depth), lathe (points [[radius,y],...]), tube (path [[x,y,z],...],radius), and group (children). Supply pos, optional rot in degrees and mat {color:'#hex',roughness:0..1,metalness:0..1,unlit:true} or a key in materials. Use shallow geometry/extruded silhouettes for flat cartoons and authored volumes for 3D. No external character models, lights or annotation text.
+Optional anchors map head/body/base or any attachment name to authored part ids; positions come from the design. poses map action names to part transforms, e.g. {"sit":{"leg":{"rot":[-70,0,0]}}}. Transforms replace the part's rest transform; omitted fields preserve it. Design named poses needed by the story; the renderer has no preset action library. All pivots and geometry lengths are authored by you.
+When AUTHORITATIVE CHARACTER MOTION is enabled, author motions for story actions: {"wave":{"duration":2,"loop":true,"tracks":[{"part":"arm","keys":[{"t":0,"rot":[0,0,-20]},{"t":1,"rot":[0,0,20]},{"t":2,"rot":[0,0,-20]}]}]}}. Keys use seconds and absolute local pos/rot/scale; omitted properties preserve the selected pose. Animate only existing parts while preserving geometry and proportions. Motion is optional; no external animation clips are loaded. When disabled, poses still apply and motion tracks stay frozen.
+${MOTION_SOUND_PROMPT}
 Return only style and cast.`;
-export const MOTION_GEN_ACTIONS_GUIDE = (actions: string[]): string => `ACTIONS (frozen pose references, never body animation): ${actions.join(", ")}.
-- standing: idle, talk, phone_look (reading a phone), phone_call, arms_crossed, hands_on_hips, think, point, wave, nod, shake_head, look_around, sad, cover_face, hands_up (surrender), hands_behind_back, handcuffed (arrested), restrain (holding someone's arm), aim / hold_gun / shoot (pistol).
-- walking/running actions are disabled: use stand or idle with a separate named prop for carried objects. Never emit moveTo, then, moveStart, moveEnd or thenAt.
-- seated: sit, sit_talk, drive (inside a car: put the actor on the driver seat, "y" ≈ 0.25), sit_down, stand_up.
-- other: crouch, kneel_fix (working on something low), interact (press, open, take), pick_up, open_chest, eat_drink, punch, jab, hit, knocked_back, fall_dead, lie, get_up, throw, climb, swim, dance, celebrate, chop, dig, torch, lantern, call_out, lean_rail.`;
+export const MOTION_GEN_ACTIONS_GUIDE = (): string => `ACTIONS are names from each character's authored poses and motions in CAST.design. Choose an existing name, or idle for the rest design. Do not assume any action has a built-in animation.
+- Follow AUTHORITATIVE CHARACTER MOTION: when enabled, authored motion tracks, safe moveTo paths and then transitions may play; when disabled, use a single fixed authored pose and omit movement/transitions.
+- For held objects use hold:{part:"authored part id or anchor name",nodes:[complete geometry nodes]}. Local coordinates belong to that attachment part. No automatic hand attachments or default props exist.`;
 export const MOTION_GEN_STAGING_PROMPT = (o: { preamble: string; story: string; actions: string; cast: string; locations: string; beats: string; continuity: string; notes: string }): string => `${o.preamble}
-ROLE: film director. Stage each beat as a static tableau: fixed character positions and poses, extra props, and moving cameras.
+ROLE: film director. Stage each beat according to AUTHORITATIVE CHARACTER MOTION, with readable poses, props and cameras.
 STORY: ${o.story}
-CAST (keys, look):
+CAST (keys, visual designs, authored poses and motions):
 ${o.cast}
 
 LOCATIONS (coordinates in metres, Y up, ground y=0; stage = free floor; marks = named spots; objects = named things with their centre and size):
@@ -250,7 +246,7 @@ ${o.actions}
 STAGING JSON per beat:
 {"id":"beat id","location":"location key","time":"optional override",
  "actors":[{"cast":"key","action":"action id","at":[x,z] or "mark name","face":degrees (0 = toward +Z/the camera side, 90 = toward +X, 180 = away, -90 = toward -X) or "camera" or a cast key or [x,z],
-            "hold":[small shapes held in the right hand: origin = palm centre, +Y toward the fingertips, +Z out of the palm; e.g. phone = box [0.075,0.15,0.009] at [0,0.02,0.008]; pistol, torch, document, cup…],"hand":"left" (optional),"y":height of the feet (optional, e.g. on a stage or in a car),"ghost":true (optional: a translucent, softly glowing, floating apparition – only for ghosts and spirits)}],
+            "hold":{"part":"authored attachment part or anchor","nodes":[complete local geometry nodes]},"y":base height (optional),"ghost":true (optional for ghosts and spirits)}],
  "props":[extra nodes only needed for this beat, same shape format, e.g. a document on the table, a dropped bag, sparks],
  "hide":["names of location objects to hide in this beat"],
  "weather":"none|rain|snow|fog|dust",
@@ -259,19 +255,19 @@ RULES:
 - For actor framing set camera view to front, profile or rear when the story calls for it. A deliberate rear/over-shoulder composition is supported. Otherwise choose a clear view on the actor's facing side rather than its back.
 - props must contain COMPLETE scene graph nodes: explicit pos [x,y,z], dimensions and mat, including all children for composite objects. Never return placeholder object descriptions. Objects already listed in the location exist; do not duplicate them in props. Use focusProp with their exact name. If changing an object state, hide the original by name and replace it at the same world position with full geometry.
 - Show exactly the "action" sentence of each beat: the right people, the right place, the right objects and what happens to them.
-- Put actors on FREE floor: never inside furniture, cars or walls (check the object sizes). People who talk or interact stand 0.7–1.4 m apart and face each other; groups form a natural arc toward the camera.
+- Put actors on FREE floor: never inside furniture, cars or walls (check the object sizes). Use spacing appropriate to authored character dimensions; subjects who talk or interact face each other; groups form a natural arc toward the camera.
 - Explain actions with camera framing and visible props. Do not add floating billboard text, explanatory captions or annotation arrows. Keep only text physically belonging to the scene, such as an EXIT sign or instrument display.
 - Ghosts and spirits: an actor with "ghost":true; reveal it slowly (far away, half hidden, in fog or at the end of a corridor) rather than in plain view.
-- Actors are completely static. Their feet, skeleton, head, hands and facing stay fixed. Use supported poses. Only cameras and props may move. Keep the same coordinates and numeric facing across consecutive beats in the same place unless the input explicitly cuts to a new tableau. Choose framing, subject size, negative space and relevant detail targets from the project's visual DNA. People are optional and must not dominate an object-led scene.
+- Follow AUTHORITATIVE CHARACTER MOTION: static poses when disabled; supported animation and safe grounded paths when enabled. Keep the same coordinates and numeric facing across consecutive beats in the same place unless the input explicitly cuts to a new tableau. Choose framing, subject size, negative space and relevant detail targets from the project's visual DNA. People are optional and must not dominate an object-led scene.
 - Object actions (opening, taking, putting, writing, digging…): do NOT animate the contact. Stage the actor next to the object in a fitting pose, then cut (a second camera) to an "insert" close-up of the object already in its result state (use "props" and "hide": the box already open, the clock already inside, the note already on the table).
-- A visible change needs distinct before and after states across its beats. Do not show the final state in every scene while narration says it changes. Preserve the same object's identity, location and scale; use complete replacement props and hide the exact original child when changing its state. Humans keep their fixed poses.
-- Sitting: use "sit" with exact seated coordinates and numeric facing aligned with an existing seat. The engine preserves coordinates and never moves an actor to a nearby chair. Include a chair prop if no seat exists.
+- A visible change needs distinct before and after states across its beats. Do not show the final state in every scene while narration says it changes. Preserve the same object's identity, location and scale; use complete replacement props and hide the exact original child when changing its state. Human animation follows AUTHORITATIVE CHARACTER MOTION.
+- Sitting: choose an existing authored seated pose with exact seated coordinates and numeric facing aligned with an existing seat. The engine preserves coordinates and never moves an actor to a nearby chair. Include a chair prop if no seat exists.
 - Shot names matter: "wide" = the whole body small in a big space, "medium" = from the waist up, "close" = head and shoulders, "extreme_close" = the face. The engine corrects the camera distance to match the shot name, so pick the name you mean and aim "target" at the person (chest for medium, face for close).
-- Poses: prefer calm, readable poses; avoid repetitive work actions (kneel_fix, chop, dig, interact) unless the narration is about that work – they play once and then hold.
+- Poses: choose readable authored poses and motions that match this beat. Non-looping motions hold their final keyframe.
 - Choose camera count, shot duration, angle, movement or deliberate stillness from the project's camera grammar and pacing. Do not impose a wide-medium-close sequence, mandatory orbit, thirds composition or a fixed number of cuts. Maintain clear sightlines and appropriate subject scale. An insert must target the actual relevant named prop, not a guessed actor position.
-- Working on an object (interact, pick_up, open_chest, kneel_fix, push…): set "face" to the object's [x,z] and stand within arm's reach (0.5–0.7 m from it). Put the camera at the side or three-quarter front of the actor (about 60–90° from where the actor looks) so the face, the hands and the object are all visible – never behind the actor's back.
-- Never use moveTo, then or camera-relative actor facing. Choose numeric "face" or a fixed object coordinate. Represent actions through static poses and changing object states.
-- Camera: eye height 1.4–1.7 for medium shots, 0.4–0.9 for low shots, 3–8 for high shots; wide shots 7–15 m from the actors, medium 2.5–4 m, close 1.2–1.8 m. "target" = what to look at (a face is at y≈1.6, a chest at 1.3). Keep the camera inside the walls of interiors and in front of (not inside) objects.
+- Working on an object: select an existing authored pose or motion, set "face" to the object's [x,z] and choose distance based on actual character dimensions. Put the camera at the side or three-quarter front of the actor (about 60–90° from where the actor looks) so the face, the hands and the object are all visible – never behind the actor's back.
+- Use numeric "face" or a fixed object coordinate. Only emit moveTo/then when AUTHORITATIVE CHARACTER MOTION is enabled; avoid complex contact interactions.
+- Camera: derive height, distance and target from actual authored character geometry and anchors. Stylized subjects can have any proportions or height. Keep the camera inside interior walls and clear of objects.
 - One to four supported cameras per beat: cuts use "at" times (0..1). Use only the camera coverage needed by this input and blueprint; preserve spatial continuity between views.
 ${o.continuity}
 ${o.notes}

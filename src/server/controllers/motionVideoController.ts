@@ -1,3 +1,8 @@
+import { MOTION_SOUND_CONFIG as SOUND } from "../../constants/motionSound.js";
+import { normalizeSoundCues } from "../../lib/motionSound.js";
+import { buildMotionSoundTrack, mixMotionSoundAudio, motionSoundAudition } from "../services/motionSoundMixService.js";
+import { ensureMotionSfxLibrary, resolveMotionSfxAsset } from "../services/motionSfxLibraryService.js";
+import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { randomUUID } from "crypto";
@@ -11,8 +16,6 @@ import {
   MOTION_TEMPLATE_GIONG_DOC_GIAY,
   MOTION_TEMPLATE_MOTION,
   MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT,
-  MOTION_TEMPLATE_SYMBOL_4,
-  MOTION_TEMPLATE_TAO_GIONG_AI33_CHO_BEAT_SONG_SONG,
   MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG,
   MOTION_TEXT_16_9,
   MOTION_TEXT_1_1,
@@ -28,7 +31,6 @@ import {
   MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC,
   MOTION_TEXT_CHAPTERID,
   MOTION_TEXT_CHUA_CO_KICH_BAN,
-  MOTION_TEXT_CHUA_CO_LOI_DAN_DE_TAO_GIONG,
   MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN,
   MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA,
   MOTION_TEXT_DARK,
@@ -36,7 +38,6 @@ import {
   MOTION_TEXT_DINH_DANG_AM_THANH_KHONG_HO_TRO,
   MOTION_TEXT_EN,
   MOTION_TEXT_FLAC,
-  MOTION_TEXT_HAY_CHON_GIONG_DOC_AI33,
   MOTION_TEXT_KHONG_TIM_THAY_TEP_VIDEO,
   MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH,
   MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH_RENDER,
@@ -68,7 +69,12 @@ import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStory
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
 import { libraryMime } from "../services/motionAssetLibraryService.js";
-import { buildAi33VoiceTrack, fitUploadedVoice } from "../services/motionAudioService.js";
+import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
+import { MOTION_VOICE } from "../../constants/motionVoice.js";
+import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
+import { listVieneuVoices, registerVieneuVoice, vieneuRoot } from "../services/vieneuTtsService.js";
+import { createHash } from "crypto";
+import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
 import { buildScenes, resolveGenPreview } from "../services/motionGenService.js";
@@ -80,20 +86,40 @@ import { generateMotionSeo } from "../services/motionSeoService.js";
 import { generateMotionThumbnail } from "../services/motionThumbnailService.js";
 import { resolveSourceInput, withFetchInfo } from "../services/motionSourceFetchService.js";
 import { cleanTranscriptInput } from "../../lib/motionSourceClean.js";
-const readStorySource = async (text: string): Promise<MotionStorySource> => { const r = await resolveSourceInput(text); const { text: cleaned, report } = cleanTranscriptInput(r.text); const source = withFetchInfo(parseStorySource(cleaned), r.notes, r.fetched); return report.splitNumbers || report.soundCues || report.missingQuotes ? { ...source, cleaned: report } : source; };
+const readStorySource = async (text: string): Promise<MotionStorySource> => {
+  const r = await resolveSourceInput(text);
+  const { text: cleaned, report } = cleanTranscriptInput(r.text);
+  const source = withFetchInfo(parseStorySource(cleaned), r.notes, r.fetched);
+  return report.splitNumbers || report.soundCues || report.missingQuotes ? { ...source, cleaned: report } : source;
+};
 import { cleanStorageJunk, scanStorageJunk } from "../services/storageService.js";
 import { getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
 const fail = (res: Response, status: number, error: unknown) => res.status(status).json({ success: false, error: _.toString(_.get(error, MOTION_TEXT_MESSAGE, error)) });
 const saveDestinations = new Map<string, string>();
-const validateSpec = (raw: unknown): MotionSpec => { const spec = (_.isString(raw) ? parseJson(raw) : raw) as MotionSpec; if (!spec || !_.isArray(spec.shots) || _.isEmpty(spec.shots)) throw new Error(MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO); if (spec.shots.length > 2000) throw new Error(MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO); return spec; };
-export const getMotionEngineScript = (_req: Request, res: Response): void => { try { res.type(MOTION_TEXT_APPLICATION_JAVASCRIPT).send(getMotionEngineClientScript()); } catch (error) { fail(res, 500, error); } };
-export const getMotionDemo = (req: Request, res: Response): void => { const spec = getMotionDemoSpec(_.toString(req.query.name || MOTION_TEXT_DEMO)); if (!spec) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_VIDEO_MAU); res.json({ success: true, spec }); };
+const validateSpec = (raw: unknown): MotionSpec => {
+  const spec = (_.isString(raw) ? parseJson(raw) : raw) as MotionSpec;
+  if (!spec || !_.isArray(spec.shots) || _.isEmpty(spec.shots)) throw new Error(MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO);
+  if (spec.shots.length > 2000) throw new Error(MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO);
+  return spec;
+};
+export const getMotionEngineScript = (_req: Request, res: Response): void => {
+  try {
+    res.type(MOTION_TEXT_APPLICATION_JAVASCRIPT).send(getMotionEngineClientScript());
+  } catch (error) {
+    fail(res, 500, error);
+  }
+};
+export const getMotionDemo = (req: Request, res: Response): void => {
+  const spec = getMotionDemoSpec(_.toString(req.query.name || MOTION_TEXT_DEMO));
+  if (!spec) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_VIDEO_MAU);
+  res.json({ success: true, spec });
+};
 export const uploadMotionAudio = async (req: Request, res: Response): Promise<void> => {
   try {
     const name = path.basename(_.toString(req.body?.name || MOTION_TEXT_VOICE_MP3));
     const ext = _.toLower(path.extname(name)) || MOTION_TEXT_MP3;
     if (!_.includes([MOTION_TEXT_MP3, MOTION_TEXT_WAV, MOTION_TEXT_M4A, MOTION_TEXT_AAC, MOTION_TEXT_OGG, MOTION_TEXT_FLAC], ext)) throw new Error(MOTION_TEXT_DINH_DANG_AM_THANH_KHONG_HO_TRO);
-    const buf = Buffer.from(_.toString(req.body?.base64).replace(/^data:[^,]+,/, ""), MOTION_TEXT_BASE64);
+    const buf = Buffer.from(_.toString(req.body?.base64).replace(/^data:[^,]+,/, MR.MOTION_TEXT_EMPTY), MOTION_TEXT_BASE64);
     if (buf.length < 1000) throw new Error(MOTION_TEXT_TEP_AM_THANH_TRONG);
     if (buf.length > MOTION_VIDEO_CONSTANTS.MAX_AUDIO_BYTES) throw new Error(MOTION_TEXT_TEP_AM_THANH_QUA_LON);
     const id = MR.MOTION_TEMPLATE_SYMBOL_81(randomUUID(), ext);
@@ -105,7 +131,14 @@ export const uploadMotionAudio = async (req: Request, res: Response): Promise<vo
     fail(res, 400, error);
   }
 };
-export const checkMotionVideo = async (req: Request, res: Response): Promise<void> => { try { res.json({ success: true, ...(await checkMotionSpec(validateSpec(req.body?.spec))) }); } catch (error) { logger.error(MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED, error); fail(res, 400, error); } };
+export const checkMotionVideo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, ...(await checkMotionSpec(validateSpec(req.body?.spec))) });
+  } catch (error) {
+    logger.error(MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED, error);
+    fail(res, 400, error);
+  }
+};
 export const startMotionVideoRender = (req: Request, res: Response): void => {
   try {
     const spec = validateSpec(req.body?.spec);
@@ -115,17 +148,16 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
       aspect: _.toString(o.aspect || spec.aspect || MOTION_TEXT_16_9),
       fps: _.toNumber(o.fps) || undefined,
       encoder: _.includes(_.values(MotionEncoderPreference), o.encoder) ? o.encoder : MotionEncoderPreference.AUTO,
-      title: _.truncate(_.toString(o.title || spec.title || ""), { length: 120 }),
+      title: _.truncate(_.toString(o.title || spec.title || MR.MOTION_TEXT_EMPTY), { length: 120 }),
       audioId: o.audioId ? path.basename(_.toString(o.audioId)) : undefined,
       audioVolume: _.toNumber(o.audioVolume ?? 1),
+      mixedAudioId: /^mix-motion-[a-f0-9]{32}\.wav$/.test(o.mixedAudioId) ? o.mixedAudioId : undefined,
+      sfxId: /^sfx-real-[a-f0-9]{32}\.wav$/.test(o.sfxId) ? o.sfxId : undefined,
       sfxVolume: _.toNumber(o.sfxVolume ?? 0.5),
       sfx:
         o.sfx && _.isArray(o.sfx.cues)
           ? {
-              cues: _.take(
-                _.map(o.sfx.cues, (c: any) => ({ t: _.toNumber(c?.t), kind: _.toString(c?.kind) })),
-                500,
-              ),
+              cues: normalizeSoundCues(o.sfx.cues, spec.duration),
               mood: _.toString(o.sfx.mood || MOTION_TEXT_DARK),
             }
           : undefined,
@@ -135,16 +167,42 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
     fail(res, 400, error);
   }
 };
-export const getMotionVideoStatus = (req: Request, res: Response): void => { const job = getMotionJob(_.toString(req.params.jobId)); if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH_RENDER); res.json({ success: true, job }); };
-export const cancelMotionVideo = (req: Request, res: Response): void => { res.json({ success: true, cancelled: cancelMotionJob(req.body?.jobId ? _.toString(req.body.jobId) : undefined) }); };
-export const listMotionVideoResults = (_req: Request, res: Response): void => { res.json({ success: true, items: listMotionResults() }); };
-export const deleteMotionVideoResult = (req: Request, res: Response): void => { res.json(deleteMotionResult(_.toString(req.params.id))); };
-export const getStorageJunk = (_req: Request, res: Response): void => { try { res.json({ success: true, report: scanStorageJunk() }); } catch (error) { fail(res, 500, error); } };
-export const cleanStorageJunkHandler = async (req: Request, res: Response): Promise<void> => { if (isMotionRenderBusy()) return void fail(res, 409, STORAGE_TEXTS.BUSY); try { res.json({ success: true, ...(await cleanStorageJunk(_.map(_.castArray(req.body?.groups || []), _.toString))) }); } catch (error) { fail(res, 500, error); } };
-export const clearMotionVideoResults = (_req: Request, res: Response): void => { if (isMotionRenderBusy()) return void fail(res, 409, MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA); res.json({ success: true, ...clearMotionResults() }); };
+export const getMotionVideoStatus = (req: Request, res: Response): void => {
+  const job = getMotionJob(_.toString(req.params.jobId));
+  if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH_RENDER);
+  res.json({ success: true, job });
+};
+export const cancelMotionVideo = (req: Request, res: Response): void => {
+  res.json({ success: true, cancelled: cancelMotionJob(req.body?.jobId ? _.toString(req.body.jobId) : undefined) });
+};
+export const listMotionVideoResults = (_req: Request, res: Response): void => {
+  res.json({ success: true, items: listMotionResults() });
+};
+export const deleteMotionVideoResult = (req: Request, res: Response): void => {
+  res.json(deleteMotionResult(_.toString(req.params.id)));
+};
+export const getStorageJunk = (_req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, report: scanStorageJunk() });
+  } catch (error) {
+    fail(res, 500, error);
+  }
+};
+export const cleanStorageJunkHandler = async (req: Request, res: Response): Promise<void> => {
+  if (isMotionRenderBusy()) return void fail(res, 409, STORAGE_TEXTS.BUSY);
+  try {
+    res.json({ success: true, ...(await cleanStorageJunk(_.map(_.castArray(req.body?.groups || []), _.toString))) });
+  } catch (error) {
+    fail(res, 500, error);
+  }
+};
+export const clearMotionVideoResults = (_req: Request, res: Response): void => {
+  if (isMotionRenderBusy()) return void fail(res, 409, MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA);
+  res.json({ success: true, ...clearMotionResults() });
+};
 export const selectMotionSaveDestination = async (req: Request, res: Response): Promise<void> => {
   try {
-    const suggested = path.basename(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(MR.MOTION_TEMPLATE_SYMBOL_82(MOTION_VIDEO_CONSTANTS.EXT_MP4))));
+    const suggested = path.basename(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(`${MOTION_VIDEO_CONSTANTS.EXT_MP4}`)));
     const target = await execFileText(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), MOTION_TEXT_SELECT_SAVE_FILE, suggested, MOTION_VIDEO_CONSTANTS.EXT_MP4]);
     if (!target) return void res.json({ success: true, cancelled: true });
     const token = randomUUID();
@@ -171,20 +229,27 @@ export const saveMotionVideo = async (req: Request, res: Response): Promise<void
 };
 const storyLanguage = (v: unknown): string => (v === MOTION_TEXT_EN ? MOTION_TEXT_EN : MOTION_TEXT_VI);
 const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
-const aiExec = (v: any): MotionAiExecution => ({ provider: _.toString(v?.provider || ""), model: _.toString(v?.model || ""), mode: _.toString(v?.mode || ""), chromeHeadless: v?.chromeHeadless !== false });
-export const parseMotionStory = async (req: Request, res: Response): Promise<void> => { try { res.json({ success: true, source: await readStorySource(_.toString(req.body?.text)) }); } catch (error) { fail(res, 400, error); } };
+const aiExec = (v: any): MotionAiExecution => ({ provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY), model: _.toString(v?.model || MR.MOTION_TEXT_EMPTY), mode: _.toString(v?.mode || MR.MOTION_TEXT_EMPTY), chromeHeadless: v?.chromeHeadless !== false });
+export const parseMotionStory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, source: await readStorySource(_.toString(req.body?.text)) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
 export const analyzeMotionStory = async (req: Request, res: Response): Promise<void> => {
   try {
     const source = (req.body?.source as MotionStorySource) || (await readStorySource(_.toString(req.body?.text)));
     if (!source?.segments?.length) throw new Error(MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN);
     const language = storyLanguage(req.body?.language);
     const length = storyLength(req.body?.length);
+    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const exec = aiExec(req.body?.aiExecution);
     const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
-      ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(MR.MOTION_TEMPLATE_SYMBOL_83(source.words), MR.MOTION_TEMPLATE_SYMBOL_84(Math.round(source.sourceSeconds / 60))));
-      const analysis = await analyzeStory(source, { language, length, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
-      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(MR.MOTION_TEMPLATE_SYMBOL_85(analysis.chapters.length), MR.MOTION_TEMPLATE_SYMBOL_86(analysis.cast.length), MR.MOTION_TEMPLATE_SYMBOL_87(analysis.places.length), MR.MOTION_TEMPLATE_SYMBOL_88(analysis.facts.length)));
+      ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(`${source.words}`, `${Math.round(source.sourceSeconds / 60)}`));
+      const analysis = await analyzeStory(source, { language, length, styleReferences, characterMotion: req.body?.characterMotion === true, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
+      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.places.length}`, `${analysis.facts.length}`));
       return analysis;
     });
     res.json({ success: true, job });
@@ -223,7 +288,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         if (ctx.signal.aborted) throw new Error(MOTION_TEXT_CANCELLED);
         const idx = _.findIndex(chapters, { id: chapter.id });
         ctx.progress(done / todo.length, chapter.id);
-        ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(MR.MOTION_TEMPLATE_SYMBOL_89(idx + 1), MR.MOTION_TEMPLATE_SYMBOL_90(chapters.length), MR.MOTION_TEMPLATE_SYMBOL_91(chapter.title)));
+        ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(`${idx + 1}`, `${chapters.length}`, `${chapter.title}`));
         const prevChapter = idx > 0 ? chapters[idx - 1] : undefined;
         const previous = prevChapter ? byChapter[prevChapter.id] : undefined;
         try {
@@ -236,7 +301,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         }
         done++;
         ctx.progress(done / todo.length, chapter.id);
-        ctx.log(MOTION_TEMPLATE_BEAT(MR.MOTION_TEMPLATE_SYMBOL_92(byChapter[chapter.id].length)));
+        ctx.log(MOTION_TEMPLATE_BEAT(`${byChapter[chapter.id].length}`));
         ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) });
       };
       await mapMotionAiPool(todo, writeOne);
@@ -288,7 +353,7 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const licenseKey = getResolvedLicenseKey(req);
     const job = startStoryJob(MotionStoryJobKind.THUMBNAIL, async (ctx) => {
-      const result = await generateMotionThumbnail(analysis, seo, { language: storyLanguage(req.body?.language), aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), note: _.truncate(_.toString(req.body?.note || ""), { length: 600 }), exec, chromeHeadless: exec.chromeHeadless, signal: ctx.signal, log: ctx.log });
+      const result = await generateMotionThumbnail(analysis, seo, { language: storyLanguage(req.body?.language), aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }), exec, chromeHeadless: exec.chromeHeadless, signal: ctx.signal, log: ctx.log });
       if (licenseKey) await LicenseService.incrementUsage(licenseKey, FeatureType.IMAGE, 1).catch(_.noop);
       return result;
     });
@@ -303,12 +368,15 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
     const exec = aiExec(req.body?.aiExecution);
+    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const onlyBeats: string[] = _.map(_.castArray(req.body?.beats || []), _.toString);
     const onlyLocations: string[] = _.map(_.castArray(req.body?.locations || []), _.toString);
-    const note = _.truncate(_.toString(req.body?.note || ""), { length: 400 });
+    const note = _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
     if (req.body?.restart) delete script.gen;
-    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) =>
-      buildScenes(script, analysis, {
+    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => {
+      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listVieneuVoices(ctx.signal, ctx.log), { exec, signal: ctx.signal, log: ctx.log }) : undefined;
+      const result = await buildScenes(script, analysis, {
+        audioDirection: voicePlan?.direction,
         exec,
         signal: ctx.signal,
         log: ctx.log,
@@ -318,31 +386,47 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         onlyBeats,
         onlyLocations,
         restyle: !!req.body?.restyle,
+        styleReferences,
+        characterMotion: req.body?.characterMotion === true,
         note: note || undefined,
         review: req.body?.review !== false,
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
-      }),
-    );
+      });
+      if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
+        ctx.progress(0.95, MOTION_VOICE.GENERATING);
+        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.95 + (0.04 * done) / total, MOTION_VOICE.GENERATING) });
+        ctx.partial(result);
+      }
+      return result;
+    });
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const serveGenPreview = (req: Request, res: Response): void => { const file = resolveGenPreview(_.toString(req.query.path)); if (!file) return void res.status(404).end(); res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_NO_CACHE); res.sendFile(file); };
-export const serveMotionAsset = (req: Request, res: Response): void => { const rel = _.toString((req.params as Record<string, string>)[0] || ""); const file = resolveMotionAsset(rel); if (!file) return void res.status(404).end(); res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400); res.type(libraryMime(file)); res.sendFile(file); };
+export const serveGenPreview = (req: Request, res: Response): void => {
+  const file = resolveGenPreview(_.toString(req.query.path));
+  if (!file) return void res.status(404).end();
+  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_NO_CACHE);
+  res.sendFile(file);
+};
+export const serveMotionAsset = (req: Request, res: Response): void => {
+  const rel = _.toString((req.params as Record<string, string>)[0] || MR.MOTION_TEXT_EMPTY);
+  const file = resolveMotionAsset(rel);
+  if (!file) return void res.status(404).end();
+  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
+  res.type(libraryMime(file));
+  res.sendFile(file);
+};
 export const voiceMotionStory = (req: Request, res: Response): void => {
   try {
-    const beats: MotionBeat[] = _.filter(_.castArray(req.body?.beats || []), (b) => !_.isEmpty(_.trim(b?.narration)));
-    if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_CHUA_CO_LOI_DAN_DE_TAO_GIONG);
-    const voiceId = _.toString(req.body?.voiceId);
-    if (!voiceId) throw new Error(MOTION_TEXT_HAY_CHON_GIONG_DOC_AI33);
-    const speed = _.toNumber(req.body?.speed) || 1;
-    const licenseKey = getResolvedLicenseKey(req);
+    const script = req.body?.script as MotionStoryScript;
+    if (!script?.beats?.length) throw new Error(MOTION_VOICE.EMPTY);
+    const analysis = (req.body?.analysis as MotionStoryAnalysis) || null;
+    const exec = aiExec(req.body?.aiExecution);
     const job = startStoryJob(MotionStoryJobKind.VOICE, async (ctx) => {
-      ctx.log(MOTION_TEMPLATE_TAO_GIONG_AI33_CHO_BEAT_SONG_SONG(MR.MOTION_TEMPLATE_SYMBOL_93(beats.length)));
-      const track = await buildAi33VoiceTrack(beats, { voiceId, speed, signal: ctx.signal, log: ctx.log, onProgress: (d, t) => ctx.progress(d / t, MOTION_TEMPLATE_SYMBOL_4(MR.MOTION_TEMPLATE_SYMBOL_94(d), MR.MOTION_TEMPLATE_SYMBOL_95(t))) });
-      if (licenseKey) await LicenseService.incrementUsage(licenseKey, FeatureType.VOICE, track.characters).catch(_.noop);
-      ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(MR.MOTION_TEMPLATE_SYMBOL_96(Math.round(track.totalSeconds))));
+      const track = await buildMotionVoiceTrack(script, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
+      ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(`${Math.round(track.totalSeconds)}`));
       return track;
     });
     res.json({ success: true, job });
@@ -350,20 +434,102 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     fail(res, 400, error);
   }
 };
-export const compileMotionStory = (req: Request, res: Response): void => {
+export const listMotionVoices = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, voices: await listVieneuVoices() });
+  } catch (error) {
+    fail(res, 503, error);
+  }
+};
+export const registerMotionVoice = async (req: Request, res: Response): Promise<void> => {
+  const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100),
+    data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(/^data:[^,]*,/, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
+  let source: string = MR.MOTION_TEXT_EMPTY;
+  try {
+    if (!data.length || data.length > MOTION_VOICE.MAX_REFERENCE_BYTES) throw new Error(MOTION_VOICE.REFERENCE_INVALID);
+    const root = path.join(vieneuRoot(), MR.MOTION_TEXT_REFERENCES);
+    fs.mkdirSync(root, { recursive: true });
+    const id = MR.MOTION_TEXT_CUSTOM + createHash(MR.MOTION_TEXT_SHA256).update(data).digest(MR.MOTION_TEXT_HEX).slice(0, 32),
+      file = path.join(root, id + MR.MOTION_TEXT_WAV);
+    source = path.join(root, randomUUID() + MR.MOTION_TEXT_INPUT);
+    await fs.promises.writeFile(source, data);
+    const seconds = await probeMediaDuration(source);
+    if (seconds < 3) throw new Error(MOTION_VOICE.REFERENCE_INVALID);
+    await runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_T, MR.MOTION_TEXT_8, MR.MOTION_TEXT_AR, String(MOTION_VOICE.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, file]);
+    const voice = await registerVieneuVoice(id, name, ([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(req.body?.gender) ? req.body.gender : MR.MOTION_TEXT_EMPTY, file);
+    res.json({ success: true, voice });
+  } catch (error) {
+    fail(res, 400, error);
+  } finally {
+    if (source) await fs.promises.rm(source, { force: true }).catch(() => {});
+  }
+};
+export const compileMotionStory = async (req: Request, res: Response): Promise<void> => {
   try {
     const script = req.body?.script as MotionStoryScript;
     if (!script?.beats?.length) throw new Error(MOTION_TEXT_CHUA_CO_KICH_BAN);
     const analysis = (req.body?.analysis as MotionStoryAnalysis) || null;
     const aspect = _.includes([MOTION_TEXT_16_9, MOTION_TEXT_9_16, MOTION_TEXT_1_1, MOTION_TEXT_4_5], req.body?.aspect) ? req.body.aspect : MOTION_TEXT_16_9;
-    let durations: number[] | undefined = _.isArray(req.body?.durations) ? _.map(req.body.durations, _.toNumber) : undefined;
+    const requestedVoice = req.body?.voiceTrack || script.voiceTrack;
+    const voiceTrack = readMotionVoiceTrack(requestedVoice?.audioId, script, analysis);
+    let durations: number[] | undefined = voiceTrack?.durations || (_.isArray(req.body?.durations) ? _.map(req.body.durations, _.toNumber) : undefined);
     const uploadedSeconds = _.toNumber(req.body?.uploadedAudioSeconds);
-    if (!durations && uploadedSeconds > 0) durations = fitUploadedVoice( script.beats, _.map(script.beats, (b) => estimateBeatSeconds(b, script.language)), uploadedSeconds, );
-    const compiled = compileStorySpec(script, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent });
-    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing });
+    if (!durations && uploadedSeconds > 0)
+      durations = fitUploadedVoice(
+        script.beats,
+        _.map(script.beats, (b) => estimateBeatSeconds(b, script.language)),
+        uploadedSeconds,
+      );
+    const directedScript = typeof req.body?.characterMotion === "boolean" && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
+    const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent, voiceTrack });
+    const duration = compiled.spec.duration || 1,
+      voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
+    let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },
+      audioPreviewId: string | undefined;
+    if (req.body?.sfx === true)
+      try {
+        sound = await buildMotionSoundTrack(duration, compiled.sfxCues, req.body?.soundOverrides);
+      } catch {
+        logger.warn(SOUND.UNAVAILABLE);
+      }
+    try {
+      audioPreviewId = await mixMotionSoundAudio(duration, voiceId, sound.sfxId, req.body?.sfxVolume ?? 0.5);
+    } catch {
+      logger.warn(SOUND.SKIPPED);
+      audioPreviewId = voiceId;
+    }
+    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing, sfxId: sound.sfxId, audioPreviewId, soundSelections: sound.selections });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const getMotionStoryStatus = (req: Request, res: Response): void => { const job = getStoryJob(_.toString(req.params.jobId)); if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH); res.json({ success: true, job }); };
-export const cancelMotionStory = (req: Request, res: Response): void => { res.json({ success: true, cancelled: cancelStoryJob(req.body?.jobId ? _.toString(req.body.jobId) : undefined) }); };
+export const getMotionStoryStatus = (req: Request, res: Response): void => {
+  const job = getStoryJob(_.toString(req.params.jobId));
+  if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH);
+  res.json({ success: true, job });
+};
+export const cancelMotionStory = (req: Request, res: Response): void => {
+  res.json({ success: true, cancelled: cancelStoryJob(req.body?.jobId ? _.toString(req.body.jobId) : undefined) });
+};
+export const listMotionSfx = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const assets = await ensureMotionSfxLibrary();
+    res.json({ success: true, assets: assets.map(({ id, name, duration, kinds }) => ({ id, name, duration, kinds })) });
+  } catch {
+    res.json({ success: true, assets: [] });
+  }
+};
+export const serveMotionSfx = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const auditionId = req.query?.start != null ? await motionSoundAudition(String(req.params.assetId), Number(req.query.start), Number(req.query.duration)) : undefined;
+    const file = auditionId ? path.join(getMotionAudioDirectory(), auditionId) : await resolveMotionSfxAsset(String(req.params.assetId));
+    if (!file) {
+      res.status(404).end();
+      return;
+    }
+    res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
+    res.sendFile(file);
+  } catch {
+    res.status(404).end();
+  }
+};

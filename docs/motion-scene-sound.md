@@ -1,0 +1,17 @@
+# Scene sound in Motion
+
+The app imports `D:/MẪU NHÂN VẬT/sfx_kho/danh_muc.json` into `storage/sfx-library`. Set `MOTION_SFX_SOURCE` to use another source folder. `npm run motion:import-sfx -- <folder>` imports that catalogue. Original files are retained; identical content shares one managed asset. The index retains provenance, source filenames and license metadata. Changes to the source manifest invalidate the index; an existing managed library remains usable when the source folder is offline.
+
+Classification uses the actual asset title, excluding downloader query prefixes. Selection considers sound kind, material, action and ambience suitability. Unknown or unsuitable sounds are skipped. The highest-ranked compatible asset is chosen automatically; sample transients remain deterministic. Known incompatible gender is rejected for character breath/gasp/laugh/cry/cough. Film, storytelling, documentary and explainer direction controls sound planning and mix restraint.
+
+Character design prompts request optional `motions[action].events` with seconds and authored part ids. Staging prompts request optional `soundEvents`, supplied with real asset candidates. A staging event can use a beat fraction, seconds, or `anchor:"cut",camera:2` to follow the final second camera cut. Events are compiled after narration timing and camera coverage. Motion markers use the same loop duration, offset and action transitions as the renderer. Camera cuts do not restart sound events. Movement without authored contact markers receives approximate footsteps based on the path; static characters do not receive visible footsteps. `soundSilence:true` preserves a deliberately silent beat.
+
+Compatible ambience spans adjacent beats at the same location without restarting at each camera. Stereo placement follows the active camera and character position; distance reduces gain. Leading silence and transient positions are measured when a selected file is first decoded. Short effects retain their attack, repeated steps use deterministic variants, looped beds have crossfades and voices duck the sound bed. Mixing writes short PCM chunks and keeps a bounded source cache rather than allocating a full floating-point film in memory.
+
+Existing projects receive a bounded sound-only planning pass before export when SFX is enabled. It enriches cached scenes and graphics without changing geometry, positions, tracks or camera coverage. Planning failures retain the visual render and its fallback audio; completed attempts are cached.
+
+Compilation builds the SFX stem and a stereo master with the current voice and effect volume. The preview player uses that master; export muxes the same cached master. Voice, timeline, cue overrides and volume participate in cache identity. Invalid assets fall back to suitable alternatives or are omitted; optional SFX failures do not invalidate scene rendering.
+
+The Motion UI has no manual sound panel, SFX switch or gain/asset overrides. Opening an existing project enables automatic SFX and clears old manual overrides. Audio direction is planned with voice casting before scene generation; changes to direction invalidate the cached sound plan.
+
+Validation: `npm run test:motion-sound` covers catalogue deduplication, incorrect download categories, marker timing, camera cuts, ambience continuity, stereo placement, mute/cache behavior, corrupt-file fallback and an actual MP4 export whose decoded audio is compared with the preview master.

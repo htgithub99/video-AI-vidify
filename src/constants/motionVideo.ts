@@ -6,11 +6,11 @@ export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> 
   [MotionQuality.HIGH]: { id: MotionQuality.HIGH, scale: 1, fps: 30, supersample: 1.5, motionBlur: 2, layerScale: 1.25, bloom: true, grain: true, jpegQuality: 0.94, crf: 17, x264Preset: "medium", gpuCq: 18, audioBitrate: "256k", maxBpp: 0.3 },
   [MotionQuality.ULTRA]: { id: MotionQuality.ULTRA, scale: 2, fps: 30, supersample: 1, motionBlur: 3, layerScale: 1.5, bloom: true, grain: true, jpegQuality: 0.95, crf: 16, x264Preset: "slow", gpuCq: 17, audioBitrate: "320k", maxBpp: 0.18 },
 };
-export const MOTION_ASPECT_BASE: Record< string, { w: number; h: number; } > = { [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 }, [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 }, [MotionAspect.SQUARE]: { w: 1080, h: 1080 }, [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 }, };
+export const MOTION_ASPECT_BASE: Record<string, { w: number; h: number }> = { [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 }, [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 }, [MotionAspect.SQUARE]: { w: 1080, h: 1080 }, [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 } };
 export const MOTION_VIDEO_CONSTANTS = {
   ENGINE_DIR: "motion-engine",
-  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "gen-core.js", "gen-build.js", "gen-mannequin.js", "gen-scene.js"],
-  CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "gen-build.js", "gen-mannequin.js", "gen-scene.js"],
+  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
   DEMO_DIR: "demo",

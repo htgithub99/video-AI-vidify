@@ -35,7 +35,7 @@ export const MOTION_LIB_CONFIG = {
 } as const;
 export const MOTION_LIB_ZIP_LINK = /\/media\/pages\/assets\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9_.-]+\.zip/i;
 export const MOTION_LIB_MODEL_DIR = /(?:^|\/)(?:GLB|GLTF) format\//i;
-export const MOTION_LIB_MIME: Record<string, string> = { ".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", default: "application/octet-stream", };
+export const MOTION_LIB_MIME: Record<string, string> = { ".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", default: "application/octet-stream" };
 export const MOTION_LIB_SYNONYMS: Record<string, string[]> = {
   car: ["sedan", "hatchback", "suv", "taxi", "police", "vehicle", "coupe"],
   cars: ["sedan", "hatchback", "suv", "taxi", "vehicle"],
@@ -94,7 +94,7 @@ export const MOTION_LIB_SYNONYMS: Record<string, string[]> = {
   bar: ["bottle", "barrel", "stool", "table", "chair"],
   restaurant: ["table", "chair", "plate", "bottle"],
 };
-export const MOTION_LIB_EXCLUDE_WORDS = ["debris", "kart", "astronaut", "astronauta", "astronautb", "alien", "character", "person", "people", "man", "woman", "figure", "mannequin", "skeleton", "human", "body", "zombie", "ghost"];
+export const MOTION_LIB_EXCLUDE_WORDS = ["debris", "kart", "astronaut", "astronauta", "astronautb", "alien", "character", "person", "people", "man", "woman", "figure", "human", "body", "zombie", "ghost"];
 export const MOTION_LIB_TEXT = {
   ABORT: "abort",
   UA_HEADER: "User-Agent",

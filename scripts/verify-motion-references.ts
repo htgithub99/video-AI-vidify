@@ -1,0 +1,62 @@
+import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
+import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRenderFailure } from "../src/lib/motionReference.ts";
+import { withMotionReferenceFiles } from "../src/server/services/motionReferenceService.ts";
+import { prepareMotionGen } from "../src/server/services/motionGenService.ts";
+import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
+import type { MotionStoryAnalysis } from "../src/types/motionVideo.ts";
+const image = { name: VT.REFERENCE_PNG, dataUrl: VT.DATA_IMAGE_PNG_BASE64_IVBORW0KGGOAAAANSUHEUGAAAAEAAAABCAQAAA };
+assert.equal(normalizeMotionReferences(Array(4).fill(image)).length, 4);
+assert.throws(() => normalizeMotionReferences(Array(5).fill(image)));
+assert.throws(() => normalizeMotionReferences([{ dataUrl: VT.DATA_IMAGE_SVG_XML_BASE64_PHN2ZZ4 }]));
+assert.throws(() => normalizeMotionReferences([{ dataUrl: VT.HTTPS_EXAMPLE_COM_IMAGE_PNG }]));
+assert.throws(() => normalizeMotionReferences([{ dataUrl: VT.DATA_IMAGE_PNG_BASE64 + VT.A.repeat(5_000_000) }]));
+let temporary = VT.EMPTY_2;
+await withMotionReferenceFiles([image], async (images) => {
+  temporary = images[0].path;
+  assert.ok(fs.existsSync(temporary));
+  assert.equal(images[0].mimeType, VT.IMAGE_PNG);
+  assert.ok(images[0].name.startsWith(VT.STYLE_REFERENCE));
+});
+assert.equal(fs.existsSync(temporary), false);
+await assert.rejects(
+  withMotionReferenceFiles([image], async (images) => {
+    temporary = images[0].path;
+    throw new Error(VT.CANCELLED);
+  }),
+);
+assert.equal(fs.existsSync(temporary), false);
+await assert.rejects(withMotionReferenceFiles([{ dataUrl: VT.DATA_IMAGE_PNG_BASE64_AAAA, name: VT.INVALID }], async () => assert.fail(VT.INVALID_BYTES_MUST_NOT_REACH_AI)));
+const profile = normalizeMotionReferenceStyle({ description: VT.FLAT_CARTOON_WITH_BOLD_INK, palette: [VT.AABBCC, VT.INVALID], outlineWidth: 4, outlineColor: VT.VALUE_101010 })!;
+assert.equal(profile.outlineWidth, 0.06);
+assert.deepEqual(profile.palette, [VT.AABBCC]);
+const analysis = { title: VT.STYLE_TEST, logline: VT.OBJECTS, look: VT.CLEAN, cast: [], places: [], chapters: [], facts: [], referenceStyle: profile } as MotionStoryAnalysis;
+const gen = prepareMotionGen(undefined, analysis, VT.VALUE_2D, VT.REFERENCE_A);
+gen.locations.room = { nodes: [] };
+assert.ok(prepareMotionGen(gen, analysis, VT.VALUE_2D, VT.REFERENCE_A).locations.room);
+assert.deepEqual(prepareMotionGen(gen, analysis, VT.VALUE_2D, VT.REFERENCE_B).locations, {});
+gen.characterMotion = true;
+assert.equal(compileStorySpec({ title: VT.TEST, language: VT.EN, beats: [{ id: VT.INTRO, chapterId: VT.C1, narration: VT.A_STYLE_REFERENCE_TEST, visual: VT.TITLE }], gen }, analysis, { aspect: VT.VALUE_16_9 }).spec.gen?.characterMotion, true);
+assert.equal(hasMotionRenderFailure([VT.STYLE_SIMILARITY_IS_LOW, VT.OUT_OF_FRAME]), false);
+assert.equal(hasMotionRenderFailure([VT.MOTION_DRAW_FAILED_MISSING_GEOMETRY]), true);
+let attached = 0;
+const extracted = await analyzeStory(parseStorySource(VT.DRAW_A_CARTOON_DINNER_SCENE_IN_A_DARK_ROOM), {
+  styleReferences: [image],
+  characterMotion: true,
+  language: VT.EN,
+  length: VT.VALUE_1MIN as any,
+  exec: {},
+  ai: async (prompt, _artifact, _exec, _signal, _log, images) => {
+    assert.ok(prompt.includes(VT.STYLE_REFERENCE_2) || prompt.includes(VT.ATTACHED_STYLE_REFERENCE));
+    assert.ok(prompt.includes(VT.AUTHORITATIVE_CHARACTER_MOTION_ENABLED));
+    assert.ok(images?.[0].path && fs.existsSync(images[0].path));
+    attached++;
+    return { title: VT.DINNER, chapters: [{ title: VT.DINNER, summary: VT.PEOPLE_AT_A_TABLE }], referenceStyle: profile };
+  },
+});
+assert.ok(attached > 0 && attached <= 2);
+assert.deepEqual(extracted.referenceStyle, profile);
+assert.equal(extracted.characterMotion, true);
+process.stdout.write(VT.STYLE_REFERENCES_PASSED_LIMITS_VALIDATION_ATTACHMENT_FILES_C);

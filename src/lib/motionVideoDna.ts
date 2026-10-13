@@ -1,7 +1,8 @@
 import * as MR from "../constants/motionRuntime.js";
+import { SOURCE_TEXT_OBJECT } from "../constants/sourceText.js";
 import { trimMotionText } from "./motionUtils.js";
 import { creativeBlueprintErrors, normalizeCreativeBlueprint } from "./motionCreativeBlueprint.js";
-import type { MotionBeat, MotionScenePlan, MotionStoryAnalysis, MotionStorySource, MotionStoryScript, MotionVideoDna, MotionVideoDnaSettings } from "../types/motionVideo.js";
+import type { MotionBeat, MotionCharacterDesign, MotionScenePlan, MotionStoryAnalysis, MotionStorySource, MotionStoryScript, MotionVideoDna, MotionVideoDnaSettings } from "../types/motionVideo.js";
 export const VIDEO_DNA_PLANNING_INSTRUCTIONS = MR.MOTION_TEXT_BEFORE_WRITING_SCENES_WORK_SIMULTANEOUSLY_AS_A_CONTENT_RESEARCHER;
 export const MOTION_VIDEO_FORMATS = {
   story: MR.MOTION_TEXT_NARRATED_STORY_WITH_CHARACTERS_AND_SCENES_FICTION_FOLK_TALE_TRUE_,
@@ -13,11 +14,24 @@ export const MOTION_VIDEO_FORMATS = {
   promo: MR.MOTION_TEXT_PRESENTS_A_PRODUCT_PLACE_OR_SERVICE_HOOK_BENEFITS_PROOF_CALL_TO_A,
 } as const;
 export type MotionVideoFormat = keyof typeof MOTION_VIDEO_FORMATS;
-export const VIDEO_DNA_PROFILE_INSTRUCTIONS = MR.MOTION_TEMPLATE_VIDEO_DNA_PROFILE_DERIVE_IT_FROM_EVIDENCE_EXACTLY_AS_A_MUSIC_PROD( Object.keys(MOTION_VIDEO_FORMATS).join(MR.MOTION_TEXT_SYMBOL_28), Object.entries(MOTION_VIDEO_FORMATS) .map(([k, v]) => MR.MOTION_TEMPLATE_SYMBOL_330(k, v)) .join(MR.MOTION_TEXT_SYMBOL_41), );
+export const VIDEO_DNA_PROFILE_INSTRUCTIONS = MR.MOTION_TEMPLATE_VIDEO_DNA_PROFILE_DERIVE_IT_FROM_EVIDENCE_EXACTLY_AS_A_MUSIC_PROD(
+  Object.keys(MOTION_VIDEO_FORMATS).join(MR.MOTION_TEXT_SYMBOL_28),
+  Object.entries(MOTION_VIDEO_FORMATS)
+    .map(([k, v]) => MR.MOTION_TEMPLATE_SYMBOL_330(k, v))
+    .join(MR.MOTION_TEXT_SYMBOL_41),
+);
 const useful = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 const text = (value: string): string => trimMotionText(value);
 const list = (items: string[]): string[] => items.slice(0, 20).map(text);
-const contentKey = (input: string): string => { let a = 2166136261, b = 5381; for (let i = 0; i < input.length; i++) { a = Math.imul(a ^ input.charCodeAt(i), 16777619); b = Math.imul(b, 33) ^ input.charCodeAt(i); } return MR.MOTION_TEMPLATE_SYMBOL_80(input.length, (a >>> 0).toString(16), (b >>> 0).toString(16)); };
+const contentKey = (input: string): string => {
+  let a = 2166136261,
+    b = 5381;
+  for (let i = 0; i < input.length; i++) {
+    a = Math.imul(a ^ input.charCodeAt(i), 16777619);
+    b = Math.imul(b, 33) ^ input.charCodeAt(i);
+  }
+  return MR.MOTION_TEMPLATE_SYMBOL_80(input.length, (a >>> 0).toString(16), (b >>> 0).toString(16));
+};
 export const videoDnaSourceKey = (source: MotionStorySource): string => contentKey(JSON.stringify([source.kind, source.title, source.url, source.text, source.segments]));
 export const sceneExecutionKey = (beat: MotionBeat): string => contentKey(JSON.stringify([beat.narration, beat.action, beat.scenePlan, beat.place, beat.cast, beat.time, beat.weather, beat.shot, beat.duration]));
 export const videoDnaErrors = (value: any): string[] => {
@@ -38,8 +52,12 @@ export const videoDnaErrors = (value: any): string[] => {
 };
 export const videoDnaProfileErrors = (value: any): string[] => {
   const errors: string[] = [];
-  const text = (key: string, v: unknown) => { if (!useful(v)) errors.push(MR.MOTION_TEMPLATE_VIDEODNA_MUST_BE_NON_EMPTY_TEXT(key)); };
-  const texts = (key: string, v: unknown, allowEmpty = false) => { if (!Array.isArray(v) || (!allowEmpty && !v.length) || !v.every(useful)) errors.push(MR.MOTION_TEMPLATE_VIDEODNA_MUST_BE(key, allowEmpty ? MR.MOTION_TEXT_AN_ARRAY_OF_TEXT : MR.MOTION_TEXT_A_NON_EMPTY_ARRAY_OF_TEXT)); };
+  const text = (key: string, v: unknown) => {
+    if (!useful(v)) errors.push(MR.MOTION_TEMPLATE_VIDEODNA_MUST_BE_NON_EMPTY_TEXT(key));
+  };
+  const texts = (key: string, v: unknown, allowEmpty = false) => {
+    if (!Array.isArray(v) || (!allowEmpty && !v.length) || !v.every(useful)) errors.push(MR.MOTION_TEMPLATE_VIDEODNA_MUST_BE(key, allowEmpty ? MR.MOTION_TEXT_AN_ARRAY_OF_TEXT : MR.MOTION_TEXT_A_NON_EMPTY_ARRAY_OF_TEXT));
+  };
   const a = value?.audienceProfile;
   for (const key of [MR.MOTION_TEXT_COUNTRY, MR.MOTION_TEXT_LANGUAGE, MR.MOTION_TEXT_DIALECT, MR.MOTION_TEXT_AGERANGE, MR.MOTION_TEXT_SUITABILITY, MR.MOTION_TEXT_VIEWINGCONTEXT]) text(MR.MOTION_TEMPLATE_AUDIENCEPROFILE(key), a?.[key]);
   if (!Number.isInteger(a?.confidence) || a.confidence < 0 || a.confidence > 100) errors.push(MR.MOTION_TEXT_VIDEODNA_AUDIENCEPROFILE_CONFIDENCE_MUST_BE_AN_INTEGER_0_100);
@@ -57,9 +75,7 @@ export const videoDnaProfileErrors = (value: any): string[] => {
   texts(MR.MOTION_TEXT_CREATIVEPROFILE_STRENGTHS, value?.creativeProfile?.strengths);
   return errors;
 };
-const profileOf = (
-  value: any,
-): Pick<MotionVideoDna, "audienceProfile" | "era" | "format" | "editDna" | "narrativeDna" | "influences"> & { strengths?: string[]; } => {
+const profileOf = (value: any): Pick<MotionVideoDna, "audienceProfile" | "era" | "format" | "editDna" | "narrativeDna" | "influences"> & { strengths?: string[] } => {
   if (videoDnaProfileErrors(value).length) return {};
   const fields = (group: any, keys: string[]) => Object.fromEntries(keys.map((key) => [key, text(group[key])]));
   return {
@@ -99,7 +115,7 @@ export const scenePlanErrors = (value: any): string[] => {
   const errors: string[] = [];
   for (const key of [MR.MOTION_TEXT_PURPOSE, MR.MOTION_TEXT_SUBJECT, MR.MOTION_TEXT_BEFORE, MR.MOTION_TEXT_AFTER, MR.MOTION_TEXT_COMPOSITION]) if (!useful(value?.[key])) errors.push(MR.MOTION_TEMPLATE_SCENEPLAN_NEEDS_CONCRETE_TEXT(key));
   for (const key of [MR.MOTION_TEXT_SPATIALRELATIONS, MR.MOTION_TEXT_REQUIREDPROPS, MR.MOTION_TEXT_CONTINUITY, MR.MOTION_TEXT_ACCEPTANCE])
-    if (!Array.isArray(value?.[key]) || !value[key].every(useful) || (key === MR.MOTION_TEXT_ACCEPTANCE && !value[key].length)) errors.push(MR.MOTION_TEMPLATE_SCENEPLAN_MUST_BE_A_TEXT_ARRAY(key, key === MR.MOTION_TEXT_ACCEPTANCE ? MR.MOTION_TEXT_WITH_OBSERVABLE_CHECKS : ""));
+    if (!Array.isArray(value?.[key]) || !value[key].every(useful) || (key === MR.MOTION_TEXT_ACCEPTANCE && !value[key].length)) errors.push(MR.MOTION_TEMPLATE_SCENEPLAN_MUST_BE_A_TEXT_ARRAY(key, key === MR.MOTION_TEXT_ACCEPTANCE ? MR.MOTION_TEXT_WITH_OBSERVABLE_CHECKS : MR.MOTION_TEXT_EMPTY));
   return errors;
 };
 export const normalizeScenePlan = (value: any): MotionScenePlan | undefined =>
@@ -116,13 +132,19 @@ export const normalizeScenePlan = (value: any): MotionScenePlan | undefined =>
         continuity: list(value.continuity),
         acceptance: list(value.acceptance),
       };
-export const scenePlanPrompt = (plan?: MotionScenePlan): string => (plan ? MR.MOTION_TEMPLATE_SCENE_EXECUTION_PLAN(JSON.stringify(plan)) : "");
+export const scenePlanPrompt = (plan?: MotionScenePlan): string => (plan ? MR.MOTION_TEMPLATE_SCENE_EXECUTION_PLAN(JSON.stringify(plan)) : MR.MOTION_TEXT_EMPTY);
 export const scenePlanStagingErrors = (plan: MotionScenePlan | undefined, staging: any, location: any): string[] => {
   if (!plan) return [];
   const names = new Set<string>();
-  const visit = (node: any, depth: number) => { if (!node || depth > 20) return; if (node.name) names.add(node.name); for (const child of node.children || []) visit(child, depth + 1); if (node.shape === MR.MOTION_TEXT_REF && location?.defs?.[node.ref]) for (const child of location.defs[node.ref]) visit(child, depth + 1); };
+  const visit = (node: any, depth: number) => {
+    if (!node || depth > 20) return;
+    if (node.name) names.add(node.name);
+    for (const child of node.children || []) visit(child, depth + 1);
+    if (node.shape === MR.MOTION_TEXT_REF && location?.defs?.[node.ref]) for (const child of location.defs[node.ref]) visit(child, depth + 1);
+  };
   for (const node of [...(location?.nodes || []), ...(staging?.props || [])]) visit(node, 0);
   for (const actor of staging?.actors || []) for (const node of actor.hold?.nodes || []) visit(node, 0);
   return plan.requiredProps.filter((name) => !names.has(name)).map((name) => MR.MOTION_TEMPLATE_SCENEPLAN_REQUIRES_NAMED_PROP_BUT_NO_SUCH_NODE_WAS_STAGED_CREATE_(name));
 };
-export const needsAuthoredCharacters = (script: MotionStoryScript | null): boolean => !!script && (!script.gen || Object.values(script.gen.cast || {}).some((outfit: any) => !outfit.drawnBody?.length));
+export const hasAuthoredCharacter = (design: unknown): design is MotionCharacterDesign => !!design && typeof design === SOURCE_TEXT_OBJECT && Array.isArray((design as MotionCharacterDesign).parts) && (design as MotionCharacterDesign).parts.some((part) => !!part && Array.isArray(part.nodes) && part.nodes.length > 0);
+export const needsAuthoredCharacters = (script: MotionStoryScript | null, castKeys: string[] = []): boolean => !!script && (!script.gen || Object.values(script.gen.cast || {}).some((design) => !hasAuthoredCharacter(design)) || castKeys.some((key) => !hasAuthoredCharacter(script.gen?.cast[key])));

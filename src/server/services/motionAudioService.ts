@@ -1,232 +1,166 @@
 import * as MR from "../../constants/motionRuntime.js";
-import { spawn } from "child_process";
-import { createHash, randomUUID } from "crypto";
 import fs from "fs";
-import _ from "lodash";
 import path from "path";
-import { MOTION_SFX_MOODS, MOTION_SFX_SPARKLE_NOTES } from "../../constants/motionAudio.js";
-import {
-  MOTION_TEMPLATE_BEAT_LOI_GIONG_THU_LAI,
-  MOTION_TEMPLATE_FFMPEG,
-  MOTION_TEMPLATE_PCM,
-  MOTION_TEMPLATE_SFX_WAV,
-  MOTION_TEMPLATE_SYMBOL_12,
-  MOTION_TEMPLATE_SYMBOL_14,
-  MOTION_TEMPLATE_VOICE_WAV,
-  MOTION_TEXT_1,
-  MOTION_TEXT_ABORT,
-  MOTION_TEXT_ABORTED,
-  MOTION_TEXT_AC,
-  MOTION_TEXT_AF,
-  MOTION_TEXT_AR,
-  MOTION_TEXT_CHAPTER,
-  MOTION_TEXT_CHIME,
-  MOTION_TEXT_CLOSE,
-  MOTION_TEXT_DARK,
-  MOTION_TEXT_DATA,
-  MOTION_TEXT_ERROR,
-  MOTION_TEXT_F,
-  MOTION_TEXT_FMT,
-  MOTION_TEXT_HEX,
-  MOTION_TEXT_HIDE_BANNER,
-  MOTION_TEXT_HIT,
-  MOTION_TEXT_I,
-  MOTION_TEXT_LOGLEVEL,
-  MOTION_TEXT_MESSAGE,
-  MOTION_TEXT_PIPE_0,
-  MOTION_TEXT_PIPE_1,
-  MOTION_TEXT_RIFF,
-  MOTION_TEXT_S16LE,
-  MOTION_TEXT_SHA1,
-  MOTION_TEXT_SIGKILL,
-  MOTION_TEXT_SILENCEREMOVE_START_PERIODS_1_START_THRESHOLD_48DB_START,
-  MOTION_TEXT_SYMBOL_13,
-  MOTION_TEXT_TTS_CACHE,
-  MOTION_TEXT_W,
-  MOTION_TEXT_WARM,
-  MOTION_TEXT_WAVE,
-} from "../../constants/motionRuntime.js";
+import { randomUUID } from "crypto";
+import { MOTION_VOICE as C } from "../../constants/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
-import type { MotionBeat, MotionVoiceTrack } from "../../types/motionVideo.js";
-import { synthesizeAi33Speech } from "./ai33TtsService.js";
-import { computeBeatTimeline } from "./motionDirectorService.js";
-import { getMotionAudioDirectory, getMotionRootDirectory } from "./motionLibraryService.js";
-import { getFfmpegPath } from "./shortsPreprocessService.js";
-const SR = 44100;
-const BYTES_PER_SAMPLE = 2;
-const decodeToPcm = (input: string | Buffer, filter?: string, signal?: AbortSignal): Promise<Buffer> =>
-  new Promise((resolve, reject) => {
-    const args = [MOTION_TEXT_HIDE_BANNER, MOTION_TEXT_LOGLEVEL, MOTION_TEXT_ERROR, MOTION_TEXT_I, Buffer.isBuffer(input) ? MOTION_TEXT_PIPE_0 : input, ...(filter ? [MOTION_TEXT_AF, filter] : []), MOTION_TEXT_AC, MOTION_TEXT_1, MOTION_TEXT_AR, String(SR), MOTION_TEXT_F, MOTION_TEXT_S16LE, MOTION_TEXT_PIPE_1];
-    const child = spawn(getFfmpegPath(), args, { windowsHide: true });
-    const chunks: Buffer[] = [];
-    let err = "";
-    const onAbort = () => child.kill(MOTION_TEXT_SIGKILL);
-    signal?.addEventListener(MOTION_TEXT_ABORT, onAbort, { once: true });
-    child.stdout.on(MOTION_TEXT_DATA, (d: Buffer) => chunks.push(d));
-    child.stderr.on(MOTION_TEXT_DATA, (d: Buffer) => (err = MR.MOTION_TEMPLATE_SYMBOL_98(err, d).slice(-2000)));
-    child.on(MOTION_TEXT_ERROR, reject);
-    child.on(MOTION_TEXT_CLOSE, (code) => {
-      signal?.removeEventListener(MOTION_TEXT_ABORT, onAbort);
-      if (signal?.aborted) return reject(new Error(MOTION_TEXT_ABORTED));
-      if (code !== 0) return reject(new Error(_.trim(err) || MOTION_TEMPLATE_FFMPEG(MR.MOTION_TEMPLATE_SYMBOL_99(code))));
-      resolve(Buffer.concat(chunks));
-    });
-    child.stdin.on(MOTION_TEXT_ERROR, _.noop);
-    if (Buffer.isBuffer(input)) child.stdin.end(input); else child.stdin.end();
-  });
-const wavHeader = (dataBytes: number): Buffer => {
-  const h = Buffer.alloc(44);
-  h.write(MOTION_TEXT_RIFF, 0);
-  h.writeUInt32LE(36 + dataBytes, 4);
-  h.write(MOTION_TEXT_WAVE, 8);
-  h.write(MOTION_TEXT_FMT, 12);
-  h.writeUInt32LE(16, 16);
-  h.writeUInt16LE(1, 20);
-  h.writeUInt16LE(1, 22);
-  h.writeUInt32LE(SR, 24);
-  h.writeUInt32LE(SR * BYTES_PER_SAMPLE, 28);
-  h.writeUInt16LE(BYTES_PER_SAMPLE, 32);
-  h.writeUInt16LE(16, 34);
-  h.write(MOTION_TEXT_DATA, 36);
-  h.writeUInt32LE(dataBytes, 40);
-  return h;
-};
-const TRIM_FILTER = MOTION_TEXT_SILENCEREMOVE_START_PERIODS_1_START_THRESHOLD_48DB_START;
-const ttsCacheDir = (): string => { const dir = path.join(getMotionRootDirectory(), MOTION_TEXT_TTS_CACHE); fs.mkdirSync(dir, { recursive: true }); return dir; };
-const splitForTts = (text: string, max: number): string[] => {
-  if (text.length <= max) return [text];
-  const sentences = _.compact(_.map(text.match(/[^.!?…]+[.!?…]*/g) || [text], _.trim));
-  const out: string[] = [];
-  let cur = "";
-  for (const s of sentences) {
-    if ((cur + MOTION_TEXT_SYMBOL_13 + s).length > max && cur) { out.push(cur.trim()); cur = s; } else cur = MOTION_TEMPLATE_SYMBOL_12(MR.MOTION_TEMPLATE_SYMBOL_100(cur), MR.MOTION_TEMPLATE_SYMBOL_101(s));
-  }
-  if (cur.trim()) out.push(cur.trim());
-  return out;
-};
-const beatPcm = async (beat: MotionBeat, voiceId: string, speed: number, signal?: AbortSignal): Promise<Buffer> => {
-  const key = createHash(MOTION_TEXT_SHA1) .update(MOTION_TEMPLATE_SYMBOL_14(MR.MOTION_TEMPLATE_SYMBOL_102(voiceId), MR.MOTION_TEMPLATE_SYMBOL_103(speed), MR.MOTION_TEMPLATE_SYMBOL_104(beat.narration))) .digest(MOTION_TEXT_HEX) .slice(0, 20);
-  const cached = path.join(ttsCacheDir(), MOTION_TEMPLATE_PCM(MR.MOTION_TEMPLATE_SYMBOL_105(key)));
-  if (fs.existsSync(cached)) return fs.promises.readFile(cached);
-  const parts = splitForTts(beat.narration, MOTION_STORY_CONFIG.TTS_MAX_CHARS);
-  const pcms: Buffer[] = [];
-  for (const part of parts) {
-    const r = await synthesizeAi33Speech({ text: part, voiceId, speed, signal });
-    pcms.push(await decodeToPcm(r.buffer, TRIM_FILTER, signal));
-    if (parts.length > 1) pcms.push(Buffer.alloc(Math.round(SR * 0.25) * BYTES_PER_SAMPLE));
-  }
-  const pcm = Buffer.concat(pcms);
-  await fs.promises.writeFile(cached, pcm);
-  return pcm;
-};
-export const buildAi33VoiceTrack = async (
-  beats: MotionBeat[],
-  opts: { voiceId: string; speed?: number; signal?: AbortSignal; onProgress?: (done: number, total: number) => void; log?: (s: string) => void; },
-): Promise<
-  MotionVoiceTrack & { characters: number; }
-> => {
-  const speed = _.clamp(_.toNumber(opts.speed) || 1, 0.7, 1.3);
-  const pcms: Buffer[] = new Array(beats.length);
-  let done = 0;
-  let next = 0;
-  const worker = async () => {
-    while (next < beats.length) {
-      const i = next++;
-      if (opts.signal?.aborted) throw new Error(MOTION_TEXT_ABORTED);
-      let lastErr: unknown;
-      for (let attempt = 0; attempt < 3; attempt++) {
+import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance } from "../../types/motionVideo.js";
+import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
+import { motionSoundSpatial } from "../../lib/motionSoundPlan.js";
+import { directedSpeechText, motionVoiceSignature } from "../../lib/motionVoice.js";
+import { getMotionAudioDirectory } from "./motionLibraryService.js";
+import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
+import { listVieneuVoices, synthesizeVieneuSpeech, vieneuRoot } from "./vieneuTtsService.js";
+import { buildMotionSoundTrack, motionWavHeader, runMotionAudioProcess } from "./motionSoundMixService.js";
+import { writeMotionJsonAtomic } from "./motionFileUtils.js";
+import { motionAudioHash as hash } from "./motionAudioUtils.js";
+const active = new Map<string, Promise<MotionVoiceTrack>>();
+export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeVieneuSpeech; }
+const deliverySpeed = (line: MotionUtterance): number => Math.max(0.85, Math.min(1.15, line.speed * ({ neutral: 1, warm: 0.97, serious: 0.94, tense: 0.96, surprised: 1.05, sad: 0.9, excited: 1.08 }[line.emotion] || 1)));
+const speechClip = async (line: MotionUtterance, voiceId: string, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ id: string; bytes: number; duration: number }> => {
+  const id = C.CLIP_PREFIX + hash([C.VERSION, C.PACKAGE, line.text, voiceId, line.emotion, line.speed, line.emphasis]) + MR.MOTION_TEXT_WAV,
+    file = path.join(getMotionAudioDirectory(), id);
+  if (!fs.existsSync(file) || fs.statSync(file).size < 48) {
+    const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, id),
+      temp = file + randomUUID() + MR.MOTION_TEXT_WAV;
+    fs.mkdirSync(path.dirname(original), { recursive: true });
+    try {
+      let failure: unknown;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (opts.signal?.aborted) throw new Error(C.CANCELLED);
         try {
-          pcms[i] = await beatPcm(beats[i], opts.voiceId, speed, opts.signal);
-          lastErr = null;
+          await (deps.synthesize || synthesizeVieneuSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log);
+          failure = undefined;
           break;
-        } catch (e) {
-          if (opts.signal?.aborted) throw e;
-          lastErr = e;
-          opts.log?.(MOTION_TEMPLATE_BEAT_LOI_GIONG_THU_LAI(MR.MOTION_TEMPLATE_SYMBOL_106(i + 1), MR.MOTION_TEMPLATE_SYMBOL_107(_.truncate(_.toString(_.get(e, MOTION_TEXT_MESSAGE, e)), { length: 90 }))));
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        } catch (error) {
+          failure = error;
+          if (opts.signal?.aborted) throw error;
         }
       }
-      if (lastErr) throw lastErr;
-      done++;
-      opts.onProgress?.(done, beats.length);
+      if (failure) throw failure;
+      await runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(deliverySpeed(line).toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
+      const wav = await fs.promises.readFile(temp);
+      const offset = wav.indexOf(Buffer.from(MR.MOTION_TEXT_DATA), 12),
+        length = offset >= 0 ? wav.readUInt32LE(offset + 4) : 0;
+      if (!length || length > wav.length - offset - 8) throw new Error(C.FAILED);
+      await fs.promises.writeFile(temp, Buffer.concat([motionWavHeader(length, 1), wav.subarray(offset + 8, offset + 8 + length)]));
+      fs.renameSync(temp, file);
+    } finally {
+      await fs.promises.rm(temp, { force: true }).catch(() => {});
     }
-  };
-  await Promise.all(_.times(Math.min(MOTION_STORY_CONFIG.TTS_CONCURRENCY, beats.length), worker));
-  const durations = _.map(pcms, (b) => b.length / BYTES_PER_SAMPLE / SR);
-  const audioId = await writeVoiceTrack(beats, pcms, durations);
-  const { total } = computeBeatTimeline(beats, durations);
-  return { audioId, voiceId: opts.voiceId, durations, totalSeconds: total, characters: _.sumBy(beats, (b) => b.narration.length) };
+  }
+  const bytes = fs.statSync(file).size - 44;
+  return { id, bytes, duration: bytes / 2 / C.SAMPLE_RATE };
 };
-const writeVoiceTrack = async (beats: MotionBeat[], pcms: Buffer[], durations: number[]): Promise<string> => {
-  const { starts } = computeBeatTimeline(beats, durations);
-  const id = MOTION_TEMPLATE_VOICE_WAV(MR.MOTION_TEMPLATE_SYMBOL_108(randomUUID().slice(0, 8)));
-  const file = path.join(getMotionAudioDirectory(), id);
-  const totalSamples = Math.ceil(((_.last(starts) || 0) + (_.last(durations) || 0) + 0.5) * SR);
-  const fd = await fs.promises.open(file, MOTION_TEXT_W);
+export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> => {
+  const voices = await (deps.voices || listVieneuVoices)(opts.signal, opts.log),
+    plan = await directMotionVoice(script, analysis, voices, opts);
+  const id = C.PREFIX + hash([C.VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging]) + MR.MOTION_TEXT_WAV,
+    folder = getMotionAudioDirectory(),
+    file = path.join(folder, id),
+    metadata = file + MR.MOTION_TEXT_JSON;
   try {
-    await fd.write(wavHeader(totalSamples * BYTES_PER_SAMPLE), 0, 44, 0);
-    let written = 0;
-    const silence = Buffer.alloc(SR * BYTES_PER_SAMPLE);
-    const pad = async (samples: number) => { while (samples > 0) { const n = Math.min(samples, SR); await fd.write(silence, 0, n * BYTES_PER_SAMPLE, 44 + written * BYTES_PER_SAMPLE); written += n; samples -= n; } };
-    for (let i = 0; i < pcms.length; i++) {
-      const target = Math.round(starts[i] * SR);
-      if (target > written) await pad(target - written);
-      await fd.write(pcms[i], 0, pcms[i].length, 44 + written * BYTES_PER_SAMPLE);
-      written += pcms[i].length / BYTES_PER_SAMPLE;
+    const cached = JSON.parse(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
+    if (cached.signature === plan.signature && cached.provider === C.PROVIDER && fs.statSync(file).size > 44 && cached.clips?.every((clip) => fs.existsSync(path.join(folder, clip.audioId)))) return cached;
+  } catch {}
+  const running = active.get(id);
+  if (running) return running;
+  const task = (async (): Promise<MotionVoiceTrack> => {
+    opts.log?.(C.GENERATING);
+    const local: { beatId: string; line: MotionUtterance; voiceId: string; audio: { id: string; bytes: number; duration: number }; t: number }[] = [],
+      durations: number[] = [];
+    const totalLines = plan.beats.reduce((sum, beat) => sum + beat.utterances.length, 0);
+    let done = 0;
+    for (const beat of plan.beats) {
+      let cursor = 0;
+      for (const line of beat.utterances) {
+        if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+        const voiceId = plan.roles.find((role) => role.speaker === line.speaker)?.voiceId || plan.roles[0].voiceId;
+        const audio = await speechClip(line, voiceId, opts, deps);
+        cursor += line.pauseBefore;
+        local.push({ beatId: beat.id, line, voiceId, audio, t: cursor });
+        cursor += audio.duration + line.pauseAfter;
+        opts.onProgress?.(++done, totalLines);
+      }
+      durations.push(Math.max(0.6, cursor));
     }
-    if (totalSamples > written) await pad(totalSamples - written);
+    if (!totalLines) throw new Error(C.EMPTY);
+    const timeline = computeBeatTimeline(script.beats, durations),
+      temporary = file + randomUUID() + MR.MOTION_TEXT_WAV,
+      frames = Math.ceil(timeline.total * C.SAMPLE_RATE),
+      visual = compileStorySpec(script, analysis, { aspect: opts.aspect || MR.MOTION_TEXT_16_9, durations }).spec;
+    const clips = local.map((item) => {
+      const index = script.beats.findIndex((beat) => beat.id === item.beatId);
+      const start = timeline.starts[index] + item.t;
+      return { id: item.line.id, beatId: item.beatId, speaker: item.line.speaker, voiceId: item.voiceId, text: item.line.text, audioId: item.audio.id, start, end: start + item.audio.duration };
+    });
+    const handle = await fs.promises.open(temporary, MR.MOTION_TEXT_W);
+    try {
+      try {
+        await handle.write(motionWavHeader(frames * 4, 2));
+        const silence = Buffer.alloc(C.SAMPLE_RATE * 4);
+        let written = 0;
+        for (let index = 0; index < local.length; index++) {
+          if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+          const target = Math.round(clips[index].start * C.SAMPLE_RATE);
+          while (written < target) {
+            const count = Math.min(C.SAMPLE_RATE, target - written);
+            await handle.write(silence, 0, count * 4);
+            written += count;
+          }
+          const audio = await fs.promises.readFile(path.join(folder, local[index].audio.id));
+          const item = local[index],
+            beatIndex = script.beats.findIndex((beat) => beat.id === item.beatId),
+            staging: any = script.gen?.staging?.[item.beatId],
+            actor = staging?.actors?.find((actor: any) => actor.cast === item.line.speaker);
+          const pan = item.line.role === MR.MOTION_TEXT_NARRATION || item.line.role === MR.MOTION_TEXT_THOUGHT ? 0 : Math.max(-0.35, Math.min(0.35, motionSoundSpatial(visual, clips[index].start, actor, durations[beatIndex], item.t).pan || 0));
+          const stereo = Buffer.alloc(item.audio.bytes * 2),
+            gain = item.line.emotion === MR.MOTION_TEXT_SAD ? 0.9 : item.line.emotion === MR.MOTION_TEXT_EXCITED ? 1.05 : 1;
+          for (let sample = 0; sample < item.audio.bytes / 2; sample++) {
+            const value = audio.readInt16LE(44 + sample * 2) * gain;
+            stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 - pan) / 2)))), sample * 4);
+            stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 + pan) / 2)))), sample * 4 + 2);
+          }
+          await handle.write(stereo);
+          written += item.audio.bytes / 2;
+        }
+        while (written < frames) {
+          const count = Math.min(C.SAMPLE_RATE, frames - written);
+          await handle.write(silence, 0, count * 4);
+          written += count;
+        }
+      } finally {
+        await handle.close();
+      }
+      if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+      fs.renameSync(temporary, file);
+    } finally {
+      await fs.promises.rm(temporary, { force: true }).catch(() => {});
+    }
+    const track: MotionVoiceTrack = { audioId: id, provider: C.PROVIDER, voiceId: C.MODEL, signature: plan.signature, durations, totalSeconds: timeline.total, plan, clips, subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })) };
+    writeMotionJsonAtomic(metadata, track);
+    return track;
+  })();
+  active.set(id, task);
+  try {
+    return await task;
   } finally {
-    await fd.close();
+    active.delete(id);
   }
-  return id;
 };
-export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audioSeconds: number): number[] => { const { total } = computeBeatTimeline(beats, estimates); const speech = _.sum(estimates); const overhead = total - speech - MOTION_STORY_CONFIG.TAIL_SECONDS; const k = Math.max(0.3, (audioSeconds - overhead) / Math.max(1, speech)); return _.map(estimates, (e) => e * k); };
-export const buildSfxTrack = async (
-  durationSeconds: number,
-  cues: { t: number; kind: string; }[],
-  mood: string = MOTION_TEXT_DARK,
-): Promise<string> => {
-  const n = Math.ceil(durationSeconds * SR);
-  const out = new Float32Array(n);
-  const M = MOTION_SFX_MOODS[mood] || MOTION_SFX_MOODS[mood === MOTION_TEXT_WARM ? MOTION_TEXT_WARM : MOTION_TEXT_DARK];
-  const { root, chord } = M;
-  let wind = 0;
-  let seed = 12345;
-  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1;
-  for (let i = 0; i < n; i++) {
-    const t = i / SR;
-    const fade = Math.min(1, t / 4) * Math.min(1, (durationSeconds - t) / 4);
-    const swell = 0.75 + 0.25 * Math.sin((2 * Math.PI * t) / M.swell);
-    let v = 0.018 * Math.sin(2 * Math.PI * root * t);
-    v += 0.008 * Math.sin(2 * Math.PI * root * 2 * chord[1] * t + Math.sin(t * 0.3));
-    v += 0.006 * Math.sin(2 * Math.PI * root * 2 * chord[2] * t + 1.3);
-    if (M.shimmer) v += M.shimmer * Math.sin(2 * Math.PI * root * 16 * chord[2] * t) * (0.5 + 0.5 * Math.sin(t * 0.41));
-    if (M.noise) { wind += (rnd() - wind) * 0.02; v += M.noise * wind * 6 * (0.6 + 0.4 * Math.sin(t * 0.17 + 1)); }
-    if (M.pulse && M.pulseFreq) { const ph = (t * M.pulseFreq) % 1; v += M.pulse * Math.exp(-ph * 14) * Math.sin(2 * Math.PI * root * 0.9 * ph * 3); }
-    out[i] = v * fade * swell * M.gain;
-  }
-  const addHit = (t0: number, f: number, len: number, gain: number) => {
-    const i0 = Math.max(0, Math.round(t0 * SR));
-    const m = Math.min(n - i0, Math.round(len * SR));
-    for (let k = 0; k < m; k++) {
-      const tt = k / SR;
-      const env = Math.min(1, tt / 0.012) * Math.exp(-tt * 1.7);
-      const pitch = f * (1 + 0.35 * Math.exp(-tt * 9));
-      out[i0 + k] += gain * env * (Math.sin(2 * Math.PI * pitch * tt) + 0.3 * Math.sin(2 * Math.PI * pitch * 2.01 * tt) * Math.exp(-tt * 4));
-    }
-  };
-  const addChime = (t0: number, f: number, gain: number) => { const i0 = Math.max(0, Math.round(t0 * SR)); const m = Math.min(n - i0, Math.round(3 * SR)); for (let k = 0; k < m; k++) { const tt = k / SR; const env = Math.min(1, tt / 0.005) * Math.exp(-tt * 1.4); out[i0 + k] += gain * env * (Math.sin(2 * Math.PI * f * tt) + 0.4 * Math.sin(2 * Math.PI * f * 2.76 * tt) * Math.exp(-tt * 3)); } };
-  for (const c of cues) {
-    if (c.kind === MOTION_TEXT_CHAPTER) addHit(c.t, M.hitFreq, 2.6, 0.32); else if (c.kind === MOTION_TEXT_HIT) addHit(c.t - 0.05, M.hitFreq + 2, 2.2, 0.26); else if (c.kind === MOTION_TEXT_CHIME) addChime(c.t, 523.25, 0.06);
-  }
-  if (M.sparkle) for (let t = 6, k = 0; t < durationSeconds - 6; t += 7.5, k++) addChime(t, MOTION_SFX_SPARKLE_NOTES[(k * 3) % MOTION_SFX_SPARKLE_NOTES.length], M.sparkle);
-  addChime(Math.max(0, durationSeconds - 3.2), M.endChime, 0.05);
-  let peak = 0;
-  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(out[i]));
-  const norm = peak > 0 ? 0.45 / peak : 1;
-  const pcm = Buffer.alloc(n * BYTES_PER_SAMPLE);
-  for (let i = 0; i < n; i++) pcm.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(out[i] * norm * 32767))), i * BYTES_PER_SAMPLE);
-  const id = MOTION_TEMPLATE_SFX_WAV(MR.MOTION_TEMPLATE_SYMBOL_109(randomUUID().slice(0, 8)));
-  await fs.promises.writeFile(path.join(getMotionAudioDirectory(), id), Buffer.concat([wavHeader(pcm.length), pcm]));
-  return id;
+export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audioSeconds: number): number[] => {
+  const { total } = computeBeatTimeline(beats, estimates),
+    speech = estimates.reduce((sum, duration) => sum + duration, 0),
+    overhead = total - speech - MOTION_STORY_CONFIG.TAIL_SECONDS;
+  const k = Math.max(0.3, (audioSeconds - overhead) / Math.max(1, speech));
+  return estimates.map((estimate) => estimate * k);
+};
+export const buildSfxTrack = async (durationSeconds: number, cues: unknown, _mood?: string, signal?: AbortSignal): Promise<string | undefined> => (await buildMotionSoundTrack(durationSeconds, cues, {}, signal)).sfxId;
+export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, analysis: MotionStoryAnalysis | null = null): MotionVoiceTrack | undefined => {
+  if (typeof id !== "string" || !/^voice-vieneu-[a-f0-9]{32}\.wav$/.test(id)) return;
+  const file = path.join(getMotionAudioDirectory(), id);
+  try {
+    const track = JSON.parse(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
+    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis) && fs.statSync(file).size > 44) return track;
+  } catch {}
 };
