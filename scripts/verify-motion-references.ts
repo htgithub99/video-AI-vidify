@@ -2,7 +2,9 @@ import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRenderFailure } from "../src/lib/motionReference.ts";
+import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRenderFailure, needsMotionPreview } from "../src/lib/motionReference.ts";
+import { MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
+import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
 import { withMotionReferenceFiles } from "../src/server/services/motionReferenceService.ts";
 import { prepareMotionGen } from "../src/server/services/motionGenService.ts";
 import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
@@ -41,22 +43,32 @@ gen.characterMotion = true;
 assert.equal(compileStorySpec({ title: VT.TEST, language: VT.EN, beats: [{ id: VT.INTRO, chapterId: VT.C1, narration: VT.A_STYLE_REFERENCE_TEST, visual: VT.TITLE }], gen }, analysis, { aspect: VT.VALUE_16_9 }).spec.gen?.characterMotion, true);
 assert.equal(hasMotionRenderFailure([VT.STYLE_SIMILARITY_IS_LOW, VT.OUT_OF_FRAME]), false);
 assert.equal(hasMotionRenderFailure([VT.MOTION_DRAW_FAILED_MISSING_GEOMETRY]), true);
+assert.equal(needsMotionPreview(), true);
+assert.equal(needsMotionPreview({ file: image.name, issues: [VT.MOTION_DRAW_FAILED_MISSING_GEOMETRY] }), true);
+assert.equal(needsMotionPreview({ file: image.name, issues: [VT.STYLE_SIMILARITY_IS_LOW] }), false);
 let attached = 0;
+let motionDirected = false;
 const extracted = await analyzeStory(parseStorySource(VT.DRAW_A_CARTOON_DINNER_SCENE_IN_A_DARK_ROOM), {
   styleReferences: [image],
   characterMotion: true,
   language: VT.EN,
   length: VT.VALUE_1MIN as any,
   exec: {},
-  ai: async (prompt, _artifact, _exec, _signal, _log, images) => {
-    assert.ok(prompt.includes(VT.STYLE_REFERENCE_2) || prompt.includes(VT.ATTACHED_STYLE_REFERENCE));
-    assert.ok(prompt.includes(VT.AUTHORITATIVE_CHARACTER_MOTION_ENABLED));
-    assert.ok(images?.[0].path && fs.existsSync(images[0].path));
-    attached++;
+  ai: async (prompt, artifact, _exec, _signal, _log, images) => {
+    if (artifact === MOTION_STORY_CONFIG.ARTIFACT_STYLE) {
+      assert.ok(prompt.includes(MOTION_REFERENCE_PROMPTS.STYLE_ONLY));
+      assert.ok(images?.[0].path && fs.existsSync(images[0].path));
+      attached++;
+      return { referenceStyle: profile };
+    }
+    assert.ok(prompt.includes(MOTION_REFERENCE_PROMPTS.PROFILE(profile)));
+    motionDirected ||= prompt.includes(VT.AUTHORITATIVE_CHARACTER_MOTION_ENABLED);
+    assert.equal(images, undefined);
     return { title: VT.DINNER, chapters: [{ title: VT.DINNER, summary: VT.PEOPLE_AT_A_TABLE }], referenceStyle: profile };
   },
 });
-assert.ok(attached > 0 && attached <= 2);
+assert.equal(attached, 1);
+assert.equal(motionDirected, true);
 assert.deepEqual(extracted.referenceStyle, profile);
 assert.equal(extracted.characterMotion, true);
 process.stdout.write(VT.STYLE_REFERENCES_PASSED_LIMITS_VALIDATION_ATTACHMENT_FILES_C);

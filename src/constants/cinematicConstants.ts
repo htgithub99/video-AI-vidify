@@ -169,7 +169,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_GOOGLE_LOGIN_SELECTOR: 'button:has-text("Continue with Google"), button:has-text("Tiếp tục với Google"), a:has-text("Continue with Google")',
   CHATGPT_COOKIE_REJECT_SELECTOR: '[data-cookie-consent] button:has-text("Reject"), [data-cookie-consent] button:has-text("Từ chối")',
   CHATGPT_COOKIE_ACTION_SELECTOR: "[data-cookie-consent] button",
-  GEMINI_MODEL_BUTTON_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label*="mô hình" i], button[aria-label*="model" i], button[aria-label*="chế độ" i], button[aria-label*="mode" i], button:has-text("Flash-Lite"), button:has-text("Flash"), button:has-text("Pro")',
+  GEMINI_MODEL_BUTTON_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label*="mô hình" i], button[aria-label*="model" i], button[aria-label*="chế độ" i], button[aria-label*="mode" i], button:has-text("Flash-Lite"), button:has-text("Flash"), button:has-text("Pro"), button:has-text("Argon")',
   GROK_MODEL_BUTTON_SELECTOR: 'button[aria-label*="chọn mô hình" i], button[aria-label*="select model" i], button:has-text("Nhanh"), button:has-text("Fast"), button:has-text("Tự động"), button:has-text("Auto")',
   JSON_ONLY_DIRECTIVE:
     'Return only the complete raw JSON value required by the request, parseable directly with JSON.parse. Escape every double quote that occurs inside a JSON string value as \\"; preferably avoid quotation marks inside string values. Before submitting, verify the entire response with strict JSON.parse semantics. Do not use Markdown fences, commentary, summaries, ellipses, placeholders, or references to earlier answers.',
@@ -225,9 +225,10 @@ export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = ["id", "generationPrompt"] 
 export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [/:result:missing_scene$/, /:id:(?:duplicate|unexpected)$/, /:generationPrompt:missing$/] as const;
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
   [AiPlanningFallbackProvider.GeminiChat]: [
-    { value: AiPlanningChatModel.GeminiFlashLite, label: "Flash-Lite" },
-    { value: AiPlanningChatModel.GeminiFlash, label: "Flash" },
-    { value: AiPlanningChatModel.GeminiPro, label: "Pro" },
+    { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
+    { value: AiPlanningChatModel.GeminiFlash, label: "3.8 Flash" },
+    { value: AiPlanningChatModel.GeminiPro, label: "3.1 Pro" },
+    { value: AiPlanningChatModel.GeminiArgon, label: "4 Argon" },
     { value: AiPlanningChatModel.GeminiThinking, label: "Pro · Tư duy mở rộng" },
     { value: AiPlanningChatModel.GeminiDeepThink, label: "Pro · Deep Think" },
   ],
@@ -245,6 +246,7 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GeminiFlashLite]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash[-\s]?Lite/i,
   [AiPlanningChatModel.GeminiFlash]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Flash(?![-\s]?Lite)/i,
   [AiPlanningChatModel.GeminiPro]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Pro/i,
+  [AiPlanningChatModel.GeminiArgon]: /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Argon\b/i,
   [AiPlanningChatModel.GeminiThinking]: /Tư duy mở rộng|Extended thinking|Extended/i,
   [AiPlanningChatModel.GeminiDeepThink]: /Deep Think/i,
   [AiPlanningChatModel.GrokFast]: /Nhanh|Fast/i,
@@ -258,6 +260,7 @@ export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, 
   [AiPlanningChatModel.GeminiFlashLite]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite],
   [AiPlanningChatModel.GeminiFlash]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash],
   [AiPlanningChatModel.GeminiPro]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
+  [AiPlanningChatModel.GeminiArgon]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiArgon],
   [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
   [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
 };

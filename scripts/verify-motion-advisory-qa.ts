@@ -56,7 +56,6 @@ try {
   assert.equal(result.gen.previews.b1.score, 4);
   assert.ok(result.gen.previews.b1.file);
   const reference = { name: VT.STYLE_PNG, dataUrl: VT.DATA_IMAGE_PNG_BASE64_IVBORW0KGGOAAAANSUHEUGAAAAEAAAABCAQAAA };
-  const referencePaths = new Set<string>();
   const styled = await buildScenes(script, analysis, {
     exec: {},
     log: () => {},
@@ -64,15 +63,12 @@ try {
     styleReferences: [reference],
     ai: async (prompt, artifact, _exec, _signal, _log, images) => {
       assert.ok(prompt.includes(VT.AUTHORITATIVE_CHARACTER_MOTION_ENABLED));
-      assert.ok(images?.[0].name.startsWith(VT.STYLE_REFERENCE));
-      assert.ok(fs.existsSync(images[0].path));
-      referencePaths.add(images[0].path);
+      assert.ok((images || []).every((image) => !image.name.startsWith(VT.STYLE_REFERENCE) && fs.existsSync(image.path)));
       return ai(prompt, artifact);
     },
   });
   assert.equal(styled.gen.characterMotion, true);
   assert.deepEqual(styled.gen.failed, []);
-  for (const file of referencePaths) assert.equal(fs.existsSync(file), false);
   fixture.broken = true;
   calls.length = 0;
   const broken = await buildScenes(script, analysis, { exec: {}, log: () => {}, ai, review: false });

@@ -11,8 +11,8 @@ import { MotionAspect } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
 import { formatSeconds, MOTION_ASSET_BASE, type MotionEngineGlobal } from "./motionApi";
 import { MotionLoadingIcon } from "./MotionControls.js";
-import { MOTION_VOICE, MOTION_VOICE_TEXT } from "../../constants/motionVoice.js";
-export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; audioUrl?: string; audioPending?: boolean; className?: string }> = ({ ME, spec, audioUrl, audioPending, className }) => {
+import { MOTION_VOICE, MOTION_VOICE_STYLES, MOTION_VOICE_TEXT } from "../../constants/motionVoice.js";
+export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; videoUrl?: string; audioUrl?: string; audioPending?: boolean; pending?: boolean; className?: string }> = ({ ME, spec, videoUrl, audioUrl, audioPending, pending = false, className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rendererRef = useRef<{ duration: number; drawFrame: (t: number) => void } | null>(null);
@@ -20,8 +20,11 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [prepared, setPrepared] = useState<{ ME: MotionEngineGlobal; spec: MotionSpec } | null>(null);
+  const [loadedAudioUrl, setLoadedAudioUrl] = useState<string>();
+  const [loadedVideoUrl, setLoadedVideoUrl] = useState<string>();
   const [error, setError] = useState<string>(MR.MOTION_TEXT_EMPTY);
+  const loading = pending || (videoUrl ? loadedVideoUrl !== videoUrl : (!!spec && (prepared?.ME !== ME || prepared?.spec !== spec)) || (!!audioUrl && loadedAudioUrl !== audioUrl));
   const aspect = _.toString(spec?.aspect || MOTION_TEXT_16_9);
   const [w, h] = MOTION_PREVIEW_SIZES[aspect] || MOTION_PREVIEW_SIZES[MotionAspect.LANDSCAPE];
   const shots = spec?.shots || [];
@@ -32,6 +35,12 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     return c.playing ? c.base + (performance.now() - c.startedAt) / 1000 : c.base;
   };
   useEffect(() => {
+    setLoadedAudioUrl(undefined);
+  }, [audioUrl, videoUrl]);
+  useEffect(() => {
+    setLoadedVideoUrl(undefined);
+  }, [videoUrl]);
+  useEffect(() => {
     const current = clock.current;
     if (current.playing) current.base += (performance.now() - current.startedAt) / 1000;
     current.playing = false;
@@ -40,44 +49,44 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   }, [audioUrl, audioPending]);
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !spec) {
-      rendererRef.current = null;
-      setDuration(0);
-      setTime(0);
-      clock.current = { playing: false, base: 0, startedAt: 0 };
-      audioRef.current?.pause();
-      setPlaying(false);
-      return;
-    }
-    let cancelled = false;
+    clock.current = { playing: false, base: 0, startedAt: 0 };
+    audioRef.current?.pause();
+    setPlaying(false);
     rendererRef.current = null;
     setDuration(0);
+    setTime(0);
+    setPrepared(null);
+    setError(MR.MOTION_TEXT_EMPTY);
+    if (!canvas || !spec || pending || videoUrl) return;
+    let cancelled = false;
+    let frame = 0;
     const t = setTimeout(async () => {
-      if (ME.GEN?.prepare) {
-        setLoading(true);
-        try {
-          await ME.GEN.prepare(spec, MOTION_ASSET_BASE);
-        } catch {}
-        setLoading(false);
-        if (cancelled) return;
-      }
       try {
-        setError(MR.MOTION_TEXT_EMPTY);
-        rendererRef.current = ME.createRenderer(canvas, spec, { width: w, height: h, quality: MOTION_PREVIEW_QUALITY, preview: true });
-        setDuration(rendererRef.current.duration);
-        clock.current.base = Math.min(clock.current.base, rendererRef.current.duration);
-        const t0 = now();
-        rendererRef.current.drawFrame(Math.min(t0, rendererRef.current.duration));
+        await ME.GEN?.prepare(spec, MOTION_ASSET_BASE);
+        if (cancelled) return;
+        const renderer = ME.createRenderer(canvas, spec, { width: w, height: h, quality: MOTION_PREVIEW_QUALITY, preview: true });
+        renderer.drawFrame(0);
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            if (cancelled) return;
+            rendererRef.current = renderer;
+            setDuration(renderer.duration);
+            setPrepared({ ME, spec });
+          });
+        });
       } catch {
+        if (cancelled) return;
         rendererRef.current = null;
         setError(MOTION_VOICE.PREVIEW_FAILED);
+        setPrepared({ ME, spec });
       }
     }, 250);
     return () => {
       cancelled = true;
       clearTimeout(t);
+      cancelAnimationFrame(frame);
     };
-  }, [ME, spec, w, h]);
+  }, [ME, spec, w, h, pending, videoUrl]);
   useEffect(() => {
     let raf = 0;
     let last = -1;
@@ -103,7 +112,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   }, [audioUrl]);
   const play = async () => {
     const r = rendererRef.current;
-    if (!r || audioPending) return;
+    if (!r || audioPending || loading) return;
     const c = clock.current;
     if (c.base >= r.duration - 0.05) c.base = 0;
     const a = audioRef.current;
@@ -129,6 +138,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     setPlaying(false);
   };
   const seek = (t: number) => {
+    if (loading || !rendererRef.current) return;
     const r = rendererRef.current;
     const c = clock.current;
     c.base = _.clamp(t, 0, duration || 0);
@@ -138,18 +148,36 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     r?.drawFrame(c.base);
   };
   const marks = useMemo(() => (duration ? _.map(shots, (s) => (s.start / duration) * 100) : []), [shots, duration]);
+  const visibility = loading ? MR.MOTION_TEXT_HIDDEN : MR.MOTION_TEXT_VISIBLE;
+  const controlsDisabled = !spec || !duration || loading;
   return (
-    <div className={cn(MOTION_STYLES.FLEX_FLEX_COL_GAP_2_5_W_FULL, className)}>
+    <div className={cn(MOTION_STYLES.FLEX_FLEX_COL_GAP_2_5_W_FULL, className)} aria-busy={loading}>
       <div className={MOTION_STYLES.RELATIVE_W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER}>
-        <canvas ref={canvasRef} className={MOTION_STYLES.MAX_W_FULL_MAX_H_FULL_OBJECT_CONTAIN} style={{ aspectRatio: MR.MOTION_TEMPLATE_SYMBOL_47(w, h) }} />
-        {!spec && (
+        {videoUrl ? (
+          <video
+            key={videoUrl}
+            src={videoUrl}
+            controls={!loading}
+            preload={MOTION_TEXT_AUTO}
+            className={MOTION_VOICE_STYLES.VIDEO}
+            style={{ visibility }}
+            onLoadedData={() => setLoadedVideoUrl(videoUrl)}
+            onError={() => {
+              setLoadedVideoUrl(videoUrl);
+              setError(MOTION_VOICE.PREVIEW_FAILED);
+            }}
+          />
+        ) : (
+          <canvas ref={canvasRef} className={MOTION_STYLES.MAX_W_FULL_MAX_H_FULL_OBJECT_CONTAIN} style={{ aspectRatio: MR.MOTION_TEMPLATE_SYMBOL_47(w, h), visibility }} />
+        )}
+        {!spec && !videoUrl && !loading && (
           <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2}>
             <Play className={MOTION_STYLES.W_8_H_8_TEXT_SLATE_600_DARK_TEXT_SLATE_700_STROKE_1} />
             <span>{MOTION_TEXT_SYMBOL_19}</span>
           </div>
         )}
         {loading && (
-          <div className={MR.MOTION_TEXT_ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_75_BAC}>
+          <div role={MR.MOTION_TEXT_STATUS} className={MR.MOTION_TEXT_ABSOLUTE_INSET_0_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_BG_BLACK_75_BAC}>
             <div className={MR.MOTION_TEXT_PX_6_PY_5_ROUNDED_2XL_BG_SLATE_900_90_BORDER_BORDER_PURPLE_500_40}>
               <div className={MR.MOTION_TEXT_RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
                 <div className={MR.MOTION_TEXT_W_12_H_12_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_30_VIA_FU}>
@@ -167,13 +195,26 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
           </div>
         )}
       </div>
-      {audioUrl && <audio ref={audioRef} src={audioUrl} preload={MOTION_TEXT_AUTO} className={MOTION_STYLES.HIDDEN} onError={() => setError(MOTION_VOICE_TEXT.vi.previewError)} />}
+      {!videoUrl && audioUrl && (
+        <audio
+          key={audioUrl}
+          ref={audioRef}
+          src={audioUrl}
+          preload={MOTION_TEXT_AUTO}
+          className={MOTION_STYLES.HIDDEN}
+          onLoadedData={() => setLoadedAudioUrl(audioUrl)}
+          onError={() => {
+            setLoadedAudioUrl(audioUrl);
+            setError(MOTION_VOICE_TEXT.vi.previewError);
+          }}
+        />
+      )}
       {error ? <p role={MR.MOTION_TEXT_ALERT}>{error}</p> : null}
-      <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_P_2_ROUNDED_XL_BG_SLATE_50_DARK_BG_SLATE_955_60}>
-        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => seek(0)} className={MOTION_STYLES.P_2_TEXT_SLATE_500_HOVER_TEXT_PURPLE_400_DARK_TEXT_SLATE_400_DARK_HOVER_TEXT_PURPLE_400_TRANSITION_COLORS_CURSOR_POINTER} disabled={!spec}>
+      <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_P_2_ROUNDED_XL_BG_SLATE_50_DARK_BG_SLATE_955_60} style={{ visibility: videoUrl ? MR.MOTION_TEXT_HIDDEN : MR.MOTION_TEXT_VISIBLE }}>
+        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => seek(0)} className={MOTION_STYLES.P_2_TEXT_SLATE_500_HOVER_TEXT_PURPLE_400_DARK_TEXT_SLATE_400_DARK_HOVER_TEXT_PURPLE_400_TRANSITION_COLORS_CURSOR_POINTER} disabled={controlsDisabled}>
           <SkipBack className={MOTION_STYLES.W_4_H_4} />
         </Button>
-        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => (playing ? pause() : void play())} className={MOTION_STYLES.P_2_TEXT_PURPLE_400_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS_CURSOR_POINTER_DISABLED_OPACITY_30} disabled={!spec || !duration || audioPending || loading}>
+        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => (playing ? pause() : void play())} className={MOTION_STYLES.P_2_TEXT_PURPLE_400_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS_CURSOR_POINTER_DISABLED_OPACITY_30} disabled={controlsDisabled || audioPending}>
           {playing ? <Pause className={MOTION_STYLES.W_4_H_4} /> : <Play className={MOTION_STYLES.W_4_H_4} />}
         </Button>
         <div className={MOTION_STYLES.RELATIVE_FLEX_1_H_6_FLEX_ITEMS_CENTER}>
@@ -182,7 +223,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
             <div key={i} className={MOTION_STYLES.ABSOLUTE_H_3_5_W_PX_BG_SLATE_400_DARK_BG_SLATE_600} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
           ))}
           <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: MR.MOTION_TEMPLATE_SYMBOL_48(duration ? (time / duration) * 100 : 0) }} />
-          <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={!spec} />
+          <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={controlsDisabled} />
         </div>
         <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
           {formatSeconds(time)}

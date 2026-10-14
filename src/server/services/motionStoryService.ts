@@ -563,11 +563,30 @@ export const buildSourceLedger = async (source: MotionStorySource, opts: { exec:
   opts.log?.(MR.MOTION_TEMPLATE_SO_SU_KIEN_PHAN(chunks.length, failedParts ? MR.MOTION_TEMPLATE_PHAN_DUNG_TRICH_DOAN_GOC(failedParts) : MR.MOTION_TEXT_EMPTY));
   return parts.map((p, i) => MR.MOTION_TEMPLATE_PART(i + 1, chunks.length, p)).join(MR.MOTION_TEXT_SYMBOL_27);
 };
+const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const raw = await (opts.ai || runMotionAi)([MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY].join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, opts.exec, opts.signal, opts.log, images);
+      const style = normalizeMotionReferenceStyle(raw?.referenceStyle || raw);
+      if (style) return style;
+    } catch (error) {
+      if (opts.signal?.aborted) throw error;
+    }
+    opts.log?.(MOTION_REFERENCE_PROMPTS.STYLE_RETRY);
+  }
+  return undefined;
+};
 export const analyzeStory = async (source: MotionStorySource, opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis> => {
-  if (opts.styleReferences?.length)
-    return withMotionReferenceFiles(opts.styleReferences, (images) =>
-      analyzeStory(source, { ...opts, styleReferences: undefined, ai: (prompt, artifact, exec, signal, log) => (opts.ai || runMotionAi)([prompt, MOTION_REFERENCE_PROMPTS.ANALYZE, opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, images) }),
-    );
+  if (opts.styleReferences?.length) {
+    const referenceStyle = await withMotionReferenceFiles(opts.styleReferences, (images) => analyzeReferenceStyle(images, opts));
+    const ai = opts.ai || runMotionAi;
+    const analysis = await analyzeStory(source, {
+      ...opts,
+      styleReferences: undefined,
+      ai: referenceStyle ? (prompt, artifact, exec, signal, log, images) => ai([prompt, MOTION_REFERENCE_PROMPTS.PROFILE(referenceStyle)].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, images) : opts.ai,
+    });
+    return { ...analysis, referenceStyle: referenceStyle || analysis.referenceStyle };
+  }
   const target = resolveTargetSeconds(source, opts.length);
   const settings: MotionVideoDnaSettings = {
     length: opts.length,

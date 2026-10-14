@@ -133,6 +133,7 @@ export const normalizeScenePlan = (value: any): MotionScenePlan | undefined =>
         acceptance: list(value.acceptance),
       };
 export const scenePlanPrompt = (plan?: MotionScenePlan): string => (plan ? MR.MOTION_TEMPLATE_SCENE_EXECUTION_PLAN(JSON.stringify(plan)) : MR.MOTION_TEXT_EMPTY);
+const SCENE_PLAN_FILLER_WORDS = new Set<string>([MR.MOTION_TEXT_PROP, MR.MOTION_TEXT_PROPS, MR.MOTION_TEXT_FX, MR.MOTION_TEXT_VFX, MR.MOTION_TEXT_NODE, MR.MOTION_TEXT_OBJ, MR.MOTION_TEXT_OBJECT, MR.MOTION_TEXT_MODEL, MR.MOTION_TEXT_UNIT, MR.MOTION_TEXT_CORE, MR.MOTION_TEXT_MAIN, MR.MOTION_TEXT_CENTER, MR.MOTION_TEXT_CENTRE, MR.MOTION_TEXT_HERO, MR.MOTION_TEXT_THE, MR.MOTION_TEXT_OF]);
 export const scenePlanStagingErrors = (plan: MotionScenePlan | undefined, staging: any, location: any): string[] => {
   if (!plan) return [];
   const names = new Set<string>();
@@ -140,11 +141,29 @@ export const scenePlanStagingErrors = (plan: MotionScenePlan | undefined, stagin
     if (!node || depth > 20) return;
     if (node.name) names.add(node.name);
     for (const child of node.children || []) visit(child, depth + 1);
-    if (node.shape === MR.MOTION_TEXT_REF && location?.defs?.[node.ref]) for (const child of location.defs[node.ref]) visit(child, depth + 1);
+    if ((node.shape === MR.MOTION_TEXT_REF || node.shape === MR.MOTION_TEXT_USE) && location?.defs?.[node.ref]) {
+      names.add(node.ref);
+      for (const child of location.defs[node.ref]) visit(child, depth + 1);
+    }
   };
   for (const node of [...(location?.nodes || []), ...(staging?.props || [])]) visit(node, 0);
   for (const actor of staging?.actors || []) for (const node of actor.hold?.nodes || []) visit(node, 0);
-  return plan.requiredProps.filter((name) => !names.has(name)).map((name) => MR.MOTION_TEMPLATE_SCENEPLAN_REQUIRES_NAMED_PROP_BUT_NO_SUCH_NODE_WAS_STAGED_CREATE_(name));
+  const words = (name: string) =>
+    name
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 1 && !SCENE_PLAN_FILLER_WORDS.has(w));
+  const built = [...names].map(words);
+  const present = (name: string) => {
+    if (names.has(name)) return true;
+    const want = words(name);
+    if (!want.length) return false;
+    return built.some((have) => {
+      const shared = want.filter((w) => have.includes(w)).length;
+      return shared >= Math.min(2, want.length) && shared / want.length >= 0.5;
+    });
+  };
+  return plan.requiredProps.filter((name) => !present(name)).map((name) => MR.MOTION_TEMPLATE_SCENEPLAN_REQUIRES_NAMED_PROP_BUT_NO_SUCH_NODE_WAS_STAGED_CREATE_(name));
 };
 export const hasAuthoredCharacter = (design: unknown): design is MotionCharacterDesign => !!design && typeof design === SOURCE_TEXT_OBJECT && Array.isArray((design as MotionCharacterDesign).parts) && (design as MotionCharacterDesign).parts.some((part) => !!part && Array.isArray(part.nodes) && part.nodes.length > 0);
 export const needsAuthoredCharacters = (script: MotionStoryScript | null, castKeys: string[] = []): boolean => !!script && (!script.gen || Object.values(script.gen.cast || {}).some((design) => !hasAuthoredCharacter(design)) || castKeys.some((key) => !hasAuthoredCharacter(script.gen?.cast[key])));

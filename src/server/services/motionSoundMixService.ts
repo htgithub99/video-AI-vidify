@@ -239,13 +239,13 @@ export const mixMotionSoundAudio = async (duration: number, voiceId?: string, sf
   const hasVoice = !!voice && fs.existsSync(voice),
     hasSfx = !!sfx && fs.existsSync(sfx);
   if (!hasVoice && !hasSfx) return undefined;
-  const volume = Math.max(0, Math.min(1.5, Number(sfxVolume) || 0)),
+  const volume = Math.max(0, Math.min(1.5, Number(sfxVolume) || 0)) * C.SFX_MIX_GAIN,
     voiceGain = Math.max(0, Math.min(2, Number(voiceVolume) || 0));
   const signature = (file: string) => {
     const stat = fs.statSync(file);
     return [path.basename(file), stat.size, stat.mtimeMs];
   };
-  const id = C.MIX_PREFIX + hash({ version: C.VERSION, duration, voice: hasVoice ? signature(voice) : undefined, sfx: hasSfx ? signature(sfx) : undefined, volume, voiceGain }) + C.WAV;
+  const id = C.MIX_PREFIX + hash({ version: C.VERSION, mix: C.MIX_VERSION, duration, voice: hasVoice ? signature(voice) : undefined, sfx: hasSfx ? signature(sfx) : undefined, volume, voiceGain }) + C.WAV;
   return cachedAudio(id, async (file) => {
     await runMotionAudioProcess(
       [

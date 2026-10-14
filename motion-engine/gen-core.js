@@ -7,7 +7,7 @@
   const T = root.THREE || null;
   GEN.T = T;
   GEN.X = (T && T.addons) || {};
-  const SHAPES = [MT.BOX, MT.CYLINDER, MT.SPHERE, MT.CONE, MT.TORUS, MT.CAPSULE, MT.PLANE, MT.DISC, MT.RING, MT.EXTRUDE, MT.LATHE, MT.TUBE, MT.TEXT, MT.GROUP, MT.USE, MT.REPEAT, MT.LIGHT, MT.MODEL, MT.ARROW];
+  const SHAPES = [MT.BOX, MT.CYLINDER, MT.SPHERE, MT.CONE, MT.TORUS, MT.CAPSULE, MT.PLANE, MT.DISC, MT.RING, MT.EXTRUDE, MT.LATHE, MT.TUBE, MT.STROKE, MT.TEXT, MT.GROUP, MT.USE, MT.REPEAT, MT.LIGHT, MT.MODEL, MT.ARROW];
   GEN.library = GEN.library || {};
   GEN.setLibrary = (map) => {
     GEN.library = map || {};
@@ -121,7 +121,7 @@
       if (st.count === LIMITS.nodes + 1) errors.push(MT.TOO_MANY_NODES_MAX + LIMITS.nodes + MT.USE_REPEAT_USE_FOR_COPIES);
       return null;
     }
-    let shape = typeof n.shape === MT.STRING ? n.shape.toLowerCase() : n.children ? MT.GROUP : n.ref ? (MT.MODEL_REF_RE.test(String(n.ref)) ? MT.MODEL : MT.USE) : MT.EMPTY;
+    let shape = typeof n.shape === MT.STRING ? n.shape.toLowerCase() : typeof n.type === MT.STRING && SHAPES.includes(n.type.toLowerCase()) ? n.type.toLowerCase() : n.children ? MT.GROUP : n.ref ? (MT.MODEL_REF_RE.test(String(n.ref)) ? MT.MODEL : MT.USE) : MT.EMPTY;
     if (shape === MT.USE && MT.MODEL_REF_RE.test(String(n.ref || MT.EMPTY))) shape = MT.MODEL;
     if (shape === MT.CUBE) shape = MT.BOX;
     if (shape === MT.CYLINDER_Y || shape === MT.CYL) shape = MT.CYLINDER;
@@ -209,6 +209,14 @@
         if (!out.points) return null;
         out.points = out.points.map((p) => [Math.abs(p[0]), p[1]]);
         out.segments = Math.round(num(n.segments, 32, 3, 96));
+        break;
+      case MT.STROKE:
+        out.points = cleanPoints2(n.points, errors, where, 2);
+        if (!out.points) return null;
+        out.width = num(n.width, 0.02, 0.001, 20);
+        if (n.closed) out.closed = true;
+        if (n.fill) out.fill = true;
+        if (n.straight) out.straight = true;
         break;
       case MT.TUBE:
         if (!Array.isArray(n.path) || n.path.length < 2) {
@@ -345,6 +353,15 @@
     }
     out.defs = defs;
     out.nodes = GEN.cleanNodes(L.nodes, st, MT.NODES);
+    for (const n of out.nodes) {
+      if (n.shape !== MT.DISC && n.shape !== MT.RING && n.shape !== MT.PLANE) continue;
+      const r = n.rot || [0, 0, 0];
+      if (r[0] || r[2] || !n.pos || Math.abs(n.pos[1]) > 0.3) continue;
+      const span = n.shape === MT.PLANE ? Math.max(...(n.size || [0])) : (n.radius || 0) * 2;
+      if (span < 6) continue;
+      n.rot = [-90, r[1] || 0, 0];
+      st.warnings.push((n.name || n.shape) + MT.FLOOR_LAID_FLAT);
+    }
     const g = L.ground && typeof L.ground === MT.OBJECT ? L.ground : {};
     out.ground = { size: vec(g.size, [80, 80], 2, 2, 4000), mat: typeof g.mat === MT.STRING && out.materials[g.mat] ? g.mat : g.mat && typeof g.mat === MT.OBJECT ? cleanMaterial(g.mat, st.errors, MT.GROUND) : { color: out.interior ? MT.VALUE_6D6A66 : MT.VALUE_5D6056, roughness: 0.92, pattern: out.interior ? MT.CONCRETE : MT.DIRT } };
     if (g.none) out.ground.none = true;
@@ -377,13 +394,14 @@
   GEN.validateCharacter = (raw) => {
     const source = raw && typeof raw === MT.OBJECT ? raw : {},
       st = newState(),
-      out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null) };
+      out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null), expressions: Object.create(null) };
     st.materials = out.materials;
     const cleanTransform = (value) => {
       const result = {};
       if (value && value.pos) result.pos = vec(value.pos, [0, 0, 0]);
       if (value && value.rot) result.rot = vec(value.rot, [0, 0, 0], 3, -3600, 3600);
       if (value && value.scale != null) result.scale = typeof value.scale === MT.NUMBER ? [value.scale, value.scale, value.scale].map((x) => num(x, 1, 0.001, 100)) : vec(value.scale, [1, 1, 1], 3, 0.001, 100);
+      if (value && typeof value.visible === MT.BOOLEAN) result.visible = value.visible;
       return result;
     };
     const geometry = (nodes, depth = 0) => (depth > LIMITS.depth ? [] : (Array.isArray(nodes) ? nodes : []).filter((node) => node && ![MT.MODEL, MT.USE, MT.LIGHT, MT.TEXT, MT.ARROW].includes(node.shape)).map((node) => ({ ...node, ...(node.children ? { children: geometry(node.children, depth + 1) } : {}), ...(node.node ? { node: geometry([node.node], depth + 1)[0] } : {}) })));
@@ -419,6 +437,11 @@
       if (!idOk(name) || !pose || typeof pose !== MT.OBJECT) continue;
       out.poses[name] = {};
       for (const [id, value] of Object.entries(pose)) if (ids.has(id)) out.poses[name][id] = cleanTransform(value);
+    }
+    for (const [name, expression] of Object.entries(source.expressions || {}).slice(0, 24)) {
+      if (!idOk(name) || !expression || typeof expression !== MT.OBJECT) continue;
+      out.expressions[name] = {};
+      for (const [id, value] of Object.entries(expression)) if (ids.has(id)) out.expressions[name][id] = cleanTransform(value);
     }
     for (const [name, motion] of Object.entries(source.motions || {}).slice(0, 64)) {
       if (!idOk(name) || !motion || typeof motion !== MT.OBJECT) continue;
@@ -540,6 +563,9 @@
       }
       if (a.offset != null) o.offset = num(a.offset, 0, 0, 20);
       if (a.ghost) o.ghost = true;
+      if (typeof a.expression === MT.STRING && idOk(a.expression)) o.expression = a.expression;
+      if (a.talk === true) o.talk = [0, 1];
+      else if (Array.isArray(a.talk) && a.talk.length === 2) o.talk = [num(a.talk[0], 0, 0, 1), num(a.talk[1], 1, 0, 1)];
       if (Array.isArray(a.hold) || (a.hold && typeof a.hold === MT.OBJECT)) {
         const st = newState(L.materials || {});
         const nodes = GEN.smallNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD, 2.4);

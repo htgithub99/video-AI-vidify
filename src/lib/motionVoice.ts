@@ -10,14 +10,11 @@ export const speechWords = (text: string): string =>
     .replace(C.TAGS, MR.MOTION_TEXT_EMPTY)
     .replace(/[^\p{L}\p{N}]/gu, MR.MOTION_TEXT_EMPTY)
     .toLowerCase();
-export const directedSpeechText = (line: MotionUtterance): string => {
-  let text = line.text;
-  for (const phrase of line.emphasis) {
-    const position = text.indexOf(phrase);
-    if (position > 0 && !/[,.;:!?…]\s*$/.test(text.slice(0, position))) text = text.slice(0, position).trimEnd() + MR.MOTION_TEXT_EMPTY_2 + text.slice(position);
-  }
-  return text;
-};
+export const directedSpeechText = (line: MotionUtterance): string =>
+  line.text
+    .replace(/[“”"«»]/g, MR.MOTION_TEXT_EMPTY)
+    .replace(/\s{2,}/g, MR.MOTION_TEXT_SYMBOL_13)
+    .trim();
 export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers: string[], narration?: string): MotionUtterance[] => {
   const used = new Set<string>();
   const lines = (Array.isArray(raw) ? raw : []).slice(0, C.MAX_LINES).flatMap((item, index): MotionUtterance[] => {
@@ -45,6 +42,11 @@ export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers
   return narration != null && speechWords(lines.map((line) => line.text).join(MR.MOTION_TEXT_SYMBOL_13)) !== speechWords(narration) ? [] : lines;
 };
 export const fallbackMotionUtterances = (id: string, text: string): MotionUtterance[] => (text.trim() ? [{ id: MR.MOTION_TEMPLATE_NARRATOR(id), speaker: C.NARRATOR, role: MR.MOTION_TEXT_NARRATION, text: text.trim(), emotion: MR.MOTION_TEXT_NEUTRAL, speed: 1, pauseBefore: 0, pauseAfter: 0.18, emphasis: [] }] : []);
+export const motionVoiceAge = (voice: MotionVoicePreset): string => {
+  const text = soundText([voice.name, voice.description].join(MR.MOTION_TEXT_SYMBOL_13));
+  if ((C.SENIOR as readonly string[]).includes(voice.name) || (C.SENIOR_FEMALE as readonly string[]).includes(voice.name) || C.SENIOR_TAG.test(text)) return MR.MOTION_TEXT_SENIOR;
+  return C.CHILD_TAG.test(text) ? MR.MOTION_TEXT_CHILD : C.ADULT;
+};
 export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], requested: Record<string, string> = {}, direction?: MotionAudioDirection, inferred: Record<string, { gender?: "male" | "female"; age?: string }> = {}): MotionVoicePlan["roles"] => {
   const existing = (name: string) => voices.find((voice) => voice.id === name || voice.name === name);
   const used = new Set<string>();
@@ -54,13 +56,17 @@ export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voi
       gender = traits.gender || inferred[member.key]?.gender,
       age = traits.age || inferred[member.key]?.age;
     const senior = age === MR.MOTION_TEXT_SENIOR,
-      female = gender === MR.MOTION_TEXT_FEMALE;
-    const candidates = senior ? (female ? C.SENIOR_FEMALE : C.SENIOR) : female ? C.PRESET_FEMALE : C.PRESET_MALE;
+      female = gender === MR.MOTION_TEXT_FEMALE,
+      wantedAge = senior ? MR.MOTION_TEXT_SENIOR : age === MR.MOTION_TEXT_CHILD ? MR.MOTION_TEXT_CHILD : C.ADULT;
+    const named = (senior ? (female ? C.SENIOR_FEMALE : C.SENIOR) : wantedAge === C.ADULT ? (female ? C.PRESET_FEMALE : C.PRESET_MALE) : []).map(existing);
+    const trained = voices.filter((voice) => voice.id.startsWith(MR.MOTION_TEXT_CUSTOM) && motionVoiceAge(voice) === wantedAge);
+    const candidates = [...named, ...trained];
     const compatible = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => !!voice && (!gender || voice.gender === gender);
     const fresh = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => compatible(voice) && !used.has(voice.id);
+    const ageOk = (voice: MotionVoicePreset) => motionVoiceAge(voice) === wantedAge;
     const preferred = existing(requested[member.key]);
-    const narrator = member.key === C.NARRATOR && direction?.mode === MR.MOTION_TEXT_STORYTELLING ? voices.find((voice) => fresh(voice) && /ke chuyen|story|natural|tu nhien/.test(soundText(voice.description))) : undefined;
-    const chosen = (fresh(preferred) ? preferred : undefined) || narrator || candidates.map(existing).find(fresh) || voices.find(fresh) || candidates.map(existing).find(compatible) || voices.find(compatible);
+    const narrator = member.key === C.NARRATOR && direction?.mode === MR.MOTION_TEXT_STORYTELLING ? voices.find((voice) => fresh(voice) && ageOk(voice) && /ke chuyen|story|natural|tu nhien/.test(soundText([voice.name, voice.description].join(MR.MOTION_TEXT_SYMBOL_13)))) : undefined;
+    const chosen = (fresh(preferred) ? preferred : undefined) || narrator || candidates.find(fresh) || voices.find((voice) => fresh(voice) && ageOk(voice)) || voices.find(fresh) || candidates.find(compatible) || voices.find(compatible);
     if (!chosen) throw new Error(gender ? C.GENDER_UNAVAILABLE : C.FAILED);
     used.add(chosen.id);
     return { speaker: member.key, name: member.name, voiceId: chosen.id, gender: gender || chosen.gender, age };

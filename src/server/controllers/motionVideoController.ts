@@ -72,7 +72,7 @@ import { libraryMime } from "../services/motionAssetLibraryService.js";
 import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
 import { MOTION_VOICE } from "../../constants/motionVoice.js";
 import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
-import { listVieneuVoices, registerVieneuVoice, vieneuRoot } from "../services/vieneuTtsService.js";
+import { listVieneuVoices, registerVieneuVoice, synthesizeVieneuSpeech, vieneuRoot } from "../services/vieneuTtsService.js";
 import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
@@ -439,6 +439,27 @@ export const listMotionVoices = async (_req: Request, res: Response): Promise<vo
     res.json({ success: true, voices: await listVieneuVoices() });
   } catch (error) {
     fail(res, 503, error);
+  }
+};
+export const previewMotionVoice = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const voice = String(req.body?.voice || MOTION_VOICE.DEFAULT).slice(0, 100),
+      text = String(req.body?.text || MOTION_VOICE.PREVIEW_TEXT)
+        .trim()
+        .slice(0, 400);
+    const folder = path.join(vieneuRoot(), MOTION_VOICE.PREVIEW_DIR),
+      file = path.join(
+        folder,
+        createHash(MR.MOTION_TEXT_SHA256)
+          .update(JSON.stringify([voice, text]))
+          .digest(MR.MOTION_TEXT_HEX)
+          .slice(0, 24) + MR.MOTION_TEXT_WAV,
+      );
+    fs.mkdirSync(folder, { recursive: true });
+    const result = fs.existsSync(file) ? { seconds: 0 } : await synthesizeVieneuSpeech(text, voice, file);
+    res.json({ success: true, seconds: result.seconds, base64: (await fs.promises.readFile(file)).toString(MR.MOTION_TEXT_BASE64) });
+  } catch (error) {
+    fail(res, 400, error);
   }
 };
 export const registerMotionVoice = async (req: Request, res: Response): Promise<void> => {

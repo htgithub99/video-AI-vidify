@@ -1,3 +1,4 @@
+import * as MR from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_683,
   SOURCE_TEMPLATE_SYMBOL_75,
@@ -147,12 +148,7 @@ const grokBootstrapMutexes = new WeakMap<BrowserContext, SimpleMutex>();
 const grokReadyContexts = new WeakSet<BrowserContext>();
 interface ActivePlanningController { controller: AbortController; provider: AiPlanningFallbackProvider; }
 const activePlanningControllers = new Map<string, Map<string, ActivePlanningController>>();
-export const beginChatPlanningRun = (
-  runId: string,
-  startedAt: number,
-  workerId: string = CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID,
-  provider: AiPlanningFallbackProvider = AiPlanningFallbackProvider.Disabled,
-): { signal: AbortSignal; cancel: () => void; complete: () => void; } => {
+export const beginChatPlanningRun = (runId: string, startedAt: number, workerId: string = CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_WORKER_ID, provider: AiPlanningFallbackProvider = AiPlanningFallbackProvider.Disabled): { signal: AbortSignal; cancel: () => void; complete: () => void } => {
   if (_.isEmpty(_.trim(runId)) || startedAt <= 0) {
     const unversionedController = new AbortController();
     unversionedController.abort();
@@ -196,6 +192,56 @@ const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
 };
 const normalizeRoomPrompt = (prompt: string): string => _.trim(_.replace(_.replace(prompt, CINEMATIC_CHAT_PLANNING_CONFIG.WINDOWS_LINE_ENDING_PATTERN, MOTION_TEXT_SYMBOL_27), CINEMATIC_CHAT_PLANNING_CONFIG.EXCESS_BLANK_LINES_PATTERN, MOTION_TEXT_SYMBOL_37));
+const closesString = (rest: string, isKey: boolean): boolean => {
+  const tail = rest.trimStart();
+  if (isKey) return tail.startsWith(MR.MOTION_TEXT_SYMBOL_39);
+  if (!tail) return true;
+  if (tail[0] === MR.MOTION_TEXT_COMMA) return /^[\s]*["{[\-\dtfn]/.test(tail.slice(1));
+  if (tail[0] === MR.MOTION_TEXT_SYMBOL_36 || tail[0] === MR.MOTION_TEXT_SYMBOL_51) return /^\s*([,}\]]|$)/.test(tail.slice(1));
+  return false;
+};
+export const repairLooseJson = (text: string): string => {
+  let out: string = MR.MOTION_TEXT_EMPTY,
+    inString = false,
+    isKey = false,
+    escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === MR.MOTION_TEXT_SYMBOL_49) escaped = true;
+      else if (ch === MR.MOTION_TEXT_SYMBOL_47) {
+        if (!closesString(text.slice(i + 1), isKey)) {
+          out += MR.MOTION_TEXT_SYMBOL_53;
+          continue;
+        }
+        inString = false;
+      }
+      out += ch;
+      continue;
+    }
+    if (ch === MR.MOTION_TEXT_SYMBOL_47) {
+      inString = true;
+      isKey = /[{,]\s*$/.test(out) && !/\[\s*$/.test(out) && closesString(text.slice(text.indexOf(MR.MOTION_TEXT_SYMBOL_47, i + 1) + 1), true);
+      out += ch;
+      continue;
+    }
+    if (ch === MR.MOTION_TEXT_COMMA) {
+      const rest = text.slice(i + 1).match(/^\s*([}\]])/);
+      if (rest) continue;
+    }
+    if (/[A-Za-z_$]/.test(ch) && /[{,]\s*$/.test(out)) {
+      const key = text.slice(i).match(/^([A-Za-z_$][\w$]*)("?)\s*:/);
+      if (key) {
+        out += MR.MOTION_TEXT_SYMBOL_47 + key[1] + MR.MOTION_TEXT_SYMBOL_47;
+        i += key[1].length + key[2].length - 1;
+        continue;
+      }
+    }
+    out += ch;
+  }
+  return out;
+};
 const parseStrictRoomJson = (text: string): unknown => {
   const trimmed = _.trim(text);
   try {
@@ -210,13 +256,18 @@ const parseStrictRoomJson = (text: string): unknown => {
     } catch {
       try {
         const cleaned = candidate
-          .replace(/```(?:json)?/gi, "")
-          .replace(/```/g, "")
+          .replace(/```(?:json)?/gi, MR.MOTION_TEXT_EMPTY)
+          .replace(/```/g, MR.MOTION_TEXT_EMPTY)
           .trim();
         const cleanStart = cleaned.indexOf(MOTION_TEXT_SYMBOL_35);
         const cleanEnd = cleaned.lastIndexOf(MOTION_TEXT_SYMBOL_36);
         if (cleanStart >= 0 && cleanEnd > cleanStart) {
-          return parseJson(cleaned.slice(cleanStart, cleanEnd + 1));
+          const body = cleaned.slice(cleanStart, cleanEnd + 1);
+          try {
+            return parseJson(body);
+          } catch {
+            return parseJson(repairLooseJson(body));
+          }
         }
       } catch {
         return undefined;
@@ -274,11 +325,7 @@ const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promis
     timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS,
   });
 };
-const getProviderConversationSelectors = (
-  provider: AiPlanningFallbackProvider,
-):
-  | { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string; }
-  | undefined => {
+const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string } | undefined => {
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat))
     return {
       item: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ITEM_SELECTOR,
@@ -315,7 +362,7 @@ const getConversationIdentity = async (item: ReturnType<Page["locator"]>): Promi
     .first()
     .getAttribute(SOURCE_TEXT_HREF)
     .catch(() => null)) ||
-  (await item.innerText().catch(() => ""));
+  (await item.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
 const waitForConversationIdentityChange = async (page: Page, itemSelector: string, previousIdentity: string): Promise<boolean> => {
   const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_VERIFY_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -541,9 +588,7 @@ const deleteProviderConversationHistory = async (page: Page, provider: AiPlannin
   }
   return deletedCount;
 };
-export const clearChatPlanningRooms = async (
-  provider: AiPlanningFallbackProvider,
-): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean; }> => {
+export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
   const rooms = getProviderRooms(provider);
   const selectors = getProviderConversationSelectors(provider);
   if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0, deletedAll: false };
@@ -631,10 +676,10 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
           })
           .map((element, index) => {
             const identityElement = element.closest(identityConfig.selector) || element;
-            const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || "";
-            const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || "";
+            const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MR.MOTION_TEXT_EMPTY;
+            const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MR.MOTION_TEXT_EMPTY;
             const identity = messageId || (testId ? `${testId}${SOURCE_TEXT_SYMBOL_16}${index}` : identityElement.id);
-            const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || "";
+            const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || MR.MOTION_TEXT_EMPTY;
             return { identity, text: visibleText.trim() };
           });
       },
@@ -673,16 +718,16 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
   let activityDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS;
   const initialResponseSet = new Set(_.map(initialResponseSnapshots, (snapshot) => _.trim(snapshot.text)));
   const initialResponseIdentitySet = new Set(_.compact(_.map(initialResponseSnapshots, SOURCE_TEXT_IDENTITY)));
-  let previousText = "";
+  let previousText: string = MR.MOTION_TEXT_EMPTY;
   let stablePolls = 0;
   let lastResponseCount = initialCount;
   let lastCandidateLength = 0;
   let lastBusyState = false;
   let lastIdentityMatch = false;
   let lastObservedResponseCount = initialCount;
-  let lastObservedCandidate = "";
+  let lastObservedCandidate: string = MR.MOTION_TEXT_EMPTY;
   let busyWaitLogged = false;
-  let lastJsonCandidate = "";
+  let lastJsonCandidate: string = MR.MOTION_TEXT_EMPTY;
   while (Date.now() < absoluteDeadline) {
     throwIfPlanningCancelled(signal);
     await throwIfGrokRateLimited(page, busySelector);
@@ -699,8 +744,8 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
-    const lastResponse = _.trim(_.last(responseTexts) || "");
-    const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : "";
+    const lastResponse = _.trim(_.last(responseTexts) || MR.MOTION_TEXT_EMPTY);
+    const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : MR.MOTION_TEXT_EMPTY;
     const newResponseTexts = count > initialCount ? _.slice(responseTexts, initialCount) : [];
     const responsesNotPresentBeforeSubmission = _.filter(responseTexts, (value) => !_.isEmpty(value) && !initialResponseSet.has(value));
     const responsesWithNewIdentity = _.map(
@@ -721,7 +766,7 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
       (candidate) => candidate.length,
     );
     if (parseableJsonResponse) lastJsonCandidate = parseableJsonResponse;
-    const selectedResponse = matchingJsonResponse || parseableJsonResponse || _.maxBy(responseCandidates, (candidate) => candidate.length) || "";
+    const selectedResponse = matchingJsonResponse || parseableJsonResponse || _.maxBy(responseCandidates, (candidate) => candidate.length) || MR.MOTION_TEXT_EMPTY;
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)
@@ -794,7 +839,12 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
   throw timeoutError;
 };
 const isPendingResponseForRequest = (pendingResponse: PendingRoomResponse, page: Page, expectedSceneIds: string[], completionMarker?: string, artifactType?: string, requestId?: string): boolean =>
-  _.isEqual(pendingResponse.page, page) && !page.isClosed() && _.isEqual(pendingResponse.expectedSceneIds, expectedSceneIds) && _.isEqual(pendingResponse.completionMarker || "", completionMarker || "") && _.isEqual(pendingResponse.artifactType || "", artifactType || "") && _.isEqual(normalizeCinematicArtifactIdentity(pendingResponse.requestId), normalizeCinematicArtifactIdentity(requestId));
+  _.isEqual(pendingResponse.page, page) &&
+  !page.isClosed() &&
+  _.isEqual(pendingResponse.expectedSceneIds, expectedSceneIds) &&
+  _.isEqual(pendingResponse.completionMarker || MR.MOTION_TEXT_EMPTY, completionMarker || MR.MOTION_TEXT_EMPTY) &&
+  _.isEqual(pendingResponse.artifactType || MR.MOTION_TEXT_EMPTY, artifactType || MR.MOTION_TEXT_EMPTY) &&
+  _.isEqual(normalizeCinematicArtifactIdentity(pendingResponse.requestId), normalizeCinematicArtifactIdentity(requestId));
 const isResponseTimeoutError = (error: unknown): boolean => _.isEqual(_.toString(_.get(error, SOURCE_TEXT_CODE)), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE);
 const setLocalFilePathsViaCdp = async (page: Page, filePaths: string[]): Promise<boolean> => {
   if (_.isEmpty(filePaths)) return false;
@@ -901,15 +951,15 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
         }
     }
   }
-  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, ""))}`)).trim());
+  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))}`)).trim());
 };
 const getComposerReadings = async (input: Locator): Promise<string[]> => {
-  const value = await input.inputValue().catch(() => "");
-  const visibleText = await input.innerText().catch(() => "");
-  const domText = await input.textContent().catch(() => "");
+  const value = await input.inputValue().catch(() => MR.MOTION_TEXT_EMPTY);
+  const visibleText = await input.innerText().catch(() => MR.MOTION_TEXT_EMPTY);
+  const domText = await input.textContent().catch(() => MR.MOTION_TEXT_EMPTY);
   return [value, visibleText, domText];
 };
-const getComposerText = async (input: Locator): Promise<string> => _.trim(_.maxBy(await getComposerReadings(input), (text) => text.length) || "");
+const getComposerText = async (input: Locator): Promise<string> => _.trim(_.maxBy(await getComposerReadings(input), (text) => text.length) || MR.MOTION_TEXT_EMPTY);
 const waitForSendButtonReady = async (sendButtons: Locator[], timeoutMs: number, signal?: AbortSignal): Promise<Locator | null> => {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
@@ -973,7 +1023,7 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
   try {
     await input.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   } catch (error) {
-    const title = await page.title().catch(() => "");
+    const title = await page.title().catch(() => MR.MOTION_TEXT_EMPTY);
     const selectorMatches = await page
       .locator(inputSelector)
       .count()
@@ -1090,7 +1140,7 @@ const clickChatModelOption = async (page: Page, modelLabel: RegExp): Promise<boo
 };
 const waitForRoomIdle = async (page: Page, busySelector: string, responseSelector: string, signal?: AbortSignal): Promise<void> => {
   const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_IDLE_WAIT_TIMEOUT_MS;
-  let previousResponse = "";
+  let previousResponse: string = MR.MOTION_TEXT_EMPTY;
   let stablePolls = 0;
   while (Date.now() < deadline) {
     throwIfPlanningCancelled(signal);
@@ -1101,7 +1151,7 @@ const waitForRoomIdle = async (page: Page, busySelector: string, responseSelecto
       .count()
       .then((count) => count > 0);
     const snapshots = await getChatResponseSnapshots(page, responseSelector);
-    const latestResponse = _.trim(_.last(snapshots)?.text || "");
+    const latestResponse = _.trim(_.last(snapshots)?.text || MR.MOTION_TEXT_EMPTY);
     stablePolls = !busy && _.isEqual(latestResponse, previousResponse) ? stablePolls + 1 : 0;
     previousResponse = latestResponse;
     if (stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_IDLE_STABLE_POLLS) return;
@@ -1113,7 +1163,7 @@ const waitForSelectedModelLabel = async (page: Page, buttonSelector: string, mod
   const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const button = page.locator(buttonSelector).filter({ visible: true }).last();
-    if (modelLabel.test(_.trim(await button.innerText().catch(() => "")))) return true;
+    if (modelLabel.test(_.trim(await button.innerText().catch(() => MR.MOTION_TEXT_EMPTY)))) return true;
     await page.waitForTimeout(100);
   }
   return false;
@@ -1126,7 +1176,7 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.MODEL_PICKER_NOT_FOUND);
     throw new Error(CHAT_UI_AUTOMATION_MESSAGES.MODEL_PICKER_NOT_FOUND);
   }
-  const currentModelLabel = _.trim(await button.innerText().catch(() => ""));
+  const currentModelLabel = _.trim(await button.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (modelLabel.test(currentModelLabel)) return;
   await button.click();
   if ((await clickChatModelOption(page, modelLabel)) && (await waitForSelectedModelLabel(page, buttonSelector, modelLabel))) return;
@@ -1146,7 +1196,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
     if (allowDefaultModel) return;
     throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_PICKER_NOT_FOUND);
   }
-  const currentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
+  const currentModelLabel = _.trim(await modelButton.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (requestedModelLabel.test(currentModelLabel)) {
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_ALREADY_SELECTED });
     return;
@@ -1166,7 +1216,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   }
   await page.keyboard.press(SOURCE_TEXT_ESCAPE).catch(() => undefined);
   modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
-  const fallbackCurrentModelLabel = _.trim(await modelButton.innerText().catch(() => ""));
+  const fallbackCurrentModelLabel = _.trim(await modelButton.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (!baseModelLabel.test(fallbackCurrentModelLabel)) {
     await modelButton.click();
     if (!(await clickChatModelOption(page, baseModelLabel))) {
@@ -1196,11 +1246,11 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_THINKING_UNAVAILABLE);
 };
 const isGrokSecurityChallengeActive = async (page: Page, chatReady: boolean): Promise<boolean> => {
-  const title = await page.title().catch(() => "");
+  const title = await page.title().catch(() => MR.MOTION_TEXT_EMPTY);
   const bodyText = await page
     .locator(SOURCE_TEXT_BODY)
     .innerText()
-    .catch(() => "");
+    .catch(() => MR.MOTION_TEXT_EMPTY);
   const hasChallengeFrame = await page
     .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_FRAME_SELECTOR)
     .filter({ visible: true })
@@ -1231,7 +1281,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
   let challengeWasVisible = false;
   let challengeActiveLastPoll = false;
   let stableReadyPolls = 0;
-  let previousReadyUrl = "";
+  let previousReadyUrl: string = MR.MOTION_TEXT_EMPTY;
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_WAIT_TIMEOUT_MS) {
     throwIfPlanningCancelled(request.signal);
     if (page.isClosed()) throw new Error(SOURCE_TEXT_GROK_CHAT_PAGE_CLOSED_DURING_BOOTSTRAP);
@@ -1240,7 +1290,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
     if (challengeActive) {
       grokReadyContexts.delete(context);
       stableReadyPolls = 0;
-      previousReadyUrl = "";
+      previousReadyUrl = MR.MOTION_TEXT_EMPTY;
       challengeWasVisible = true;
       if (request.chromeHeadless !== false) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ERROR_GROK_SECURITY_HEADLESS);
       if (!challengeActiveLastPoll) {
@@ -1254,7 +1304,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
     challengeActiveLastPoll = false;
     const currentUrl = page.url();
     stableReadyPolls = chatReady ? (_.isEqual(currentUrl, previousReadyUrl) ? _.add(stableReadyPolls, 1) : 1) : 0;
-    previousReadyUrl = chatReady ? currentUrl : "";
+    previousReadyUrl = chatReady ? currentUrl : MR.MOTION_TEXT_EMPTY;
     const requiredStablePolls = challengeWasVisible ? CINEMATIC_CHAT_PLANNING_CONFIG.GROK_POST_CHALLENGE_READY_STABLE_POLLS : CINEMATIC_CHAT_PLANNING_CONFIG.GROK_READY_STABLE_POLLS;
     if (stableReadyPolls >= requiredStablePolls) {
       grokReadyContexts.add(context);
@@ -1300,7 +1350,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
   try {
     await input.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   } catch (error) {
-    throw new Error(CHAT_UI_AUTOMATION_MESSAGES.CHATGPT_LOGIN_INCOMPLETE(page.url(), await page.title().catch(() => ""), _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
+    throw new Error(CHAT_UI_AUTOMATION_MESSAGES.CHATGPT_LOGIN_INCOMPLETE(page.url(), await page.title().catch(() => MR.MOTION_TEXT_EMPTY), _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
   }
 };
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
@@ -1419,9 +1469,7 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.GrokChat]: generateWithGrokChat,
   [AiPlanningFallbackProvider.ChatGptUi]: generateWithChatGptUi,
 };
-export const generatePlanningWithChatUi = async (
-  request: ChatPlanningRequest,
-): Promise<{ text: string; provider: AiPlanningFallbackProvider; }> => {
+export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
   throwIfPlanningCancelled(request.signal);
   const roomKey = getPlanningRoomKey(request);

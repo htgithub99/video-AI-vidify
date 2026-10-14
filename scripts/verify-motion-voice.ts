@@ -11,6 +11,7 @@ import { getMotionAudioDirectory } from "../src/server/services/motionLibrarySer
 import { normalizeBeats } from "../src/server/services/motionStoryService.ts";
 import { motionAudioDirection } from "../src/lib/motionAudioDirection.ts";
 import { soundCandidates } from "../src/server/services/motionSfxLibraryService.ts";
+import { MOTION_VOICE } from "../src/constants/motionVoice.ts";
 const directory = path.resolve(VT.SCRATCH_MOTION_VOICE_UNIT, randomUUID());
 process.env.VIDIFY_STORAGE_DIR = directory;
 const voices = [
@@ -78,7 +79,7 @@ const opts: any = {
 const plan = await directMotionVoice(script, analysis, voices, opts);
 assert.equal(plan.beats[0].utterances[1].speaker, VT.WOMAN);
 assert.equal(speechWords(plan.beats[0].utterances.map((line) => line.text).join(VT.EMPTY_8)), speechWords(source));
-assert.ok(directedSpeechText(plan.beats[0].utterances[3]).includes(VT.BINH_TINH_2));
+assert.equal(directedSpeechText(plan.beats[0].utterances[3]), VT.CO_CHAU_CU_BINH_TINH);
 assert.deepEqual(normalizeMotionUtterances([{ text: VT.NOI_DUNG_BIA_DAT }], VT.A_2, [VT.NARRATOR], source), []);
 assert.equal(normalizeMotionUtterances([{ id: VT.Q, speaker: VT.UNKNOWN, text: VT.CHAO }], VT.A_2, [VT.NARRATOR])[0].speaker, VT.NARRATOR);
 await directMotionVoice(script, analysis, voices, opts);
@@ -101,7 +102,7 @@ assert.equal(track.clips?.length, 4);
 assert.equal(generated, 4);
 assert.equal(track.clips![0].speaker, VT.NARRATOR);
 for (let index = 1; index < track.clips!.length; index++) assert.ok(track.clips![index].start >= track.clips![index - 1].end);
-assert.ok(track.clips![1].end + 0.39 < track.clips![2].start);
+assert.ok(Math.abs(track.clips![2].start - track.clips![1].end - MOTION_VOICE.PAUSE.SPEAKER_CHANGE) < 1 / 48000);
 const wav = fs.readFileSync(path.join(getMotionAudioDirectory(), track.audioId));
 assert.equal(wav.readUInt16LE(22), 2);
 assert.ok(Math.abs((wav.length - 44) / 4 / 48000 - track.totalSeconds) < 1 / 48000);

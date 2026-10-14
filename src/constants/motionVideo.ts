@@ -38,6 +38,7 @@ export const MOTION_GPU_ENCODERS = ["h264_nvenc", "h264_qsv", "h264_amf"] as con
 export const MOTION_STORY_CONFIG = {
   PROJECT_ID_PREFIX: "motion-story-",
   ARTIFACT_ANALYSIS: "motion-story-analysis",
+  ARTIFACT_STYLE: "motion-style-kit",
   ARTIFACT_CHAPTER: "motion-story-chapter",
   VI_SYLLABLES_PER_SECOND: 4.3,
   EN_WORDS_PER_SECOND: 2.5,

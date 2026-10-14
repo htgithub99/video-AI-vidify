@@ -110,7 +110,7 @@ import { MotionVideoDnaCard } from "./motion-video/MotionVideoDnaCard.js";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { Tooltip } from "./ui/Tooltip";
-import { MOTION_VOICE_TEXT, MOTION_VOICE_STYLES } from "../constants/motionVoice.js";
+import { MOTION_VOICE_TEXT } from "../constants/motionVoice.js";
 const cardCls = MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P;
 const inputCls = MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL;
 const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_TEXT_VI as Lang }) => {
@@ -670,10 +670,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
             {studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
-            {studio.previewVideoUrl ? (
-              <video className={MOTION_VOICE_STYLES.VIDEO} src={studio.previewVideoUrl} controls preload={MR.MOTION_TEXT_METADATA} />
-            ) : studio.ME ? (
-              <MotionSpecPlayer ME={studio.ME} spec={previewSpec} audioUrl={motionAudioUrl(studio.previewAudioId)} audioPending={studio.audioPreparing || !!studio.voiceError} />
+            {studio.ME ? (
+              <MotionSpecPlayer ME={studio.ME} spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} audioPending={studio.audioPreparing || !!studio.voiceError} pending={studio.audioPreparing || studio.renderBusy || busyKind === MOTION_TEXT_SCENES} />
             ) : (
               <div className={MOTION_STYLES.W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
                 <div className={MOTION_STYLES.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20}>

@@ -1,6 +1,6 @@
 import { motionFiniteNumber } from "./motionNumber.js";
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_SOUND_CONFIG as C, MOTION_SOUND_KINDS } from "../constants/motionSound.js";
+import { MOTION_SOUND_CONFIG as C, MOTION_SOUND_FOLDER_KINDS, MOTION_SOUND_KINDS } from "../constants/motionSound.js";
 import type { MotionSoundCue, MotionSoundEvent } from "../types/motionVideo.js";
 export const soundText = (value: unknown): string =>
   String(value || C.EMPTY)
@@ -13,6 +13,14 @@ export const soundText = (value: unknown): string =>
 export const soundKind = (value: unknown): string | undefined => {
   const text = soundText(value);
   return MOTION_SOUND_KINDS.find((item) => soundText(item.kind) === text)?.kind || MOTION_SOUND_KINDS.find((item) => item.pattern.test(text))?.kind;
+};
+export const soundAssetKinds = (name: string, file: string = C.EMPTY): string[] => {
+  const text = soundText(name),
+    kinds = MOTION_SOUND_KINDS.filter((kind) => kind.pattern.test(text)).map((kind) => kind.kind);
+  if (kinds.length) return kinds;
+  const folder = String(file).split(/[\\/]/).slice(-2, -1)[0] || C.EMPTY,
+    fallback = MOTION_SOUND_FOLDER_KINDS[folder];
+  return fallback ? [fallback] : [];
 };
 export const normalizeSoundEvents = (raw: unknown): MotionSoundEvent[] =>
   (Array.isArray(raw) ? raw : []).slice(0, C.MAX_EVENTS).flatMap((value, index) => {

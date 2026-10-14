@@ -5,8 +5,7 @@ import type { MotionAudioDirection } from "../../types/motionVideo.js";
 import { MOTION_AUDIO_DIRECTION } from "../../constants/motionAudioDirection.js";
 import { motionSoundCatalogPrompt } from "./motionSfxLibraryService.js";
 import { MOTION_REFERENCE_PROMPTS, MOTION_QA_MESSAGES } from "../../constants/motionReference.js";
-import { hasMotionRenderFailure } from "../../lib/motionReference.js";
-import { withMotionReferenceFiles } from "./motionReferenceService.js";
+import { hasMotionRenderFailure, needsMotionPreview } from "../../lib/motionReference.js";
 import type { MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
@@ -177,53 +176,78 @@ const aborted = (o: GenOptions) => {
 const storyLine = (a: MotionStoryAnalysis): string => MOTION_TEMPLATE_SYMBOL_50(`${a.title}`, `${a.logline}`);
 const castLines = (a: MotionStoryAnalysis): string => _.map(a.cast, (c) => MOTION_TEMPLATE_LOOK(`${c.key}`, `${c.gender || MOTION_TEXT_MALE}`, `${c.name}`, `${c.role || MR.MOTION_TEXT_EMPTY}`, `${c.look || c.description || MOTION_TEXT_SYMBOL_25}`)).join(MOTION_TEXT_SYMBOL_27);
 const imagesOf = (files: string[]): MotionAiImage[] => _.map(files, (f) => ({ name: path.basename(f), mimeType: MOTION_TEXT_IMAGE_JPEG, path: f }));
+const kitRenderStyle = (analysis: MotionStoryAnalysis): Partial<MotionGenState["style"]> => {
+  const render = analysis.referenceStyle?.kit?.render || {},
+    outline = _.toLower(render.outline || MR.MOTION_TEXT_EMPTY),
+    tones = parseInt(String(render.shadingTones || MR.MOTION_TEXT_EMPTY), 10);
+  return {
+    ...(/silhouette|outer|outline only/.test(outline) ? { outlineSilhouette: true } : {}),
+    ...(tones >= 2 || /cel|gradient|painterly/.test(_.toLower(render.mode || MR.MOTION_TEXT_EMPTY)) ? { faceShading: true } : {}),
+  };
+};
+const LEGACY_CHARACTER_KEYS = [MR.MOTION_TEXT_DRAWNBODY, MR.MOTION_TEXT_SOCKET, MR.MOTION_TEXT_LAYERS, MR.MOTION_TEXT_BUILD, MR.MOTION_TEXT_BODY];
+const characterNodes = (nodes: any[], materials: Record<string, any>): any[] =>
+  (Array.isArray(nodes) ? nodes : []).map((node) => ({
+    ...node,
+    ...(!node?.shape && typeof node?.type === MR.MOTION_TEXT_STRING ? { shape: node.type } : {}),
+    ...(typeof node?.mat === MR.MOTION_TEXT_STRING && materials[node.mat] ? { mat: materials[node.mat] } : {}),
+    ...(node?.children ? { children: characterNodes(node.children, materials) } : {}),
+    ...(node?.node ? { node: characterNodes([node.node], materials)[0] } : {}),
+  }));
 export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions): Promise<void> => {
-  let errors: string[] = [];
-  for (let attempt = 0; attempt < 3; attempt++) {
-    aborted(o);
-    o.log(attempt ? MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN(`${attempt + 1}`) : MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH);
-    const raw = await (o.ai || runMotionAi)(
-      MOTION_GEN_BIBLE_PROMPT({ preamble: MR.MOTION_TEMPLATE_SYMBOL_147(o.preamble || MOTION_GEN_PREAMBLE, planningPrompt(analysis), MOTION_PRODUCTION_BRIEF), story: storyLine(analysis), era: analysis.era || MR.MOTION_TEXT_EMPTY, look: analysis.look, cast: castLines(analysis), errors: errors.join(MOTION_TEXT_SYMBOL_27) }),
-      MOTION_GEN_CONFIG.ARTIFACT_BIBLE,
-      o.exec,
-      o.signal,
-      o.log,
-    ).catch((e) => {
-      if (o.signal?.aborted) throw e;
-      errors = [getMotionErrorSummary(e)];
-      return null;
-    });
-    if (!raw) continue;
-    const style = raw.style || {};
-    gen.style = {
-      grade: _.includes(MOTION_GEN_GRADES, style.grade) ? style.grade : MOTION_TEXT_NEUTRAL,
-      notes: _.truncate(_.toString(style.notes || MR.MOTION_TEXT_EMPTY), { length: 200 }),
-      outlineColor: analysis.referenceStyle?.outlineColor,
-      outlineWidth: analysis.referenceStyle?.outlineWidth,
-    };
-    errors = [];
-    for (const c of analysis.cast) {
-      const rawDesign = _.get(raw, [MOTION_TEXT_CAST, c.key]);
+  o.log(MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH);
+  const preamble = MR.MOTION_TEMPLATE_SYMBOL_147(o.preamble || MOTION_GEN_PREAMBLE, planningPrompt(analysis), MOTION_PRODUCTION_BRIEF);
+  const failures: string[] = [];
+  let styled = false;
+  await mapMotionAiPool(analysis.cast, async (c) => {
+    const others = _.filter(analysis.cast, (other) => other.key !== c.key);
+    const castText = castLines({ ...analysis, cast: [c] }) + (others.length ? MOTION_TEXT_SYMBOL_27 + MOTION_GEN_CONFIG.OTHER_CAST + castLines({ ...analysis, cast: others }) : MR.MOTION_TEXT_EMPTY);
+    let errors: string[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      aborted(o);
+      if (attempt) o.log(MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN(`${attempt + 1}`) + MR.MOTION_TEXT_SYMBOL_13 + c.key);
+      const raw = await (o.ai || runMotionAi)(MOTION_GEN_BIBLE_PROMPT({ preamble, story: storyLine(analysis), era: analysis.era || MR.MOTION_TEXT_EMPTY, look: analysis.look, cast: castText, errors: errors.join(MOTION_TEXT_SYMBOL_27) }), MOTION_GEN_CONFIG.ARTIFACT_BIBLE, o.exec, o.signal, o.log).catch((e) => {
+        if (o.signal?.aborted) throw e;
+        errors = [getMotionErrorSummary(e)];
+        return null;
+      });
+      if (!raw) continue;
+      const rawDesign = _.get(raw, [MOTION_TEXT_CAST, c.key]) || (_.size(raw.cast) === 1 ? _.values(raw.cast)[0] : undefined);
       if (!rawDesign) {
         o.log(MR.MOTION_TEMPLATE_CHARACTER_SCHEMA_MISMATCH_ROOT_FIELDS_CAST_KEYS_EXPECTED(Object.keys(raw).join(MR.MOTION_TEXT_SYMBOL_14), Object.keys(raw.cast || {}).join(MR.MOTION_TEXT_SYMBOL_14), c.key));
-        errors.push(MOTION_TEMPLATE_CAST_IS_MISSING(`${c.key}`));
+        errors = [MOTION_TEMPLATE_CAST_IS_MISSING(`${c.key}`)];
         continue;
       }
-      const selected = { ...rawDesign };
+      const legacy = LEGACY_CHARACTER_KEYS.filter((key) => key in rawDesign);
+      if (legacy.length && !Array.isArray(rawDesign.parts)) {
+        errors = [MOTION_GEN_CONFIG.LEGACY_SCHEMA + legacy.join(MR.MOTION_TEXT_SYMBOL_14)];
+        continue;
+      }
+      if (!styled && raw.style) {
+        styled = true;
+        gen.style = {
+          grade: !analysis.referenceStyle?.kit && _.includes(MOTION_GEN_GRADES, raw.style.grade) ? raw.style.grade : MOTION_TEXT_NEUTRAL,
+          notes: _.truncate(_.toString(raw.style.notes || MR.MOTION_TEXT_EMPTY), { length: 200 }),
+          outlineColor: analysis.referenceStyle?.outlineColor,
+          outlineWidth: analysis.referenceStyle?.outlineWidth,
+          ...kitRenderStyle(analysis),
+        };
+      }
       const materials = { ...(raw.materials || {}), ...(rawDesign.materials || {}) };
-      const inlineMaterials = (nodes: any[]) => (nodes || []).map((node) => ({ ...node, ...(typeof node.mat === MR.MOTION_TEXT_STRING && materials[node.mat] ? { mat: materials[node.mat] } : {}), ...(node.children ? { children: inlineMaterials(node.children) } : {}), ...(node.node ? { node: inlineMaterials([node.node])[0] } : {}) }));
-      if (selected.parts) selected.parts = selected.parts.map((p: any) => ({ ...p, nodes: inlineMaterials(p.nodes) }));
+      const selected = { ...rawDesign, ...(rawDesign.parts ? { parts: rawDesign.parts.map((p: any) => ({ ...p, nodes: characterNodes(p.nodes, materials) })) } : {}) };
       const v = validateGenCharacter(selected);
       if (!hasAuthoredCharacter(v.value)) {
-        errors.push(MR.MOTION_TEMPLATE_COMPLETE_VALID_CUSTOM_CHARACTER_DESIGN_REQUIRED(c.key, v.errors.join(MR.MOTION_TEXT_SYMBOL_41)));
+        errors = [MR.MOTION_TEMPLATE_COMPLETE_VALID_CUSTOM_CHARACTER_DESIGN_REQUIRED(c.key, v.errors.join(MR.MOTION_TEXT_SYMBOL_41))];
         continue;
       }
       if (v.errors.length) o.log(MOTION_TEMPLATE_CAST_2(`${c.key}`, `${_.take(v.errors, 3).join(MOTION_TEXT_SYMBOL_41)}`));
       gen.cast[c.key] = v.value;
+      return;
     }
-    if (!errors.length) return;
-  }
-  throw new Error(MR.MOTION_TEMPLATE_CANNOT_BUILD_CUSTOM_CHARACTERS(errors.join(MR.MOTION_TEXT_SYMBOL_41)));
+    failures.push(...errors);
+  });
+  if (!styled && _.isEmpty(gen.style)) gen.style = { grade: MOTION_TEXT_NEUTRAL, notes: MR.MOTION_TEXT_EMPTY, outlineColor: analysis.referenceStyle?.outlineColor, outlineWidth: analysis.referenceStyle?.outlineWidth, ...kitRenderStyle(analysis) };
+  if (failures.length) throw new Error(MR.MOTION_TEMPLATE_CANNOT_BUILD_CUSTOM_CHARACTERS(failures.join(MR.MOTION_TEXT_SYMBOL_41)));
 };
 const beatSeconds = (b: MotionBeat, lang: string): number => _.clamp(b.duration || estimateBeatSeconds(b, lang) + 0.4, 2.5, 14);
 const usesOf = (key: string, script: MotionStoryScript): string =>
@@ -740,12 +764,7 @@ export const directExistingMotionSound = async (script: MotionStoryScript, gen: 
   gen.soundDirectionKey = key;
 };
 export const buildScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, o: GenOptions): Promise<MotionStoryScript> => {
-  if (o.styleReferences?.length && !o.referenceImages)
-    return withMotionReferenceFiles(o.styleReferences, (images) => {
-      const ai = o.ai || runMotionAi;
-      const referenceKey = createHash(MR.MOTION_TEXT_SHA256).update(JSON.stringify(o.styleReferences)).digest(MR.MOTION_TEXT_HEX);
-      return buildScenes(script, analysis, { ...o, referenceKey, referenceImages: images, ai: (prompt, artifact, exec, signal, log, previews) => ai([prompt, MOTION_REFERENCE_PROMPTS.IMAGES].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, [...images, ...(previews || [])]) });
-    });
+  if (o.styleReferences?.length && !o.referenceKey) return buildScenes(script, analysis, { ...o, referenceKey: createHash(MR.MOTION_TEXT_SHA256).update(JSON.stringify(o.styleReferences)).digest(MR.MOTION_TEXT_HEX) });
   analysis = bindVideoDnaSettings({ ...analysis, characterMotion: o.characterMotion === true }, { drawingMode: o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, characterMode: MR.MOTION_TEXT_DRAWN, aspect: o.aspect || MR.MOTION_TEXT_16_9 });
   const gen = prepareMotionGen(script.gen, analysis, o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, o.referenceKey);
   if (gen.characterMotion !== (o.characterMotion === true)) {
@@ -827,10 +846,12 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
       emit();
     });
     progress(0.76, MOTION_TEXT_PREVIEW);
-    o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(`${stageList.length}`));
-    await previewBeats(stageList, script, gen, session, o);
+    const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
+    const previewList = [...stageList, ...stale];
+    o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(`${previewList.length}`));
+    await previewBeats(previewList, script, gen, session, o);
     emit();
-    const broken = stageList.filter((beat) => !gen.previews[beat.id]?.file || hasMotionRenderFailure(gen.previews[beat.id]?.issues));
+    const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
     if (broken.length) {
       const notes = autoNotes(broken, gen);
       await mapMotionAiPool(_.chunk(broken, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL), (group) => stageBeats(group, script, analysis, gen, o, notes));
@@ -849,7 +870,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
   await directExistingMotionSound(script, gen, o);
   emit();
   gen.failed = _.map(
-    _.filter(sceneBeats, (b) => !gen.staging[b.id] || !gen.previews[b.id]?.file || hasMotionRenderFailure(gen.previews[b.id]?.issues)),
+    _.filter(sceneBeats, (b) => !gen.staging[b.id] || needsMotionPreview(gen.previews[b.id])),
     MOTION_TEXT_ID,
   );
   gen.updatedAt = new Date().toISOString();

@@ -16,9 +16,9 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { motionAudioHash as hash } from "./motionAudioUtils.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeVieneuSpeech; }
-const deliverySpeed = (line: MotionUtterance): number => Math.max(0.85, Math.min(1.15, line.speed * ({ neutral: 1, warm: 0.97, serious: 0.94, tense: 0.96, surprised: 1.05, sad: 0.9, excited: 1.08 }[line.emotion] || 1)));
+const deliverySpeed = (line: MotionUtterance): number => Math.max(0.93, Math.min(1.12, line.speed * ({ neutral: 1, warm: 0.99, serious: 0.98, tense: 1, surprised: 1.04, sad: 0.96, excited: 1.06 }[line.emotion] || 1)));
 const speechClip = async (line: MotionUtterance, voiceId: string, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ id: string; bytes: number; duration: number }> => {
-  const id = C.CLIP_PREFIX + hash([C.VERSION, C.PACKAGE, line.text, voiceId, line.emotion, line.speed, line.emphasis]) + MR.MOTION_TEXT_WAV,
+  const id = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, line.text, voiceId, line.emotion, line.speed, line.emphasis]) + MR.MOTION_TEXT_WAV,
     file = path.join(getMotionAudioDirectory(), id);
   if (!fs.existsSync(file) || fs.statSync(file).size < 48) {
     const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, id),
@@ -55,7 +55,7 @@ const speechClip = async (line: MotionUtterance, voiceId: string, opts: MotionVo
 export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> => {
   const voices = await (deps.voices || listVieneuVoices)(opts.signal, opts.log),
     plan = await directMotionVoice(script, analysis, voices, opts);
-  const id = C.PREFIX + hash([C.VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging]) + MR.MOTION_TEXT_WAV,
+  const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging]) + MR.MOTION_TEXT_WAV,
     folder = getMotionAudioDirectory(),
     file = path.join(folder, id),
     metadata = file + MR.MOTION_TEXT_JSON;
@@ -73,13 +73,18 @@ export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis:
     let done = 0;
     for (const beat of plan.beats) {
       let cursor = 0;
-      for (const line of beat.utterances) {
+      for (let index = 0; index < beat.utterances.length; index++) {
+        const line = beat.utterances[index],
+          previous = beat.utterances[index - 1],
+          next = beat.utterances[index + 1];
         if (opts.signal?.aborted) throw new Error(C.CANCELLED);
         const voiceId = plan.roles.find((role) => role.speaker === line.speaker)?.voiceId || plan.roles[0].voiceId;
         const audio = await speechClip(line, voiceId, opts, deps);
-        cursor += line.pauseBefore;
+        const gapBefore = previous ? 0 : Math.min(line.pauseBefore, C.PAUSE.FIRST),
+          gapAfter = Math.min(Math.max(line.pauseAfter, next?.pauseBefore || 0), !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
+        cursor += gapBefore;
         local.push({ beatId: beat.id, line, voiceId, audio, t: cursor });
-        cursor += audio.duration + line.pauseAfter;
+        cursor += audio.duration + gapAfter;
         opts.onProgress?.(++done, totalLines);
       }
       durations.push(Math.max(0.6, cursor));

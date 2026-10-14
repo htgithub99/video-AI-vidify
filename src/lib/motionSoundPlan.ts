@@ -1,5 +1,5 @@
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_SOUND_CONFIG as C, MOTION_SOUND_KINDS } from "../constants/motionSound.js";
+import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_BED, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
 import { normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
@@ -55,7 +55,10 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
     }
     const context = soundText([place?.description, location?.name, location?.time, staging.time, beat?.time, staging.weather, beat?.weather].join(MR.MOTION_TEXT_SYMBOL_13));
     const interior = place?.interior ?? location?.interior;
-    const bed = /\brain\b/.test(context) ? MR.MOTION_TEXT_RAIN : /\bwind\b/.test(context) ? MR.MOTION_TEXT_WIND : !interior && /\bnight\b/.test(context) ? MR.MOTION_TEXT_NIGHT : /\bforest\b/.test(context) ? MR.MOTION_TEXT_FOREST : /\bcity\b|\bstreet\b/.test(context) ? MR.MOTION_TEXT_CITY : interior ? MR.MOTION_TEXT_ROOM : undefined;
+    const bed = MOTION_SOUND_BEDS.find((item) => item.pattern.test(context) && !(item.exteriorOnly && interior))?.kind || (interior ? MR.MOTION_TEXT_ROOM : undefined);
+    const genreBed = MOTION_SOUND_GENRE_BED[(analysis?.genre || C.EMPTY) as keyof typeof MOTION_SOUND_GENRE_BED];
+    if (genreBed && (genreBed.always || MOTION_SOUND_SCARY_PLACE.test(context) || (!interior && /\bnight\b|ban dem|dem khuya|nua dem/.test(context))))
+      add({ id: MR.MOTION_TEMPLATE_AMBIENCE(beatId, genreBed.kind), beatId, t: start, kind: genreBed.kind, layer: MR.MOTION_TEXT_AMBIENCE, duration, gainDb: genreBed.gainDb, description: place?.description || location?.name, source: MR.MOTION_TEXT_OFFSCREEN });
     const events = normalizeSoundEvents(staging.soundEvents || beat?.data?.soundEvents);
     if (bed && !events.some((event) => event.layer === MR.MOTION_TEXT_AMBIENCE)) {
       const placeKey = MR.MOTION_TEMPLATE_EMPTY_3(staging.location, staging.time || location?.time, bed);

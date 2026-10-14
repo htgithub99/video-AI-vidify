@@ -1,5 +1,8 @@
 export const MOTION_VOICE = {
   VERSION: 2,
+  CLIP_VERSION: 2,
+  TRACK_VERSION: 2,
+  PAUSE: { FIRST: 0.2, SAME_SPEAKER: 0.12, SPEAKER_CHANGE: 0.3, BEAT_END: 0.35 },
   PROVIDER: "vieneu",
   PACKAGE: "vieneu==3.8.3",
   ONNX: "onnxruntime==1.24.1",
@@ -27,6 +30,9 @@ export const MOTION_VOICE = {
   VOICES_URL: "/api/motion-video/voices",
   REFERENCE_ROUTE: "/voices/reference",
   REFERENCE_URL: "/api/motion-video/voices/reference",
+  PREVIEW_ROUTE: "/voices/preview",
+  PREVIEW_DIR: "previews",
+  PREVIEW_TEXT: "Xin chào, đây là giọng đọc thử cho video của bạn.",
   MAX_REFERENCE_BYTES: 20000000,
   REFERENCE_INVALID: "Mẫu giọng cần là audio có ít nhất 3 giây tiếng nói và tối đa 20 MB.",
   SETUP: "Chuẩn bị VieNeu-TTS; lần đầu cần tải runtime và model, các lần sau dùng cache.",
@@ -42,12 +48,15 @@ export const MOTION_VOICE = {
   SENIOR: ["Thiền Tâm Đức", "Xuân Vĩnh", "Thanh Bình"],
   SENIOR_FEMALE: ["Thùy Dung", "Thục Đoan"],
   DEFAULT: "Hải Đăng",
+  ADULT: "adult",
+  SENIOR_TAG: /ong lao|ba lao|ba cu|ong cu|cao tuoi|nguoi gia|elderly|\bold\b|grandpa|grandma/,
+  CHILD_TAG: /tre em|giong be|thieu nhi|\bchild|\bkid/,
   GENDER_UNAVAILABLE: "Chưa có giọng VieNeu phù hợp với giới tính nhân vật trong thư viện.",
   EMOTIONS: ["neutral", "warm", "serious", "tense", "surprised", "sad", "excited"] as const,
   TAGS: /\[(?:cười|thở dài|hắng giọng)\]/gi,
 } as const;
-export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited",speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Pauses normally 0.1..0.5 seconds, longer only for a motivated reaction. Describe expression without adding bracket tags to text. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
-export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited",speed:0.85..1.15,pauseBefore:0..2,pauseAfter:0..3,emphasis:["words in text"]}]. The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For fictional stories, write natural character dialogue where the action motivates it and assign each line to its actual speaker. Documentary or factual material must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
+export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited",speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
+export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited",speed:0.85..1.15,pauseBefore:0..0.3,pauseAfter:0..0.6,emphasis:["words in text"]}]. The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For fictional stories (folk tales, horror, drama, children's stories – not documentary or factual material), the characters must speak in their own voices like an animated story: in at least a third of the beats where a speaking character is present, add one or two short natural lines of direct speech (a call, a question, a reaction, a promise) inside beat.narration, assign each line to the speaker's exact cast key with role dialogue, and keep the narrator for the rest. Animals speak only if the story treats them as speaking; otherwise their sounds are sound effects. The added lines count toward the beat length, so trim narration to keep the timing. Documentary or factual material must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
 export const MOTION_VOICE_TEXT = {
   vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", previewError: "Không phát được âm thanh xem trước" },
   en: { preparing: "Automatically casting voices and mixing sound for the script", previewError: "Preview audio could not be played" },

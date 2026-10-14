@@ -33,11 +33,13 @@ import {
   startMotionVideoRender,
   uploadMotionAudio,
   voiceMotionStory,
+  previewMotionVoice,
 } from "../controllers/motionVideoController.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
 const router = express.Router();
 router.get(MOTION_VOICE.VOICES_ROUTE, listMotionVoices);
 router.post(MOTION_VOICE.REFERENCE_ROUTE, registerMotionVoice);
+router.post(MOTION_VOICE.PREVIEW_ROUTE, previewMotionVoice);
 router.get(MOTION_SOUND_CONFIG.LIST_ROUTE, listMotionSfx);
 router.get(MOTION_SOUND_CONFIG.ASSET_ROUTE, serveMotionSfx);
 router.get(MOTION_VIDEO_API_PATHS.ENGINE, getMotionEngineScript);

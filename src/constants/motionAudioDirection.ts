@@ -3,7 +3,7 @@ export const MOTION_AUDIO_DIRECTION = {
   ARTIFACT: "motion-audio-casting",
   MAX_CONTEXT: 24000,
   SFX_VOLUME: 0.5,
-  SOUND_OFFSETS: { film: { ambience: 0, action: 0, character: 0, accent: 0 }, storytelling: { ambience: -5, action: -3, character: -2, accent: -5 }, documentary: { ambience: -6, action: -5, character: -3, accent: -8 }, explainer: { ambience: -6, action: -4, character: -3, accent: -5 }, mixed: { ambience: -3, action: -2, character: -1, accent: -3 } },
+  SOUND_OFFSETS: { film: { ambience: 0, action: 0, character: 0, accent: 0 }, storytelling: { ambience: -2, action: 0, character: 0, accent: -2 }, documentary: { ambience: -4, action: -3, character: -2, accent: -5 }, explainer: { ambience: -4, action: -2, character: -2, accent: -3 }, mixed: { ambience: -1, action: 0, character: 0, accent: -1 } },
   NARRATION: {
     film: "Character dialogue drives scenes; narrator only for existing narration. Preserve speaker identity and motivated reactions.",
     storytelling: "An expressive narrator carries the story; quoted dialogue uses the attributed character voice. Never read scene descriptions as character dialogue.",

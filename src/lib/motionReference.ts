@@ -1,6 +1,6 @@
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_REFERENCE_CONFIG as C, MOTION_REFERENCE_TEXTS as T, MOTION_QA_MESSAGES } from "../constants/motionReference.js";
-import type { MotionStyleReference, MotionReferenceStyle } from "../types/motionVideo.js";
+import type { MotionStyleReference, MotionReferenceStyle, MotionStyleKit, MotionReferenceImageInfo, MotionGenPreview } from "../types/motionVideo.js";
 export const normalizeMotionReferences = (value: unknown): MotionStyleReference[] => {
   if (value == null) return [];
   if (!Array.isArray(value) || value.length > C.MAX_IMAGES) throw new Error(T.vi.limit);
@@ -12,13 +12,60 @@ export const normalizeMotionReferences = (value: unknown): MotionStyleReference[
     return { name: `${C.NAME_PREFIX}${index + 1}`, dataUrl };
   });
 };
+const kitText = (value: unknown): string | undefined => (typeof value === "string" && value.trim() ? value.trim().slice(0, C.KIT_FIELD_MAX) : undefined);
+const kitGroup = (value: unknown): Record<string, string> | undefined => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .slice(0, C.KIT_GROUP_MAX)
+    .flatMap(([key, item]) => {
+      const text = kitText(typeof item === "number" ? String(item) : item);
+      return /^[a-zA-Z][\w]{0,40}$/.test(key) && text ? [[key, text]] : [];
+    });
+  return entries.length ? Object.fromEntries(entries) : undefined;
+};
+export const normalizeStyleKit = (value: any): MotionStyleKit | undefined => {
+  if (!value || typeof value !== "object") return undefined;
+  const kit: MotionStyleKit = { render: kitGroup(value.render), character: kitGroup(value.character), animals: kitText(value.animals), background: kitGroup(value.background), fx: kitText(value.fx), typography: kitText(value.typography), camera: kitText(value.camera) };
+  const clean = Object.fromEntries(Object.entries(kit).filter(([, item]) => item !== undefined)) as MotionStyleKit;
+  return Object.keys(clean).length ? clean : undefined;
+};
+export const normalizeReferenceImages = (value: any): MotionReferenceImageInfo[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const list = value.slice(0, C.MAX_IMAGES).flatMap((item: any) => {
+    const name = kitText(item?.name)?.replace(/\.[a-z]+$/i, MR.MOTION_TEXT_EMPTY);
+    if (!name || !name.startsWith(C.NAME_PREFIX)) return [];
+    const role = (C.IMAGE_ROLES as readonly string[]).includes(item?.role) ? item.role : C.IMAGE_ROLES[4];
+    const details = typeof item?.details === "string" && item.details.trim() ? item.details.trim().slice(0, C.IMAGE_DETAILS_MAX) : undefined;
+    return [{ name, role, subjects: (Array.isArray(item?.subjects) ? item.subjects : []).map(kitText).filter(Boolean).slice(0, 8) as string[], ...(details ? { details } : {}) }];
+  });
+  return list.length ? list : undefined;
+};
+export const referenceImagesFor = <T extends { name: string }>(images: T[], style: MotionReferenceStyle | undefined, step: "character" | "location"): T[] => {
+  if (!style?.images?.length) return images;
+  const wanted: string[] = step === MR.MOTION_TEXT_CHARACTER ? [C.IMAGE_ROLES[0], C.IMAGE_ROLES[4]] : [C.IMAGE_ROLES[1], C.IMAGE_ROLES[2], C.IMAGE_ROLES[3], C.IMAGE_ROLES[4]];
+  const roles = new Map<string, string>(style.images.map((info) => [info.name, info.role]));
+  const picked = images.filter((image) => wanted.includes(roles.get(image.name.replace(/\.[a-z]+$/, MR.MOTION_TEXT_EMPTY)) || C.IMAGE_ROLES[4]));
+  return picked.length ? picked : images;
+};
 export const normalizeMotionReferenceStyle = (value: any): MotionReferenceStyle | undefined => {
-  if (typeof value?.description !== "string" || !value.description.trim()) return undefined;
+  const kit = normalizeStyleKit(value?.kit);
+  const description =
+    typeof value?.description === "string" && value.description.trim()
+      ? value.description.trim()
+      : kit
+        ? Object.values(kit.render || {})
+            .concat(Object.values(kit.character || {}).slice(0, 4))
+            .join(MR.MOTION_TEXT_SYMBOL_41)
+        : MR.MOTION_TEXT_EMPTY;
+  if (!description) return undefined;
   return {
-    description: value.description.trim().slice(0, C.PROFILE_MAX_CHARS),
+    description: description.slice(0, C.PROFILE_MAX_CHARS),
     palette: Array.isArray(value.palette) ? value.palette.filter((color: unknown) => typeof color === "string" && C.HEX_COLOR.test(color)).slice(0, 12) : [],
     outlineColor: C.HEX_COLOR.test(value.outlineColor) ? value.outlineColor : undefined,
     outlineWidth: Number.isFinite(value.outlineWidth) ? Math.max(0, Math.min(C.OUTLINE_MAX, value.outlineWidth)) : 0,
+    kit,
+    images: normalizeReferenceImages(value.images),
   };
 };
 export const hasMotionRenderFailure = (issues?: string[]): boolean => !!issues?.some((issue) => MOTION_QA_MESSAGES.RENDER_FAILURE.test(issue));
+export const needsMotionPreview = (preview?: Pick<MotionGenPreview, "file" | "issues">): boolean => !preview?.file || hasMotionRenderFailure(preview.issues);

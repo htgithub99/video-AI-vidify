@@ -30,7 +30,9 @@ export enum MotionWorkspaceTab {
 }
 export interface MotionShot { id?: string; start: number; end: number; template: string; params?: Record<string, unknown>; transition?: { type: string; duration?: number; direction?: string }; overlays?: Record<string, unknown>[]; }
 export interface MotionStyleReference { name: string; dataUrl: string; }
-export interface MotionReferenceStyle { description: string; palette: string[]; outlineColor?: string; outlineWidth?: number; }
+export interface MotionStyleKit { render?: Record<string, string>; character?: Record<string, string>; animals?: string; background?: Record<string, string>; fx?: string; typography?: string; camera?: string; }
+export interface MotionReferenceImageInfo { name: string; role: "character" | "scene" | "prop" | "screen" | "style"; subjects: string[]; details?: string; }
+export interface MotionReferenceStyle { description: string; palette: string[]; outlineColor?: string; outlineWidth?: number; kit?: MotionStyleKit; images?: MotionReferenceImageInfo[]; }
 export type MotionDrawingMode = "2d" | "3d";
 export interface MotionGenSpec { characterMotion?: boolean; characterMode?: "drawn"; videoDna?: MotionVideoDna; drawingMode?: MotionDrawingMode; style?: MotionGenStyle; cast?: Record<string, unknown>; locations?: Record<string, unknown>; }
 export interface MotionSpec { fadeIn?: number; fadeOut?: number; title?: string; aspect?: MotionAspect | string; fps?: number; look?: string; accent?: string; letterbox?: boolean; subtitleStyle?: string; gen?: MotionGenSpec; shots: MotionShot[]; subtitles?: { start: number; end: number; text: string }[]; duration?: number; audio?: { id?: string; volume?: number }; }
@@ -111,7 +113,7 @@ export interface MotionCharacterDesign {
   poses?: Record<string, Record<string, MotionCharacterTransform>>;
   motions?: Record<string, { duration: number; loop?: boolean; events?: MotionSoundEvent[]; tracks: { part: string; keys: (MotionCharacterTransform & { t: number })[] }[] }>;
 }
-export interface MotionGenStyle { outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; }
+export interface MotionGenStyle { outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; }
 export interface MotionGenPreview { file?: string; files?: string[]; issues?: string[]; score?: number; note?: string; at?: string; }
 export interface MotionGenState {
   soundDirectionKey?: string;
