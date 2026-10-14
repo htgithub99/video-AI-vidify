@@ -660,12 +660,12 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
   }
   throw new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND);
 };
-const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
+export const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
   page
     .locator(responseSelector)
     .evaluateAll(
       (elements, browserPayload) => {
-        const { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16 } = browserPayload.texts;
+        const { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16, MOTION_TEXT_EMPTY } = browserPayload.texts;
         const identityConfig = browserPayload.payload;
         return elements
           .filter((element) => {
@@ -676,10 +676,10 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
           })
           .map((element, index) => {
             const identityElement = element.closest(identityConfig.selector) || element;
-            const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MR.MOTION_TEXT_EMPTY;
-            const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MR.MOTION_TEXT_EMPTY;
+            const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MOTION_TEXT_EMPTY;
+            const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
             const identity = messageId || (testId ? `${testId}${SOURCE_TEXT_SYMBOL_16}${index}` : identityElement.id);
-            const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || MR.MOTION_TEXT_EMPTY;
+            const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || MOTION_TEXT_EMPTY;
             return { identity, text: visibleText.trim() };
           });
       },
@@ -690,7 +690,7 @@ const getChatResponseSnapshots = async (page: Page, responseSelector: string): P
           testIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TEST_ID_ATTRIBUTE,
           legacyTestIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_LEGACY_TEST_ID_ATTRIBUTE,
         },
-        texts: { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16 },
+        texts: { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16, MOTION_TEXT_EMPTY: MR.MOTION_TEXT_EMPTY },
       },
     )
     .catch(() => []);

@@ -13,6 +13,7 @@
     "test:visual-style": "tsx scripts/verify-visual-style-controls.ts && tsx scripts/verify-image-continuity-lanes.ts",
     "test:proxy": "tsx scripts/verify-proxy-manager.ts && tsx scripts/verify-native-proxy-browser.ts",
     "test:activity": "tsx scripts/verify-workflow-activity.ts",
+    "test:chat-responses": "tsx scripts/verify-chat-response-snapshots.ts && tsx scripts/verify-chat-composer-validation.ts",
     "test:motion-controls": "tsx scripts/verify-motion-references.ts && node scripts/verify-motion-static-cast.mjs && tsx scripts/verify-motion-advisory-qa.ts && tsx scripts/verify-motion-characters.ts && tsx scripts/verify-motion-render-controls.ts && tsx scripts/verify-motion-reference-ui.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",
     "test:suno-style": "tsx scripts/verify-suno-style-application.ts",
