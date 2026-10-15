@@ -26,6 +26,7 @@ export enum MotionJobStatus {
 }
 export enum MotionWorkspaceTab {
   CREATE = "create",
+  VOICES = "voices",
   RESULTS = "results",
 }
 export interface MotionShot { id?: string; start: number; end: number; template: string; params?: Record<string, unknown>; transition?: { type: string; duration?: number; direction?: string }; overlays?: Record<string, unknown>[]; }
@@ -135,15 +136,18 @@ export interface MotionGenState {
   castPreview?: string;
   updatedAt?: string;
 }
-export interface MotionStoryScript { voiceTrack?: MotionVoiceTrack; voiceSettings?: MotionVoiceSettings; title: string; language: string; beats: MotionBeat[]; gen?: MotionGenState; edit?: { reviewed: number; rewritten: number; notes: string[] }; }
+export interface MotionStoryScript { voiceTrack?: MotionVoiceTrack; voiceSettings?: MotionVoiceSettings; voiceChannel?: string; title: string; language: string; beats: MotionBeat[]; gen?: MotionGenState; edit?: { reviewed: number; rewritten: number; notes: string[] }; }
 export interface MotionSeoOption { title: string; description: string; hashtags: string[]; tags: string[]; seoScore: number; }
 export interface MotionThumbnail { image: string; prompt: string; optionIndex?: number; }
 export interface MotionSeoPack { options: MotionSeoOption[]; chapters: { id: string; t: number; title: string }[]; timingFrom: "estimate" | "voice"; scriptKey: string; }
 export interface MotionVoiceTrack { provider?: "vieneu"; signature?: string; plan?: MotionVoicePlan; clips?: MotionVoiceClip[]; subtitles?: { start: number; end: number; text: string; speaker?: string }[]; audioId: string; voiceId: string; durations: number[]; totalSeconds: number; }
 export interface MotionUtterance { id: string; speaker: string; role: "narration" | "dialogue" | "thought" | "offscreen"; text: string; emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited"; speed: number; pauseBefore: number; pauseAfter: number; emphasis: string[]; }
 export interface MotionVoiceSettings { voices?: Record<string, string>; utterances?: Record<string, MotionUtterance[]>; }
-export interface MotionVoicePreset { id: string; name: string; gender?: string; description?: string; }
-export interface MotionVoicePlan { direction?: MotionAudioDirection; version: number; signature: string; roles: { speaker: string; name: string; voiceId: string; gender?: string; age?: string }[]; beats: { id: string; utterances: MotionUtterance[] }[]; }
+export interface MotionVoicePreset { id: string; name: string; gender?: string; description?: string; age?: string; custom?: boolean; }
+export type MotionVoiceGroup = "male_adult" | "female_adult" | "child" | "senior_male" | "senior_female";
+export interface MotionVoiceChannel { id: string; name: string; narratorVoiceId: string; roleVoices?: Partial<Record<MotionVoiceGroup, string>>; updatedAt: number; }
+export interface MotionVoiceChannels { channels: MotionVoiceChannel[]; defaultId?: string; }
+export interface MotionVoicePlan { direction?: MotionAudioDirection; version: number; signature: string; roles: { speaker: string; name: string; voiceId: string; gender?: string; age?: string; locked?: boolean }[]; beats: { id: string; utterances: MotionUtterance[] }[]; }
 export interface MotionAudioDirection { mode: "film" | "storytelling" | "documentary" | "explainer" | "mixed"; factual: boolean; narrationStyle: string; soundStyle: string; dialect: string; }
 export interface MotionVoiceClip { id: string; beatId: string; speaker: string; voiceId: string; text: string; audioId: string; start: number; end: number; }
 export enum MotionStoryLength {

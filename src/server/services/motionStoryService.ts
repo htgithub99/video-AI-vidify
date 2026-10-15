@@ -428,6 +428,7 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
   if (failure !== undefined) throw failure;
   return results;
 };
+const blockedRoomProviders = new Map<string, number>();
 export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: (s: string) => void, images?: MotionAiImage[], attempt = 0): Promise<any> => {
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
   const provider = pickEnum(_.values(AiPlanningFallbackProvider), exec.provider, AiPlanningFallbackProvider.GeminiChat);
@@ -435,6 +436,9 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const requestId = MOTION_TEMPLATE_SYMBOL_5(`${artifactType}`, `${randomUUID().slice(0, 8)}`);
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(`${artifactType}`, `${requestId}`);
   const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(`${prompt}`, `${identity}`);
+  const runGeminiFallback = () => runMotionAi(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0);
+  if (useRoom && provider !== AiPlanningFallbackProvider.GeminiChat && (blockedRoomProviders.get(provider) || 0) > Date.now()) return runGeminiFallback();
+  let fallbackToGemini = false;
   if (useRoom) {
     const run = motionAiRunStore.getStore();
     const projectId = run?.projectId || MR.MOTION_TEMPLATE_SYMBOL_294(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, requestId);
@@ -481,7 +485,11 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       } else {
         const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(`${Math.round(MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS / 60000)}`)) : caught;
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(`${_.truncate(_.toString(error?.message), { length: 140 })}`));
-        if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
+        if (!timedOut && provider !== AiPlanningFallbackProvider.GeminiChat && MOTION_STORY_CONFIG.ROOM_BLOCKED_RE.test(_.toString(error?.message))) {
+          blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_BLOCK_MS);
+          log?.(MOTION_STORY_CONFIG.ROOM_FALLBACK_LOG(provider));
+          fallbackToGemini = true;
+        } else if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
       }
     } finally {
       clearTimeout(watchdog);
@@ -496,6 +504,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       if (motionAiSessions || retryRoom) cancelGlobalBrowserCleanup();
     }
     if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
+    if (fallbackToGemini) return runGeminiFallback();
   }
   log?.(MOTION_TEXT_GOI_AI_QUA_API);
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
@@ -567,9 +576,11 @@ const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: Moti
   for (let attempt = 0; attempt < MOTION_REFERENCE_PROMPTS.STYLE_ATTEMPTS; attempt++) {
     try {
       const parts = attempt >= 1 ? [MOTION_REFERENCE_PROMPTS.STYLE_SAFE, MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY] : [MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY];
-      const raw = await (opts.ai || runMotionAi)(parts.join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, opts.exec, opts.signal, opts.log, images);
+      const fallback = opts.exec.provider === AiPlanningFallbackProvider.GeminiChat ? AiPlanningFallbackProvider.ChatGptUi : AiPlanningFallbackProvider.GeminiChat;
+      const exec = attempt >= 2 ? { ...opts.exec, provider: fallback, model: fallback === AiPlanningFallbackProvider.GeminiChat ? AiPlanningChatModel.GeminiFlash : AiPlanningChatModel.ChatGptAuto } : opts.exec;
+      const raw = await (opts.ai || runMotionAi)(parts.join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, exec, opts.signal, opts.log, images);
       const style = normalizeMotionReferenceStyle(raw?.referenceStyle || raw);
-      if (style?.kit) return style;
+      if (style?.kit && (style.images?.length || 0) >= images.length && !MOTION_REFERENCE_PROMPTS.STYLE_UNSEEN.test(style.description || MR.MOTION_TEXT_EMPTY)) return style;
     } catch (error) {
       if (opts.signal?.aborted) throw error;
     }

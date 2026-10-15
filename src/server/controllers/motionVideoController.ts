@@ -70,7 +70,8 @@ import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
 import { libraryMime } from "../services/motionAssetLibraryService.js";
 import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
-import { MOTION_VOICE } from "../../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../../constants/motionVoice.js";
+import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../services/motionVoiceLibraryService.js";
 import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
 import { listVieneuVoices, registerVieneuVoice, synthesizeVieneuSpeech, vieneuRoot } from "../services/vieneuTtsService.js";
 import { createHash } from "crypto";
@@ -436,7 +437,7 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
 };
 export const listMotionVoices = async (_req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, voices: await listVieneuVoices() });
+    res.json({ success: true, voices: applyVoiceLibrary(await listVieneuVoices()) });
   } catch (error) {
     fail(res, 503, error);
   }
@@ -462,6 +463,44 @@ export const previewMotionVoice = async (req: Request, res: Response): Promise<v
     fail(res, 400, error);
   }
 };
+export const updateMotionVoiceMeta = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.body?.id || MR.MOTION_TEXT_EMPTY);
+    if (!applyVoiceLibrary(await listVieneuVoices()).some((voice) => voice.id === id)) throw new Error(MOTION_VOICE_LIBRARY.VOICE_NOT_FOUND);
+    res.json({ success: true, meta: updateVoiceMeta(id, { name: req.body?.name, gender: req.body?.gender, age: req.body?.age }) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const removeMotionVoice = (req: Request, res: Response): void => {
+  try {
+    removeCustomVoice(String(req.body?.id || MR.MOTION_TEXT_EMPTY));
+    res.json({ success: true });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const listMotionVoiceChannels = (_req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, ...readVoiceChannels() });
+  } catch (error) {
+    fail(res, 500, error);
+  }
+};
+export const saveMotionVoiceChannel = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, ...saveVoiceChannel(req.body?.channel, applyVoiceLibrary(await listVieneuVoices()), req.body?.makeDefault === true) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const removeMotionVoiceChannel = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, ...deleteVoiceChannel(String(req.body?.id || MR.MOTION_TEXT_EMPTY)) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
 export const registerMotionVoice = async (req: Request, res: Response): Promise<void> => {
   const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100),
     data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(/^data:[^,]*,/, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
@@ -476,9 +515,10 @@ export const registerMotionVoice = async (req: Request, res: Response): Promise<
     await fs.promises.writeFile(source, data);
     const seconds = await probeMediaDuration(source);
     if (seconds < 3) throw new Error(MOTION_VOICE.REFERENCE_INVALID);
-    await runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_T, MR.MOTION_TEXT_8, MR.MOTION_TEXT_AR, String(MOTION_VOICE.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, file]);
+    await runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_AF, MOTION_VOICE_LIBRARY.SAMPLE_FILTER, MR.MOTION_TEXT_T, MOTION_VOICE_LIBRARY.SAMPLE_SECONDS, MR.MOTION_TEXT_AR, String(MOTION_VOICE.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, file]);
     const voice = await registerVieneuVoice(id, name, ([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(req.body?.gender) ? req.body.gender : MR.MOTION_TEXT_EMPTY, file);
-    res.json({ success: true, voice });
+    const meta = updateVoiceMeta(id, { name, gender: req.body?.gender, age: req.body?.age }, true);
+    res.json({ success: true, voice: { ...voice, ...meta, hidden: undefined, custom: true } });
   } catch (error) {
     fail(res, 400, error);
   } finally {

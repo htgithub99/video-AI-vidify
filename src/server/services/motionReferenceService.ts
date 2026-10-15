@@ -2,6 +2,8 @@ import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { spawnSync } from "child_process";
+import { getFfmpegPath } from "./shortsPreprocessService.js";
 import { MOTION_REFERENCE_CONFIG as C, MOTION_REFERENCE_TEXTS as T } from "../../constants/motionReference.js";
 import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import type { MotionAiImage } from "./motionStoryService.js";
@@ -18,6 +20,9 @@ export const withMotionReferenceFiles = async <R>(value: unknown, task: (images:
       const name = reference.name + C.EXTENSIONS[mimeType as keyof typeof C.EXTENSIONS];
       const file = path.join(directory, name);
       fs.writeFileSync(file, bytes);
+      const small = path.join(directory, reference.name + C.UPLOAD_SUFFIX);
+      const scaled = spawnSync(getFfmpegPath(), C.UPLOAD_ARGS(file, small, C.UPLOAD_MAX_SIDE), { windowsHide: true, timeout: C.UPLOAD_TIMEOUT_MS });
+      if (scaled.status === 0 && fs.existsSync(small) && fs.statSync(small).size > 0) return { name: reference.name + C.EXTENSIONS[C.MIME_JPEG as keyof typeof C.EXTENSIONS], mimeType: C.MIME_JPEG, path: small };
       return { name, mimeType, path: file };
     });
     return await task(images);

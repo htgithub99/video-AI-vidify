@@ -1064,7 +1064,7 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
         await attachRoomFiles(page, attachments, artifactType);
         if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING) {
           await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-        }
+        } else await delayAsync(Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_MAX_MS, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_PER_FILE_MS * attachments.length));
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
       } catch (error) {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_FAILED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length, ...musicErrorDetails(error) });
@@ -1285,6 +1285,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
   while (Date.now() - startedAt < CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_WAIT_TIMEOUT_MS) {
     throwIfPlanningCancelled(request.signal);
     if (page.isClosed()) throw new Error(SOURCE_TEXT_GROK_CHAT_PAGE_CLOSED_DURING_BOOTSTRAP);
+    if (!challengeWasVisible && Date.now() - startedAt > CINEMATIC_CHAT_PLANNING_CONFIG.GROK_NOT_READY_TIMEOUT_MS && !(await isGrokChatReady(page))) break;
     const chatReady = await isGrokChatReady(page);
     const challengeActive = await isGrokSecurityChallengeActive(page, chatReady);
     if (challengeActive) {
@@ -1313,7 +1314,9 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
     }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CHALLENGE_POLL_MS);
   }
-  throw new Error(challengeWasVisible ? SOURCE_TEXT_GROK_SECURITY_VERIFICATION_TIMEOUT : SOURCE_TEXT_GROK_CHAT_NOT_READY_OR_LOGIN);
+  if (challengeWasVisible) throw new Error(SOURCE_TEXT_GROK_SECURITY_VERIFICATION_TIMEOUT);
+  const pageTitle = await page.title().catch(() => MR.MOTION_TEXT_EMPTY);
+  throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_NOT_READY_DETAIL(SOURCE_TEXT_GROK_CHAT_NOT_READY_OR_LOGIN, page.url(), pageTitle));
 };
 const getGrokBootstrapMutex = (context: BrowserContext): SimpleMutex => {
   const existingMutex = grokBootstrapMutexes.get(context);

@@ -1,9 +1,10 @@
 import { MotionToggle } from "./motion-video/MotionToggle.js";
 import { MotionReferenceControls } from "./motion-video/MotionReferenceControls.js";
+import { MotionVoicePanel } from "./motion-video/MotionVoicePanel.js";
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Maximize2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -110,7 +111,7 @@ import { MotionVideoDnaCard } from "./motion-video/MotionVideoDnaCard.js";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { Tooltip } from "./ui/Tooltip";
-import { MOTION_VOICE_TEXT } from "../constants/motionVoice.js";
+import { MOTION_VOICE_TEXT, MOTION_VOICE_CHANNEL_TEXT } from "../constants/motionVoice.js";
 const cardCls = MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P;
 const inputCls = MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL;
 const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_TEXT_VI as Lang }) => {
@@ -145,6 +146,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
               {_.map(
                 [
                   { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
+                  { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
                   { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
                 ],
                 ({ id, label, icon: Icon }) => (
@@ -212,6 +214,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         )}
         <div className={MOTION_STYLES.W_FULL}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
+          {tab === MotionWorkspaceTab.VOICES && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
         </div>
       </div>
@@ -223,6 +226,7 @@ interface MotionPreviewModalData { type: "location" | "beat"; id: string; title:
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
+  const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
   const [sceneNote, setSceneNote] = useState<string>(MR.MOTION_TEXT_EMPTY);
@@ -360,6 +364,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
                   <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
+                </div>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{voiceText.PICK_CHANNEL}</span>
+                  <select value={state.voiceChannelId ?? studio.voiceChannels.defaultId ?? MR.MOTION_TEXT_EMPTY} onChange={(e) => patch({ voiceChannelId: e.target.value })} disabled={studio.storyBusy} title={voiceText.CHANNELS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    <option value={MR.MOTION_TEXT_EMPTY}>{voiceText.NO_CHANNEL}</option>
+                    {_.map(studio.voiceChannels.channels, (channel) => (
+                      <option key={channel.id} value={channel.id}>
+                        {channel.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>

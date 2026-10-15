@@ -1,8 +1,8 @@
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
 import { MOTION_SOUND_CONFIG } from "../constants/motionSound.js";
-import { MOTION_VOICE } from "../constants/motionVoice.js";
-import { motionVoiceSignature } from "../lib/motionVoice.js";
-import type { MotionCompiledPreview, MotionSoundOverride, MotionStyleReference } from "../types/motionVideo.js";
+import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../constants/motionVoice.js";
+import { motionVoiceSignature, voiceChannelRef } from "../lib/motionVoice.js";
+import type { MotionCompiledPreview, MotionSoundOverride, MotionStyleReference, MotionVoiceChannels } from "../types/motionVideo.js";
 import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../services/motionWorkflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../constants/workflowActivity";
 import * as MR from "../constants/motionRuntime.js";
@@ -46,6 +46,7 @@ const reportStoryError = (error: unknown): void => {
   else toast.error(message);
 };
 interface PersistedState {
+  voiceChannelId?: string;
   styleReferences: MotionStyleReference[];
   characterMotion: boolean;
   rawText: string;
@@ -114,8 +115,15 @@ const DEFAULTS: PersistedState = {
 export interface MotionScenesRequest { beats?: string[]; locations?: string[]; restart?: boolean; restyle?: boolean; note?: string; }
 const compileStateKey = (state: PersistedState): string => JSON.stringify([state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.subtitles !== false, state.sfx, state.sfxVolume, state.soundOverrides]);
 export const narrationSignature = motionVoiceSignature;
+const withVoiceChannel = (next: PersistedState, data: MotionVoiceChannels): PersistedState => {
+  if (!next.script) return next;
+  const wanted = voiceChannelRef(data.channels.find((item) => item.id === (next.voiceChannelId === undefined ? data.defaultId : next.voiceChannelId)));
+  return (next.script.voiceChannel || MR.MOTION_TEXT_EMPTY) === wanted ? next : { ...next, script: { ...next.script, voiceChannel: wanted || undefined } };
+};
 export function useMotionStudio() {
   const [state, setState] = useState<PersistedState>(DEFAULTS);
+  const [voiceChannels, setVoiceChannels] = useState<MotionVoiceChannels>({ channels: [] });
+  const channelsRef = useRef<MotionVoiceChannels>({ channels: [] });
   const [hydrated, setHydrated] = useState(false);
   const [ME, setME] = useState<MotionEngineGlobal | null>(null);
   const [engineError, setEngineError] = useState<string>(MR.MOTION_TEXT_EMPTY);
@@ -144,12 +152,25 @@ export function useMotionStudio() {
           next.analysis = bindVideoDnaSettings(next.analysis, { language: next.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, length: next.length, drawingMode: next.drawingMode, characterMode: MR.MOTION_TEXT_DRAWN, aspect: next.aspect });
         }
         if (next.analysis) next.analysis = { ...next.analysis, characterMotion: next.characterMotion };
-        if (p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(p.script, next.analysis)) next.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
-        stateRef.current = next;
-        return next;
+        const synced = withVoiceChannel(next, channelsRef.current);
+        if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
+        stateRef.current = synced;
+        return synced;
       }),
     [],
   );
+  const reloadVoiceChannels = useCallback(async (): Promise<MotionVoiceChannels> => {
+    try {
+      const data = await motionRequest<MotionVoiceChannels>(MOTION_VOICE_LIBRARY.CHANNELS_URL);
+      const next = { channels: data.channels || [], ...(data.defaultId ? { defaultId: data.defaultId } : {}) };
+      channelsRef.current = next;
+      if (mounted.current) setVoiceChannels(next);
+      patch({});
+      return next;
+    } catch {
+      return channelsRef.current;
+    }
+  }, [patch]);
   useEffect(() => {
     mounted.current = true;
     (async () => {
@@ -157,7 +178,7 @@ export function useMotionStudio() {
       if (!mounted.current) return;
       const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), sfx: true, sfxVolume: MOTION_AUDIO_DIRECTION.SFX_VOLUME, soundOverrides: {}, uploadedAudio: null };
       if (restored.script?.voiceSettings) restored.script = { ...restored.script, voiceSettings: undefined };
-      setState(restored);
+      setState(withVoiceChannel(restored, channelsRef.current));
       setHydrated(true);
     })();
     (async () => {
@@ -169,6 +190,7 @@ export function useMotionStudio() {
         setEngineError(e?.message || MOTION_TEXT_ENGINE);
       }
     })();
+    void reloadVoiceChannels();
     motionRequest<{ items: MotionResultItem[] }>(API_ROUTES.MOTION_VIDEO_RESULTS)
       .then((r) => mounted.current && setResults(r.items || []))
       .catch(_.noop);
@@ -646,6 +668,8 @@ export function useMotionStudio() {
   return {
     state,
     patch,
+    voiceChannels,
+    reloadVoiceChannels,
     ME,
     engineError,
     storyJob,

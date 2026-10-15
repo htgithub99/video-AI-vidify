@@ -2,7 +2,8 @@ import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
 import { createHash } from "crypto";
-import { MOTION_VOICE as C, MOTION_VOICE_PROMPT } from "../../constants/motionVoice.js";
+import { MOTION_VOICE as C, MOTION_VOICE_PROMPT, MOTION_VOICE_LIBRARY } from "../../constants/motionVoice.js";
+import { applyVoiceLibrary, findVoiceChannel } from "./motionVoiceLibraryService.js";
 import { MOTION_AUDIO_DIRECTION, MOTION_AUDIO_CAST_PROMPT } from "../../constants/motionAudioDirection.js";
 import { motionAudioDirection } from "../../lib/motionAudioDirection.js";
 import { motionVoiceSignature, normalizeMotionUtterances, fallbackMotionUtterances, selectMotionVoiceRoles } from "../../lib/motionVoice.js";
@@ -12,7 +13,9 @@ import { runMotionAi } from "./motionStoryService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 export interface MotionVoiceOptions { exec: MotionAiExecution; aspect?: string; signal?: AbortSignal; log?: (value: string) => void; onProgress?: (done: number, total: number) => void; ai?: typeof runMotionAi; }
 export const directMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => {
+  voices = applyVoiceLibrary(voices);
   const signature = motionVoiceSignature(script, analysis),
+    channel = findVoiceChannel(script.voiceChannel),
     speakers = [C.NARRATOR, ...(analysis?.cast || []).map((member) => member.key)];
   const planFile = path.join(
     getMotionRootDirectory(),
@@ -25,7 +28,7 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
   try {
     saved = JSON.parse(fs.readFileSync(planFile, MR.MOTION_TEXT_UTF8));
   } catch {}
-  if (saved?.signature === signature && saved.version === C.VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender)))) return saved;
+  if (saved?.signature === signature && saved.version === C.VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) && (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))) return saved;
   opts.log?.(C.PLANNING);
   let casting: any;
   const stride = Math.max(1, Math.ceil(script.beats.reduce((total, beat) => total + beat.narration.length, 0) / MOTION_AUDIO_DIRECTION.MAX_CONTEXT));
@@ -58,7 +61,8 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
     if (voices.some((voice) => voice.id === role.voiceId)) requested[role.speaker] = role.voiceId;
     inferred[role.speaker] = { gender: ([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(role.gender) ? role.gender : undefined, age: ([MR.MOTION_TEXT_CHILD, MR.MOTION_TEXT_ADULT, MR.MOTION_TEXT_SENIOR] as readonly string[]).includes(role.age) ? role.age : undefined };
   }
-  const roles = selectMotionVoiceRoles(analysis, voices, requested, direction, inferred);
+  const roles = selectMotionVoiceRoles(analysis, voices, requested, direction, inferred, channel);
+  if (channel) opts.log?.(MOTION_VOICE_LIBRARY.LOCKED_LOG + channel.name);
   const planned = new Map<string, MotionVoicePlan["beats"][number]>();
   for (const beat of script.beats) {
     const explicit = normalizeMotionUtterances(script.voiceSettings?.utterances?.[beat.id] || beat.utterances, beat.id, speakers, beat.narration);

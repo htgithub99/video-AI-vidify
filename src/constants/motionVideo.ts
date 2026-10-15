@@ -59,6 +59,9 @@ export const MOTION_STORY_CONFIG = {
   BROWSER_KEEP_ALIVE_MS: 3 * 60 * 1000,
   ROOM_PROVIDER_RETRIES: 2,
   ROOM_RETRY_LOG: "AI báo lỗi tạm thời – mở phòng chat mới và hỏi lại…",
+  ROOM_BLOCKED_RE: /security_verification|cloudflare|chờ một chút|just a moment|not_ready_or_login|chưa hoàn tất đăng nhập|login_required|đăng nhập/i,
+  ROOM_BLOCK_MS: 15 * 60 * 1000,
+  ROOM_FALLBACK_LOG: (provider: string): string => `Phòng chat ${provider} đang bị chặn (xác minh Cloudflare/đăng nhập) – chuyển sang Gemini để chạy tiếp…`,
 } as const;
 export const MOTION_PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
 export const MOTION_PREVIEW_SIZES: Record<string, [number, number]> = { [MotionAspect.LANDSCAPE]: [960, 540], [MotionAspect.PORTRAIT]: [405, 720], [MotionAspect.SQUARE]: [600, 600], [MotionAspect.FOUR_FIVE]: [540, 675] };
