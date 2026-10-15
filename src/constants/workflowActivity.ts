@@ -16,7 +16,7 @@ export const WORKFLOW_ACTIVITY_CONFIG = {
   STATUS_FILTER_KEYS: { all: "all", success: "success", error: "error" },
   STATUS_TYPE_KEYS: { success: "success", fail: "fail", running: "running", stop: "stop", info: "info" },
   TIME_FORMAT_OPTIONS: { hour: "2-digit", minute: "2-digit", second: "2-digit" } as const,
-  A11Y: { ROLE_GROUP: "group", ROLE_LOG: "log", ARIA_LIVE_POLITE: "polite", },
+  A11Y: { ROLE_GROUP: "group", ROLE_LOG: "log", ARIA_LIVE_POLITE: "polite" },
   BUTTON_VARIANT_UNSTYLED: "unstyled",
 } as const;
 export const WORKFLOW_ACTIVITY_EVENT = {
@@ -147,8 +147,8 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     copied: "Đã sao chép nhật ký",
     copyFailed: "Không thể sao chép nhật ký",
     eventsCount: "hoạt động",
-    statuses: { success: "Thành công", error: "Thất bại", running: "Đang xử lý", stopped: "Đã dừng", info: "Thông tin", },
-    statusFilter: { all: "Tất cả", success: "Thành công", error: "Lỗi", },
+    statuses: { success: "Thành công", error: "Thất bại", running: "Đang xử lý", stopped: "Đã dừng", info: "Thông tin" },
+    statusFilter: { all: "Tất cả", success: "Thành công", error: "Lỗi" },
     statusFilterAriaLabel: "Lọc theo trạng thái",
     events: {
       musicPlanStart: "Đang sáng tác nhạc",
@@ -278,8 +278,8 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     copied: "Log copied",
     copyFailed: "Could not copy log",
     eventsCount: "activities",
-    statuses: { success: "Success", error: "Failed", running: "In Progress", stopped: "Stopped", info: "Info", },
-    statusFilter: { all: "All Status", success: "Success", error: "Errors", },
+    statuses: { success: "Success", error: "Failed", running: "In Progress", stopped: "Stopped", info: "Info" },
+    statusFilter: { all: "All Status", success: "Success", error: "Errors" },
     statusFilterAriaLabel: "Filter by status",
     events: {
       musicPlanStart: "Creating music",
@@ -394,7 +394,7 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     },
   },
 } as const;
-export const storyActivityPrefixes: Record<MotionStoryJobKind, string> = { [MotionStoryJobKind.ANALYZE]: "motionAnalyze", [MotionStoryJobKind.SCRIPT]: "motionScript", [MotionStoryJobKind.SCENES]: "motionScenes", [MotionStoryJobKind.VOICE]: "motionVoice", [MotionStoryJobKind.SEO]: "motionSeo", [MotionStoryJobKind.THUMBNAIL]: "motionThumbnail", };
+export const storyActivityPrefixes: Record<MotionStoryJobKind, string> = { [MotionStoryJobKind.ANALYZE]: "motionAnalyze", [MotionStoryJobKind.SCRIPT]: "motionScript", [MotionStoryJobKind.SCENES]: "motionScenes", [MotionStoryJobKind.VOICE]: "motionVoice", [MotionStoryJobKind.SEO]: "motionSeo", [MotionStoryJobKind.THUMBNAIL]: "motionThumbnail", [MotionStoryJobKind.LIBRARY]: "motionLibrary" };
 export const storyActivityRoutes: Record<string, MotionStoryJobKind> = {
   [API_ROUTES.MOTION_STORY_ANALYZE]: MotionStoryJobKind.ANALYZE,
   [API_ROUTES.MOTION_STORY_SCRIPT]: MotionStoryJobKind.SCRIPT,

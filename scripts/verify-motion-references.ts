@@ -1,7 +1,9 @@
+import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
 import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRenderFailure, needsMotionPreview } from "../src/lib/motionReference.ts";
 import { MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
 import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
@@ -9,6 +11,8 @@ import { withMotionReferenceFiles } from "../src/server/services/motionReference
 import { prepareMotionGen } from "../src/server/services/motionGenService.ts";
 import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
 import type { MotionStoryAnalysis } from "../src/types/motionVideo.ts";
+delete process.env.APP_DATA_DIR;
+process.env.VIDIFY_STORAGE_DIR = path.resolve(AUT.FORMAT_SCRATCH_MOTION_REFERENCES(process.pid));
 const image = { name: VT.REFERENCE_PNG, dataUrl: VT.DATA_IMAGE_PNG_BASE64_IVBORW0KGGOAAAANSUHEUGAAAAEAAAABCAQAAA };
 assert.equal(normalizeMotionReferences(Array(4).fill(image)).length, 4);
 assert.throws(() => normalizeMotionReferences(Array(5).fill(image)));

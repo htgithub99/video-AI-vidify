@@ -1,10 +1,13 @@
 import { MotionToggle } from "./motion-video/MotionToggle.js";
 import { MotionReferenceControls } from "./motion-video/MotionReferenceControls.js";
 import { MotionVoicePanel } from "./motion-video/MotionVoicePanel.js";
+import { MotionSceneLibraryPanel, MotionStyleSetPicker } from "./motion-video/MotionSceneLibraryPanel.js";
+import { MOTION_SCENE_LIBRARY_TEXT } from "../constants/motionSceneLibrary.js";
+import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -69,7 +72,6 @@ import {
   MOTION_TEXT_STATS,
   MOTION_TEXT_STATS_2,
   MOTION_TEXT_STOPPING,
-  MOTION_TEXT_SWITCH,
   MOTION_TEXT_SYMBOL_10,
   MOTION_TEXT_SYMBOL_11,
   MOTION_TEXT_SYMBOL_12,
@@ -147,6 +149,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
                 [
                   { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
                   { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
+                  { id: MotionWorkspaceTab.LIBRARY, label: MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Library },
                   { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
                 ],
                 ({ id, label, icon: Icon }) => (
@@ -173,37 +176,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         </div>
         {aiOpen && (
           <fieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
-            <ChatPlanningSettingsBlock
-              provider={state.aiProvider}
-              model={state.aiModel}
-              executionMode={state.aiMode}
-              chromeHeadless={state.aiHeadless}
-              onProviderChange={(v) => patch({ aiProvider: v })}
-              onModelChange={(v) => patch({ aiModel: v })}
-              onExecutionModeChange={(v) => patch({ aiMode: v })}
-              onChromeHeadlessChange={(v) => patch({ aiHeadless: v })}
-              currentLang={currentLang}
-              allowHybrid
-              extraControl={
-                <div className={MOTION_STYLES.AI_REVIEW_TOGGLE_WRAPPER} title={text.AI_REVIEW_HINT}>
-                  <div className={MOTION_STYLES.AI_REVIEW_TOGGLE_INFO}>
-                    <Sparkles className={MOTION_STYLES.AI_REVIEW_TOGGLE_ICON} />
-                    <span className={MOTION_STYLES.AI_REVIEW_TOGGLE_LABEL}>{text.AI_REVIEW}</span>
-                  </div>
-                  <Button
-                    variant={MR.MOTION_TEXT_UNSTYLED}
-                    role={MOTION_TEXT_SWITCH}
-                    aria-checked={state.aiReview !== false}
-                    aria-label={text.AI_REVIEW}
-                    title={text.AI_REVIEW_HINT}
-                    disabled={studio.storyBusy}
-                    onClick={() => patch({ aiReview: state.aiReview === false })}
-                    className={cn(MOTION_STYLES.TOGGLE_SWITCH_BASE, state.aiReview !== false ? MOTION_STYLES.TOGGLE_SWITCH_ACTIVE : MOTION_STYLES.TOGGLE_SWITCH_INACTIVE)}>
-                    <span aria-hidden={MR.MOTION_TEXT_TRUE} className={cn(MOTION_STYLES.TOGGLE_THUMB_BASE, state.aiReview !== false ? MOTION_STYLES.TOGGLE_THUMB_ACTIVE : MOTION_STYLES.TOGGLE_THUMB_INACTIVE)} />
-                  </Button>
-                </div>
-              }
-            />
+            <ChatPlanningSettingsBlock provider={state.aiProvider} model={state.aiModel} executionMode={state.aiMode} chromeHeadless={state.aiHeadless} onProviderChange={(v) => patch({ aiProvider: v })} onModelChange={(v) => patch({ aiModel: v })} onExecutionModeChange={(v) => patch({ aiMode: v })} onChromeHeadlessChange={(v) => patch({ aiHeadless: v })} currentLang={currentLang} allowHybrid />
           </fieldset>
         )}
         {studio.engineError && (
@@ -215,6 +188,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         <div className={MOTION_STYLES.W_FULL}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.VOICES && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
+          {tab === MotionWorkspaceTab.LIBRARY && <MotionSceneLibraryPanel studio={studio} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
         </div>
       </div>
@@ -227,6 +201,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const libraryText = MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
   const [sceneNote, setSceneNote] = useState<string>(MR.MOTION_TEXT_EMPTY);
@@ -400,8 +375,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                   <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                 </div>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{libraryText.MODE}</span>
+                  <select value={state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO} onChange={(e) => patch({ libraryMode: e.target.value as MotionSceneLibraryMode })} disabled={studio.storyBusy} title={libraryText.MODE_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(MOTION_SCENE_LIBRARY_MODES, (mode) => (
+                      <option key={mode} value={mode}>
+                        {libraryText.MODES[mode]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
+              <MotionStyleSetPicker studio={studio} currentLang={currentLang} disabled={studio.storyBusy || studio.renderBusy} />
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP}>
                 <div />
                 {busyKind === MOTION_TEXT_ANALYZE ? (

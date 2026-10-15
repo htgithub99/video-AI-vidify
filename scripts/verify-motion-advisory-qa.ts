@@ -53,7 +53,8 @@ try {
   assert.deepEqual(result.gen.failed, []);
   assert.equal(calls.filter((artifact) => artifact === C.ARTIFACT_LOCATION).length, 1);
   assert.equal(calls.filter((artifact) => artifact === C.ARTIFACT_STAGING).length, 1);
-  assert.equal(result.gen.previews.b1.score, 4);
+  assert.equal(result.gen.previews.b1.score, undefined);
+  assert.equal(calls.includes(C.ARTIFACT_LOCATION_REVIEW), false);
   assert.ok(result.gen.previews.b1.file);
   const reference = { name: VT.STYLE_PNG, dataUrl: VT.DATA_IMAGE_PNG_BASE64_IVBORW0KGGOAAAANSUHEUGAAAAEAAAABCAQAAA };
   const styled = await buildScenes(script, analysis, {

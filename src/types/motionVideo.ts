@@ -27,6 +27,7 @@ export enum MotionJobStatus {
 export enum MotionWorkspaceTab {
   CREATE = "create",
   VOICES = "voices",
+  LIBRARY = "library",
   RESULTS = "results",
 }
 export interface MotionShot { id?: string; start: number; end: number; template: string; params?: Record<string, unknown>; transition?: { type: string; duration?: number; direction?: string }; overlays?: Record<string, unknown>[]; }
@@ -49,8 +50,8 @@ export interface MotionJobState { id: string; status: MotionJobStatus; progress:
 export interface MotionResultItem { id: string; title: string; fileName: string; videoUrl: string; aspect: string; quality: string; width: number; height: number; fps: number; durationSeconds: number; sizeBytes: number; renderSeconds: number; encoder: string; createdAt: string; }
 export interface MotionStorySegment { t: number; text: string; }
 export interface MotionStorySource { kind?: "brief" | "transcript" | "article"; title: string; notes?: string; fetched?: { kind: "youtube" | "page"; ok: boolean; note: string; url: string }; cleaned?: { splitNumbers: number; soundCues: number; missingQuotes: number }; url?: string; text: string; segments: MotionStorySegment[]; words: number; sourceSeconds: number; }
-export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; }
-export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; }
+export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; }
+export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; reuse?: string; tags?: string[]; type?: string; }
 export interface MotionChapter { id: string; title: string; summary: string; from?: number; to?: number; targetSeconds?: number; weight?: number; mustKeep?: boolean; hook?: string; keyPoints?: string[]; handoff?: string; }
 export interface MotionFact { claim: string; status: "ok" | "uncertain" | "wrong"; note?: string; }
 export interface MotionCreativeBlueprint {
@@ -135,6 +136,8 @@ export interface MotionGenState {
   failed: string[];
   castPreview?: string;
   updatedAt?: string;
+  assetStyleKey?: string;
+  assetSources?: Record<string, string>;
 }
 export interface MotionStoryScript { voiceTrack?: MotionVoiceTrack; voiceSettings?: MotionVoiceSettings; voiceChannel?: string; title: string; language: string; beats: MotionBeat[]; gen?: MotionGenState; edit?: { reviewed: number; rewritten: number; notes: string[] }; }
 export interface MotionSeoOption { title: string; description: string; hashtags: string[]; tags: string[]; seoScore: number; }
@@ -166,6 +169,12 @@ export enum MotionStoryJobKind {
   SCENES = "scenes",
   SEO = "seo",
   THUMBNAIL = "thumbnail",
+  LIBRARY = "library",
 }
 export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; }
 export interface MotionStoryJobState { id: string; kind: MotionStoryJobKind; status: MotionJobStatus; progress: number; stage?: string; log: string[]; error?: string; result?: unknown; startedAt: number; }
+export type MotionSceneAssetKind = "location" | "character" | "prop";
+export interface MotionSceneAsset { id: string; kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description: string; tags: string[]; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; thumb?: boolean; uses: number; createdAt: number; usedAt?: number; }
+export interface MotionSceneStyleSet { key: string; name: string; drawingMode: MotionDrawingMode; images: string[]; referenceStyle?: MotionReferenceStyle; genStyle?: MotionGenStyle; createdAt: number; usedAt?: number; }
+export interface MotionSceneLibraryList { items: MotionSceneAsset[]; styles: MotionSceneStyleSet[]; base?: { characters: number; locations: number; props: number }; }
+export interface MotionSceneCustomItem { group: string; type: string; name: string; description: string; time?: string; interior?: boolean; gender?: "male" | "female"; }

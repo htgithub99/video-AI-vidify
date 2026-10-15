@@ -1260,7 +1260,7 @@ const generateMusicThumbnailAsset = async (input: {
       ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false, input.styleAnalysis)
       : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext, input.styleAnalysis);
   const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
-  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
+  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
   const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
   let prompt: string = C.EMPTY;
   try {
@@ -7443,7 +7443,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
   const roomProvider = _.toString(req.body?.roomProvider) as AiPlanningFallbackProvider;
   const roomProjectId = _.trim(_.toString(req.body?.roomProjectId));
-  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
+  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
   if (closeMusicRooms) {
     cleanupTasks.push(closeChatPlanningRoomsForProject({ provider: roomProvider, projectId: roomProjectId }));
   }
@@ -7473,7 +7473,7 @@ router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIP
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
   const projectId = _.toString(req.body?.projectId);
   const workerIds = _.uniq(_.compact(_.map(_.castArray(req.body?.workerIds || []), _.toString)));
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat];
   if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
   await closeChatBrowserIfIdle();

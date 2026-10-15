@@ -1,55 +1,41 @@
+import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import { build } from "esbuild";
 import { AiPlanningFallbackProvider } from "../src/types.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/index.ts";
-
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
   let reject!: (error: Error) => void;
-  const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
   return { promise, resolve, reject };
 };
-
-// Execute the real planning service with simulated browser timing. No Chrome or
-// network access is needed to reproduce cancellation during launch and retries.
 const bundled = await build({
-  entryPoints: ["src/server/services/chatUiPlanningService.ts"],
-  bundle: true, platform: "node", format: "cjs", packages: "external", write: false,
-  logOverride: { "empty-import-meta": "silent" },
-  plugins: [{
-    name: "simulated-browser",
-    setup(builder) {
-      builder.onLoad({ filter: /imageGeneratorService\.ts$/ }, () => ({ contents: `
-        export class SimpleMutex {
-          tail = Promise.resolve();
-          async acquire() {
-            const previous = this.tail;
-            let release;
-            this.tail = new Promise(resolve => { release = resolve; });
-            await previous;
-            return release;
-          }
-        }
-        export const getOrLaunchGlobalBrowser = (...args) => globalThis.browserMocks.launch(...args);
-        export const getOrLaunchGrokBrowser = (...args) => globalThis.browserMocks.launch(...args);
-        export const closeAppBrowserAfterTask = () => globalThis.browserMocks.closeBrowser();
-        export const closeOwnedGrokBrowserIfIdle = async () => true;
-        export const scheduleGlobalBrowserCleanup = () => {};
-      ` }));
-      builder.onLoad({ filter: /musicDiagnosticService\.ts$/ }, () => ({ contents: `
-        export const writeMusicDiagnostic = async () => {};
-        export const musicErrorDetails = () => ({});
-      ` }));
-      builder.onLoad({ filter: /shared-utils\.ts$/ }, () => ({ contents: "export const delayAsync = async () => {};" }));
-      builder.onLoad({ filter: /lib[\\/]logger\.ts$/ }, () => ({ contents: "export const appLog = () => {}; export const appWarn = () => {}; export const appError = () => {};" }));
+  entryPoints: [AUT.SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS],
+  bundle: true,
+  platform: AUT.NODE,
+  format: AUT.CJS,
+  packages: AUT.EXTERNAL,
+  write: false,
+  logOverride: { "empty-import-meta": AUT.SILENT },
+  plugins: [
+    {
+      name: AUT.SIMULATED_BROWSER,
+      setup(builder) {
+        builder.onLoad({ filter: /imageGeneratorService\.ts$/ }, () => ({ contents: AUT.EXPORT_CLASS_SIMPLEMUTEX_TAIL_PROMISE_RESOLVE_ASYNC_ACQUIRE_CONST_PREVIOUS_THIS_TAIL }));
+        builder.onLoad({ filter: /musicDiagnosticService\.ts$/ }, () => ({ contents: AUT.EXPORT_CONST_WRITEMUSICDIAGNOSTIC_ASYNC_EXPORT_CONST_MUSICERRORDETAILS_2 }));
+        builder.onLoad({ filter: /shared-utils\.ts$/ }, () => ({ contents: AUT.EXPORT_CONST_DELAYASYNC_ASYNC }));
+        builder.onLoad({ filter: /lib[\\/]logger\.ts$/ }, () => ({ contents: AUT.EXPORT_CONST_APPLOG_EXPORT_CONST_APPWARN_EXPORT_CONST_APPERROR }));
+      },
     },
-  }],
+  ],
 });
-
 for (const provider of [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi]) {
-  for (const phase of ["launch", "new-page", "open-room"] as const) {
+  for (const phase of [AUT.LAUNCH, AUT.NEW_PAGE, AUT.OPEN_ROOM] as const) {
     const reachedPhase = deferred<void>();
     const launch = deferred<any>();
     const newPage = deferred<any>();
@@ -62,53 +48,75 @@ for (const provider of [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbac
       isClosed: () => pageClosed,
       close: async () => {
         pageClosed = true;
-        navigation.reject(new Error("Target page, context or browser has been closed"));
+        navigation.reject(new Error(AUT.TARGET_PAGE_CONTEXT_OR_BROWSER_HAS_BEEN_CLOSED));
       },
-      goto: () => { reachedPhase.resolve(); return navigation.promise; },
+      goto: () => {
+        reachedPhase.resolve();
+        return navigation.promise;
+      },
     };
-    // A late page may be closed before navigation starts.
     void navigation.promise.catch(() => undefined);
     const browser = {
-      account: { email: "test@example.invalid" },
+      account: { email: AUT.TEST_EXAMPLE_INVALID },
       context: {
         newPage: async () => {
           pagesCreated++;
-          if (phase === "new-page") { reachedPhase.resolve(); return newPage.promise; }
+          if (phase === AUT.NEW_PAGE) {
+            reachedPhase.resolve();
+            return newPage.promise;
+          }
           return page;
         },
       },
     };
     const module = { exports: {} as any };
     const sandbox = {
-      module, exports: module.exports, require: createRequire(import.meta.url),
-      Buffer, process, URL, AbortController, setTimeout, clearTimeout,
+      module,
+      exports: module.exports,
+      require: createRequire(import.meta.url),
+      Buffer,
+      process,
+      URL,
+      AbortController,
+      setTimeout,
+      clearTimeout,
       browserMocks: {
         launch: async () => {
           launches++;
-          if (phase === "launch") { reachedPhase.resolve(); return launch.promise; }
+          if (phase === AUT.LAUNCH) {
+            reachedPhase.resolve();
+            return launch.promise;
+          }
           return browser;
         },
-        closeBrowser: async () => { browserCloses++; return true; },
+        closeBrowser: async () => {
+          browserCloses++;
+          return true;
+        },
       },
     };
     vm.runInNewContext(bundled.outputFiles[0].text, sandbox);
     const service = module.exports;
-    const run = service.beginChatPlanningRun("music-mixer-rank-test", Date.now(), undefined, provider);
+    const run = service.beginChatPlanningRun(AUT.MUSIC_MIXER_RANK_TEST, Date.now(), undefined, provider);
     const result = service.generatePlanningWithChatUi({
-      provider, projectId: "music-mixer-rank-test", prompt: "test",
-      artifactType: "music-mixer-ranking", signal: run.signal, closeRoomOnComplete: false,
+      provider,
+      projectId: AUT.MUSIC_MIXER_RANK_TEST,
+      prompt: AUT.TEST,
+      artifactType: AUT.MUSIC_MIXER_RANKING,
+      signal: run.signal,
+      closeRoomOnComplete: false,
     });
     const rejected = assert.rejects(result, (error: any) => error.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
     await reachedPhase.promise;
-    assert.equal(service.cancelChatPlanningRun("music-mixer-rank-test"), true);
-    if (phase === "launch") launch.resolve(browser);
-    if (phase === "new-page") newPage.resolve(page);
+    assert.equal(service.cancelChatPlanningRun(AUT.MUSIC_MIXER_RANK_TEST), true);
+    if (phase === AUT.LAUNCH) launch.resolve(browser);
+    if (phase === AUT.NEW_PAGE) newPage.resolve(page);
     await rejected;
-    assert.equal(launches, 1, `${provider}/${phase}: cancellation must prevent recovery from reopening Chrome`);
-    assert.equal(pagesCreated, phase === "launch" ? 0 : 1);
-    if (phase !== "launch") assert.equal(pageClosed, true, "Close active and late-created pages");
-    assert.ok(browserCloses > 0, "Release the idle browser after cancellation");
-    assert.equal(service.cancelChatPlanningRun("music-mixer-rank-test"), false);
+    assert.equal(launches, 1, AUT.FORMAT_CANCELLATION_MUST_PREVENT_RECOVERY_FROM_REOPENING_CHROME(provider, phase));
+    assert.equal(pagesCreated, phase === AUT.LAUNCH ? 0 : 1);
+    if (phase !== AUT.LAUNCH) assert.equal(pageClosed, true, AUT.CLOSE_ACTIVE_AND_LATE_CREATED_PAGES);
+    assert.ok(browserCloses > 0, AUT.RELEASE_THE_IDLE_BROWSER_AFTER_CANCELLATION);
+    assert.equal(service.cancelChatPlanningRun(AUT.MUSIC_MIXER_RANK_TEST), false);
   }
 }
-console.log("Music mixer cancellation passed: 3 providers × launch, page creation, and active-room cancellation.");
+process.stdout.write(AUT.MUSIC_MIXER_CANCELLATION_PASSED_3_PROVIDERS_LAUNCH_PAGE_CREATION_AND_ACTIVE_ROOM_CAN);

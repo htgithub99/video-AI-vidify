@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import fs from "fs";
 import _ from "lodash";
+import { motionSpeechRate, recordSpeechRate } from "../services/motionSpeechRateService.js";
 import path from "path";
 import {
   MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM,
@@ -59,13 +60,13 @@ import {
   MOTION_TEXT_VOICE_MP3,
   MOTION_TEXT_WAV,
 } from "../../constants/motionRuntime.js";
-import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
+import { MOTION_STORY_CONFIG, MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { FeatureType } from "../../constants/security.js";
 import { STORAGE_TEXTS } from "../../constants/storage.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../constants/sunoAutomation.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
-import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSeoOption, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
+import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSeoOption, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource, type MotionSceneCustomItem } from "../../types/motionVideo.js";
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
 import { libraryMime } from "../services/motionAssetLibraryService.js";
@@ -78,11 +79,14 @@ import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
-import { buildScenes, resolveGenPreview } from "../services/motionGenService.js";
+import { buildScenes, customSceneSeed, importBaseLibrary, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
+import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
+import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
+import { baseLibraryCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
-import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, writeChapterBeats } from "../services/motionStoryService.js";
+import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, resolveMotionReferenceStyle, writeChapterBeats } from "../services/motionStoryService.js";
 import { generateMotionSeo } from "../services/motionSeoService.js";
 import { generateMotionThumbnail } from "../services/motionThumbnailService.js";
 import { resolveSourceInput, withFetchInfo } from "../services/motionSourceFetchService.js";
@@ -249,7 +253,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(`${source.words}`, `${Math.round(source.sourceSeconds / 60)}`));
-      const analysis = await analyzeStory(source, { language, length, styleReferences, characterMotion: req.body?.characterMotion === true, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
+      const analysis = await analyzeStory(source, { language, length, styleReferences, libraryMode: motionLibraryMode(req.body?.libraryMode), characterMotion: req.body?.characterMotion === true, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.places.length}`, `${analysis.facts.length}`));
       return analysis;
     });
@@ -279,7 +283,14 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const only: string[] = _.map(_.castArray(req.body?.chapterIds || []), _.toString);
     const existing: MotionBeat[] = _.castArray(req.body?.beats || []);
+    const speechRate = motionSpeechRate(req.body?.voiceChannel, language);
     const job = startStoryJob(MotionStoryJobKind.SCRIPT, async (ctx) => {
+      ctx.log(
+        MOTION_STORY_CONFIG.SPEECH_RATE_LOG(
+          speechRate,
+          _.sumBy(analysis.chapters, (chapter) => chapter.targetSeconds || 0),
+        ),
+      );
       const chapters = analysis.chapters;
       const byChapter: Record<string, MotionBeat[]> = _.groupBy(existing, MOTION_TEXT_CHAPTERID);
       const todo = _.filter(chapters, (c) => _.isEmpty(only) || _.includes(only, c.id));
@@ -293,7 +304,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         const prevChapter = idx > 0 ? chapters[idx - 1] : undefined;
         const previous = prevChapter ? byChapter[prevChapter.id] : undefined;
         try {
-          byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, { language, exec, signal: ctx.signal, log: ctx.log, previous, previousSummary: prevChapter?.summary, isFirst: idx === 0, isLast: idx === chapters.length - 1 });
+          byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, { language, exec, signal: ctx.signal, log: ctx.log, previous, previousSummary: prevChapter?.summary, isFirst: idx === 0, isLast: idx === chapters.length - 1, speechRate });
         } catch (error) {
           if (ctx.signal.aborted) throw error;
           failed.push(chapter);
@@ -428,6 +439,8 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     const job = startStoryJob(MotionStoryJobKind.VOICE, async (ctx) => {
       const track = await buildMotionVoiceTrack(script, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
       ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(`${Math.round(track.totalSeconds)}`));
+      const measured = recordSpeechRate(script, track.totalSeconds);
+      if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
       return track;
     });
     res.json({ success: true, job });
@@ -592,5 +605,108 @@ export const serveMotionSfx = async (req: Request, res: Response): Promise<void>
     res.sendFile(file);
   } catch {
     res.status(404).end();
+  }
+};
+export const listSceneLibrary = (_req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, items: listSceneAssets(), styles: listSceneStyles(), base: baseLibraryCounts() });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const removeSceneLibraryItem = (req: Request, res: Response): void => {
+  try {
+    removeSceneAsset(req.body?.id);
+    res.json({ success: true });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const renameSceneLibraryItem = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, item: renameSceneAsset(req.body?.id, req.body?.name) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const serveSceneLibraryThumb = (req: Request, res: Response): void => {
+  const file = req.query.style ? sceneStyleImagePath(_.toString(req.query.style), _.clamp(_.toNumber(req.query.index) || 0, 0, 8)) : sceneAssetThumbPath(_.toString(req.query.id));
+  if (!file) return void res.status(404).end();
+  res.sendFile(file);
+};
+export const getSceneLibraryStyle = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, references: sceneStyleReferences(_.toString(req.query.key)) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const removeSceneLibraryStyle = (req: Request, res: Response): void => {
+  try {
+    removeSceneStyle(req.body?.key);
+    res.json({ success: true });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const renameSceneLibraryStyle = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, style: renameSceneStyle(req.body?.key, req.body?.name) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+const customSeedItems = (value: unknown): MotionSceneCustomItem[] =>
+  _.take(_.castArray(value || []), MOTION_SCENE_LIBRARY.CUSTOM_MAX).flatMap((raw: any) => {
+    const type = motionSceneType(raw?.type);
+    const name = _.truncate(_.toString(raw?.name).trim(), { length: MOTION_SCENE_LIBRARY.NAME_MAX });
+    const description = _.truncate(_.toString(raw?.description).trim(), { length: MOTION_SCENE_LIBRARY.DESCRIPTION_MAX });
+    if (!type || !name || !description || !_.includes(MOTION_SCENE_GROUPS, type.group)) return [];
+    return [{ group: type.group, type: type.id, name, description, time: _.toString(raw?.time || MR.MOTION_TEXT_EMPTY) || undefined, interior: raw?.interior === true, gender: raw?.gender === MR.MOTION_TEXT_FEMALE ? MR.MOTION_TEXT_FEMALE : MR.MOTION_TEXT_MALE }];
+  });
+export const seedSceneLibraryJob = (req: Request, res: Response): void => {
+  try {
+    const seed = customSceneSeed(customSeedItems(req.body?.items));
+    if (!seed.cast.length && !seed.places.length && !seed.showrooms.length) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.SEED_EMPTY);
+    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
+    const exec = aiExec(req.body?.aiExecution);
+    const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
+    const characterMotion = req.body?.characterMotion === true;
+    const job = startStoryJob(MotionStoryJobKind.LIBRARY, async (ctx) => {
+      const referenceStyle = styleReferences.length ? await resolveMotionReferenceStyle(styleReferences, { exec, signal: ctx.signal, log: ctx.log }) : undefined;
+      return seedSceneLibrary(seed, referenceStyle, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode, characterMotion });
+    });
+    res.json({ success: true, job });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const motionLibraryMode = (value: unknown): MotionSceneLibraryMode => (_.includes(_.values(MOTION_SCENE_LIBRARY_MODES), value) ? (value as MotionSceneLibraryMode) : MOTION_SCENE_LIBRARY_MODES.AUTO);
+export const importSceneLibraryJob = (req: Request, res: Response): void => {
+  try {
+    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
+    const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
+    const pack = req.body?.pack ? parseLibraryPack(req.body.pack) : undefined;
+    const job = startStoryJob(MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: aiExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
+    res.json({ success: true, job });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const clearSceneLibraryItems = (_req: Request, res: Response): void => {
+  try {
+    clearSceneLibrary();
+    res.json({ success: true });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const exportSceneLibraryFile = (req: Request, res: Response): void => {
+  try {
+    const style = _.toString(req.query.style);
+    res.setHeader(MOTION_SCENE_LIBRARY.EXPORT_DISPOSITION, MOTION_SCENE_LIBRARY.EXPORT_ATTACHMENT(MOTION_SCENE_LIBRARY.EXPORT_FILE + (isSceneStyleKey(style) ? MOTION_SCENE_LIBRARY.TEXT.DASH + style : MR.MOTION_TEXT_EMPTY)));
+    res.type(MOTION_SCENE_LIBRARY.EXPORT_TYPE).send(JSON.stringify(exportSceneLibrary(isSceneStyleKey(style) ? style : undefined)));
+  } catch (error) {
+    fail(res, 400, error);
   }
 };

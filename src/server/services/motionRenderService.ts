@@ -1,4 +1,6 @@
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
+import { closeMotionAiBrowserBeforeRender } from "./motionStoryService.js";
+import { MOTION_BROWSER_FINISHED_LOG, MOTION_BROWSER_NOT_RELEASED_ERROR, MOTION_BROWSER_RELEASED_LOG } from "../../constants/browserLifecycle.js";
 import { MOTION_SOUND_CONFIG } from "../../constants/motionSound.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { execFile, spawn } from "child_process";
@@ -383,6 +385,9 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
   try {
     job.status = MotionJobStatus.PREPARING;
     job.stage = MOTION_TEXT_PREPARE;
+    if (!(await closeMotionAiBrowserBeforeRender())) throw new Error(MOTION_BROWSER_NOT_RELEASED_ERROR);
+    pushLog(job, MOTION_BROWSER_RELEASED_LOG);
+    if (signal.aborted) throw new Error(ABORTED);
     const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
     const html = buildMotionRenderHtml(renderSpec);
     const encoders = await detectEncoders();
@@ -488,6 +493,8 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       encoder,
       createdAt: new Date().toISOString(),
     };
+    const browserClosed = await closeMotionAiBrowserBeforeRender();
+    pushLog(job, browserClosed ? MOTION_BROWSER_FINISHED_LOG : MOTION_BROWSER_NOT_RELEASED_ERROR);
     addMotionResult(result);
     job.result = result;
     job.progress = 1;

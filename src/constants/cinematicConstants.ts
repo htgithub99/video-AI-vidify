@@ -1,10 +1,12 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 import { CLAUDE_CHAT_MODEL_OPTIONS } from "./claudeChatModels";
+import { DEEPSEEK_CHAT_MODES } from "./deepseekChat";
 export const CINEMATIC_CHAT_DEFAULT_MODELS: Record<AiPlanningFallbackProvider, AiPlanningChatModel> = {
   [AiPlanningFallbackProvider.GeminiChat]: AiPlanningChatModel.GeminiFlash,
   [AiPlanningFallbackProvider.GrokChat]: AiPlanningChatModel.GrokAuto,
   [AiPlanningFallbackProvider.ChatGptUi]: AiPlanningChatModel.ChatGptAuto,
   [AiPlanningFallbackProvider.ClaudeChat]: AiPlanningChatModel.ClaudeAuto,
+  [AiPlanningFallbackProvider.DeepSeekChat]: AiPlanningChatModel.DeepSeekAuto,
   [AiPlanningFallbackProvider.Disabled]: AiPlanningChatModel.GeminiFlash,
 };
 export const CINEMATIC_POLICY_CONFIG = {
@@ -272,6 +274,7 @@ export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, Re
   ],
   [AiPlanningFallbackProvider.ChatGptUi]: [{ value: AiPlanningChatModel.ChatGptAuto, label: "Mặc định" }],
   [AiPlanningFallbackProvider.ClaudeChat]: CLAUDE_CHAT_MODEL_OPTIONS,
+  [AiPlanningFallbackProvider.DeepSeekChat]: [...DEEPSEEK_CHAT_MODES],
   [AiPlanningFallbackProvider.Disabled]: [],
 };
 export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
@@ -288,6 +291,11 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GrokHeavy]: /Nặng|Heavy/i,
   [AiPlanningChatModel.ChatGptAuto]: /Auto|Mặc định|Default/i,
   [AiPlanningChatModel.ClaudeAuto]: /Auto|Mặc định|Default/i,
+  [AiPlanningChatModel.DeepSeekAuto]: /Auto|Mặc định|Default/i,
+  [AiPlanningChatModel.DeepSeekStandard]: /DeepSeek|Tiêu chuẩn|Standard/i,
+  [AiPlanningChatModel.DeepSeekThink]: /Suy Nghĩ Sâu|DeepThink|深度思考/i,
+  [AiPlanningChatModel.DeepSeekSearch]: /Tìm kiếm|Search|搜索/i,
+  [AiPlanningChatModel.DeepSeekThinkSearch]: /DeepSeek/i,
   [AiPlanningChatModel.ClaudeFable51]: /^Fable\s+5\.1(?:\s|$)/i,
   [AiPlanningChatModel.ClaudeOpus55]: /^Opus\s+5\.5(?:\s|$)/i,
   [AiPlanningChatModel.ClaudeSonnet55]: /^Sonnet\s+5\.5(?:\s|$)/i,

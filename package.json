@@ -15,6 +15,7 @@
     "test:activity": "tsx scripts/verify-workflow-activity.ts",
     "test:chat-responses": "tsx scripts/verify-chat-response-snapshots.ts && tsx scripts/verify-chat-composer-validation.ts",
     "test:claude": "tsx scripts/verify-claude-models.ts && tsx scripts/verify-claude-chat.ts",
+    "test:deepseek": "tsx scripts/verify-deepseek-chat.ts",
     "test:motion-controls": "tsx scripts/verify-motion-references.ts && node scripts/verify-motion-static-cast.mjs && tsx scripts/verify-motion-advisory-qa.ts && tsx scripts/verify-motion-characters.ts && tsx scripts/verify-motion-render-controls.ts && tsx scripts/verify-motion-reference-ui.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",
     "test:suno-style": "tsx scripts/verify-suno-style-application.ts",

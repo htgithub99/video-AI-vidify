@@ -1,3 +1,5 @@
+import { needsMotionPreview } from "../src/lib/motionReference.ts";
+import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -7,10 +9,11 @@ import { MotionStoryLength } from "../src/types/motionVideo.ts";
 import { bindVideoDnaSettings, sceneExecutionKey, normalizeScenePlan, scenePlanErrors, scenePlanStagingErrors, videoDnaErrors, videoDnaSourceKey } from "../src/lib/motionVideoDna.ts";
 import { productionPreamble } from "../src/lib/motionDirection.ts";
 import { analyzeStory, parseStorySource, writeChapterBeats } from "../src/server/services/motionStoryService.ts";
-import { beatPreviewSpec, prepareMotionGen, previewBeats, reviewBeats, stageBeats } from "../src/server/services/motionGenService.ts";
+import { beatPreviewSpec, prepareMotionGen, previewBeats, stageBeats } from "../src/server/services/motionGenService.ts";
 import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
 import { openStillSession } from "../src/server/services/motionRenderService.ts";
 import { getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
+import { normalizeMotionAnalysisResponse } from "../src/lib/motionAnalysisResponse.ts";
 const rawDna = (style: string) => ({
   intent: `${VT.EXPLAIN}${style}`,
   audience: VT.VIEWERS_REQUESTED_BY_THE_INPUT,
@@ -52,6 +55,55 @@ assert.ok(prompts[0].includes(VT.USER_SETTINGS_ARE_AUTHORITATIVE));
 assert.ok(productionPreamble(analysis, VT.VISUAL).includes(VT.APPROVED_VIDEO_DNA));
 assert.ok(videoDnaErrors({ ...rawDna(VT.FORMS), opening: {} }).some((error) => error.includes(VT.OPENING)));
 assert.ok(videoDnaErrors({ ...rawDna(VT.FORMS), evidence: [{ claim: VT.FORM, sourceClue: VT.INPUT, confidence: 101 }] }).length);
+const nestedResponse = {
+  title: raw.title,
+  logline: raw.logline,
+  videoDna: {
+    ...rawDna(VT.PASTEL_FORMS),
+    visualDna: { ...rawDna(VT.PASTEL_FORMS).visualDna, palette: [AUT.C8B89A, AUT.VALUE_8B9A7A] },
+    chapters: raw.chapters,
+    places: raw.places,
+    cast: [{ key: AUT.NARRATOR, name: AUT.NARRATOR_2, role: AUT.WITNESS }],
+  },
+};
+const nestedSnapshot = JSON.stringify(nestedResponse);
+let nestedCalls = 0;
+const nestedAnalysis = await analyzeStory(source, {
+  language: VT.EN,
+  length: MotionStoryLength.ONE,
+  exec: {} as any,
+  ai: async () => {
+    nestedCalls++;
+    return nestedResponse;
+  },
+});
+assert.equal(nestedCalls, 1, AUT.USEFUL_PALETTE_ARRAYS_AND_NESTED_PLANNING_DATA_MUST_NOT_REQUIRE_ANOTHER_AI_CALL);
+assert.equal(nestedAnalysis.videoDna?.visualDna.palette, AUT.C8B89A_8B9A7A);
+assert.equal(nestedAnalysis.chapters[0].summary, raw.chapters[0].summary);
+assert.equal(nestedAnalysis.places[0].key, raw.places[0].key);
+assert.equal(nestedAnalysis.cast[0].name, AUT.NARRATOR_2);
+assert.equal(JSON.stringify(nestedResponse), nestedSnapshot, AUT.NORMALIZATION_MUST_NOT_MUTATE_THE_PROVIDER_RESPONSE);
+assert.deepEqual(normalizeMotionAnalysisResponse({ ...nestedResponse, chapters: [] }).chapters, [], AUT.EXPLICIT_ROOT_FIELDS_MUST_TAKE_PRECEDENCE_OVER_NESTED_FIELDS);
+for (const palette of [[], [AUT.EMPTY], [AUT.C8B89A, null], { colour: AUT.C8B89A }]) {
+  const invalid = normalizeMotionAnalysisResponse({ ...nestedResponse, videoDna: { ...nestedResponse.videoDna, visualDna: { ...nestedResponse.videoDna.visualDna, palette } } });
+  assert.ok(
+    videoDnaErrors(invalid.videoDna).some((error) => error.includes(AUT.PALETTE)),
+    AUT.MISSING_OR_MALFORMED_PALETTE_DATA_MUST_STILL_FAIL_VALIDATION,
+  );
+}
+let paletteCalls = 0;
+await analyzeStory(source, {
+  language: VT.EN,
+  length: MotionStoryLength.ONE,
+  exec: {} as any,
+  ai: async (prompt) => {
+    paletteCalls++;
+    if (paletteCalls === 1) return { ...raw, videoDna: { ...rawDna(VT.FORMS), visualDna: { ...rawDna(VT.FORMS).visualDna, palette: [] } } };
+    assert.ok(prompt.includes(AUT.VISUALDNA_PALETTE));
+    return nestedResponse;
+  },
+});
+assert.equal(paletteCalls, 2);
 let corrections = 0;
 const other = await analyzeStory(parseStorySource(VT.TEACH_SAFE_WORKSHOP_OBSERVATION_WITH_RESTRAINED_REALISTIC_MA), {
   language: VT.VI,
@@ -177,23 +229,24 @@ try {
   assert.equal(gen.previews[beats[0].id].score, undefined);
   assert.ok(gen.previews[beats[0].id].file);
   assert.ok(!gen.previews[beats[0].id].issues?.some((issue) => /failed|render error/.test(issue)));
-  const review = await reviewBeats(beats, gen, {
-    exec: {} as any,
-    log: () => {},
-    openingBeatId: beats[0].id,
-    preamble: productionPreamble(analysis, VT.VISUAL),
-    ai: async (prompt, _artifact, _exec, _signal, _log, images) => {
-      assert.equal(images?.length, 4);
-      assert.ok(prompt.includes(VT.BOTH_OBJECTS_ARE_VISIBLE_FROM_THE_FIRST_FRAME));
-      assert.ok(prompt.includes(VT.SCENE_EXECUTION_PLAN));
-      assert.ok(prompt.includes(VT.HERO));
-      return { beats: [{ id: beats[0].id, ok: false, fix: VT.THE_DETAIL_CAMERA_MUST_SHOW_THE_HERO_UNOBSTRUCTED }] };
+  assert.equal(needsMotionPreview(gen.previews[beats[0].id]), false);
+  const renderedPreview = structuredClone(gen.previews[beats[0].id]);
+  await previewBeats(
+    beats,
+    script,
+    gen,
+    {
+      ...session,
+      render: async () => {
+        throw new Error(VT.MOTION_DRAW_FAILED_MISSING_GEOMETRY);
+      },
     },
-  });
-  assert.ok(review.staging[beats[0].id]);
-  assert.equal(gen.previews[beats[0].id].score, 4, VT.A_FAILED_ANGLE_MUST_FAIL_THE_WHOLE_BEAT);
-  const missingVerdict = await reviewBeats(beats, gen, { exec: {} as any, log: () => {}, ai: async () => ({ beats: [] }) });
-  assert.ok(missingVerdict.staging[beats[0].id], VT.MISSING_VERDICTS_MUST_NOT_SILENTLY_APPROVE_SCENES);
+    { exec: {} as any, log: () => {}, runId, aspect: VT.VALUE_9_16 },
+  );
+  assert.equal(needsMotionPreview(gen.previews[beats[0].id]), true);
+  assert.equal(gen.previews[beats[0].id].score, 0);
+  assert.deepEqual(gen.previews[beats[0].id].files, []);
+  gen.previews[beats[0].id] = renderedPreview;
   const output = VT.SCRATCH_VIDEO_DNA_CHECK;
   fs.mkdirSync(output, { recursive: true });
   for (const file of gen.previews[beats[0].id].files || []) fs.copyFileSync(path.join(getMotionRootDirectory(), VT.GEN_PREVIEW, file), path.join(output, path.basename(file)));

@@ -76,6 +76,7 @@ import { MOTION_TEMPLATE_SYMBOL_26 } from "../src/constants/motionRuntime.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../src/constants/messages.ts";
 import { waitForMusicMixerUploads } from "../src/server/services/musicMixerUploadReadiness.ts";
+import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
 const source = await readFile(SOURCE_TEXT_SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS, SOURCE_TEXT_UTF8);
 const start = source.indexOf(SOURCE_TEXT_CONST_GETCOMPOSERREADINGS);
 const end = source.indexOf(SOURCE_TEXT_CONST_GETCHATMODELOPTION, start);
@@ -84,6 +85,7 @@ const attachments = [{ name: SOURCE_TEXT_DISPLAY_NAME_WAV, path: SOURCE_TEXT_D_M
 const sandbox = vm.createContext({
   _,
   MR,
+  D,
   createHash,
   ...sourceTexts,
   MOTION_TEMPLATE_SYMBOL_26,

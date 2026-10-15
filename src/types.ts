@@ -61,6 +61,7 @@ export enum AiPlanningFallbackProvider {
   GrokChat = "grok-chat",
   ChatGptUi = "chatgpt-ui",
   ClaudeChat = "claude-chat",
+  DeepSeekChat = "deepseek-chat",
   Disabled = "disabled",
 }
 export enum AiPlanningExecutionMode {
@@ -82,6 +83,11 @@ export enum AiPlanningChatModel {
   GrokHeavy = "grok-heavy",
   ChatGptAuto = "chatgpt-auto",
   ClaudeAuto = "claude-auto",
+  DeepSeekAuto = "deepseek-auto",
+  DeepSeekStandard = "deepseek-standard",
+  DeepSeekThink = "deepseek-think",
+  DeepSeekSearch = "deepseek-search",
+  DeepSeekThinkSearch = "deepseek-think-search",
   ClaudeFable51 = "claude-fable-5-1",
   ClaudeOpus55 = "claude-opus-5-5",
   ClaudeSonnet55 = "claude-sonnet-5-5",

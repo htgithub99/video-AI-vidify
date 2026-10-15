@@ -26,7 +26,7 @@ const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange
     <ChevronDown className={CHAT_PLANNING_STYLES.CHEVRON} />
   </div>
 );
-interface PlanningTexts { readonly GEMINI_CHAT_OPTION: string; readonly GROK_CHAT_OPTION: string; readonly CHATGPT_UI_OPTION: string; readonly CLAUDE_CHAT_OPTION: string; readonly PLANNING_API_ONLY: string; readonly PLANNING_HYBRID: string; readonly PLANNING_CHROME_HIDDEN: string; readonly PLANNING_CHROME_VISIBLE: string; }
+interface PlanningTexts { readonly GEMINI_CHAT_OPTION: string; readonly GROK_CHAT_OPTION: string; readonly CHATGPT_UI_OPTION: string; readonly CLAUDE_CHAT_OPTION: string; readonly DEEPSEEK_CHAT_OPTION: string; readonly PLANNING_API_ONLY: string; readonly PLANNING_HYBRID: string; readonly PLANNING_CHROME_HIDDEN: string; readonly PLANNING_CHROME_VISIBLE: string; }
 interface ChatPlanningSettingsBlockProps {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;
@@ -46,6 +46,7 @@ const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: Planni
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return texts.GEMINI_CHAT_OPTION;
   if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return texts.GROK_CHAT_OPTION;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ClaudeChat)) return texts.CLAUDE_CHAT_OPTION;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.DeepSeekChat)) return texts.DEEPSEEK_CHAT_OPTION;
   return texts.CHATGPT_UI_OPTION;
 };
 const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackProvider, chromeHeadless: boolean, texts: PlanningTexts): string => {
@@ -119,6 +120,9 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <option value={AiPlanningFallbackProvider.ClaudeChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.CLAUDE_CHAT_OPTION}
           </option>
+          <option value={AiPlanningFallbackProvider.DeepSeekChat} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.DEEPSEEK_CHAT_OPTION}
+          </option>
           {allowHybrid && (
             <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
               {texts.PLANNING_HYBRID}
@@ -166,6 +170,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
         {extraControl && <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>{extraControl}</div>}
       </div>
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.ClaudeChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.CLAUDE_CHAT_NOTE}</p>}
+      {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.DeepSeekChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.DEEPSEEK_CHAT_NOTE}</p>}
     </div>
   );
 }

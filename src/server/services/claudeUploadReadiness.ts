@@ -1,7 +1,8 @@
+import { observeChatUploads } from "./chatUploadObserver.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
 import _ from "lodash";
-import type { Locator, Page, Request } from "playwright";
+import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinematicConstants.js";
 type Attachment = { name: string; mimeType: string; path?: string };
 type UploadState = { count: number; labels: string[]; busy: boolean; failed: boolean; sendReady: boolean };
@@ -79,38 +80,12 @@ export const readClaudeUploadState = async (input: Locator): Promise<UploadState
       },
     },
   );
-export const observeClaudeUploads = (page: Page) => {
-  const pending = new Set<Request>();
-  let failed = false;
-  const onRequest = (request: Request) => {
+export const observeClaudeUploads = (page: Page) =>
+  observeChatUploads(page, (request) => {
     const url = new URL(request.url());
     const contentType = request.headers()[ST.SOURCE_TEXT_CONTENT_TYPE_2] || C.EMPTY;
-    if (url.hostname !== C.CLAUDE_HOST || request.method() !== ST.SOURCE_TEXT_POST) return;
-    if (C.UPLOAD_PATH_PATTERN.test(url.pathname) || C.MULTIPART_PATTERN.test(contentType)) pending.add(request);
-  };
-  const onFinished = (request: Request) => {
-    pending.delete(request);
-  };
-  const onFailed = (request: Request) => {
-    if (pending.delete(request)) failed = true;
-  };
-  const onResponse = (response: import("playwright").Response) => {
-    if (pending.has(response.request()) && !response.ok()) failed = true;
-  };
-  page.on(ST.SOURCE_TEXT_REQUEST, onRequest);
-  page.on(C.REQUEST_FINISHED, onFinished);
-  page.on(C.REQUEST_FAILED, onFailed);
-  page.on(ST.SOURCE_TEXT_RESPONSE, onResponse);
-  return {
-    state: () => ({ pending: pending.size, failed }),
-    dispose: () => {
-      page.off(ST.SOURCE_TEXT_REQUEST, onRequest);
-      page.off(C.REQUEST_FINISHED, onFinished);
-      page.off(C.REQUEST_FAILED, onFailed);
-      page.off(ST.SOURCE_TEXT_RESPONSE, onResponse);
-    },
-  };
-};
+    return url.hostname === C.CLAUDE_HOST && request.method() === ST.SOURCE_TEXT_POST && (C.UPLOAD_PATH_PATTERN.test(url.pathname) || C.MULTIPART_PATTERN.test(contentType));
+  });
 type UploadObservation = Pick<ReturnType<typeof observeClaudeUploads>, "state">;
 export const waitForClaudeUploads = async (input: Locator, attachments: Attachment[], timeoutMs: number, signal?: AbortSignal, observation?: UploadObservation, stableMs = CONFIG.CLAUDE_UPLOAD_STABLE_MS, requireSendReady = false): Promise<void> => {
   const deadline = Date.now() + timeoutMs;

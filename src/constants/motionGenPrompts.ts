@@ -49,7 +49,7 @@ Requirements:
 7. Keep it compact: chapter summary ≤ 35 words, cast description ≤ 20 words.
 8. No gore or explicit violence. Leave out sexual content and anything the audience suitability excludes; do not list it in facts or cast, and never give it a chapter or a chapter title (if the source spends time on it, fold that time into a neighbouring chapter).
 9. "genre" and "genre2": optional descriptive metadata, use "" when unnecessary. They must not select narration, sets, light, structure or camera rules. "factual": true for an account presented as real events, false for fiction; note uncertainty in the Video DNA when the input does not establish this.
-10. Return one complete "videoDna" object following the contract below. Do not return the obsolete "dna" or "creativeBlueprint" fields.
+10. Return one complete "videoDna" object following the contract below. Do not return the obsolete "dna" or "creativeBlueprint" fields. Keep "chapters", "cast", "places", "facts", "look", "accent", "era" and "sfxMood" at the JSON root, as siblings of "videoDna". The field "videoDna.visualDna.palette" must be one non-empty string describing the colours; if a reference supplies a colour array, describe those colours in this string.
 
 JSON format:
 {"title":"…","logline":"…","genre":"","genre2":"","factual":true,"videoDna":{…},"look":"clean","accent":"#ffb070","era":"…",

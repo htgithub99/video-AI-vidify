@@ -76,6 +76,7 @@ try {
               RESPONSE_ACTIVITY_GRACE_MS: 1500,
               RESPONSE_POLL_MS: 10,
               RESPONSE_STABLE_POLLS: 2,
+              INVALID_RESPONSE_STABLE_POLLS: 3,
               ROOM_IDLE_STABLE_POLLS: 1,
               ROOM_REQUEST_COOLDOWN_MS: 0,
               PROMPT_INPUT_SETTLE_MS: 0,

@@ -1,3 +1,4 @@
+import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import { MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
 import { normalizeMotionReferenceStyle } from "../../lib/motionReference.js";
@@ -5,6 +6,11 @@ import { MOTION_STORY_VOICE_PROMPT, MOTION_VOICE } from "../../constants/motionV
 import { normalizeMotionUtterances } from "../../lib/motionVoice.js";
 import { motionAudioContext } from "../../lib/motionAudioDirection.js";
 import { withMotionReferenceFiles } from "./motionReferenceService.js";
+import { withCachedMotionReferenceStyle } from "./motionReferenceCacheService.js";
+import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
+import { assignSceneLibrary, cleanSceneTags, isSceneAssetId, motionAssetStyleKey, saveSceneStyle, sceneLibraryCatalog, sceneTypeOf } from "./motionSceneLibraryService.js";
+import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
+import { cleanCharacterColors } from "../../lib/motionCharacterVariant.js";
 import type { MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { AsyncLocalStorage } from "async_hooks";
@@ -14,6 +20,7 @@ import _ from "lodash";
 import path from "path";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
 import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES } from "../../constants/motionGenPrompts.js";
+import { normalizeMotionAnalysisResponse } from "../../lib/motionAnalysisResponse.js";
 import {
   MOTION_TEMPLATE_2_2,
   MOTION_TEMPLATE_AI_TRA_LOI_KHONG_PHAI_JSON,
@@ -139,10 +146,11 @@ import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifi
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { parseClaudeChatModel } from "../../constants/claudeChatModels.js";
+import { DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "./chatUiPlanningService.js";
 import { generateContentWithRetry } from "./geminiService.js";
-import { cancelGlobalBrowserCleanup, closeIdleSharedChrome } from "./imageGeneratorService.js";
+import { cancelGlobalBrowserCleanup } from "./imageGeneratorService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { AiTaskCapability } from "./taskRouterService.js";
 import { MOTION_SFX_MOODS } from "../../constants/motionAudio.js";
@@ -377,7 +385,22 @@ interface MotionAiRun { projectId: string; workerId: string; signal: AbortSignal
 const motionAiRunStore = new AsyncLocalStorage<MotionAiRun>();
 let motionAiSessions = 0;
 let motionAiUsedBrowser = false;
-let motionAiIdleTimer: ReturnType<typeof setTimeout> | null = null;
+let motionAiCleanup: Promise<boolean> | undefined;
+export const closeMotionAiBrowserBeforeRender = async (): Promise<boolean> => {
+  if (motionAiSessions) return false;
+  if (motionAiCleanup) return motionAiCleanup;
+  motionAiCleanup = (async () => {
+    cancelGlobalBrowserCleanup();
+    const closed = await closeChatBrowserIfIdle();
+    if (closed) motionAiUsedBrowser = false;
+    return closed;
+  })();
+  try {
+    return await motionAiCleanup;
+  } finally {
+    motionAiCleanup = undefined;
+  }
+};
 const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {
   const provider = run.rooms.get(workerId);
   if (!provider) return;
@@ -385,9 +408,8 @@ const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<vo
   await closeChatPlanningRoom({ provider, projectId: run.projectId, workerId }).catch(_.noop);
 };
 export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>): Promise<T> => {
+  if (motionAiCleanup) await motionAiCleanup.catch(_.noop);
   motionAiSessions++;
-  if (motionAiIdleTimer) clearTimeout(motionAiIdleTimer);
-  motionAiIdleTimer = null;
   const projectId = MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
   const planningRun = beginChatPlanningRun(projectId, Date.now(), MOTION_STORY_CONFIG.WORKER_IDS[0]);
   const run: MotionAiRun = { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: planningRun.signal, rooms: new Map(), roomQueue: Promise.resolve() };
@@ -398,15 +420,7 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
     await Promise.allSettled(_.map([...run.rooms.keys()], (workerId) => closeMotionAiRoom(run, workerId)));
     motionAiSessions = Math.max(0, motionAiSessions - 1);
     if (!motionAiSessions && motionAiUsedBrowser) {
-      cancelGlobalBrowserCleanup();
-      motionAiIdleTimer = setTimeout(() => {
-        motionAiIdleTimer = null;
-        if (motionAiSessions) return;
-        motionAiUsedBrowser = false;
-        void closeChatBrowserIfIdle()
-          .then((closed) => closed || closeIdleSharedChrome())
-          .catch(_.noop);
-      }, MOTION_STORY_CONFIG.BROWSER_KEEP_ALIVE_MS);
+      await closeMotionAiBrowserBeforeRender().catch(_.noop);
     }
   }
 };
@@ -459,7 +473,18 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     let roomOk = false;
     try {
       log?.(MOTION_TEMPLATE_GUI_YEU_CAU_TOI_PHONG_CHAT_AI_CAU(`${provider}`));
-      const model = provider === AiPlanningFallbackProvider.ClaudeChat ? (parseClaudeChatModel(exec.model) ? (exec.model as AiPlanningChatModel) : AiPlanningChatModel.ClaudeAuto) : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
+      const model =
+        provider === AiPlanningFallbackProvider.ClaudeChat
+          ? parseClaudeChatModel(exec.model)
+            ? (exec.model as AiPlanningChatModel)
+            : AiPlanningChatModel.ClaudeAuto
+          : provider === AiPlanningFallbackProvider.DeepSeekChat
+            ? pickEnum(
+                DEEPSEEK_CHAT_MODES.map((item) => item.value),
+                exec.model,
+                AiPlanningChatModel.DeepSeekAuto,
+              )
+            : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
       if (run && !run.rooms.has(workerId!)) {
         const prepared = run.roomQueue.then(() => prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true }));
         run.roomQueue = prepared.catch(_.noop);
@@ -472,6 +497,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     } catch (caught: any) {
       if (signal?.aborted && !timedOut) throw caught;
       if (_.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) throw caught;
+      if (_.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE)) throw caught;
       const diag = _.get(caught, MOTION_TEXT_DIAGNOSTICS) as { lastCandidate?: string; candidateChars?: number; busy?: boolean; identityMatch?: boolean; elapsedMs?: number; responseCount?: number; initialCount?: number } | undefined;
       const roomProbe = await probeRoomPage(_.get(caught, MOTION_TEXT_ROOMPAGE), requestId);
       await writeMotionAiDebug(requestId, { stage: artifactType, provider, error: _.toString(caught?.message), promptChars: fullPrompt.length, ...(diag || {}), room: roomProbe });
@@ -591,12 +617,23 @@ const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: Moti
   }
   throw new Error(MOTION_REFERENCE_PROMPTS.STYLE_FAILED);
 };
-export const analyzeStory = async (source: MotionStorySource, opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis> => {
+export const resolveMotionReferenceStyle = (references: MotionStyleReference[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => withCachedMotionReferenceStyle(references, () => withMotionReferenceFiles(references, (images) => analyzeReferenceStyle(images, opts)), opts);
+export const analyzeStory = async (
+  source: MotionStorySource,
+  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; assetStyleKey?: string; libraryMode?: MotionSceneLibraryMode },
+): Promise<MotionStoryAnalysis> => {
   if (opts.styleReferences?.length) {
-    const referenceStyle = await withMotionReferenceFiles(opts.styleReferences, (images) => analyzeReferenceStyle(images, opts));
+    const referenceStyle = await withCachedMotionReferenceStyle(opts.styleReferences, () => withMotionReferenceFiles(opts.styleReferences, (images) => analyzeReferenceStyle(images, opts)), opts);
+    const assetStyleKey = motionAssetStyleKey(opts.styleReferences, opts.drawingMode);
+    try {
+      saveSceneStyle(assetStyleKey, { references: opts.styleReferences, drawingMode: opts.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, referenceStyle, name: source.title });
+    } catch (error) {
+      opts.log?.(MOTION_SCENE_LIBRARY.LOGS.SAVE_FAILED(_.toString((error as Error)?.message || error)));
+    }
     const ai = opts.ai || runMotionAi;
     const analysis = await analyzeStory(source, {
       ...opts,
+      assetStyleKey,
       styleReferences: undefined,
       ai: referenceStyle ? (prompt, artifact, exec, signal, log, images) => ai([prompt, MOTION_REFERENCE_PROMPTS.PROFILE(referenceStyle)].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, images) : opts.ai,
     });
@@ -617,7 +654,12 @@ export const analyzeStory = async (source: MotionStorySource, opts: { styleRefer
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
-  const fullRequest = MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) + MR.MOTION_TEXT_SYMBOL_27 + (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF);
+  const libraryMode = opts.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO;
+  const assetStyleKey = opts.assetStyleKey || motionAssetStyleKey([], opts.drawingMode);
+  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion);
+  const catalog = sceneLibraryCatalog(assetStyleKey, _.truncate([source.title, source.text].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE), { length: MOTION_SCENE_LIBRARY.CONTEXT_MAX }), { characterMotion: opts.characterMotion, items: libraryMode === MOTION_SCENE_LIBRARY_MODES.AI });
+  if (catalog.locations || catalog.characters) opts.log?.(MOTION_SCENE_LIBRARY.LOGS.CATALOG(catalog.locations, catalog.characters));
+  const fullRequest = MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) + MR.MOTION_TEXT_SYMBOL_27 + (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) + MR.MOTION_TEXT_SYMBOL_27 + catalog.prompt;
   let errors: string[] = [];
   let roomHasContext = false;
   let lastRaw: any = null;
@@ -625,7 +667,7 @@ export const analyzeStory = async (source: MotionStorySource, opts: { styleRefer
     const request = !errors.length || !roomHasContext ? MR.MOTION_TEMPLATE_SYMBOL_305(fullRequest, errors.length ? MR.MOTION_TEMPLATE_CORRECT_THESE_EXACT_CONTRACT_FAILURES(errors.join(MR.MOTION_TEXT_SYMBOL_41)) : MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEMPLATE_CORRECTION_YOUR_PREVIOUS_ANALYSIS_JSON_FAILED_THESE_EXACT_CHECKS_(errors.join(MR.MOTION_TEXT_SYMBOL_41));
     let raw: any;
     try {
-      raw = await (opts.ai || runMotionAi)(request, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log);
+      raw = normalizeMotionAnalysisResponse(await (opts.ai || runMotionAi)(request, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log));
     } catch (error) {
       if (opts.signal?.aborted || attempt === MOTION_ANALYSIS_ATTEMPTS - 1) throw error;
       roomHasContext = false;
@@ -645,13 +687,13 @@ export const analyzeStory = async (source: MotionStorySource, opts: { styleRefer
       const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
       const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
       opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
-      return normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target);
+      return finish(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target));
     }
     opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA_THIEU_MUC_NHO_AI_SUA_TRONG_CUNG_PHONG_CHAT(errors.length, _.truncate(errors.slice(0, 3).join(MR.MOTION_TEXT_SYMBOL_41), { length: 160 })));
   }
   if (lastRaw?.chapters?.length) {
     opts.log?.(MR.MOTION_TEXT_VIDEO_DNA_CHUA_HOAN_CHINH_SAU_NHIEU_LAN_SUA_CHAY_TIEP_THEO_CACH_C);
-    return normalizeAnalysis({ ..._.omit(lastRaw, [MR.MOTION_TEXT_VIDEODNA]), characterMotion: opts.characterMotion === true }, source, target);
+    return finish(normalizeAnalysis({ ..._.omit(lastRaw, [MR.MOTION_TEXT_VIDEODNA]), characterMotion: opts.characterMotion === true }, source, target));
   }
   throw new Error(MR.MOTION_TEMPLATE_INVALID_SOURCE_DERIVED_VIDEO_DNA(errors.join(MR.MOTION_TEXT_SYMBOL_41)));
 };
@@ -749,7 +791,18 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
       while (used.has(key)) key = MOTION_TEMPLATE_2_2(`${key}`);
       used.add(key);
       const gender = /^f|woman|female|girl/i.test(_.toString(m.gender || m.suggested?.gender || MR.MOTION_TEXT_EMPTY)) ? MOTION_TEXT_FEMALE : MOTION_TEXT_MALE;
-      return { key, name: _.truncate(_.toString(m.name), { length: 60 }), role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }), description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }), look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 240 }), gender } as MotionCastMember;
+      return {
+        key,
+        name: _.truncate(_.toString(m.name), { length: 60 }),
+        role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
+        description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
+        look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 240 }),
+        gender,
+        tags: cleanSceneTags(m.tags),
+        ...(isSceneAssetId(m.reuse) ? { reuse: m.reuse } : {}),
+        ...(sceneTypeOf(m.type) ? { type: sceneTypeOf(m.type) } : {}),
+        ...(cleanCharacterColors(m.colors) ? { colors: cleanCharacterColors(m.colors) } : {}),
+      } as MotionCastMember;
     }),
   );
   const usedPlaces = new Set<string>();
@@ -761,7 +814,16 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
         let key = slugKey(obj.key || obj.name);
         if (usedPlaces.has(key)) return null;
         usedPlaces.add(key);
-        return { key, name: _.truncate(_.toString(obj.name || key), { length: 60 }), description: _.truncate(_.toString(obj.description || obj.name || key), { length: 500 }), interior: !!obj.interior, time: _.includes(TIMES, obj.time) ? obj.time : obj.interior ? MOTION_TEXT_TOON_CAT_INTERIOR : MOTION_TEXT_DAY } as MotionPlace;
+        return {
+          key,
+          name: _.truncate(_.toString(obj.name || key), { length: 60 }),
+          description: _.truncate(_.toString(obj.description || obj.name || key), { length: 500 }),
+          interior: !!obj.interior,
+          time: _.includes(TIMES, obj.time) ? obj.time : obj.interior ? MOTION_TEXT_TOON_CAT_INTERIOR : MOTION_TEXT_DAY,
+          tags: cleanSceneTags(obj.tags),
+          ...(isSceneAssetId(obj.reuse) ? { reuse: obj.reuse } : {}),
+          ...(sceneTypeOf(obj.type) ? { type: sceneTypeOf(obj.type) } : {}),
+        } as MotionPlace;
       }),
     ),
     target > 1200 ? 18 : 10,
@@ -826,10 +888,10 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter): 
     .filter(Boolean)
     .join(MR.MOTION_TEXT_SYMBOL_27);
 };
-export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; previous?: MotionBeat[]; previousSummary?: string; isFirst: boolean; isLast: boolean; ai?: typeof runMotionAi }): Promise<MotionBeat[]> => {
+export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; previous?: MotionBeat[]; previousSummary?: string; isFirst: boolean; isLast: boolean; ai?: typeof runMotionAi; speechRate?: number }): Promise<MotionBeat[]> => {
   const isVi = opts.language !== MOTION_TEXT_EN;
   const seconds = chapter.targetSeconds || 120;
-  const units = Math.round(seconds * (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND) * MOTION_STORY_CONFIG.LENGTH_SAFETY);
+  const units = Math.round(seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND)) * MOTION_STORY_CONFIG.LENGTH_SAFETY);
   const beatsWanted = Math.max(2, Math.round(seconds / MOTION_STORY_CONFIG.TARGET_BEAT_SECONDS));
   const language = isVi ? MOTION_TEXT_VIETNAMESE : MOTION_TEXT_ENGLISH;
   const unitName = isVi ? MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS : MOTION_TEXT_WORDS;

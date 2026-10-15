@@ -96,7 +96,7 @@ export const CLAUDE_VERIFICATION_TEXTS = {
   FIXTURE_BROWSER: "fixture-browser",
   FIXTURE: "fixture",
   BROWSER_SERVICE_FIXTURE:
-    "\n        export const getOrLaunchGlobalBrowser = async () => globalThis.__claudeFixture;\n        export const getOrLaunchGrokBrowser = getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup = () => {};\n        export const closeAppBrowserAfterTask = async () => true;\n        export const closeOwnedGrokBrowserIfIdle = async () => true;\n        export class SimpleMutex { tail = Promise.resolve(); async acquire() { const previous = this.tail; let release; this.tail = new Promise(resolve => release = resolve); await previous; return release; } }\n      ",
+    "\n        export const getOrLaunchGlobalBrowser = async () => globalThis.__claudeFixture;\n        export const getOrLaunchGrokBrowser = getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup = () => {};\n        export const closeAppBrowserAfterTask = async () => true;\n        export const closeIdleSharedChrome = async () => true;\n        export const closeOwnedGrokBrowserIfIdle = async () => true;\n        export class SimpleMutex { tail = Promise.resolve(); async acquire() { const previous = this.tail; let release; this.tail = new Promise(resolve => release = resolve); await previous; return release; } }\n      ",
   JS: "js",
   UTF8: "utf8",
   CONFIG_NUMBER_PATTERN: (value0: unknown): string => `\\b${value0}: \\d+`,
