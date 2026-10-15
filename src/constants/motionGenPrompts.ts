@@ -16,6 +16,7 @@ export const MOTION_GEN_CONFIG = {
   NOTE_KEY: "note",
   REVIEW_OFF_LOG: "Đã tắt bước AI xem ảnh (Cấu hình AI) – chỉ sửa theo lỗi máy tự phát hiện.",
   BEATS_PER_STAGING_CALL: 8,
+  MIN_BEATS_PER_AI_CALL: 3,
   REVIEW_IMAGES_PER_CALL: 6,
   PREVIEW_FOLDER: "gen-preview",
   PREVIEW_WIDTH: 960,

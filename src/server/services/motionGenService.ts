@@ -124,6 +124,7 @@ import { validateGenLocation, validateGenCharacter, validateGenStaging } from ".
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { openStillSession, type MotionStillSession } from "./motionRenderService.js";
 import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 export interface GenOptions {
   audioDirection?: MotionAudioDirection;
   styleReferences?: MotionStyleReference[];
@@ -607,6 +608,7 @@ export const previewBeats = async (beats: MotionBeat[], script: MotionStoryScrip
     }
   }
 };
+const aiGroupSize = (count: number): number => _.clamp(Math.ceil(count / MOTION_STORY_CONFIG.AI_PARALLEL), MOTION_GEN_CONFIG.MIN_BEATS_PER_AI_CALL, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL);
 export const reviewBeats = async (beats: MotionBeat[], gen: MotionGenState, o: GenOptions): Promise<{ staging: Record<string, string>; locations: Record<string, string> }> => {
   const notes: Record<string, string> = {};
   const locations: Record<string, string> = {};
@@ -619,11 +621,11 @@ export const reviewBeats = async (beats: MotionBeat[], gen: MotionGenState, o: G
     if (!last || used + count > MOTION_GEN_CONFIG.REVIEW_IMAGES_PER_CALL) chunks.push([beat]);
     else last.push(beat);
   }
-  for (const chunk of chunks) {
+  await mapMotionAiPool(chunks, async (chunk) => {
     aborted(o);
     for (const b of chunk) gen.previews[b.id].score = 0;
     const files = _.compact(chunk.flatMap((b) => (gen.previews[b.id].files || [gen.previews[b.id].file!]).map((file) => resolveGenPreview(file))));
-    if (!files.length) continue;
+    if (!files.length) return;
     try {
       const res = await (o.ai || runMotionAi)(
         MOTION_GEN_STAGING_REVIEW_PROMPT({
@@ -669,7 +671,7 @@ export const reviewBeats = async (beats: MotionBeat[], gen: MotionGenState, o: G
       if (o.signal?.aborted) throw e;
       o.log(MOTION_TEMPLATE_BO_QUA_BUOC_AI_XEM_LAI_CANH(`${getMotionErrorSummary(e)}`));
     }
-  }
+  });
   return { staging: { ...autoNotes(withImg, gen), ...notes }, locations };
 };
 const autoNotes = (beats: MotionBeat[], gen: MotionGenState): Record<string, string> => {
@@ -693,7 +695,7 @@ export const directExistingMotionSound = async (script: MotionStoryScript, gen: 
     return;
   }
   o.log(MOTION_SOUND_CONFIG.PLANNING);
-  for (const group of _.chunk(beats, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL)) {
+  await mapMotionAiPool(_.chunk(beats, aiGroupSize(beats.length)), async (group) => {
     aborted(o);
     const castKeys = _.uniq(group.flatMap((beat) => ((gen.staging[beat.id] as any)?.actors || []).map((actor: any) => actor.cast)));
     const cast = Object.fromEntries(
@@ -759,7 +761,7 @@ export const directExistingMotionSound = async (script: MotionStoryScript, gen: 
       const staging: any = beat.visual === MOTION_TEXT_SCENE ? gen.staging[beat.id] : (beat.data ||= {});
       staging.soundDirected = true;
     }
-  }
+  });
   gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
   gen.soundDirectionKey = key;
 };
@@ -821,6 +823,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     emit();
   }
   const session = await openStillSession();
+  let reviewList: MotionBeat[] = [];
   try {
     const neededPlaces = _.uniq(_.compact(_.map(focusBeats || sceneBeats, MOTION_TEXT_PLACE)));
     const toDesign = _.filter(analysis.places, (p) => _.includes(neededPlaces, p.key) && (!gen.locations[p.key] || _.includes(o.onlyLocations || [], p.key)));
@@ -837,7 +840,8 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     }
     const placeOk = (b: MotionBeat) => !!b.place && !!gen.locations[b.place];
     const stageList = _.filter(focusBeats || sceneBeats, (b) => placeOk(b) && (!!focusBeats || (o.onlyLocations?.length ? _.includes(o.onlyLocations, b.place) : !gen.staging[b.id])));
-    const groups = _.flatMap(_.values(_.groupBy(stageList, MOTION_TEXT_CHAPTERID)), (list) => _.chunk(list, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL));
+    reviewList = stageList;
+    const groups = _.flatMap(_.values(_.groupBy(stageList, MOTION_TEXT_CHAPTERID)), (list) => _.chunk(list, aiGroupSize(stageList.length)));
     let g = 0;
     await mapMotionAiPool(groups, async (group) => {
       await stageBeats(group, script, analysis, gen, o, o.note && focusBeats ? _.fromPairs(_.map(group, (b) => [b.id, o.note!])) : {});
@@ -854,21 +858,23 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
     if (broken.length) {
       const notes = autoNotes(broken, gen);
-      await mapMotionAiPool(_.chunk(broken, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL), (group) => stageBeats(group, script, analysis, gen, o, notes));
+      await mapMotionAiPool(_.chunk(broken, aiGroupSize(broken.length)), (group) => stageBeats(group, script, analysis, gen, o, notes));
       await previewBeats(broken, script, gen, session, o);
-      emit();
-    }
-    if (o.review !== false) {
-      progress(0.9, MOTION_TEXT_REVIEW);
-      await reviewBeats(stageList, gen, o);
-      o.log(MOTION_QA_MESSAGES.RETAINED);
       emit();
     }
   } finally {
     await session.close();
   }
-  await directExistingMotionSound(script, gen, o);
-  emit();
+  progress(0.9, MOTION_TEXT_REVIEW);
+  await Promise.all([
+    o.review !== false
+      ? reviewBeats(reviewList, gen, o).then(() => {
+          o.log(MOTION_QA_MESSAGES.RETAINED);
+          emit();
+        })
+      : Promise.resolve(),
+    directExistingMotionSound(script, gen, o).then(() => emit()),
+  ]);
   gen.failed = _.map(
     _.filter(sceneBeats, (b) => !gen.staging[b.id] || needsMotionPreview(gen.previews[b.id])),
     MOTION_TEXT_ID,

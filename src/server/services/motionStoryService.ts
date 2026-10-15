@@ -564,17 +564,18 @@ export const buildSourceLedger = async (source: MotionStorySource, opts: { exec:
   return parts.map((p, i) => MR.MOTION_TEMPLATE_PART(i + 1, chunks.length, p)).join(MR.MOTION_TEXT_SYMBOL_27);
 };
 const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < MOTION_REFERENCE_PROMPTS.STYLE_ATTEMPTS; attempt++) {
     try {
-      const raw = await (opts.ai || runMotionAi)([MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY].join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, opts.exec, opts.signal, opts.log, images);
+      const parts = attempt >= 1 ? [MOTION_REFERENCE_PROMPTS.STYLE_SAFE, MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY] : [MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY];
+      const raw = await (opts.ai || runMotionAi)(parts.join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, opts.exec, opts.signal, opts.log, images);
       const style = normalizeMotionReferenceStyle(raw?.referenceStyle || raw);
-      if (style) return style;
+      if (style?.kit) return style;
     } catch (error) {
       if (opts.signal?.aborted) throw error;
     }
     opts.log?.(MOTION_REFERENCE_PROMPTS.STYLE_RETRY);
   }
-  return undefined;
+  throw new Error(MOTION_REFERENCE_PROMPTS.STYLE_FAILED);
 };
 export const analyzeStory = async (source: MotionStorySource, opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis> => {
   if (opts.styleReferences?.length) {
