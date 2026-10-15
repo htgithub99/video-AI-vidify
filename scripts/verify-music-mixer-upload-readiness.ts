@@ -1,3 +1,4 @@
+import { CLAUDE_VERIFICATION_TEXTS as CT } from "./claudeVerificationTexts.js";
 import { writeVerificationLog } from "./verificationLogger";
 import {
   SOURCE_TEXT_SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS,
@@ -70,6 +71,7 @@ import ts from "typescript";
 import _ from "lodash";
 import { chromium, type Page } from "playwright";
 import * as sourceTexts from "../src/constants/sourceText.ts";
+import * as MR from "../src/constants/motionRuntime.ts";
 import { MOTION_TEMPLATE_SYMBOL_26 } from "../src/constants/motionRuntime.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../src/constants/messages.ts";
@@ -81,6 +83,7 @@ const events: string[] = [];
 const attachments = [{ name: SOURCE_TEXT_DISPLAY_NAME_WAV, path: SOURCE_TEXT_D_MUSIC_TRACK_WAV }];
 const sandbox = vm.createContext({
   _,
+  MR,
   createHash,
   ...sourceTexts,
   MOTION_TEMPLATE_SYMBOL_26,
@@ -119,7 +122,7 @@ vm.runInContext(
 const browser = await chromium.launch({ channel: SOURCE_TEXT_CHROME, headless: true });
 try {
   const page = await browser.newPage();
-  const fixture = async (inside: string, outside = "") => {
+  const fixture = async (inside: string, outside: string = CT.EMPTY) => {
     events.length = 0;
     await page.setContent(SOURCE_TEMPLATE_FORM_TEXTAREA_ID_PROMPT_TEXTAREA_BUTTON(`${outside}`, `${inside}`));
   };
@@ -140,7 +143,7 @@ try {
   await slowSubmit;
   assert.equal(await sent(), 1);
   assert.ok(events.includes(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED));
-  await fixture("");
+  await fixture(CT.EMPTY);
   await assert.rejects(submit(), /chưa xác nhận tải xong/);
   assert.equal(await sent(), 0, SOURCE_TEXT_NO_ATTACHMENT_PREVIEWS_MUST_BLOCK_SUBMISSION);
   assert.ok(!events.includes(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED));
@@ -165,7 +168,7 @@ try {
   await fixture(SOURCE_TEMPLATE_ASYNC_PROCESSING_CHIP_PROCESSING_ASYNC_PROCESSING(`${ready}`));
   await assert.rejects(submit(), /chưa xác nhận tải xong/);
   assert.equal(await sent(), 0, SOURCE_TEXT_FILE_PROCESSING_MUST_FINISH_BEFORE_SUBMISSION);
-  await fixture("", SOURCE_TEMPLATE_DIV_DIV(`${ready}`));
+  await fixture(CT.EMPTY, SOURCE_TEMPLATE_DIV_DIV(`${ready}`));
   await assert.rejects(submit(), /chưa xác nhận tải xong/);
   assert.equal(await sent(), 0, SOURCE_TEXT_OLD_MESSAGE_ATTACHMENTS_CANNOT_SATISFY_COMPOSER_CHECKS);
   await fixture(SOURCE_TEMPLATE_DIV_ARIA_BUSY_TRUE_DIV(`${ready}`));
@@ -175,7 +178,7 @@ try {
   await assert.rejects(cancelled, /abort/i);
   assert.equal(await sent(), 0);
   await fixture(ready);
-  await page.locator("#prompt").evaluate(
+  await page.locator(CT.PROMPT).evaluate(
     (node, sharedBrowserPayload) => {
       const { SOURCE_TEXT_INPUT, SOURCE_TEXT_INPUT_COMPANION_CHIP } = sharedBrowserPayload.texts;
       return node.addEventListener(SOURCE_TEXT_INPUT, () => document.querySelector(SOURCE_TEXT_INPUT_COMPANION_CHIP)?.remove(), { once: true });
@@ -222,18 +225,18 @@ try {
   await assert.rejects(waitForMusicMixerUploads(page.locator(SOURCE_TEXT_PROMPT_2), attachments, 80, undefined, 20, { ...longPolicy, maxWaitMs: 180 }), /chưa xác nhận tải xong/);
   assert.equal(await sent(), 0, SOURCE_TEXT_A_PERMANENTLY_ACTIVE_SPINNER_STILL_HAS_A);
   const tenFiles = Array.from({ length: 10 }, (_, index) => ({ name: SOURCE_TEMPLATE_TRACK_WAV(`${index}`) }));
-  const geminiPreviews = tenFiles.map((file) => SOURCE_TEMPLATE_UPLOADER_FILE_PREVIEW_GEM_ATTACHMENT_SPAN(`${file.name.replace(/\.wav$/, "")}`, `${file.name.replace(/\.wav$/, "")}`)).join("");
+  const geminiPreviews = tenFiles.map((file) => SOURCE_TEMPLATE_UPLOADER_FILE_PREVIEW_GEM_ATTACHMENT_SPAN(`${file.name.replace(/\.wav$/, CT.EMPTY)}`, `${file.name.replace(/\.wav$/, CT.EMPTY)}`)).join(CT.EMPTY);
   await fixture(SOURCE_TEMPLATE_DIV_CLASS_ATTACHMENT_PREVIEW_WRAPPER_UPLOADER(`${geminiPreviews}`));
   await waitForMusicMixerUploads(page.locator(SOURCE_TEXT_PROMPT_2), tenFiles, 80, undefined, 20, longPolicy);
   await page
-    .locator("uploader-file-preview")
+    .locator(CT.UPLOADER_FILE_PREVIEW)
     .last()
     .evaluate((node) => node.remove());
   await assert.rejects(waitForMusicMixerUploads(page.locator(SOURCE_TEXT_PROMPT_2), tenFiles, 80, undefined, 20, longPolicy), /đang thấy 9/);
   const longName = SOURCE_TEXT_21_MIDNIGHT_FREQUENCY_WAV;
   await fixture(SOURCE_TEXT_UPLOADER_FILE_PREVIEW_DIV_ARIA_DESCRIBEDBY_FULL, SOURCE_TEMPLATE_DIV_HIDDEN_ID_FULL_NAME_DIV(`${longName}`));
   await waitForMusicMixerUploads(page.locator(SOURCE_TEXT_PROMPT_2), [{ name: longName }], 80, undefined, 20, longPolicy);
-  await page.locator("#full-name").evaluate(
+  await page.locator(CT.FULL_NAME).evaluate(
     (node, sharedBrowserPayload) => {
       const { SOURCE_TEXT_21_DIFFERENT_FREQUENCY_WAV } = sharedBrowserPayload.texts;
       return (node.textContent = SOURCE_TEXT_21_DIFFERENT_FREQUENCY_WAV);

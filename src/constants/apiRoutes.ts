@@ -134,6 +134,7 @@ export const EXTERNAL_URLS = {
   GROK_IMAGINE: "https://grok.com/imagine",
   GROK_CHAT: "https://grok.com/",
   CHATGPT: "https://chatgpt.com/",
+  CLAUDE_CHAT: "https://claude.ai/new",
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",
@@ -183,10 +184,10 @@ export const IMAGES_DIR_NAME = "images";
 export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
-export const API_HEADERS = { CONTENT_TYPE: "Content-Type", ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin", AI33_API_KEY: "x-ai33-api-key", GEMINI_API_KEY: "x-gemini-api-key", CEREBRAS_API_KEY: "x-cerebras-api-key", GROQ_API_KEY: "x-groq-api-key", LICENSE_KEY: "x-license-key", } as const;
-export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video", } as const;
-export const SHORTS_API_PATHS = { BASE: "/shorts", METADATA: "/metadata", GENERATE: "/generate", EXPORT_ZIP: "/export-zip", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", BUILD_ZIP: "/build-zip", STREAM_SOURCE: "/stream-source", } as const;
-export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project", } as const;
+export const API_HEADERS = { CONTENT_TYPE: "Content-Type", ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin", AI33_API_KEY: "x-ai33-api-key", GEMINI_API_KEY: "x-gemini-api-key", CEREBRAS_API_KEY: "x-cerebras-api-key", GROQ_API_KEY: "x-groq-api-key", LICENSE_KEY: "x-license-key" } as const;
+export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video" } as const;
+export const SHORTS_API_PATHS = { BASE: "/shorts", METADATA: "/metadata", GENERATE: "/generate", EXPORT_ZIP: "/export-zip", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", BUILD_ZIP: "/build-zip", STREAM_SOURCE: "/stream-source" } as const;
+export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project" } as const;
 export const MOTION_VIDEO_API_PATHS = {
   ENGINE: "/engine",
   DEMO: "/demo",
@@ -214,5 +215,5 @@ export const MOTION_VIDEO_API_PATHS = {
   STORY_STATUS: "/story/status/:jobId",
   STORY_CANCEL: "/story/cancel",
 } as const;
-export const SETTINGS_API_PATHS = { GAS_CONFIG: "/gas-config", API_KEYS: "/api-keys", ACCOUNTS: "/accounts", ACCOUNTS_STATUS: "/accounts/status", } as const;
+export const SETTINGS_API_PATHS = { GAS_CONFIG: "/gas-config", API_KEYS: "/api-keys", ACCOUNTS: "/accounts", ACCOUNTS_STATUS: "/accounts/status" } as const;
 export const API_QUERY_PARAMS = { PROVIDER: "provider", PAGE: "page", PAGE_SIZE: "page_size", LANGUAGE: "language", GENDER: "gender", AGE: "age", SEARCH: "search" } as const;

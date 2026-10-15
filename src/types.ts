@@ -60,6 +60,7 @@ export enum AiPlanningFallbackProvider {
   GeminiChat = "gemini-chat",
   GrokChat = "grok-chat",
   ChatGptUi = "chatgpt-ui",
+  ClaudeChat = "claude-chat",
   Disabled = "disabled",
 }
 export enum AiPlanningExecutionMode {
@@ -80,6 +81,20 @@ export enum AiPlanningChatModel {
   GrokExpert = "grok-expert",
   GrokHeavy = "grok-heavy",
   ChatGptAuto = "chatgpt-auto",
+  ClaudeAuto = "claude-auto",
+  ClaudeFable51 = "claude-fable-5-1",
+  ClaudeOpus55 = "claude-opus-5-5",
+  ClaudeSonnet55 = "claude-sonnet-5-5",
+  ClaudeHaiku55 = "claude-haiku-5-5",
+  ClaudeFable5 = "claude-fable-5",
+  ClaudeOpus5 = "claude-opus-5",
+  ClaudeOpus48 = "claude-opus-4-8",
+  ClaudeOpus47 = "claude-opus-4-7",
+  ClaudeOpus46 = "claude-opus-4-6",
+  ClaudeOpus3 = "claude-3-opus-20240229",
+  ClaudeSonnet5 = "claude-sonnet-5",
+  ClaudeSonnet46 = "claude-sonnet-4-6",
+  ClaudeHaiku45 = "claude-haiku-4-5-20251001",
 }
 export enum GenerateType {
   Image = "image",
@@ -544,10 +559,10 @@ export interface StoryboardQualityReport { continuityScore: number; shotDiversit
 export interface ImagePromptQualityIssue { sceneId: string; code: string; severity: "blocking" | "warning"; }
 export interface ImagePromptQualityReport { totalPrompts: number; validPrompts: number; blockingErrors: ImagePromptQualityIssue[]; warnings: ImagePromptQualityIssue[]; passed: boolean; }
 export interface ContentSafetyReport { sensitiveTopic: boolean; trueCase: boolean; minorsInvolved: boolean; sexualExploitationRisk: boolean; victimExploitationRisk: boolean; privacyRisk: boolean; likenessRisk: boolean; copyrightRisk: boolean; requiredDisclosures: string[]; blockingErrors: string[]; warnings: string[]; allowed: boolean; }
-export interface PipelineRolloutConfig { releaseChannel: "stable" | "canary"; canaryEnabled: boolean; shadowMode: boolean; qaMode: "advisory"; maxEditorialRepairAttempts: 1; flags: { creativeBrief: boolean; scriptQa: boolean; visualQa: boolean; audioQa: boolean; thumbnailQa: boolean; finalQc: boolean; }; }
+export interface PipelineRolloutConfig { releaseChannel: "stable" | "canary"; canaryEnabled: boolean; shadowMode: boolean; qaMode: "advisory"; maxEditorialRepairAttempts: 1; flags: { creativeBrief: boolean; scriptQa: boolean; visualQa: boolean; audioQa: boolean; thumbnailQa: boolean; finalQc: boolean }; }
 export interface PipelineBenchmark { totalLatencyMs: number; aiLatencyMs: number; estimatedCostUsd: number; actualCostUsd: number; retryCount: number; rejectCount: number; generatedAt: string; }
 export interface AudioCue { id: string; sceneId: string; type: AudioCueType; description: string; emotionalIntent: string; startOffsetSeconds: number; durationSeconds: number; assetUrl?: string; status: AudioCueStatus; }
-export interface AudioCueSheet { musicArc: string[]; cues: AudioCue[]; mixTargets: { narrationLufs: number; musicUnderVoiceDb: number; peakDb: number; }; }
+export interface AudioCueSheet { musicArc: string[]; cues: AudioCue[]; mixTargets: { narrationLufs: number; musicUnderVoiceDb: number; peakDb: number }; }
 export interface RenderAudioTrack { id: string; type: AudioCueType; assetUrl: string; startSeconds: number; durationSeconds: number; volumeDb: number; loop?: boolean; fadeInSeconds?: number; fadeOutSeconds?: number; }
 export interface PipelineShadowComparison { baselineProjectId?: string; comparedAt: string; sceneCountDelta: number; approvedSceneDelta: number; scriptContinuityDelta: number; hookPayoffDelta: number; durationDeltaSeconds: number; estimatedCostUsd: number; regressions: string[]; improved: boolean; }
 export interface ThumbnailQualityReport { anatomyScore: number; characterConsistencyScore: number; focalClarityScore: number; smallSizeLegibilityScore: number; titlePromiseAlignmentScore: number; estimatedCtrScore: number; blockingErrors: string[]; warnings: string[]; passed: boolean; }

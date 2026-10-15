@@ -1,3 +1,5 @@
+import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
+import { isPlanningChatModel } from "../../lib/chatPlanningUtils.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_75,
   SOURCE_TEMPLATE_SYMBOL_86,
@@ -1205,13 +1207,8 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
 interface MusicPlanRequestPayload { requestedSongCount: number; style: string; referenceSongs: string[]; projectId: string; execution: Record<string, any>; requestId: string; thumbnailReference: string; thumbnailReferenceName: string; thumbnailDescription: string; sunoInspo: string; }
 let activeMusicPlanRuns = 0;
 const activeMusicPlanCleanup = new Map<string, Promise<void>>();
-const musicPlanCheckpoints = new Map<
-  string,
-  { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]>; }
->();
-const parseAndValidateMusicPlanRequest = (
-  req: Request,
-): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string; } => {
+const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]> }>();
+const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
   const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
   const style = _.trim(_.toString(req.body?.style));
   const referenceSongs = _.compact(_.map(_.castArray(req.body?.referenceSongs || []), (song) => _.trim(_.toString(song))));
@@ -1242,18 +1239,30 @@ const parseAndValidateMusicPlanRequest = (
     },
   };
 };
-const generateMusicThumbnailAsset = async (
-  input: { songs: any[]; style: string; styleAnalysis?: unknown; sourceContext?: string; description: string; reference: string; referenceName: string; chromeHeadless: boolean; assetPurpose?: string; showTrackList?: boolean; planningProvider?: AiPlanningFallbackProvider; planningModel?: AiPlanningChatModel; signal?: AbortSignal; },
-): Promise<{ thumbnail: string | null; warning?: string; }> => {
+const generateMusicThumbnailAsset = async (input: {
+  songs: any[];
+  style: string;
+  styleAnalysis?: unknown;
+  sourceContext?: string;
+  description: string;
+  reference: string;
+  referenceName: string;
+  chromeHeadless: boolean;
+  assetPurpose?: string;
+  showTrackList?: boolean;
+  planningProvider?: AiPlanningFallbackProvider;
+  planningModel?: AiPlanningChatModel;
+  signal?: AbortSignal;
+}): Promise<{ thumbnail: string | null; warning?: string }> => {
   let lastWarning: string = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
   const imageBrief =
     input.assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO
       ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false, input.styleAnalysis)
       : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext, input.styleAnalysis);
   const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
-  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
+  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
   const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
-  let prompt = "";
+  let prompt: string = C.EMPTY;
   try {
     await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel });
     const response = await generatePlanningWithChatUi({
@@ -1530,7 +1539,7 @@ const validateMusicPlaylistSeoContract = (parsed: any, _songs?: any[]): boolean 
     const tags = _.map(_.castArray(option?.tags || []), (value) => _.trim(_.toString(value)));
     const titleWords = _.filter(title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES), (word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
     const hasTitleCase = _.every(titleWords, (word) => {
-      const firstLetter = word.match(SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER)?.[0] || "";
+      const firstLetter = word.match(SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER)?.[0] || C.EMPTY;
       return firstLetter === firstLetter.toUpperCase();
     });
     const hasSingleIcon = _.size(description.match(MUSIC_CREATOR_REGEXES.EMOJI) || []) === 1;
@@ -1575,7 +1584,7 @@ const getMusicPlaylistSeoContractIssues = (parsed: any): string[] => {
     const titleWords = _.filter(title.split(SUNO_AUTOMATION_PATTERNS.WHITESPACES), (word) => SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER.test(word));
     if (
       !_.every(titleWords, (word) => {
-        const firstLetter = word.match(SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER)?.[0] || "";
+        const firstLetter = word.match(SUNO_AUTOMATION_PATTERNS.UNICODE_LETTER)?.[0] || C.EMPTY;
         return firstLetter === firstLetter.toUpperCase();
       })
     )
@@ -1668,7 +1677,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
     if (!validateMusicStyleAnalysisContract(styleAnalysisParsed, analysisRequestId)) {
       const failedFields = _.slice(styleAnalysisIssues, 0, 5).join(SOURCE_TEXT_SYMBOL_6);
-      throw createAppError(SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}`, `${failedFields ? SOURCE_TEMPLATE_CHI_TIET(SOURCE_TEMPLATE_SYMBOL_86(`${failedFields}`)) : ""}`));
+      throw createAppError(SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR}`, `${failedFields ? SOURCE_TEMPLATE_CHI_TIET(SOURCE_TEMPLATE_SYMBOL_86(`${failedFields}`)) : C.EMPTY}`));
     }
     checkpoint.styleAnalysis = styleAnalysisParsed;
     checkpoint.updatedAt = Date.now();
@@ -1677,7 +1686,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION;
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage, songCount: requestedSongCount });
     let responseProvider = provider;
-    const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix = "", workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[] | null> => {
+    const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix: string = C.EMPTY, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[] | null> => {
       let batchParsed: any = null;
       let batchIssues: string[] = [];
       let roomWasReloaded = false;
@@ -1715,7 +1724,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       }
       return null;
     };
-    const composeAdaptiveBatch = async (startIndex: number, batchCount: number, requestSuffix = "", workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[]> => {
+    const composeAdaptiveBatch = async (startIndex: number, batchCount: number, requestSuffix: string = C.EMPTY, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[]> => {
       const isMinimumBatch = batchCount <= _.last(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES)!;
       const attempts = isMinimumBatch ? SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS : 1;
       const composedSongs = await composeSongBatch(startIndex, batchCount, attempts, requestSuffix, workerId);
@@ -1752,7 +1761,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       prepareChatPlanningRoom({
         provider,
         model: execution.model,
-        prompt: "",
+        prompt: C.EMPTY,
         projectId,
         workerId: workerIndex === 0 ? SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE,
         chromeHeadless: execution.chromeHeadless !== false,
@@ -1767,7 +1776,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         const batchIndex = compositionBatches.findIndex((item) => item.startIndex === batch.startIndex);
         try {
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_STARTED, { runId: requestId, stage: currentStage, batch: batch.startIndex, batchSize: batch.batchCount, workerId });
-          composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, "", workerId);
+          composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, C.EMPTY, workerId);
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_COMPLETED, { runId: requestId, stage: currentStage, batch: batch.startIndex, songCount: composedBatchResults[batchIndex].length });
           checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
           checkpoint.updatedAt = Date.now();
@@ -2099,7 +2108,7 @@ const createSunoEvaluationPreview = async (wavPath: string): Promise<Buffer> => 
   }
 };
 const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, signal?: AbortSignal, preparePreview = true): Promise<Map<string, Buffer>> => {
-  const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, "");
+  const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, C.EMPTY);
   const audioBySongId = new Map<string, Buffer>();
   for (const idChunk of _.chunk(_.uniq(songIds), SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY)) {
     signal?.throwIfAborted();
@@ -2170,15 +2179,7 @@ const readMediaDurationSeconds = async (filePath: string): Promise<number> =>
     }, SUNO_AUTOMATION_CONFIG.AUDIO_DURATION_PROBE_TIMEOUT_MS);
     command.ffprobe((error, metadata) => finish(error ? 0 : Math.max(0, _.toNumber(metadata?.format?.duration))));
   });
-const selectProfessionalSunoTracks = async (
-  groups: Array<{ title: string; candidates: string[]; }>,
-  style: string,
-  room: { projectId: string; workerId: string; model?: AiPlanningChatModel; signal?: AbortSignal; },
-  audioBySongId: Map<string, Buffer>,
-  styleAnalysis?: unknown,
-): Promise<
-  Array<{ songId: string; title: string; qualityScore: number; }>
-> => {
+const selectProfessionalSunoTracks = async (groups: Array<{ title: string; candidates: string[] }>, style: string, room: { projectId: string; workerId: string; model?: AiPlanningChatModel; signal?: AbortSignal }, audioBySongId: Map<string, Buffer>, styleAnalysis?: unknown): Promise<Array<{ songId: string; title: string; qualityScore: number }>> => {
   if (_.isEmpty(groups) || _.some(groups, (group) => _.size(group.candidates) !== 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
   const createEvaluationSchema = (requestId: string) => ({
     type: SOURCE_TEXT_OBJECT,
@@ -2232,7 +2233,7 @@ const selectProfessionalSunoTracks = async (
           closeRoomOnComplete: false,
           allowDefaultGeminiModel: true,
         });
-        const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[]; }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
+        const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         if (!_.isEqual(evaluation.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION) || !_.isEqual(normalizeCinematicArtifactIdentity(evaluation.requestId), normalizeCinematicArtifactIdentity(requestId))) {
           throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         }
@@ -2417,7 +2418,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       let cumulativeSeconds = 0;
       const curatedTracks = _.map(checkpoint.selectedTracks, (track, index) => {
         const durationSeconds = durations[index] || 0;
-        const result = { songId: track.songId, title: _.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, ""), qualityScore: track.qualityScore, durationSeconds, startSeconds: cumulativeSeconds };
+        const result = { songId: track.songId, title: _.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, C.EMPTY), qualityScore: track.qualityScore, durationSeconds, startSeconds: cumulativeSeconds };
         cumulativeSeconds += durationSeconds;
         return result;
       });
@@ -2456,7 +2457,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       });
       const groupsByChunk = _.map(pairChunks, (pairChunk) =>
         _.map(pairChunk, (pair) => ({
-          title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, "")),
+          title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, C.EMPTY)),
           candidates: _.map(pair, SOURCE_TEXT_SONGID),
         })),
       );
@@ -2471,7 +2472,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         prepareChatPlanningRoom({
           provider: AiPlanningFallbackProvider.GeminiChat,
           model: req.body?.aiExecution?.model,
-          prompt: "",
+          prompt: C.EMPTY,
           projectId: evaluationProjectId,
           workerId,
           chromeHeadless: false,
@@ -2518,20 +2519,12 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       );
       const rejectedEvaluation = _.find(evaluationResults, (result) => _.isEqual(result.status, SOURCE_TEXT_REJECTED)) as PromiseRejectedResult | undefined;
       if (rejectedEvaluation) throw rejectedEvaluation.reason;
-      const selectedTrackChunks = _.map(
-        evaluationResults,
-        (result) =>
-          (
-            result as PromiseFulfilledResult<
-              Array<{ songId: string; title: string; qualityScore: number; }>
-            >
-          ).value,
-      );
+      const selectedTrackChunks = _.map(evaluationResults, (result) => (result as PromiseFulfilledResult<Array<{ songId: string; title: string; qualityScore: number }>>).value);
       const evaluatedTracks = _.flatten(selectedTrackChunks);
       const globallyRankedTracks = _.orderBy(evaluatedTracks, [SOURCE_TEXT_QUALITYSCORE], [SOURCE_TEXT_DESC]);
       const selectedTracksForDownload = _.map(globallyRankedTracks, (track, rank) => ({
         songId: track.songId,
-        title: SOURCE_TEMPLATE_SYMBOL_6(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`)),
+        title: SOURCE_TEMPLATE_SYMBOL_6(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, C.EMPTY)}`)),
         qualityScore: track.qualityScore,
       }));
       if (!_.isEqual(selectedTracksForDownload.length, trackPairs.length) || !_.isEqual(_.uniq(_.map(selectedTracksForDownload, SOURCE_TEXT_SONGID)).length, trackPairs.length)) {
@@ -2614,7 +2607,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
       texture: SOURCE_TEXT_DIGITAL_CLEAN,
       detailLevel: SOURCE_TEXT_OPTIMIZED,
       visualComplexity: SOURCE_TEXT_HIGH_CLARITY,
-      periodCues: "",
+      periodCues: C.EMPTY,
       worldRendering: preset.defaultBackgroundMode === SOURCE_TEXT_WHITE ? SOURCE_TEXT_PURE_SOLID_WHITE_BACKGROUND : SOURCE_TEXT_CONTEXTUAL_MINIMAL_ENVIRONMENT,
       compositionLanguage: SOURCE_TEXT_CENTERED_COMPOSITION_WITH_NEGATIVE_SPACE,
       facialExpressionLanguage: SOURCE_TEXT_CLEAR_EXPRESSIVE_FACIAL_FEATURES,
@@ -2656,7 +2649,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
     const scenesToRewrite = _.filter(
       _.map(storyboard, (s: any) => ({
         id: s.id,
-        prompt: s.prompt || s.script || "",
+        prompt: s.prompt || s.script || C.EMPTY,
       })),
       (s: any) => s.prompt,
     );
@@ -2729,7 +2722,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const requestedPlanningProvider = _.toString(req.body?.planningFallbackProvider);
     const planningFallbackProvider = _.includes(_.values(AiPlanningFallbackProvider), requestedPlanningProvider as AiPlanningFallbackProvider) ? (requestedPlanningProvider as AiPlanningFallbackProvider) : AiPlanningFallbackProvider.GeminiChat;
     const requestedPlanningModel = _.toString(req.body?.planningChatModel);
-    const planningChatModel = _.includes(_.values(AiPlanningChatModel), requestedPlanningModel as AiPlanningChatModel) ? (requestedPlanningModel as AiPlanningChatModel) : undefined;
+    const planningChatModel = isPlanningChatModel(requestedPlanningModel) ? requestedPlanningModel : undefined;
     const requestedExecutionMode = _.toString(req.body?.planningExecutionMode);
     const planningExecutionMode = _.includes(_.values(AiPlanningExecutionMode), requestedExecutionMode as AiPlanningExecutionMode) ? (requestedExecutionMode as AiPlanningExecutionMode) : _.isEqual(planningFallbackProvider, AiPlanningFallbackProvider.Disabled) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly;
     const usesChatPlanning = !_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly);
@@ -2790,7 +2783,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const continuityContextJson = jsonUtils.safeStringify(continuityContext);
       const quickGenerateType = resolvedVisualConfig.generateType || GenerateType.Image;
       const quickVideoPromptRequired = _.includes([GenerateType.Video, GenerateType.Mixed], quickGenerateType);
-      const createPlanningPrompt = (correctionIssuesJson: string = "") => {
+      const createPlanningPrompt = (correctionIssuesJson: string = C.EMPTY) => {
         const scopedCharactersJson = chunkCharactersJson;
         const scopedVisualBibleJson = chunkVisualBibleJson;
         if (isCinematicPlanning) {
@@ -3285,13 +3278,11 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     }
     const requiresCompleteArtifact = Boolean(cinematicMode);
     const prompt = requiresCompleteArtifact ? getCinematicCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext)) : getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext));
-    let result:
-      | { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[]; }
-      | undefined;
+    let result: { characters: any[]; characterAnalysis?: string; characterSpecs?: string; identityContinuityRisks?: string[]; artifactWarnings?: string[] } | undefined;
     let artifactIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
       try {
-        const correctionDirective = _.isEmpty(artifactIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(artifactIssues)}`));
+        const correctionDirective = _.isEmpty(artifactIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(artifactIssues)}`));
         const response = await generateContentWithRetry({
           contents: SOURCE_TEMPLATE_SYMBOL_75(`${prompt}`, `${correctionDirective}`),
           config: {
@@ -3413,7 +3404,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
     const scenesToRewrite = _.filter(
       _.map(storyboard, (s: any) => ({
         id: s.id,
-        prompt: s.prompt || s.script || "",
+        prompt: s.prompt || s.script || C.EMPTY,
       })),
       (s) => s.prompt,
     );
@@ -3516,7 +3507,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     }
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg(SOURCE_TEXT_GEMINI_NOT_INIT, isVi) });
   }
-  let activeHookText = selectedHookText || "";
+  let activeHookText = selectedHookText || C.EMPTY;
   let generatedHookVersions: any[] = [];
   try {
     const isVi = config.language === ProjectLanguage.VI;
@@ -3526,9 +3517,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const targetWordCount = durationInfo.targetWordCount;
     const durationText = durationInfo.durationText;
     const targetWordCountMin = Math.floor(targetWordCount * 0.95);
-    let genreGuideline = "";
-    let styleGuideline = "";
-    let audienceGuideline = "";
+    let genreGuideline: string = C.EMPTY;
+    let styleGuideline: string = C.EMPTY;
+    let audienceGuideline: string = C.EMPTY;
     if (isVi) {
       genreGuideline = VI_GENRE_GUIDELINES[config.genre] || PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || SOURCE_TEXT_STORYTELLING);
       styleGuideline = VI_STYLE_GUIDELINES[config.writingStyle] || PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || SOURCE_TEXT_DEFAULT_2);
@@ -3545,7 +3536,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS && !contentSafety; attempt++) {
       try {
         const safetyResponse = await generateContentWithRetry({
-          contents: SOURCE_TEMPLATE_SYMBOL_75(`${getContentSafetyPrompt(originalInput)}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE : ""}`),
+          contents: SOURCE_TEMPLATE_SYMBOL_75(`${getContentSafetyPrompt(originalInput)}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE : C.EMPTY}`),
           config: {
             responseMimeType: CONTENT_TYPES.JSON,
             responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
@@ -3566,7 +3557,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const logStep = (msg: string) => {
       appLogStep(msg, multiStepLogs);
     };
-    activeHookText = isCinematicScript ? "" : selectedHookText || "";
+    activeHookText = isCinematicScript ? C.EMPTY : selectedHookText || C.EMPTY;
     if (!isCinematicScript && !activeHookText && config.hookConfig) {
       logStep(getPipelineLog(SOURCE_TEXT_HOOK_AUTO_GENERATE, isVi));
       try {
@@ -3579,7 +3570,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         for (let attempt = 0; attempt < TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS && !validHookResult; attempt++) {
           try {
             const hookResponse = await generateContentWithRetry({
-              contents: SOURCE_TEMPLATE_SYMBOL_75(`${hookPrompt}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : ""}`),
+              contents: SOURCE_TEMPLATE_SYMBOL_75(`${hookPrompt}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : C.EMPTY}`),
               config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: HOOK_RESPONSE_SCHEMA, includeRoomSchemaContract: false },
               task: { capability: AiTaskCapability.TextPlanning },
             });
@@ -3608,11 +3599,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP1, isVi));
     const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
     const contentControlDirective = isCinematicScript
-      ? ""
+      ? C.EMPTY
       : SOURCE_TEMPLATE_USER_CONTENT_CONTROLS_INPUT_TYPE_TREAT(SOURCE_TEMPLATE_SYMBOL_86(`${inputType}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}`));
-    const retentionDirective = isCinematicScript ? "" : createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
+    const retentionDirective = isCinematicScript ? C.EMPTY : createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
     const combinedScriptPrompt = isCinematicScript
-      ? ""
+      ? C.EMPTY
       : MOTION_TEMPLATE_SYMBOL_25(
           SOURCE_TEMPLATE_SYMBOL_86(`${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}`),
           SOURCE_TEMPLATE_SYMBOL_86(`${createGenreEditorialDirective(config.genre)}`),
@@ -3639,7 +3630,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     if (groundedResearchResponse?.aiMetadata) aiMetrics.push(groundedResearchResponse.aiMetadata);
     let cinematicFilmPackage: Record<string, any> | undefined;
     let cinematicCheckpointProject: any = null;
-    let cinematicSourceSignature = "";
+    let cinematicSourceSignature: string = C.EMPTY;
     let canReuseCinematicCheckpoint = false;
     let scriptResult: any;
     if (isCinematicScript) {
@@ -3750,7 +3741,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         theme: cinematicFilmPackage.theme,
         characterSpecs: cinematicFilmPackage.characterSpecs,
         preferredTerms: [],
-        factCheckNotes: "",
+        factCheckNotes: C.EMPTY,
         creativeBrief: _.pick(cinematicFilmPackage, [SOURCE_TEXT_TITLE, SOURCE_TEXT_LOGLINE, SOURCE_TEXT_THEME, SOURCE_TEXT_VISUALDIRECTION]),
         factPack: { claims: [] },
         narrativePlan: undefined,
@@ -3792,7 +3783,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const latestCinematicCheckpoint = _.isEmpty(path.basename(_.toString(req.body?.projectId))) ? undefined : await getProjectDetailFromDb(path.basename(_.toString(req.body?.projectId))).catch(() => null);
       const parsedData = {
         rewrittenScript: finalCleanScript,
-        factCheckNotes: "",
+        factCheckNotes: C.EMPTY,
         creativeBrief: scriptResult.creativeBrief || {},
         narrativePlan: undefined,
         chapterPlans: finalChapters,
@@ -3817,13 +3808,13 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     }
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP3, isVi));
     const completedChapters: any[] = [];
-    let fullScript = activeHookText ? activeHookText + MOTION_TEXT_SYMBOL_37 : "";
+    let fullScript = activeHookText ? activeHookText + MOTION_TEXT_SYMBOL_37 : C.EMPTY;
     let previousChapterSummary = activeHookText;
     const chapters = scriptResult.chapters || [];
     const chapterWordTarget = _.ceil(targetWordCount / (_.max([1, chapters.length]) || 1));
     const requestValidChapterSegment = async (contents: string): Promise<string> => {
       const languageFailureLogs: string[] = [];
-      let latestUsableSegment = "";
+      let latestUsableSegment: string = C.EMPTY;
       for (let attemptIndex = 0; attemptIndex < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_GENERATION_ATTEMPTS; attemptIndex++) {
         const response = await generateContentWithRetry({
           contents: attemptIndex > 0 ? MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${contents}`), SOURCE_TEMPLATE_SYMBOL_86(`${isVi ? VIETNAMESE_CHAPTER_RETRY_DIRECTIVE : ENGLISH_CHAPTER_RETRY_DIRECTIVE}`)) : contents,
@@ -3836,7 +3827,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         });
         if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
         if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
-        let cleanedSegment = "";
+        let cleanedSegment: string = C.EMPTY;
         try {
           cleanedSegment = extractCleanChapterSegment(response.text);
         } catch (responseError) {
@@ -3929,12 +3920,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP4, isVi));
     logStep(getPipelineLog(SOURCE_TEXT_SCRIPT_STEP4_DONE, isVi));
     const assembledChapterDraft = fullScript.trim();
-    let finalCleanScript = "";
+    let finalCleanScript: string = C.EMPTY;
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     let editorialQa: Record<string, unknown> = {};
     let editorialIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correctionDirective = _.isEmpty(editorialIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_2(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(editorialIssues)}`));
+      const correctionDirective = _.isEmpty(editorialIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_2(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(editorialIssues)}`));
       const editorialResponse = await generateContentWithRetry({
         contents: MOTION_TEMPLATE_SYMBOL_27(SOURCE_TEMPLATE_SYMBOL_86(`${getFinalScriptEditorialPrompt(assembledChapterDraft, config.genre, isVi, targetWordCount)}`), SOURCE_TEMPLATE_SYMBOL_86(`${retentionDirective}`), SOURCE_TEMPLATE_SYMBOL_86(`${correctionDirective}`)),
         config: {
@@ -4069,7 +4060,7 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
     const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
     let lastIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correction = _.isEmpty(lastIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_WAS_INVALID_RETURN(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(lastIssues)}`));
+      const correction = _.isEmpty(lastIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_WAS_INVALID_RETURN(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(lastIssues)}`));
       const response = await generateContentWithRetry({
         contents: SOURCE_TEMPLATE_SYMBOL_75(`${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}`, `${correction}`),
         config: { responseMimeType: CONTENT_TYPES.JSON },
@@ -4219,12 +4210,12 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
   const splitStrategy = config?.splitStrategy || SplitStrategy.LONG_SENTENCE;
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
-    const wordCount = _.compact((rewrittenScript || "").split(/\s+/)).length;
+    const wordCount = _.compact((rewrittenScript || C.EMPTY).split(/\s+/)).length;
     const speed = config?.speed || STORYBOARD_FALLBACK_CONFIG.DEFAULT_VOICE_SPEED;
     chosenDuration = Math.round(wordCount / STORYBOARD_FALLBACK_CONFIG.ESTIMATED_WORDS_PER_SECOND / speed);
     chosenDuration = _.max([chosenDuration, STORYBOARD_FALLBACK_CONFIG.MIN_TOTAL_DURATION_SECONDS]);
   }
-  let activeStyle = referenceStyle || "";
+  let activeStyle = referenceStyle || C.EMPTY;
   if (!activeStyle && visualStyle && stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords]) activeStyle = stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords];
   const cached = checkCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, bypassCache);
   if (cached) {
@@ -4274,17 +4265,17 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
       }
     }
     bibleParts.push({
-      text: visualBiblePrompt + (referenceImages && !_.isEmpty(referenceImages) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
+      text: visualBiblePrompt + (referenceImages && !_.isEmpty(referenceImages) ? VISUAL_BIBLE_REFERENCE_PROMPT : C.EMPTY),
     });
     let visualBible: VisualBible = {
-      characterSpecs: characterRef || "",
-      landscapeSpecs: "",
+      characterSpecs: characterRef || C.EMPTY,
+      landscapeSpecs: C.EMPTY,
       visualStyle: activeStyle || visualStyle,
-      colorPalette: "",
-      lightingMood: "",
-      lineStyle: "",
-      colorMode: "",
-      shading: "",
+      colorPalette: C.EMPTY,
+      lightingMood: C.EMPTY,
+      lineStyle: C.EMPTY,
+      colorMode: C.EMPTY,
+      shading: C.EMPTY,
       background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.contextual),
       textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
       locations: [],
@@ -4468,7 +4459,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
     }
     if (!isCinematicStoryboard && chosenDuration && data.scenes && data.scenes.length > 0) {
       const scenes = data.scenes;
-      const wordCounts = _.map(scenes, (s: any) => _.compact((s.script || "").split(/\s+/)).length);
+      const wordCounts = _.map(scenes, (s: any) => _.compact((s.script || C.EMPTY).split(/\s+/)).length);
       const totalWords = _.reduce(wordCounts, (a: number, b: number) => a + b, 0);
       let currentSecs = 0;
       for (let i = 0; i < scenes.length; i++) {
@@ -4516,8 +4507,8 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
             !_.isEqual(normalizedStoryboardScript, normalizedSourceScript) && SOURCE_TEXT_STORYBOARD_SCRIPT_PARTITION_ADVISORY,
             _.some(data.scenes, (scene) => !chapterIds.has(_.toString(scene.chapterId))) && SOURCE_TEXT_STORYBOARD_UNKNOWN_CHAPTER_ID_ADVISORY,
             !_.isEmpty(underfilledSceneIds) && SOURCE_TEMPLATE_STORYBOARD_UNDERFILLED_SCENES_ADVISORY(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(underfilledSceneIds, SOURCE_TEXT_SYMBOL_4)}`)),
-            storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "",
-            storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : "",
+            storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : C.EMPTY,
+            storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : C.EMPTY,
           ]),
         ),
         passed: _.isEmpty(blockingErrors),
@@ -4526,7 +4517,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
       data.storyboardQa = {
         ...storyboardQaBase,
         blockingErrors: [],
-        warnings: _.uniq(_.compact([ADVISORY_QA_CONFIG.STORYBOARD_SKIPPED_WARNING, storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "", storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : ""])),
+        warnings: _.uniq(_.compact([ADVISORY_QA_CONFIG.STORYBOARD_SKIPPED_WARNING, storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : C.EMPTY, storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : C.EMPTY])),
         passed: true,
       };
     }
@@ -4572,7 +4563,7 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
     let seoResult: any;
     let seoIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
-      const correctionDirective = _.isEmpty(seoIssues) ? "" : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_3(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(seoIssues)}`));
+      const correctionDirective = _.isEmpty(seoIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_3(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(seoIssues)}`));
       const combinedResponse = await generateContentWithRetry({
         contents: SOURCE_TEMPLATE_SYMBOL_75(`${combinedSeoPrompt}`, `${correctionDirective}`),
         config: {
@@ -4655,15 +4646,15 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
     const isVi = config.language === ProjectLanguage.VI;
     const thumbnailRequestId = createCinematicArtifactRequestId(req.body?.pipelineRunId, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS);
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
-    const thumbnailBackgroundDirective = visualConfig?.thumbnailBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, visualConfig.thumbnailBackgroundMode, "") : "";
-    const thumbnailFocusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : "";
+    const thumbnailBackgroundDirective = visualConfig?.thumbnailBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, visualConfig.thumbnailBackgroundMode, C.EMPTY) : C.EMPTY;
+    const thumbnailFocusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : C.EMPTY;
     const thumbnailCharacters = createPromptCharacterCards(_.defaultTo(visualConfig?.characters, []));
     const combinedThumbnailsPrompt = isCinematicThumbnail
       ? getCinematicThumbnailPrompt({
           requestId: thumbnailRequestId,
           rewrittenScript,
           thumbnailCount,
-          referenceDirection: visualConfig.thumbnailReferencePrompt || "",
+          referenceDirection: visualConfig.thumbnailReferencePrompt || C.EMPTY,
           isVi,
           aspectRatio: visualConfig.aspectRatio || SOURCE_TEXT_16_9,
           textMode: thumbnailTextMode,
@@ -4671,10 +4662,10 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
           focusMode: visualConfig.thumbnailImageFocusMode || SOURCE_TEXT_DEFAULT,
           backgroundDirective: thumbnailBackgroundDirective,
           focusDirective: thumbnailFocusDirective,
-          charactersJson: _.isEmpty(thumbnailCharacters) ? "" : jsonUtils.safeStringify(thumbnailCharacters),
-          genre: config.genre || "",
-          writingStyle: config.writingStyle || "",
-          audience: config.audience || "",
+          charactersJson: _.isEmpty(thumbnailCharacters) ? C.EMPTY : jsonUtils.safeStringify(thumbnailCharacters),
+          genre: config.genre || C.EMPTY,
+          writingStyle: config.writingStyle || C.EMPTY,
+          audience: config.audience || C.EMPTY,
           hasThumbnailReference: hasThumbReference,
           hasStyleReference: hasStyleRef,
         })
@@ -4689,11 +4680,11 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
           visualConfig.thumbnailImageFocusMode || SOURCE_TEXT_DEFAULT,
           thumbnailBackgroundDirective,
           thumbnailFocusDirective,
-          _.isEmpty(thumbnailCharacters) ? "" : jsonUtils.safeStringify(thumbnailCharacters),
-          config.genre || "",
-          config.writingStyle || "",
-          createGenreEditorialDirective(config.genre || ""),
-          MOTION_TEMPLATE_SYMBOL_29(SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config.language, config.audience)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createViewerRetentionDirective(config.duration || req.body?.duration || 180, config.genre || "")}`)),
+          _.isEmpty(thumbnailCharacters) ? C.EMPTY : jsonUtils.safeStringify(thumbnailCharacters),
+          config.genre || C.EMPTY,
+          config.writingStyle || C.EMPTY,
+          createGenreEditorialDirective(config.genre || C.EMPTY),
+          MOTION_TEMPLATE_SYMBOL_29(SOURCE_TEMPLATE_SYMBOL_86(`${createAudienceMarketDirective(config.language, config.audience)}`), SOURCE_TEMPLATE_SYMBOL_86(`${createViewerRetentionDirective(config.duration || req.body?.duration || 180, config.genre || C.EMPTY)}`)),
         );
     const thumbParts: any[] = [];
     const thumbRefList = _.take(_.compact(_.concat(_.castArray(visualConfig.thumbnailReferenceImages || []), _.castArray(visualConfig.thumbnailSceneReferenceImages || []))), 3);
@@ -4708,13 +4699,13 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
         });
       }
     }
-    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>>; } = {
+    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>> } = {
       concepts: [],
       thumbnails: [],
     };
     const requestParts = _.concat(thumbParts, [
       {
-        text: combinedThumbnailsPrompt + (!isCinematicThumbnail && visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : ""),
+        text: combinedThumbnailsPrompt + (!isCinematicThumbnail && visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : C.EMPTY),
       },
     ]);
     const combinedResponse = await generateContentWithRetry({
@@ -4986,7 +4977,7 @@ router.post(SOURCE_TEXT_RECOVER_FLOW_VIDEO, requireLicense(FeatureType.VIDEO), a
     return res.json({
       success: false,
       base64: null,
-      fallbackUrl: "",
+      fallbackUrl: C.EMPTY,
       warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, getErrorMessage(error, FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR)),
     });
   }
@@ -5047,12 +5038,12 @@ router.post(SOURCE_TEXT_SAVE_FLOW_VIDEOS, requireLicense(FeatureType.VIDEO), asy
       if (!source) return res.status(400).json({ success: false, error: SOURCE_TEMPLATE_VIDEO_CHUA_SAN_SANG_DE_LUU(SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`)) });
       const title = _.filter(
         _.trim(_.toString(scene?.assetName))
-          .replace(/[<>:"/\\|?*]/g, "")
-          .split(""),
+          .replace(/[<>:"/\\|?*]/g, C.EMPTY)
+          .split(C.EMPTY),
         (character) => character.charCodeAt(0) >= 32,
       )
-        .join("")
-        .replace(/[. ]+$/g, "")
+        .join(C.EMPTY)
+        .replace(/[. ]+$/g, C.EMPTY)
         .slice(0, 90);
       const stem = title || SOURCE_TEMPLATE_FLOW_VIDEO(SOURCE_TEMPLATE_SYMBOL_86(`${sceneId.replace(/[^a-zA-Z0-9_-]/g, SOURCE_TEXT_SYMBOL_25)}`));
       let destination = path.join(folderPath, SOURCE_TEMPLATE_MP4(SOURCE_TEMPLATE_SYMBOL_86(`${stem}`)));
@@ -5074,7 +5065,7 @@ router.post(SOURCE_TEXT_SAVE_FLOW_VIDEOS, requireLicense(FeatureType.VIDEO), asy
   }
 });
 router.post(SOURCE_TEXT_GENERATE_FLOW_VIDEO_BATCH, requireBatchVisualLicense, async (req: Request, res: Response) => {
-  let activeVideoProjectKey = "";
+  let activeVideoProjectKey: string = C.EMPTY;
   try {
     const requestedItems = _.map(_.castArray(req.body?.items || []), (item) => ({
       sceneId: path.basename(_.toString(item?.sceneId)),
@@ -5197,8 +5188,8 @@ router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAG
   }
 });
 router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: Request, res: Response) => {
-  let activeVideoSubmissionKey = "";
-  let activeVideoProjectKey = "";
+  let activeVideoSubmissionKey: string = C.EMPTY;
+  let activeVideoProjectKey: string = C.EMPTY;
   try {
     const { prompt, style, visualConfig, sandboxConfig, sceneId } = req.body;
     const isVideoRequest = _.isEqual(visualConfig?.generateType, GenerateType.Video);
@@ -5211,7 +5202,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
         return res.json({
           success: false,
           base64: null,
-          fallbackUrl: "",
+          fallbackUrl: C.EMPTY,
           warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
           remoteSubmissionPending: true,
         });
@@ -5226,13 +5217,13 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
       localProject = await getProjectDetailFromDb(localProjectId);
       persistedFlowProjectId = _.toString(localProject?.visualConfig?.flowProjectId || persistedFlowProjectId);
     }
-    const requestedVideoProjectKey = isVideoRequest ? _.toString(localProjectId || persistedFlowProjectId) : "";
+    const requestedVideoProjectKey = isVideoRequest ? _.toString(localProjectId || persistedFlowProjectId) : C.EMPTY;
     if (!_.isEmpty(requestedVideoProjectKey)) {
       if (activeVideoProjectKeys.has(requestedVideoProjectKey)) {
         return res.json({
           success: false,
           base64: null,
-          fallbackUrl: "",
+          fallbackUrl: C.EMPTY,
           warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
           remoteSubmissionPending: true,
         });
@@ -5247,7 +5238,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
       return res.json({
         success: false,
         base64: null,
-        fallbackUrl: "",
+        fallbackUrl: C.EMPTY,
         warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
         remoteSubmissionPending: true,
       });
@@ -5468,7 +5459,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
     return res.json({
       success: false,
       base64: null,
-      fallbackUrl: "",
+      fallbackUrl: C.EMPTY,
       warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, error.message),
     });
   } finally {
@@ -5602,7 +5593,7 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
   const relativePath = _.trimStart(_.first(_.split(videoUrl, SOURCE_TEXT_SYMBOL_21)) || videoUrl, SOURCE_TEXT_SYMBOL_37);
   const dataRoot = path.resolve(getDataDirectory());
   const videoPath = path.resolve(dataRoot, relativePath);
-  const isInsideDataRoot = _.startsWith(_.toLower(videoPath), _.toLower(_.join([dataRoot, path.sep], "")));
+  const isInsideDataRoot = _.startsWith(_.toLower(videoPath), _.toLower(_.join([dataRoot, path.sep], C.EMPTY)));
   if (!isInsideDataRoot || !fs.existsSync(videoPath)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: SOURCE_TEXT_RENDERED_VIDEO_IS_OUTSIDE_THE_VIDIFY });
   const tempDir = path.join(getTempDirectory(), SOURCE_TEMPLATE_SYMBOL_75(`${FINAL_MULTIMODAL_QA_CONFIG.TEMP_DIR_PREFIX}`, `${randomUUID()}`));
   fs.mkdirSync(tempDir, { recursive: true });
@@ -5724,11 +5715,11 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
   const analysisDir = path.join(getTempDirectory(), SOURCE_TEMPLATE_SYMBOL_75(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.TEMP_DIR_PREFIX}`, `${randomUUID()}`));
   fs.mkdirSync(analysisDir, { recursive: true });
   const analyzeScene = async (scene: any, includeReviewMedia = false) => {
-    const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), SOURCE_TEXT_SYMBOL_21)) || "", SOURCE_TEXT_SYMBOL_37);
+    const relativePath = _.trimStart(_.first(_.split(_.toString(scene.assetUrl), SOURCE_TEXT_SYMBOL_21)) || C.EMPTY, SOURCE_TEXT_SYMBOL_37);
     const candidate = path.resolve(dataRoot, relativePath);
     const isSafe = _.startsWith(_.toLower(candidate), _.toLower(SOURCE_TEMPLATE_SYMBOL_75(`${projectRoot}`, `${path.sep}`))) && fs.existsSync(candidate);
-    if (!isSafe) return { sceneId: scene.id, sourcePath: "", warnings: [SOURCE_TEXT_CLIP_MISSING], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: SOURCE_TEXT_OMIT, reason: SOURCE_TEXT_CLIP_MISSING };
-    const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean; }>((resolve) =>
+    if (!isSafe) return { sceneId: scene.id, sourcePath: C.EMPTY, warnings: [SOURCE_TEXT_CLIP_MISSING], trimStartSeconds: 0, trimEndSeconds: 0, takeDecision: SOURCE_TEXT_OMIT, reason: SOURCE_TEXT_CLIP_MISSING };
+    const mediaInfo = await new Promise<{ duration: number; width: number; height: number; hasAudio: boolean }>((resolve) =>
       ffmpeg.ffprobe(candidate, (error, metadata) => {
         const videoStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_VIDEO_2));
         const audioStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_AUDIO));
@@ -5747,7 +5738,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const { duration } = mediaInfo;
     const stderr = await new Promise<string>((resolve) => {
       const process = spawn(executable, [SOURCE_TEXT_HIDE_BANNER, SOURCE_TEXT_I, candidate, SOURCE_TEXT_VF, SOURCE_TEXT_BLACKDETECT_D_0_12_PIX_TH, SOURCE_TEXT_AN, SOURCE_TEXT_F, SOURCE_TEXT_NULL, SOURCE_TEXT_SYMBOL_15], { windowsHide: true });
-      let output = "";
+      let output: string = C.EMPTY;
       const timeout = setTimeout(() => process.kill(), 30000);
       process.stderr.on(SOURCE_TEXT_DATA_2, (chunk) => {
         output += _.toString(chunk);
@@ -5778,7 +5769,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const cropWidth = _.toNumber(detectedCrop?.[1]);
     const cropHeight = _.toNumber(detectedCrop?.[2]);
     const hasEmbeddedBorder = Boolean(detectedCrop) && _.gte(_.size(dominantBorderGroup), 5);
-    const sourceCrop = hasEmbeddedBorder ? SOURCE_TEMPLATE_SYMBOL_47(SOURCE_TEMPLATE_SYMBOL_86(`${cropWidth}`), SOURCE_TEMPLATE_SYMBOL_86(`${cropHeight}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[3]}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[4]}`)) : "";
+    const sourceCrop = hasEmbeddedBorder ? SOURCE_TEMPLATE_SYMBOL_47(SOURCE_TEMPLATE_SYMBOL_86(`${cropWidth}`), SOURCE_TEMPLATE_SYMBOL_86(`${cropHeight}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[3]}`), SOURCE_TEMPLATE_SYMBOL_86(`${detectedCrop?.[4]}`)) : C.EMPTY;
     const maxEdgeTrim = _.min([1.25, duration * 0.18]) || 0;
     let trimStartSeconds = 0;
     let trimEndSeconds = 0;
@@ -5791,14 +5782,14 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       if (_.lte(start, 0.2)) trimStartSeconds = _.max([trimStartSeconds, _.min([end, maxEdgeTrim]) || 0]) || 0;
       if (_.gte(end, duration - 0.2)) trimEndSeconds = _.max([trimEndSeconds, _.min([duration - start, maxEdgeTrim]) || 0]) || 0;
     });
-    const warnings = _.compact([_.isEmpty(blackRanges) ? "" : SOURCE_TEXT_BLACK_FRAMES_DETECTED, _.isEmpty(freezeStarts) ? "" : SOURCE_TEXT_FREEZE_DETECTED, hasEmbeddedBorder ? SOURCE_TEXT_EMBEDDED_BORDER_DETECTED : "", _.lte(duration, 0) ? SOURCE_TEXT_INVALID_DURATION : ""]);
+    const warnings = _.compact([_.isEmpty(blackRanges) ? C.EMPTY : SOURCE_TEXT_BLACK_FRAMES_DETECTED, _.isEmpty(freezeStarts) ? C.EMPTY : SOURCE_TEXT_FREEZE_DETECTED, hasEmbeddedBorder ? SOURCE_TEXT_EMBEDDED_BORDER_DETECTED : C.EMPTY, _.lte(duration, 0) ? SOURCE_TEXT_INVALID_DURATION : C.EMPTY]);
     const invalidDuration = _.lte(duration, 0);
     const usableDuration = _.max([0, duration - trimStartSeconds - trimEndSeconds]) || 0;
     const destructiveEdgeDamage = _.gt(duration, 0) && _.lt(usableDuration, _.min([4, duration * 0.55]) || 0);
     const takeDecision = invalidDuration || destructiveEdgeDamage ? SOURCE_TEXT_OMIT : trimStartSeconds > 0 || trimEndSeconds > 0 || hasEmbeddedBorder ? SOURCE_TEXT_TRIM : SOURCE_TEXT_USE;
     const reason = takeDecision === SOURCE_TEXT_OMIT ? (invalidDuration ? SOURCE_TEXT_INVALID_DURATION : SOURCE_TEXT_INSUFFICIENT_USABLE_DURATION_AFTER_EDGE_CLEANUP) : takeDecision === SOURCE_TEXT_TRIM ? _.join(warnings, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_SAFE_EDGE_CLEANUP : SOURCE_TEXT_TECHNICAL_CLIP_ANALYSIS_PASSED;
-    let contactSheetData = "";
-    let contactSheetPath = "";
+    let contactSheetData: string = C.EMPTY;
+    let contactSheetPath: string = C.EMPTY;
     if (includeReviewMedia && _.gt(duration, 0)) {
       contactSheetPath = path.join(analysisDir, SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${path.basename(_.toString(scene.id))}`), SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.CONTACT_SHEET_FILE_NAME}`)));
       const frameRate = CINEMATIC_EDIT_ANALYSIS_CONFIG.FRAME_COUNT / duration;
@@ -6112,7 +6103,7 @@ router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => 
               role: SOURCE_TEXT_USER,
               parts: [
                 {
-                  text: SOURCE_TEMPLATE_SYMBOL_75(`${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}`, `${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : ""}`),
+                  text: SOURCE_TEMPLATE_SYMBOL_75(`${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}`, `${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : C.EMPTY}`),
                 },
                 { inlineData: { mimeType: _.startsWith(audioBase64, SOURCE_TEXT_UKLGR) ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, data: audioBase64 } },
               ],
@@ -6329,7 +6320,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
     const pad = (n: number) => _.padStart(n.toString(), 2, SOURCE_TEXT_0);
     finalProjectName = SOURCE_TEMPLATE_AI_CAPCUT(SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getHours())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getMinutes())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getDate())}`), SOURCE_TEMPLATE_SYMBOL_86(`${pad(d.getMonth() + 1)}`), SOURCE_TEMPLATE_SYMBOL_86(`${d.getFullYear().toString().substring(2)}`));
   }
-  let realTemplateId = templateId || "";
+  let realTemplateId = templateId || C.EMPTY;
   if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
     try {
       const rawContent = fs.readFileSync(realTemplateId, FileEncoding.UTF8 as any).toString();
@@ -6339,25 +6330,25 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
       logger.error(SOURCE_TEXT_ERROR_READING_TEMPLATE_FILE, e);
     }
   }
-  let finalImagesDir = imagesDir || "";
-  let finalVoicesDir = voicesDir || "";
+  let finalImagesDir = imagesDir || C.EMPTY;
+  let finalVoicesDir = voicesDir || C.EMPTY;
   if (projectId) {
     finalImagesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, SOURCE_TEXT_IMAGES);
     finalVoicesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, SOURCE_TEXT_VOICES);
   }
   const cmdOpts = {
     ...opts,
-    api_key: geminiApiKey || "",
-    sfx_folder: sfxFolder || "",
+    api_key: geminiApiKey || C.EMPTY,
+    sfx_folder: sfxFolder || C.EMPTY,
     is_auto_mode: isAutoMode || false,
     template_id: realTemplateId,
-    parent_folder: parentFolder || "",
+    parent_folder: parentFolder || C.EMPTY,
     images_dir: finalImagesDir,
     voices_dir: finalVoicesDir,
     project_style: projectStyle || {},
     project_name: finalProjectName,
     auto_export_video: autoExportVideo || false,
-    video_output_dir: videoOutputDir || "",
+    video_output_dir: videoOutputDir || C.EMPTY,
   };
   try {
     fs.writeFileSync(optsJsonPath, jsonUtils.safeStringify(cmdOpts, null, 2), FileEncoding.UTF8 as any);
@@ -6507,7 +6498,7 @@ const MUSIC_MIXER_SOURCE_TTL_MS = 30 * 60 * 1000;
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Response) => {
   execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.PICKER_SCRIPT)], { windowsHide: true }, async (error, stdout, stderr) => {
     if (error || !stdout.trim()) {
-      if (error) logger.error(MUSIC_MIXER_SERVER.LOG_SELECT_SOURCE_ERROR(error.message, stderr || ""));
+      if (error) logger.error(MUSIC_MIXER_SERVER.LOG_SELECT_SOURCE_ERROR(error.message, stderr || C.EMPTY));
       return res.json({ success: false });
     }
     const audioPattern = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
@@ -6519,7 +6510,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
           else if (entry.isFile() && audioPattern.test(entry.name)) files.push(fullPath);
         }
       } catch (err: any) {
-        logger.error(MUSIC_MIXER_SERVER.LOG_SCAN_DIR_ERROR(directory, err?.message || ""));
+        logger.error(MUSIC_MIXER_SERVER.LOG_SCAN_DIR_ERROR(directory, err?.message || C.EMPTY));
       }
     };
     try {
@@ -6579,7 +6570,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
       );
       return res.json({ success: true, folders });
     } catch (err: any) {
-      logger.error(MUSIC_MIXER_SERVER.LOG_PROCESS_FOLDERS_ERROR(err?.message || ""));
+      logger.error(MUSIC_MIXER_SERVER.LOG_PROCESS_FOLDERS_ERROR(err?.message || C.EMPTY));
       return res.status(500).json({ success: false });
     }
   });
@@ -6621,7 +6612,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
     );
     if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
     planningRun.signal.throwIfAborted();
-    const scores: Array<{ index: number; score: number; durationSeconds: number; }> = [];
+    const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
     for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
       const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${rankingId}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`));
       const offset = chunkIndex * MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST;
@@ -6643,7 +6634,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         closeRoomOnComplete: false,
         allowDefaultGeminiModel: true,
       });
-      const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+      const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
       const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT && parsed.requestId === requestId && Array.isArray(parsed.scores) && parsed.scores.length === chunk.length && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
       if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
       const durations = await Promise.all(_.map(chunk, (item: any) => readMediaDurationSeconds(item.sourcePath)));
@@ -6663,7 +6654,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
   }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_CANCEL, async (req: Request, res: Response) => {
-  const projectId = typeof req.body?.projectId === MOTION_TEXT_STRING ? req.body.projectId : "";
+  const projectId = typeof req.body?.projectId === MOTION_TEXT_STRING ? req.body.projectId : C.EMPTY;
   if (!projectId) return res.status(400).json({ success: false });
   const projectIds = _.uniq([projectId, ...(Array.isArray(req.body?.projectIds) ? req.body.projectIds.filter((value: unknown): value is string => typeof value === MOTION_TEXT_STRING) : [])]);
   projectIds.forEach((id) => cancelChatPlanningRun(id));
@@ -6686,7 +6677,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
   try {
     const response = await generatePlanningWithChatUi({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, model: execution.model, prompt, projectId, requestId, signal: planningRun.signal, artifactType: MUSIC_MIXER_SERVER.SEO_ARTIFACT, chromeHeadless: execution.chromeHeadless !== false, closeRoomOnComplete: true });
     planningRun.signal.throwIfAborted();
-    const parsed = parseJson(response.text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+    const parsed = parseJson(response.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
     if (parsed.artifactType !== MUSIC_MIXER_SERVER.SEO_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.seoOptions) || parsed.seoOptions.length !== 5) throw new Error(MUSIC_MIXER_SERVER.ERROR_SEO_RESPONSE);
     await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId }).catch(() => undefined);
     await closeChatBrowserIfIdle().catch(() => undefined);
@@ -6714,7 +6705,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_ZIP_DESTINATION, (req: Request, res:
   });
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Response) => {
-  const token = typeof req.body?.token === MOTION_TEXT_STRING ? req.body.token : "";
+  const token = typeof req.body?.token === MOTION_TEXT_STRING ? req.body.token : C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
   musicMixerZipDestinations.delete(token);
@@ -6726,23 +6717,23 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     const manifest = {
       targetZipPath: target,
       folders: folders.map((folder: any) => ({
-        name: String(folder.name || ""),
+        name: String(folder.name || C.EMPTY),
         files: Array.isArray(folder.files)
           ? folder.files.map((file: any) => ({
-              sourcePath: String(file.sourcePath || ""),
-              zipPath: String(file.zipPath || ""),
+              sourcePath: String(file.sourcePath || C.EMPTY),
+              zipPath: String(file.zipPath || C.EMPTY),
             }))
           : [],
         texts: Array.isArray(folder.texts)
           ? folder.texts.map((textItem: any) => ({
-              content: String(textItem.content || ""),
-              zipPath: String(textItem.zipPath || ""),
+              content: String(textItem.content || C.EMPTY),
+              zipPath: String(textItem.zipPath || C.EMPTY),
             }))
           : [],
       })),
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
-    const result = await new Promise<{ success: boolean; path?: string; error?: string; }>((resolve) => {
+    const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
       execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true }, (error, stdout, stderr) => {
         if (error) {
           return resolve({ success: false, error: error.message || stderr || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
@@ -6767,7 +6758,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
   }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Response) => {
-  const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || "";
+  const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
   musicMixerZipDestinations.delete(token);
@@ -6954,7 +6945,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
       const end = sc.endTime && endSec > start ? endSec : start + duration;
       const actualDuration = end - start;
       elapsed = end;
-      return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script || "" };
+      return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script || C.EMPTY };
     });
     const totalDurationUs = !_.isEmpty(sceneRanges) ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
     _.forEach(sceneRanges, (scRange, idx) => {
@@ -7071,7 +7062,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME, jsonUtils.safeStringify({ editing_items: [], version: 1 }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME, jsonUtils.safeStringify({ device_id: CAPCUT_CONFIG.DEVICE_ID, client_version: CAPCUT_CONFIG.CLIENT_VERSION, system_info: CAPCUT_CONFIG.SYSTEM_INFO }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, jsonUtils.safeStringify({ client_os: SOURCE_TEXT_WIN, author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, jsonUtils.safeStringify({ agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, jsonUtils.safeStringify({ agency_id: C.EMPTY, org_id: C.EMPTY, user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, jsonUtils.safeStringify({ commercial_use: false, music_copyright_check: true }, null, 2));
     const draftMetaInfoObj = {
       draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID,
@@ -7082,7 +7073,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
       draft_duration: totalDurationUs,
       tm_draft_modified: Math.floor(Date.now() / 1000),
       draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME,
-      draft_fold_path: "",
+      draft_fold_path: C.EMPTY,
     };
     writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, jsonUtils.safeStringify(draftMetaInfoObj, null, 2));
     const draftSettings = {
@@ -7185,7 +7176,7 @@ router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) =
   if (!_.includes(allowed, group) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   const directory = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, SOURCE_TEXT_REFERENCES, group);
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
-  if (!_.startsWith(_.toLower(directory), _.toLower(_.join([projectRoot, path.sep], "")))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  if (!_.startsWith(_.toLower(directory), _.toLower(_.join([projectRoot, path.sep], C.EMPTY)))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   fs.mkdirSync(directory, { recursive: true });
   const assets: string[] = [];
   try {
@@ -7431,7 +7422,7 @@ router.post(ROUTER_PATHS.REFERENCE_AUDIO, async (req: Request, res: Response) =>
   if (_.isEmpty(projectId) || !match) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   const directory = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, SOURCE_TEXT_REFERENCES, REFERENCE_ASSET_GROUP.AUDIO);
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
-  if (!_.startsWith(_.toLower(directory), _.toLower(_.join([projectRoot, path.sep], "")))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  if (!_.startsWith(_.toLower(directory), _.toLower(_.join([projectRoot, path.sep], C.EMPTY)))) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   fs.mkdirSync(directory, { recursive: true });
   const extension = _.includes(match[1], SOURCE_TEXT_WAV) ? SOURCE_TEXT_WAV : _.includes(match[1], SOURCE_TEXT_OGG) ? SOURCE_TEXT_OGG : SOURCE_TEXT_MP3;
   const filename = SOURCE_TEMPLATE_MUSIC_2(SOURCE_TEMPLATE_SYMBOL_86(`${createHash(SOURCE_TEXT_SHA256).update(match[2]).digest(SOURCE_TEXT_HEX).slice(0, 12)}`), SOURCE_TEMPLATE_SYMBOL_86(`${extension}`));
@@ -7444,7 +7435,7 @@ router.post(RENDER_QUEUE_CONFIG.CANCEL_ROUTE, async (req: Request, res: Response
   if (!cancelled) return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
   return res.json({ success: true });
 });
-router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C.EMPTY), async (req: Request, res: Response) => {
   const pipelineRunId = _.trim(_.toString(req.body?.pipelineRunId));
   musicPlanCheckpoints.delete(pipelineRunId);
   const renderJobId = _.trim(_.toString(req.body?.renderJobId));
@@ -7452,7 +7443,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
   const roomProvider = _.toString(req.body?.roomProvider) as AiPlanningFallbackProvider;
   const roomProjectId = _.trim(_.toString(req.body?.roomProjectId));
-  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
+  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
   if (closeMusicRooms) {
     cleanupTasks.push(closeChatPlanningRoomsForProject({ provider: roomProvider, projectId: roomProjectId }));
   }
@@ -7466,7 +7457,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, "
   }
   return res.json({ success: true });
 });
-router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, C.EMPTY), async (req: Request, res: Response) => {
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
   const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
   if (!_.includes(supportedProviders, provider)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
@@ -7478,11 +7469,11 @@ router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, ""
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false, error: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) });
   }
 });
-router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIPELINE, ""), async (req: Request, res: Response) => {
+router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIPELINE, C.EMPTY), async (req: Request, res: Response) => {
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
   const projectId = _.toString(req.body?.projectId);
   const workerIds = _.uniq(_.compact(_.map(_.castArray(req.body?.workerIds || []), _.toString)));
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat];
   if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
   await closeChatBrowserIfIdle();

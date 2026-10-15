@@ -1,0 +1,55 @@
+import { CLAUDE_VERIFICATION_TEXTS as CT } from "./claudeVerificationTexts.js";
+import assert from "node:assert/strict";
+import { chromium } from "playwright";
+import { CLAUDE_CHAT_MODELS, CLAUDE_CHAT_MODEL_OPTIONS, encodeClaudeChatModel, parseClaudeChatModel } from "../src/constants/claudeChatModels.ts";
+import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../src/constants/cinematicConstants.ts";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../src/types.ts";
+import { resolvePipelineAiExecution } from "../src/services/pipelineAiExecutionService.ts";
+import { resolveFlowVideoPlanningModel } from "../src/services/flowVideoPlanningModel.ts";
+import { selectClaudeChatModel } from "../src/server/services/claudeModelService.ts";
+assert.equal(CLAUDE_CHAT_MODELS.length, 13);
+for (const { value } of CLAUDE_CHAT_MODEL_OPTIONS) {
+  assert.ok(parseClaudeChatModel(value));
+  assert.equal(resolveFlowVideoPlanningModel(AiPlanningFallbackProvider.ClaudeChat, value), value);
+  assert.equal(resolvePipelineAiExecution({ planningFallbackProvider: AiPlanningFallbackProvider.ClaudeChat, planningChatModel: value, planningExecutionMode: AiPlanningExecutionMode.RoomOnly }, null, true).model, value);
+  const saved = JSON.parse(JSON.stringify({ config: { planningFallbackProvider: AiPlanningFallbackProvider.ClaudeChat, planningChatModel: value } }));
+  assert.equal(resolvePipelineAiExecution({}, saved, true).model, value, CT.PRESERVE_THE_MODEL_AND_EFFORT_WHEN_RELOADING_A_PROJECT);
+}
+for (const invalid of [CT.INVALID_AUTO_EFFORT, CT.CLAUDE_UNKNOWN, CT.CLAUDE_SONNET_5_5_UNKNOWN, CT.CLAUDE_SONNET_5_5_LOW_MAX, CT.CLAUDE_SONNET_4_6_XHIGH]) assert.equal(parseClaudeChatModel(invalid), undefined);
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+const timing = CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number };
+const originalTimeout = timing.MODEL_PICKER_TIMEOUT_MS;
+timing.MODEL_PICKER_TIMEOUT_MS = 300;
+type Mode = "ready" | "locked" | "disabled" | "missing" | "ignore-model" | "ignore-effort";
+const reset = async (mode: Mode = CT.READY) => {
+  await page.setContent(CT.MODEL_MENU_FIXTURE(JSON.stringify(CLAUDE_CHAT_MODELS), JSON.stringify(mode)));
+};
+try {
+  await reset();
+  for (const model of CLAUDE_CHAT_MODELS) {
+    await selectClaudeChatModel(page, model.value);
+    assert.equal(await page.evaluate(() => (window as any).current), model.value);
+    for (const effort of model.efforts) {
+      await selectClaudeChatModel(page, encodeClaudeChatModel(model.value, effort));
+      assert.equal(await page.evaluate(() => (window as any).effort), effort);
+    }
+  }
+  const previous = await page.locator(CT.BUTTON).innerText();
+  await selectClaudeChatModel(page, AiPlanningChatModel.ClaudeAuto);
+  assert.equal(await page.locator(CT.BUTTON).innerText(), previous);
+  for (const mode of [CT.LOCKED, CT.DISABLED, CT.MISSING, CT.IGNORE_MODEL, CT.IGNORE_EFFORT] as const) {
+    await reset(mode);
+    const model = mode === CT.LOCKED ? AiPlanningChatModel.ClaudeOpus55 : mode === CT.MISSING ? AiPlanningChatModel.ClaudeSonnet5 : mode === CT.IGNORE_EFFORT ? encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, CT.HIGH) : AiPlanningChatModel.ClaudeHaiku55;
+    await assert.rejects(selectClaudeChatModel(page, model), /claude_model_unavailable/, mode);
+    assert.equal(await page.locator(CT.ROLE_MENU).count(), 0, CT.ALWAYS_DISMISS_MODEL_MENUS_ON_FAILURE);
+    assert.equal(await page.evaluate(() => (window as any).upgradeClicks), 0, CT.NEVER_CLICK_UPGRADE_INSTEAD_OF_SELECTING_A_MODEL);
+  }
+  const abort = new AbortController();
+  abort.abort();
+  await assert.rejects(selectClaudeChatModel(page, AiPlanningChatModel.ClaudeSonnet55, abort.signal), /chat_planning_cancelled/);
+  process.stdout.write(CT.CLAUDE_MODELS_ALL_13_MODEL_SELECTIONS_SUPPORTED_EFFORT_LEVELS_EXACT_VERSION);
+} finally {
+  timing.MODEL_PICKER_TIMEOUT_MS = originalTimeout;
+  await browser.close();
+}

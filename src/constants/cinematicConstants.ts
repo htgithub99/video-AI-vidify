@@ -1,4 +1,12 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
+import { CLAUDE_CHAT_MODEL_OPTIONS } from "./claudeChatModels";
+export const CINEMATIC_CHAT_DEFAULT_MODELS: Record<AiPlanningFallbackProvider, AiPlanningChatModel> = {
+  [AiPlanningFallbackProvider.GeminiChat]: AiPlanningChatModel.GeminiFlash,
+  [AiPlanningFallbackProvider.GrokChat]: AiPlanningChatModel.GrokAuto,
+  [AiPlanningFallbackProvider.ChatGptUi]: AiPlanningChatModel.ChatGptAuto,
+  [AiPlanningFallbackProvider.ClaudeChat]: AiPlanningChatModel.ClaudeAuto,
+  [AiPlanningFallbackProvider.Disabled]: AiPlanningChatModel.GeminiFlash,
+};
 export const CINEMATIC_POLICY_CONFIG = {
   CLIP_DURATION_SECONDS: 10,
   MIN_CLIP_DURATION_SECONDS: 3,
@@ -165,6 +173,25 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_RESPONSE_SELECTOR: '[data-message-author-role="assistant"], article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"]), [data-content-search-unit-key$=":assistant"]',
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  CLAUDE_INPUT_SELECTOR: 'div.ProseMirror[contenteditable="true"], [contenteditable="true"][role="textbox"], textarea[placeholder*="Claude" i]',
+  CLAUDE_RESPONSE_SELECTOR: '.font-claude-response, [data-testid="assistant-message"]',
+  CLAUDE_SEND_SELECTOR: 'button[aria-label="Send message" i], button[aria-label="Gửi tin nhắn" i], button[data-testid="send-button"], button[data-testid="chat-input-send"]',
+  CLAUDE_BUSY_SELECTOR: 'button[aria-label*="Stop response" i], button[aria-label*="Stop generating" i], button[aria-label*="Dừng" i], [data-is-streaming="true"]',
+  CLAUDE_LOGIN_TIMEOUT_MS: 180000,
+  CLAUDE_MODEL_BUTTON_SELECTOR: 'button[data-testid="model-selector-dropdown"], button[aria-label^="Model:" i], button[aria-label^="Mô hình:" i]',
+  CLAUDE_LOGIN_REQUIRED_ERROR: "claude_login_required – Chưa đăng nhập Claude hoặc Claude đang chờ xác minh. Chọn Hiện trình duyệt trong Cấu hình AI, đăng nhập Claude rồi chạy lại.",
+  CLAUDE_LOGIN_WAIT_LOG: "[Claude] Đang chờ bạn đăng nhập hoặc hoàn tất xác minh trong cửa sổ trình duyệt.",
+  CLAUDE_INLINE_RESPONSE_DIRECTIVE: "Return the requested content directly in your chat message. Do not create artifacts, write files, update memory, or use tools. Put the complete JSON inside one fenced json code block, using straight ASCII double quotes and preserving all field names exactly. This code block is required to prevent typography and Markdown from changing JSON characters.",
+  CLAUDE_RATE_LIMIT_PATTERN: /you(?:'|’)?ve (?:reached|hit).*limit|usage limit|message limit|out of (?:free )?messages|too many messages|đã (?:đạt|hết).*giới hạn|hết lượt/i,
+  CLAUDE_RATE_LIMIT_ERROR: "Claude đã hết lượt sử dụng. Hãy chờ giới hạn đặt lại hoặc chọn nguồn AI khác.",
+  CLAUDE_UPLOAD_SCOPE_SELECTOR: 'form, [data-testid="chat-input"]:not([contenteditable="true"]), [data-testid="composer"], [data-cds="ChatComposer"]',
+  CLAUDE_REMOVE_ATTACHMENT_SELECTOR: 'button[aria-label*="remove" i], button[aria-label*="xóa" i], button[aria-label*="gỡ" i]',
+  CLAUDE_ATTACHMENT_SELECTOR: '[data-testid*="attachment" i], [data-testid*="file-thumbnail" i], [data-testid*="file-upload" i]',
+  CLAUDE_UPLOAD_BUSY_SELECTOR: '[role="progressbar"], [aria-busy="true"], [data-state="uploading"], [data-state="processing"], [data-status="uploading"], [data-status="processing"], .animate-spin',
+  CLAUDE_UPLOAD_ERROR_PATTERN: /upload (?:failed|error)|failed to upload|could(?:n't| not) upload|unsupported (?:file|image)|file (?:is )?too large|image (?:is )?too large|tải.*(?:thất bại|không thành công)|không thể tải|(?:tệp|ảnh).*(?:không (?:được )?hỗ trợ|quá lớn)/i,
+  CLAUDE_UPLOAD_STABLE_MS: 1000,
+  CLAUDE_UPLOAD_NOT_READY_ERROR: "claude_attachments_not_ready – Chưa xác nhận Claude tải xong đầy đủ ảnh/tệp đính kèm. Yêu cầu chưa được gửi.",
+  CLAUDE_UPLOAD_FAILED_ERROR: "claude_attachment_upload_failed – Claude không tải được ảnh/tệp đính kèm. Yêu cầu chưa được gửi.",
   RESPONSE_IDENTITY_SELECTOR: "[data-message-id], [data-testid^='conversation-turn-'], [data-test-id]",
   RESPONSE_MESSAGE_ID_ATTRIBUTE: "data-message-id",
   RESPONSE_TEST_ID_ATTRIBUTE: "data-testid",
@@ -244,6 +271,7 @@ export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, Re
     { value: AiPlanningChatModel.GrokHeavy, label: "Nặng" },
   ],
   [AiPlanningFallbackProvider.ChatGptUi]: [{ value: AiPlanningChatModel.ChatGptAuto, label: "Mặc định" }],
+  [AiPlanningFallbackProvider.ClaudeChat]: CLAUDE_CHAT_MODEL_OPTIONS,
   [AiPlanningFallbackProvider.Disabled]: [],
 };
 export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
@@ -259,6 +287,20 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GrokExpert]: /Chuyên gia|Expert/i,
   [AiPlanningChatModel.GrokHeavy]: /Nặng|Heavy/i,
   [AiPlanningChatModel.ChatGptAuto]: /Auto|Mặc định|Default/i,
+  [AiPlanningChatModel.ClaudeAuto]: /Auto|Mặc định|Default/i,
+  [AiPlanningChatModel.ClaudeFable51]: /^Fable\s+5\.1(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus55]: /^Opus\s+5\.5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeSonnet55]: /^Sonnet\s+5\.5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeHaiku55]: /^Haiku\s+5\.5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeFable5]: /^Fable\s+5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus5]: /^Opus\s+5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus48]: /^Opus\s+4\.8(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus47]: /^Opus\s+4\.7(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus46]: /^Opus\s+4\.6(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeOpus3]: /^Opus\s+3(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeSonnet5]: /^Sonnet\s+5(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeSonnet46]: /^Sonnet\s+4\.6(?:\s|$)/i,
+  [AiPlanningChatModel.ClaudeHaiku45]: /^Haiku\s+4\.5(?:\s|$)/i,
 };
 export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
   [AiPlanningChatModel.GeminiFlashLite]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite],

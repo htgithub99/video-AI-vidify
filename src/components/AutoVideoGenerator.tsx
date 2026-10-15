@@ -1,3 +1,5 @@
+import { AUTO_VIDEO_STYLES as AV } from "../constants/autoVideoStyles.js";
+import * as ST from "../constants/sourceText.js";
 import { SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_4, SOURCE_TEXT_AUTO, SOURCE_TEXT_CONFIG, SOURCE_TEXT_CONTINUE, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_NEW, SOURCE_TEXT_PHIM_AI, SOURCE_TEXT_RENDER_ONLY, SOURCE_TEXT_VALUE } from "../constants/sourceText";
 import { cn } from "../lib/utils";
 import { readBlobAsDataUrl } from "../lib/fileUtils";
@@ -14,6 +16,7 @@ import { API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, COMMON_ST
 import { MEDIA_MIX_TEXTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, CINEMATIC_CONFIG, FLOW_DIRECT_VIDEO_CONFIG } from "../constants/config";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../constants/cinematicConstants";
+import { isPlanningChatModel } from "../lib/chatPlanningUtils";
 import { deleteProjectRegenerationAssets, applyProjectRegenerationReset } from "../services/projectRegenerationService";
 import { Lang } from "../lib/lang";
 import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords, buildPresetPayload, applyPresetConfigToState } from "./auto-video/autoVideoGeneratorUtils";
@@ -40,16 +43,7 @@ import { genreLabels } from "../constants/data";
 import { AutoVideoStudioSkeleton } from "./ui/Skeleton";
 import { ProgressLogContext } from "../constants/progressLog";
 import { normalizeVideoModelSettings } from "../services/videoModelCapabilityService";
-interface AutoVideoGeneratorProps {
-  currentLang: Lang;
-  projects: VideoProject[];
-  selectedProjectId?: string | null;
-  onSelectProject: (id: string) => void;
-  onCreateProject: (name: string, desc: string) => Promise<void>;
-  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void;
-  theme?: AppTheme;
-  cinematicMode?: boolean;
-}
+interface AutoVideoGeneratorProps { currentLang: Lang; projects: VideoProject[]; selectedProjectId?: string | null; onSelectProject: (id: string) => void; onCreateProject: (name: string, desc: string) => Promise<void>; onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void; theme?: AppTheme; cinematicMode?: boolean; }
 export default function AutoVideoGenerator({ currentLang, projects, selectedProjectId, onSelectProject: _onSelectProject, onUpdateProject, theme = AppTheme.DARK, cinematicMode = false }: AutoVideoGeneratorProps) {
   const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
   const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
@@ -186,7 +180,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     } else {
       setPlanningFallbackProvider(AiPlanningFallbackProvider.GeminiChat);
     }
-    if (savedModel && _.includes(_.values(AiPlanningChatModel), savedModel)) setPlanningChatModel(savedModel);
+    if (isPlanningChatModel(savedModel)) setPlanningChatModel(savedModel);
     if (savedMode && _.includes(_.values(AiPlanningExecutionMode), savedMode)) setPlanningExecutionMode(savedMode);
     else setPlanningExecutionMode(_.isEqual(savedProvider, AiPlanningFallbackProvider.Disabled) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly);
     setPlanningChromeHeadless(_.isBoolean(savedHeadless) ? savedHeadless : CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
@@ -463,11 +457,11 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     return <AutoVideoStudioSkeleton />;
   }
   return (
-    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full")}>
+    <div className={cn(ST.SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN)}>
+      <div className={cn(AV.PANEL)}>
         {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
-        <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6")}>
-          <div className={cn("lg:col-span-2 flex flex-col gap-5 h-full justify-stretch min-w-0")}>
+        <div className={cn(AV.GRID)}>
+          <div className={cn(AV.MAIN_COLUMN)}>
             {cinematicMode ? (
               <CinematicFilmSetupSection
                 idea={scriptContent}
@@ -493,7 +487,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
               <ChatPlanningSettingsBlock provider={planningFallbackProvider} model={planningChatModel} onProviderChange={setPlanningFallbackProvider} onModelChange={setPlanningChatModel} executionMode={planningExecutionMode} onExecutionModeChange={setPlanningExecutionMode} chromeHeadless={planningChromeHeadless} onChromeHeadlessChange={setPlanningChromeHeadless} currentLang={currentLang} />
             )}
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
-            <div className={cn("bg-slate-955/50 rounded-xl p-5 space-y-5 shadow-inner w-full")}>
+            <div className={cn(AV.SETTINGS_PANEL)}>
               <GenerationSettingsSection
                 generationMode={generationMode}
                 setGenerationMode={setGenerationMode}
@@ -535,7 +529,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
                   T={T}
                 />
               )}
-              <div className={cn("pt-2 border-t border-slate-800/80")}>
+              <div className={cn(ST.SOURCE_TEXT_PT_2_BORDER_T_BORDER_SLATE_800)}>
                 <StylePresetSelector selectedStyle={stylePreset} onSelectStyle={setStylePreset} language={currentLang} accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE} genre={genre} allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
               </div>
             </div>
@@ -563,7 +557,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
               allowedStylePresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined}
             />
           </div>
-          <div className={cn("space-y-6 flex flex-col min-w-0")}>
+          <div className={cn(AV.SIDEBAR)}>
             <ActionPanelSection
               scriptContent={scriptContent}
               isProcessing={isProcessing}

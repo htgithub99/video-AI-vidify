@@ -1,3 +1,6 @@
+import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
+import * as ST from "../../constants/sourceText.js";
+import { throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import * as MR from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_683,
@@ -101,6 +104,8 @@ import {
 } from "../../constants/sourceText.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import { createHash } from "crypto";
+import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
 import _ from "lodash";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { waitForMusicMixerUploads } from "./musicMixerUploadReadiness.js";
@@ -112,6 +117,8 @@ import { appLog, appWarn } from "../../lib/logger.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
 import { assessChatComposerContent } from "./chatComposerValidation.js";
+import { getClaudeComposerScope, observeClaudeUploads, waitForClaudeUploads } from "./claudeUploadReadiness.js";
+import { selectClaudeChatModel } from "./claudeModelService.js";
 import { closeAppBrowserAfterTask, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 interface ChatRoomAttachment { name: string; mimeType: string; buffer?: Buffer; path?: string; }
@@ -138,6 +145,7 @@ const planningMutexes = new Map<string, SimpleMutex>();
 const geminiRooms = new Map<string, Page>();
 const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
+const claudeRooms = new Map<string, Page>();
 const pendingRoomResponses = new Map<string, PendingRoomResponse>();
 let activeMusicMixerRequests = 0;
 const scheduleChatBrowserCleanup = (): void => {
@@ -187,9 +195,6 @@ export const cancelChatPlanningRun = (runId?: string): boolean => {
   _.forEach(controllers, (record) => record.controller.abort());
   activePlanningControllers.clear();
   return !_.isEmpty(controllers);
-};
-const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
-  if (signal?.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
 };
 const normalizeRoomPrompt = (prompt: string): string => _.trim(_.replace(_.replace(prompt, CINEMATIC_CHAT_PLANNING_CONFIG.WINDOWS_LINE_ENDING_PATTERN, MOTION_TEXT_SYMBOL_27), CINEMATIC_CHAT_PLANNING_CONFIG.EXCESS_BLANK_LINES_PATTERN, MOTION_TEXT_SYMBOL_37));
 const closesString = (rest: string, isKey: boolean): boolean => {
@@ -281,9 +286,10 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return geminiRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return grokRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return chatGptRooms;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.ClaudeChat)) return claudeRooms;
   return undefined;
 };
-const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
+const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
 export const closeChatBrowserIfIdle = async (): Promise<boolean> => {
   if (hasActiveChatRooms()) return false;
   const grokClosed = await closeOwnedGrokBrowserIfIdle();
@@ -665,6 +671,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
     .locator(responseSelector)
     .evaluateAll(
       (elements, browserPayload) => {
+        const { C, ST } = browserPayload.sharedTexts;
         const { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16, MOTION_TEXT_EMPTY } = browserPayload.texts;
         const identityConfig = browserPayload.payload;
         return elements
@@ -679,11 +686,17 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MOTION_TEXT_EMPTY;
             const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
             const identity = messageId || (testId ? `${testId}${SOURCE_TEXT_SYMBOL_16}${index}` : identityElement.id);
-            const visibleText = element instanceof HTMLElement ? element.innerText : element.textContent || MOTION_TEXT_EMPTY;
+            const codeText = browserPayload.preferCodeBlocks
+              ? Array.from(element.querySelectorAll(C.CODE_BLOCK_SELECTOR))
+                  .map((block) => block.textContent || MOTION_TEXT_EMPTY)
+                  .join(ST.SOURCE_TEXT_SYMBOL_56)
+              : MOTION_TEXT_EMPTY;
+            const visibleText = codeText.trim() || (element instanceof HTMLElement ? element.innerText : element.textContent || MOTION_TEXT_EMPTY);
             return { identity, text: visibleText.trim() };
           });
       },
       {
+        preferCodeBlocks: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR,
         payload: {
           selector: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_IDENTITY_SELECTOR,
           messageIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MESSAGE_ID_ATTRIBUTE,
@@ -691,6 +704,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
           legacyTestIdAttribute: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_LEGACY_TEST_ID_ATTRIBUTE,
         },
         texts: { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16, MOTION_TEXT_EMPTY: MR.MOTION_TEXT_EMPTY },
+        sharedTexts: { C: { CODE_BLOCK_SELECTOR: C.CODE_BLOCK_SELECTOR }, ST: { SOURCE_TEXT_SYMBOL_56: ST.SOURCE_TEXT_SYMBOL_56 } },
       },
     )
     .catch(() => []);
@@ -703,6 +717,15 @@ const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): 
   return _.isEqual(returnedSceneIds.length, expectedSceneIds.length) && _.isEqual(_.uniq(returnedSceneIds).length, returnedSceneIds.length) && _.isEmpty(_.difference(expectedSceneIds, returnedSceneIds)) && _.isEmpty(_.difference(returnedSceneIds, expectedSceneIds));
 };
 const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise<void> => {
+  if (_.isEqual(busySelector, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR)) {
+    const alerts = await page
+      .locator(C.CLAUDE_USAGE_NOTICE_SELECTOR)
+      .filter({ visible: true })
+      .allTextContents()
+      .catch(() => []);
+    if (alerts.some((alert) => CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(alert))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR);
+    return;
+  }
   if (!_.isEqual(busySelector, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR)) return;
   const alerts = await page
     .locator(SOURCE_TEXT_ROLE_ALERT)
@@ -801,7 +824,7 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
         const mayUseUnmarkedJsonFallback = _.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson;
-        if (belongsToCurrentRequest || mayUseUnmarkedJsonFallback) {
+        if (isCompleteJson && (belongsToCurrentRequest || mayUseUnmarkedJsonFallback)) {
           if (!belongsToCurrentRequest) {
             appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RAW_CONTRACT_FALLBACK(_.join(expectedSceneIds, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_NOT_REQUIRED, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
           }
@@ -870,30 +893,34 @@ const setLocalFilePathsViaCdp = async (page: Page, filePaths: string[]): Promise
     await session.detach().catch(() => undefined);
   }
 };
-const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], artifactType?: string): Promise<void> => {
-  const allowLocalFileFallback = artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING;
-  const localFilePaths = _.compact(_.map(attachments, SOURCE_TEXT_PATH));
-  const usesOnlyLocalPaths = _.size(localFilePaths) === _.size(attachments);
-  const inputFiles = _.map(
-    attachments,
-    (attachment) =>
-      attachment.path || {
-        name: attachment.name,
-        mimeType: attachment.mimeType,
-        buffer: attachment.buffer as Buffer,
-      },
-  );
-  const removableAttachments = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_REMOVABLE_BUTTON_SELECTOR);
+const clearQueuedRoomAttachments = async (page: Page, claudeComposer?: Locator): Promise<void> => {
+  const removableAttachments = claudeComposer ? claudeComposer.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_REMOVE_ATTACHMENT_SELECTOR) : page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_REMOVABLE_BUTTON_SELECTOR);
   for (let index = (await removableAttachments.count().catch(() => 0)) - 1; index >= 0; index--) {
     await removableAttachments
       .nth(index)
       .click()
       .catch(() => undefined);
   }
+  if (claudeComposer && (await removableAttachments.filter({ visible: true }).count())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_NOT_READY_ERROR);
+};
+const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], artifactType?: string, claudeComposer?: Locator): Promise<void> => {
+  const allowLocalFileFallback = Boolean(claudeComposer) || artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING;
+  const localFilePaths = _.compact(_.map(attachments, SOURCE_TEXT_PATH));
+  const usesOnlyLocalPaths = _.size(localFilePaths) === _.size(attachments);
+  const inputFiles = usesOnlyLocalPaths
+    ? localFilePaths
+    : await Promise.all(
+        _.map(attachments, async (attachment) => ({
+          name: attachment.path ? basename(attachment.path) : attachment.name,
+          mimeType: attachment.mimeType,
+          buffer: attachment.path ? await readFile(attachment.path) : (attachment.buffer as Buffer),
+        })),
+      );
+  await clearQueuedRoomAttachments(page, claudeComposer);
   let uploaded = false;
   let lastUploadError: unknown;
-  const fileInputs = page.locator(SOURCE_TEXT_INPUT_TYPE_FILE);
-  if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
+  const fileInputs = (claudeComposer || page).locator(SOURCE_TEXT_INPUT_TYPE_FILE);
+  if (usesOnlyLocalPaths && !claudeComposer) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
   if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
     for (let index = 0; index < (await fileInputs.count().catch(() => 0)); index++) {
       try {
@@ -905,7 +932,8 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
       }
     }
   if (!uploaded) {
-    const attachmentButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN }).or(page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_SELECTOR)).filter({ visible: true }).last();
+    const attachmentScope = claudeComposer || page;
+    const attachmentButton = attachmentScope.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN }).or(attachmentScope.locator(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_BUTTON_SELECTOR)).filter({ visible: true }).last();
     let chooser = await Promise.all([
       page.waitForEvent(SOURCE_TEXT_FILECHOOSER, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => null),
       attachmentButton.click().catch((error) => {
@@ -914,7 +942,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
     ]).then(([fileChooser]) => fileChooser);
     if (!chooser) {
       const revealedFileInputs = page.locator(SOURCE_TEXT_INPUT_TYPE_FILE);
-      if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
+      if (usesOnlyLocalPaths && !claudeComposer) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
       if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
         for (let index = 0; index < (await revealedFileInputs.count().catch(() => 0)); index++) {
           try {
@@ -941,7 +969,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
         ]).then(([fileChooser]) => fileChooser);
     }
     if (chooser && !uploaded) {
-      if (usesOnlyLocalPaths) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
+      if (usesOnlyLocalPaths && !claudeComposer) uploaded = await setLocalFilePathsViaCdp(page, localFilePaths);
       if (!uploaded && (!usesOnlyLocalPaths || allowLocalFileFallback))
         try {
           await chooser.setFiles(inputFiles);
@@ -952,6 +980,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
     }
   }
   if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))}`)).trim());
+  if (claudeComposer) await page.keyboard.press(SOURCE_TEXT_ESCAPE);
 };
 const getComposerReadings = async (input: Locator): Promise<string[]> => {
   const value = await input.inputValue().catch(() => MR.MOTION_TEXT_EMPTY);
@@ -990,127 +1019,141 @@ const waitForSubmissionConfirmation = async (input: Locator, page: Page, respons
   return false;
 };
 const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSelector: string, sendSelector: string, responseSelector: string, busySelector: string, expectedSceneIds: string[], attachments: ChatRoomAttachment[] = [], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal): Promise<string> => {
-  throwIfPlanningCancelled(signal);
-  const diagnosticRunId = requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined;
-  const pendingResponse = pendingRoomResponses.get(roomKey);
-  if (pendingResponse && isPendingResponseForRequest(pendingResponse, page, expectedSceneIds, completionMarker, artifactType, requestId)) {
-    await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PENDING_RESPONSE_RESUMED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
-    appLog(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_RESUME_LOG);
-    try {
-      const resumedResponse = await waitForStableResponse(page, responseSelector, busySelector, pendingResponse.initialCount, expectedSceneIds, pendingResponse.initialResponseSnapshots, completionMarker, artifactType, requestId, signal);
-      pendingRoomResponses.delete(roomKey);
-      return resumedResponse;
-    } catch (error) {
-      if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
-      throw error;
-    }
-  }
-  if (pendingResponse && !page.isClosed()) {
-    await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_WAIT_STARTED, { runId: diagnosticRunId, stage: artifactType });
-    try {
-      await waitForStableResponse(page, responseSelector, busySelector, pendingResponse.initialCount, pendingResponse.expectedSceneIds, pendingResponse.initialResponseSnapshots, pendingResponse.completionMarker, pendingResponse.artifactType, pendingResponse.requestId, signal);
-      pendingRoomResponses.delete(roomKey);
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_COMPLETED, { runId: diagnosticRunId, stage: artifactType });
-    } catch (error) {
-      if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
-      throw error;
-    }
-  }
-  pendingRoomResponses.delete(roomKey);
-  const uiReadyStartedAt = Date.now();
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_WAITING_INPUT);
-  const input = await getLastVisibleLocator(page, inputSelector);
+  const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
+  const uploadObservation = isClaude && attachments.length ? observeClaudeUploads(page) : undefined;
   try {
-    await input.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  } catch (error) {
-    const title = await page.title().catch(() => MR.MOTION_TEXT_EMPTY);
-    const selectorMatches = await page
-      .locator(inputSelector)
-      .count()
-      .catch(() => 0);
-    await writeMusicDiagnostic(SOURCE_TEXT_CHAT_INPUT_FAILED, { runId: diagnosticRunId, stage: artifactType, status: String(selectorMatches), ...musicErrorDetails(error) });
-    throw new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_NOT_FOUND_DETAIL(page.url(), title, selectorMatches, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
-  }
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
-  let initialResponseSnapshots: ChatResponseSnapshot[] = [];
-  let initialCount = 0;
-  const normalizedPrompt = normalizeRoomPrompt(prompt);
-  let submissionConfirmed = false;
-  const markPendingSubmission = (): void => {
-    pendingRoomResponses.set(roomKey, {
-      page,
-      initialCount,
-      initialResponseSnapshots,
-      expectedSceneIds: _.clone(expectedSceneIds),
-      completionMarker,
-      artifactType,
-      requestId,
-    });
-  };
-  {
-    await throwIfGrokRateLimited(page, busySelector);
-    try {
-      await waitForRoomIdle(page, busySelector, responseSelector, signal);
-    } catch (error) {
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ROOM_IDLE_FAILED, { runId: diagnosticRunId, stage: artifactType, ...musicErrorDetails(error) });
-      throw error;
-    }
-    initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
-    initialCount = initialResponseSnapshots.length;
-    if (!_.isEmpty(attachments)) {
-      throwIfPlanningCancelled(signal);
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_STARTED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+    throwIfPlanningCancelled(signal);
+    const diagnosticRunId = requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined;
+    const pendingResponse = pendingRoomResponses.get(roomKey);
+    if (pendingResponse && isPendingResponseForRequest(pendingResponse, page, expectedSceneIds, completionMarker, artifactType, requestId)) {
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PENDING_RESPONSE_RESUMED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+      appLog(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_RESUME_LOG);
       try {
-        await attachRoomFiles(page, attachments, artifactType);
-        if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING) {
-          await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-        } else await delayAsync(Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_MAX_MS, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_PER_FILE_MS * attachments.length));
-        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+        const resumedResponse = await waitForStableResponse(page, responseSelector, busySelector, pendingResponse.initialCount, expectedSceneIds, pendingResponse.initialResponseSnapshots, completionMarker, artifactType, requestId, signal);
+        pendingRoomResponses.delete(roomKey);
+        return resumedResponse;
       } catch (error) {
-        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_FAILED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length, ...musicErrorDetails(error) });
+        if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
         throw error;
       }
     }
-    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
-    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${normalizedPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE}`));
-    await input.fill(submittedPrompt);
-    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-    await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-    const composerAssessment = assessChatComposerContent(submittedPrompt, CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE, requestId, await getComposerReadings(input));
-    if (!composerAssessment.valid) {
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
-      throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
+    if (pendingResponse && !page.isClosed()) {
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_WAIT_STARTED, { runId: diagnosticRunId, stage: artifactType });
+      try {
+        await waitForStableResponse(page, responseSelector, busySelector, pendingResponse.initialCount, pendingResponse.expectedSceneIds, pendingResponse.initialResponseSnapshots, pendingResponse.completionMarker, pendingResponse.artifactType, pendingResponse.requestId, signal);
+        pendingRoomResponses.delete(roomKey);
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_COMPLETED, { runId: diagnosticRunId, stage: artifactType });
+      } catch (error) {
+        if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
+        throw error;
+      }
     }
-    {
-      const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
-      const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
-      const sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
-      if (sendButton) {
-        await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-        if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING && !_.isEmpty(attachments)) {
-          await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-          if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-        }
-        markPendingSubmission();
-        await sendButton.click();
-      } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-      submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
-    }
-  }
-  if (!submissionConfirmed) {
-    await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_UNCERTAIN_WAITING_RESPONSE, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
-  } else {
-    appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace(SOURCE_TEXT_0_2, _.toString(normalizedPrompt.length)));
-  }
-  try {
-    const response = await waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseSnapshots, completionMarker, artifactType, requestId, signal);
     pendingRoomResponses.delete(roomKey);
-    return response;
-  } catch (error) {
-    if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
-    throw error;
+    const uiReadyStartedAt = Date.now();
+    appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_WAITING_INPUT);
+    const input = await getLastVisibleLocator(page, inputSelector);
+    try {
+      await input.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    } catch (error) {
+      const title = await page.title().catch(() => MR.MOTION_TEXT_EMPTY);
+      const selectorMatches = await page
+        .locator(inputSelector)
+        .count()
+        .catch(() => 0);
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_INPUT_FAILED, { runId: diagnosticRunId, stage: artifactType, status: String(selectorMatches), ...musicErrorDetails(error) });
+      throw new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_NOT_FOUND_DETAIL(page.url(), title, selectorMatches, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
+    }
+    appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
+    let initialResponseSnapshots: ChatResponseSnapshot[] = [];
+    let initialCount = 0;
+    const normalizedPrompt = normalizeRoomPrompt(prompt);
+    let submissionConfirmed = false;
+    const markPendingSubmission = (): void => {
+      pendingRoomResponses.set(roomKey, {
+        page,
+        initialCount,
+        initialResponseSnapshots,
+        expectedSceneIds: _.clone(expectedSceneIds),
+        completionMarker,
+        artifactType,
+        requestId,
+      });
+    };
+    {
+      await throwIfGrokRateLimited(page, busySelector);
+      try {
+        await waitForRoomIdle(page, busySelector, responseSelector, signal);
+      } catch (error) {
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ROOM_IDLE_FAILED, { runId: diagnosticRunId, stage: artifactType, ...musicErrorDetails(error) });
+        throw error;
+      }
+      initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
+      initialCount = initialResponseSnapshots.length;
+      const claudeComposer = isClaude ? await getClaudeComposerScope(input) : undefined;
+      if (!_.isEmpty(attachments)) {
+        throwIfPlanningCancelled(signal);
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_STARTED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+        try {
+          await attachRoomFiles(page, attachments, artifactType, claudeComposer);
+          if (isClaude) {
+            await waitForClaudeUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
+          } else if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING) {
+            await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+          } else await delayAsync(Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_MAX_MS, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_PER_FILE_MS * attachments.length));
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_COMPLETED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+        } catch (error) {
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_FAILED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length, ...musicErrorDetails(error) });
+          throw error;
+        }
+      } else if (claudeComposer) {
+        await clearQueuedRoomAttachments(page, claudeComposer);
+        await waitForClaudeUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
+      }
+      await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
+      const responseDirective = isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+      const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${normalizedPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${responseDirective}`));
+      await input.fill(submittedPrompt);
+      await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+      await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+      const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input));
+      if (!composerAssessment.valid) {
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
+        throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
+      }
+      {
+        const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
+        const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
+        const sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
+        if (sendButton) {
+          await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+          if (isClaude || (!_.isEmpty(attachments) && artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING)) {
+            if (isClaude) await waitForClaudeUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS, true);
+            else await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+            if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+          }
+          markPendingSubmission();
+          await sendButton.click();
+        } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+        submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
+      }
+    }
+    if (!submissionConfirmed) {
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_UNCERTAIN_WAITING_RESPONSE, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
+    } else {
+      appLog(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_CONFIRMED_LOG.replace(SOURCE_TEXT_0_2, _.toString(normalizedPrompt.length)));
+    }
+    try {
+      const response = await waitForStableResponse(page, responseSelector, busySelector, initialCount, expectedSceneIds, initialResponseSnapshots, completionMarker, artifactType, requestId, signal);
+      pendingRoomResponses.delete(roomKey);
+      return response;
+    } catch (error) {
+      if (!isResponseTimeoutError(error)) pendingRoomResponses.delete(roomKey);
+      throw error;
+    }
+  } finally {
+    uploadObservation?.dispose();
   }
 };
 const getChatModelOption = (page: Page, modelLabel: RegExp) =>
@@ -1381,8 +1424,58 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   scheduleChatBrowserCleanup();
   return response;
 };
+const ensureClaudeReady = async (room: Page, request: ChatPlanningRequest): Promise<void> => {
+  const input = room.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR).filter({ visible: true }).last();
+  const ready = await input
+    .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  throwIfPlanningCancelled(request.signal);
+  if (ready) return;
+  if (request.chromeHeadless !== false) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_REQUIRED_ERROR);
+  appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_WAIT_LOG);
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(request.signal);
+    if (room.isClosed()) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_REQUIRED_ERROR);
+    if (await input.isVisible().catch(() => false)) return;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_REQUIRED_ERROR);
+};
+const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
+  await ensureClaudeReady(room, request);
+  await selectClaudeChatModel(room, request.model, request.signal);
+  const response = await submitPrompt(
+    room,
+    getPlanningRoomKey(request),
+    request.prompt,
+    CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_SEND_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR,
+    CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR,
+    request.expectedSceneIds || [],
+    request.attachments || [],
+    request.completionMarker,
+    request.artifactType,
+    request.requestId,
+    request.signal,
+  );
+  scheduleChatBrowserCleanup();
+  return response;
+};
 export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
   throwIfPlanningCancelled(request.signal);
+  if (_.isEqual(request.provider, AiPlanningFallbackProvider.ClaudeChat)) {
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
+    await ensureClaudeReady(room, request);
+    await selectClaudeChatModel(room, request.model, request.signal);
+    return;
+  }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
@@ -1465,12 +1558,14 @@ const providerNames: Record<AiPlanningFallbackProvider, string> = {
   [AiPlanningFallbackProvider.GeminiChat]: SOURCE_TEXT_GEMINI_CHAT,
   [AiPlanningFallbackProvider.GrokChat]: SOURCE_TEXT_GROK_CHAT,
   [AiPlanningFallbackProvider.ChatGptUi]: SOURCE_TEXT_CHATGPT,
+  [AiPlanningFallbackProvider.ClaudeChat]: C.CLAUDE,
   [AiPlanningFallbackProvider.Disabled]: SOURCE_TEXT_DISABLED,
 };
 const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: ChatPlanningRequest) => Promise<string>>> = {
   [AiPlanningFallbackProvider.GeminiChat]: generateWithGeminiChat,
   [AiPlanningFallbackProvider.GrokChat]: generateWithGrokChat,
   [AiPlanningFallbackProvider.ChatGptUi]: generateWithChatGptUi,
+  [AiPlanningFallbackProvider.ClaudeChat]: generateWithClaudeChat,
 };
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
@@ -1480,9 +1575,11 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   planningMutexes.set(roomKey, planningMutex);
   const mutexStartedAt = Date.now();
   const release = await planningMutex.acquire();
+  let cancelledRoomCleanup: Promise<void> | undefined;
   const closeCancelledRoom = () => {
-    void closeChatPlanningRoom(request)
+    cancelledRoomCleanup ??= closeChatPlanningRoom(request)
       .then(() => closeChatBrowserIfIdle())
+      .then(() => undefined)
       .catch(() => undefined);
   };
   request.signal?.addEventListener(SOURCE_TEXT_ABORT, closeCancelledRoom, { once: true });
@@ -1544,10 +1641,12 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   } finally {
     request.signal?.removeEventListener(SOURCE_TEXT_ABORT, closeCancelledRoom);
     try {
-      if (request.signal?.aborted || (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE))) {
+      if (request.signal?.aborted) {
+        closeCancelledRoom();
+        await cancelledRoomCleanup;
+      } else if (responseCompleted && (request.closeRoomOnComplete ?? CINEMATIC_CHAT_PLANNING_CONFIG.CLOSE_ROOM_ON_COMPLETE)) {
         await closeChatPlanningRoom(request);
       }
-      if (request.signal?.aborted) await closeChatBrowserIfIdle();
     } finally {
       release();
       if (isMusicMixerRequest) {
