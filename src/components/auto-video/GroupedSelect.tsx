@@ -1,3 +1,4 @@
+import { StudioSelect } from "../ui/Studio.js";
 import _ from "lodash";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { GROUPED_SELECT_CLASS_NAME } from "../../constants";
@@ -28,7 +29,7 @@ export const GroupedSelect = <T extends string>({ value, onChange, label, icon: 
       </span>
       <div className={cn(GROUPED_SELECT_CLASS_NAME.CONTROL)} title={currentDescription}>
         <Icon className={cn(GROUPED_SELECT_CLASS_NAME.ICON)} />
-        <select value={value} onChange={(event) => onChange(event.target.value as T)} className={cn(GROUPED_SELECT_CLASS_NAME.SELECT)}>
+        <StudioSelect value={value} onChange={(event) => onChange(event.target.value as T)} className={cn(GROUPED_SELECT_CLASS_NAME.SELECT)}>
           {_.map(groups, (group) => (
             <optgroup key={group.label} label={group.label} className={cn(GROUPED_SELECT_CLASS_NAME.GROUP)}>
               {_.map(group.options, (option) => (
@@ -38,7 +39,7 @@ export const GroupedSelect = <T extends string>({ value, onChange, label, icon: 
               ))}
             </optgroup>
           ))}
-        </select>
+        </StudioSelect>
         <ChevronDown className={cn(GROUPED_SELECT_CLASS_NAME.CHEVRON)} />
       </div>
     </div>

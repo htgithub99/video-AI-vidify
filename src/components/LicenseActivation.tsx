@@ -1,3 +1,4 @@
+import { StudioCard, StudioInput } from "./ui/Studio.js";
 import { SOURCE_TEXT_BG_EMERALD_500, SOURCE_TEXT_BG_EMERALD_500_10, SOURCE_TEXT_BG_ROSE_500, SOURCE_TEXT_BG_ROSE_500_10, SOURCE_TEXT_ERROR, SOURCE_TEXT_SHADOW_EMERALD_950_20, SOURCE_TEXT_SHADOW_ROSE_950_20, SOURCE_TEXT_STATUS, SOURCE_TEXT_SUCCESS, SOURCE_TEXT_TEXT_EMERALD_500, SOURCE_TEXT_TEXT_ROSE_500, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
 import React, { useState, useEffect, FC, FormEvent, useCallback, useMemo } from "react";
 import { useLicense } from "../contexts/LicenseContext";
@@ -75,7 +76,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
   if (isLoading) {
     return (
       <div className={cn("flex items-center justify-center min-h-screen bg-slate-955 p-4 relative overflow-hidden")}>
-        <div className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80 space-y-6")}>
+        <StudioCard className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80 space-y-6")}>
           <div className={cn("flex flex-col items-center space-y-4")}>
             <div className={cn("w-18 h-18 rounded-3xl skeleton-shimmer")} />
             <div className={cn("w-48 h-6 rounded-xl skeleton-shimmer")} />
@@ -85,7 +86,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
             <div className={cn("w-full h-12 rounded-2xl skeleton-shimmer")} />
             <div className={cn("w-full h-12 rounded-2xl skeleton-shimmer")} />
           </div>
-        </div>
+        </StudioCard>
       </div>
     );
   }
@@ -95,7 +96,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
         <div className={cn("flex items-center justify-center min-h-screen bg-slate-955 p-4 relative overflow-hidden")}>
           <div className={cn("absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none")} />
           <div className={cn("absolute bottom-10 right-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none")} />
-          <div className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80")}>
+          <StudioCard className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80")}>
             <div className={cn("flex flex-col items-center text-center mb-8")}>
               <div className={cn("w-18 h-18 bg-gradient-to-tr from-rose-600 to-amber-500 rounded-3xl flex items-center justify-center mb-5 shadow-lg shadow-rose-500/25 ring-2 ring-white/20")}>
                 <KeyRound className={cn("w-9 h-9 text-white")} />
@@ -107,7 +108,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
             </div>
             <form onSubmit={handleFormSubmit} className={cn("space-y-5")}>
               <div>
-                <input
+                <StudioInput
                   type={SecurityConstants.INPUT_TYPE_TEXT}
                   value={inputKey}
                   onChange={(e) => setInputKey(e.target.value)}
@@ -136,7 +137,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
                 )}
               </Button>
             </form>
-          </div>
+          </StudioCard>
         </div>
         <div className={cn("fixed bottom-6 right-6 z-[999999] flex flex-col gap-3 pointer-events-none")}>
           <AnimatePresence>

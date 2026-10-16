@@ -1,3 +1,4 @@
+import { StudioCard, StudioInput, StudioSelect } from "../ui/Studio.js";
 import { SOURCE_TEXT_LBLTHUMBNAILS, SOURCE_TEXT_PURPLE, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React, { useState } from "react";
@@ -68,7 +69,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
     }
   };
   return (
-    <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
+    <StudioCard className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
       <div className={cn("flex items-center justify-between")}>
         <div className={cn("flex items-center gap-2")}>
           <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20")}>{subtitleMode ? 3 : PIPELINE_STEPS.STEP_4}</span>
@@ -86,18 +87,18 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
       <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end")}>
         <div className={cn("space-y-1")}>
           <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblProjectName}</span>
-          <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={REFACTOR_CONSTANTS.PROJECT_NAME_PLACEHOLDER} className={cn("w-full h-10 bg-slate-955/90 border border-slate-800/90 focus:border-purple-500/80 text-slate-200 px-3 rounded-xl text-xs outline-none transition-colors")} />
+          <StudioInput type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={REFACTOR_CONSTANTS.PROJECT_NAME_PLACEHOLDER} className={cn("w-full h-10 bg-slate-955/90 border border-slate-800/90 focus:border-purple-500/80 text-slate-200 px-3 rounded-xl text-xs outline-none transition-colors")} />
         </div>
         {!_.isUndefined(subtitleMode) && setSubtitleMode && (
           <div className={cn("space-y-1")}>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.subtitleFieldLabel}</span>
             <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10")}>
-              <select value={subtitleMode} onChange={(event) => setSubtitleMode(event.target.value as SubtitleMode)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <StudioSelect value={subtitleMode} onChange={(event) => setSubtitleMode(event.target.value as SubtitleMode)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 <option value={SubtitleMode.None}>{T.subtitleNone}</option>
                 <option value={SubtitleMode.BurnIn}>{T.subtitleBurnIn}</option>
                 <option value={SubtitleMode.Track}>{T.subtitleTrack}</option>
                 <option value={SubtitleMode.Both}>{T.subtitleBoth}</option>
-              </select>
+              </StudioSelect>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
@@ -109,13 +110,13 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblThumbCount}</span>
           <div className={cn("relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 h-10 focus-within:border-purple-500/60 transition-colors")}>
             <Layout className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-            <select value={thumbnailCount} onChange={(e) => setThumbnailCount(Number(e.target.value))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+            <StudioSelect value={thumbnailCount} onChange={(e) => setThumbnailCount(Number(e.target.value))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
               {_.map(REFACTOR_CONSTANTS.THUMBNAIL_COUNT_OPTIONS, (n) => (
                 <option key={n} value={n} className={cn("bg-slate-955 text-slate-300")}>
                   {T.thumbCountOption(n)}
                 </option>
               ))}
-            </select>
+            </StudioSelect>
             <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
           </div>
         </div>
@@ -145,11 +146,11 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           <label className={cn("flex items-center justify-center gap-2 px-3 h-10 cursor-pointer rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/60 hover:bg-purple-100/70 transition-colors shadow-xs")}>
             <Music className={cn("w-3.5 h-3.5 text-purple-600 shrink-0")} />
             <span className={cn("text-xs font-bold text-purple-700")}>{T.musicUploadLabel || uiTexts.musicUploadPlaceholder}</span>
-            <input type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL} className={cn("hidden")} onChange={handleMusicInputChange} />
+            <StudioInput type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL} className={cn("hidden")} onChange={handleMusicInputChange} />
           </label>
         )}
       </div>
       <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
-    </div>
+    </StudioCard>
   );
 };

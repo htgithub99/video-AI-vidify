@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { VideoExportSectionHeading } from "./VideoExportSectionHeading";
 import {
   VIDEO_EXPORT_TEMPLATE_SYMBOL_5,
@@ -103,7 +104,7 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
       "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700": sourceTab !== tab,
     });
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex flex-col")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex flex-col")}>
       <audio ref={audioRef} className={cn("hidden")} onEnded={() => setPlayingId(null)} onError={() => setPlayingId(null)} />
       <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
         <VideoExportSectionHeading step={text.STEP_01} title={text.SOURCE_TITLE} icon={FolderOpen} titleClassName={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")} iconClassName={cn("w-3.5 h-3.5 text-purple-400")}>
@@ -123,7 +124,6 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
             </div>
             <div className={cn("absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse")} />
           </div>
-
           <div className={cn("space-y-2 max-w-md w-full flex flex-col items-center")}>
             <p className={cn("text-sm font-bold text-slate-100")}>{text.SOURCE_SCANNING}</p>
             {savedFolderPath && (
@@ -133,7 +133,6 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
               </div>
             )}
           </div>
-
           <div className={cn("w-48 h-1.5 rounded-full bg-slate-800 overflow-hidden")}>
             <div className={cn("h-full w-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full animate-pulse")} />
           </div>
@@ -308,6 +307,6 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
           )}
         </>
       )}
-    </div>
+    </StudioCard>
   );
 };

@@ -1,3 +1,4 @@
+import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput, StudioSelect } from "./ui/Studio.js";
 import { MotionToggle } from "./motion-video/MotionToggle.js";
 import { MotionReferenceControls } from "./motion-video/MotionReferenceControls.js";
 import { MotionVoicePanel } from "./motion-video/MotionVoicePanel.js";
@@ -8,7 +9,7 @@ import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../constants/motionGenre.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -124,61 +125,42 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
   const [aiOpen, setAiOpen] = useState(false);
   const { state, patch } = studio;
   return (
-    <div className={MOTION_STYLES.CREATION_WORKSPACE_W_FULL_H_FULL_MIN_H_0_FLEX_FLEX_COL_OVERFLOW_Y_AUTO}>
-      <div className={MOTION_STYLES.BG_GRADIENT_TO_B_FROM_SLATE_900_90_TO_SLATE_950_95_ROUNDED_XL_SM_ROUNDED_2XL_P_4_SM_P_6}>
-        <div className={MOTION_STYLES.GLASS_CARD_ROUNDED_XL_PX_3_PY_2_SM_PX_4_SM_PY_2_5_SHADOW_SM}>
-          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0}>
-            <div className={MOTION_STYLES.W_8_H_8_ROUNDED_XL_BG_GRADIENT_TO_TR_FROM_PURPLE_500_VIA_FUCHSIA_500_TO_PINK_600}>
-              <div className={MOTION_STYLES.W_FULL_H_FULL_BG_SLATE_950_ROUNDED_10PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
-                <Clapperboard className={MOTION_STYLES.W_4_H_4} />
+    <StudioPage>
+      <StudioCanvas>
+        <StudioHeader
+          icon={Clapperboard}
+          title={<>{text.TITLE}</>}
+          description={<>{text.SUBTITLE}</>}
+          badge={<>{text.BADGE}</>}
+          actions={
+            <>
+              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_SELF_START_SM_SELF_AUTO_ML_AUTO}>
+                <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_P_0_5_ROUNDED_XL_BG_SLATE_955_80_BORDER}>
+                  {_.map(
+                    [
+                      { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
+                      { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
+                      { id: MotionWorkspaceTab.LIBRARY, label: MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Library },
+                      { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
+                    ],
+                    ({ id, label, icon: Icon }) => (
+                      <Button key={id} variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setTab(id)} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_LG_TEXT_XS, tab === id ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_TEXT_WHITE_SHADOW_SM_SHADOW_PURPLE_500_20 : MOTION_STYLES.TEXT_SLATE_400_HOVER_TEXT_SLATE_100_HOVER_BG_SLATE_900)}>
+                        <Icon className={MOTION_STYLES.W_3_5_H_3_5} />
+                        <span>{label}</span>
+                      </Button>
+                    ),
+                  )}
+                </div>
+                <Tooltip content={text.AI_CONFIG} align={MOTION_TEXT_END}>
+                  <StudioDisclosureButton type={MOTION_TEXT_BUTTON} onClick={() => setAiOpen(!aiOpen)} disabled={studio.storyBusy} expanded={aiOpen} label={<>{text.AI_CONFIG}</>} />
+                </Tooltip>
               </div>
-            </div>
-            <div className={MOTION_STYLES.MIN_W_0}>
-              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
-                <h1 className={MOTION_STYLES.TEXT_SM_SM_TEXT_BASE_FONT_BLACK_TEXT_SLATE_100_TRACKING_TIGHT_UPPERCASE_FONT_SANS}>{text.TITLE}</h1>
-                <span className={MOTION_STYLES.PX_2_PY_0_5_ROUNDED_FULL_TEXT_9PX_FONT_MONO_FONT_BOLD_UPPERCASE}>
-                  <Sparkles className={MOTION_STYLES.W_2_5_H_2_5_TEXT_PURPLE_400} />
-                  {text.BADGE}
-                </span>
-              </div>
-              <p className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LEADING_TIGHT_TRUNCATE_HIDDEN_MD_BLOCK}>{text.SUBTITLE}</p>
-            </div>
-          </div>
-          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_SELF_START_SM_SELF_AUTO_ML_AUTO}>
-            <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_1_P_0_5_ROUNDED_XL_BG_SLATE_955_80_BORDER}>
-              {_.map(
-                [
-                  { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
-                  { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
-                  { id: MotionWorkspaceTab.LIBRARY, label: MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Library },
-                  { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
-                ],
-                ({ id, label, icon: Icon }) => (
-                  <Button key={id} variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setTab(id)} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_LG_TEXT_XS, tab === id ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_TEXT_WHITE_SHADOW_SM_SHADOW_PURPLE_500_20 : MOTION_STYLES.TEXT_SLATE_400_HOVER_TEXT_SLATE_100_HOVER_BG_SLATE_900)}>
-                    <Icon className={MOTION_STYLES.W_3_5_H_3_5} />
-                    <span>{label}</span>
-                  </Button>
-                ),
-              )}
-            </div>
-            <Tooltip content={text.AI_CONFIG} align={MOTION_TEXT_END}>
-              <Button
-                variant={MOTION_TEXT_UNSTYLED}
-                type={MOTION_TEXT_BUTTON}
-                onClick={() => setAiOpen(!aiOpen)}
-                disabled={studio.storyBusy}
-                className={cn(MOTION_STYLES.GROUP_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_PX_3_5_PY_2, aiOpen ? MOTION_STYLES.BG_PURPLE_600_15_BORDER_PURPLE_500_50_TEXT_PURPLE_300_SHADOW_PURPLE_500_10 : MOTION_STYLES.BG_SLATE_955_80_HOVER_BG_SLATE_900_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TEXT_PURPLE_300)}>
-                <SlidersHorizontal className={MOTION_STYLES.W_3_5_H_3_5_TEXT_PURPLE_400_SHRINK_0_GROUP_HOVER_SCALE_105_TRANSITION_TRANSFORM} />
-                <span className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_SLATE_200_GROUP_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS}>{text.AI_CONFIG}</span>
-                {aiOpen ? <ChevronUp className={MOTION_STYLES.W_3_5_H_3_5_TEXT_PURPLE_400_SHRINK_0} /> : <ChevronDown className={MOTION_STYLES.W_3_5_H_3_5_TEXT_SLATE_400_SHRINK_0} />}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
+            </>
+          }></StudioHeader>
         {aiOpen && (
-          <fieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
+          <StudioFieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
             <ChatPlanningSettingsBlock provider={state.aiProvider} model={state.aiModel} executionMode={state.aiMode} chromeHeadless={state.aiHeadless} onProviderChange={(v) => patch({ aiProvider: v })} onModelChange={(v) => patch({ aiModel: v })} onExecutionModeChange={(v) => patch({ aiMode: v })} onChromeHeadlessChange={(v) => patch({ aiHeadless: v })} currentLang={currentLang} allowHybrid />
-          </fieldset>
+          </StudioFieldset>
         )}
         {studio.engineError && (
           <div className={MOTION_STYLES.ROUNDED_XL_BORDER_BORDER_ROSE_500_40_BG_ROSE_500_10_PX_4_PY_3_TEXT_XS}>
@@ -192,12 +174,22 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
           {tab === MotionWorkspaceTab.LIBRARY && <MotionSceneLibraryPanel studio={studio} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
         </div>
-      </div>
-    </div>
+      </StudioCanvas>
+    </StudioPage>
   );
 };
 export default MotionVideoCreator;
-interface MotionPreviewModalData { type: "location" | "beat"; id: string; title: string; imageUrl: string; score?: number; issues?: string[]; note?: string; narration?: string; action?: string; }
+interface MotionPreviewModalData {
+  type: "location" | "beat";
+  id: string;
+  title: string;
+  imageUrl: string;
+  score?: number;
+  issues?: string[];
+  note?: string;
+  narration?: string;
+  action?: string;
+}
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
@@ -264,7 +256,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
       </div>
       <div className={MOTION_STYLES.STUDIO_GRID_LAYOUT}>
         <div className={MOTION_STYLES.STUDIO_LEFT_COLUMN}>
-          <div className={cardCls}>
+          <StudioCard className={cardCls}>
             <StepHeader
               n={MOTION_TEXT_01}
               icon={BookOpen}
@@ -284,7 +276,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               }
             />
             <div className={MOTION_STYLES.SPACE_Y_3}>
-              <textarea value={state.rawText} onChange={(e) => void studio.parseSource(e.target.value)} placeholder={text.SOURCE_PLACEHOLDER} rows={12} className={cn(inputCls, MOTION_STYLES.FONT_MONO_TEXT_XS_LEADING_RELAXED_RESIZE_Y_MIN_H_170PX)} disabled={studio.storyBusy} />
+              <StudioTextarea value={state.rawText} onChange={(e) => void studio.parseSource(e.target.value)} placeholder={text.SOURCE_PLACEHOLDER} rows={12} className={cn(inputCls, MOTION_STYLES.FONT_MONO_TEXT_XS_LEADING_RELAXED_RESIZE_Y_MIN_H_170PX)} disabled={studio.storyBusy} />
               {state.source ? (
                 <div className={MOTION_STYLES.GRID_GRID_COLS_2_SM_GRID_COLS_4_GAP_2_PT_1_ANIMATE_IN_FADE_IN}>
                   <MotionStatCard icon={FileText} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_400_SHRINK_0} label={text.WORDS}>
@@ -404,9 +396,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 )}
               </div>
             </div>
-          </div>
+          </StudioCard>
           {busyKind === MOTION_TEXT_ANALYZE ? (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <StepHeader n={MOTION_TEXT_02} icon={Users} title={text.STEP_ANALYSIS} badge={text.BADGE_ANALYZING} />
               <div className={MOTION_STYLES.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_4}>
                 <div className={MOTION_STYLES.RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
@@ -422,9 +414,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.EXEC_TIME} suffix={text.ELAPSED} />}
                 <MotionProgressBar progress={job?.progress} minimum={15} className={MOTION_STYLES.W_56_H_1_5} />
               </div>
-            </div>
+            </StudioCard>
           ) : state.analysis ? (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <StepHeader
                 n={MOTION_TEXT_02}
                 icon={Users}
@@ -440,7 +432,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 }
               />
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                <input value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
+                <StudioInput value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
                 {state.analysis.genre && (
                   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
                     <span className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>{text.GENRE}</span>
@@ -566,10 +558,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   )}
                 </div>
               </div>
-            </div>
+            </StudioCard>
           ) : null}
           {busyKind === MOTION_TEXT_SCRIPT ? (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <StepHeader n={MOTION_TEXT_03} icon={Film} title={text.STEP_SCRIPT} badge={text.BADGE_SCRIPT_WRITING} />
               <div className={MOTION_STYLES.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_4}>
                 <div className={MOTION_STYLES.RELATIVE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
@@ -585,9 +577,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCRIPT_TIME} suffix={text.ELAPSED} />}
                 <MotionProgressBar progress={job?.progress} minimum={15} className={MOTION_STYLES.W_56_H_1_5} />
               </div>
-            </div>
+            </StudioCard>
           ) : state.script && state.analysis ? (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <StepHeader
                 n={MOTION_TEXT_03}
                 icon={Film}
@@ -654,20 +646,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                               <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
                             </Button>
                           </div>
-                          <textarea value={b.narration} onChange={(e) => updateBeat(b.id, { narration: e.target.value })} rows={2} placeholder={MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH} className={MOTION_STYLES.W_FULL_BG_SLATE_955_80_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_3_TEXT_XS} disabled={studio.storyBusy} />
-                          {b.visual === MOTION_TEXT_SCENE && <input value={b.action || MR.MOTION_TEXT_EMPTY} onChange={(e) => updateBeat(b.id, { action: e.target.value })} className={MOTION_STYLES.W_FULL_BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_LG_PX_2_5_PY_1_5} disabled={studio.storyBusy} />}
+                          <StudioTextarea value={b.narration} onChange={(e) => updateBeat(b.id, { narration: e.target.value })} rows={2} placeholder={MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH} className={MOTION_STYLES.W_FULL_BG_SLATE_955_80_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_3_TEXT_XS} disabled={studio.storyBusy} />
+                          {b.visual === MOTION_TEXT_SCENE && <StudioInput value={b.action || MR.MOTION_TEXT_EMPTY} onChange={(e) => updateBeat(b.id, { action: e.target.value })} className={MOTION_STYLES.W_FULL_BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_LG_PX_2_5_PY_1_5} disabled={studio.storyBusy} />}
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </StudioCard>
           ) : null}
           {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} /> : null}
         </div>
         <div className={MOTION_STYLES.STUDIO_RIGHT_COLUMN}>
-          <div className={cardCls}>
+          <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
             {studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
@@ -680,13 +672,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </div>
               </div>
             )}
-          </div>
+          </StudioCard>
           {state.script && state.analysis && (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneBeats.length ? MOTION_TEMPLATE_SYMBOL_4(`${builtCount}`, `${sceneBeats.length}`) : undefined} />
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{text.SCENES_HINT}</p>
-                <input value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.storyBusy} />
+                <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.storyBusy} />
                 {busyKind === MOTION_TEXT_SCENES ? (
                   <div className={MOTION_STYLES.SPACE_Y_3}>
                     <div className={MOTION_STYLES.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_3}>
@@ -854,9 +846,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 )}
               </div>
-            </div>
+            </StudioCard>
           )}
-          <div className={cardCls}>
+          <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_04} icon={Clapperboard} title={text.STEP_RENDER} badge={MOTION_TEXT_OUTPUT_MP4} />
             <div className={MOTION_STYLES.SPACE_Y_4}>
               <div className={MOTION_STYLES.SPACE_Y_1_5}>
@@ -899,22 +891,22 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
                 <label className={MOTION_STYLES.SPACE_Y_1}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.FPS}</span>
-                  <select value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
+                  <StudioSelect value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
                     {_.map([24, 25, 30, 60], (f) => (
                       <option key={f} value={f}>
                         {f}
                         {MOTION_TEXT_FPS}
                       </option>
                     ))}
-                  </select>
+                  </StudioSelect>
                 </label>
                 <label className={MOTION_STYLES.SPACE_Y_1}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.ENCODER}</span>
-                  <select value={state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy}>
+                  <StudioSelect value={state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy}>
                     <option value={MotionEncoderPreference.AUTO}>{text.ENCODER_AUTO}</option>
                     <option value={MotionEncoderPreference.GPU}>{text.ENCODER_GPU}</option>
                     <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
-                  </select>
+                  </StudioSelect>
                 </label>
               </div>
               <div className={MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
@@ -931,9 +923,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 )}
               </div>
             </div>
-          </div>
+          </StudioCard>
           {(job || rj) && (
-            <div className={cardCls}>
+            <StudioCard className={cardCls}>
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
                 <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{rj ? MOTION_TEXT_RENDER_VIDEO_MP4 : job?.kind === MOTION_TEXT_ANALYZE ? text.STEP_ANALYSIS : job?.kind === MOTION_TEXT_SCRIPT ? text.STEP_SCRIPT : job?.kind === MOTION_TEXT_SCENES ? text.STEP_SCENES : text.STEP_VOICE}</span>
                 <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{rj ? MOTION_TEMPLATE_SYMBOL_3(`${Math.round((rj.progress || 0) * 100)}`) : MOTION_TEMPLATE_SYMBOL_3(`${Math.round((job?.progress || 0) * 100)}`)}</span>
@@ -960,7 +952,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 </div>
               )}
-            </div>
+            </StudioCard>
           )}
         </div>
       </div>
@@ -1111,7 +1103,7 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
             <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_46VH_OVERFLOW_Y_AUTO_PR_1}>
               {_.map(report.groups, (g) => (
                 <label key={g.group} className={MOTION_STYLES.FLEX_GAP_3_ITEMS_START_ROUNDED_XL_BORDER_BORDER_SLATE_200_DARK_BORDER_SLATE_800}>
-                  <input
+                  <StudioInput
                     type={MOTION_TEXT_CHECKBOX}
                     className={MOTION_STYLES.MT_1_ACCENT_PURPLE_500}
                     checked={picked.has(g.group)}
@@ -1198,17 +1190,17 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   };
   if (_.isEmpty(studio.results)) {
     return (
-      <div className={cn(cardCls, MOTION_STYLES.TEXT_CENTER_TEXT_XS_TEXT_SLATE_500_DARK_TEXT_SLATE_400_PY_20_FLEX_1_FLEX)}>
+      <StudioCard className={cn(cardCls, MOTION_STYLES.TEXT_CENTER_TEXT_XS_TEXT_SLATE_500_DARK_TEXT_SLATE_400_PY_20_FLEX_1_FLEX)}>
         <FolderKanban className={MOTION_STYLES.W_10_H_10_TEXT_SLATE_300_DARK_TEXT_SLATE_700_STROKE_1} />
         <span>{text.RESULTS_EMPTY}</span>
         <div className={MOTION_STYLES.PT_3}>{junkButton}</div>
         {junkDialog}
-      </div>
+      </StudioCard>
     );
   }
   return (
     <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_4_W_FULL_PB_16_TEXT_LEFT}>
-      <div className={cn(cardCls, MR.MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX)}>
+      <StudioCard className={cn(cardCls, MR.MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX)}>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_XS_SM_TEXT_SM_FONT_BOL}>
           <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(`${studio.results.length}`, text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</span>
         </div>
@@ -1219,10 +1211,10 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
             <span>{text.RESULTS_DELETE_ALL}</span>
           </Button>
         </div>
-      </div>
+      </StudioCard>
       <div className={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}>
         {_.map(studio.results, (r) => (
-          <div key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT)}>
+          <StudioCard key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
               <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK} />
               <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_FLEX_ITEMS_CENTER_GAP_2_Z_10}>
@@ -1257,7 +1249,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
                 {formatSeconds(r.renderSeconds)}
               </div>
             </div>
-          </div>
+          </StudioCard>
         ))}
       </div>
       {junkDialog}

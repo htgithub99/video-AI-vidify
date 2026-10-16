@@ -1,3 +1,4 @@
+import { StudioInput } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
 import _ from "lodash";
 import { Pause, Play, SkipBack } from "lucide-react";
@@ -223,7 +224,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
             <div key={i} className={MOTION_STYLES.ABSOLUTE_H_3_5_W_PX_BG_SLATE_400_DARK_BG_SLATE_600} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
           ))}
           <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: MR.MOTION_TEMPLATE_SYMBOL_48(duration ? (time / duration) * 100 : 0) }} />
-          <input type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={controlsDisabled} />
+          <StudioInput type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={controlsDisabled} />
         </div>
         <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
           {formatSeconds(time)}

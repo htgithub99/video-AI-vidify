@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEXT_BUTTON, SOURCE_TEXT_SMOOTH, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { useRef, useEffect, useMemo } from "react";
 import _ from "lodash";
@@ -38,7 +39,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
     if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
   }, [logs.length]);
   return (
-    <div className={cn("workspace-card log-panel glass-card bg-slate-900/80 p-3.5 space-y-2.5 h-[190px] min-h-[170px] max-h-[210px] flex-none flex flex-col relative rounded-2xl shadow-xl backdrop-blur-xl w-full")}>
+    <StudioCard className={cn("workspace-card log-panel glass-card bg-slate-900/80 p-3.5 space-y-2.5 h-[190px] min-h-[170px] max-h-[210px] flex-none flex flex-col relative rounded-2xl shadow-xl backdrop-blur-xl w-full")}>
       <div className={cn("flex items-center justify-between border-b border-slate-800 pb-3")}>
         <span className={cn("section-title flex items-center gap-2 text-slate-100")} title={T.logHeaderTooltip}>
           <span className={cn("w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-400 dark:text-amber-300 flex items-center justify-center")}>
@@ -66,6 +67,6 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
           <ProgressLogTimeline logs={visibleLogs} theme={theme} language={language} context={context} />
         )}
       </div>
-    </div>
+    </StudioCard>
   );
 };

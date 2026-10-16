@@ -1,3 +1,4 @@
+import { StudioCard, StudioSelect } from "../ui/Studio.js";
 import { SOURCE_TEXT_VI } from "../../constants/sourceText";
 import React from "react";
 import _ from "lodash";
@@ -69,7 +70,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({ genre, s
     },
   ];
   return (
-    <div className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-3xl p-4 sm:p-5 md:p-6 space-y-3.5 sm:space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center gap-2.5 relative z-10 border-b border-slate-800/80 pb-3")}>
         <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20 shrink-0")}>
           <Settings2 className={cn("w-3.5 h-3.5 text-amber-400")} />
@@ -85,7 +86,7 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({ genre, s
               {fieldIndex === 0 && lockedGenreLabel ? (
                 <span className={cn("flex-1 text-amber-400 text-xs font-semibold truncate")}>{lockedGenreLabel}</span>
               ) : (
-                <select value={value} onChange={(e) => onChange(e.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none truncate")}>
+                <StudioSelect value={value} onChange={(e) => onChange(e.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5 border-none truncate")}>
                   {optionGroups
                     ? _.map(optionGroups, (group) => (
                         <optgroup key={group.label} label={group.label} className={cn("bg-slate-950 text-slate-400")}>
@@ -101,13 +102,13 @@ export const ScriptSettingsCard: React.FC<ScriptSettingsCardProps> = ({ genre, s
                           {o.label}
                         </option>
                       ))}
-                </select>
+                </StudioSelect>
               )}
               {!(fieldIndex === 0 && lockedGenreLabel) && <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none")} />}
             </div>
           </div>
         ))}
       </div>
-    </div>
+    </StudioCard>
   );
 };

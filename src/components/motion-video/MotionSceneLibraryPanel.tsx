@@ -1,3 +1,4 @@
+import { StudioCard, StudioHeader, StudioSelect, StudioInput, StudioTextarea } from "../ui/Studio.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { MotionDetailRow } from "./MotionDetailRow.js";
@@ -77,7 +78,7 @@ export const MotionStyleSetPicker: FC<{ studio: MotionStudio; currentLang: Lang;
   return (
     <div className={S.PICKER}>
       <Images className={S.ICON} />
-      <select
+      <StudioSelect
         className={S.SELECT}
         value={MR.MOTION_TEXT_EMPTY}
         disabled={disabled}
@@ -91,7 +92,7 @@ export const MotionStyleSetPicker: FC<{ studio: MotionStudio; currentLang: Lang;
             {styleLabel(style.key, sets, t) + C.TEXT.SEP + style.images.length + C.TEXT.SPACE + t.IMAGES}
           </option>
         ))}
-      </select>
+      </StudioSelect>
     </div>
   );
 };
@@ -270,64 +271,58 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
   ];
   return (
     <div className={S.CONTAINER}>
-      <div className={S.HERO}>
+      <StudioCard className={S.HERO}>
         <div className={S.ABSOLUTE_INSET_X_0_TOP_PX_H_PX_BG_GRADIENT_TO_R_FROM_TRANSPARENT_VIA_PURPLE_500_50_T} />
-        <div className={S.FLEX_FLEX_COL_LG_FLEX_ROW_LG_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_4}>
-          <div className={S.FLEX_ITEMS_START_SM_ITEMS_CENTER_GAP_3_5}>
-            <div className={S.W_11_H_11_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_VIA_PINK_600_TO_INDIGO_600_P}>
-              <div className={S.W_FULL_H_FULL_BG_SLATE_950_ROUNDED_14PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
-                <Library className={S.W_5_H_5_TEXT_PURPLE_400} />
+        <StudioHeader
+          icon={Library}
+          title={<>{t.TITLE}</>}
+          description={<>{t.SEED_SUB}</>}
+          badge={<>{t.TOTAL_ITEMS(totalAssetsCount)}</>}
+          actions={
+            <>
+              <div className={S.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_SHRINK_0}>
+                <StudioInput
+                  ref={fileInput}
+                  type={C.TEXT.FILE}
+                  accept={C.TEXT.JSON_ACCEPT}
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = MR.MOTION_TEXT_EMPTY;
+                    void uploadPack(file);
+                  }}
+                />
+                <ActionBtn icon={Wand2} className={S.BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_PINK_600_TO_INDIGO_600_HOVER_OPACITY_95_TEXT_WH} onClick={() => setShowAddModal(true)}>
+                  {t.AI_TOGGLE}
+                </ActionBtn>
+                <ActionBtn icon={Upload} variant={C.TEXT.SECONDARY} busy={seeding} disabled={seeding || studio.storyBusy} onClick={() => fileInput.current?.click()} className={S.TEXT_XS_PX_3_5_PY_2}>
+                  {seeding ? t.SEED_RUNNING : t.UPLOAD}
+                </ActionBtn>
+                <ActionBtn icon={Package} variant={C.TEXT.SECONDARY} disabled={seeding || studio.storyBusy || basePending === 0} title={basePending === 0 ? t.BUILTIN_DONE : basePending ? t.BUILTIN_PENDING(basePending) : undefined} onClick={() => void startSeed({}, C.URLS.IMPORT)} className={S.TEXT_XS_PX_3_5_PY_2}>
+                  {t.BUILTIN}
+                </ActionBtn>
+                <div className={S.FLEX_ITEMS_CENTER_GAP_1_PL_1_SM_BORDER_L_SM_BORDER_SLATE_800_80_SM_PL_2}>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_300_TRANSITIO} disabled={!data.items.length} onClick={exportLibrary} title={t.EXPORT}>
+                    <Download className={S.W_4_H_4} />
+                  </Button>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_TRANSI} onClick={() => void reload()} title={t.REFRESH}>
+                    <RefreshCw className={S.W_4_H_4} />
+                  </Button>
+                  <Button
+                    variant={MR.MOTION_TEXT_UNSTYLED}
+                    disabled={seeding || (!data.items.length && !data.styles.length)}
+                    onClick={clearAll}
+                    className={cn(S.TRANSITION_COLORS_TEXT_XS_FONT_MEDIUM_FLEX_ITEMS_CENTER_CURSOR_POINTER_BG_TRANSPAREN, confirmClear ? S.PX_2_PY_1_TEXT_ROSE_400_ANIMATE_PULSE_GAP_1 : S.W_8_H_8_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_ROSE_400)}
+                    title={confirmClear ? t.CLEAR_CONFIRM : t.CLEAR}>
+                    <Trash2 className={S.W_4_H_4} />
+                    {confirmClear && <span>{t.CLEAR_CONFIRM}</span>}
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className={S.SPACE_Y_1}>
-              <div className={S.FLEX_ITEMS_CENTER_GAP_2_5_FLEX_WRAP}>
-                <h1 className={S.TEXT_LG_FONT_BOLD_TRACKING_TIGHT_TEXT_SLATE_100_FLEX_ITEMS_CENTER_GAP_2}>{t.TITLE}</h1>
-                <span className={S.TEXT_XS_PX_2_5_PY_0_5_ROUNDED_FULL_FONT_MEDIUM_BG_PURPLE_500_15_TEXT_PURPLE_300_BORD}>{t.TOTAL_ITEMS(totalAssetsCount)}</span>
-                <span className={S.TEXT_11PX_PX_2_PY_0_5_ROUNDED_MD_FONT_MONO_FONT_SEMIBOLD_BG_SLATE_800_TEXT_SLATE_300}>{studio.state.drawingMode === MR.MOTION_TEXT_2D ? t.MODE_2D : t.MODE_3D}</span>
-              </div>
-              <p className={S.TEXT_XS_TEXT_SLATE_400_MAX_W_XL_LEADING_RELAXED}>{t.SEED_SUB}</p>
-            </div>
-          </div>
-          <div className={S.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_SHRINK_0}>
-            <input
-              ref={fileInput}
-              type={C.TEXT.FILE}
-              accept={C.TEXT.JSON_ACCEPT}
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = MR.MOTION_TEXT_EMPTY;
-                void uploadPack(file);
-              }}
-            />
-            <ActionBtn icon={Wand2} className={S.BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_PINK_600_TO_INDIGO_600_HOVER_OPACITY_95_TEXT_WH} onClick={() => setShowAddModal(true)}>
-              {t.AI_TOGGLE}
-            </ActionBtn>
-            <ActionBtn icon={Upload} variant={C.TEXT.SECONDARY} busy={seeding} disabled={seeding || studio.storyBusy} onClick={() => fileInput.current?.click()} className={S.TEXT_XS_PX_3_5_PY_2}>
-              {seeding ? t.SEED_RUNNING : t.UPLOAD}
-            </ActionBtn>
-            <ActionBtn icon={Package} variant={C.TEXT.SECONDARY} disabled={seeding || studio.storyBusy || basePending === 0} title={basePending === 0 ? t.BUILTIN_DONE : basePending ? t.BUILTIN_PENDING(basePending) : undefined} onClick={() => void startSeed({}, C.URLS.IMPORT)} className={S.TEXT_XS_PX_3_5_PY_2}>
-              {t.BUILTIN}
-            </ActionBtn>
-            <div className={S.FLEX_ITEMS_CENTER_GAP_1_PL_1_SM_BORDER_L_SM_BORDER_SLATE_800_80_SM_PL_2}>
-              <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_300_TRANSITIO} disabled={!data.items.length} onClick={exportLibrary} title={t.EXPORT}>
-                <Download className={S.W_4_H_4} />
-              </Button>
-              <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_TRANSI} onClick={() => void reload()} title={t.REFRESH}>
-                <RefreshCw className={S.W_4_H_4} />
-              </Button>
-              <Button
-                variant={MR.MOTION_TEXT_UNSTYLED}
-                disabled={seeding || (!data.items.length && !data.styles.length)}
-                onClick={clearAll}
-                className={cn(S.TRANSITION_COLORS_TEXT_XS_FONT_MEDIUM_FLEX_ITEMS_CENTER_CURSOR_POINTER_BG_TRANSPAREN, confirmClear ? S.PX_2_PY_1_TEXT_ROSE_400_ANIMATE_PULSE_GAP_1 : S.W_8_H_8_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_ROSE_400)}
-                title={confirmClear ? t.CLEAR_CONFIRM : t.CLEAR}>
-                <Trash2 className={S.W_4_H_4} />
-                {confirmClear && <span>{t.CLEAR_CONFIRM}</span>}
-              </Button>
-            </div>
-          </div>
-        </div>
+            </>
+          }>
+          <span className={S.TEXT_11PX_PX_2_PY_0_5_ROUNDED_MD_FONT_MONO_FONT_SEMIBOLD_BG_SLATE_800_TEXT_SLATE_300}>{studio.state.drawingMode === MR.MOTION_TEXT_2D ? t.MODE_2D : t.MODE_3D}</span>
+        </StudioHeader>
         {job && (
           <div className={S.PT_3_BORDER_T_BORDER_SLATE_800_80_SPACE_Y_2}>
             <div className={S.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_TEXT_XS_TEXT_PURPLE_300_FONT_MEDIUM}>
@@ -355,8 +350,8 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             )}
           </div>
         )}
-      </div>
-      <div className={S.CARD}>
+      </StudioCard>
+      <StudioCard className={S.CARD}>
         <div className={S.FLEX_FLEX_COL_LG_FLEX_ROW_LG_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_4_PB_2_BORDER_B_BORDER}>
           <div className={S.TABS_CONTAINER}>
             {tabs.map(({ id, label, icon: Icon, count, color }) => {
@@ -404,7 +399,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
           <div className={S.FLEX_FLEX_COL_SM_FLEX_ROW_ITEMS_STRETCH_SM_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3}>
             <div className={S.RELATIVE_FLEX_1_MAX_W_MD}>
               <Search className={S.W_4_H_4_TEXT_SLATE_500_ABSOLUTE_LEFT_3_5_TOP_1_2_TRANSLATE_Y_1_2_POINTER_EVENTS_NONE} />
-              <input type={SRT.SOURCE_TEXT_TEXT} className={cn(S.INPUT, S.PL_10_PR_9)} placeholder={t.SEARCH_PLACEHOLDER} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
+              <StudioInput type={SRT.SOURCE_TEXT_TEXT} className={cn(S.INPUT, S.PL_10_PR_9)} placeholder={t.SEARCH_PLACEHOLDER} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
               {searchQuery && (
                 <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ABSOLUTE_RIGHT_2_5_TOP_1_2_TRANSLATE_Y_1_2_TEXT_SLATE_400_HOVER_TEXT_WHITE_P_1_ROUND} onClick={() => setSearchQuery(XRT.EMPTY)} title={t.CLEAR_SEARCH}>
                   <X className={S.ICON} />
@@ -469,7 +464,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
                   <div className={S.ITEM_BODY}>
                     {editing?.id === style.key ? (
                       <div className={S.ROW}>
-                        <input className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
+                        <StudioInput className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
                         <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => void rename()} title={t.SAVE}>
                           <Check className={S.ICON} />
                         </Button>
@@ -529,7 +524,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
                       </div>
                       {editing?.id === item.id ? (
                         <div className={S.ROW}>
-                          <input className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
+                          <StudioInput className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
                           <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => void rename()} title={t.SAVE}>
                             <Check className={S.ICON} />
                           </Button>
@@ -605,7 +600,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             </div>
           </div>
         )}
-      </div>
+      </StudioCard>
       {previewItem && (
         <Modal isOpen={Boolean(previewItem)} onClose={() => setPreviewItem(null)} title={previewItem.name} maxWidth={S.MAX_W_3XL}>
           <div className={S.SPACE_Y_5}>
@@ -772,7 +767,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
                     ))}
                   </MotionSelectField>
                   <div className={S.FLEX_ITEMS_CENTER_GAP_2_PT_6}>
-                    <input type={C.TEXT.CHECKBOX} id={XRT.INTERIOR_CHECKBOX} className={S.ROUNDED_BORDER_SLATE_700_TEXT_PURPLE_600_FOCUS_RING_PURPLE_500} checked={!!draft.interior} onChange={(event) => setDraft({ ...draft, interior: event.target.checked })} />
+                    <StudioInput type={C.TEXT.CHECKBOX} id={XRT.INTERIOR_CHECKBOX} className={S.ROUNDED_BORDER_SLATE_700_TEXT_PURPLE_600_FOCUS_RING_PURPLE_500} checked={!!draft.interior} onChange={(event) => setDraft({ ...draft, interior: event.target.checked })} />
                     <label htmlFor={XRT.INTERIOR_CHECKBOX} className={S.TEXT_XS_TEXT_SLATE_300_FONT_MEDIUM_CURSOR_POINTER}>
                       {t.INTERIOR}
                     </label>
@@ -782,11 +777,11 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             </div>
             <div className={S.SPACE_Y_1}>
               <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.NAME}</label>
-              <input className={S.INPUT} placeholder={t.NAME} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+              <StudioInput className={S.INPUT} placeholder={t.NAME} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             </div>
             <div className={S.SPACE_Y_1}>
               <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.DESCRIPTION}</label>
-              <textarea className={S.INPUT} placeholder={t.DESCRIPTION} rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
+              <StudioTextarea className={S.INPUT} placeholder={t.DESCRIPTION} rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
             </div>
             {queue.length > 0 && (
               <div className={S.SPACE_Y_2_PT_2_BORDER_T_BORDER_SLATE_800}>

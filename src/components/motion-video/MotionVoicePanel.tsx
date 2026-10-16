@@ -1,3 +1,4 @@
+import { StudioCard, StudioSelect, StudioInput } from "../ui/Studio.js";
 import _ from "lodash";
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { toast } from "sonner";
@@ -14,7 +15,7 @@ import { Modal } from "../ui/Modal";
 import { MotionVoicePreviewButton } from "./MotionVoicePreviewButton.js";
 import { ActionBtn, StepHeader } from "./MotionControls.js";
 import { formatBytes, motionRequest, readFileBase64 } from "./motionApi";
-type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>>; };
+type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>> };
 type VoiceFilter = (typeof F)[keyof typeof F];
 const emptyDraft = (voiceId: string = MR.MOTION_TEXT_EMPTY): Draft => ({
   name: MR.MOTION_TEXT_EMPTY,
@@ -212,18 +213,18 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       toast.success(t.DELETED);
     });
   const voiceSelect = (value: string, onChange: (value: string) => void, allowAuto: boolean) => (
-    <select value={value} onChange={(event) => onChange(event.target.value)} className={S.SELECT}>
+    <StudioSelect value={value} onChange={(event) => onChange(event.target.value)} className={S.SELECT}>
       {allowAuto ? <option value={MR.MOTION_TEXT_EMPTY}>{t.AUTO}</option> : null}
       {_.map(sortedVoices, (voice) => (
         <option key={voice.id} value={voice.id}>
           {_.compact([voice.name, genderLabel(voice.gender), ageLabel(voice.age), voice.custom ? t.CUSTOM : MR.MOTION_TEXT_EMPTY]).join(MR.MOTION_TEXT_SYMBOL_41)}
         </option>
       ))}
-    </select>
+    </StudioSelect>
   );
   return (
     <div className={S.CONTAINER}>
-      <div className={S.HEADER_CARD}>
+      <StudioCard className={S.HEADER_CARD}>
         <div className={S.HEADER_GLOW} />
         <div className={S.HEADER_GRID}>
           <div className={S.HEADER_COPY}>
@@ -273,10 +274,10 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
             </div>
           </div>
         </div>
-      </div>
+      </StudioCard>
       <div className={S.GRID}>
         <div className={S.COL_CHANNELS}>
-          <div className={S.CARD}>
+          <StudioCard className={S.CARD}>
             <StepHeader
               n={MR.MOTION_TEXT_EMPTY + 1}
               icon={Radio}
@@ -332,7 +333,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                           </Button>
                         </div>
                       </div>
-                      <div className={S.NARRATOR_CARD}>
+                      <StudioCard className={S.NARRATOR_CARD}>
                         <div className={S.NARRATOR_ROW}>
                           <div className={S.NARRATOR_ICON_FRAME}>
                             <Mic className={S.ICON_SMALL_LIGHT} />
@@ -352,7 +353,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                           </div>
                         </div>
                         <MotionVoicePreviewButton voiceId={channel.narratorVoiceId} playingId={playingId} busyId={busy} playLabel={t.PREVIEW} stopLabel={t.STOP_PREVIEW} onPreview={preview} />
-                      </div>
+                      </StudioCard>
                       <div className={S.ROLE_SECTION}>
                         <div className={S.ROLE_LABEL}>{t.ROLE_VOICES}</div>
                         {assignedRoles.length > 0 ? (
@@ -384,10 +385,10 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 </ActionBtn>
               </div>
             )}
-          </div>
+          </StudioCard>
         </div>
         <div className={S.COL_LIBRARY}>
-          <div className={S.CARD}>
+          <StudioCard className={S.CARD}>
             <StepHeader
               n={MR.MOTION_TEXT_EMPTY + 2}
               icon={Mic2}
@@ -413,7 +414,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                     <X className={S.ICON} />
                   </Button>
                 </div>
-                <input
+                <StudioInput
                   type={MR.MOTION_TEXT_FILE}
                   ref={fileInputRef}
                   accept={MOTION_VOICE_AUDIO.ACCEPT}
@@ -467,22 +468,22 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 <div className={S.FIELDS_3}>
                   <label className={S.FIELD}>
                     <span className={S.LABEL}>{t.VOICE_NAME}</span>
-                    <input value={sample.name} onChange={(event) => setSample({ ...sample, name: event.target.value })} maxLength={L.NAME_MAX} placeholder={t.VOICE_NAME_PLACEHOLDER} className={S.INPUT} />
+                    <StudioInput value={sample.name} onChange={(event) => setSample({ ...sample, name: event.target.value })} maxLength={L.NAME_MAX} placeholder={t.VOICE_NAME_PLACEHOLDER} className={S.INPUT} />
                   </label>
                   <label className={S.FIELD}>
                     <span className={S.LABEL}>{t.GENDER}</span>
-                    <select value={sample.gender} onChange={(event) => setSample({ ...sample, gender: event.target.value })} className={S.SELECT}>
+                    <StudioSelect value={sample.gender} onChange={(event) => setSample({ ...sample, gender: event.target.value })} className={S.SELECT}>
                       <option value={MR.MOTION_TEXT_MALE}>{t.MALE}</option>
                       <option value={MR.MOTION_TEXT_FEMALE}>{t.FEMALE}</option>
-                    </select>
+                    </StudioSelect>
                   </label>
                   <label className={S.FIELD}>
                     <span className={S.LABEL}>{t.AGE}</span>
-                    <select value={sample.age} onChange={(event) => setSample({ ...sample, age: event.target.value })} className={S.SELECT}>
+                    <StudioSelect value={sample.age} onChange={(event) => setSample({ ...sample, age: event.target.value })} className={S.SELECT}>
                       <option value={MOTION_VOICE.ADULT}>{t.AGE_ADULT}</option>
                       <option value={MR.MOTION_TEXT_CHILD}>{t.AGE_CHILD}</option>
                       <option value={MR.MOTION_TEXT_SENIOR}>{t.AGE_SENIOR}</option>
-                    </select>
+                    </StudioSelect>
                   </label>
                 </div>
                 {busy === MOTION_VOICE.REFERENCE_URL && (
@@ -512,7 +513,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 )}
               </div>
               <div className={S.INPUT_WRAPPER}>
-                <input value={previewText} onChange={(event) => setPreviewText(event.target.value)} placeholder={MOTION_VOICE.PREVIEW_TEXT} className={cn(S.INPUT, S.INPUT_CLEAR_PADDING)} />
+                <StudioInput value={previewText} onChange={(event) => setPreviewText(event.target.value)} placeholder={MOTION_VOICE.PREVIEW_TEXT} className={cn(S.INPUT, S.INPUT_CLEAR_PADDING)} />
                 {previewText && (
                   <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setPreviewText(MR.MOTION_TEXT_EMPTY)} className={S.PREVIEW_CLEAR}>
                     <X className={S.ICON_CLEAR} />
@@ -532,7 +533,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
               <div className={S.FILTER_ROW}>
                 <div className={S.SEARCH_WRAPPER}>
                   <Search className={S.ICON_SEARCH} />
-                  <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t.SEARCH_PLACEHOLDER} className={cn(S.INPUT, S.SEARCH_PADDING)} />
+                  <StudioInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t.SEARCH_PLACEHOLDER} className={cn(S.INPUT, S.SEARCH_PADDING)} />
                   {searchQuery && (
                     <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setSearchQuery(MR.MOTION_TEXT_EMPTY)} className={S.SEARCH_CLEAR}>
                       <X className={S.ICON_CLEAR} />
@@ -567,7 +568,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                       <div className={S.ITEM_MAIN}>
                         {editing?.id === voice.id ? (
                           <div className={S.INLINE_ROW}>
-                            <input value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} maxLength={L.NAME_MAX} className={cn(S.INPUT, S.RENAME_PADDING)} autoFocus />
+                            <StudioInput value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} maxLength={L.NAME_MAX} className={cn(S.INPUT, S.RENAME_PADDING)} autoFocus />
                             <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.SAVED} disabled={!!busy || !editing.name.trim()} onClick={() => rename()} className={S.ICON_BTN}>
                               <Check className={S.ICON_CONFIRM} />
                             </Button>
@@ -625,7 +626,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 )}
               </div>
             )}
-          </div>
+          </StudioCard>
         </div>
       </div>
       <Modal isOpen={Boolean(draft)} onClose={() => setDraft(null)} title={draft?.id ? t.EDIT_CHANNEL_MODAL_TITLE : t.CREATE_CHANNEL_MODAL_TITLE} maxWidth={P.MODAL_WIDTH}>
@@ -633,7 +634,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
           <div className={S.MODAL_BODY}>
             <label className={S.FIELD}>
               <span className={S.LABEL}>{t.CHANNEL_NAME}</span>
-              <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={L.NAME_MAX} placeholder={t.CHANNEL_NAME_PLACEHOLDER} className={S.INPUT} autoFocus />
+              <StudioInput value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={L.NAME_MAX} placeholder={t.CHANNEL_NAME_PLACEHOLDER} className={S.INPUT} autoFocus />
             </label>
             <label className={S.FIELD}>
               <span className={S.LABEL}>{t.NARRATOR}</span>
@@ -658,7 +659,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
             </div>
             <div className={S.DEFAULT_SECTION}>
               <label className={S.DEFAULT_LABEL}>
-                <input type={MR.MOTION_TEXT_CHECKBOX} checked={makeDefaultDraft} onChange={(e) => setMakeDefaultDraft(e.target.checked)} className={S.DEFAULT_CHECKBOX} />
+                <StudioInput type={MR.MOTION_TEXT_CHECKBOX} checked={makeDefaultDraft} onChange={(e) => setMakeDefaultDraft(e.target.checked)} className={S.DEFAULT_CHECKBOX} />
                 <span className={S.DEFAULT_TEXT}>{t.SET_DEFAULT}</span>
               </label>
             </div>

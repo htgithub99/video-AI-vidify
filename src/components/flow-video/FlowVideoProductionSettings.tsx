@@ -1,3 +1,4 @@
+import { StudioSelect } from "../ui/Studio.js";
 import _ from "lodash";
 import { SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_H_10, SOURCE_TEXT_W_FULL_MIN_W_0_BG } from "../../constants/sourceText";
 import { ChevronDown, Film, Globe, Layout, Sparkles, WandSparkles } from "lucide-react";
@@ -41,13 +42,13 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn("text-[10px] font-bold text-slate-400")}>{texts.VIDEO_MODEL}</span>
         <span className={cn(FIELD_CLASS)}>
           <Sparkles className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
-          <select value={config.engine} disabled={disabled} onChange={(event) => updateModel(event.target.value as ImageGeneratorEngine)} className={cn(SELECT_CLASS)}>
+          <StudioSelect value={config.engine} disabled={disabled} onChange={(event) => updateModel(event.target.value as ImageGeneratorEngine)} className={cn(SELECT_CLASS)}>
             {_.map(FLOW_VIDEO_MODEL_OPTIONS, (option) => (
               <option key={option.value} value={option.value} disabled={hasCharacterImages && !getVideoModelCapabilities(option.value).supportsReferences}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
       </label>
@@ -55,10 +56,10 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn("text-[10px] font-bold text-slate-400")}>{texts.VIDEO_BROWSER}</span>
         <span className={cn(FIELD_CLASS)}>
           <Globe className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
-          <select value={String(config.chromeHeadless)} disabled={disabled} onChange={(event) => onChange({ ...config, chromeHeadless: event.target.value === String(true) })} className={cn(SELECT_CLASS)}>
+          <StudioSelect value={String(config.chromeHeadless)} disabled={disabled} onChange={(event) => onChange({ ...config, chromeHeadless: event.target.value === String(true) })} className={cn(SELECT_CLASS)}>
             <option value={String(false)}>{texts.VIDEO_BROWSER_VISIBLE}</option>
             <option value={String(true)}>{texts.VIDEO_BROWSER_HIDDEN}</option>
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
       </label>
@@ -66,13 +67,13 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn("text-[10px] font-bold text-slate-400")}>{texts.VIDEO_DURATION}</span>
         <span className={cn(FIELD_CLASS)}>
           <Film className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
-          <select value={config.duration} disabled={disabled} onChange={(event) => onChange({ ...config, duration: event.target.value })} className={cn(SELECT_CLASS)}>
+          <StudioSelect value={config.duration} disabled={disabled} onChange={(event) => onChange({ ...config, duration: event.target.value })} className={cn(SELECT_CLASS)}>
             {_.map(capabilities.durations, (duration) => (
               <option key={duration} value={duration}>
                 {duration}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
       </label>
@@ -80,13 +81,13 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn("text-[10px] font-bold text-slate-400")}>{texts.VIDEO_RESOLUTION}</span>
         <span className={cn(FIELD_CLASS)}>
           <Sparkles className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
-          <select value={config.resolution} disabled={disabled} onChange={(event) => onChange({ ...config, resolution: event.target.value })} className={cn(SELECT_CLASS)}>
+          <StudioSelect value={config.resolution} disabled={disabled} onChange={(event) => onChange({ ...config, resolution: event.target.value })} className={cn(SELECT_CLASS)}>
             {_.map(capabilities.resolutions, (resolution) => (
               <option key={resolution} value={resolution}>
                 {resolution}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
       </label>
@@ -94,13 +95,13 @@ export default function FlowVideoProductionSettings({ config, onChange, disabled
         <span className={cn("text-[10px] font-bold text-slate-400")}>{texts.VIDEO_ASPECT_RATIO}</span>
         <span className={cn(FIELD_CLASS)}>
           <Layout className={cn("w-4 h-4 shrink-0 mr-2 text-purple-400")} />
-          <select value={config.aspectRatio} disabled={disabled} onChange={(event) => onChange({ ...config, aspectRatio: event.target.value as AspectRatio })} className={cn(SELECT_CLASS)}>
+          <StudioSelect value={config.aspectRatio} disabled={disabled} onChange={(event) => onChange({ ...config, aspectRatio: event.target.value as AspectRatio })} className={cn(SELECT_CLASS)}>
             {_.map(capabilities.aspectRatios, (ratio) => (
               <option key={ratio} value={ratio}>
                 {ratio}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("w-3.5 h-3.5 absolute right-2 pointer-events-none text-slate-500")} />
         </span>
       </label>

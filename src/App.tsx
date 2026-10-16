@@ -7,7 +7,6 @@ import {
   SOURCE_TEXT_TAB_LOADING_OVERLAY_SELECT_NONE,
   SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0,
   SOURCE_TEXT_HIDDEN,
-  SOURCE_TEXT_W_FULL_H_FULL_MIN_H_FULL,
   SOURCE_TEXT_W_FULL_H_FULL,
   SOURCE_TEMPLATE_AUTO,
   SOURCE_TEMPLATE_FILM,
@@ -561,7 +560,7 @@ export default function App() {
     <div className={cn(SOURCE_TEXT_APP_SHELL_H_SCREEN_W_SCREEN_MAX)}>
       <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
       <div className={cn(SOURCE_TEXT_FLEX_1_MIN_W_0_H_FULL)}>
-        <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} />
+        <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} isMobileMenuOpen={isMobileMenuOpen} onToggleMobileMenu={() => setIsMobileMenuOpen((open) => !open)} />
         <Toaster position={SOURCE_TEXT_TOP_RIGHT} theme={theme as any} richColors />
         <main className={cn(SOURCE_TEXT_APP_MAIN_FLEX_1_MIN_H_0)}>
           {isTabSwitching && (
@@ -573,7 +572,7 @@ export default function App() {
             <DashboardView currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={handleSelectProject} onNavigateToProjects={() => handleActiveTabChange(AppTab.PROJECTS)} />
           </div>
           <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.PROJECTS) && SOURCE_TEXT_HIDDEN)}>
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_FULL)}>
+            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
               <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
             </div>
           </div>

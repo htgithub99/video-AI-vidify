@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEXT_A, SOURCE_TEXT_INFO, SOURCE_TEXT_METADATA, SOURCE_TEXT_PURPLE, SOURCE_TEXT_SUCCESS } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React, { useState, useEffect, useRef } from "react";
@@ -51,7 +52,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ render
     a.click();
   };
   return (
-    <div className={cn("glass-card bg-slate-900/80 p-5 rounded-3xl space-y-4 shadow-xl flex flex-col justify-between w-full text-left")}>
+    <StudioCard className={cn("glass-card bg-slate-900/80 p-5 rounded-3xl space-y-4 shadow-xl flex flex-col justify-between w-full text-left")}>
       <div className={cn("flex items-center justify-between border-b border-slate-800 pb-3")}>
         <div className={cn("flex items-center gap-2")}>
           <span className={cn("w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center")}>
@@ -101,6 +102,6 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ render
         </div>
       )}
       <SceneRegenerationDialog isOpen={isSceneDialogOpen} isProcessing={isSceneMediaActive} scenes={_.defaultTo(activeCreatedProject?.storyboard, [])} texts={regenerationTexts} onClose={() => setIsSceneDialogOpen(false)} onConfirm={(sceneId) => onRegenerate(REGENERATION_TARGET.IMAGES, sceneId)} />
-    </div>
+    </StudioCard>
   );
 };

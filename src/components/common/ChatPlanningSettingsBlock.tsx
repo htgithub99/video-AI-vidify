@@ -1,3 +1,4 @@
+import { StudioCard, StudioSelect } from "../ui/Studio.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
 import _ from "lodash";
@@ -20,13 +21,23 @@ const FIELD_BASE_CLASSNAME = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2;
 const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange, disabled = false, fieldDisabled = false, children }: { title: string; icon: typeof Bot; iconClassName: string; value: string; onChange: React.ChangeEventHandler<HTMLSelectElement>; disabled?: boolean; fieldDisabled?: boolean; children: React.ReactNode }) => (
   <div className={cn(FIELD_BASE_CLASSNAME, fieldDisabled && CHAT_PLANNING_STYLES.DISABLED)} title={title}>
     <Icon className={iconClassName} />
-    <select aria-label={title} disabled={disabled} value={value} onChange={onChange} className={SELECT_BASE_CLASSNAME}>
+    <StudioSelect aria-label={title} disabled={disabled} value={value} onChange={onChange} className={SELECT_BASE_CLASSNAME}>
       {children}
-    </select>
+    </StudioSelect>
     <ChevronDown className={CHAT_PLANNING_STYLES.CHEVRON} />
   </div>
 );
-interface PlanningTexts { readonly GEMINI_CHAT_OPTION: string; readonly GROK_CHAT_OPTION: string; readonly CHATGPT_UI_OPTION: string; readonly CLAUDE_CHAT_OPTION: string; readonly DEEPSEEK_CHAT_OPTION: string; readonly PLANNING_API_ONLY: string; readonly PLANNING_HYBRID: string; readonly PLANNING_CHROME_HIDDEN: string; readonly PLANNING_CHROME_VISIBLE: string; }
+interface PlanningTexts {
+  readonly GEMINI_CHAT_OPTION: string;
+  readonly GROK_CHAT_OPTION: string;
+  readonly CHATGPT_UI_OPTION: string;
+  readonly CLAUDE_CHAT_OPTION: string;
+  readonly DEEPSEEK_CHAT_OPTION: string;
+  readonly PLANNING_API_ONLY: string;
+  readonly PLANNING_HYBRID: string;
+  readonly PLANNING_CHROME_HIDDEN: string;
+  readonly PLANNING_CHROME_VISIBLE: string;
+}
 interface ChatPlanningSettingsBlockProps {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;
@@ -86,7 +97,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
   };
   const badgeSummary = resolveBadgeSummary(isApiOnly, resolvedProvider, chromeHeadless, texts);
   return (
-    <div className={CHAT_PLANNING_STYLES.WRAPPER}>
+    <StudioCard className={CHAT_PLANNING_STYLES.WRAPPER}>
       <div className={CHAT_PLANNING_STYLES.HEADER}>
         <div className={CHAT_PLANNING_STYLES.HEADER_INFO}>
           <span className={CHAT_PLANNING_STYLES.HEADER_ICON_FRAME}>
@@ -171,6 +182,6 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
       </div>
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.ClaudeChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.CLAUDE_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.DeepSeekChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.DEEPSEEK_CHAT_NOTE}</p>}
-    </div>
+    </StudioCard>
   );
 }

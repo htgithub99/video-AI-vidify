@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEXT_GHOST, SOURCE_TEXT_SM, SOURCE_TEXT_SYMBOL_8 } from "../../constants/sourceText";
 import React from "react";
 import { Sparkles, CheckCircle2, AlertCircle, X } from "lucide-react";
@@ -15,7 +16,7 @@ export const ShortsProgressCard: React.FC<ShortsProgressCardProps> = ({ progress
   const isCompleted = progress.stage === ShortsProgressStage.COMPLETED;
   const isRunning = !isError && !isCompleted;
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/80 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/80 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between")}>
         <div className={cn("flex items-center gap-2")}>
           {isError ? <AlertCircle className={cn("w-5 h-5 text-rose-500")} /> : isCompleted ? <CheckCircle2 className={cn("w-5 h-5 text-emerald-400")} /> : <Sparkles className={cn("w-5 h-5 text-purple-400 animate-spin")} />}
@@ -47,6 +48,6 @@ export const ShortsProgressCard: React.FC<ShortsProgressCardProps> = ({ progress
           </span>
         </div>
       </div>
-    </div>
+    </StudioCard>
   );
 };

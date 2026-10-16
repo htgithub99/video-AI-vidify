@@ -1,3 +1,6 @@
+import { Sparkles } from "lucide-react";
+import { STUDIO_TEXTS } from "../constants/studioTheme.js";
+import { StudioCard, StudioPage, StudioCanvas, StudioHeader } from "./ui/Studio.js";
 import { AUTO_VIDEO_STYLES as AV } from "../constants/autoVideoStyles.js";
 import * as ST from "../constants/sourceText.js";
 import { SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_4, SOURCE_TEXT_AUTO, SOURCE_TEXT_CONFIG, SOURCE_TEXT_CONTINUE, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_NEW, SOURCE_TEXT_PHIM_AI, SOURCE_TEXT_RENDER_ONLY, SOURCE_TEXT_VALUE } from "../constants/sourceText";
@@ -43,7 +46,16 @@ import { genreLabels } from "../constants/data";
 import { AutoVideoStudioSkeleton } from "./ui/Skeleton";
 import { ProgressLogContext } from "../constants/progressLog";
 import { normalizeVideoModelSettings } from "../services/videoModelCapabilityService";
-interface AutoVideoGeneratorProps { currentLang: Lang; projects: VideoProject[]; selectedProjectId?: string | null; onSelectProject: (id: string) => void; onCreateProject: (name: string, desc: string) => Promise<void>; onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void; theme?: AppTheme; cinematicMode?: boolean; }
+interface AutoVideoGeneratorProps {
+  currentLang: Lang;
+  projects: VideoProject[];
+  selectedProjectId?: string | null;
+  onSelectProject: (id: string) => void;
+  onCreateProject: (name: string, desc: string) => Promise<void>;
+  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void;
+  theme?: AppTheme;
+  cinematicMode?: boolean;
+}
 export default function AutoVideoGenerator({ currentLang, projects, selectedProjectId, onSelectProject: _onSelectProject, onUpdateProject, theme = AppTheme.DARK, cinematicMode = false }: AutoVideoGeneratorProps) {
   const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
   const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
@@ -457,8 +469,9 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
     return <AutoVideoStudioSkeleton />;
   }
   return (
-    <div className={cn(ST.SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN)}>
-      <div className={cn(AV.PANEL)}>
+    <StudioPage>
+      <StudioCanvas>
+        <StudioHeader icon={Sparkles} title={cinematicMode ? STUDIO_TEXTS[currentLang].CINEMATIC_TITLE : STUDIO_TEXTS[currentLang].AUTO_TITLE} description={cinematicMode ? STUDIO_TEXTS[currentLang].CINEMATIC_DESCRIPTION : STUDIO_TEXTS[currentLang].AUTO_DESCRIPTION} />
         {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
         <div className={cn(AV.GRID)}>
           <div className={cn(AV.MAIN_COLUMN)}>
@@ -487,7 +500,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
               <ChatPlanningSettingsBlock provider={planningFallbackProvider} model={planningChatModel} onProviderChange={setPlanningFallbackProvider} onModelChange={setPlanningChatModel} executionMode={planningExecutionMode} onExecutionModeChange={setPlanningExecutionMode} chromeHeadless={planningChromeHeadless} onChromeHeadlessChange={setPlanningChromeHeadless} currentLang={currentLang} />
             )}
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
-            <div className={cn(AV.SETTINGS_PANEL)}>
+            <StudioCard className={cn(AV.SETTINGS_PANEL)}>
               <GenerationSettingsSection
                 generationMode={generationMode}
                 setGenerationMode={setGenerationMode}
@@ -532,7 +545,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
               <div className={cn(ST.SOURCE_TEXT_PT_2_BORDER_T_BORDER_SLATE_800)}>
                 <StylePresetSelector selectedStyle={stylePreset} onSelectStyle={setStylePreset} language={currentLang} accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE} genre={genre} allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined} />
               </div>
-            </div>
+            </StudioCard>
             <ProjectSettingsSection
               genre={genre}
               projectName={projectName}
@@ -581,7 +594,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
             <SeoPanelSection activeCreatedProject={presentationProject} />
           </div>
         </div>
-      </div>
-    </div>
+      </StudioCanvas>
+    </StudioPage>
   );
 }

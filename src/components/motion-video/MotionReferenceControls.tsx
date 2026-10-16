@@ -1,3 +1,4 @@
+import { StudioCard, StudioInput } from "../ui/Studio.js";
 import { useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 import { Activity, ImagePlus, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
@@ -27,7 +28,16 @@ const encodeReference = async (file: File): Promise<MotionStyleReference> => {
     bitmap.close();
   }
 };
-export interface MotionReferenceControlsProps { images: MotionStyleReference[]; characterMotion?: boolean; disabled?: boolean; language?: "vi" | "en"; onImages: (images: MotionStyleReference[]) => void; onMotion?: (enabled: boolean) => void; hideMotionToggle?: boolean; className?: string; }
+export interface MotionReferenceControlsProps {
+  images: MotionStyleReference[];
+  characterMotion?: boolean;
+  disabled?: boolean;
+  language?: "vi" | "en";
+  onImages: (images: MotionStyleReference[]) => void;
+  onMotion?: (enabled: boolean) => void;
+  hideMotionToggle?: boolean;
+  className?: string;
+}
 export const MotionReferenceControls = ({ images, characterMotion = false, disabled = false, language = MR.MOTION_TEXT_VI, onImages, onMotion, hideMotionToggle = false, className }: MotionReferenceControlsProps) => {
   const text = TEXT[language] ?? TEXT.vi;
   const input = useRef<HTMLInputElement>(null);
@@ -86,7 +96,7 @@ export const MotionReferenceControls = ({ images, characterMotion = false, disab
   const occupiedSlots = images.length + loadingSlotsCount + (hasAddButton ? 1 : 0);
   const emptySlotsCount = Math.max(0, C.MAX_IMAGES - occupiedSlots);
   return (
-    <div className={cn(MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800, isDragging && MR.MOTION_TEXT_BORDER_PURPLE_500_80_BG_PURPLE_50_70_DARK_BG_PURPLE_950_20_R, className)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+    <StudioCard className={cn(MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800, isDragging && MR.MOTION_TEXT_BORDER_PURPLE_500_80_BG_PURPLE_50_70_DARK_BG_PURPLE_950_20_R, className)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
       <div className={MR.MOTION_TEXT_FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP_3_PB_0_5}>
         <div className={MR.MOTION_TEXT_SPACE_Y_0_5_MIN_W_0}>
           <h3 className={MR.MOTION_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_800_DA}>
@@ -101,7 +111,7 @@ export const MotionReferenceControls = ({ images, characterMotion = false, disab
           {C.MAX_IMAGES}
         </span>
       </div>
-      <input
+      <StudioInput
         ref={input}
         type={MR.MOTION_TEXT_FILE}
         accept={C.ACCEPT}
@@ -210,6 +220,6 @@ export const MotionReferenceControls = ({ images, characterMotion = false, disab
           </Button>
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

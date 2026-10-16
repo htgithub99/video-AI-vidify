@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEMPLATE_SYMBOL_30, SOURCE_TEMPLATE_SYMBOL_31, SOURCE_TEXT_ROTATIONLOGS, SOURCE_TEXT_SEO_SOURCE_FALLBACK_USED, SOURCE_TEXT_SYMBOL_10 } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -34,7 +35,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
     toast.success(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TAGS);
   };
   return (
-    <div className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-left")}>
+    <StudioCard className={cn("bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-left")}>
       <h3 className={cn("text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-2")} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_TITLE_TOOLTIP}>
         <Target className={cn("w-4 h-4 text-rose-500")} /> {AUTO_GENERATOR_CONSTANTS.UI_SEO_TITLE_SHORT}
       </h3>
@@ -126,6 +127,6 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
           )}
         </div>
       </div>
-    </div>
+    </StudioCard>
   );
 };

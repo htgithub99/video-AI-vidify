@@ -1,3 +1,4 @@
+import { StudioCard, StudioSelect } from "../ui/Studio.js";
 import React from "react";
 import _ from "lodash";
 import { ChevronDown, Globe, RefreshCw, Sliders } from "lucide-react";
@@ -56,7 +57,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   const currentChromeValue = chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED;
   const currentResumeValue = resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW;
   return (
-    <div className={cn("glass-card bg-slate-900/80 rounded-2xl shadow-sm overflow-hidden transition-all text-left", AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
+    <StudioCard className={cn("glass-card bg-slate-900/80 rounded-2xl shadow-sm overflow-hidden transition-all text-left", AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
       <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)} aria-expanded={showAdvancedImageSettings} className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS, "cursor-pointer hover:bg-slate-800/40 rounded-2xl")}>
         <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS)}>
           <span className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS, "bg-blue-500/15 text-blue-400")}>
@@ -84,7 +85,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
             </span>
             <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 h-10 focus-within:border-rose-500/50 transition-colors")} title={T.lblChromeHeadlessTooltip}>
               <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <StudioSelect value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(chromeGroups, (group) => (
                   <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (
@@ -94,7 +95,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </StudioSelect>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
@@ -104,7 +105,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
             </span>
             <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 h-10 focus-within:border-rose-500/50 transition-colors")} title={T.lblResumeModeTooltip}>
               <RefreshCw className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <StudioSelect value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(resumeGroups, (group) => (
                   <optgroup key={group.label} label={group.label} className={cn("bg-slate-955 text-slate-400 font-bold")}>
                     {_.map(group.options, (option) => (
@@ -114,12 +115,12 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </StudioSelect>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

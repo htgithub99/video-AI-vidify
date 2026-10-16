@@ -1,3 +1,4 @@
+import { StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_1_1,
   SOURCE_TEMPLATE_HTTP,
@@ -108,7 +109,7 @@ import {
 import { readBlobAsDataUrl } from "../lib/fileUtils";
 import { DestructiveActionNotice } from "./common/DestructiveActionNotice";
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Music2, WandSparkles, Sparkles, Copy, Check, Disc3, SlidersHorizontal, Flame, FileText, Search, Save, Trash2, Pencil, X, Columns, Clock, AlertTriangle, Upload, Image as ImageIcon, Download, RefreshCw, ExternalLink, Link2, Globe, Users, Lock } from "lucide-react";
+import { ChevronDown, Music2, WandSparkles, Sparkles, Copy, Check, Disc3, SlidersHorizontal, Flame, FileText, Search, Save, Trash2, Pencil, X, Columns, Clock, AlertTriangle, Upload, Image as ImageIcon, Download, RefreshCw, ExternalLink, Link2, Globe, Users, Lock } from "lucide-react";
 import _ from "lodash";
 import { toast } from "sonner";
 import { recordWorkflowActivity } from "../services/workflowActivity";
@@ -400,42 +401,20 @@ interface HeaderProps {
   isLoading: boolean;
 }
 const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onToggleAiConfig, isLoading }) => (
-  <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
-    <div className={cn("flex items-center gap-3 min-w-0")}>
-      <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
-        <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
-          <Music2 className={cn("w-5 h-5")} />
+  <StudioHeader
+    icon={Music2}
+    title={<>{texts.HEADER_TITLE}</>}
+    description={<>{texts.HEADER_DESC}</>}
+    badge={<>{texts.HEADER_BADGE}</>}
+    actions={
+      <>
+        <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
+          <Tooltip content={texts.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
+            <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={onToggleAiConfig} disabled={isLoading} expanded={isAiConfigOpen} label={<>{texts.AI_CONFIG_TITLE}</>} />
+          </Tooltip>
         </div>
-      </div>
-      <div className={cn("min-w-0")}>
-        <div className={cn("flex items-center gap-2 flex-wrap")}>
-          <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>{texts.HEADER_TITLE}</h1>
-          <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
-            <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
-            {texts.HEADER_BADGE}
-          </span>
-        </div>
-        <p className={cn("text-[11px] text-slate-400 mt-0.5")}>{texts.HEADER_DESC}</p>
-      </div>
-    </div>
-    <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
-      <Tooltip content={texts.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
-        <Button
-          variant={SOURCE_TEXT_UNSTYLED}
-          type={SOURCE_TEXT_BUTTON}
-          onClick={onToggleAiConfig}
-          disabled={isLoading}
-          className={cn("group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none", {
-            "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
-            "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
-          })}>
-          <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
-          <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>{texts.AI_CONFIG_TITLE}</span>
-          {isAiConfigOpen ? <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} /> : <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />}
-        </Button>
-      </Tooltip>
-    </div>
-  </div>
+      </>
+    }></StudioHeader>
 );
 interface SongCardProps {
   song: GeneratedSong;
@@ -457,7 +436,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
   };
   const displayTitle = toSentenceCase(song.title);
   return (
-    <div className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md")}>
+    <StudioCard className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md")}>
       <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800/80")}>
         <div className={cn("flex items-center gap-2.5 min-w-0 flex-wrap")}>
           <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-mono text-xs sm:text-sm font-black shrink-0 select-none shadow-2xs")}>
@@ -508,7 +487,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
           <pre className={cn("p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner")}>{song.lyrics}</pre>
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };
 interface PlaylistSeoCardProps {
@@ -561,7 +540,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
   };
   const gridColumnsClass = columns === 3 ? SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS : columns === 2 ? SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS : SOURCE_TEXT_GRID_COLS_1;
   return (
-    <div className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md")}>
+    <StudioCard className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md")}>
       <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-3")}>
         <div className={cn("flex items-center gap-2")}>
           <Sparkles className={cn("w-4 h-4 text-fuchsia-500 shrink-0")} />
@@ -585,7 +564,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
         {_.map(seoOptions, (opt, sIdx) => {
           const trackOrder = getSeoTrackOrder(opt.description);
           return (
-            <div key={sIdx} className={cn("p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between")}>
+            <StudioCard key={sIdx} className={cn("p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between")}>
               <div className={cn("flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5")}>
                 <div className={cn("flex items-center gap-2 min-w-0")}>
                   <span className={cn("inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 !text-[#a21caf] dark:!text-fuchsia-300 font-mono text-xs font-black shadow-2xs")}>{texts.formatOptionLabel(sIdx + 1)}</span>
@@ -605,7 +584,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
               </div>
               <div className={cn("space-y-2.5 flex-1 flex flex-col justify-between")}>
                 <div className={cn("space-y-2.5")}>
-                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
                     <div className={cn("flex items-center justify-between gap-2")}>
                       <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
                         <FileText className={cn("w-3 h-3 text-purple-500")} />
@@ -614,8 +593,8 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                       <CopyFieldButton text={opt.title} field={SOURCE_TEXT_TITLE} optionIndex={sIdx} />
                     </div>
                     <h4 className={cn("text-xs sm:text-[13px] font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words")}>{opt.title}</h4>
-                  </div>
-                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                  </StudioCard>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
                     <div className={cn("flex items-center justify-between gap-2")}>
                       <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
                         <SlidersHorizontal className={cn("w-3 h-3 text-sky-500")} />
@@ -624,9 +603,9 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                       <CopyFieldButton text={opt.description} field={SOURCE_TEXT_DESCRIPTION} optionIndex={sIdx} />
                     </div>
                     <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-32 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-pre-line break-words")}>{opt.description}</p>
-                  </div>
+                  </StudioCard>
                   {!_.isEmpty(trackOrder) && (
-                    <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
+                    <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
                       <div className={cn("flex items-center justify-between gap-2")}>
                         <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
                           <Music2 className={cn("w-3 h-3 text-fuchsia-500")} />
@@ -635,11 +614,11 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                         <CopyFieldButton text={trackOrder} field={SOURCE_TEXT_TRACK_ORDER} optionIndex={sIdx} />
                       </div>
                       <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words")}>{trackOrder}</p>
-                    </div>
+                    </StudioCard>
                   )}
                 </div>
                 <div className={cn("grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1")}>
-                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
                     <div className={cn("space-y-2")}>
                       <div className={cn("flex items-center justify-between gap-2")}>
                         <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
@@ -661,8 +640,8 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                         ))}
                       </div>
                     </div>
-                  </div>
-                  <div className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
+                  </StudioCard>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
                     <div className={cn("space-y-2")}>
                       <div className={cn("flex items-center justify-between gap-2")}>
                         <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
@@ -678,14 +657,14 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                       </div>
                       <p className={cn("text-[10px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words select-all")}>{opt.tags.join(SOURCE_TEXT_SYMBOL_10)}</p>
                     </div>
-                  </div>
+                  </StudioCard>
                 </div>
               </div>
-            </div>
+            </StudioCard>
           );
         })}
       </div>
-    </div>
+    </StudioCard>
   );
 };
 export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCreatorProps) {
@@ -1589,17 +1568,17 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const isBusy = isLoading || isStopping || isRegeneratingSeo || isCreatingSuno || isDownloadingSuno || isGeneratingThumbnail || isNormalizingThumbnailNote || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote;
   const isTrackListUnavailable = isBusy || _.isEmpty(downloadedMusicTracks);
   return (
-    <div aria-busy={isBusy} className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
+    <StudioPage aria-busy={isBusy}>
+      <StudioCanvas>
         <MusicCreatorHeader texts={texts} isAiConfigOpen={isAiConfigOpen} onToggleAiConfig={() => setIsAiConfigOpen(!isAiConfigOpen)} isLoading={isBusy} />
         {isAiConfigOpen && (
-          <fieldset disabled={isBusy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
+          <StudioFieldset disabled={isBusy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
             <ChatPlanningSettingsBlock provider={provider} model={model} executionMode={executionMode} chromeHeadless={chromeHeadless} onProviderChange={setProvider} onModelChange={setModel} onExecutionModeChange={setExecutionMode} onChromeHeadlessChange={setChromeHeadless} currentLang={currentLang} />
-          </fieldset>
+          </StudioFieldset>
         )}
         <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
           <div className={cn("lg:col-span-2 flex flex-col gap-5 min-w-0 h-full")}>
-            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0")}>
+            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0")}>
               <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
                   <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{texts.STEP_01}</span>
@@ -1635,10 +1614,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               </div>
               <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2 relative z-10")}>
                 <div className={cn("sm:col-span-4")}>
-                  <input type={SOURCE_TEXT_TEXT} value={styleName} onChange={(event) => setStyleName(event.target.value)} placeholder={texts.STYLE_NAME_PLACEHOLDER} disabled={isBusy} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
+                  <StudioInput type={SOURCE_TEXT_TEXT} value={styleName} onChange={(event) => setStyleName(event.target.value)} placeholder={texts.STYLE_NAME_PLACEHOLDER} disabled={isBusy} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
                 </div>
                 <div className={cn("sm:col-span-8")}>
-                  <input
+                  <StudioInput
                     type={SOURCE_TEXT_TEXT}
                     value={styleDraft}
                     onChange={(e) => {
@@ -1778,10 +1757,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 </div>
                 <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2")}>
                   <div className={cn("sm:col-span-4")}>
-                    <input type={SOURCE_TEXT_TEXT} value={inspoName} onChange={(event) => setInspoName(event.target.value)} disabled={isBusy} placeholder={texts.INSPO_NAME_PLACEHOLDER} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
+                    <StudioInput type={SOURCE_TEXT_TEXT} value={inspoName} onChange={(event) => setInspoName(event.target.value)} disabled={isBusy} placeholder={texts.INSPO_NAME_PLACEHOLDER} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
                   </div>
                   <div className={cn("sm:col-span-8")}>
-                    <input
+                    <StudioInput
                       type={SOURCE_TEXT_TEXT}
                       value={sunoInspoDraft}
                       onChange={(event) => {
@@ -1895,8 +1874,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   </div>
                 )}
               </div>
-            </div>
-            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col")}>
+            </StudioCard>
+            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col")}>
               <div className={cn("flex items-center justify-between relative z-10 shrink-0")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
                   <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{texts.STEP_02}</span>
@@ -1918,7 +1897,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 </Button>
               </div>
               <div className={cn("relative z-10 flex-1 flex flex-col min-h-0")}>
-                <textarea
+                <StudioTextarea
                   rows={4}
                   value={referenceSongs}
                   onChange={(e) => setReferenceSongs(e.target.value)}
@@ -1927,10 +1906,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   className={cn("w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar")}
                 />
               </div>
-            </div>
+            </StudioCard>
           </div>
           <div className={cn("lg:col-span-1 flex flex-col gap-5 min-w-0 h-full")}>
-            <div className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
+            <StudioCard className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
               <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
                   <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0")}>
@@ -2042,8 +2021,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   </Button>
                 )}
               </div>
-            </div>
-            <div className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
+            </StudioCard>
+            <StudioCard className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
               <div className={cn("flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3")}>
                 <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
                   <ImageIcon className={cn("w-3.5 h-3.5 text-fuchsia-400")} />
@@ -2051,7 +2030,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 </h3>
                 <span className={cn("text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full")}>{texts.THUMBNAIL_RATIO_BADGE}</span>
               </div>
-              <input ref={thumbnailFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} disabled={isBusy} className={cn("hidden")} />
+              <StudioInput ref={thumbnailFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} disabled={isBusy} className={cn("hidden")} />
               <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                 {thumbnailReference ? (
                   <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center")}>
@@ -2158,7 +2137,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     {isNormalizingThumbnailNote ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-400")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
                   </Button>
                 </div>
-                <textarea
+                <StudioTextarea
                   rows={4}
                   value={thumbnailDescription}
                   onChange={(event) => setThumbnailDescription(event.target.value)}
@@ -2209,12 +2188,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs": !isTrackListUnavailable && showVideoTrackList,
                       "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer": !isTrackListUnavailable && !showVideoTrackList,
                     })}>
-                    <input type={SOURCE_TEXT_CHECKBOX} checked={showVideoTrackList} onChange={(event) => setShowVideoTrackList(event.target.checked)} disabled={isTrackListUnavailable} className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")} />
+                    <StudioInput type={SOURCE_TEXT_CHECKBOX} checked={showVideoTrackList} onChange={(event) => setShowVideoTrackList(event.target.checked)} disabled={isTrackListUnavailable} className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")} />
                     <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
                   </label>
                 </div>
                 {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) ? (
-                  <div className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
+                  <StudioCard className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
                     <div className={cn("w-9 h-9 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto shadow-xs")}>
                       <Lock className={cn("w-4 h-4 text-slate-400")} />
                     </div>
@@ -2232,10 +2211,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         <span>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                       </div>
                     </div>
-                  </div>
+                  </StudioCard>
                 ) : (
                   <div className={cn("space-y-3")}>
-                    <input ref={videoBackgroundFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} disabled={isBusy} className={cn("hidden")} />
+                    <StudioInput ref={videoBackgroundFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} disabled={isBusy} className={cn("hidden")} />
                     <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
                       {videoBackgroundReference ? (
                         <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md")}>
@@ -2319,7 +2298,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           {isNormalizingVideoBackgroundNote ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-400")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
                         </Button>
                       </div>
-                      <textarea
+                      <StudioTextarea
                         rows={3}
                         value={videoBackgroundDescription}
                         onChange={(event) => setVideoBackgroundDescription(event.target.value)}
@@ -2354,10 +2333,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   </div>
                 )}
               </div>
-            </div>
+            </StudioCard>
           </div>
         </div>
-        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full space-y-4")}>
+        <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full space-y-4")}>
           <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5")}>
             <div className={cn("flex items-center gap-2.5 min-w-0")}>
               <div className={cn("w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0")}>
@@ -2474,7 +2453,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           <div className={cn("flex flex-wrap items-center gap-2")}>
             <div className={cn("relative min-w-[240px] flex-1")}>
               <Link2 className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400")} />
-              <input
+              <StudioInput
                 type={SOURCE_TEXT_URL}
                 value={downloadPlaylistUrl}
                 onChange={(event) => setDownloadPlaylistUrl(event.target.value)}
@@ -2595,14 +2574,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               </summary>
               <div className={cn("p-4 sm:p-5 space-y-4 text-left")}>
                 <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
-                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
                     <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
                       <Globe className={cn("w-3 h-3 text-indigo-400 shrink-0")} />
                       <span>{texts.MARKET_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
                     </span>
                     <p className={cn("text-xs font-semibold text-slate-100 leading-snug")}>{_.compact([styleAnalysis.market.country, styleAnalysis.market.region, styleAnalysis.market.language]).join(SOURCE_TEXT_SYMBOL_18)}</p>
-                  </div>
-                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                  </StudioCard>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
                     <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
                       <Users className={cn("w-3 h-3 text-violet-400 shrink-0")} />
                       <span>{texts.AUDIENCE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
@@ -2614,8 +2593,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         {SOURCE_TEXT_SYMBOL_8}
                       </span>
                     </div>
-                  </div>
-                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                  </StudioCard>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
                     <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
                       <Music2 className={cn("w-3 h-3 text-purple-400 shrink-0")} />
                       <span>{texts.GENRE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
@@ -2628,8 +2607,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         </span>
                       ))}
                     </div>
-                  </div>
-                  <div className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
+                  </StudioCard>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
                     <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
                       <Clock className={cn("w-3 h-3 text-amber-400 shrink-0")} />
                       <span>{texts.ERA_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
@@ -2639,7 +2618,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       {SOURCE_TEXT_SYMBOL_2}
                       {styleAnalysis.era.productionEra}
                     </p>
-                  </div>
+                  </StudioCard>
                 </div>
                 <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-3")}>
                   <div className={cn("p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 space-y-1.5 shadow-2xs")}>
@@ -2681,13 +2660,13 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   </div>
                 </div>
                 {!_.isEmpty(styleAnalysis.uncertainties) && (
-                  <div className={cn("p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1 shadow-2xs")}>
+                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1 shadow-2xs")}>
                     <div className={cn("flex items-center gap-1.5 text-slate-400 font-bold text-[11px]")}>
                       <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0")} />
                       <span>{texts.UNCERTAINTIES_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
                     </div>
                     <p className={cn("text-[11px] text-slate-300 leading-relaxed")}>{formatStyleAnalysisItems(styleAnalysis.uncertainties)}</p>
-                  </div>
+                  </StudioCard>
                 )}
                 {sunoSettings && (
                   <div className={cn("pt-4 border-t border-fuchsia-500/20 space-y-3.5")}>
@@ -2801,7 +2780,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           },
                         ],
                         (item) => (
-                          <div key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between min-w-0")}>
+                          <StudioCard key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between min-w-0")}>
                             <div className={cn("flex items-start justify-between gap-1.5")}>
                               <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 shrink-0")}>{item.label}</span>
                               {SOURCE_TEXT_SETTINGKEY in item && item.settingKey ? (
@@ -2827,7 +2806,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               </div>
                             )}
                             <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
-                          </div>
+                          </StudioCard>
                         ),
                       )}
                     </div>
@@ -2864,7 +2843,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           },
                         ],
                         (item) => (
-                          <div key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2.5 shadow-2xs min-w-0")}>
+                          <StudioCard key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2.5 shadow-2xs min-w-0")}>
                             <div className={cn("flex items-center justify-between gap-2")}>
                               <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400")}>{item.label}</span>
                               <span className={cn("text-xs font-mono font-bold text-fuchsia-300 bg-fuchsia-500/10 border border-fuchsia-500/25 px-2 py-0.5 rounded-md shrink-0")}>
@@ -2882,7 +2861,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               </div>
                             )}
                             <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
-                          </div>
+                          </StudioCard>
                         ),
                       )}
                     </div>
@@ -2981,8 +2960,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               )}
             </div>
           )}
-        </div>
-      </div>
+        </StudioCard>
+      </StudioCanvas>
       <ImagePreviewModal imageUrl={previewThumbnail} onClose={() => setPreviewThumbnail(null)} />
       <Modal
         isOpen={Boolean(styleToDelete)}
@@ -3060,6 +3039,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           </div>
         </div>
       </Modal>
-    </div>
+    </StudioPage>
   );
 }

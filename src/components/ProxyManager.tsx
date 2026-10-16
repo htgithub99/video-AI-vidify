@@ -1,3 +1,4 @@
+import { StudioHeader, StudioPage, StudioCanvas, StudioCard, StudioInput, StudioSelect, StudioTextarea } from "./ui/Studio.js";
 import { recordWorkflowActivity } from "../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
 import {
@@ -118,21 +119,12 @@ import {
   SOURCE_TEXT_W_7_H_7_ANIMATE_SPIN_TEXT,
   SOURCE_TEXT_STATUS,
   SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_300,
-  SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN,
-  SOURCE_TEXT_BG_GRADIENT_TO_B_FROM_SLATE_900,
-  SOURCE_TEXT_P_4_SM_P_5_FLEX_FLEX,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3_5_MIN,
-  SOURCE_TEXT_W_11_H_11_ROUNDED_2XL_BG,
-  SOURCE_TEXT_W_FULL_H_FULL_BG_SLATE_950,
   SOURCE_TEXT_W_5_H_5,
   SOURCE_TEXT_MIN_W_0,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP,
-  SOURCE_TEXT_TEXT_BASE_SM_TEXT_LG_FONT_BLACK,
-  SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL,
   SOURCE_TEXT_W_2_5_H_2_5_TEXT,
   SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_2,
   SOURCE_TEXT_ANTI_DETECT_ISOLATED,
-  SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MT_0,
   SOURCE_TEXT_PX_3_5_PY_2,
   SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400,
   SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400,
@@ -480,11 +472,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     if (mounted.current) setCheckingAll(false);
   };
   const openEditor = (profile?: ProxyProfile) => {
-    setForm(
-      profile
-        ? { name: profile.name, protocol: profile.protocol, host: profile.host, port: profile.port, username: profile.username, notes: profile.notes, password: "", }
-        : emptyForm(),
-    );
+    setForm(profile ? { name: profile.name, protocol: profile.protocol, host: profile.host, port: profile.port, username: profile.username, notes: profile.notes, password: "" } : emptyForm());
     setEditor(profile ? { id: profile.id, hasPassword: profile.hasPassword } : {});
     setFormError("");
     setShowPassword(false);
@@ -538,10 +526,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     setImportError("");
   };
   const selected = profiles.find((profile) => profile.id === selectedId);
-  const counts = useMemo(
-    () => ({ total: profiles.length, ok: profiles.filter((p) => p.check?.status === SOURCE_TEXT_OK).length, open: profiles.filter((p) => p.session !== SOURCE_TEXT_CLOSED).length, issues: profiles.filter((p) => p.check?.status === SOURCE_TEXT_ERROR || !p.check).length, }),
-    [profiles],
-  );
+  const counts = useMemo(() => ({ total: profiles.length, ok: profiles.filter((p) => p.check?.status === SOURCE_TEXT_OK).length, open: profiles.filter((p) => p.session !== SOURCE_TEXT_CLOSED).length, issues: profiles.filter((p) => p.check?.status === SOURCE_TEXT_ERROR || !p.check).length }), [profiles]);
   const visible = useMemo(() => {
     const searchTrimmed = query.trim().toLowerCase();
     return profiles.filter((profile) => {
@@ -566,7 +551,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
     });
   if (!workspaceReady) {
     return (
-      <div className={SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_FLEX}>
+      <StudioPage className={SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_FLEX}>
         {recoveryError ? (
           <>
             <p role={SOURCE_TEXT_ALERT} className={SOURCE_TEXT_TEXT_SM_TEXT_ROSE_300_FONT_BOLD}>
@@ -584,55 +569,46 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
             </p>
           </>
         )}
-      </div>
+      </StudioPage>
     );
   }
   return (
-    <div className={SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN}>
-      <div className={SOURCE_TEXT_BG_GRADIENT_TO_B_FROM_SLATE_900}>
-        <div className={cn(panelClass, SOURCE_TEXT_P_4_SM_P_5_FLEX_FLEX)}>
-          <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3_5_MIN}>
-            <div className={SOURCE_TEXT_W_11_H_11_ROUNDED_2XL_BG}>
-              <div className={SOURCE_TEXT_W_FULL_H_FULL_BG_SLATE_950}>
-                <Globe className={SOURCE_TEXT_W_5_H_5} />
-              </div>
-            </div>
-            <div className={SOURCE_TEXT_MIN_W_0}>
+    <StudioPage>
+      <StudioCanvas>
+        <StudioHeader
+          icon={Globe}
+          title={<>{t.title}</>}
+          description={<>{t.subtitle}</>}
+          badge={<>{t.badge}</>}
+          actions={
+            <>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
-                <h1 className={SOURCE_TEXT_TEXT_BASE_SM_TEXT_LG_FONT_BLACK}>{t.title}</h1>
-                <span className={SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL}>
-                  <Sparkles className={SOURCE_TEXT_W_2_5_H_2_5_TEXT} />
-                  {t.badge}
-                </span>
-                <span className={SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_2}>{SOURCE_TEXT_ANTI_DETECT_ISOLATED}</span>
+                <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, primaryBtnClass, SOURCE_TEXT_PX_3_5_PY_2)} onClick={() => openEditor()}>
+                  <Plus className={SOURCE_TEXT_W_4_H_4} />
+                  <span>{t.add}</span>
+                </Button>
+                <Button
+                  variant={SOURCE_TEXT_UNSTYLED}
+                  className={actionBtnClass}
+                  onClick={() => {
+                    setImportOpen(true);
+                    setImportError("");
+                  }}>
+                  <Download className={SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400} />
+                  <span>{t.import}</span>
+                </Button>
+                <Button variant={SOURCE_TEXT_UNSTYLED} className={actionBtnClass} disabled={checkingAll || !profiles.length} onClick={checkAll}>
+                  {checkingAll ? <Sparkles className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_3} /> : <RefreshCw className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400} />}
+                  <span>{t.checkAll}</span>
+                </Button>
+                <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_P_2)} aria-label={t.refresh} onClick={() => refresh().catch(() => setLoadError(t.loadError))}>
+                  <RefreshCw className={SOURCE_TEXT_W_3_5_H_3_5} />
+                </Button>
               </div>
-              <p className={SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MT_0}>{t.subtitle}</p>
-            </div>
-          </div>
-          <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
-            <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, primaryBtnClass, SOURCE_TEXT_PX_3_5_PY_2)} onClick={() => openEditor()}>
-              <Plus className={SOURCE_TEXT_W_4_H_4} />
-              <span>{t.add}</span>
-            </Button>
-            <Button
-              variant={SOURCE_TEXT_UNSTYLED}
-              className={actionBtnClass}
-              onClick={() => {
-                setImportOpen(true);
-                setImportError("");
-              }}>
-              <Download className={SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400} />
-              <span>{t.import}</span>
-            </Button>
-            <Button variant={SOURCE_TEXT_UNSTYLED} className={actionBtnClass} disabled={checkingAll || !profiles.length} onClick={checkAll}>
-              {checkingAll ? <Sparkles className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_3} /> : <RefreshCw className={SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400} />}
-              <span>{t.checkAll}</span>
-            </Button>
-            <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_P_2)} aria-label={t.refresh} onClick={() => refresh().catch(() => setLoadError(t.loadError))}>
-              <RefreshCw className={SOURCE_TEXT_W_3_5_H_3_5} />
-            </Button>
-          </div>
-        </div>
+            </>
+          }>
+          <span className={SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_2}>{SOURCE_TEXT_ANTI_DETECT_ISOLATED}</span>
+        </StudioHeader>
         <div className={SOURCE_TEXT_GRID_GRID_COLS_2_LG_GRID_COLS}>
           {[
             { label: t.total, value: counts.total, icon: Globe, color: SOURCE_TEXT_TEXT_PURPLE_400, bg: SOURCE_TEXT_BG_PURPLE_500_10_BORDER_PURPLE_500, desc: SOURCE_TEXT_HO_SO_DA_LUU_AN_TOAN },
@@ -640,7 +616,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
             { label: t.sessions, value: counts.open, icon: Monitor, color: SOURCE_TEXT_TEXT_CYAN_400, bg: SOURCE_TEXT_BG_CYAN_500_10_BORDER_CYAN_500, desc: SOURCE_TEXT_TRINH_DUYET_DANG_MO, hasPulse: counts.open > 0 },
             { label: t.issues, value: counts.issues, icon: AlertTriangle, color: SOURCE_TEXT_TEXT_AMBER_400, bg: SOURCE_TEXT_BG_AMBER_500_10_BORDER_AMBER_500, desc: SOURCE_TEXT_CHUA_TEST_HOAC_LOI },
           ].map((item) => (
-            <div key={item.label} className={cn(panelClass, SOURCE_TEXT_P_4_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
+            <StudioCard key={item.label} className={cn(panelClass, SOURCE_TEXT_P_4_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
               <div className={SOURCE_TEXT_MIN_W_0}>
                 <p className={SOURCE_TEXT_TEXT_11PX_FONT_BOLD_TEXT_SLATE_400}>{item.label}</p>
                 <p className={SOURCE_TEXT_TEXT_XL_SM_TEXT_2XL_FONT_BLACK}>{item.value}</p>
@@ -650,7 +626,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 <item.icon className={SOURCE_TEXT_W_5_H_5} />
                 {item.hasPulse && <span className={SOURCE_TEXT_ABSOLUTE_TOP_1_RIGHT_1_W_2} />}
               </div>
-            </div>
+            </StudioCard>
           ))}
         </div>
         {loadError && (
@@ -662,10 +638,10 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
           </div>
         )}
         {loading ? (
-          <div className={cn(panelClass, SOURCE_TEXT_P_16_FLEX_FLEX_COL_ITEMS_CENTER)}>
+          <StudioCard className={cn(panelClass, SOURCE_TEXT_P_16_FLEX_FLEX_COL_ITEMS_CENTER)}>
             <Sparkles aria-label={t.working} className={SOURCE_TEXT_W_8_H_8_ANIMATE_SPIN_TEXT} />
             <p className={SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_400}>{t.working}</p>
-          </div>
+          </StudioCard>
         ) : (
           <div className={SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS}>
             <section className={cn(panelClass, SOURCE_TEXT_LG_COL_SPAN_5_P_4_SM)}>
@@ -679,7 +655,12 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 </div>
               </div>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_P_1}>
-                {[ { key: SOURCE_TEXT_ALL, label: t.all, count: counts.total }, { key: SOURCE_TEXT_OK, label: t.filterOk, count: counts.ok }, { key: SOURCE_TEXT_OPEN, label: t.filterOpen, count: counts.open }, { key: SOURCE_TEXT_ISSUES, label: t.filterError, count: counts.issues }, ].map((tab) => (
+                {[
+                  { key: SOURCE_TEXT_ALL, label: t.all, count: counts.total },
+                  { key: SOURCE_TEXT_OK, label: t.filterOk, count: counts.ok },
+                  { key: SOURCE_TEXT_OPEN, label: t.filterOpen, count: counts.open },
+                  { key: SOURCE_TEXT_ISSUES, label: t.filterError, count: counts.issues },
+                ].map((tab) => (
                   <Button key={tab.key} variant={SOURCE_TEXT_UNSTYLED} onClick={() => setFilterTab(tab.key as typeof filterTab)} className={cn(SOURCE_TEXT_FLEX_1_PY_1_PX_2_ROUNDED, filterTab === tab.key ? SOURCE_TEXT_BG_PURPLE_600_20_TEXT_PURPLE_300 : SOURCE_TEXT_TEXT_SLATE_400_HOVER_TEXT_SLATE_200)}>
                     <span>{tab.label}</span>
                     <span className={SOURCE_TEXT_ML_1_OPACITY_60_TEXT_9PX_FONT}>
@@ -692,7 +673,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               </div>
               <div className={SOURCE_TEXT_RELATIVE}>
                 <Search className={SOURCE_TEXT_ABSOLUTE_LEFT_3_TOP_3_W_4} />
-                <input aria-label={t.search} placeholder={t.search} value={query} onChange={(event) => setQuery(event.target.value)} className={cn(controlClass, SOURCE_TEXT_PL_9_PR_8_TEXT_XS)} />
+                <StudioInput aria-label={t.search} placeholder={t.search} value={query} onChange={(event) => setQuery(event.target.value)} className={cn(controlClass, SOURCE_TEXT_PL_9_PR_8_TEXT_XS)} />
                 {query && (
                   <Button variant={SOURCE_TEXT_UNSTYLED} onClick={() => setQuery("")} className={SOURCE_TEXT_ABSOLUTE_RIGHT_2_5_TOP_2_5}>
                     <X className={SOURCE_TEXT_W_3_5_H_3_5} />
@@ -872,7 +853,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                       </Button>
                     </div>
                   </div>
-                  <div className={SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_PURPLE_500_30}>
+                  <StudioCard className={SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_PURPLE_500_30}>
                     <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                       <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
                         <Monitor className={SOURCE_TEXT_W_4_H_4_TEXT_CYAN_400} />
@@ -917,7 +898,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                       )}
                     </div>
                     {selected.session !== SOURCE_TEXT_CLOSED && <p className={SOURCE_TEXT_TEXT_11PX_TEXT_AMBER_300_90_FONT}>{t.busyHint}</p>}
-                  </div>
+                  </StudioCard>
                   <div className={SOURCE_TEXT_GRID_GRID_COLS_2_SM_GRID_COLS}>
                     <div className={SOURCE_TEXT_ROUNDED_XL_BG_SLATE_950_70_BORDER}>
                       <p className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_BOLD}>{t.ip}</p>
@@ -1004,7 +985,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
             <span>{t.networkHint}</span>
           </p>
         </div>
-      </div>
+      </StudioCanvas>
       <Modal
         isOpen={editor !== null}
         onClose={() => {
@@ -1033,7 +1014,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               </span>
               <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TEN_GOI_NHO}</span>
             </div>
-            <input autoFocus required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={controlClass} placeholder={SOURCE_TEXT_YOUTUBE_STUDIO_01} />
+            <StudioInput autoFocus required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={controlClass} placeholder={SOURCE_TEXT_YOUTUBE_STUDIO_01} />
           </label>
           <div className={SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_3}>
             <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_2}>
@@ -1042,11 +1023,11 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 <span>{t.protocol}</span>
                 <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
-              <select className={controlClass} value={form.protocol} onChange={(event) => setForm({ ...form, protocol: event.target.value as ProxyInput["protocol"] })}>
+              <StudioSelect className={controlClass} value={form.protocol} onChange={(event) => setForm({ ...form, protocol: event.target.value as ProxyInput["protocol"] })}>
                 <option value={SOURCE_BROWSER_TEXT_HTTP}>{SOURCE_TEXT_HTTP_2}</option>
                 <option value={SOURCE_TEXT_HTTPS_2}>{SOURCE_TEXT_HTTPS_3}</option>
                 <option value={SOURCE_TEXT_SOCKS5}>{SOURCE_TEXT_SOCKS5_2}</option>
-              </select>
+              </StudioSelect>
             </label>
             <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS_3}>
               <span className={SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200_FLEX_ITEMS}>
@@ -1054,7 +1035,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 <span>{t.host}</span>
                 <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
-              <input required maxLength={253} className={controlClass} value={form.host} onChange={(event) => setForm({ ...form, host: event.target.value })} placeholder={SOURCE_TEXT_PROXY_EXAMPLE_COM} />
+              <StudioInput required maxLength={253} className={controlClass} value={form.host} onChange={(event) => setForm({ ...form, host: event.target.value })} placeholder={SOURCE_TEXT_PROXY_EXAMPLE_COM} />
             </label>
           </div>
           <div className={SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_4}>
@@ -1064,7 +1045,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 <span>{t.port}</span>
                 <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
-              <input required type={SOURCE_TEXT_NUMBER} min={1} max={65535} className={controlClass} value={form.port || ""} onChange={(event) => setForm({ ...form, port: Number(event.target.value) })} placeholder={SOURCE_TEXT_8080} />
+              <StudioInput required type={SOURCE_TEXT_NUMBER} min={1} max={65535} className={controlClass} value={form.port || ""} onChange={(event) => setForm({ ...form, port: Number(event.target.value) })} placeholder={SOURCE_TEXT_8080} />
             </label>
             <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
@@ -1074,7 +1055,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 </span>
                 <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TUY_CHON}</span>
               </div>
-              <input autoComplete={SOURCE_TEXT_OFF} maxLength={512} className={controlClass} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder={t.optional} />
+              <StudioInput autoComplete={SOURCE_TEXT_OFF} maxLength={512} className={controlClass} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder={t.optional} />
             </label>
           </div>
           <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
@@ -1091,7 +1072,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               )}
             </div>
             <div className={SOURCE_TEXT_RELATIVE}>
-              <input
+              <StudioInput
                 autoComplete={SOURCE_TEXT_NEW_PASSWORD}
                 type={showPassword ? SOURCE_TEXT_TEXT : SOURCE_TEXT_PASSWORD}
                 disabled={form.clearPassword}
@@ -1128,7 +1109,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 </div>
               </div>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_SHRINK_0}>
-                <input type={SOURCE_TEXT_CHECKBOX} className={SOURCE_TEXT_SR_ONLY} checked={Boolean(form.clearPassword)} onChange={(e) => setForm({ ...form, clearPassword: e.target.checked, password: "" })} tabIndex={-1} />
+                <StudioInput type={SOURCE_TEXT_CHECKBOX} className={SOURCE_TEXT_SR_ONLY} checked={Boolean(form.clearPassword)} onChange={(e) => setForm({ ...form, clearPassword: e.target.checked, password: "" })} tabIndex={-1} />
                 <button
                   type={SOURCE_TEXT_BUTTON}
                   role={SOURCE_TEXT_SWITCH}
@@ -1152,7 +1133,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               </span>
               <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TUY_CHON}</span>
             </div>
-            <textarea maxLength={2000} rows={3} className={controlClass} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t.notesPlaceholder} />
+            <StudioTextarea maxLength={2000} rows={3} className={controlClass} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t.notesPlaceholder} />
           </label>
           {form.protocol === SOURCE_TEXT_SOCKS5 && (
             <div className={SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_AMBER_500_30}>
@@ -1202,7 +1183,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               {t.sampleImport}
             </Button>
           </div>
-          <textarea
+          <StudioTextarea
             aria-label={t.import}
             rows={6}
             spellCheck={false}
@@ -1306,6 +1287,6 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
           </div>
         </div>
       </Modal>
-    </div>
+    </StudioPage>
   );
 }

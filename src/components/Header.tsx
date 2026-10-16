@@ -31,6 +31,9 @@ import { toast } from "sonner";
 import _ from "lodash";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
+import { StudioIcon } from "./ui/Studio.js";
+import { STUDIO_UI, STUDIO_TEXTS } from "../constants/studioTheme.js";
+import { Menu } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../constants";
 interface HeaderProps {
   currentLang: AppLanguage | Lang;
@@ -63,7 +66,7 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colo
     </div>
   );
 };
-export default function Header({ currentLang, setLang, theme, toggleTheme }: HeaderProps) {
+export default function Header({ currentLang, setLang, theme, toggleTheme, isMobileMenuOpen, onToggleMobileMenu }: HeaderProps) {
   const t = translations[currentLang as Lang];
   const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
   const langKey = isVietnamese ? UIConstants.LANG_VI : UIConstants.LANG_EN;
@@ -145,12 +148,15 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
   const logoutLabel = isVietnamese ? SecurityConstants.LOGOUT_KEY_LABEL_VI : SecurityConstants.LOGOUT_KEY_LABEL_EN;
   return (
     <header className={cn("app-header bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 text-slate-200 sticky top-0 z-50 flex-shrink-0")}>
-      <div className={cn("w-full px-3 sm:px-5 lg:px-6 py-2 flex items-center justify-between gap-3 sm:gap-5 relative")}>
-        <div className={cn("flex items-center gap-2 sm:gap-3 min-w-0")}>
-          <div className={cn("w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center shadow-sm ring-1 ring-white/15 shrink-0")}>
-            <Video className={cn("w-4 h-4 text-white")} />
-          </div>
-          <div className={cn("min-w-0")}>
+      <div className={STUDIO_UI.APP_HEADER_ROW}>
+        <div className={STUDIO_UI.APP_HEADER_BRAND}>
+          {onToggleMobileMenu && (
+            <Button variant={STUDIO_UI.UNSTYLED} type={STUDIO_UI.BUTTON_TYPE} className={STUDIO_UI.MENU_BUTTON} onClick={onToggleMobileMenu} aria-expanded={!!isMobileMenuOpen} aria-label={isMobileMenuOpen ? STUDIO_TEXTS[currentLang].CLOSE_MENU : STUDIO_TEXTS[currentLang].OPEN_MENU}>
+              <Menu className={STUDIO_UI.ICON} />
+            </Button>
+          )}
+          <StudioIcon icon={Video} />
+          <div className={STUDIO_UI.APP_HEADER_TITLE}>
             <h1 className={cn("text-sm sm:text-base font-extrabold text-slate-100 flex items-center gap-2 font-logo truncate")}>
               <span className={cn("truncate")}>{t.appTitle}</span>
               <span className={cn("hidden sm:flex text-[9px] bg-rose-500/10 text-rose-500 font-bold px-2 py-0.5 rounded-full border border-rose-500/20 items-center gap-1 shrink-0")}>
@@ -160,7 +166,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme }: Hea
             </h1>
           </div>
         </div>
-        <div className={cn("flex items-center justify-end gap-1.5 sm:gap-2 shrink-0")}>
+        <div className={STUDIO_UI.APP_HEADER_ACTIONS}>
           <Button
             variant={SOURCE_TEXT_UNSTYLED}
             type={SOURCE_TEXT_BUTTON}

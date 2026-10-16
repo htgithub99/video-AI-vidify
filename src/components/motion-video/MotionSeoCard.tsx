@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { MOTION_SEO_TEXTS } from "../../constants/motionVideoTexts";
 import { Check, Copy, Download, FileText, Image as ImageIcon, Maximize2, RefreshCw, Search, SlidersHorizontal, Sparkles, Clock } from "lucide-react";
@@ -9,7 +10,16 @@ import { cn } from "../../lib/utils";
 import type { MotionSeoOption, MotionSeoPack, MotionThumbnail } from "../../types/motionVideo";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
-interface MotionSeoCardProps { seo: MotionSeoPack | null; busy: boolean; canGenerate: boolean; onGenerate: () => void; lang?: string; thumbnail?: MotionThumbnail | null; thumbnails?: Record<number, MotionThumbnail>; onThumbnail?: (optionIndex: number) => void; }
+interface MotionSeoCardProps {
+  seo: MotionSeoPack | null;
+  busy: boolean;
+  canGenerate: boolean;
+  onGenerate: () => void;
+  lang?: string;
+  thumbnail?: MotionThumbnail | null;
+  thumbnails?: Record<number, MotionThumbnail>;
+  onThumbnail?: (optionIndex: number) => void;
+}
 export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail }) => {
   const { copiedKey, copyText: handleCopy } = useMotionClipboard();
   const [zoomModal, setZoomModal] = useState<{ image: string; prompt: string; optionIndex?: number } | null>(null);
@@ -19,13 +29,19 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
     const items: Array<MotionThumbnail & { optionIndex: number }> = [];
     const totalOptions = seo?.options?.length || 5;
     for (let i = 0; i < totalOptions; i++) {
-      if (map[i]) { items.push({ ...map[i], optionIndex: i }); }
+      if (map[i]) {
+        items.push({ ...map[i], optionIndex: i });
+      }
     }
-    if (items.length === 0 && thumbnail) { items.push({ ...thumbnail, optionIndex: thumbnail.optionIndex ?? 0 }); }
+    if (items.length === 0 && thumbnail) {
+      items.push({ ...thumbnail, optionIndex: thumbnail.optionIndex ?? 0 });
+    }
     return items;
   }, [thumbnails, thumbnail, seo]);
   const all = seo ? seo.options.map((option, index) => renderSeoOptionText(option, seo, index, t)).join(MR.MOTION_TEXT_SYMBOL_4) : "";
-  const handleCopyFullOption = (option: MotionSeoOption, index: number) => { if (seo) handleCopy(renderSeoOptionText(option, seo, index, t), MR.MOTION_TEMPLATE_SEO_FULL(index), t.copied); };
+  const handleCopyFullOption = (option: MotionSeoOption, index: number) => {
+    if (seo) handleCopy(renderSeoOptionText(option, seo, index, t), MR.MOTION_TEMPLATE_SEO_FULL(index), t.copied);
+  };
   const renderCopyField = (value: string, key: string, titleText?: string) => (
     <MotionCopyButton
       copied={copiedKey === key}
@@ -38,7 +54,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
   );
   const chaptersText = seo ? chapterLines(seo) : "";
   return (
-    <div className={MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_B}>
+    <StudioCard className={MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_B}>
       <div className={MR.MOTION_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER}>
         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
           <Sparkles className={MR.MOTION_TEXT_W_4_H_4_TEXT_FUCHSIA_500_SHRINK_0} />
@@ -173,7 +189,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
               const description = renderSeoDescription(opt, seo);
               const hasThumb = Boolean(thumbnails?.[i] || (thumbnail?.optionIndex === i && thumbnail?.image));
               return (
-                <div key={i} className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL}>
+                <StudioCard key={i} className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL}>
                   <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200}>
                     <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W_0_FLEX_WRAP}>
                       <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_}>
@@ -211,7 +227,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                   </div>
                   <div className={MR.MOTION_TEXT_SPACE_Y_2_5_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN}>
                     <div className={MR.MOTION_TEXT_SPACE_Y_2_5}>
-                      <div className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
+                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
                         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                           <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
                             <FileText className={MR.MOTION_TEXT_W_3_H_3_TEXT_PURPLE_500} />
@@ -220,8 +236,8 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                           {renderCopyField(opt.title, MR.MOTION_TEMPLATE_SEO_TITLE(i))}
                         </div>
                         <h4 className={MR.MOTION_TEXT_TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_L}>{opt.title}</h4>
-                      </div>
-                      <div className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
+                      </StudioCard>
+                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
                         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                           <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
                             <SlidersHorizontal className={MR.MOTION_TEXT_W_3_H_3_TEXT_SKY_500} />
@@ -230,10 +246,10 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                           {renderCopyField(description, MR.MOTION_TEMPLATE_SEO_DESC(i))}
                         </div>
                         <p className={MR.MOTION_TEXT_TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_}>{description}</p>
-                      </div>
+                      </StudioCard>
                     </div>
                     <div className={MR.MOTION_TEXT_GRID_GRID_COLS_1_XL_GRID_COLS_2_GAP_2_5_PT_1}>
-                      <div className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
+                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
                         <div className={MR.MOTION_TEXT_SPACE_Y_2}>
                           <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                             <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
@@ -255,8 +271,8 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                             ))}
                           </div>
                         </div>
-                      </div>
-                      <div className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
+                      </StudioCard>
+                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
                         <div className={MR.MOTION_TEXT_SPACE_Y_2}>
                           <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                             <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
@@ -272,15 +288,15 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                           </div>
                           <p className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_TEXT_475569_DARK_TEXT_SLATE_300_LEADING_RELAX}>{opt.tags.join(MR.MOTION_TEXT_SYMBOL_14)}</p>
                         </div>
-                      </div>
+                      </StudioCard>
                     </div>
                   </div>
-                </div>
+                </StudioCard>
               );
             })}
           </div>
           {chaptersText && (
-            <div className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL_2}>
+            <StudioCard className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL_2}>
               <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                 <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
                   <Clock className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400} />
@@ -289,10 +305,10 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                 {renderCopyField(chaptersText, MR.MOTION_TEXT_SEO_CHAPTERS)}
               </div>
               <pre className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__3}>{chaptersText}</pre>
-            </div>
+            </StudioCard>
           )}
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import _ from "lodash";
 import { SOURCE_TEXT_15_30S_2, SOURCE_TEXT_30_60S_2, SOURCE_TEXT_60_90S_2, SOURCE_TEXT_BUTTON, SOURCE_TEXT_TU_DONG, SOURCE_TEXT_TU_DONG_AI, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import React from "react";
@@ -19,7 +20,7 @@ type ShortsReframeConfigCardProps = {
 };
 export const ShortsReframeConfigCard: React.FC<ShortsReframeConfigCardProps> = ({ aspectRatio, setAspectRatio, reframeMode, setReframeMode, clipCount, setClipCount, durationMode, setDurationMode, disabled }) => {
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
         <div className={cn("flex items-center gap-2.5 min-w-0")}>
           <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{SHORTS_TEXTS.STEP_02}</span>
@@ -194,6 +195,6 @@ export const ShortsReframeConfigCard: React.FC<ShortsReframeConfigCardProps> = (
           </div>
         </div>
       </div>
-    </div>
+    </StudioCard>
   );
 };

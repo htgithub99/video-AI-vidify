@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEMPLATE_GB, SOURCE_TEMPLATE_MB, SOURCE_TEMPLATE_PATH, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BUTTON, SOURCE_TEXT_METADATA, SOURCE_TEXT_POST, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_X } from "../../constants/sourceText";
 import React, { useState } from "react";
 import _ from "lodash";
@@ -53,7 +54,7 @@ export const ShortsSourceCard: React.FC<ShortsSourceCardProps> = ({ sourceVideoP
   };
   const hasSource = Boolean(sourceVideoPath);
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
         <div className={cn("flex items-center gap-2.5 min-w-0")}>
           <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{SHORTS_TEXTS.STEP_01}</span>
@@ -154,6 +155,6 @@ export const ShortsSourceCard: React.FC<ShortsSourceCardProps> = ({ sourceVideoP
           </div>
         ) : null}
       </div>
-    </div>
+    </StudioCard>
   );
 };

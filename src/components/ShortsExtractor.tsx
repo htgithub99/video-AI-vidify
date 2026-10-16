@@ -1,3 +1,4 @@
+import { StudioHeader, StudioPage, StudioInput, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard } from "./ui/Studio.js";
 import { stringifyJson } from "../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_0,
@@ -47,7 +48,7 @@ import {
 } from "../constants/sourceText";
 import { ChangeEvent, DragEvent, FC, useEffect, useRef, useState } from "react";
 import _ from "lodash";
-import { Scissors, Sparkles, Download, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, Play, Pause, FolderDown, Film, ChevronDown, ChevronUp } from "lucide-react";
+import { Scissors, Sparkles, Download, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, Play, Pause, FolderDown, Film } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/Button.js";
 import { Tooltip } from "./ui/Tooltip.js";
@@ -413,53 +414,31 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
   const hasClips = !_.isEmpty(highlightClips);
   const isProgressRunning = progressState.stage !== SOURCE_TEXT_IDLE && progressState.stage !== SOURCE_TEXT_COMPLETED && progressState.stage !== SOURCE_TEXT_ERROR;
   return (
-    <div aria-busy={isProcessing} className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
-      <input ref={fileInputRef} type={SOURCE_TEXT_FILE} accept={SOURCE_TEXT_VIDEO} className={cn("hidden")} onChange={handleFileInputChange} />
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
-        <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
-          <div className={cn("flex items-center gap-3 min-w-0")}>
-            <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
-              <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
-                <Scissors className={cn("w-5 h-5")} />
+    <StudioPage aria-busy={isProcessing}>
+      <StudioInput ref={fileInputRef} type={SOURCE_TEXT_FILE} accept={SOURCE_TEXT_VIDEO} className={cn("hidden")} onChange={handleFileInputChange} />
+      <StudioCanvas>
+        <StudioHeader
+          icon={Scissors}
+          title={<>{text.HEADER_TITLE}</>}
+          description={<>{text.HEADER_DESC}</>}
+          badge={<>{text.HEADER_BADGE}</>}
+          actions={
+            <>
+              <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
+                <Tooltip content={text.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
+                  <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={() => setIsAiConfigOpen(!isAiConfigOpen)} disabled={isProcessing} expanded={isAiConfigOpen} label={<>{text.AI_CONFIG_TITLE}</>} />
+                </Tooltip>
               </div>
-            </div>
-            <div className={cn("min-w-0")}>
-              <div className={cn("flex items-center gap-2 flex-wrap")}>
-                <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>{text.HEADER_TITLE}</h1>
-                <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
-                  <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
-                  {text.HEADER_BADGE}
-                </span>
-              </div>
-              <p className={cn("text-[11px] text-slate-400 mt-0.5")}>{text.HEADER_DESC}</p>
-            </div>
-          </div>
-          <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
-            <Tooltip content={text.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
-              <Button
-                variant={SOURCE_TEXT_UNSTYLED}
-                type={SOURCE_TEXT_BUTTON}
-                onClick={() => setIsAiConfigOpen(!isAiConfigOpen)}
-                disabled={isProcessing}
-                className={cn("group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none select-none", {
-                  "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
-                  "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
-                })}>
-                <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
-                <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>{text.AI_CONFIG_TITLE}</span>
-                {isAiConfigOpen ? <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} /> : <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
+            </>
+          }></StudioHeader>
         {isAiConfigOpen && (
-          <fieldset disabled={isProcessing} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4 text-left")}>
+          <StudioFieldset disabled={isProcessing} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4 text-left")}>
             <ChatPlanningSettingsBlock provider={aiProvider} model={aiModel} executionMode={aiExecutionMode} chromeHeadless={aiChromeHeadless} onProviderChange={setAiProvider} onModelChange={setAiModel} onExecutionModeChange={setAiExecutionMode} onChromeHeadlessChange={setAiChromeHeadless} currentLang={currentLang} />
-          </fieldset>
+          </StudioFieldset>
         )}
         <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
           <div className={cn("lg:col-span-2 flex flex-col gap-5 min-w-0 h-full")}>
-            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full h-full flex flex-col justify-start")}>
+            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full h-full flex flex-col justify-start")}>
               <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
                   <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{text.STEP_01}</span>
@@ -570,10 +549,10 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
                   </div>
                 ) : null}
               </div>
-            </div>
+            </StudioCard>
           </div>
           <div className={cn("lg:col-span-1 flex flex-col gap-5 min-w-0 h-full")}>
-            <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
               <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
                   <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500 to-pink-600 p-0.5 shadow-xs shadow-purple-500/20 shrink-0")}>
@@ -770,10 +749,10 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
                   )}
                 </div>
               </div>
-            </div>
+            </StudioCard>
           </div>
         </div>
-        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+        <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
           <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4")}>
             <div className={cn("flex items-center gap-2.5 min-w-0")}>
               <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{text.STEP_03}</span>
@@ -847,9 +826,9 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </StudioCard>
+      </StudioCanvas>
+    </StudioPage>
   );
 };
 const ShortsResultCardItem: FC<{
@@ -902,7 +881,7 @@ const ShortsResultCardItem: FC<{
   };
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
   return (
-    <div className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-955/80 shadow-xl flex flex-col justify-between group hover:border-purple-500/50 hover:shadow-purple-500/10 transition-all")}>
+    <StudioCard className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-955/80 shadow-xl flex flex-col justify-between group hover:border-purple-500/50 hover:shadow-purple-500/10 transition-all")}>
       <div className={cn("relative rounded-xl overflow-hidden bg-slate-950 aspect-[9/16] w-full max-h-[420px] flex items-center justify-center border border-slate-800/60 shadow-inner group/video")}>
         {clip.videoUrl ? (
           <video
@@ -990,7 +969,7 @@ const ShortsResultCardItem: FC<{
           </Button>
         </div>
       </div>
-    </div>
+    </StudioCard>
   );
 };
 export default ShortsExtractor;

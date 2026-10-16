@@ -1,3 +1,4 @@
+import { StudioSelect, StudioInput } from "../ui/Studio.js";
 import { SOURCE_TEXT_LABEL, SOURCE_TEXT_MAXVIDEOSTOOLTIP, SOURCE_TEXT_MIXED, SOURCE_TEXT_RANGE, SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE, SOURCE_TEXT_SELECTING, SOURCE_TEXT_SYMBOL_18, SOURCE_TEXT_SYMBOL_23, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_7, SOURCE_TEXT_VALUE, SOURCE_TEXT_VI } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -101,7 +102,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenMode}</span>
               <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Wand2 className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                <select
+                <StudioSelect
                   value={generationMode}
                   onChange={(e) => {
                     const mode = e.target.value as ImageGenerationMode;
@@ -115,7 +116,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   <option value={ImageGenerationMode.GeminiChat} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionAssistantMode}
                   </option>
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
               </div>
             </div>
@@ -133,13 +134,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{forceVideoOnly ? uiTexts.videoModelLabel : T.lblEngine}</span>
             <div className={cn(FIELD_BASE_CLASSNAME)}>
               <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={imageGeneratorEngine} onChange={(e) => applyVideoModel(e.target.value as ImageGeneratorEngine)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <StudioSelect value={imageGeneratorEngine} onChange={(e) => applyVideoModel(e.target.value as ImageGeneratorEngine)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(engineOptions, (opt) => (
                   <option key={opt.value + opt.label} value={opt.value} className={cn("bg-slate-955 text-slate-300")}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </StudioSelect>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
@@ -148,14 +149,14 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{forceVideoOnly ? T.lblChromeVideoGen : T.lblChromeHeadless}</span>
               <div className={cn(FIELD_BASE_CLASSNAME)} title={T.lblChromeHeadlessTooltip}>
                 <Globe className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                <select value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                <StudioSelect value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                   <option value={uiTexts.windowedModeValue} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionWindowed}
                   </option>
                   <option value={uiTexts.headlessModeValue} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionHeadless}
                   </option>
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
               </div>
             </div>
@@ -166,13 +167,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblDuration}</span>
                 <div className={cn(FIELD_BASE_CLASSNAME)}>
                   <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                  <select value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                  <StudioSelect value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                     {_.map(videoDurationOptions, (duration) => (
                       <option key={duration} value={duration} className={cn("bg-slate-955 text-slate-300")}>
                         {duration}
                       </option>
                     ))}
-                  </select>
+                  </StudioSelect>
                   <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
                 </div>
               </div>
@@ -180,13 +181,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                 <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblVideoResolution}</span>
                 <div className={cn(FIELD_BASE_CLASSNAME)}>
                   <Sparkles className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                  <select value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+                  <StudioSelect value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                     {_.map(videoResolutionOptions, (resolution) => (
                       <option key={resolution} value={resolution} className={cn("bg-slate-955 text-slate-300")}>
                         {resolution}
                       </option>
                     ))}
-                  </select>
+                  </StudioSelect>
                   <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
                 </div>
               </div>
@@ -196,13 +197,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblAspectRatio}</span>
             <div className={cn(FIELD_BASE_CLASSNAME)}>
               <Layout className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-              <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
+              <StudioSelect value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className={cn("flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5")}>
                 {_.map(aspectRatioOptions, (r) => (
                   <option key={r} value={r} className={cn("bg-slate-955 text-slate-300")}>
                     {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
                   </option>
                 ))}
-              </select>
+              </StudioSelect>
               <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
             </div>
           </div>
@@ -211,7 +212,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <span className={cn("text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block")}>{T.lblGenType || uiTexts.contentToGenerate}</span>
               <div className={cn(FIELD_BASE_CLASSNAME)}>
                 <Film className={cn("w-3.5 h-3.5 text-slate-400 mr-2 shrink-0")} />
-                <select
+                <StudioSelect
                   value={forceVideoOnly ? GenerateType.Video : generateType}
                   disabled={forceVideoOnly}
                   onChange={(e) => {
@@ -233,7 +234,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   <option value={GenerateType.Mixed} className={cn("bg-slate-955 text-slate-300")}>
                     {T.optionMixed || uiTexts.mixedMedia}
                   </option>
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5")} />
               </div>
             </div>
@@ -260,7 +261,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </p>
             <div className={cn("flex items-center gap-3 pt-1")}>
               <span className={cn("text-[10px] text-slate-400 whitespace-nowrap")}>{maxVideosLabel}</span>
-              <input type={SOURCE_TEXT_RANGE} min={MEDIA_MIX_CONFIG.MIN_VIDEOS} max={MEDIA_MIX_CONFIG.MAX_VIDEOS} value={maxVideoScenes} onChange={(e) => setMaxVideoScenes(Number(e.target.value))} className={cn("flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer")} />
+              <StudioInput type={SOURCE_TEXT_RANGE} min={MEDIA_MIX_CONFIG.MIN_VIDEOS} max={MEDIA_MIX_CONFIG.MAX_VIDEOS} value={maxVideoScenes} onChange={(e) => setMaxVideoScenes(Number(e.target.value))} className={cn("flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer")} />
               <span className={cn("text-xs font-mono font-bold text-purple-300 w-6 text-right")}>{maxVideoScenes}</span>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { StudioCard, StudioSelect, StudioInput } from "../ui/Studio.js";
 import { SOURCE_TEXT_AMBER, SOURCE_TEXT_SYMBOL_16 } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -26,7 +27,7 @@ interface PresetSectionProps {
 export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedPresetId, handleApplyPreset, presetNameInputState, setPresetNameInputState, handleSavePreset, handleDeletePreset, T, truncateWords }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   return (
-    <div className={cn("glass-card bg-slate-900/60 rounded-2xl px-4 py-2.5 shadow-md backdrop-blur-md w-full flex flex-wrap items-center justify-between gap-3 text-left")}>
+    <StudioCard className={cn("glass-card bg-slate-900/60 rounded-2xl px-4 py-2.5 shadow-md backdrop-blur-md w-full flex flex-wrap items-center justify-between gap-3 text-left")}>
       <div className={cn("flex items-center gap-2.5 flex-1 min-w-[280px]")}>
         <div className={cn("flex items-center gap-1.5 shrink-0")}>
           <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20")}>
@@ -35,7 +36,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedP
           <span className={cn("text-xs font-bold text-slate-200 uppercase tracking-wider font-mono hidden sm:inline")}>{_.trimEnd(T.presetLabel || uiTexts.presetConfigDefault, SOURCE_TEXT_SYMBOL_16)}</span>
         </div>
         <div className={cn("relative flex-1 min-w-[140px] max-w-[240px] flex items-center bg-slate-955/90 rounded-xl px-3 h-9 shadow-inner")}>
-          <select value={selectedPresetId} onChange={(e) => handleApplyPreset(e.target.value)} className={cn("w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none font-medium truncate")}>
+          <StudioSelect value={selectedPresetId} onChange={(e) => handleApplyPreset(e.target.value)} className={cn("w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none font-medium truncate")}>
             <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className={cn("bg-slate-900 text-slate-300")}>
               {T.presetDefaultOption || uiTexts.defaultPreset}
             </option>
@@ -44,7 +45,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedP
                 {truncateWords(p.name, 5)}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <ChevronDown className={cn("pointer-events-none absolute right-2.5 text-slate-400 w-3.5 h-3.5")} />
         </div>
         {!_.isEmpty(selectedPresetId) && (
@@ -60,7 +61,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedP
         )}
       </div>
       <div className={cn("flex items-center gap-2 shrink-0")}>
-        <input
+        <StudioInput
           type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
           placeholder={T.presetNamePlaceholder}
           value={presetNameInputState}
@@ -72,6 +73,6 @@ export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedP
           <span className={cn("hidden sm:inline")}>{T.savePresetBtn}</span>
         </Button>
       </div>
-    </div>
+    </StudioCard>
   );
 };

@@ -1,3 +1,4 @@
+import { StudioCard, StudioInput } from "../ui/Studio.js";
 import {
   VIDEO_EXPORT_TEMPLATE_SYMBOL,
   VIDEO_EXPORT_TEXT_ASPECTRATIO,
@@ -269,7 +270,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
   const progressPercent = _.clamp(_.toNumber(job?.percent) || 0, 0, 100);
   const showProgress = Boolean(job) && job?.status !== VideoExportJobStatus.IDLE;
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
         <div className={cn("flex items-center gap-2.5 min-w-0")}>
           <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{text.STEP_02}</span>
@@ -359,7 +360,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           <label htmlFor={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE} className={cn("text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between")}>
             <span>{text.TITLE_LABEL}</span>
           </label>
-          <input
+          <StudioInput
             id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE}
             type={VIDEO_EXPORT_TEXT_TEXT}
             value={title}
@@ -435,6 +436,6 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           </Button>
         )}
       </div>
-    </div>
+    </StudioCard>
   );
 };

@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_A, SOURCE_TEXT_BUTTON, SOURCE_TEXT_METADATA, SOURCE_TEXT_SM, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_28, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import React, { useRef, useState } from "react";
 import _ from "lodash";
@@ -73,7 +74,7 @@ export const ShortsResultCard: React.FC<ShortsResultCardProps> = ({ clip, isPlay
     document.body.removeChild(link);
   };
   return (
-    <div className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-900/70 shadow-xl flex flex-col justify-between group hover:border-purple-500/40 transition-all")}>
+    <StudioCard className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-900/70 shadow-xl flex flex-col justify-between group hover:border-purple-500/40 transition-all")}>
       <div className={cn("relative rounded-xl overflow-hidden bg-slate-950 aspect-[9/16] w-full max-h-[380px] flex items-center justify-center border border-slate-800/60 shadow-inner group/video")}>
         {clip.videoUrl ? (
           <video
@@ -154,6 +155,6 @@ export const ShortsResultCard: React.FC<ShortsResultCardProps> = ({ clip, isPlay
           </Button>
         </div>
       </div>
-    </div>
+    </StudioCard>
   );
 };

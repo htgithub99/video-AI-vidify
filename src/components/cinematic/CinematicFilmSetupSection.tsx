@@ -1,3 +1,4 @@
+import { StudioCard, StudioTextarea, StudioSelect } from "../ui/Studio.js";
 import { SOURCE_TEXT_10_MINUTES, SOURCE_TEXT_15_MINUTES, SOURCE_TEXT_1_MINUTE, SOURCE_TEXT_2_MINUTES, SOURCE_TEXT_3_MINUTES, SOURCE_TEXT_5_MINUTES, SOURCE_TEXT_8_MINUTES, SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE, SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2, SOURCE_TEXT_VI } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import { ChevronDown, Clapperboard, Clock, Globe } from "lucide-react";
@@ -29,7 +30,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
   const texts = _.get(CINEMATIC_SETUP_TEXTS, currentLang, CINEMATIC_SETUP_TEXTS.vi);
   const common = _.get(UI_COMMON_TEXTS, currentLang, UI_COMMON_TEXTS.vi);
   return (
-    <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl text-left border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden")}>
+    <StudioCard className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl text-left border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden")}>
       <div className={cn("flex items-center gap-3 min-w-0 relative z-10")}>
         <div className={cn("w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-md shadow-amber-500/20 shrink-0")}>
           <div className={cn("w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center")}>
@@ -47,7 +48,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
         </div>
       </div>
       <div className={cn("relative z-10")}>
-        <textarea rows={4} value={idea} onChange={(event) => setIdea(event.target.value)} placeholder={texts.PLACEHOLDER} className={cn("w-full min-h-[120px] sm:min-h-[140px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y placeholder:text-slate-500 transition-all shadow-inner font-sans")} />
+        <StudioTextarea rows={4} value={idea} onChange={(event) => setIdea(event.target.value)} placeholder={texts.PLACEHOLDER} className={cn("w-full min-h-[120px] sm:min-h-[140px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y placeholder:text-slate-500 transition-all shadow-inner font-sans")} />
       </div>
       <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3")}>
         <div className={cn("space-y-1.5 min-w-0")}>
@@ -56,14 +57,14 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
           </span>
           <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.LANGUAGE_LABEL}>
             <Globe className={cn("w-3.5 h-3.5 text-sky-400 mr-2 shrink-0")} />
-            <select value={language} onChange={(event) => setLanguage(event.target.value as ProjectLanguage)} className={cn(SELECT_BASE_CLASSNAME)}>
+            <StudioSelect value={language} onChange={(event) => setLanguage(event.target.value as ProjectLanguage)} className={cn(SELECT_BASE_CLASSNAME)}>
               <option value={ProjectLanguage.VI} className={cn("bg-slate-955 text-slate-200")}>
                 {texts.VIETNAMESE_LANG}
               </option>
               <option value={ProjectLanguage.EN} className={cn("bg-slate-955 text-slate-200")}>
                 {texts.ENGLISH_LANG}
               </option>
-            </select>
+            </StudioSelect>
             <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
         </div>
@@ -73,7 +74,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
           </span>
           <div className={cn(FIELD_BASE_CLASSNAME)} title={texts.DURATION_LABEL}>
             <Clock className={cn("w-3.5 h-3.5 text-emerald-400 mr-2 shrink-0")} />
-            <select value={duration} onChange={(event) => setDuration(event.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
+            <StudioSelect value={duration} onChange={(event) => setDuration(event.target.value)} className={cn(SELECT_BASE_CLASSNAME)}>
               <option value={SOURCE_TEXT_1_MINUTE} className={cn("bg-slate-955 text-slate-200")}>
                 {texts.DURATIONS.ONE_MIN}
               </option>
@@ -95,7 +96,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
               <option value={SOURCE_TEXT_15_MINUTES} className={cn("bg-slate-955 text-slate-200")}>
                 {texts.DURATIONS.FIFTEEN_MIN}
               </option>
-            </select>
+            </StudioSelect>
             <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-500 w-4 h-4")} />
           </div>
         </div>
@@ -114,6 +115,6 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
         title={texts.AI_DIRECTOR_TITLE}
         note={_.isEqual(planningExecutionMode, AiPlanningExecutionMode.ApiOnly) ? texts.PLANNING_API_NOTE : texts.PLANNING_ROOM_NOTE}
       />
-    </div>
+    </StudioCard>
   );
 }

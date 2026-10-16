@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEXT_A, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_THUMBNAILS, SOURCE_TEXT_VI } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React, { useState } from "react";
@@ -86,7 +87,7 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
     return null;
   }
   return (
-    <div className={cn("bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-4 shadow-xl backdrop-blur-md text-left")}>
+    <StudioCard className={cn("bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-4 shadow-xl backdrop-blur-md text-left")}>
       <div className={cn("flex items-center justify-between")}>
         <div className={cn("flex items-center gap-2")}>
           <span className={cn("w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20")}>
@@ -108,6 +109,6 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
         ))}
       </div>
       <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
-    </div>
+    </StudioCard>
   );
 };

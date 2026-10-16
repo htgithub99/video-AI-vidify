@@ -1,3 +1,4 @@
+import { StudioSelect } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { Film, Sparkles, Square } from "lucide-react";
 import { FC, useEffect, useId, useState, type SelectHTMLAttributes } from "react";
@@ -93,9 +94,9 @@ export const MotionSelectField: FC<SelectHTMLAttributes<HTMLSelectElement> & { l
       <label htmlFor={selectId} className={labelClassName}>
         {label}
       </label>
-      <select {...props} id={selectId}>
+      <StudioSelect {...props} id={selectId}>
         {children}
-      </select>
+      </StudioSelect>
     </div>
   );
 };

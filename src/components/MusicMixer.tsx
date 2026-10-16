@@ -1,3 +1,4 @@
+import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioInput } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
   SOURCE_TEMPLATE_SYMBOL_126,
@@ -7,25 +8,8 @@ import {
   SOURCE_TEMPLATE_SYMBOL_149,
   SOURCE_TEMPLATE_SYMBOL_75,
   SOURCE_TEMPLATE_SYMBOL_170,
-  SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN,
-  SOURCE_TEXT_BG_GRADIENT_TO_B_FROM_SLATE_900_2,
-  SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_SM,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3_MIN_W,
-  SOURCE_TEXT_W_10_H_10_ROUNDED_XL_BG_2,
-  SOURCE_TEXT_W_FULL_H_FULL_BG_SLATE_950_2,
-  SOURCE_TEXT_W_5_H_5,
-  SOURCE_TEXT_MIN_W_0,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP,
-  SOURCE_TEXT_TEXT_BASE_SM_TEXT_LG_FONT_BLACK_2,
-  SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_3,
-  SOURCE_TEXT_W_2_5_H_2_5_TEXT,
   SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MT_0,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SELF_START,
-  SOURCE_TEXT_GROUP_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER,
-  SOURCE_TEXT_W_3_5_H_3_5_TEXT_5,
-  SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT,
-  SOURCE_TEXT_W_3_5_H_3_5_TEXT_6,
-  SOURCE_TEXT_W_3_5_H_3_5_TEXT_7,
   SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG,
   SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS_2,
   SOURCE_TEXT_LG_COL_SPAN_2_FLEX_FLEX_COL,
@@ -221,7 +205,7 @@ import { stringifyJson } from "../lib/jsonStringify.js";
 import { ChangeEvent, DragEvent, FC, useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
 import _ from "lodash";
-import { Download, FolderOpen, FolderPlus, Music2, Shuffle, Trash2, Sparkles, SlidersHorizontal, X, Disc3, Layers, FileArchive, AlertCircle, ChevronDown, ChevronUp, Square, CheckSquare } from "lucide-react";
+import { Download, FolderOpen, FolderPlus, Music2, Shuffle, Trash2, Sparkles, SlidersHorizontal, X, Disc3, Layers, FileArchive, AlertCircle, Square, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
@@ -237,9 +221,9 @@ import { MUSIC_MIXER_SERVER } from "../constants/musicMixer";
 import { deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../services/musicMixerTracks";
 import { recordWorkflowActivity } from "../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
-type Track = { file: File; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number; };
+type Track = { file: File; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number };
 type SeoData = ReturnType<typeof createSeo>;
-type ResultFolder = { name: string; tracks: Track[]; seo?: SeoData; seoOptions?: any[]; };
+type ResultFolder = { name: string; tracks: Track[]; seo?: SeoData; seoOptions?: any[] };
 const AUDIO_EXT = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
 const MIXER_DB = MUSIC_MIXER_SERVER.DATABASE_NAME;
 const numberedName = (file: File, index: number) =>
@@ -408,7 +392,7 @@ const walkEntry = async (entry: any): Promise<Track[]> => {
 };
 const PRESET_SONGS_PER_RESULT = [5, 10, 15, 20, 25];
 const PRESET_RESULT_COUNTS = [2, 3, 5, 8, 10];
-const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
+const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const vi = currentLang === SOURCE_TEXT_VI;
   const text = MUSIC_MIXER_TEXTS[vi ? SOURCE_TEXT_VI : SOURCE_TEXT_EN];
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -428,9 +412,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
   const [seoChromeHeadless, setSeoChromeHeadless] = useState(false);
   const [trackOrder, setTrackOrder] = useState<"random" | "featured" | "name">(SOURCE_TEXT_FEATURED);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
-  const [pendingFolders, setPendingFolders] = useState<
-    Array<{ folderPath: string; files: Array<{ name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string; }>; }>
-  >([]);
+  const [pendingFolders, setPendingFolders] = useState<Array<{ folderPath: string; files: Array<{ name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }> }>>([]);
   const [selectedPendingFolders, setSelectedPendingFolders] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -669,10 +651,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
             });
             const ranking = await response.json();
             if (!response.ok || !ranking.success) throw new Error(ranking.error || text.RANK_ERROR);
-            const scores = new Map<
-              number,
-              { score: number; durationSeconds?: number; }
-            >(ranking.scores.map((item: { index: number; score: number; durationSeconds?: number }) => [item.index - 1, item]));
+            const scores = new Map<number, { score: number; durationSeconds?: number }>(ranking.scores.map((item: { index: number; score: number; durationSeconds?: number }) => [item.index - 1, item]));
             const orderedTracks = _.map(
               _.orderBy(
                 _.map(folder.tracks, (track, index) => ({ track: { ...track, durationSeconds: scores.get(index)?.durationSeconds || track.durationSeconds }, score: scores.get(index)?.score ?? 0 })),
@@ -797,52 +776,30 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
   const isFormValid = tracks.length > 0 && songsPerResult >= 1 && resultCount >= 1 && !isInsufficient;
   const isBusy = busy || isDownloading;
   return (
-    <div aria-busy={isBusy} className={cn(SOURCE_TEXT_CREATION_WORKSPACE_W_FULL_H_FULL_MIN)}>
-      <div className={cn(SOURCE_TEXT_BG_GRADIENT_TO_B_FROM_SLATE_900_2)}>
-        <div className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_SM)}>
-          <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3_MIN_W)}>
-            <div className={cn(SOURCE_TEXT_W_10_H_10_ROUNDED_XL_BG_2)}>
-              <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_BG_SLATE_950_2)}>
-                <Shuffle className={cn(SOURCE_TEXT_W_5_H_5)} />
+    <StudioPage aria-busy={isBusy}>
+      <StudioCanvas>
+        <StudioHeader
+          icon={Shuffle}
+          title={<>{text.HEADER_TITLE}</>}
+          description={<>{text.HEADER_DESC}</>}
+          badge={<>{text.HEADER_BADGE}</>}
+          actions={
+            <>
+              <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SELF_START)}>
+                <Tooltip content={text.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
+                  <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={() => setIsAiConfigOpen(!isAiConfigOpen)} disabled={isBusy} expanded={isAiConfigOpen} label={<>{text.AI_CONFIG_TITLE}</>} />
+                </Tooltip>
               </div>
-            </div>
-            <div className={cn(SOURCE_TEXT_MIN_W_0)}>
-              <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP)}>
-                <h1 className={cn(SOURCE_TEXT_TEXT_BASE_SM_TEXT_LG_FONT_BLACK_2)}>{text.HEADER_TITLE}</h1>
-                <span className={cn(SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_3)}>
-                  <Sparkles className={cn(SOURCE_TEXT_W_2_5_H_2_5_TEXT)} />
-                  {text.HEADER_BADGE}
-                </span>
-              </div>
-              <p className={cn(SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_400_MT_0)}>{text.HEADER_DESC}</p>
-            </div>
-          </div>
-          <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SELF_START)}>
-            <Tooltip content={text.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
-              <Button
-                variant={SOURCE_TEXT_UNSTYLED}
-                type={SOURCE_TEXT_BUTTON}
-                onClick={() => setIsAiConfigOpen(!isAiConfigOpen)}
-                disabled={isBusy}
-                className={cn(SOURCE_TEXT_GROUP_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER, {
-                  "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": isAiConfigOpen,
-                  "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !isAiConfigOpen,
-                })}>
-                <SlidersHorizontal className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_5)} />
-                <span className={cn(SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT)}>{text.AI_CONFIG_TITLE}</span>
-                {isAiConfigOpen ? <ChevronUp className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_6)} /> : <ChevronDown className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_7)} />}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
+            </>
+          }></StudioHeader>
         {isAiConfigOpen && (
-          <fieldset disabled={isBusy} className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
+          <StudioFieldset disabled={isBusy} className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
             <ChatPlanningSettingsBlock provider={seoProvider} model={seoModel} executionMode={seoExecutionMode} chromeHeadless={seoChromeHeadless} onProviderChange={setSeoProvider} onModelChange={setSeoModel} onExecutionModeChange={setSeoExecutionMode} onChromeHeadlessChange={setSeoChromeHeadless} currentLang={currentLang} />
-          </fieldset>
+          </StudioFieldset>
         )}
         <div className={cn(SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS_2)}>
           <div className={cn(SOURCE_TEXT_LG_COL_SPAN_2_FLEX_FLEX_COL)}>
-            <div className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL)}>
+            <StudioCard className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL)}>
               <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_RELATIVE_Z)}>
                 <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
                   <span className={cn(SOURCE_TEXT_W_6_H_6_ROUNDED_XL_BG)}>{text.STEP_01}</span>
@@ -865,7 +822,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                       </Button>
                     </Tooltip>
                   )}
-                  <input ref={fileInputRef} className={cn(SOURCE_TEXT_SR_ONLY)} type={SOURCE_TEXT_FILE} {...{ webkitdirectory: SOURCE_TEXT_TRUE, directory: SOURCE_TEXT_TRUE, multiple: true }} onChange={onFiles} />
+                  <StudioInput ref={fileInputRef} className={cn(SOURCE_TEXT_SR_ONLY)} type={SOURCE_TEXT_FILE} {...{ webkitdirectory: SOURCE_TEXT_TRUE, directory: SOURCE_TEXT_TRUE, multiple: true }} onChange={onFiles} />
                 </div>
               </div>
               <div
@@ -949,10 +906,10 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                   </div>
                 )}
               </div>
-            </div>
+            </StudioCard>
           </div>
           <div className={cn(SOURCE_TEXT_LG_COL_SPAN_1_FLEX_FLEX_COL)}>
-            <div className={cn(SOURCE_TEXT_GLASS_CARD_BG_SLATE_900_90_BORDER)}>
+            <StudioCard className={cn(SOURCE_TEXT_GLASS_CARD_BG_SLATE_900_90_BORDER)}>
               <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B)}>
                 <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
                   <div className={cn(SOURCE_TEXT_W_8_H_8_ROUNDED_LG_BG)}>
@@ -995,7 +952,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                     );
                   })}
                 </div>
-                <input
+                <StudioInput
                   type={SOURCE_TEXT_NUMBER}
                   min={SOURCE_TEXT_1}
                   max={Math.max(1, tracks.length)}
@@ -1037,7 +994,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                     );
                   })}
                 </div>
-                <input
+                <StudioInput
                   type={SOURCE_TEXT_NUMBER}
                   min={SOURCE_TEXT_1}
                   max={SOURCE_TEXT_100}
@@ -1167,10 +1124,10 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                   )}
                 </div>
               </div>
-            </div>
+            </StudioCard>
           </div>
         </div>
-        <div className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_2)}>
+        <StudioCard className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_2)}>
           <div className={cn(SOURCE_TEXT_FLEX_FLEX_COL_SM_FLEX_ROW_SM_2)}>
             <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
               <span className={cn(SOURCE_TEXT_W_6_H_6_ROUNDED_XL_BG)}>{text.STEP_03}</span>
@@ -1227,7 +1184,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
           ) : (
             <div className={cn(SOURCE_TEXT_GRID_GRID_COLS_1_MD_GRID_COLS)}>
               {_.map(results, (folder) => (
-                <div key={folder.name} className={cn(SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_800_90)}>
+                <StudioCard key={folder.name} className={cn(SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_800_90)}>
                   <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_5)}>
                     <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W)}>
                       <div className={cn(SOURCE_TEXT_W_7_H_7_ROUNDED_LG_BG)}>
@@ -1258,12 +1215,12 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </StudioCard>
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </StudioCard>
+      </StudioCanvas>
       <Modal
         isOpen={pendingFolders.length > 0}
         onClose={() => {
@@ -1410,7 +1367,7 @@ const MusicMixer: FC<{ currentLang: Lang; }> = ({ currentLang }) => {
           </div>
         </div>
       </Modal>
-    </div>
+    </StudioPage>
   );
 };
 export default MusicMixer;

@@ -1,3 +1,4 @@
+import { StudioInput } from "../ui/Studio.js";
 import _ from "lodash";
 import { SOURCE_TEXT_BUTTON, SOURCE_TEXT_FILE, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { useRef } from "react";
@@ -30,7 +31,7 @@ export default function FlowVideoCharacterImages({ images, disabled, texts, onAd
           {FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.MAX_IMAGES}
         </span>
       </div>
-      <input
+      <StudioInput
         ref={fileInputRef}
         type={SOURCE_TEXT_FILE}
         accept={FLOW_VIDEO_CHARACTER_REFERENCE_CONFIG.ACCEPT_ATTRIBUTE}

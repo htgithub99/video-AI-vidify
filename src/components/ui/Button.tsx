@@ -1,6 +1,8 @@
 import { VIDEO_EXPORT_TEXT_NUMBER, VIDEO_EXPORT_TEXT_STRING } from "../../constants/videoExportText";
 import { SOURCE_TEXT_MD, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
+import { STUDIO_UI } from "../../constants/studioTheme.js";
+import { studioButtonVariant } from "../../lib/studioTheme.js";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
 import { BUTTON_CLASS_NAME, BUTTON_SIZE_CLASS_NAME, BUTTON_TOOLTIP_PREFIX, BUTTON_VARIANT_CLASS_NAME, DETECTOR_VIETNAMESE_REGEX } from "../../constants";
@@ -31,7 +33,8 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = SOURCE_
   }
   return (
     <button
-      className={cn(finalBaseStyles, sizeStyles, variantStyles, className, {
+      data-variant={studioButtonVariant(variant, className)}
+      className={cn(STUDIO_UI.BUTTON, finalBaseStyles, sizeStyles, variantStyles, className, {
         [BUTTON_CLASS_NAME.LOADING]: Boolean(isLoading),
       })}
       disabled={disabled || isLoading}

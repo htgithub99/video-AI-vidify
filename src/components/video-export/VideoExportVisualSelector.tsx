@@ -1,3 +1,4 @@
+import { StudioInput } from "../ui/Studio.js";
 import {
   VIDEO_EXPORT_TEMPLATE_KET_QUA_TIM_KIEM_CHO,
   VIDEO_EXPORT_TEXT_5XL,
@@ -276,7 +277,7 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
               <div className="flex-1 flex flex-col min-w-0 bg-[#121214] p-4 gap-3.5 overflow-hidden">
                 <div className="relative w-full max-w-xl shrink-0">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-                  <input
+                  <StudioInput
                     type={VIDEO_EXPORT_TEXT_TEXT}
                     autoFocus
                     value={searchQuery}

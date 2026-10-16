@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { VideoExportSectionHeading } from "./VideoExportSectionHeading";
 import { VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SM, VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2, VIDEO_EXPORT_TEXT_UNSTYLED } from "../../constants/videoExportText";
 import { FC } from "react";
@@ -25,7 +26,7 @@ const formatCreatedAt = (value: string): string => {
   return Number.isNaN(date.getTime()) ? VIDEO_EXPORT_TEXT_SYMBOL : date.toLocaleString();
 };
 const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, isDownloading, onDownload, onRemove }) => (
-  <div className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-900/70 shadow-xl flex flex-col justify-between group hover:border-purple-500/40 transition-all")}>
+  <StudioCard className={cn("glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 bg-slate-900/70 shadow-xl flex flex-col justify-between group hover:border-purple-500/40 transition-all")}>
     <VideoExportPlayer src={result.videoUrl} aspectRatio={result.aspectRatio} badgeText={result.aspectRatio} badgeIcon={Film} />
     <div className={cn("mt-3 space-y-2 text-left flex-1 flex flex-col justify-between")}>
       <div className={cn("space-y-1.5")}>
@@ -70,13 +71,13 @@ const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, i
         </Button>
       </div>
     </div>
-  </div>
+  </StudioCard>
 );
 export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter }) => {
   const { text, results, isExporting, job, downloadingId } = exporter;
   const hasResults = !_.isEmpty(results);
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between gap-3 border-b border-slate-800/80 pb-4")}>
         <VideoExportSectionHeading step={text.STEP_03} title={text.RESULTS_TITLE} icon={Flame} titleClassName={cn("text-sm font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-2")} iconClassName={cn("w-4 h-4 text-amber-400", { "animate-bounce": isExporting })}>
           <span className={cn("px-2 py-0.5 rounded-full text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>
@@ -113,6 +114,6 @@ export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter
           ))}
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

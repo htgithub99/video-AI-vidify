@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { VIDEO_EXPORT_TEMPLATE_SYMBOL_3, VIDEO_EXPORT_TEMPLATE_SYMBOL_4, VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SYMBOL_3, VIDEO_EXPORT_TEXT_UNSTYLED, VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW, VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW_CANCEL } from "../../constants/videoExportText";
 import { VIDEO_EXPORT_FRAME_CLASSNAMES } from "../../constants/videoExport";
 import { FC } from "react";
@@ -12,7 +13,7 @@ type VideoExportPreviewCardProps = {
 export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ exporter }) => {
   const { text, preview, isPreviewing, isPreviewOutdated, canRender, isExporting, config } = exporter;
   return (
-    <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between flex-wrap gap-2")}>
         <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
           <Eye className={cn("w-3.5 h-3.5 text-purple-400")} />
@@ -62,6 +63,6 @@ export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ export
           <span>{text.PREVIEW_OUTDATED}</span>
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

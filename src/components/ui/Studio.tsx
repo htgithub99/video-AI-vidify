@@ -1,0 +1,47 @@
+import { forwardRef, type HTMLAttributes, type FieldsetHTMLAttributes, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from "react";
+import { ChevronDown, ChevronUp, SlidersHorizontal, Sparkles, type LucideIcon } from "lucide-react";
+import { STUDIO_UI as S } from "../../constants/studioTheme.js";
+import { cn } from "../../lib/utils.js";
+import { Button } from "./Button.js";
+export const StudioPage = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.PAGE, className)} />);
+export const StudioCanvas = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CANVAS, className)} />);
+export const StudioCard = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CARD, className)} />);
+export const StudioFieldset = forwardRef<HTMLFieldSetElement, FieldsetHTMLAttributes<HTMLFieldSetElement>>(({ className, ...props }, ref) => <fieldset {...props} ref={ref} className={cn(S.FIELDSET, className)} />);
+export const StudioInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => <input {...props} ref={ref} className={cn(S.INPUT, className)} />);
+export const StudioSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(({ className, ...props }, ref) => <select {...props} ref={ref} className={cn(S.SELECT, className)} />);
+export const StudioTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => <textarea {...props} ref={ref} className={cn(S.TEXTAREA, className)} />);
+export const StudioIcon = ({ icon: Icon }: { icon: LucideIcon }) => (
+  <div className={S.ICON_FRAME}>
+    <div className={S.ICON_INNER}>
+      <Icon className={S.ICON} />
+    </div>
+  </div>
+);
+export const StudioHeader = ({ icon: Icon, title, description, badge, actions, children, className }: { icon: LucideIcon; title: ReactNode; description?: ReactNode; badge?: ReactNode; actions?: ReactNode; children?: ReactNode; className?: string }) => (
+  <StudioCard className={cn(S.HEADER, className)}>
+    <div className={S.HEADER_CONTENT}>
+      <StudioIcon icon={Icon} />
+      <div className={S.MIN_WIDTH}>
+        <div className={S.TITLE_ROW}>
+          <h1 className={S.TITLE}>{title}</h1>
+          {badge && (
+            <span className={S.BADGE}>
+              <Sparkles className={S.BADGE_ICON} />
+              {badge}
+            </span>
+          )}
+          {children}
+        </div>
+        {description && <p className={S.DESCRIPTION}>{description}</p>}
+      </div>
+    </div>
+    {actions && <div className={S.ACTIONS}>{actions}</div>}
+  </StudioCard>
+);
+export const StudioDisclosureButton = ({ expanded, label, className, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & { expanded: boolean; label: ReactNode }) => (
+  <Button {...props} type={props.type ?? S.BUTTON_TYPE} variant={S.UNSTYLED} aria-expanded={expanded} className={cn(S.DISCLOSURE, className)}>
+    <SlidersHorizontal className={S.DISCLOSURE_ICON} />
+    <span>{label}</span>
+    {expanded ? <ChevronUp className={S.DISCLOSURE_ICON} /> : <ChevronDown className={S.DISCLOSURE_ICON} />}
+  </Button>
+);

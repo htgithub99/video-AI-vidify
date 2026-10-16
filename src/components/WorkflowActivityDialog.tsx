@@ -1,3 +1,4 @@
+import { StudioSelect } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_170,
   SOURCE_TEMPLATE_SYMBOL_28,
@@ -288,11 +289,11 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
                 </Button>
               );
             })}
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)} aria-label={t.statusFilterAriaLabel} className={SOURCE_TEXT_SR_ONLY}>
+            <StudioSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilterType)} aria-label={t.statusFilterAriaLabel} className={SOURCE_TEXT_SR_ONLY}>
               <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.all}>{t.statusFilter.all}</option>
               <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.success}>{t.statusFilter.success}</option>
               <option value={WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.error}>{t.statusFilter.error}</option>
-            </select>
+            </StudioSelect>
           </div>
           <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
             <Tooltip content={t.copyAll} align={SOURCE_TEXT_END}>

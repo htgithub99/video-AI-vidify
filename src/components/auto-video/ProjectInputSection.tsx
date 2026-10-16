@@ -1,3 +1,4 @@
+import { StudioCard, StudioTextarea } from "../ui/Studio.js";
 import { SOURCE_TEXT_SYMBOL_31 } from "../../constants/sourceText";
 import React from "react";
 import _ from "lodash";
@@ -33,7 +34,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
     },
   ] as const;
   return (
-    <div className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
+    <StudioCard className={cn("glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full")}>
       <div className={cn("flex items-center justify-between relative z-10")}>
         <div className={cn("flex items-center gap-2.5")}>
           <span className={cn("w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-amber-500/20")}>{PIPELINE_STEPS.STEP_1}</span>
@@ -75,7 +76,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
         })}
       </div>
       <div className={cn("relative z-10")}>
-        <textarea
+        <StudioTextarea
           rows={5}
           value={scriptContent}
           onChange={(e) => setScriptContent(e.target.value)}
@@ -83,6 +84,6 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
           className={cn("w-full min-h-[140px] sm:min-h-[160px] max-h-[220px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/20")}
         />
       </div>
-    </div>
+    </StudioCard>
   );
 };

@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEMPLATE_4, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_VI } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -29,7 +30,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
   const cinematicPhaseIndex = currentStepIndex > 0 ? Math.min(Math.max(currentStepIndex, 1), 4) : stepProgress <= 25 ? 1 : stepProgress <= 50 ? 2 : stepProgress <= 75 ? 3 : 4;
   const cinematicPhaseLabels = T.cinematicPhaseLabels;
   return (
-    <div className={cn("action-panel glass-card bg-slate-900/90 border border-slate-800/80 p-4 space-y-4 text-center relative overflow-hidden shrink-0 backdrop-blur-xl rounded-3xl shadow-xl")}>
+    <StudioCard className={cn("action-panel glass-card bg-slate-900/90 border border-slate-800/80 p-4 space-y-4 text-center relative overflow-hidden shrink-0 backdrop-blur-xl rounded-3xl shadow-xl")}>
       <div className={cn("flex items-center gap-3 w-full relative z-10")}>
         {!isProcessing && canContinue ? (
           <Button
@@ -127,6 +128,6 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({ scriptCo
           <span className={cn("font-bold text-amber-400")}>{T.estimatePrefix}</span> {T.estimateSummary(estimatedClipCount, estimatedBatchCount, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH)}
         </div>
       )}
-    </div>
+    </StudioCard>
   );
 };

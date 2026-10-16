@@ -1,3 +1,4 @@
+import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea } from "./ui/Studio.js";
 import _ from "lodash";
 import {
   SOURCE_TEMPLATE_00_00,
@@ -48,7 +49,7 @@ import { DestructiveActionNotice } from "./common/DestructiveActionNotice";
 import { delayAsync } from "../lib/asyncUtils";
 import { getErrorMessage } from "../utils/errorUtils";
 import { useEffect, useState } from "react";
-import { Film, FolderOpen, Sparkles, Copy, Check, Trash2, AlertTriangle, Video, Play, Flame, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+import { Film, FolderOpen, Sparkles, Copy, Check, Trash2, AlertTriangle, Video, Play, Flame, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { recordWorkflowActivity } from "../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../constants/workflowActivity";
@@ -487,44 +488,22 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   const unsavedVideosCount = _.filter(clips, (clip) => clip.url && !clip.savedPath).length;
   const completedVideosCount = _.filter(clips, (clip) => clip.url).length;
   return (
-    <div className={cn("creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar")}>
-      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl relative overflow-visible w-full border border-slate-800/80")}>
-        <div className={cn("glass-card rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
-          <div className={cn("flex items-center gap-3 min-w-0")}>
-            <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 via-fuchsia-500 to-pink-600 p-0.5 shadow-md shadow-purple-500/20 shrink-0")}>
-              <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-purple-400")}>
-                <Film className={cn("w-5 h-5")} />
+    <StudioPage>
+      <StudioCanvas>
+        <StudioHeader
+          icon={Film}
+          title={<>{flowTexts.VIDEO_CREATOR_TITLE}</>}
+          description={<>{isVi ? SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU : SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT}</>}
+          badge={<>{SOURCE_TEXT_AI_FLOW}</>}
+          actions={
+            <>
+              <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
+                <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={() => setShowSettings(!showSettings)} disabled={!!busy} expanded={showSettings} label={<>{flowTexts.AI_SETTINGS}</>} />
               </div>
-            </div>
-            <div className={cn("min-w-0")}>
-              <div className={cn("flex items-center gap-2 flex-wrap")}>
-                <h1 className={cn("text-base sm:text-lg font-black text-slate-100 tracking-tight uppercase font-sans")}>{flowTexts.VIDEO_CREATOR_TITLE}</h1>
-                <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center gap-1 shadow-xs")}>
-                  <Sparkles className={cn("w-2.5 h-2.5 text-purple-400")} />
-                  {SOURCE_TEXT_AI_FLOW}
-                </span>
-              </div>
-              <p className={cn("text-[11px] text-slate-400 mt-0.5")}>{isVi ? SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU : SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT}</p>
-            </div>
-          </div>
-          <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
-            <Button
-              variant={SOURCE_TEXT_UNSTYLED}
-              type={SOURCE_TEXT_BUTTON}
-              onClick={() => setShowSettings(!showSettings)}
-              disabled={!!busy}
-              className={cn("group inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs leading-none select-none", {
-                "bg-purple-600/15 border-purple-500/50 text-purple-700 dark:text-purple-300 shadow-purple-500/10": showSettings,
-                "bg-white/95 hover:bg-purple-50/90 border-slate-200/90 hover:border-purple-300/80 text-slate-800 hover:text-purple-700 dark:bg-slate-900/90 dark:hover:bg-slate-850 dark:border-slate-800 dark:hover:border-purple-500/40 dark:text-slate-200 dark:hover:text-purple-300": !showSettings,
-              })}>
-              <SlidersHorizontal className={cn("w-3.5 h-3.5 text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-105 transition-transform")} />
-              <span className={cn("inline-flex items-center leading-none text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors")}>{flowTexts.AI_SETTINGS}</span>
-              {showSettings ? <ChevronUp className={cn("w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0 transition-colors")} /> : <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 shrink-0 transition-colors")} />}
-            </Button>
-          </div>
-        </div>
+            </>
+          }></StudioHeader>
         {showSettings && (
-          <fieldset disabled={!!busy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
+          <StudioFieldset disabled={!!busy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
             <ChatPlanningSettingsBlock
               provider={provider}
               model={model}
@@ -539,10 +518,10 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               onChromeHeadlessChange={setChromeHeadless}
               currentLang={currentLang}
             />
-          </fieldset>
+          </StudioFieldset>
         )}
         <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch")}>
-          <div className={cn("lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl")}>
+          <StudioCard className={cn("lg:col-span-6 flex flex-col justify-between gap-4 glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl")}>
             <div className={cn("space-y-3.5 flex-1 flex flex-col")}>
               <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-2.5")}>
                 <div className={cn("flex items-center gap-2.5 min-w-0")}>
@@ -579,7 +558,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 </div>
               </div>
               <div className={cn("flex-1 min-h-[130px] flex flex-col")}>
-                <textarea
+                <StudioTextarea
                   value={request}
                   onChange={(event) => setRequest(event.target.value)}
                   disabled={!!busy}
@@ -655,8 +634,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 </Button>
               </div>
             </div>
-          </div>
-          <div className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl lg:h-0 lg:min-h-full min-h-[420px] overflow-hidden")}>
+          </StudioCard>
+          <StudioCard className={cn("lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl lg:h-0 lg:min-h-full min-h-[420px] overflow-hidden")}>
             <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3 shrink-0")}>
               <div className={cn("flex items-center gap-2.5 min-w-0")}>
                 <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{SOURCE_TEXT_02}</span>
@@ -732,9 +711,9 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 </div>
               )}
             </div>
-          </div>
+          </StudioCard>
         </div>
-        <div className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full")}>
+        <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full")}>
           <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3")}>
             <div className={cn("flex items-center gap-2.5")}>
               <span className={cn("w-6 h-6 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20")}>{SOURCE_TEXT_03}</span>
@@ -832,8 +811,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               })}
             </div>
           )}
-        </div>
-      </div>
+        </StudioCard>
+      </StudioCanvas>
       {previewVideoUrl && (
         <Modal isOpen={Boolean(previewVideoUrl)} onClose={() => setPreviewVideoUrl(null)} title={flowTexts.PREVIEW} maxWidth={SOURCE_TEXT_XL}>
           <div className={cn("space-y-4 p-2")}>
@@ -905,6 +884,6 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
           </div>
         </div>
       </Modal>
-    </div>
+    </StudioPage>
   );
 }

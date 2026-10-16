@@ -1,3 +1,4 @@
+import { StudioCard } from "../ui/Studio.js";
 import { SOURCE_TEXT_EN, SOURCE_TEXT_TOP, SOURCE_TEXT_VI } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import React from "react";
@@ -27,7 +28,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({ vo
   const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, currentLang, AUTO_VIDEO_UI_TEXTS.vi);
   const displayVoiceName = voiceName || voiceURI;
   return (
-    <div className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
+    <StudioCard className={cn("bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md")}>
       <div className={cn("flex items-center justify-between")}>
         <div className={cn("flex items-center gap-2")}>
           <span className={cn("w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-amber-500/20")}>{PIPELINE_STEPS.STEP_2}</span>
@@ -59,6 +60,6 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({ vo
       {isVoiceDialogOpen && (
         <VoiceSelectionDialog key={voiceDialogPersistenceScope} isOpen={isVoiceDialogOpen} onClose={() => setIsVoiceDialogOpen(false)} currentLang={_.isEqual(currentLang, SOURCE_TEXT_EN) ? SOURCE_TEXT_EN : SOURCE_TEXT_VI} selectedVoiceId={voiceURI} favoriteVoices={[]} onToggleFavoriteVoice={_.noop} onSelectVoice={handleVoiceSelect} persistenceScope={voiceDialogPersistenceScope} />
       )}
-    </div>
+    </StudioCard>
   );
 };

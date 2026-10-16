@@ -1,3 +1,4 @@
+import { StudioSelect } from "../ui/Studio.js";
 import { VIDEO_EXPORT_TEMPLATE_SYMBOL_2 } from "../../constants/videoExportText";
 import { FC } from "react";
 import _ from "lodash";
@@ -33,7 +34,7 @@ export const VideoExportOptionSelect = <T extends string | number>({ id, label, 
             <SelectedIcon className={cn("w-3.5 h-3.5")} />
           </div>
         )}
-        <select
+        <StudioSelect
           id={id}
           disabled={disabled}
           value={`${value}`}
@@ -62,7 +63,7 @@ export const VideoExportOptionSelect = <T extends string | number>({ id, label, 
                   ))}
                 </optgroup>
               ))}
-        </select>
+        </StudioSelect>
         <div className={cn("absolute right-2.5 pointer-events-none text-slate-400")}>
           <ChevronDown className={cn("w-3.5 h-3.5")} />
         </div>

@@ -1,3 +1,4 @@
+import { StudioInput, StudioSelect } from "./ui/Studio.js";
 import _ from "lodash";
 import { Activity, Check, ChevronDown, Globe2, Heart, Mic, Play, Search, Square, User } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -239,7 +240,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 {dialogTexts.searchLabel}
               </label>
               <div className={cn("relative")}>
-                <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className={cn("w-full h-10 bg-slate-955 border border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-100 placeholder:text-slate-500 focus:border-rose-500 outline-none transition-all shadow-inner font-sans font-medium")} />
+                <StudioInput type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className={cn("w-full h-10 bg-slate-955 border border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-100 placeholder:text-slate-500 focus:border-rose-500 outline-none transition-all shadow-inner font-sans font-medium")} />
                 <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400")} />
               </div>
             </div>
@@ -249,13 +250,13 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 {dialogTexts.providerLabel}
               </label>
               <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <select value={provider} onChange={(e) => setProvider(_.get(e, SOURCE_TEXT_TARGET_VALUE))} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+                <StudioSelect value={provider} onChange={(e) => setProvider(_.get(e, SOURCE_TEXT_TARGET_VALUE))} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
                     <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
                       {_.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
@@ -265,13 +266,13 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 {dialogTexts.languageLabel}
               </label>
               <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+                <StudioSelect value={language} onChange={(e) => setLanguage(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
                       {VOICE_DIALOG_LANGUAGE_LABELS[_.get(opt, SOURCE_TEXT_VALUE)]?.[currentLang] || _.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
@@ -305,13 +306,13 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 {dialogTexts.ageLabel}
               </label>
               <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <select value={age} onChange={(e) => setAge(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+                <StudioSelect value={age} onChange={(e) => setAge(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
                       {VOICE_DIALOG_AGE_LABELS[_.get(opt, SOURCE_TEXT_VALUE)]?.[currentLang] || _.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
-                </select>
+                </StudioSelect>
                 <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
               </div>
             </div>
