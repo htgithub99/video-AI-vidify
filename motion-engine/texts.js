@@ -1,5 +1,7 @@
 (function (root) {
   root.MotionEngineText = {
+    FINISH_MATERIAL: { CLAY: "clay", WOOD: "wood", CARDBOARD: "cardboard", PLASTIC: "plastic", LOWPOLY: "lowpoly", KRAFT: 0xc9a77a },
+    WHITESPACE_RE: /\s+/,
     CHARACTER_GEOMETRY_REQUIRED: "Character parts need visible authored geometry; rebuild characters before rendering.",
     CHARACTER_PART_INVALID: "Character part id must be valid and unique.",
     CHARACTER_PARENT_INVALID: "Invalid or cyclic character parent: ",
@@ -79,6 +81,7 @@
     VALUE_2D: "2d",
     RGBA_0_0_0_0: "rgba(0,0,0,0)",
     MOTION_INIT_FAILED: "[motion] init failed",
+    MOTION_STYLE_FINISH_FAILED: "[motion] style finish failed",
     FUNCTION: "function",
     SOURCE_OVER: "source-over",
     MOTION_DRAW_FAILED: "[motion] draw failed",
@@ -641,5 +644,230 @@
     PF: (value0, value1, value2) => "pf" + value0 + "_" + value1 + "_" + value2,
     FA: (value0, value1, value2, value3, value4, value5, value6) => "fa" + value0 + "_" + value1 + "_" + value2 + "_" + value3 + "_" + value4 + "_" + value5 + "_" + value6,
     PLANE: (value0, value1) => "plane" + value0 + "_" + value1,
+  };
+  root.MotionStyleFinishText = {
+    WEBGL2: "webgl2",
+    CANVAS: "canvas",
+    UNDEFINED: "undefined",
+    OBJECT: "object",
+    EMPTY: "",
+    NON_VISUAL: ["stepFps", "transition", "fonts", "material"],
+    PAPER: { none: 0, rice: 1, wood: 2, kraft: 3, canvas: 4, news: 5, board: 6, grid: 7, film: 8, plastic: 9 },
+    DITHER: { none: 0, bayer: 1, noise: 2 },
+    MONO: { none: 0, gray: 1, sepia: 2, duo: 3 },
+    LINE: { none: 0, chalk: 1, blueprint: 2 },
+    MAX_PALETTE: 16,
+    BOIL_FRAMES: 3,
+    VERTEX: `#version 300 es
+in vec2 p;
+out vec2 vUv;
+void main() { vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`,
+    FRAGMENT: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 o;
+uniform sampler2D uTex;
+uniform vec2 uRes;
+uniform float uFrame;
+uniform float uPixel;
+uniform vec3 uPal[16];
+uniform int uPalCount;
+uniform float uPalMix;
+uniform int uDither;
+uniform float uDitherAmt;
+uniform float uPosterize;
+uniform vec4 uEdge;
+uniform float uEdgeWidth;
+uniform int uPaper;
+uniform float uPaperAmt;
+uniform vec3 uPaperColor;
+uniform vec3 uHalftone;
+uniform vec3 uInk;
+uniform float uMisreg;
+uniform float uBleed;
+uniform float uBlurR;
+uniform float uBoil;
+uniform int uMono;
+uniform vec3 uMonoA;
+uniform vec3 uMonoB;
+uniform float uFlicker;
+uniform float uScratches;
+uniform float uGrain;
+uniform float uGlow;
+uniform float uChroma;
+uniform float uScan;
+uniform float uTilt;
+uniform float uDark;
+uniform float uTorch;
+uniform int uLine;
+uniform vec3 uLineBg;
+uniform vec3 uLineFg;
+uniform float uLineFill;
+uniform float uSat;
+uniform float uContrast;
+uniform vec4 uTint;
+uniform float uVignette;
+uniform vec2 uLevels;
+const mat4 BAYER = mat4(0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0) / 16.0;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) { vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y); }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+vec3 tex(vec2 uv) { return texture(uTex, clamp(uv, vec2(0.0), vec2(1.0))).rgb; }
+vec3 sampleColor(vec2 uv) {
+  vec2 px = 1.0 / uRes;
+  float shift = uMisreg + uChroma;
+  if (shift <= 0.0) return tex(uv);
+  return vec3(tex(uv + vec2(shift, shift * 0.4) * px).r, tex(uv).g, tex(uv - vec2(shift, -shift * 0.3) * px).b);
+}
+vec3 blurAt(vec2 uv, float r) {
+  vec2 px = r / uRes;
+  vec3 s = vec3(0.0);
+  for (int i = 0; i < 8; i++) { float a = float(i) * 0.785398; s += tex(uv + vec2(cos(a), sin(a)) * px); s += tex(uv + vec2(cos(a + 0.39), sin(a + 0.39)) * px * 0.5); }
+  return s / 16.0;
+}
+float edgeAt(vec2 uv, float w) {
+  vec2 px = w / uRes;
+  float tl = lum(tex(uv + vec2(-px.x, px.y))), t = lum(tex(uv + vec2(0.0, px.y))), tr = lum(tex(uv + px));
+  float l = lum(tex(uv - vec2(px.x, 0.0))), r = lum(tex(uv + vec2(px.x, 0.0)));
+  float bl = lum(tex(uv - px)), b = lum(tex(uv - vec2(0.0, px.y))), br = lum(tex(uv + vec2(px.x, -px.y)));
+  float gx = -tl - 2.0 * l - bl + tr + 2.0 * r + br, gy = -bl - 2.0 * b - br + tl + 2.0 * t + tr;
+  return clamp(length(vec2(gx, gy)) * 1.6, 0.0, 1.0);
+}
+float paper(vec2 frag, int kind) {
+  vec2 p = frag / uRes.y;
+  if (kind == 1) return 0.84 + 0.1 * fbm(p * 9.0) + 0.06 * fbm(p * 70.0) - 0.05 * step(0.997, hash(floor(frag * 0.5)));
+  if (kind == 2) { float ring = sin((p.x * 40.0 + fbm(p * vec2(2.0, 14.0)) * 6.0)); return 0.84 + 0.1 * ring * ring + 0.06 * fbm(p * 30.0); }
+  if (kind == 3) return 0.84 + 0.1 * fbm(p * 14.0) + 0.06 * step(0.94, hash(floor(frag * 0.5)));
+  if (kind == 4) { vec2 w = abs(fract(frag / 4.0) - 0.5); return 0.88 + 0.08 * (w.x + w.y) + 0.04 * fbm(p * 20.0); }
+  if (kind == 5) return 0.86 + 0.1 * fbm(p * 40.0) + 0.04 * hash(floor(frag));
+  if (kind == 6) return 0.8 + 0.2 * fbm(p * 5.0 + vec2(0.0, p.x * 2.0));
+  if (kind == 7) { vec2 g = abs(fract(p * 12.0) - 0.5), G = abs(fract(p * 2.4) - 0.5); return 1.0 + 0.35 * (1.0 - smoothstep(0.0, 0.03, min(g.x, g.y))) + 0.6 * (1.0 - smoothstep(0.0, 0.012, min(G.x, G.y))); }
+  if (kind == 8) return 0.9 + 0.1 * fbm(p * 60.0 + uFrame);
+  if (kind == 9) return 0.94 + 0.06 * fbm(p * 3.0);
+  return 1.0;
+}
+void main() {
+  vec2 frag = gl_FragCoord.xy;
+  vec2 uv = vUv;
+  if (uBoil > 0.0) {
+    float seed = floor(uFrame / 3.0);
+    vec2 cell = floor(frag / 18.0);
+    uv += (vec2(hash(cell + seed), hash(cell.yx + seed * 1.7)) - 0.5) * uBoil / uRes;
+  }
+  vec2 grid = frag;
+  if (uPixel > 1.0) { grid = (floor(frag / uPixel) + 0.5) * uPixel; uv = grid / uRes; }
+  vec3 c = clamp((sampleColor(uv) - uLevels.x) / max(uLevels.y - uLevels.x, 0.05), 0.0, 1.0);
+  if (uTilt > 0.0) { float k = smoothstep(0.18, 0.45, abs(vUv.y - 0.5)) * uTilt; if (k > 0.0) c = mix(c, blurAt(uv, 10.0 * k), k); }
+  if (uBleed > 0.0 || uGlow > 0.0) {
+    vec3 soft = blurAt(uv, uBlurR);
+    if (uBleed > 0.0) { float edgeInk = clamp(length(c - soft) * 3.0, 0.0, 1.0); c = mix(c, soft, 0.5 * uBleed); c *= 1.0 - edgeInk * 0.45 * uBleed; c = mix(c, c * (0.92 + 0.16 * fbm(frag / uRes.y * 6.0)), uBleed); }
+    if (uGlow > 0.0) c += max(soft - 0.55, 0.0) * 2.2 * uGlow;
+  }
+  float e = 0.0;
+  if (uEdge.a > 0.0 || uLine > 0) e = edgeAt(uv, max(uEdgeWidth, uPixel > 1.0 ? uPixel : 1.0));
+  if (uLine > 0) {
+    float strokes = uLine == 1 ? 0.75 + 0.25 * noise(frag * vec2(0.02, 0.6)) : 1.0;
+    float fill = lum(c) * uLineFill;
+    vec3 tinted = mix(uLineBg, mix(uLineFg, c, 0.35), fill);
+    c = mix(tinted, uLineFg, clamp(e * 1.4, 0.0, 1.0) * strokes);
+  } else if (uEdge.a > 0.0) {
+    c = mix(c, uEdge.rgb, smoothstep(0.25, 0.75, e) * uEdge.a);
+  }
+  if (uPosterize > 1.0) { float L = lum(c); float q = floor(L * uPosterize + 0.5) / uPosterize; c = clamp(c * (q + 0.04) / max(L, 0.04), 0.0, 1.0); }
+  if (uMono == 1) c = vec3(lum(c));
+  else if (uMono == 2 || uMono == 3) c = mix(uMonoA, uMonoB, lum(c));
+  if (uHalftone.y > 0.0) {
+    float s = uHalftone.x, a = uHalftone.z;
+    vec2 r = mat2(cos(a), -sin(a), sin(a), cos(a)) * frag;
+    vec2 f = fract(r / s) - 0.5;
+    float dark = 1.0 - lum(c);
+    float dotMask = 1.0 - smoothstep(0.0, 0.06, length(f) - sqrt(dark) * 0.55);
+    vec3 printed = mix(mix(uPaperColor, c, 0.55), uInk, dotMask * smoothstep(0.08, 0.5, dark));
+    c = mix(c, printed, uHalftone.y);
+  }
+  if (uPalCount > 0) {
+    vec3 q = c;
+    if (uDither == 1) { ivec2 bp = ivec2(mod(floor(grid / max(uPixel, 1.0)), 4.0)); q += (BAYER[bp.x][bp.y] - 0.5) * uDitherAmt; }
+    else if (uDither == 2) q += (hash(grid) - 0.5) * uDitherAmt;
+    vec3 best = uPal[0]; float bd = 1e9;
+    for (int i = 0; i < 16; i++) { if (i >= uPalCount) break; vec3 d = q - uPal[i]; float dd = dot(d, d * vec3(0.9, 1.2, 0.7)); if (dd < bd) { bd = dd; best = uPal[i]; } }
+    c = mix(c, best, uPalMix);
+  }
+  if (uPaper > 0 && uPaperAmt > 0.0) { float t = paper(frag, uPaper); if (uPaper == 7) c = mix(c, c * t, uPaperAmt); else c = mix(c, c * t * mix(vec3(1.0), uPaperColor / max(lum(uPaperColor), 0.2), 0.25), uPaperAmt); }
+  float fr = floor(uFrame);
+  if (uFlicker > 0.0) c *= 1.0 + (hash(vec2(fr, 3.1)) - 0.5) * uFlicker;
+  if (uScratches > 0.0) {
+    for (int i = 0; i < 3; i++) { float x = hash(vec2(fr, float(i) * 7.0)); float on = step(1.0 - uScratches, hash(vec2(fr * 1.3, float(i)))); c = mix(c, vec3(0.92), on * (1.0 - smoothstep(0.0, 1.2, abs(frag.x - x * uRes.x))) * 0.7); }
+    float blot = step(0.9975, hash(floor(frag / 6.0) + fr)) * step(0.6, hash(vec2(fr, 9.0)));
+    c = mix(c, vec3(0.05), blot * uScratches);
+  }
+  if (uScan > 0.0) c *= 1.0 - uScan * 0.35 * step(0.5, fract(frag.y / 3.0));
+  if (uDark > 0.0) {
+    vec2 centre = vec2(0.5 + 0.08 * sin(uFrame * 0.013), 0.48 + 0.05 * sin(uFrame * 0.021));
+    vec2 d = (vUv - centre) * vec2(uRes.x / uRes.y, 1.0);
+    float torch = uTorch > 0.0 ? 1.0 - smoothstep(uTorch * 0.6, uTorch, length(d)) : 0.0;
+    c *= mix(1.0 - uDark, 1.0, torch);
+  }
+  if (uGrain > 0.0) c += (hash(frag + fr * 17.0) - 0.5) * uGrain;
+  float L2 = lum(c);
+  c = mix(vec3(L2), c, uSat);
+  c = (c - 0.5) * uContrast + 0.5;
+  c = mix(c, c * uTint.rgb * 1.6, uTint.a);
+  if (uVignette > 0.0) { vec2 d = vUv - 0.5; c *= 1.0 - uVignette * dot(d, d) * 2.2; }
+  o = vec4(clamp(c, 0.0, 1.0), 1.0);
+}`,
+    HEX_PREFIX_RE: /^#/,
+    ZERO: "0",
+    POSITION: "p",
+    U_RES: "uRes",
+    U_PIXEL: "uPixel",
+    U_PAL: "uPal",
+    U_PAL_COUNT: "uPalCount",
+    U_PAL_MIX: "uPalMix",
+    U_DITHER: "uDither",
+    U_DITHER_AMT: "uDitherAmt",
+    U_POSTERIZE: "uPosterize",
+    COLOR_1A1A1A: "#1a1a1a",
+    U_EDGE: "uEdge",
+    U_EDGE_WIDTH: "uEdgeWidth",
+    U_PAPER: "uPaper",
+    U_PAPER_AMT: "uPaperAmt",
+    U_PAPER_COLOR: "uPaperColor",
+    COLOR_F2EAD8: "#f2ead8",
+    U_HALFTONE: "uHalftone",
+    U_INK: "uInk",
+    COLOR_151515: "#151515",
+    U_MISREG: "uMisreg",
+    U_BLEED: "uBleed",
+    U_BLUR_R: "uBlurR",
+    U_BOIL: "uBoil",
+    U_MONO: "uMono",
+    U_MONO_A: "uMonoA",
+    COLOR_141210: "#141210",
+    U_MONO_B: "uMonoB",
+    COLOR_EFE6D2: "#efe6d2",
+    U_FLICKER: "uFlicker",
+    U_SCRATCHES: "uScratches",
+    U_GRAIN: "uGrain",
+    U_GLOW: "uGlow",
+    U_CHROMA: "uChroma",
+    U_SCAN: "uScan",
+    U_TILT: "uTilt",
+    U_DARK: "uDark",
+    U_TORCH: "uTorch",
+    U_LINE: "uLine",
+    U_LINE_BG: "uLineBg",
+    COLOR_22352C: "#22352c",
+    U_LINE_FG: "uLineFg",
+    COLOR_F2F2EA: "#f2f2ea",
+    U_LINE_FILL: "uLineFill",
+    U_SAT: "uSat",
+    U_CONTRAST: "uContrast",
+    COLOR_808080: "#808080",
+    U_TINT: "uTint",
+    U_VIGNETTE: "uVignette",
+    U_LEVELS: "uLevels",
+    U_FRAME: "uFrame",
   };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -83,7 +83,7 @@ import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
-import { buildScenes, customSceneSeed, importBaseLibrary, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
+import { buildScenes, customSceneSeed, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
 import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
@@ -434,6 +434,16 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
+  }
+};
+export const serveStylePreview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const file = await renderStylePreview(_.toString((req.params as Record<string, string>).id));
+    if (!file) return void res.status(404).end();
+    res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
+    res.sendFile(file);
+  } catch (error) {
+    fail(res, 500, error);
   }
 };
 export const serveGenPreview = (req: Request, res: Response): void => {

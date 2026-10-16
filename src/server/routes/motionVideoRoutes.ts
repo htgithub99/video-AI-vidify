@@ -31,6 +31,7 @@ import {
   scriptMotionStory,
   selectMotionSaveDestination,
   serveGenPreview,
+  serveStylePreview,
   serveMotionAsset,
   startMotionVideoRender,
   uploadMotionAudio,
@@ -66,6 +67,7 @@ router.get(MOTION_VIDEO_API_PATHS.ENGINE, getMotionEngineScript);
 router.get(MOTION_VIDEO_API_PATHS.DEMO, getMotionDemo);
 router.get(MOTION_TEMPLATE_SYMBOL_13(String(MOTION_VIDEO_API_PATHS.ASSET)), serveMotionAsset);
 router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
+router.get(MOTION_VIDEO_API_PATHS.STYLE_PREVIEW, serveStylePreview);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);
 router.post(MOTION_VIDEO_API_PATHS.RENDER, startMotionVideoRender);

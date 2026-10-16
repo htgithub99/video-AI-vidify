@@ -488,7 +488,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         const forced = options.music.mood !== MOTION_MUSIC.AUTO ? motionMusicMoodKey(options.music.mood) : undefined;
         const segments = forced ? [{ start: 0, mood: forced }] : spec.music?.segments?.length ? spec.music.segments : [{ start: 0, mood: spec.music?.mood || MOTION_MUSIC.DEFAULT_MOOD }];
         const mood = _.uniq(_.map(segments, (segment) => segment.mood)).join(MOTION_MUSIC.MOOD_JOIN);
-        const music = await buildMotionMusic(duration, segments, spec.music?.cues || [], Math.round(duration * 1000));
+        const music = await buildMotionMusic(duration, segments, spec.music?.cues || [], Math.round(duration * 1000), spec.music?.instrument, spec.music?.ambience);
         mixedPath = await mixMotionMusic(mixedPath, music, options.music.volume, duration, signal);
         pushLog(job, MOTION_MUSIC.LOG.BUILT(mood));
       } catch (error) {

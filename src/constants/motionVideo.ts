@@ -10,8 +10,8 @@ export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> 
 export const MOTION_ASPECT_BASE: Record<string, { w: number; h: number }> = { [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 }, [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 }, [MotionAspect.SQUARE]: { w: 1080, h: 1080 }, [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 } };
 export const MOTION_VIDEO_CONSTANTS = {
   ENGINE_DIR: "motion-engine",
-  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "geo-data.js", "history.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
-  CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "style-finish.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
   DEMO_DIR: "demo",

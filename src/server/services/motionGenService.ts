@@ -123,8 +123,9 @@ import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "./motionStoryS
 import { MOTION_SCENE_LIBRARY, MOTION_SCENE_LIBRARY_PROMPT } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_CATALOG_PROMPT, MOTION_SCENE_LIBRARY_MODES, MOTION_SCENE_SHOWROOM, motionSceneType, type MotionSeedCast, type MotionSeedPlace, type MotionSeedProp } from "../../constants/motionSceneCatalog.js";
 import { applyCharacterVariant } from "../../lib/motionCharacterVariant.js";
-import { assignSceneLibrary, attachSceneProps, extractSceneProps, pendingBaseLibrary, getSceneAsset, listSceneAssets, motionAssetStyleKey, readSceneStyle, saveSceneAsset, saveSceneStyle, sceneAssetThumbPath, sceneStyleFits, scenePropCatalog, sharedStyleKeyOf, touchSceneAssets, type MotionBaseLibrary } from "./motionSceneLibraryService.js";
+import { assignSceneLibrary, readBaseLibrary, attachSceneProps, extractSceneProps, pendingBaseLibrary, getSceneAsset, listSceneAssets, motionAssetStyleKey, readSceneStyle, saveSceneAsset, saveSceneStyle, sceneAssetThumbPath, sceneStyleFits, scenePropCatalog, sharedStyleKeyOf, touchSceneAssets, type MotionBaseLibrary } from "./motionSceneLibraryService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
+import { MOTION_STYLE_PREVIEW, motionStyleFinish } from "../../constants/motionStyleFinish.js";
 export interface GenOptions {
   audioDirection?: MotionAudioDirection;
   styleReferences?: MotionStyleReference[];
@@ -1261,4 +1262,37 @@ export const importBaseLibrary = async (o: GenOptions, pack?: MotionBaseLibrary)
     await session.close();
   }
   return counts;
+};
+let stylePreviewChain: Promise<unknown> = Promise.resolve();
+export const renderStylePreview = (presetId: string): Promise<string | null> => {
+  const preset = motionStylePreset(presetId);
+  if (!preset) return Promise.resolve(null);
+  const P = MOTION_STYLE_PREVIEW;
+  const dir = path.join(previewRoot(), P.FOLDER);
+  const file = path.join(dir, P.FILE(preset.id, P.VERSION) + P.EXT);
+  if (fs.existsSync(file)) return Promise.resolve(file);
+  const run = stylePreviewChain.then(async () => {
+    if (fs.existsSync(file)) return file;
+    const base = readBaseLibrary();
+    const place = _.find(base.locations, (item) => item.type === P.LOCATION_TYPE && item.time === P.LOCATION_TIME) || base.locations[0];
+    const people = _.compact(_.map(P.CAST_TYPES, (type) => _.find(base.characters, { type })));
+    const keys = _.map(people, (_person, index) => P.CAST_NAMES[index]);
+    const gen: MotionGenState = { ...emptyGen(), cast: _.fromPairs(_.map(people, (person, index) => [keys[index], person.design])), locations: { [P.PLACE]: place.location }, characterMotion: false, drawingMode: preset.mode };
+    const beat: MotionBeat = { id: P.BEAT, chapterId: P.BEAT, narration: P.SUBTITLE, visual: MOTION_TEXT_SCENE, place: P.PLACE, cast: keys, action: P.ACTION, shot: P.SHOT };
+    const script = { language: MR.MOTION_TEXT_VI, beats: [beat] } as unknown as MotionStoryScript;
+    autoStageBeats([beat], script, { cast: _.map(keys, (key) => ({ key, name: key })) } as unknown as MotionStoryAnalysis, gen, { exec: {}, log: _.noop } as unknown as GenOptions);
+    const { spec } = beatPreviewSpec(beat, gen, MR.MOTION_TEXT_VI, MOTION_TEXT_16_9, 0);
+    const finish = motionStyleFinish(preset.id);
+    const full: MotionSpec = { ...spec, ...(finish ? { finish } : {}), subtitles: [{ start: 0, end: spec.duration || 5, text: P.SUBTITLE }] };
+    fs.mkdirSync(dir, { recursive: true });
+    const session = await openStillSession();
+    try {
+      const frames = await session.render(full, [{ id: P.FILE(preset.id, P.VERSION), t: P.AT }], dir, { width: P.WIDTH, height: P.HEIGHT, quality: MOTION_TEXT_HIGH });
+      return frames[0]?.file && fs.existsSync(frames[0].file) ? frames[0].file : null;
+    } finally {
+      await session.close();
+    }
+  });
+  stylePreviewChain = run.catch(_.noop);
+  return run;
 };

@@ -1409,6 +1409,7 @@
         }
       }
     }
+    if (spec.finish && spec.finish.material) finishMaterials(S, spec.finish.material);
     S.cam0 = { pos: fit.pos, tgt: fit.tgt };
     S.issues = (S.preIssues || []).concat(fit.issues);
     const wx = weatherFx(stg.weather, L.stage.center, S.flatDrawing);
@@ -1464,6 +1465,88 @@
     }
     GEN.info[ctx.shot && ctx.shot.id != null ? ctx.shot.id : MT.X_2] = { issues: S.issues, camera: { pos: S.cam0.pos.toArray().map((v) => +v.toFixed(2)), target: S.cam0.tgt.toArray().map((v) => +v.toFixed(2)), fov: cam.fov } };
     return S;
+  };
+  const FINISH = MT.FINISH_MATERIAL;
+  const finishTextures = {};
+  const finishTexture = (kind) => {
+    if (finishTextures[kind]) return finishTextures[kind];
+    const size = 256,
+      c = ME.makeCanvas(size, size),
+      g = c.getContext(MT.VALUE_2D),
+      img = g.createImageData(size, size),
+      rnd = U.rng(kind.length * 977);
+    const field = new Float32Array(size * size);
+    for (let octave = 0, amp = 1, cell = 64; octave < 4; octave++, amp *= 0.5, cell /= 2) {
+      const n = size / cell,
+        grid = [];
+      for (let i = 0; i < (n + 1) * (n + 1); i++) grid.push(rnd());
+      for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++) {
+          const gx = x / cell,
+            gy = y / cell,
+            ix = Math.floor(gx) % n,
+            iy = Math.floor(gy) % n,
+            fx = gx - Math.floor(gx),
+            fy = gy - Math.floor(gy);
+          const at = (a, b) => grid[(b % n) * (n + 1) + (a % n)];
+          const sx = fx * fx * (3 - 2 * fx),
+            sy = fy * fy * (3 - 2 * fy);
+          field[y * size + x] += amp * ((at(ix, iy) * (1 - sx) + at(ix + 1, iy) * sx) * (1 - sy) + (at(ix, iy + 1) * (1 - sx) + at(ix + 1, iy + 1) * sx) * sy);
+        }
+    }
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const f = field[y * size + x] / 1.875;
+        let v = 1;
+        if (kind === FINISH.CLAY) v = 0.76 + 0.24 * f + (rnd() < 0.004 ? -0.12 : 0);
+        else if (kind === FINISH.WOOD) v = 0.6 + 0.3 * Math.pow(Math.sin(x * 0.18 + f * 9), 2) + 0.08 * f;
+        else if (kind === FINISH.CARDBOARD) v = 0.74 + 0.2 * f + (rnd() < 0.02 ? -0.08 : 0) + 0.04 * Math.sin(y * 0.5);
+        const b = Math.round(U.clamp(v) * 255),
+          k = (y * size + x) * 4;
+        img.data[k] = img.data[k + 1] = img.data[k + 2] = b;
+        img.data[k + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
+    const tex = new T.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(2, 2);
+    tex.colorSpace = T.SRGBColorSpace;
+    finishTextures[kind] = tex;
+    return tex;
+  };
+  const finishMaterials = (S, kind) => {
+    const done = new Map();
+    const kraft = new T.Color(FINISH.KRAFT);
+    const remake = (m) => {
+      const lit = m && (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial);
+      const textured = kind === FINISH.CLAY || kind === FINISH.WOOD || kind === FINISH.CARDBOARD;
+      if (!m || !(lit || (textured && m.isMeshBasicMaterial && m.toneMapped !== false))) return m;
+      if (done.has(m)) return done.get(m);
+      const n = m.clone();
+      if (kind === FINISH.LOWPOLY) n.flatShading = true;
+      if (kind === FINISH.PLASTIC) {
+        if (n.roughness != null) n.roughness = 0.18;
+        if (n.metalness != null) n.metalness = 0;
+        const hsl = {};
+        n.color.getHSL(hsl);
+        n.color.setHSL(hsl.h, Math.min(1, hsl.s * 1.25), hsl.l);
+      } else if (kind === FINISH.CLAY || kind === FINISH.WOOD || kind === FINISH.CARDBOARD) {
+        if (!n.map) n.map = finishTexture(kind);
+        if (kind === FINISH.CLAY && lit) n.bumpMap = finishTexture(kind);
+        if (n.bumpMap) n.bumpScale = 0.6;
+        if (n.roughness != null) n.roughness = kind === FINISH.WOOD ? 0.65 : 1;
+        if (n.metalness != null) n.metalness = 0;
+        if (kind === FINISH.CARDBOARD) n.color.lerp(kraft, 0.5);
+      }
+      n.needsUpdate = true;
+      S.disposables.push(n);
+      done.set(m, n);
+      return n;
+    };
+    S.scene.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      o.material = Array.isArray(o.material) ? o.material.map(remake) : remake(o.material);
+    });
   };
   const meshDimensions = (o) => {
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();

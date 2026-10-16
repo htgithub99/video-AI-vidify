@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
-  const MT = root.MotionEngineText, MF = root.MotionEngineTemplate;
+  const MT = root.MotionEngineText,
+    MF = root.MotionEngineTemplate;
   const ME = (root.MotionEngine = root.MotionEngine || {});
   const warn = (...args) => root.console?.warn(...args);
   ME.version = MT.VALUE_1_0_0;
@@ -37,7 +38,10 @@
     return x - Math.floor(x);
   };
   U.noise = (x, seed = 0) => {
-    const i = Math.floor(x), f = x - i, a = U.hash(i + seed * 101), b = U.hash(i + 1 + seed * 101);
+    const i = Math.floor(x),
+      f = x - i,
+      a = U.hash(i + seed * 101),
+      b = U.hash(i + 1 + seed * 101);
     return (U.lerp(a, b, f * f * (3 - 2 * f)) - 0.5) * 2;
   };
   U.fbm = (x, seed = 0) => U.noise(x, seed) * 0.6 + U.noise(x * 2.1, seed + 7) * 0.3 + U.noise(x * 4.3, seed + 13) * 0.1;
@@ -51,14 +55,16 @@
     const n = T.length;
     if (n === 0) return () => 0;
     if (n === 1) return () => Y[0];
-    const d = [], m = [];
+    const d = [],
+      m = [];
     for (let i = 0; i < n - 1; i++) d.push((Y[i + 1] - Y[i]) / (T[i + 1] - T[i] || 1e-6));
     m[0] = d[0];
     m[n - 1] = d[n - 2];
     for (let i = 1; i < n - 1; i++) {
       if (d[i - 1] * d[i] <= 0) m[i] = 0;
       else {
-        const w1 = 2 * (T[i + 1] - T[i]) + (T[i] - T[i - 1]), w2 = T[i + 1] - T[i] + 2 * (T[i] - T[i - 1]);
+        const w1 = 2 * (T[i + 1] - T[i]) + (T[i] - T[i - 1]),
+          w2 = T[i + 1] - T[i] + 2 * (T[i] - T[i - 1]);
         m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
       }
     }
@@ -67,7 +73,10 @@
       if (t >= T[n - 1]) return Y[n - 1];
       let i = 0;
       while (t > T[i + 1]) i++;
-      const h = T[i + 1] - T[i], s = (t - T[i]) / h, s2 = s * s, s3 = s2 * s;
+      const h = T[i + 1] - T[i],
+        s = (t - T[i]) / h,
+        s2 = s * s,
+        s3 = s2 * s;
       return (2 * s3 - 3 * s2 + 1) * Y[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * Y[i + 1] + (s3 - s2) * h * m[i + 1];
     };
   };
@@ -108,13 +117,14 @@
       )
       .join(MT.EMPTY);
   C.mix = (a, b, k) => {
-    const A = C.rgb(a), B = C.rgb(b);
+    const A = C.rgb(a),
+      B = C.rgb(b);
     return C.hex([U.lerp(A[0], B[0], k), U.lerp(A[1], B[1], k), U.lerp(A[2], B[2], k)]);
   };
   C.shade = (a, k) => (k >= 0 ? C.mix(a, MT.FFFFFF, k) : C.mix(a, MT.VALUE_000000, -k));
   C.rgba = (a, alpha) => {
     const A = C.rgb(a);
-    return MF.RGBA(`${A[0]}`, `${A[1]}`, `${A[2]}`, `${U.clamp(alpha)}`);
+    return MF.RGBA(String(A[0]), String(A[1]), String(A[2]), String(U.clamp(alpha)));
   };
   ME.registry = { templates: {}, transitions: {} };
   ME.registerTemplate = (id, def) => (ME.registry.templates[id] = Object.assign({ id }, def));
@@ -153,7 +163,7 @@
     head: MT.OSWALD_BE_VIETNAM_PRO_ARIAL_NARROW_SANS_SERIF,
     serif: MT.PLAYFAIR_DISPLAY_GEORGIA_SERIF,
   };
-  ME.font = (weight, size, fam = MT.BODY, style = MT.NORMAL) => MF.PX(`${style}`, `${weight}`, `${Math.round(size * 10) / 10}`, `${ME.FONTS[fam] || fam}`);
+  ME.font = (weight, size, fam = MT.BODY, style = MT.NORMAL) => MF.PX(String(style), String(weight), String(Math.round(size * 10) / 10), String(ME.FONTS[fam] || fam));
   ME.measure = (g, str, o = {}) => {
     const size = o.size || 40;
     const chars = Array.from(String(str == null ? MT.EMPTY : str));
@@ -198,7 +208,7 @@
     g.save();
     g.font = font;
     const words = String(str || MT.EMPTY)
-      .split(/\s+/)
+      .split(MT.WHITESPACE_RE)
       .filter(Boolean);
     const lines = [];
     let cur = MT.EMPTY;
@@ -267,19 +277,23 @@
   ME.createRenderer = (canvas, specIn, opts = {}) => {
     const spec = ME.normalizeSpec(JSON.parse(U.stringifyJson(specIn || {})));
     const q = Object.assign({}, ME.QUALITY.standard, typeof opts.quality === MT.STRING ? ME.QUALITY[opts.quality] : opts.quality || {});
-    const W = opts.width || spec.width, H = opts.height || spec.height;
+    const W = opts.width || spec.width,
+      H = opts.height || spec.height;
     canvas.width = W;
     canvas.height = H;
     const out = canvas.getContext(MT.VALUE_2D, { alpha: false });
     const ss = Math.max(1, q.supersample || 1);
-    const SW = Math.round(W * ss), SH = Math.round(H * ss);
+    const SW = Math.round(W * ss),
+      SH = Math.round(H * ss);
     const aspect = ME.ASPECTS[spec.aspect] || ME.ASPECTS[MT.VALUE_16_9];
     const look = Object.assign({}, ME.LOOKS[spec.look] || ME.LOOKS.documentary, spec.lookOverrides || {});
     const fps = spec.fps || 30;
     const unit = Math.min(W, H) / 1080;
-    const sceneC = ME.makeCanvas(SW, SH), sg = sceneC.getContext(MT.VALUE_2D);
+    const sceneC = ME.makeCanvas(SW, SH),
+      sg = sceneC.getContext(MT.VALUE_2D);
     const accC = q.motionBlur > 1 ? ME.makeCanvas(SW, SH) : null;
-    const layerA = ME.makeCanvas(SW, SH), layerB = ME.makeCanvas(SW, SH);
+    const layerA = ME.makeCanvas(SW, SH),
+      layerB = ME.makeCanvas(SW, SH);
     const bloomC = q.bloom && look.bloom > 0 ? ME.makeCanvas(Math.ceil(W / 4), Math.ceil(H / 4)) : null;
     const vig = ME.makeCanvas(W, H);
     {
@@ -287,15 +301,16 @@
       const r = Math.hypot(W, H) / 2;
       const gr = v.createRadialGradient(W / 2, H / 2, r * 0.35, W / 2, H / 2, r * 1.02);
       gr.addColorStop(0, MT.RGBA_0_0_0_0);
-      gr.addColorStop(0.6, MF.RGBA_0_0_0(`${look.vignette * 0.25}`));
-      gr.addColorStop(1, MF.RGBA_0_0_0(`${look.vignette}`));
+      gr.addColorStop(0.6, MF.RGBA_0_0_0(String(look.vignette * 0.25)));
+      gr.addColorStop(1, MF.RGBA_0_0_0(String(look.vignette)));
       v.fillStyle = gr;
       v.fillRect(0, 0, W, H);
     }
     const grains = [];
     if (q.grain && look.grain > 0) {
       for (let k = 0; k < 4; k++) {
-        const gc = ME.makeCanvas(256, 256), gx = gc.getContext(MT.VALUE_2D);
+        const gc = ME.makeCanvas(256, 256),
+          gx = gc.getContext(MT.VALUE_2D);
         const img = gx.createImageData(256, 256);
         const r = U.rng(911 + k * 31);
         for (let i = 0; i < img.data.length; i += 4) {
@@ -309,7 +324,8 @@
     }
     const splitTone = (() => {
       if (!look.split) return null;
-      const c = ME.makeCanvas(4, 256), x = c.getContext(MT.VALUE_2D);
+      const c = ME.makeCanvas(4, 256),
+        x = c.getContext(MT.VALUE_2D);
       const gr = x.createLinearGradient(0, 0, 0, 256);
       gr.addColorStop(0, C.rgba(look.highlights, 1));
       gr.addColorStop(1, C.rgba(look.shadows, 1));
@@ -317,6 +333,17 @@
       x.fillRect(0, 0, 4, 256);
       return c;
     })();
+    const finish = spec.finish && typeof spec.finish === MT.OBJECT ? spec.finish : null;
+    let finisher = null;
+    if (finish && ME.createStyleFinish) {
+      try {
+        finisher = ME.createStyleFinish(finish, SW, SH);
+      } catch (e) {
+        warn(MT.MOTION_STYLE_FINISH_FAILED, MT.EMPTY, e);
+      }
+    }
+    const stepTime = (t) => (finish && finish.stepFps > 0 ? Math.floor(t * finish.stepFps + 1e-6) / finish.stepFps : t);
+    const finishFonts = finish && finish.fonts ? Object.assign({}, ME.FONTS, finish.fonts) : null;
     const ctxBase = { spec, W: SW, H: SH, ss, unit: Math.min(SW, SH) / 1080, aspect, fps, quality: q, look, cast: spec.cast || {}, preview: !!opts.preview };
     const shots = spec.shots.map((sh, index) => ({ shot: sh, tpl: ME.registry.templates[sh.template], state: null, ready: false, index }));
     const ensure = (inst) => {
@@ -369,7 +396,11 @@
       }
       g.restore();
     };
-    const transitionOf = (sh) => Object.assign({ type: MT.FADE, duration: 0.6 }, sh.transition || {});
+    const transitionOf = (sh) => {
+      const tr = Object.assign({ type: MT.FADE, duration: 0.6 }, sh.transition || {});
+      if (finish && finish.transition && tr.type !== MT.CUT && ME.registry.transitions[finish.transition]) tr.type = finish.transition;
+      return tr;
+    };
     const renderScene = (t) => {
       let cur = -1;
       for (let i = 0; i < shots.length; i++) if (t >= shots[i].shot.start) cur = i;
@@ -391,7 +422,8 @@
         drawShot(sg, B, t);
         return;
       }
-      const ga = layerA.getContext(MT.VALUE_2D), gb = layerB.getContext(MT.VALUE_2D);
+      const ga = layerA.getContext(MT.VALUE_2D),
+        gb = layerB.getContext(MT.VALUE_2D);
       drawShot(ga, A, t);
       drawShot(gb, B, t);
       ME.transitions(tr.type)(sg, layerA, layerB, k, SW, SH, tr);
@@ -415,7 +447,8 @@
       if (sub) ME.drawSubtitle(out, sub, t, { W, H, unit, aspect, style: spec.subtitleStyle || MT.CINEMA, letterbox: spec.letterbox });
     };
     const post = (t, frameIndex) => {
-      const src = accC || sceneC;
+      const base = accC || sceneC;
+      const src = finisher ? finisher.apply(base, frameIndex) : base;
       out.save();
       out.setTransform(1, 0, 0, 1, 0, 0);
       out.globalAlpha = 1;
@@ -456,22 +489,33 @@
         out.globalAlpha = look.grain;
         const gp = out.createPattern(grains[frameIndex % grains.length], MT.REPEAT);
         out.fillStyle = gp;
-        const ox = (frameIndex * 37) % 256, oy = (frameIndex * 91) % 256;
+        const ox = (frameIndex * 37) % 256,
+          oy = (frameIndex * 91) % 256;
         out.translate(-ox, -oy);
         out.fillRect(0, 0, W + 256, H + 256);
         out.setTransform(1, 0, 0, 1, 0, 0);
         out.globalAlpha = 1;
         out.globalCompositeOperation = MT.SOURCE_OVER;
       }
-      const fin = spec.fadeIn == null ? 0.6 : spec.fadeIn, fout = spec.fadeOut == null ? 1.2 : spec.fadeOut;
+      const fin = spec.fadeIn == null ? 0.6 : spec.fadeIn,
+        fout = spec.fadeOut == null ? 1.2 : spec.fadeOut;
       const fade = Math.min(fin > 0 ? U.clamp(t / fin) : 1, fout > 0 ? U.clamp((spec.duration - t) / fout) : 1);
       if (fade < 1) {
-        out.fillStyle = MF.RGBA_0_0_0(`${1 - U.smooth(fade)}`);
+        out.fillStyle = MF.RGBA_0_0_0(String(1 - U.smooth(fade)));
         out.fillRect(0, 0, W, H);
       }
       out.restore();
     };
-    const inToon = (fn) => fn();
+    const inToon = (fn) => {
+      if (!finishFonts) return fn();
+      const saved = ME.FONTS;
+      ME.FONTS = finishFonts;
+      try {
+        return fn();
+      } finally {
+        ME.FONTS = saved;
+      }
+    };
     const drawFrame = (t) => {
       const frameIndex = Math.round(t * fps);
       const K = Math.max(1, Math.round(q.motionBlur || 1));
@@ -480,13 +524,13 @@
         const shutter = (spec.shutter == null ? 0.5 : spec.shutter) / fps;
         for (let i = 0; i < K; i++) {
           const ts = t + (i / (K - 1) - 0.5) * shutter;
-          renderScene(Math.max(0, ts));
+          renderScene(stepTime(Math.max(0, ts)));
           ag.globalAlpha = 1 / (i + 1);
           ag.globalCompositeOperation = MT.SOURCE_OVER;
           ag.drawImage(sceneC, 0, 0);
         }
         ag.globalAlpha = 1;
-      } else renderScene(t);
+      } else renderScene(stepTime(t));
       post(t, frameIndex);
     };
     return {
@@ -553,7 +597,7 @@
   };
   T.flash = (g, a, b, k, W, H) => {
     g.drawImage(k < 0.5 ? a : b, 0, 0);
-    g.fillStyle = MF.RGBA_255_248_235(`${Math.pow(1 - Math.abs(k - 0.5) * 2, 2) * 0.95}`);
+    g.fillStyle = MF.RGBA_255_248_235(String(Math.pow(1 - Math.abs(k - 0.5) * 2, 2) * 0.95));
     g.fillRect(0, 0, W, H);
   };
   const smear = (g, img, dx, blurPx, W) => {
@@ -609,19 +653,91 @@
     g.restore();
     const gr = g.createLinearGradient(x - soft, 0, x, 0);
     gr.addColorStop(0, MT.RGBA_255_255_255_0);
-    gr.addColorStop(1, MF.RGBA_255_240_220(`${0.25 * Math.sin(Math.PI * k)}`));
+    gr.addColorStop(1, MF.RGBA_255_240_220(String(0.25 * Math.sin(Math.PI * k))));
     g.fillStyle = gr;
     g.fillRect(x - soft, 0, soft, H);
     void tr;
   };
   T.blur = (g, a, b, k) => {
     const s = Math.sin(Math.PI * k);
-    g.filter = MF.BLUR_PX(`${(s * 14).toFixed(1)}`);
+    g.filter = MF.BLUR_PX(String((s * 14).toFixed(1)));
     g.drawImage(a, 0, 0);
     g.globalAlpha = U.smooth(k);
     g.drawImage(b, 0, 0);
     g.globalAlpha = 1;
     g.filter = MT.NONE;
+  };
+  const scratch = { c: null };
+  const scratchOf = (w, h) => {
+    if (!scratch.c || scratch.c.width !== w || scratch.c.height !== h) scratch.c = ME.makeCanvas(w, h);
+    return scratch.c;
+  };
+  T.pixelate = (g, a, b, k, W, H) => {
+    const block = Math.max(1, Math.round(1 + Math.sin(Math.PI * k) * 46 * (W / 1920)));
+    const src = k < 0.5 ? a : b;
+    if (block <= 1) return g.drawImage(src, 0, 0);
+    const w = Math.max(1, Math.round(W / block)),
+      h = Math.max(1, Math.round(H / block));
+    const c = scratchOf(w, h),
+      x = c.getContext(MT.VALUE_2D);
+    x.imageSmoothingEnabled = false;
+    x.drawImage(src, 0, 0, w, h);
+    g.save();
+    g.imageSmoothingEnabled = false;
+    g.drawImage(c, 0, 0, W, H);
+    g.restore();
+  };
+  T.iris = (g, a, b, k, W, H) => {
+    const diag = Math.hypot(W, H) / 2;
+    const closing = k < 0.5;
+    const r = Math.max(0, (closing ? 1 - k * 2 : k * 2 - 1) * diag);
+    g.fillStyle = MT.VALUE_000;
+    g.fillRect(0, 0, W, H);
+    g.save();
+    g.beginPath();
+    g.arc(W / 2, H / 2, r, 0, Math.PI * 2);
+    g.clip();
+    g.drawImage(closing ? a : b, 0, 0);
+    g.restore();
+  };
+  T.ink = (g, a, b, k, W, H) => {
+    g.drawImage(a, 0, 0);
+    const rnd = U.rng(4242);
+    const e = U.ease(k);
+    g.save();
+    g.beginPath();
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * W,
+        y = rnd() * H,
+        grow = 0.4 + rnd() * 0.9;
+      const r = Math.max(0, e * grow * Math.hypot(W, H) * 0.42);
+      g.moveTo(x + r, y);
+      g.arc(x, y, r, 0, Math.PI * 2);
+    }
+    g.clip();
+    g.drawImage(b, 0, 0);
+    g.restore();
+  };
+  T.tear = (g, a, b, k, W, H) => {
+    g.drawImage(a, 0, 0);
+    const e = U.ease(k);
+    const teeth = 18,
+      amp = W * 0.025;
+    const x0 = -amp * 2 + e * (W + amp * 4);
+    g.save();
+    g.beginPath();
+    g.moveTo(0, 0);
+    for (let i = 0; i <= teeth; i++) g.lineTo(x0 + (i % 2 ? amp : -amp), (H * i) / teeth);
+    g.lineTo(0, H);
+    g.closePath();
+    g.fillStyle = MT.VALUE_000;
+    g.shadowColor = MT.RGBA_0_0_0_0_45;
+    g.shadowBlur = 18 * (W / 1920);
+    g.fill();
+    g.clip();
+    g.shadowColor = MT.RGBA_0_0_0_0;
+    g.drawImage(b, 0, 0);
+    g.restore();
   };
   ME.drawSubtitle = (g, sub, t, o) => {
     const { W, H, unit } = o;
@@ -662,17 +778,20 @@
   };
   ME.drawOverlay = (g, ov, lt, shot, o) => {
     const { W, H, unit } = o;
-    const at = ov.at || 0, dur = ov.duration || Math.max(1.5, shot.end - shot.start - at - 0.3);
+    const at = ov.at || 0,
+      dur = ov.duration || Math.max(1.5, shot.end - shot.start - at - 0.3);
     const k = lt - at;
     if (k < 0 || k > dur + 0.6) return;
-    const inK = U.easeOut(U.clamp(k / 0.6)), outK = U.clamp((dur + 0.6 - k) / 0.6);
+    const inK = U.easeOut(U.clamp(k / 0.6)),
+      outK = U.clamp((dur + 0.6 - k) / 0.6);
     const a = inK * U.smooth(outK);
     const accent = ov.color || MT.FFB070;
     const portrait = H > W;
     g.save();
     g.globalAlpha = a;
     if (ov.type === MT.LOWERTHIRD) {
-      const x = W * (portrait ? 0.08 : 0.065), y = H * (portrait ? 0.16 : 0.8);
+      const x = W * (portrait ? 0.08 : 0.065),
+        y = H * (portrait ? 0.16 : 0.8);
       const s = 34 * unit;
       const barW = (W * 0.004 + 2) * 1;
       g.fillStyle = accent;
@@ -681,7 +800,8 @@
       if (ov.sub) ME.text(g, ov.sub, x + s * 0.62, y + s * 1.05, { size: s * 0.58, weight: 500, color: MT.D8D2C8, tracking: 0.12, progress: U.clamp((k - 0.25) / 0.9) });
     } else if (ov.type === MT.TAG) {
       const s = 28 * unit;
-      const x = W * 0.065, y = portrait ? H * 0.1 : H * 0.11;
+      const x = W * 0.065,
+        y = portrait ? H * 0.1 : H * 0.11;
       g.font = ME.font(700, s, MT.HEAD);
       const tw = g.measureText(ov.text).width + s * 0.12 * ov.text.length;
       g.fillStyle = MT.RGBA_8_10_14_0_55;

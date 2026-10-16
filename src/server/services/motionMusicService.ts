@@ -3,18 +3,19 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { randomUUID } from "crypto";
-import { MOTION_MUSIC as M, MOTION_MUSIC_MOODS, type MotionMusicMood } from "../../constants/motionMusic.js";
-import type { MotionSpec, MotionStoryAnalysis } from "../../types/motionVideo.js";
+import { MOTION_MUSIC as M, MOTION_MUSIC_AMBIENCE, MOTION_MUSIC_INSTRUMENTS, MOTION_MUSIC_LEAD_SECONDS, MOTION_MUSIC_MOODS, MOTION_MUSIC_PAD_SHAPES, MOTION_MUSIC_SCALES, MOTION_MUSIC_VOICES as MV, type MotionMusicInstrument, type MotionMusicMood } from "../../constants/motionMusic.js";
+import type { MotionMusicSegment, MotionSpec, MotionStoryAnalysis } from "../../types/motionVideo.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { runMotionAudioProcess, motionWavHeader } from "./motionSoundMixService.js";
 import { motionAudioHash as hash } from "./motionAudioUtils.js";
 import { motionMusicMoodKey } from "../../lib/motionMusic.js";
+interface MotionStereoAudio { left: Float32Array; right: Float32Array; rate: number; }
 export const motionMusicMood = (analysis: MotionStoryAnalysis | null | undefined, wanted?: string): string => {
   return motionMusicMoodKey(wanted) || motionMusicMoodKey(analysis?.musicMood) || M.GENRE_MOOD[_.toString(analysis?.videoGenre)] || M.SFX_MOOD[_.toString(analysis?.sfxMood)] || M.DEFAULT_MOOD;
 };
-export const motionMusicSegments = (analysis: MotionStoryAnalysis | null | undefined, beats: { chapterId: string }[], starts: number[]): { start: number; mood: string }[] => {
+export const motionMusicSegments = (analysis: MotionStoryAnalysis | null | undefined, beats: { chapterId: string }[], starts: number[]): MotionMusicSegment[] => {
   const base = motionMusicMood(analysis);
-  const out: { start: number; mood: string }[] = [{ start: 0, mood: base }];
+  const out: MotionMusicSegment[] = [{ start: 0, mood: base }];
   for (const chapter of analysis?.chapters || []) {
     const index = _.findIndex(beats, (beat) => beat.chapterId === chapter.id);
     if (index < 0) continue;
@@ -37,12 +38,94 @@ const rng = (seed: number) => () => {
   return seed / 2147483647;
 };
 const midiHz = (note: number): number => 440 * Math.pow(2, (note - 69) / 12);
-const table = (() => {
+const tables: Record<string, Float32Array> = {};
+const tableOf = (shape: string): Float32Array => {
+  if (tables[shape]) return tables[shape];
+  const partials = MOTION_MUSIC_PAD_SHAPES[shape] || M.PAD_PARTIALS;
   const out = new Float32Array(M.TABLE_SIZE);
-  const norm = _.sum(M.PAD_PARTIALS);
-  for (let i = 0; i < M.TABLE_SIZE; i++) out[i] = M.PAD_PARTIALS.reduce((sum, amp, k) => sum + amp * Math.sin((2 * Math.PI * (k + 1) * i) / M.TABLE_SIZE), 0) / norm;
+  const norm = _.sum(partials);
+  for (let i = 0; i < M.TABLE_SIZE; i++) out[i] = partials.reduce((sum, amp, k) => sum + amp * Math.sin((2 * Math.PI * (k + 1) * i) / M.TABLE_SIZE), 0) / norm;
+  tables[shape] = out;
   return out;
-})();
+};
+const withInstrument = (mood: MotionMusicMood, inst: MotionMusicInstrument): MotionMusicMood => ({
+  ...mood,
+  scale: inst.pentatonic ? (_.includes(mood.scale, MOTION_MUSIC_SCALES.MINOR_THIRD) ? MOTION_MUSIC_SCALES.MINOR_PENTATONIC : MOTION_MUSIC_SCALES.MAJOR_PENTATONIC) : mood.scale,
+  bpm: mood.bpm * inst.bpmScale,
+  brightness: mood.brightness * inst.brightness,
+  pad: mood.pad * inst.padGain,
+  bass: mood.bass * inst.bass,
+  arp: Math.max(mood.arp, inst.minArp),
+  arpStep: inst.arpStep ?? mood.arpStep,
+});
+const leadSample = (kind: string, f: number, t: number, hold: number): number => {
+  if (kind === MV.CHIP) return (Math.sin(2 * Math.PI * f * t) >= 0 ? 1 : -1) * 0.35 * Math.min(1, t / 0.004) * Math.exp(-t / 0.22);
+  if (kind === MV.BELL) return (Math.sin(2 * Math.PI * f * t) + 0.4 * Math.sin(2 * Math.PI * f * 2.76 * t) * Math.exp(-t * 3)) * Math.exp(-t / 0.9) * 0.6;
+  if (kind === MV.PIANO) {
+    let v = 0;
+    for (let k = 1; k <= 4; k++) v += (Math.sin(2 * Math.PI * k * f * t) / Math.pow(k, 1.5)) * Math.exp(-t * (1 + k * 0.7));
+    return v * Math.min(1, t / 0.005) * 0.7;
+  }
+  return Math.sin(2 * Math.PI * f * t + 0.6 * Math.sin(2 * Math.PI * 5 * t) * Math.min(1, t / 0.3)) * Math.min(1, t / 0.08) * Math.min(1, Math.max(0, (hold - t) / 0.25)) * 0.5;
+};
+const ambienceBed = (left: Float32Array, right: Float32Array, rate: number, name: string, seed: number): void => {
+  const level = MOTION_MUSIC_AMBIENCE[name]?.gain;
+  if (!level) return;
+  const random = rng(seed + 7919),
+    frames = left.length,
+    gain = level * M.PEAK;
+  const add = (i: number, l: number, r = l) => {
+    if (i >= 0 && i < frames) {
+      left[i] += l * gain;
+      right[i] += r * gain;
+    }
+  };
+  let lp = 0,
+    lp2 = 0;
+  if (name === MV.PROJECTOR) {
+    const step = Math.round(rate / 24);
+    for (let i = 0; i < frames; i++) {
+      lp = lp * 0.9 + (random() * 2 - 1) * 0.1;
+      const click = i % step < rate * 0.003 ? (random() * 2 - 1) * Math.exp(-(i % step) / (rate * 0.001)) : 0;
+      add(i, click * 0.5 + lp * 0.25 + Math.sin((2 * Math.PI * 50 * i) / rate) * 0.04);
+    }
+  } else if (name === MV.VINYL) {
+    for (let i = 0; i < frames; i++) {
+      lp = lp * 0.6 + (random() * 2 - 1) * 0.4;
+      add(i, lp * 0.08 + (random() < 3 / rate ? (random() * 2 - 1) * 0.9 : 0));
+    }
+  } else if (name === MV.NIGHT) {
+    for (let i = 0; i < frames; i++) {
+      lp = lp * 0.995 + (random() * 2 - 1) * 0.005;
+      const t = i / rate;
+      add(i, lp * 0.8 * (0.6 + 0.4 * Math.sin(t * 0.21)), lp * 0.8 * (0.6 + 0.4 * Math.cos(t * 0.17)));
+    }
+    for (let t = random(); t < frames / rate; t += 0.6 + random() * 1.2)
+      for (let p = 0; p < 3; p++) {
+        const start = Math.floor((t + p * 0.035) * rate),
+          pan = random();
+        for (let j = 0; j < rate * 0.02; j++) {
+          const v = Math.sin((2 * Math.PI * 4400 * j) / rate) * Math.sin((Math.PI * j) / (rate * 0.02)) * 0.12;
+          add(start + j, v * (1 - pan), v * pan);
+        }
+      }
+  } else {
+    const chalk = name === MV.CHALK;
+    for (let t = 1 + random() * 3; t < frames / rate; t += (chalk ? 3 : 4) + random() * 5) {
+      const start = Math.floor(t * rate),
+        length = Math.floor((chalk ? 0.2 + random() * 0.3 : 0.4 + random() * 0.4) * rate),
+        pan = random();
+      for (let j = 0; j < length; j++) {
+        const n = random() * 2 - 1;
+        lp = lp * 0.7 + n * 0.3;
+        lp2 = lp2 * 0.97 + n * 0.03;
+        const band = chalk ? (n - lp) * (0.6 + 0.4 * Math.sin((2 * Math.PI * 30 * j) / rate)) : lp - lp2;
+        const v = band * Math.sin((Math.PI * j) / length) * 0.5;
+        add(start + j, v * (1 - pan), v * pan);
+      }
+    }
+  }
+};
 const chordNotes = (mood: MotionMusicMood, degree: number): number[] => {
   const scale = mood.scale,
     at = (step: number) => mood.root + scale[(degree + step) % scale.length] + 12 * Math.floor((degree + step) / scale.length);
@@ -88,8 +171,10 @@ const reverb = (left: Float32Array, right: Float32Array, rate: number): void => 
     right[i] = right[i] * (1 - R.WET) + wetR[i] * gain;
   }
 };
-export const synthesizeMotionMusic = (duration: number, moodName: string, cues: number[], seed: number): { left: Float32Array; right: Float32Array; rate: number } => {
-  const mood = MOTION_MUSIC_MOODS[moodName] || MOTION_MUSIC_MOODS[M.DEFAULT_MOOD],
+export const synthesizeMotionMusic = (duration: number, moodName: string, cues: number[], seed: number, instrumentName?: string): MotionStereoAudio => {
+  const inst = MOTION_MUSIC_INSTRUMENTS[_.toString(instrumentName)] || MOTION_MUSIC_INSTRUMENTS.default,
+    mood = withInstrument(MOTION_MUSIC_MOODS[moodName] || MOTION_MUSIC_MOODS[M.DEFAULT_MOOD], inst),
+    table = tableOf(inst.pad),
     rate = M.SAMPLE_RATE,
     frames = Math.ceil(duration * rate),
     left = new Float32Array(frames),
@@ -99,7 +184,7 @@ export const synthesizeMotionMusic = (duration: number, moodName: string, cues: 
     chordSeconds = beat * M.BEATS_PER_CHORD,
     chords = Math.ceil(duration / chordSeconds) + 1,
     lowpass = Math.exp((-2 * Math.PI * mood.brightness) / rate),
-    detune = Math.pow(2, M.DETUNE_CENTS / 1200);
+    detune = Math.pow(2, (inst.detuneCents ?? M.DETUNE_CENTS) / 1200);
   let padL = 0,
     padR = 0;
   const phases = new Float64Array(16);
@@ -127,7 +212,7 @@ export const synthesizeMotionMusic = (duration: number, moodName: string, cues: 
       });
       padL = padL * lowpass + (l / notes.length) * (1 - lowpass);
       padR = padR * lowpass + (r / notes.length) * (1 - lowpass);
-      if (i < frames) {
+      if (i < frames && inst.pad !== MV.NONE) {
         left[i] += padL * mood.pad * env;
         right[i] += padR * mood.pad * env;
       }
@@ -148,13 +233,23 @@ export const synthesizeMotionMusic = (duration: number, moodName: string, cues: 
     if (mood.arp > 0) {
       const steps = Math.round(M.BEATS_PER_CHORD / mood.arpStep);
       for (let s = 0; s < steps; s++) {
-        const note = notes[(s * 3 + c) % notes.length] + 12,
+        const note = notes[(s * 3 + c) % notes.length] + inst.leadOctave,
           f = midiHz(note),
-          start = Math.floor((c * chordSeconds + s * mood.arpStep * beat) * rate),
+          start = Math.floor((c * chordSeconds + (s + (s % 2 ? inst.swing : 0)) * mood.arpStep * beat) * rate),
           period = Math.max(2, Math.round(rate / f)),
           line = new Float32Array(period).map(() => random() * 2 - 1),
           length = Math.floor(Math.min(1.2, beat * 2) * rate),
           pan = 0.5 + (random() - 0.5) * 0.6;
+        if (inst.lead !== MV.PLUCK) {
+          const hold = Math.min(MOTION_MUSIC_LEAD_SECONDS[inst.lead], mood.arpStep * beat * 1.5),
+            span = Math.floor(Math.max(hold, MOTION_MUSIC_LEAD_SECONDS[inst.lead]) * rate);
+          for (let j = 0; j < span && start + j < frames; j++) {
+            const out = leadSample(inst.lead, f, j / rate, hold) * mood.arp * 0.5;
+            left[start + j] += out * (1 - pan);
+            right[start + j] += out * pan;
+          }
+          continue;
+        }
         let index = 0;
         for (let j = 0; j < length && start + j < frames; j++) {
           const next = (index + 1) % period,
@@ -243,8 +338,8 @@ const writeWav = async (file: string, left: Float32Array, right: Float32Array, r
   }
   await fs.promises.writeFile(file, Buffer.concat([motionWavHeader(data.length, M.CHANNELS, rate), data]));
 };
-const synthesizeSegments = (duration: number, segments: { start: number; mood: string }[], cues: number[], seed: number): { left: Float32Array; right: Float32Array; rate: number } => {
-  if (segments.length < 2) return synthesizeMotionMusic(duration, segments[0]?.mood || M.DEFAULT_MOOD, cues, seed);
+const synthesizeSegments = (duration: number, segments: MotionMusicSegment[], cues: number[], seed: number, instrument?: string): MotionStereoAudio => {
+  if (segments.length < 2) return synthesizeMotionMusic(duration, segments[0]?.mood || M.DEFAULT_MOOD, cues, seed, instrument);
   const rate = M.SAMPLE_RATE,
     frames = Math.ceil(duration * rate),
     left = new Float32Array(frames),
@@ -261,6 +356,7 @@ const synthesizeSegments = (duration: number, segments: { start: number; mood: s
           (cue) => cue - from,
         ),
         seed + index,
+        instrument,
       ),
       offset = Math.floor(from * rate),
       fadeIn = index ? overlap * rate : 0,
@@ -273,12 +369,13 @@ const synthesizeSegments = (duration: number, segments: { start: number; mood: s
   });
   return { left, right, rate };
 };
-export const buildMotionMusic = async (duration: number, segments: { start: number; mood: string }[], cues: number[], seed: number): Promise<string> => {
-  const id = M.PREFIX + hash([M.VERSION, duration.toFixed(2), segments, cues, seed]) + M.WAV,
+export const buildMotionMusic = async (duration: number, segments: MotionMusicSegment[], cues: number[], seed: number, instrument?: string, ambience?: string): Promise<string> => {
+  const id = M.PREFIX + hash([M.VERSION, duration.toFixed(2), segments, cues, seed, instrument || MR.MOTION_TEXT_EMPTY, ambience || MR.MOTION_TEXT_EMPTY]) + M.WAV,
     file = path.join(getMotionAudioDirectory(), id);
   if (!fs.existsSync(file)) {
     const temp = file + randomUUID() + M.WAV;
-    const { left, right, rate } = synthesizeSegments(duration, segments, cues, seed);
+    const { left, right, rate } = synthesizeSegments(duration, segments, cues, seed, instrument);
+    if (ambience) ambienceBed(left, right, rate, ambience, seed);
     await writeWav(temp, left, right, rate);
     fs.renameSync(temp, file);
   }

@@ -1,4 +1,5 @@
 export const MOTION_PATTERNS = {
+  HTML_TAG_OPEN: /</g,
   WHITESPACE: /\s+/,
   WHITESPACE_GLOBAL: /\s+/g,
   URL: /https?:\/\/\S+/i,

@@ -1,3 +1,4 @@
+import { motionStyleFinish } from "../../constants/motionStyleFinish.js";
 import { compileMotionSoundPlan } from "../../lib/motionSoundPlan.js";
 import type { MotionSoundCue } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
@@ -313,7 +314,9 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitles,
     duration: +total.toFixed(3),
   };
-  spec.music = { mood: motionMusicMood(analysis), cues: motionMusicCues(spec), segments: motionMusicSegments(analysis, beats, shotStarts) };
+  const finish = motionStyleFinish(analysis?.stylePreset);
+  if (finish) spec.finish = finish;
+  spec.music = { mood: motionMusicMood(analysis), cues: motionMusicCues(spec), segments: motionMusicSegments(analysis, beats, shotStarts), ...(finish?.music ? { instrument: finish.music } : {}), ...(finish?.ambience ? { ambience: finish.ambience } : {}) };
   const hud = buildMotionHudTrack(beats, shotStarts, total);
   if (hud.length) spec.hud = hud;
   const stampCues = normalizeSoundCues(

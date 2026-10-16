@@ -1,3 +1,5 @@
+import type { MotionStyleFinish } from "../constants/motionStyleFinish.js";
+export interface MotionMusicSegment { start: number; mood: string; }
 export enum MotionQuality {
   DRAFT = "draft",
   STANDARD = "standard",
@@ -54,7 +56,8 @@ export interface MotionSpec {
   shots: MotionShot[];
   subtitles?: { start: number; end: number; text: string }[];
   hud?: MotionHudSegment[];
-  music?: { mood: string; cues: number[]; segments?: { start: number; mood: string }[] };
+  music?: { mood: string; cues: number[]; segments?: MotionMusicSegment[]; instrument?: string; ambience?: string };
+  finish?: MotionStyleFinish;
   duration?: number;
   audio?: { id?: string; volume?: number };
 }

@@ -103,6 +103,7 @@ import {
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../constants/motionVideoTexts.js";
 import { MOTION_STORY_CONFIG } from "../constants/motionVideo.js";
+import { API_ROUTES } from "../constants/apiRoutes.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
@@ -415,6 +416,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </MotionSelectField>
                 <MotionStyleSetPicker studio={studio} currentLang={currentLang} disabled={studio.storyBusy || studio.renderBusy} />
               </div>
+              {!state.styleReferences?.length && motionStylePreset(state.stylePreset) ? (
+                <div className={MOTION_STYLES.STYLE_PREVIEW_BOX}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{presetText.PREVIEW}</span>
+                  <img key={state.stylePreset} src={API_ROUTES.MOTION_STYLE_PREVIEW + encodeURIComponent(state.stylePreset || MR.MOTION_TEXT_EMPTY)} alt={presetText.PREVIEW} loading={MR.MOTION_TEXT_LAZY} className={MOTION_STYLES.STYLE_PREVIEW_IMG} />
+                  <span className={MOTION_STYLES.STYLE_PREVIEW_HINT}>{presetText.PREVIEW_HINT}</span>
+                </div>
+              ) : null}
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP}>
                 <div />
