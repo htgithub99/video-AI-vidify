@@ -5,7 +5,7 @@ import { MOTION_BROWSER_FINISHED_LOG, MOTION_BROWSER_NOT_RELEASED_ERROR, MOTION_
 import { MOTION_SOUND_CONFIG } from "../../constants/motionSound.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { execFile, spawn } from "child_process";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import fs from "fs";
 import { MOTION_LOUDNESS, motionLoudnormFilter } from "../../constants/motionLoudness.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
@@ -27,7 +27,6 @@ import {
   MOTION_TEMPLATE_JPG_2,
   MOTION_TEMPLATE_K,
   MOTION_TEMPLATE_LOI,
-  MOTION_TEMPLATE_PART_MP4,
   MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG,
   MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO,
   MOTION_TEMPLATE_SYMBOL_20,
@@ -169,7 +168,7 @@ import {
   MOTION_TEXT_Y,
   MOTION_TEXT_YUV420P,
 } from "../../constants/motionRuntime.js";
-import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../constants/motionVideo.js";
+import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_RENDER_CACHE, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../constants/motionVideo.js";
 import { cloneJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../types/motionVideo.js";
@@ -445,23 +444,44 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     const cpuBudget = is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
     const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
     job.workers = workers;
-    const per = Math.ceil(totalFrames / workers);
-    const slices: WorkerSlice[] = _.filter(
-      _.map(_.range(workers), (i) => ({ index: i, start: i * per, end: Math.min(totalFrames, (i + 1) * per), file: path.join(work, MOTION_TEMPLATE_PART_MP4(String(i))) })),
-      (s) => s.end > s.start,
-    );
+    const cacheKey = createHash(MOTION_RENDER_CACHE.HASH)
+      .update(JSON.stringify([MOTION_RENDER_CACHE.VERSION, html, width, height, fps, preset.id, encoder]))
+      .digest(MOTION_RENDER_CACHE.HEX);
+    const cacheRoot = path.join(getMotionRootDirectory(), MOTION_RENDER_CACHE.FOLDER);
+    const cacheDir = path.join(cacheRoot, cacheKey);
+    fs.mkdirSync(cacheDir, { recursive: true });
+    for (const entry of fs.readdirSync(cacheRoot)) {
+      const dir = path.join(cacheRoot, entry);
+      if (entry !== cacheKey && Date.now() - fs.statSync(dir).mtimeMs > MOTION_RENDER_CACHE.MAX_AGE_MS) fs.rmSync(dir, { recursive: true, force: true });
+    }
+    const per = Math.max(1, Math.round(fps * MOTION_RENDER_CACHE.CHUNK_SECONDS));
+    const slices: WorkerSlice[] = _.map(_.range(Math.ceil(totalFrames / per)), (i) => ({ index: i, start: i * per, end: Math.min(totalFrames, (i + 1) * per), file: path.join(cacheDir, MOTION_RENDER_CACHE.CHUNK_FILE(i)) }));
+    const ready = (s: WorkerSlice) => fs.existsSync(s.file) && fs.statSync(s.file).size > 0;
+    const todo = _.filter(slices, (s) => !ready(s));
     job.status = MotionJobStatus.RENDERING;
     job.stage = MOTION_TEXT_RENDER_2;
-    pushLog(job, MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG(String(slices.length), String(totalFrames)));
+    pushLog(job, MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG(String(workers), String(totalFrames)));
+    pushLog(job, MOTION_RENDER_CACHE.CHUNKS(slices.length, workers));
+    if (todo.length < slices.length) pushLog(job, MOTION_RENDER_CACHE.RESUMED(slices.length - todo.length, slices.length));
     const t0 = Date.now();
+    const skipped = _.sumBy(_.difference(slices, todo), (s) => s.end - s.start);
+    job.framesDone = skipped;
     const onFrames = (n: number) => {
       job.framesDone += n;
       const el = (Date.now() - t0) / 1000;
-      job.fpsRender = el > 0 ? job.framesDone / el : 0;
+      job.fpsRender = el > 0 ? (job.framesDone - skipped) / el : 0;
       job.etaSeconds = job.fpsRender ? (totalFrames - job.framesDone) / job.fpsRender : undefined;
       job.progress = Math.min(0.94, (job.framesDone / totalFrames) * 0.94);
     };
-    await Promise.all(_.map(slices, (s) => renderSlice(s, html, { width, height, fps, preset, encoder, signal, onFrames })));
+    const queue = [...todo];
+    const worker = async (): Promise<void> => {
+      for (let s = queue.shift(); s; s = queue.shift()) {
+        const temp = s.file + MOTION_RENDER_CACHE.TEMP_SUFFIX;
+        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal, onFrames });
+        fs.renameSync(temp, s.file);
+      }
+    };
+    await Promise.all(_.times(Math.min(workers, Math.max(1, todo.length)), worker));
     job.status = MotionJobStatus.ENCODING;
     job.stage = MOTION_TEXT_MUX;
     pushLog(job, MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO(String(((Date.now() - t0) / 1000) | 0)));
@@ -550,6 +570,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     };
     const browserClosed = await closeMotionAiBrowserBeforeRender();
     pushLog(job, browserClosed ? MOTION_BROWSER_FINISHED_LOG : MOTION_BROWSER_NOT_RELEASED_ERROR);
+    fs.rmSync(cacheDir, { recursive: true, force: true });
     addMotionResult(result);
     job.result = result;
     job.progress = 1;

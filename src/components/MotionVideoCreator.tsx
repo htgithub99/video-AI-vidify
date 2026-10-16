@@ -321,12 +321,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   {_.map(
                     [
                       [MotionStoryLength.FULL, text.LENGTH_FULL],
-                      [MotionStoryLength.TEN, text.LENGTH_10],
-                      [MotionStoryLength.FIVE, text.LENGTH_5],
-                      [MotionStoryLength.THIRTY, text.LENGTH_30],
-                      [MotionStoryLength.SIXTY, text.LENGTH_60],
-                      [MotionStoryLength.SHORT, text.LENGTH_SHORT],
                       [MotionStoryLength.ONE, text.LENGTH_1],
+                      [MotionStoryLength.SHORT, text.LENGTH_SHORT],
+                      [MotionStoryLength.FIVE, text.LENGTH_5],
+                      [MotionStoryLength.TEN, text.LENGTH_10],
+                      [MotionStoryLength.TWENTY, text.LENGTH_20],
+                      [MotionStoryLength.THIRTY, text.LENGTH_30],
+                      [MotionStoryLength.FORTY, text.LENGTH_40],
+                      [MotionStoryLength.FIFTY, text.LENGTH_50],
+                      [MotionStoryLength.SIXTY, text.LENGTH_60],
+                      [MotionStoryLength.SEVENTY_FIVE, text.LENGTH_75],
+                      [MotionStoryLength.NINETY, text.LENGTH_90],
+                      [MotionStoryLength.ONE_HUNDRED_FIVE, text.LENGTH_105],
                     ],
                     ([id, label]) => (
                       <option key={id} value={id}>

@@ -1,4 +1,18 @@
-import { MotionAspect, MotionQuality } from "../types/motionVideo.js";
+import { MotionAspect, MotionQuality, MotionStoryLength } from "../types/motionVideo.js";
+export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, number>> = {
+  [MotionStoryLength.ONE]: 60,
+  [MotionStoryLength.FIVE]: 300,
+  [MotionStoryLength.TEN]: 600,
+  [MotionStoryLength.TWENTY]: 1200,
+  [MotionStoryLength.THIRTY]: 1800,
+  [MotionStoryLength.FORTY]: 2400,
+  [MotionStoryLength.FIFTY]: 3000,
+  [MotionStoryLength.SIXTY]: 3600,
+  [MotionStoryLength.SEVENTY_FIVE]: 4500,
+  [MotionStoryLength.NINETY]: 5400,
+  [MotionStoryLength.ONE_HUNDRED_FIVE]: 6300,
+  [MotionStoryLength.SHORT]: 75,
+};
 export const MOTION_DIRECTOR_PATTERNS = { WORDS: /\s+/, PUNCTUATION: /[,.;:!?…]/g, SENTENCES: /[^.!?…]+[.!?…]*["”»)]*/g, CLAUSES: /(?<=[,;:–—])\s+/, SENTENCE_END: /[,.;:!?…]$/, BITMAP: /[^01#.* ]/g } as const;
 export interface MotionQualityPreset { id: MotionQuality; scale: number; fps: number; supersample: number; motionBlur: number; layerScale: number; bloom: boolean; grain: boolean; jpegQuality: number; crf: number; x264Preset: string; gpuCq: number; audioBitrate: string; maxBpp: number; }
 export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> = {
@@ -36,6 +50,18 @@ export const MOTION_VIDEO_CONSTANTS = {
   PREVIEW_WIDTH: 960,
 } as const;
 export const MOTION_GPU_ENCODERS = ["h264_nvenc", "h264_qsv", "h264_amf"] as const;
+export const MOTION_RENDER_CACHE = {
+  VERSION: 1,
+  FOLDER: "render-cache",
+  CHUNK_SECONDS: 60,
+  MAX_AGE_MS: 3 * 24 * 3600 * 1000,
+  HASH: "sha256",
+  HEX: "hex" as const,
+  CHUNK_FILE: (index: number): string => `chunk-${String(index).padStart(4, "0")}.mp4`,
+  TEMP_SUFFIX: ".part.mp4",
+  RESUMED: (done: number, total: number): string => `Tiếp tục render: dùng lại ${done}/${total} đoạn đã render trước đó`,
+  CHUNKS: (total: number, workers: number): string => `Render theo ${total} đoạn (${workers} luồng) – nếu bị dừng giữa chừng, lần sau sẽ chạy tiếp từ đoạn dở`,
+};
 export const MOTION_STORY_CONFIG = {
   PROJECT_ID_PREFIX: "motion-story-",
   ARTIFACT_ANALYSIS: "motion-story-analysis",
@@ -61,6 +87,8 @@ export const MOTION_STORY_CONFIG = {
   TTS_MAX_CHARS: 900,
   SUBTITLE_MAX_CHARS: 64,
   STORY_STORAGE_KEY: "motion_story_state_v1",
+  GRAPHIC_TRANSITION: "push",
+  GRAPHIC_TRANSITION_SECONDS: 0.45,
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   AI_PARALLEL: 5,
   WORKER_IDS: ["motion-primary", "motion-second", "motion-third", "motion-fourth", "motion-fifth"],
@@ -78,6 +106,7 @@ export const MOTION_STORY_CONFIG = {
   ROOM_LIMIT_BLOCK_MS: 5 * 60 * 60 * 1000,
   ROOM_LIMIT_LOG: (from: string, to: string): string => `${from} đã hết lượt – các yêu cầu còn lại trong phiên chuyển thẳng sang ${to}`,
   API_PROVIDER: "api",
+  BROWSER_RELEASED: "Đã xong toàn bộ phần trao đổi với AI – đóng Chrome trước khi dựng ảnh xem trước",
   REQUEST_COUNT_LOG: (counts: Record<string, number>): string =>
     `Số request đã gửi: ${Object.entries(counts)
       .map(([provider, count]) => `${provider} ${count}`)

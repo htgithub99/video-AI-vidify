@@ -1,4 +1,7 @@
 export const MOTION_VERIFICATION_TEXTS = {
+  RENDER_FAILURE_RE: /failed|render error/,
+  MOTION_RENDER_MODULE_RE: /motionRenderService\.ts$/,
+  MOTION_ASSET_LIBRARY_MODULE_RE: /motionAssetLibraryService\.ts$/,
   MOTION_ENGINE_CORE_JS: "../motion-engine/core.js",
   MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON: "motion-engine/demo/editorial-qa.json",
   UTF8: "utf8",
@@ -239,7 +242,7 @@ export const MOTION_VERIFICATION_TEXTS = {
   DATA_IMAGE_PNG_BASE64_IVBORW0KGGOAAAANSUHEUGAAAAEAAAABCAQAAA: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jMioAAAAASUVORK5CYII=",
   AUTHORITATIVE_CHARACTER_MOTION_ENABLED: "AUTHORITATIVE CHARACTER MOTION: enabled",
   STYLE_REFERENCE: "style-reference-",
-  ADVISORY_QA_PASSED_LOW_SCORES_RETAIN_VALID_SCENES_RENDER_FAI: "Advisory QA passed: low scores retain valid scenes; render failures trigger one repair and remain visible.\n",
+  ADVISORY_QA_PASSED_LOW_SCORES_RETAIN_VALID_SCENES_RENDER_FAI: "Advisory QA passed: low scores retain valid scenes; render failures trigger local staging retries without another AI request and remain visible.\n",
   IDLE: "idle",
   HEAD: "head",
   LOOK: "look",

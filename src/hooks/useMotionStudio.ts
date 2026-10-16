@@ -12,7 +12,7 @@ import { MOTION_VIDEO_GENRES, type MotionVideoGenre } from "../constants/motionG
 import { MOTION_STYLE_PRESET_NONE } from "../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
-import { bindVideoDnaSettings, needsAuthoredCharacters, sceneExecutionKey } from "../lib/motionVideoDna.js";
+import { needsAuthoredCharacters, sceneExecutionKey } from "../lib/motionVideoDna.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadMotionEngineClient, motionJobStatusUrl, motionRequest, pollMotionJob, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
@@ -130,6 +130,7 @@ const DEFAULTS: PersistedState = {
   seo: null,
   thumbnail: null,
 };
+const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look });
 export interface MotionScenesRequest { beats?: string[]; locations?: string[]; restart?: boolean; restyle?: boolean; note?: string; }
 const compileStateKey = (state: PersistedState): string => JSON.stringify([state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.subtitles !== false, state.sfx, state.sfxVolume, state.soundOverrides]);
 export const narrationSignature = motionVoiceSignature;
@@ -185,18 +186,7 @@ export function useMotionStudio() {
     (p: Partial<PersistedState>) =>
       setState((s) => {
         const next = { ...s, ...p };
-        const changedInput = p.rawText !== undefined && p.rawText !== s.rawText;
-        const changedNarration = (p.length !== undefined && p.length !== s.length) || (p.language !== undefined && p.language !== s.language);
-        if (changedInput || changedNarration || p.styleReferences !== undefined) {
-          next.soundOverrides = {};
-          next.analysis = null;
-          next.script = null;
-          next.voice = null;
-          if (changedInput) next.source = null;
-        } else if (next.analysis?.videoDna) {
-          next.analysis = bindVideoDnaSettings(next.analysis, { language: next.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, length: next.length, drawingMode: next.drawingMode, characterMode: MR.MOTION_TEXT_DRAWN, aspect: next.aspect });
-        }
-        if (next.analysis) next.analysis = { ...next.analysis, characterMotion: next.characterMotion, ...(p.videoGenre !== undefined ? { videoGenre: p.videoGenre } : {}) };
+        if (p.rawText !== undefined && p.rawText !== s.rawText) next.source = null;
         const synced = withVoiceChannel(next, channelsRef.current);
         if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
         stateRef.current = synced;
@@ -334,7 +324,7 @@ export function useMotionStudio() {
         logStoryTerminal(final);
         if (final.status !== MotionJobStatus.COMPLETED || !final.result) return;
         if (final.kind === MotionStoryJobKind.SCRIPT || final.kind === MotionStoryJobKind.SCENES) patch({ script: final.result as MotionStoryScript });
-        if (final.kind === MotionStoryJobKind.ANALYZE) patch({ analysis: final.result as MotionStoryAnalysis, script: null, voice: null, seo: null, thumbnail: null });
+        if (final.kind === MotionStoryJobKind.ANALYZE) patch(analyzedState(final.result as MotionStoryAnalysis, stateRef.current.look));
         if (final.kind === MotionStoryJobKind.VOICE) {
           const track = final.result as MotionVoiceTrack;
           setState((s) =>
@@ -399,7 +389,7 @@ export function useMotionStudio() {
           videoGenre: state.videoGenre || MOTION_VIDEO_GENRES.AUTO,
           stylePreset: state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE,
         })) as MotionStoryAnalysis;
-        patch({ analysis, script: null, voice: null, seo: null, thumbnail: null, look: analysis.look || state.look });
+        patch(analyzedState(analysis, stateRef.current.look));
         setCompiled(null);
         toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(String(analysis.chapters.length), String(analysis.cast.length)));
         if (state.autoContinue !== false && writeScriptRef.current) await writeScriptRef.current(undefined, analysis);

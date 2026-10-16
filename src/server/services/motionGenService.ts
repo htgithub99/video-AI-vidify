@@ -119,11 +119,45 @@ import { estimateBeatSeconds, sceneShots } from "./motionDirectorService.js";
 import { validateGenLocation, validateGenCharacter, validateGenStaging } from "./motionEngineService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { openStillSession, type MotionStillSession } from "./motionRenderService.js";
-import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { mapMotionAiPool, releaseMotionAiSession, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
 import { MOTION_SCENE_LIBRARY, MOTION_SCENE_LIBRARY_PROMPT } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_CATALOG_PROMPT, MOTION_SCENE_LIBRARY_MODES, MOTION_SCENE_SHOWROOM, motionSceneType, type MotionSeedCast, type MotionSeedPlace, type MotionSeedProp } from "../../constants/motionSceneCatalog.js";
 import { applyCharacterVariant } from "../../lib/motionCharacterVariant.js";
-import { assignSceneLibrary, readBaseLibrary, attachSceneProps, extractSceneProps, pendingBaseLibrary, getSceneAsset, listSceneAssets, motionAssetStyleKey, readSceneStyle, saveSceneAsset, saveSceneStyle, sceneAssetThumbPath, sceneStyleFits, scenePropCatalog, sharedStyleKeyOf, touchSceneAssets, type MotionBaseLibrary } from "./motionSceneLibraryService.js";
+import { MOTION_COSTUME } from "../../constants/motionCostume.js";
+import { MOTION_LIBRARY_FIT, MOTION_LIBRARY_LOG } from "../../constants/motionSceneTraits.js";
+import { motionApplyCostume } from "../../lib/motionCostume.js";
+import { motionRedressLocation } from "../../lib/motionRedress.js";
+import { motionTraitsFit, motionTraitsLabel } from "../../lib/motionSceneTraits.js";
+import { motionAutoSoundEvents } from "../../lib/motionSound.js";
+import { motionQaReport } from "../../lib/motionQa.js";
+import {
+  assignSceneLibrary,
+  baseRedressProps,
+  baseWardrobe,
+  motionMemberCostume,
+  motionMemberTraits,
+  motionPlaceScore,
+  motionPlaceTraits,
+  motionStoryTraits,
+  motionStripForeignParts,
+  sceneAssetTraits,
+  readBaseLibrary,
+  attachSceneProps,
+  extractSceneProps,
+  pendingBaseLibrary,
+  getSceneAsset,
+  listSceneAssets,
+  motionAssetStyleKey,
+  readSceneStyle,
+  saveSceneAsset,
+  saveSceneStyle,
+  sceneAssetThumbPath,
+  sceneStyleFits,
+  scenePropCatalog,
+  sharedStyleKeyOf,
+  touchSceneAssets,
+  type MotionBaseLibrary,
+} from "./motionSceneLibraryService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { MOTION_STYLE_PREVIEW, motionStyleFinish } from "../../constants/motionStyleFinish.js";
 export interface GenOptions {
@@ -619,14 +653,6 @@ export const previewBeats = async (beats: MotionBeat[], script: MotionStoryScrip
   }
 };
 const aiGroupSize = (count: number): number => _.clamp(Math.ceil(count / MOTION_STORY_CONFIG.AI_PARALLEL), MOTION_GEN_CONFIG.MIN_BEATS_PER_AI_CALL, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL);
-const autoNotes = (beats: MotionBeat[], gen: MotionGenState): Record<string, string> => {
-  const notes: Record<string, string> = {};
-  for (const b of beats) {
-    const auto = _.filter(gen.previews[b.id]?.issues || [], (s) => MOTION_QA_MESSAGES.RENDER_FAILURE.test(s));
-    if (auto.length) notes[b.id] = auto.join(MOTION_TEXT_SYMBOL_41);
-  }
-  return notes;
-};
 export const directExistingMotionSound = async (script: MotionStoryScript, gen: MotionGenState, o: GenOptions): Promise<void> => {
   const direction = o.audioDirection || motionAudioDirection(script, null);
   const key = createHash(MR.MOTION_TEXT_SHA256)
@@ -640,7 +666,17 @@ export const directExistingMotionSound = async (script: MotionStoryScript, gen: 
     return;
   }
   o.log(MOTION_SOUND_CONFIG.PLANNING);
-  await mapMotionAiPool(_.chunk(beats, beats.length > MOTION_GEN_CONFIG.LONG_VIDEO_SCENE_BEATS ? MOTION_GEN_CONFIG.KEY_BEATS_PER_STAGING_CALL : aiGroupSize(beats.length)), async (group) => {
+  const long = beats.length > MOTION_GEN_CONFIG.LONG_VIDEO_SCENE_BEATS;
+  const openers = new Set(_.map(_.values(_.groupBy(script.beats, MOTION_TEXT_CHAPTERID)), (list) => list[0].id));
+  const aiBeats = long ? _.filter(beats, (b) => !!b.emphasis || openers.has(b.id)) : beats;
+  const autoBeats = _.difference(beats, aiBeats);
+  for (const beat of autoBeats) {
+    const staging: any = beat.visual === MOTION_TEXT_SCENE ? gen.staging[beat.id] : (beat.data ||= {});
+    staging.soundEvents = motionAutoSoundEvents([beat.narration, beat.action, ..._.map(staging.actors || [], (actor: any) => actor.action)]);
+    staging.soundDirected = true;
+  }
+  if (long) o.log(MOTION_SOUND_CONFIG.AUTO_LOG(aiBeats.length, autoBeats.length));
+  await mapMotionAiPool(_.chunk(aiBeats, long ? MOTION_GEN_CONFIG.KEY_BEATS_PER_STAGING_CALL : aiGroupSize(aiBeats.length)), async (group) => {
     aborted(o);
     const castKeys = _.uniq(group.flatMap((beat) => ((gen.staging[beat.id] as any)?.actors || []).map((actor: any) => actor.cast)));
     const cast = Object.fromEntries(
@@ -771,7 +807,7 @@ const actorText = (text: string, key: string, name: string, lead: boolean): stri
   const own = _.filter(text.split(MOTION_GEN_CONFIG.AUTO_CLAUSE_SPLIT), (clause) => _.some(words, (word) => _.includes(_.toLower(clause), word)));
   return own.length ? own.join(MR.MOTION_TEXT_SYMBOL_27) : lead ? text : MR.MOTION_TEXT_EMPTY;
 };
-const autoStaging = (b: MotionBeat, index: number, script: MotionStoryScript, gen: MotionGenState, names: Record<string, string>): any => {
+const autoStaging = (b: MotionBeat, index: number, script: MotionStoryScript, gen: MotionGenState, names: Record<string, string>, fresh = false): any => {
   const L: any = gen.locations[b.place || MR.MOTION_TEXT_EMPTY];
   const cast = _.filter(b.cast || [], (key) => !!gen.cast[key]);
   const text = [b.action, b.scenePlan?.subject, b.scenePlan?.composition].join(MR.MOTION_TEXT_SYMBOL_27);
@@ -779,7 +815,7 @@ const autoStaging = (b: MotionBeat, index: number, script: MotionStoryScript, ge
   const lead = speaker || cast[0];
   const position = script.beats.findIndex((other) => other.id === b.id);
   const prevIndex = position > 0 ? _.findLastIndex(script.beats, (other) => other.visual === MOTION_TEXT_SCENE && !!gen.staging[other.id] && castSetKey(other) === castSetKey(b), position - 1) : -1;
-  const reference: any = prevIndex >= 0 ? gen.staging[script.beats[prevIndex].id] : null;
+  const reference: any = prevIndex >= 0 && !fresh ? gen.staging[script.beats[prevIndex].id] : null;
   const shared = !_.some(cast, (key) => !!actorText(text, key, names[key] || key, false));
   const actions = Object.fromEntries(_.map(cast, (key) => [key, autoAction(gen.cast[key], actorText(text, key, names[key] || key, shared), gen.characterMotion === true)]));
   const taken: number[][] = [];
@@ -804,17 +840,11 @@ const autoStaging = (b: MotionBeat, index: number, script: MotionStoryScript, ge
   if (beatSeconds(b, script.language) >= MOTION_GEN_CONFIG.AUTO_SECOND_CAMERA_SECONDS) cameras.push(camera(MOTION_GEN_CONFIG.AUTO_SECOND_CAMERA_AT, shotAt(index + 2), index + 3, cycleOf(MOTION_GEN_CONFIG.AUTO_MOVES, index + 1), listener));
   return { id: b.id, location: b.place, ...(b.time ? { time: b.time } : {}), ...(b.weather ? { weather: b.weather } : {}), actors, cameras };
 };
-const autoStageBeats = (beats: MotionBeat[], script: MotionStoryScript, analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions): void => {
+const autoStageBeats = (beats: MotionBeat[], script: MotionStoryScript, analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions, offset = 0): void => {
   const ctx = stagingContext(gen);
   const ordered = _.sortBy(beats, (b) => script.beats.findIndex((other) => other.id === b.id));
   for (const b of ordered) {
-    const raw = autoStaging(
-      b,
-      script.beats.findIndex((other) => other.id === b.id),
-      script,
-      gen,
-      Object.fromEntries(_.map(analysis.cast, (c) => [c.key, c.name])),
-    );
+    const raw = autoStaging(b, script.beats.findIndex((other) => other.id === b.id) + offset, script, gen, Object.fromEntries(_.map(analysis.cast, (c) => [c.key, c.name])), offset > 0);
     let prepared = raw;
     try {
       prepared = productionStaging(raw, gen.locations[raw.location]);
@@ -822,8 +852,9 @@ const autoStageBeats = (beats: MotionBeat[], script: MotionStoryScript, analysis
       o.log(getMotionErrorSummary(error));
     }
     gen.staging[b.id] = validateGenStaging(prepared, ctx).value;
+    if (offset > 0) Object.assign(gen.staging[b.id] as any, { soundEvents: motionAutoSoundEvents([b.narration, b.action]), soundDirected: true });
   }
-  if (ordered.length) o.log(MOTION_GEN_CONFIG.LOG_AUTO_STAGED(ordered.length));
+  if (ordered.length) o.log(offset > 0 ? MOTION_GEN_CONFIG.LOG_AUTO_RESTAGED(ordered.length) : MOTION_GEN_CONFIG.LOG_AUTO_STAGED(ordered.length));
 };
 const genPreamble = (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions, extra: string = MR.MOTION_TEXT_EMPTY): string =>
   MR.MOTION_TEMPLATE_SYMBOL_225(
@@ -838,12 +869,13 @@ const libraryPreviewRel = (id: string): string | null => {
   fs.copyFileSync(thumb, file);
   return genPreviewRel(file);
 };
-const fillSceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions): MotionStoryAnalysis => {
+const fillSceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions, beats: MotionBeat[] = []): MotionStoryAnalysis => {
   if (o.restyle || !gen.assetStyleKey || analysis.libraryMode === MOTION_SCENE_LIBRARY_MODES.OFF) return analysis;
   const cast = _.filter(analysis.cast, (c) => !c.reuse && !hasAuthoredCharacter(gen.cast[c.key]));
   const places = _.filter(analysis.places, (p) => !p.reuse && !gen.locations[p.key] && !_.includes(o.onlyLocations || [], p.key));
   if (!cast.length && !places.length) return analysis;
-  const filled = assignSceneLibrary({ ...analysis, cast, places }, gen.assetStyleKey, MOTION_SCENE_LIBRARY_MODES.AUTO, o.characterMotion);
+  const weights = _.countBy(beats, (b) => b.place);
+  const filled = assignSceneLibrary({ ...analysis, cast, places }, gen.assetStyleKey, MOTION_SCENE_LIBRARY_MODES.AUTO, o.characterMotion, { drawBudget: MOTION_LIBRARY_FIT.DRAW_MAX, weight: (place) => weights[place.key] || 0, log: o.log });
   const castCount = _.filter(filled.cast, (c) => !!c.reuse).length,
     placeCount = _.filter(filled.places, (p) => !!p.reuse).length;
   if (!castCount && !placeCount) return analysis;
@@ -852,6 +884,7 @@ const fillSceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o:
 };
 const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions): void => {
   const styleKey = gen.assetStyleKey || MR.MOTION_TEXT_EMPTY;
+  const story = motionStoryTraits(analysis);
   const sources = (gen.assetSources ||= {});
   const used: string[] = [];
   if (_.isEmpty(gen.style)) {
@@ -867,21 +900,35 @@ const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o
       if (!c.reuse || hasAuthoredCharacter(gen.cast[c.key])) continue;
       const asset = getSceneAsset(c.reuse);
       if (!asset || asset.item.kind !== MOTION_SCENE_LIBRARY.KIND_CHARACTER || !sceneStyleFits(asset.item.styleKey, styleKey) || !hasAuthoredCharacter(asset.data) || (o.characterMotion && !asset.item.motion)) continue;
-      gen.cast[c.key] = applyCharacterVariant(asset.data, c.type || asset.item.type, { index: c.variant || 0, colors: c.colors }).design;
+      const traits = c.traits || motionMemberTraits(c, story);
+      const costume = c.costume || motionMemberCostume(c, analysis, traits);
+      const variant = applyCharacterVariant(asset.data, costume ? MOTION_COSTUME.RANK_TYPES[costume.rank] : c.type || asset.item.type, { index: c.variant || 0, colors: c.colors }).design;
+      gen.cast[c.key] = costume ? motionApplyCostume(variant, costume, baseWardrobe()) : motionStripForeignParts(variant, traits);
       sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = asset.item.id;
       used.push(asset.item.id);
-      o.log(MOTION_SCENE_LIBRARY.LOGS.REUSED_CHARACTER(c.name, asset.item.name));
+      o.log(MOTION_LIBRARY_LOG.CAST(c.name, asset.item.name, costume?.label || MR.MOTION_TEXT_EMPTY));
     }
   for (const place of analysis.places) {
     if (!place.reuse || gen.locations[place.key] || _.includes(o.onlyLocations || [], place.key)) continue;
     const asset = getSceneAsset(place.reuse);
     if (!asset || asset.item.kind !== MOTION_SCENE_LIBRARY.KIND_LOCATION || !sceneStyleFits(asset.item.styleKey, styleKey) || !asset.data?.stage) continue;
-    gen.locations[place.key] = cloneJson(asset.data);
+    const traits = place.traits || motionPlaceTraits(place, story);
+    const fits = motionTraitsFit(sceneAssetTraits(asset.item), traits);
+    const dressed = fits ? { location: cloneJson(asset.data), swapped: [], removed: [] } : motionRedressLocation(asset.data, traits, baseRedressProps());
+    gen.locations[place.key] = dressed.location;
+    if (dressed.swapped.length || dressed.removed.length) o.log(MOTION_LIBRARY_LOG.REDRESS(place.name, dressed.swapped.length, dressed.removed.length));
     sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = asset.item.id;
     const rel = libraryPreviewRel(asset.item.id);
     gen.locationInfo[place.key] = { files: rel ? [rel] : [], issues: [], at: new Date().toISOString() };
     used.push(asset.item.id);
-    o.log(MOTION_SCENE_LIBRARY.LOGS.REUSED_LOCATION(place.name, asset.item.name));
+    o.log(
+      MOTION_LIBRARY_LOG.PLACE(
+        place.name,
+        asset.item.name,
+        motionPlaceScore(asset.item, place, () => 0),
+        fits ? MR.MOTION_TEXT_EMPTY : motionTraitsLabel(traits),
+      ),
+    );
   }
   touchSceneAssets(used);
 };
@@ -1018,7 +1065,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
       }
   }
   gen.assetStyleKey = !o.styleReferences?.length && motionStylePreset(analysis.stylePreset) ? MOTION_STYLE_PRESET_KEY(analysis.stylePreset!, gen.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D) : motionAssetStyleKey(o.styleReferences, gen.drawingMode);
-  analysis = fillSceneLibrary(analysis, gen, o);
+  analysis = fillSceneLibrary(analysis, gen, o, sceneBeats);
   applySceneLibrary(analysis, gen, o);
   const castToDraw = o.restyle ? analysis.cast.length : _.filter(analysis.cast, (c) => !hasAuthoredCharacter(gen.cast[c.key])).length;
   const placesToDraw = _.filter(analysis.places, (p) => _.some(sceneBeats, (b) => b.place === p.key) && (!gen.locations[p.key] || _.includes(o.onlyLocations || [], p.key))).length;
@@ -1081,16 +1128,20 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     if (unstaged.length) o.log(MOTION_GEN_CONFIG.LOG_AUTO_FALLBACK(unstaged.length));
     autoStageBeats([...autoList, ..._.filter(keyList, (b) => !gen.staging[b.id])], script, analysis, gen, o);
     emit();
-    progress(0.76, MOTION_TEXT_PREVIEW);
+    progress(0.76, MOTION_TEXT_REVIEW);
+    await directExistingMotionSound(script, gen, o);
+    emit();
+    await releaseMotionAiSession(o.log);
+    progress(0.8, MOTION_TEXT_PREVIEW);
     const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
     const previewList = [...stageList, ...stale];
     o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(String(previewList.length)));
     await previewBeats(previewList, script, gen, session, o);
     emit();
-    const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
-    if (broken.length) {
-      const notes = autoNotes(broken, gen);
-      await mapMotionAiPool(_.chunk(broken, longVideo ? MOTION_GEN_CONFIG.KEY_BEATS_PER_STAGING_CALL : aiGroupSize(broken.length)), (group) => stageBeats(group, script, analysis, gen, o, notes), poolLimit(talkExec(o)));
+    for (let attempt = 1; attempt <= MOTION_GEN_CONFIG.AUTO_RESTAGE_ATTEMPTS; attempt++) {
+      const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
+      if (!broken.length) break;
+      autoStageBeats(broken, script, analysis, gen, o, attempt * MOTION_GEN_CONFIG.AUTO_RESTAGE_OFFSET);
       await previewBeats(broken, script, gen, session, o);
       emit();
     }
@@ -1099,14 +1150,13 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
   } finally {
     await session.close();
   }
-  progress(0.9, MOTION_TEXT_REVIEW);
-  await directExistingMotionSound(script, gen, o);
-  emit();
+  progress(0.95, MOTION_TEXT_REVIEW);
   gen.failed = _.map(
     _.filter(sceneBeats, (b) => !gen.staging[b.id] || needsMotionPreview(gen.previews[b.id])),
     MOTION_TEXT_ID,
   );
   gen.updatedAt = new Date().toISOString();
+  _.forEach(motionQaReport(out, analysis), (line) => o.log(line));
   progress(1, MOTION_TEXT_DONE);
   return out;
 };

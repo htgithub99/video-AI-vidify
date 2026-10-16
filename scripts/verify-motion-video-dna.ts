@@ -6,16 +6,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 import { MotionStoryLength } from "../src/types/motionVideo.ts";
+import { MOTION_TEXT_TRANSCRIPT_2 } from "../src/constants/motionRuntime.ts";
 import { bindVideoDnaSettings, sceneExecutionKey, normalizeScenePlan, scenePlanErrors, scenePlanStagingErrors, videoDnaErrors, videoDnaSourceKey } from "../src/lib/motionVideoDna.ts";
 import { productionPreamble } from "../src/lib/motionDirection.ts";
-import { analyzeStory, parseStorySource, writeChapterBeats } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, parseStorySource, resolveTargetSeconds, writeChapterBeats } from "../src/server/services/motionStoryService.ts";
 import { beatPreviewSpec, prepareMotionGen, previewBeats, stageBeats } from "../src/server/services/motionGenService.ts";
 import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
 import { openStillSession } from "../src/server/services/motionRenderService.ts";
 import { getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
 import { normalizeMotionAnalysisResponse } from "../src/lib/motionAnalysisResponse.ts";
 const rawDna = (style: string) => ({
-  intent: `${VT.EXPLAIN}${style}`,
+  intent: VT.EXPLAIN + style,
   audience: VT.VIEWERS_REQUESTED_BY_THE_INPUT,
   narrative: { voice: VT.NATURAL_ENGLISH, structure: VT.SHOW_COMPARE_EXPLAIN, pacing: VT.ONE_IDEA_AT_A_TIME },
   visualDna: { style, composition: VT.KEEP_OBJECTS_SEPARATED, camera: VT.OVERHEAD_AND_DETAIL_VIEWS, lighting: VT.READABLE_SURFACES, palette: VT.INPUT_DERIVED_COLOURS, materials: VT.MATTE, subjectHierarchy: VT.OBJECT_FIRST },
@@ -128,12 +129,22 @@ assert.ok(recovered.chapters.length);
 assert.equal(recovered.characterMotion, false);
 for (const [length, target] of [
   [MotionStoryLength.TEN, 600],
+  [MotionStoryLength.TWENTY, 1200],
+  [MotionStoryLength.FORTY, 2400],
+  [MotionStoryLength.FIFTY, 3000],
+  [MotionStoryLength.SEVENTY_FIVE, 4500],
+  [MotionStoryLength.NINETY, 5400],
+  [MotionStoryLength.ONE_HUNDRED_FIVE, 6300],
   [MotionStoryLength.SHORT, 75],
   [MotionStoryLength.FULL, 60],
 ] as const) {
   const result = await analyzeStory(source, { language: VT.EN, length, exec: {} as any, ai: async () => ({ ...raw, videoDna: rawDna(VT.FORMS) }) });
   assert.equal(result.videoDna?.settings.length, length);
   assert.equal(result.videoDna?.settings.targetSeconds, target);
+  if (target >= 1200) {
+    assert.equal(resolveTargetSeconds({ ...source, kind: MOTION_TEXT_TRANSCRIPT_2, sourceSeconds: 10000 }, length), target);
+    assert.equal(resolveTargetSeconds({ ...source, kind: MOTION_TEXT_TRANSCRIPT_2, sourceSeconds: 30 }, length), 300);
+  }
 }
 const plan = { purpose: VT.COMPARE_OBJECTS, subject: VT.HERO, before: VT.BOTH_OBJECTS_ARE_VISIBLE, after: VT.BOTH_OBJECTS_REMAIN_VISIBLE, composition: VT.HERO_LEFT_OF_COMPARISON, spatialRelations: [VT.HERO_LEFT_OF_COMPARISON], requiredProps: [VT.HERO, VT.COMPARISON_2], continuity: [VT.SAME_POSITIONS], acceptance: [VT.HERO_AND_COMPARISON_ARE_SEPARATE] };
 assert.deepEqual(scenePlanErrors(plan), []);
@@ -223,12 +234,12 @@ assert.equal(analysis.videoDna.settings.drawingMode, VT.VALUE_2D, VT.BINDING_MUS
 assert.deepEqual(prepareMotionGen(gen, bound).locations, {}, VT.CHANGED_DNA_INVALIDATES_ASSETS_AND_THEIR_REVIEWS);
 const session = await openStillSession();
 try {
-  const runId = `${VT.VIDEO_DNA_CHECK}${Date.now()}`;
+  const runId = VT.VIDEO_DNA_CHECK + Date.now();
   await previewBeats(beats, script, gen, session, { exec: {} as any, log: () => {}, runId, aspect: VT.VALUE_9_16 });
   assert.equal(gen.previews[beats[0].id].files?.length, 4);
   assert.equal(gen.previews[beats[0].id].score, undefined);
   assert.ok(gen.previews[beats[0].id].file);
-  assert.ok(!gen.previews[beats[0].id].issues?.some((issue) => /failed|render error/.test(issue)));
+  assert.ok(!gen.previews[beats[0].id].issues?.some((issue) => VT.RENDER_FAILURE_RE.test(issue)));
   assert.equal(needsMotionPreview(gen.previews[beats[0].id]), false);
   const renderedPreview = structuredClone(gen.previews[beats[0].id]);
   await previewBeats(
@@ -253,11 +264,11 @@ try {
   const browser = await chromium.launch({ channel: VT.CHROME, headless: true });
   try {
     const page = await browser.newPage();
-    const image = fs.readFileSync(path.join(output, `${beats[0].id}${VT.OPENING_JPG}`)).toString(VT.BASE64);
+    const image = fs.readFileSync(path.join(output, beats[0].id + VT.OPENING_JPG)).toString(VT.BASE64);
     const stats = await page.evaluate(
       async ({ payload: image, texts: VT }) => {
         const img = new Image();
-        img.src = `${VT.DATA_IMAGE_JPEG_BASE64}${image}`;
+        img.src = VT.DATA_IMAGE_JPEG_BASE64 + image;
         await img.decode();
         const canvas = document.createElement(VT.CANVAS);
         canvas.width = 32;
@@ -271,7 +282,7 @@ try {
       },
       { payload: image, texts: VT },
     );
-    assert.ok(stats.brightness > 15, `${VT.OPENING_IMAGE_MUST_NOT_BE_COVERED_BY_A_BLACK_FADE}${stats.brightness}`);
+    assert.ok(stats.brightness > 15, VT.OPENING_IMAGE_MUST_NOT_BE_COVERED_BY_A_BLACK_FADE + stats.brightness);
     assert.equal(stats.width / stats.height, 9 / 16, VT.REVIEW_MUST_USE_THE_SELECTED_ASPECT_RATIO);
   } finally {
     await browser.close();

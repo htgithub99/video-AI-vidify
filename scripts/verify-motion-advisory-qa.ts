@@ -24,8 +24,8 @@ const bundled = await build({
     {
       name: VT.QA_FIXTURES,
       setup(builder) {
-        builder.onLoad({ filter: /motionRenderService\.ts$/ }, () => ({ contents: VT.EXPORT_CONST_OPENSTILLSESSION_ASYNC_CLOSE_ASYNC_RENDER_ASYNC, loader: VT.TS }));
-        builder.onLoad({ filter: /motionAssetLibraryService\.ts$/ }, () => ({
+        builder.onLoad({ filter: VT.MOTION_RENDER_MODULE_RE }, () => ({ contents: VT.EXPORT_CONST_OPENSTILLSESSION_ASYNC_CLOSE_ASYNC_RENDER_ASYNC, loader: VT.TS }));
+        builder.onLoad({ filter: VT.MOTION_ASSET_LIBRARY_MODULE_RE }, () => ({
           contents: VT.EXPORT_CONST_ENSUREMOTIONLIBRARY_ASYNC_EXPORT_CONST_ENSURELI,
           loader: VT.TS,
         }));
@@ -71,10 +71,12 @@ try {
   assert.equal(styled.gen.characterMotion, true);
   assert.deepEqual(styled.gen.failed, []);
   fixture.broken = true;
+  const rendersBefore = fixture.renders;
   calls.length = 0;
   const broken = await buildScenes(script, analysis, { exec: {}, log: () => {}, ai, review: false });
   assert.deepEqual(broken.gen.failed, [VT.B1]);
-  assert.equal(calls.filter((artifact) => artifact === C.ARTIFACT_STAGING).length, 2);
+  assert.equal(calls.filter((artifact) => artifact === C.ARTIFACT_STAGING).length, 1);
+  assert.ok(fixture.renders - rendersBefore >= C.AUTO_RESTAGE_ATTEMPTS + 1);
   process.stdout.write(VT.ADVISORY_QA_PASSED_LOW_SCORES_RETAIN_VALID_SCENES_RENDER_FAI);
 } finally {
   fs.unlinkSync(modulePath);

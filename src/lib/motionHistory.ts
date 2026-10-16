@@ -3,7 +3,11 @@ import { MOTION_HISTORY as C } from "../constants/motionHistory.js";
 import type { MotionBeat, MotionHud, MotionHudSegment } from "../types/motionVideo.js";
 const text = (v: unknown, max: number): string | undefined => {
   const s = _.trim(_.toString(v ?? C.EMPTY));
-  return s ? s.slice(0, max) : undefined;
+  if (!s) return undefined;
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max),
+    space = cut.lastIndexOf(C.SPACE);
+  return _.trimEnd(space > max * C.WORD_CUT_MIN ? cut.slice(0, space) : cut, C.TRIM_TAIL);
 };
 const color = (v: unknown): string | undefined => (typeof v === "string" && C.COLOR_RE.test(v) ? v : undefined);
 const num = (v: unknown, min: number, max: number, fallback: number): number => {
@@ -22,24 +26,35 @@ export const normalizeMotionHud = (raw: unknown): MotionHud | undefined => {
   const r = raw as Record<string, unknown>;
   if (r.clear === true) return { clear: true };
   const hud: MotionHud = {};
-  const counter = text(r.counter, C.HUD_TEXT_MAX), date = text(r.date, C.HUD_TEXT_MAX), label = text(r.label, C.HUD_TEXT_MAX);
+  const counter = text(r.counter, C.HUD_TEXT_MAX),
+    date = text(r.date, C.HUD_TEXT_MAX),
+    label = text(r.label, C.HUD_TEXT_MAX);
   if (counter) hud.counter = counter;
   if (date) hud.date = date;
   if (label) hud.label = label;
   const bars = items(r.bars, C.HUD_BARS_MAX, (b) => {
     if (!_.isPlainObject(b)) return null;
-    const label = text(b.label, C.HUD_LABEL_MAX), barColor = color(b.color);
+    const label = text(b.label, C.HUD_LABEL_MAX),
+      barColor = color(b.color);
     return label ? { label, value: num(b.value, 0, 100, 0), ...(barColor ? { color: barColor } : {}) } : null;
   });
   if (bars.length) hud.bars = bars;
   return _.isEmpty(hud) ? undefined : hud;
+};
+const nextHudState = (state: MotionHud, hud?: MotionHud): MotionHud => (hud ? (hud.clear ? {} : { ...state, ..._.omit(hud, C.HUD_CLEAR) }) : state);
+export const motionHudStates = (beats: MotionBeat[]): MotionHud[] => {
+  let state: MotionHud = {};
+  return _.map(beats, (beat) => {
+    state = nextHudState(state, beat.hud);
+    return state;
+  });
 };
 export const buildMotionHudTrack = (beats: MotionBeat[], starts: number[], total: number): MotionHudSegment[] => {
   const out: MotionHudSegment[] = [];
   let state: Omit<MotionHudSegment, "start" | "end"> = {};
   beats.forEach((beat, i) => {
     if (!beat.hud) return;
-    state = beat.hud.clear ? {} : { ...state, ..._.omit(beat.hud, C.HUD_CLEAR) };
+    state = nextHudState(state, beat.hud);
     const last = out[out.length - 1];
     if (last) last.end = Math.min(last.end, +starts[i].toFixed(3));
     if (!_.isEmpty(state)) out.push({ ...state, start: +starts[i].toFixed(3), end: +total.toFixed(3) });
@@ -49,7 +64,7 @@ export const buildMotionHudTrack = (beats: MotionBeat[], starts: number[], total
 export const motionGeomapParams = (d: Record<string, any>): Record<string, unknown> => {
   const region = _.toString(d.region).toLowerCase();
   return {
-    title: text(d.title, C.MAP_TEXT_MAX) || C.EMPTY,
+    title: text(d.title, C.TITLE_MAX) || C.EMPTY,
     date: text(d.date, C.HUD_TEXT_MAX),
     region: _.includes(C.REGIONS as readonly string[], region) ? region : C.DEFAULT_REGION,
     bbox: Array.isArray(d.bbox) && d.bbox.length === 4 && _.every(d.bbox, (x) => _.isFinite(+x)) ? _.map(d.bbox, Number) : undefined,
@@ -62,17 +77,20 @@ export const motionGeomapParams = (d: Record<string, any>): Record<string, unkno
     }),
     fronts: items(d.fronts, C.MAP_FRONTS_MAX, (f) => {
       if (!_.isPlainObject(f)) return null;
-      const from = line(f.line || f.from), to = line(f.to);
+      const from = line(f.line || f.from),
+        to = line(f.to);
       return from.length >= 2 ? { line: from, to: to.length >= 2 ? to : undefined, color: color(f.color), flip: f.flip === true } : null;
     }),
     arrows: items(d.arrows, C.MAP_ARROWS_MAX, (a) => {
       if (!_.isPlainObject(a)) return null;
-      const from = lonLat(a.from), to = lonLat(a.to);
+      const from = lonLat(a.from),
+        to = lonLat(a.to);
       return from && to ? { from, to, label: text(a.label, C.MAP_TEXT_MAX), color: color(a.color) } : null;
     }),
     labels: items(d.labels, C.MAP_ITEMS_MAX, (l) => {
       if (!_.isPlainObject(l)) return null;
-      const label = text(l.text, C.MAP_TEXT_MAX), at = lonLat(l.at ?? (l.lon != null ? [l.lon, l.lat] : undefined));
+      const label = text(l.text, C.MAP_TEXT_MAX),
+        at = lonLat(l.at ?? (l.lon != null ? [l.lon, l.lat] : undefined));
       return label && at ? { text: label, at, big: l.big === true, color: color(l.color) } : null;
     }),
     zoomTo: d.zoomTo != null ? lonLat(d.zoomTo) : undefined,
@@ -85,7 +103,7 @@ const tone = (v: unknown): string => {
 };
 export const motionVerdictParams = (d: Record<string, any>): Record<string, unknown> => ({
   label: text(d.label, C.HUD_TEXT_MAX),
-  title: text(d.title, C.MAP_TEXT_MAX),
+  title: text(d.title, C.TITLE_MAX),
   question: text(d.question, C.VERDICT_LINE_MAX),
   verdict: text(d.verdict, C.VERDICT_TEXT_MAX) || C.EMPTY,
   tone: tone(d.tone),
@@ -99,12 +117,12 @@ export const motionScoreboardParams = (d: Record<string, any>): Record<string, u
     return label ? { label, verdict: text(r.verdict, C.VERDICT_TEXT_MAX) || C.EMPTY, tone: tone(r.tone) } : null;
   });
   const highlight = _.toNumber(d.highlight);
-  return { title: text(d.title, C.MAP_TEXT_MAX) || C.EMPTY, rows, highlight: _.isFinite(highlight) ? _.clamp(Math.round(highlight), 0, Math.max(0, rows.length - 1)) : undefined };
+  return { title: text(d.title, C.TITLE_MAX) || C.EMPTY, rows, highlight: _.isFinite(highlight) ? _.clamp(Math.round(highlight), 0, Math.max(0, rows.length - 1)) : undefined };
 };
 export const motionIconsParams = (d: Record<string, any>): Record<string, unknown> => {
   const raw = _.castArray(d.groups && _.castArray(d.groups).length ? d.groups : [d]);
   return {
-    title: text(d.title, C.MAP_TEXT_MAX) || C.EMPTY,
+    title: text(d.title, C.TITLE_MAX) || C.EMPTY,
     caption: text(d.caption, 120),
     groups: _.map(_.take(raw, C.ICON_GROUPS_MAX), (g: any) => {
       const count = Math.round(num(g?.count, 1, C.ICON_COUNT_MAX, 10));

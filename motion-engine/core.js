@@ -387,7 +387,7 @@
         const dur = Math.max(0.01, sh.end - sh.start);
         const lt = t - sh.start;
         try {
-          inst.tpl.draw(g, Object.assign({}, ctxBase, { shot: sh, params: sh.params || {}, state: inst.state, t: lt, u: lt / dur, dur, abs: t }));
+          inst.tpl.draw(g, Object.assign({}, ctxBase, { shot: sh, params: sh.params || {}, state: inst.state, t: lt, u: lt / dur, dur, abs: t, hud: ME.hudAt ? ME.hudAt(spec.hud, t) : null }));
         } catch (e) {
           if (!inst.warned) warn(MT.MOTION_DRAW_FAILED, sh.template, e);
           inst.warned = true;
@@ -442,7 +442,11 @@
           ME.drawOverlay(out, ov, t - sh.start, sh, { W, H, unit, aspect, look });
         }
       }
-      if (ME.drawHud && spec.hud) ME.drawHud(out, spec.hud, t, { W, H, unit });
+      if (ME.drawHud && spec.hud) {
+        const live = spec.shots.filter((sh) => t >= sh.start && t < sh.end).pop();
+        const p = (live && live.params) || {};
+        ME.drawHud(out, spec.hud, t, { W, H, unit, shotText: [p.title, p.verdict, p.label, p.kicker, p.headline].filter(Boolean).join(MT.SYMBOL_3) });
+      }
       const sub = spec.subtitleStyle === MT.OFF ? null : subtitleAt(t);
       if (sub) ME.drawSubtitle(out, sub, t, { W, H, unit, aspect, style: spec.subtitleStyle || MT.CINEMA, letterbox: spec.letterbox });
     };

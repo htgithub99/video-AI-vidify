@@ -144,7 +144,7 @@ import {
   MOTION_TEXT_WORDS,
   MOTION_TEXT_WRONG,
 } from "../../constants/motionRuntime.js";
-import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
+import { MOTION_STORY_CONFIG, MOTION_STORY_LENGTH_SECONDS } from "../../constants/motionVideo.js";
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { productionPreamble } from "../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../lib/motionCreativeBlueprint.js";
@@ -204,12 +204,11 @@ export const parseStorySource = (raw: string): MotionStorySource => {
   return { kind: matches.length || transcriptIdx >= 0 ? MR.MOTION_TEXT_TRANSCRIPT_2 : MR.MOTION_TEXT_BRIEF, title, url, text, segments, words, sourceSeconds };
 };
 export const resolveTargetSeconds = (source: MotionStorySource, length: MotionStoryLength): number => {
-  if (length === MotionStoryLength.TEN) return source.kind === MR.MOTION_TEXT_BRIEF ? 600 : Math.min(600, source.sourceSeconds);
-  if (length === MotionStoryLength.FIVE) return source.kind === MR.MOTION_TEXT_BRIEF ? 300 : Math.min(300, source.sourceSeconds);
-  if (length === MotionStoryLength.THIRTY) return source.kind === MR.MOTION_TEXT_BRIEF ? 1800 : Math.min(1800, Math.max(300, source.sourceSeconds));
-  if (length === MotionStoryLength.SIXTY) return source.kind === MR.MOTION_TEXT_BRIEF ? 3600 : Math.min(3600, Math.max(300, source.sourceSeconds));
-  if (length === MotionStoryLength.SHORT) return 75;
-  if (length === MotionStoryLength.ONE) return 60;
+  const seconds = MOTION_STORY_LENGTH_SECONDS[length];
+  if (seconds !== undefined) {
+    if (source.kind === MR.MOTION_TEXT_BRIEF || length === MotionStoryLength.SHORT || length === MotionStoryLength.ONE) return seconds;
+    return Math.min(seconds, seconds > 600 ? Math.max(300, source.sourceSeconds) : source.sourceSeconds);
+  }
   return Math.max(60, source.sourceSeconds);
 };
 const formatTs = (s: number) => MOTION_TEMPLATE_SYMBOL_11(String(Math.floor(s / 60)), String(String(Math.floor(s % 60)).padStart(2, MOTION_TEXT_0)));
@@ -405,6 +404,18 @@ const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<vo
   if (!provider) return;
   run.rooms.delete(workerId);
   await closeChatPlanningRoom({ provider, projectId: run.projectId, workerId }).catch(_.noop);
+};
+export const releaseMotionAiSession = async (log?: (s: string) => void): Promise<boolean> => {
+  const run = motionAiRunStore.getStore();
+  if (run) await Promise.allSettled(_.map([...run.rooms.keys()], (workerId) => closeMotionAiRoom(run, workerId)));
+  if (motionAiSessions > 1 || !motionAiUsedBrowser) return false;
+  cancelGlobalBrowserCleanup();
+  const closed = await closeChatBrowserIfIdle().catch(() => false);
+  if (closed) {
+    motionAiUsedBrowser = false;
+    log?.(MOTION_STORY_CONFIG.BROWSER_RELEASED);
+  }
+  return closed;
 };
 export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>, log?: (s: string) => void, keepBrowser = false): Promise<T> => {
   if (motionAiCleanup) await motionAiCleanup.catch(_.noop);

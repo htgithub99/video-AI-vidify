@@ -48,6 +48,10 @@ export const MOTION_SOUND_CONFIG = {
   SOURCES: ["visible", "offscreen"],
   EMPTY: "",
   OBJECT: "object",
+  SPACE: " ",
+  AUTO_MAX_EVENTS: 2,
+  AUTO_AT: [0.3, 0.65],
+  AUTO_LOG: (ai: number, auto: number): string => `Âm thanh: ${ai} cảnh chính do AI đạo diễn, ${auto} cảnh còn lại tự gán theo nội dung (không tốn request)`,
 } as const;
 export const MOTION_SOUND_KINDS = [
   { kind: "footstep", layer: "action", pattern: /\bfootsteps?\b|\bwalking\b|\brunning\b|buoc chan|di bo|chay bo/, duration: 0.28 },

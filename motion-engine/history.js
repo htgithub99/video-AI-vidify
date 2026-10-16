@@ -2,7 +2,8 @@
   "use strict";
   const MT = root.MotionEngineText;
   const ME = root.MotionEngine;
-  const U = ME.util, C = ME.color;
+  const U = ME.util,
+    C = ME.color;
   const PI = Math.PI;
   const GEO = root.MotionGeoData || { countries: [], cities: {}, aliases: {}, regions: {} };
   const byName = {};
@@ -34,15 +35,20 @@
   const mercY = (lat) => Math.log(Math.tan(PI / 4 + (U.clamp(lat, -84, 84) * PI) / 360));
   const wrapLon = (lon, wrap) => (wrap && lon < 0 ? lon + 360 : lon);
   const view = (box, W, H) => {
-    const x0 = (box[0] * PI) / 180, x1 = (box[2] * PI) / 180, y0 = mercY(box[1]), y1 = mercY(box[3]);
+    const x0 = (box[0] * PI) / 180,
+      x1 = (box[2] * PI) / 180,
+      y0 = mercY(box[1]),
+      y1 = mercY(box[3]);
     const s = Math.max(W / Math.max(1e-6, x1 - x0), H / Math.max(1e-6, y1 - y0));
-    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const cx = (x0 + x1) / 2,
+      cy = (y0 + y1) / 2;
     return { s, cx, cy, wrap: box[2] > MT.GEO_WRAP_EAST };
   };
   const project = (v, W, H, lon, lat) => [W / 2 + ((wrapLon(lon, v.wrap) * PI) / 180 - v.cx) * v.s, H / 2 - (mercY(lat) - v.cy) * v.s];
   const lerpBox = (a, b, k) => a.map((x, i) => U.lerp(x, b[i], k));
   const zoomBox = (box, center, factor) => {
-    const w = (box[2] - box[0]) / factor, h = (box[3] - box[1]) / factor;
+    const w = (box[2] - box[0]) / factor,
+      h = (box[3] - box[1]) / factor;
     return [center[0] - w / 2, center[1] - h / 2, center[0] + w / 2, center[1] + h / 2];
   };
   const tracePath = (g, pts) => {
@@ -64,6 +70,61 @@
     g.fillText(str, x, y);
     g.restore();
   };
+  const textWidth = (g, str, size, o = {}) => {
+    g.save();
+    g.font = ME.font(o.weight || 800, size, o.family || MT.HEAD);
+    const w = g.measureText(str).width;
+    g.restore();
+    return w;
+  };
+  const textBox = (g, str, x, y, size, o = {}) => {
+    const w = textWidth(g, str, size, o);
+    const ax = o.align === MT.LEFT ? 0 : o.align === MT.RIGHT ? 1 : 0.5,
+      pad = size * MT.TEXT_BOX_PAD;
+    return [x - w * ax - pad, y - size * 0.6 - pad, x - w * ax + w + pad, y + size * 0.6 + pad];
+  };
+  const hits = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const textLayout = (reserved) => {
+    const boxes = reserved.slice();
+    return {
+      boxes,
+      place(g, str, x, y, size, o = {}) {
+        const r = textBox(g, str, x, y, size, o);
+        if (boxes.some((b) => hits(r, b))) return false;
+        boxes.push(r);
+        outlinedText(g, str, x, y, size, o);
+        return true;
+      },
+    };
+  };
+  const words = (str) =>
+    String(str || MT.EMPTY)
+      .toLowerCase()
+      .replace(MT.NUMBER_GROUP_RE, MT.SYMBOL_1_REPLACE)
+      .split(MT.WORD_SPLIT_RE)
+      .filter((w) => w.length > 1);
+  const coveredBy = (str, other) => {
+    const a = words(str),
+      b = new Set(words(other));
+    return a.length > 0 && a.filter((w) => b.has(w)).length / a.length >= MT.HUD_LABEL_OVERLAP;
+  };
+  const sideLimit = (reserved, y, size, W) => {
+    let half = (W * MT.TEXT_TITLE_MAX) / 2;
+    for (const r of reserved) {
+      if (r[3] < y - size * 0.7 || r[1] > y + size * 0.7) continue;
+      if (r[0] >= W / 2) half = Math.min(half, r[0] - W / 2 - W * MT.TEXT_SIDE_MARGIN);
+      else if (r[2] <= W / 2) half = Math.min(half, W / 2 - r[2] - W * MT.TEXT_SIDE_MARGIN);
+    }
+    return Math.max(W * 0.2, half * 2);
+  };
+  const fitTitle = (g, str, x, y, size, reserved, W, o = {}) => {
+    const maxW = sideLimit(reserved, y, size, W);
+    const w = textWidth(g, str, size, o);
+    const fit = w > maxW ? Math.max(size * MT.TEXT_FIT_MIN, (size * maxW) / w) : size;
+    const lines = fit > size * MT.TEXT_FIT_MIN ? [str] : ME.wrap(g, str, maxW, ME.font(o.weight || 800, fit, o.family || MT.HEAD));
+    return { size: fit, lines, rect: [x - maxW / 2, y - fit * 0.7, x + maxW / 2, y + fit * (lines.length - 0.3)] };
+  };
+  const drawTitle = (g, title, x, y, o = {}) => title.lines.forEach((line, i) => outlinedText(g, line, x, y + i * title.size * 1.05, title.size, o));
   const ringPoints = (ring, v, W, H) => {
     const pts = [];
     for (let i = 0; i < ring.length; i += 2) pts.push(project(v, W, H, ring[i], ring[i + 1]));
@@ -82,7 +143,8 @@
     if (pts.length < 2) return pts.slice();
     const seg = [0];
     for (let i = 1; i < pts.length; i++) seg.push(seg[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-    const total = seg[seg.length - 1] || 1, out = [];
+    const total = seg[seg.length - 1] || 1,
+      out = [];
     for (let k = 0; k < n; k++) {
       const d = (k / (n - 1)) * total;
       let i = 1;
@@ -102,15 +164,21 @@
     tracePath(g, pts);
     g.stroke();
     g.fillStyle = color || MT.GEO_FRONT;
-    const step = 26 * un, size = 11 * un;
+    const step = 26 * un,
+      size = 11 * un;
     let carry = 0;
     for (let i = 1; i < pts.length; i++) {
-      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      const [x0, y0] = pts[i - 1],
+        [x1, y1] = pts[i];
       const len = Math.hypot(x1 - x0, y1 - y0);
       if (len < 1e-3) continue;
-      const dx = (x1 - x0) / len, dy = (y1 - y0) / len, nx = flip ? dy : -dy, ny = flip ? -dx : dx;
+      const dx = (x1 - x0) / len,
+        dy = (y1 - y0) / len,
+        nx = flip ? dy : -dy,
+        ny = flip ? -dx : dx;
       for (let d = step - carry; d < len; d += step) {
-        const px = x0 + dx * d, py = y0 + dy * d;
+        const px = x0 + dx * d,
+          py = y0 + dy * d;
         g.beginPath();
         g.moveTo(px - dx * size * 0.6, py - dy * size * 0.6);
         g.lineTo(px + dx * size * 0.6, py + dy * size * 0.6);
@@ -125,14 +193,17 @@
     }
     g.restore();
   };
-  const drawArrow = (g, a, b, k, color, un, label, bend) => {
-    const mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * bend, my = (a[1] + b[1]) / 2 + (b[0] - a[0]) * bend;
+  const drawArrow = (g, a, b, k, color, un, label, bend, place) => {
+    const mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * bend,
+      my = (a[1] + b[1]) / 2 + (b[0] - a[0]) * bend;
     const at = (s) => [(1 - s) * (1 - s) * a[0] + 2 * (1 - s) * s * mx + s * s * b[0], (1 - s) * (1 - s) * a[1] + 2 * (1 - s) * s * my + s * s * b[1]];
-    const N = 48, end = Math.max(1, Math.round(N * k));
+    const N = 48,
+      end = Math.max(1, Math.round(N * k));
     const pts = [];
     for (let i = 0; i <= end; i++) pts.push(at(i / N));
     if (pts.length < 2) return;
-    const tip = pts[pts.length - 1], prev = pts[Math.max(0, pts.length - 3)];
+    const tip = pts[pts.length - 1],
+      prev = pts[Math.max(0, pts.length - 3)];
     const ang = Math.atan2(tip[1] - prev[1], tip[0] - prev[0]);
     g.save();
     g.lineCap = MT.ROUND;
@@ -163,7 +234,7 @@
     g.restore();
     if (label && k > 0.6) {
       const m = at(0.5);
-      outlinedText(g, label, m[0], m[1] - 30 * un, 30 * un, { alpha: U.clamp((k - 0.6) / 0.3) });
+      (place || outlinedText)(g, label, m[0], m[1] - 30 * un, 30 * un, { alpha: U.clamp((k - 0.6) / 0.3) });
     }
   };
   const tagBox = (g, str, x, y, size, o = {}) => {
@@ -171,7 +242,8 @@
     if (!str) return;
     g.save();
     g.font = ME.font(800, size, MT.HEAD);
-    const w = g.measureText(str).width + size * 1.2, h = size * 1.7;
+    const w = g.measureText(str).width + size * 1.2,
+      h = size * 1.7;
     const bx = o.align === MT.RIGHT ? x - w : o.align === MT.CENTER ? x - w / 2 : x;
     g.globalAlpha = o.alpha == null ? 1 : o.alpha;
     g.fillStyle = o.bg || MT.HUD_PANEL;
@@ -195,18 +267,47 @@
     description: MT.GEOMAP_DESC,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, u = ctx.u, un = ctx.unit;
+      const p = ctx.params,
+        W = ctx.W,
+        H = ctx.H,
+        t = ctx.t,
+        u = ctx.u,
+        un = ctx.unit;
       const base = regionOf(p);
       const target = lonLatOf(p.zoomTo);
       const zk = target ? U.smooth(U.inv(0.15, 0.75, u)) : 0;
       const box = target ? lerpBox(base, zoomBox(base, target, U.clamp(+p.zoom || 2.5, 1, 8)), zk) : base;
       const v = view(box, W, H);
+      const hud = ctx.hud || null;
+      const reserved = [...ME.hudReserved(g, hud, W, H, un), [W * MT.SUBTITLE_BAND[0], H * MT.SUBTITLE_BAND[1], W * MT.SUBTITLE_BAND[2], H * MT.SUBTITLE_BAND[3]]];
+      const legendItems = (Array.isArray(p.sides) ? p.sides : []).map((s, i) => ({ name: s && s.name, col: (s && s.color) || MT.GEO_SIDE_COLORS[i % MT.GEO_SIDE_COLORS.length] })).filter((s) => s.name);
+      let legendBox = null;
+      if (legendItems.length) {
+        const fs = 22 * un,
+          row = fs * 1.5,
+          pad = fs * 0.7;
+        g.save();
+        g.font = ME.font(800, fs, MT.HEAD);
+        const lw = Math.max(...legendItems.map((s) => g.measureText(String(s.name).toUpperCase()).width)) + fs * 1.6 + pad * 2;
+        g.restore();
+        const lh = legendItems.length * row + pad * 1.2;
+        legendBox = [W * 0.965 - lw, H * 0.93 - lh, W * 0.965, H * 0.93];
+        reserved.push(legendBox);
+      }
+      const showDate = p.date && !(hud && hud.date);
+      if (showDate) reserved.push(textBox(g, String(p.date).toUpperCase(), W * 0.035, H * 0.9, 26 * un, { align: MT.LEFT }));
+      const title = p.title ? fitTitle(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 64 * un, reserved, W) : null;
+      if (title) reserved.push(title.rect);
+      const layout = textLayout(reserved);
+      const queue = [];
+      const later = (priority) => (gg, str, x, y, size, o) => queue.push({ priority, str, x, y, size, o });
       g.fillStyle = p.sea || MT.GEO_SEA;
       g.fillRect(0, 0, W, H);
       g.strokeStyle = C.rgba(MT.FFFFFF, 0.12);
       g.lineWidth = 1 * un;
       for (let lon = -180; lon <= 360; lon += 10) {
-        const a = project(v, W, H, lon, -80), b = project(v, W, H, lon, 84);
+        const a = project(v, W, H, lon, -80),
+          b = project(v, W, H, lon, 84);
         if (b[0] < -10 || a[0] > W + 10) continue;
         g.beginPath();
         g.moveTo(a[0], 0);
@@ -270,19 +371,21 @@
         if (show <= 0) return;
         const mk = b.length >= 2 ? U.smooth(U.inv(0.3, 0.85, u)) : 0;
         const n = Math.max(12, a.length * 6);
-        const ra = resample(a, n), rb = b.length >= 2 ? resample(b, n) : ra;
+        const ra = resample(a, n),
+          rb = b.length >= 2 ? resample(b, n) : ra;
         const cur = ra.map((pt, j) => project(v, W, H, U.lerp(pt[0], rb[j][0], mk), U.lerp(pt[1], rb[j][1], mk)));
         g.globalAlpha = show;
         drawFront(g, cur, f.color, un, !!f.flip);
         g.globalAlpha = 1;
       });
       (Array.isArray(p.arrows) ? p.arrows : []).forEach((ar, i) => {
-        const a = lonLatOf(ar && ar.from), b = lonLatOf(ar && ar.to);
+        const a = lonLatOf(ar && ar.from),
+          b = lonLatOf(ar && ar.to);
         if (!a || !b) return;
         const st = isFinite(ar.at) ? +ar.at : 0.25 + i * 0.12;
         const k = U.clamp((u - st) / Math.max(0.1, isFinite(ar.dur) ? +ar.dur : 0.35));
         if (k <= 0) return;
-        drawArrow(g, project(v, W, H, a[0], a[1]), project(v, W, H, b[0], b[1]), U.easeOut(k), ar.color || MT.GEO_ARROW, un, ar.label, isFinite(ar.bend) ? +ar.bend : 0.15);
+        drawArrow(g, project(v, W, H, a[0], a[1]), project(v, W, H, b[0], b[1]), U.easeOut(k), ar.color || MT.GEO_ARROW, un, ar.label, isFinite(ar.bend) ? +ar.bend : 0.15, later(MT.TEXT_PRIORITY.ARROW));
       });
       (Array.isArray(p.cities) ? p.cities : []).forEach((ct, i) => {
         const ll = lonLatOf(ct);
@@ -305,8 +408,8 @@
           g.arc(x, y, r * 0.45, 0, PI * 2);
           g.fill();
         }
-        const label = ct.label || (typeof ct === MT.STRING ? ct : ct.name);
-        if (label) outlinedText(g, String(label).toUpperCase(), x, p.title && y < H * MT.GEO_TITLE_BAND ? y + 30 * un : y - 26 * un, 26 * un, { alpha: k });
+        const label = ct.hideLabel ? MT.EMPTY : ct.label || (typeof ct === MT.STRING ? ct : ct.name);
+        if (label) later(ct.capital ? MT.TEXT_PRIORITY.CAPITAL : MT.TEXT_PRIORITY.CITY)(g, String(label).toUpperCase(), x, p.title && y < H * MT.GEO_TITLE_BAND ? y + 30 * un : y - 26 * un, 26 * un, { alpha: k });
       });
       (Array.isArray(p.labels) ? p.labels : []).forEach((lb, i) => {
         const ll = lonLatOf(lb && (lb.at || lb.pos || lb)) || lonLatOf([lb && lb.lon, lb && lb.lat]);
@@ -314,18 +417,22 @@
         const k = U.clamp((u - (isFinite(lb.show) ? +lb.show : 0.2 + i * 0.08)) / 0.12);
         if (k <= 0) return;
         const [x, y] = project(v, W, H, ll[0], ll[1]);
-        outlinedText(g, String(lb.text).toUpperCase(), x, y, (lb.big ? 64 : 40) * un * (0.7 + 0.3 * U.back(k)), { alpha: k, color: lb.color || MT.GEO_TEXT });
+        later(lb.big ? MT.TEXT_PRIORITY.BIG_LABEL : MT.TEXT_PRIORITY.LABEL)(g, String(lb.text).toUpperCase(), x, y, (lb.big ? 64 : 40) * un * (0.7 + 0.3 * U.back(k)), { alpha: k, color: lb.color || MT.GEO_TEXT });
       });
-      if (p.title) outlinedText(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 64 * un, { alpha: U.clamp(t / 0.6), color: p.titleColor || MT.GEO_TEXT });
-      if (p.date) tagBox(g, String(p.date).toUpperCase(), W * 0.035, H * 0.9, 26 * un, { alpha: U.clamp(t / 0.6) });
-      const legend = (Array.isArray(p.sides) ? p.sides : []).map((s, i) => ({ name: s && s.name, col: (s && s.color) || MT.GEO_SIDE_COLORS[i % MT.GEO_SIDE_COLORS.length] })).filter((s) => s.name);
+      queue.sort((a, b) => a.priority - b.priority).forEach((item) => layout.place(g, item.str, item.x, item.y, item.size, item.o));
+      if (title) drawTitle(g, title, W / 2, H * 0.1, { alpha: U.clamp(t / 0.6), color: p.titleColor || MT.GEO_TEXT });
+      if (showDate) tagBox(g, String(p.date).toUpperCase(), W * 0.035, H * 0.9, 26 * un, { alpha: U.clamp(t / 0.6) });
+      const legend = legendItems;
       if (legend.length) {
-        const fs = 22 * un, row = fs * 1.5, pad = fs * 0.7;
+        const fs = 22 * un,
+          row = fs * 1.5,
+          pad = fs * 0.7;
         g.save();
         g.font = ME.font(800, fs, MT.HEAD);
         const lw = Math.max(...legend.map((s) => g.measureText(String(s.name).toUpperCase()).width)) + fs * 1.6 + pad * 2;
         const lh = legend.length * row + pad * 1.2;
-        const lx = W * 0.965 - lw, ly = H * 0.93 - lh;
+        const lx = W * 0.965 - lw,
+          ly = H * 0.93 - lh;
         g.globalAlpha = U.clamp(t / 0.6);
         g.fillStyle = MT.HUD_PANEL;
         g.strokeStyle = MT.HUD_EDGE;
@@ -523,34 +630,46 @@
     description: MT.ICONS_DESC,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, u = ctx.u, un = ctx.unit;
+      const p = ctx.params,
+        W = ctx.W,
+        H = ctx.H,
+        t = ctx.t,
+        u = ctx.u,
+        un = ctx.unit;
       const gr = g.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
       gr.addColorStop(0, p.bgInner || MT.VALUE_1C2433);
       gr.addColorStop(1, p.bgOuter || MT.VALUE_040609);
       g.fillStyle = gr;
       g.fillRect(0, 0, W, H);
       const groups = (Array.isArray(p.groups) && p.groups.length ? p.groups : [{ icon: p.icon, count: p.count, highlight: p.highlight, color: p.color, label: p.label }]).slice(0, 3);
-      const top = p.title ? H * 0.2 : H * 0.1, bottom = H * 0.9;
+      const top = p.title ? H * 0.2 : H * 0.1,
+        bottom = H * 0.9;
       const rowH = (bottom - top) / groups.length;
-      if (p.title) outlinedText(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 56 * un, { alpha: U.clamp(t / 0.6) });
+      if (p.title) drawTitle(g, fitTitle(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 56 * un, ME.hudReserved(g, ctx.hud || null, W, H, un), W), W / 2, H * 0.1, { alpha: U.clamp(t / 0.6) });
       groups.forEach((gp, gi) => {
-        const count = U.clamp(Math.round(+gp.count || 10), 1, 100), hi = isFinite(gp.highlight) ? U.clamp(Math.round(+gp.highlight), 0, count) : count;
+        const count = U.clamp(Math.round(+gp.count || 10), 1, 100),
+          hi = isFinite(gp.highlight) ? U.clamp(Math.round(+gp.highlight), 0, count) : count;
         const cols = Math.min(count, U.clamp(Math.round(+p.columns || Math.ceil(Math.sqrt(count * (W / H) * (groups.length > 1 ? 2.2 : 1.4)))), 1, 25));
         const rows = Math.ceil(count / cols);
         const labelW = gp.label && groups.length > 1 ? W * 0.2 : 0;
-        const areaW = W * 0.86 - labelW, areaH = rowH * (gp.label && groups.length === 1 ? 0.78 : 0.86);
-        const cell = Math.min(areaW / cols, areaH / rows), s = cell * 0.82;
-        const x0 = W * 0.07 + labelW + (areaW - cell * cols) / 2, y0 = top + gi * rowH + (rowH - cell * rows) / 2;
+        const areaW = W * 0.86 - labelW,
+          areaH = rowH * (gp.label && groups.length === 1 ? 0.78 : 0.86);
+        const cell = Math.min(areaW / cols, areaH / rows),
+          s = cell * 0.82;
+        const x0 = W * 0.07 + labelW + (areaW - cell * cols) / 2,
+          y0 = top + gi * rowH + (rowH - cell * rows) / 2;
         if (gp.label) {
           if (groups.length > 1) outlinedText(g, String(gp.label).toUpperCase(), W * 0.07 + labelW / 2, top + gi * rowH + rowH / 2, 30 * un, { alpha: U.clamp(t / 0.6) });
           else outlinedText(g, String(gp.label).toUpperCase(), W / 2, bottom - 10 * un, 34 * un, { alpha: U.clamp(t / 0.6), color: gp.color || MT.HUD_EDGE });
         }
-        const appearEnd = 0.55, fillStart = 0.6;
+        const appearEnd = 0.55,
+          fillStart = 0.6;
         for (let i = 0; i < count; i++) {
           const k = U.clamp((u - (0.04 + (appearEnd * i) / count)) / 0.06);
           if (k <= 0) break;
           const lit = i < hi && u > fillStart + (0.3 * i) / Math.max(1, hi);
-          const cx = x0 + (i % cols) * cell + cell / 2, cy = y0 + Math.floor(i / cols) * cell + cell / 2;
+          const cx = x0 + (i % cols) * cell + cell / 2,
+            cy = y0 + Math.floor(i / cols) * cell + cell / 2;
           g.save();
           g.translate(cx, cy);
           const sc = U.back(k);
@@ -586,7 +705,8 @@
     g.font = ME.font(900, size, MT.HEAD);
     g.textAlign = MT.CENTER;
     g.textBaseline = MT.MIDDLE;
-    const w = g.measureText(str).width + size * 1.1, h = size * 1.55;
+    const w = g.measureText(str).width + size * 1.1,
+      h = size * 1.55;
     g.strokeStyle = color;
     g.fillStyle = color;
     g.lineWidth = size * 0.12;
@@ -610,7 +730,13 @@
     description: MT.VERDICT_DESC,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, u = ctx.u, un = ctx.unit, dur = ctx.dur || 4;
+      const p = ctx.params,
+        W = ctx.W,
+        H = ctx.H,
+        t = ctx.t,
+        u = ctx.u,
+        un = ctx.unit,
+        dur = ctx.dur || 4;
       const at = isFinite(p.at) ? U.clamp(+p.at, 0.05, 0.9) : MT.VERDICT_STAMP_AT;
       const since = t - at * dur;
       const shake = since > 0 && since < MT.VERDICT_SHAKE ? (1 - since / MT.VERDICT_SHAKE) * 9 * un : 0;
@@ -618,8 +744,10 @@
       if (shake) g.translate(Math.sin(t * 90) * shake, Math.cos(t * 77) * shake);
       paper(g, W, H);
       const intro = U.clamp(t / 0.5);
-      if (p.label) tagBox(g, String(p.label).toUpperCase(), W / 2, H * 0.16, 26 * un, { align: MT.CENTER, alpha: intro });
-      if (p.title) outlinedText(g, String(p.title).toUpperCase(), W / 2, H * 0.3, 62 * un, { alpha: intro });
+      const hud = ctx.hud || null;
+      const reserved = ME.hudReserved(g, hud, W, H, un);
+      if (p.label && !(hud && (hud.counter || coveredBy(p.label, hud.label)))) tagBox(g, String(p.label).toUpperCase(), W / 2, H * 0.16, 26 * un, { align: MT.CENTER, alpha: intro });
+      if (p.title) drawTitle(g, fitTitle(g, String(p.title).toUpperCase(), W / 2, H * 0.3, 62 * un, reserved, W), W / 2, H * 0.3, { alpha: intro });
       if (p.question) para(g, String(p.question), W / 2, H * 0.41, 30 * un, W * 0.8, U.clamp((t - 0.3) / 0.5));
       const k = U.clamp(since / Math.min(MT.VERDICT_SLAM_MAX, MT.VERDICT_SLAM * dur));
       if (since > 0 && p.verdict) stamp(g, p.verdict, W / 2, H * 0.62, 92 * un, toneColor(p.tone), { scale: 1 + 1.6 * (1 - U.easeOut(k)), alpha: U.clamp(k * 1.4) });
@@ -633,17 +761,28 @@
     description: MT.SCOREBOARD_DESC,
     init: () => ({}),
     draw(g, ctx) {
-      const p = ctx.params, W = ctx.W, H = ctx.H, t = ctx.t, u = ctx.u, un = ctx.unit;
+      const p = ctx.params,
+        W = ctx.W,
+        H = ctx.H,
+        t = ctx.t,
+        u = ctx.u,
+        un = ctx.unit;
       paper(g, W, H);
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 10);
-      if (p.title) outlinedText(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 54 * un, { alpha: U.clamp(t / 0.5) });
+      if (p.title) drawTitle(g, fitTitle(g, String(p.title).toUpperCase(), W / 2, H * 0.1, 54 * un, ME.hudReserved(g, ctx.hud || null, W, H, un), W), W / 2, H * 0.1, { alpha: U.clamp(t / 0.5) });
       if (!rows.length) return;
-      const top = H * 0.19, bottom = H * 0.93, rowH = Math.min(H * 0.1, (bottom - top) / rows.length), x0 = W * 0.12, x1 = W * 0.88;
+      const top = H * 0.19,
+        bottom = H * 0.93,
+        rowH = Math.min(H * 0.1, (bottom - top) / rows.length),
+        x0 = W * 0.12,
+        x1 = W * 0.88;
       const fs = Math.min(30 * un, rowH * 0.42);
       rows.forEach((r, i) => {
-        const st = 0.06 + (i * 0.7) / rows.length, k = U.clamp((u - st) / 0.06);
+        const st = 0.06 + (i * 0.7) / rows.length,
+          k = U.clamp((u - st) / 0.06);
         if (k <= 0) return;
-        const y = top + rowH * (i + 0.5), hi = p.highlight === i || r.highlight === true;
+        const y = top + rowH * (i + 0.5),
+          hi = p.highlight === i || r.highlight === true;
         g.save();
         g.globalAlpha = U.clamp(k * 1.5);
         g.fillStyle = hi && u > 0.82 ? MT.VERDICT_ROW_HI : MT.VERDICT_ROW_BG;
@@ -657,21 +796,61 @@
     },
   });
   const hudAt = (list, t) => {
+    if (!Array.isArray(list)) return -1;
     for (let i = 0; i < list.length; i++) if (t >= list[i].start && t < list[i].end) return i;
     return -1;
+  };
+  ME.hudAt = (list, t) => {
+    const i = hudAt(list, t);
+    return i < 0 ? null : list[i];
+  };
+  const hudLayout = (g, cur, W, H, un, shotText) => {
+    const out = { panel: null, date: null, counter: null, label: null };
+    if (!cur) return out;
+    let right = H * 0.05;
+    if (Array.isArray(cur.bars) && cur.bars.length) {
+      const rows = cur.bars.slice(0, 5).length,
+        rowH = 30 * un,
+        pw = 300 * un,
+        ph = rowH * rows + 24 * un,
+        px = W - pw - W * 0.025,
+        py = H * 0.04;
+      out.panel = { x: px, y: py, w: pw, h: ph, rowH };
+      right = py + ph + 26 * un;
+    }
+    const tag = (str, x, y, align) => {
+      const size = 22 * un;
+      const w = textWidth(g, String(str).toUpperCase(), size) + size * 1.2,
+        h = size * 1.7;
+      const bx = align === MT.RIGHT ? x - w : x;
+      return { x, y, align, rect: [bx, y - h / 2, bx + w, y + h / 2] };
+    };
+    if (cur.date) out.date = tag(cur.date, W - W * 0.025, right + 6 * un, MT.RIGHT);
+    if (cur.counter) out.counter = tag(cur.counter, W * 0.025, H - H * 0.06, MT.LEFT);
+    if (cur.label && !(shotText && coveredBy(cur.label, shotText))) out.label = tag(cur.label, W * 0.025, H * 0.06, MT.LEFT);
+    return out;
+  };
+  ME.hudReserved = (g, cur, W, H, un) => {
+    const l = hudLayout(g, cur, W, H, un);
+    return [l.panel ? [l.panel.x, l.panel.y, l.panel.x + l.panel.w, l.panel.y + l.panel.h] : null, l.date && l.date.rect, l.counter && l.counter.rect, l.label && l.label.rect].filter(Boolean);
   };
   ME.drawHud = (g, list, t, o) => {
     if (!Array.isArray(list) || !list.length) return;
     const i = hudAt(list, t);
     if (i < 0) return;
-    const cur = list[i], prev = i > 0 && list[i - 1].end >= cur.start - 0.05 ? list[i - 1] : null;
-    const W = o.W, H = o.H, un = o.unit;
-    const fadeIn = prev ? 1 : U.clamp((t - cur.start) / MT.HUD_FADE), fadeOut = list[i + 1] && list[i + 1].start <= cur.end + 0.05 ? 1 : U.clamp((cur.end - t) / MT.HUD_FADE);
+    const cur = list[i],
+      prev = i > 0 && list[i - 1].end >= cur.start - 0.05 ? list[i - 1] : null;
+    const W = o.W,
+      H = o.H,
+      un = o.unit;
+    const fadeIn = prev ? 1 : U.clamp((t - cur.start) / MT.HUD_FADE),
+      fadeOut = list[i + 1] && list[i + 1].start <= cur.end + 0.05 ? 1 : U.clamp((cur.end - t) / MT.HUD_FADE);
     const alpha = Math.min(fadeIn, fadeOut);
     const ease = U.smooth(U.clamp((t - cur.start) / MT.HUD_EASE));
-    let right = H * 0.05;
-    if (Array.isArray(cur.bars) && cur.bars.length) {
-      const bars = cur.bars.slice(0, 5), rowH = 30 * un, pw = 300 * un, ph = rowH * bars.length + 24 * un, px = W - pw - W * 0.025, py = H * 0.04;
+    const lay = hudLayout(g, cur, W, H, un, o.shotText);
+    if (lay.panel) {
+      const { x: px, y: py, w: pw, h: ph, rowH } = lay.panel;
+      const bars = cur.bars.slice(0, 5);
       g.save();
       g.globalAlpha = alpha;
       g.fillStyle = MT.HUD_PANEL;
@@ -687,17 +866,19 @@
         const val = U.lerp(isFinite(before) ? before : b.value, b.value, ease);
         const y = py + 12 * un + j * rowH;
         ME.text(g, String(b.label || MT.EMPTY).toUpperCase(), px + 14 * un, y + rowH * 0.62, { size: 15 * un, weight: 800, family: MT.HEAD, color: MT.HUD_TEXT, shadow: false });
-        const bx = px + 110 * un, bw = pw - 128 * un, bh = rowH * 0.42, by = y + rowH * 0.3;
+        const bx = px + 110 * un,
+          bw = pw - 128 * un,
+          bh = rowH * 0.42,
+          by = y + rowH * 0.3;
         g.fillStyle = MT.HUD_BAR_BG;
         g.fillRect(bx, by, bw, bh);
         g.fillStyle = b.color || MT.HUD_BAR_COLORS[j % MT.HUD_BAR_COLORS.length];
         g.fillRect(bx, by, (bw * U.clamp(val, 0, 100)) / 100, bh);
       });
       g.restore();
-      right = py + ph + 26 * un;
     }
-    if (cur.date) tagBox(g, String(cur.date).toUpperCase(), W - W * 0.025, right + 6 * un, 22 * un, { align: MT.RIGHT, alpha });
-    if (cur.counter) tagBox(g, String(cur.counter).toUpperCase(), W * 0.025, H - H * 0.06, 22 * un, { alpha });
-    if (cur.label) tagBox(g, String(cur.label).toUpperCase(), W * 0.025, H * 0.06, 22 * un, { alpha });
+    if (lay.date) tagBox(g, String(cur.date).toUpperCase(), lay.date.x, lay.date.y, 22 * un, { align: lay.date.align, alpha });
+    if (lay.counter) tagBox(g, String(cur.counter).toUpperCase(), lay.counter.x, lay.counter.y, 22 * un, { alpha });
+    if (lay.label) tagBox(g, String(cur.label).toUpperCase(), lay.label.x, lay.label.y, 22 * un, { alpha });
   };
 })(typeof window !== globalThis.MotionEngineText.UNDEFINED ? window : globalThis);

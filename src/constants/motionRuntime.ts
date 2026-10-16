@@ -319,7 +319,6 @@ export const MOTION_TEMPLATE_SYMBOL_19 = (value0: string): string => value0 + "/
 export const MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "Bộ mã hoá: " + value0 + " · " + value1 + "×" + value2 + " @" + value3 + "fps · chất lượng " + value4;
 export const MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S = (value0: string, value1: string): string => "Trình duyệt render: " + value0 + " · thời lượng " + value1 + "s";
 export const MOTION_TEXT_DA_TAO_AM_NEN_HIEU_UNG_TRAM = "Đã tạo âm nền + hiệu ứng trầm" as const;
-export const MOTION_TEMPLATE_PART_MP4 = (value0: string): string => "part" + value0 + ".mp4";
 export const MOTION_TEXT_RENDER_2 = "render" as const;
 export const MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG = (value0: string, value1: string): string => "Render song song " + value0 + " luồng · " + value1 + " khung";
 export const MOTION_TEXT_MUX = "mux" as const;

@@ -99,6 +99,8 @@ export const MOTION_SCENE_LIBRARY = {
     DANGER: "danger" as const,
     SENTENCE: ". ",
     ASC: "asc" as const,
+    DESC: "desc" as const,
+    EMPTY: "",
     UNDERSCORE: "_",
     CHECKBOX: "checkbox",
   },
@@ -132,8 +134,6 @@ export const MOTION_SCENE_LIBRARY = {
     STATUS: "/api/motion-video/story/status/",
   },
   LOGS: {
-    REUSED_CHARACTER: (name: string, item: string): string => `Dùng lại nhân vật từ kho: ${name} ← ${item} (không tốn request)`,
-    REUSED_LOCATION: (name: string, item: string): string => `Dùng lại bối cảnh từ kho: ${name} ← ${item} (không tốn request)`,
     REUSED_STYLE: "Dùng lại phong cách vẽ đã lưu trong kho.",
     SAVED: (locations: number, characters: number, props: number): string => `Đã lưu vào kho: ${locations} bối cảnh, ${characters} nhân vật, ${props} đạo cụ/xe cộ.`,
     SAVE_FAILED: (message: string): string => `Không lưu được vào kho tài nguyên: ${message}`,

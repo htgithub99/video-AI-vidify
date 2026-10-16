@@ -1,0 +1,16 @@
+export const MOTION_TEXT_BUDGET = {
+  COVERED_RATIO: 0.5,
+  MIN_WORDS: 2,
+  MAP_TEXT_MAX: 5,
+  MAP: { LABELS: "labels", ARROWS: "arrows", CITIES: "cities", LABEL: "label", RANK: "rank", SEP: ":", HIDE: "hideLabel" },
+  RANK: { BIG_LABEL: 0, ARROW: 1, CAPITAL: 2, CITY: 3, LABEL: 4, SPOKEN_ARROW: 5 },
+  EMPTY: "",
+  WORD_SPLIT_RE: /[^\p{L}\p{N}]+/u,
+  NUMBER_GROUP_RE: /(\d)[.,](?=\d{3}\b)/g,
+  NUMBER_GROUP_REPLACE: "$1",
+  STOPWORDS: ["the", "a", "an", "of", "in", "on", "to", "and", "or", "for", "with", "at", "by", "from", "as", "is", "are", "was", "were", "be", "it", "its", "this", "that", "vs", "và", "của", "là", "có", "các", "những", "một", "cho", "với", "trong", "khi", "đã", "được", "để", "thì", "này", "ở"],
+  SECONDARY: { title: ["kicker", "subtitle"], verdict: ["question", "note"], icons: ["caption"], bitmap: ["caption"], headline: ["sub"], ending: ["sub"] } as Record<string, string[]>,
+  SECONDARY_MAX: { verdict: 0 } as Record<string, number>,
+  HUD_DATE_FIELD: { geomap: "date" } as Record<string, string>,
+  HUD_COUNTER_FIELD: { verdict: "label" } as Record<string, string>,
+} as const;

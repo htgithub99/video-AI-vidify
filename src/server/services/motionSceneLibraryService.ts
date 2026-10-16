@@ -10,6 +10,11 @@ import { MOTION_SCENE_LIBRARY_PATTERNS as LP, MOTION_SCENE_LIBRARY as C, MOTION_
 import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import { MOTION_SCENE_CATALOG_PROMPT, MOTION_SCENE_LIBRARY_MODES as MODES, MOTION_SCENE_TYPE_OTHER, motionSceneType, motionSceneTypesPrompt, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
 import { characterVariantLook } from "../../lib/motionCharacterVariant.js";
+import { MOTION_COSTUME as COSTUME, type MotionCostume } from "../../constants/motionCostume.js";
+import { MOTION_CHARACTER_REGION_PARTS, MOTION_LIBRARY_FIT as FIT, MOTION_LIBRARY_LOG, MOTION_TYPE_FALLBACK, type MotionRegion, type MotionTraits } from "../../constants/motionSceneTraits.js";
+import { motionCostumeFor, motionCostumeNation, motionCostumeType, motionStripParts } from "../../lib/motionCostume.js";
+import { motionLocationPropKeys } from "../../lib/motionRedress.js";
+import { motionCombineTraits, motionMergeTraits, motionPropTraits, motionRegionFits, motionRegionGroup, motionTextTraits, motionTraitsFit } from "../../lib/motionSceneTraits.js";
 import type { MotionCastMember, MotionDrawingMode, MotionGenStyle, MotionPlace, MotionStoryAnalysis, MotionReferenceStyle, MotionSceneAsset, MotionSceneAssetKind, MotionSceneStyleSet, MotionStyleReference } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
@@ -200,12 +205,12 @@ export const scenePropCatalog = (styleKey: string, context: string): string => {
   if (!props.length) return MR.MOTION_TEXT_EMPTY;
   return [P.PROP_HEADER, ...props.map((item) => [item.id, motionSceneType(item.type)?.en || item.name, item.name, (item.size || []).join(C.TEXT.TIMES), item.from || MR.MOTION_TEXT_EMPTY].join(C.TEXT.PIPE))].join(C.TEXT.NEWLINE);
 };
-const usedRefs = (value: unknown, found: Set<string> = new Set()): Set<string> => {
-  if (Array.isArray(value)) value.forEach((entry) => usedRefs(entry, found));
+const usedRefs = (value: unknown, found: Set<string> = new Set(), accept: (ref: unknown) => boolean = isSceneAssetId): Set<string> => {
+  if (Array.isArray(value)) value.forEach((entry) => usedRefs(entry, found, accept));
   else if (value && typeof value === MR.MOTION_TEXT_OBJECT) {
     const node = value as Record<string, unknown>;
-    if (node.shape === MR.MOTION_TEXT_USE && isSceneAssetId(node.ref)) found.add(node.ref as string);
-    Object.values(node).forEach((entry) => usedRefs(entry, found));
+    if (node.shape === MR.MOTION_TEXT_USE && accept(node.ref)) found.add(node.ref as string);
+    Object.values(node).forEach((entry) => usedRefs(entry, found, accept));
   }
   return found;
 };
@@ -240,16 +245,7 @@ const inlineNodes = (nodes: unknown, location: any, depth: number): any[] => {
 const countNodes = (nodes: any[]): number => _.sumBy(nodes, (node) => 1 + countNodes(node?.children || []) + (node?.node ? 1 : 0));
 export const extractSceneProps = (location: any, measure: (nodes: any[]) => number[] | null, keepAll = false): { name: string; nodes: any[]; size: number[] }[] => {
   const defs: Record<string, unknown> = location?.defs || {};
-  const nested = new Set<string>();
-  const collect = (value: unknown): void => {
-    if (Array.isArray(value)) value.forEach(collect);
-    else if (value && typeof value === MR.MOTION_TEXT_OBJECT) {
-      const node = value as Record<string, unknown>;
-      if (node.shape === MR.MOTION_TEXT_USE && typeof node.ref === MR.MOTION_TEXT_STRING) nested.add(node.ref as string);
-      Object.values(node).forEach(collect);
-    }
-  };
-  Object.values(defs).forEach(collect);
+  const nested = usedRefs(Object.values(defs), new Set(), (ref) => typeof ref === MR.MOTION_TEXT_STRING);
   return Object.entries(defs).flatMap(([name, nodes]) => {
     if ((!keepAll && nested.has(name)) || isSceneAssetId(name) || !Array.isArray(nodes)) return [];
     const inlined = inlineNodes(nodes, location, 0);
@@ -331,47 +327,100 @@ export const renameSceneStyle = (key: unknown, name: unknown): MotionSceneStyleS
   writeMotionJsonAtomic(styleFile(style.key), next);
   return next;
 };
-const REUSE_FIELDS = [XRT.REUSE, XRT.VARIANT];
+const REUSE_FIELDS = [XRT.REUSE, XRT.VARIANT, FIT.COSTUME, FIT.TRAITS];
 const genderFits = (item: MotionSceneAsset, gender?: string): boolean => !!motionSceneType(item.type)?.animal || !item.gender || !gender || item.gender === gender;
-export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: string, mode: MotionSceneLibraryMode, characterMotion?: boolean): MotionStoryAnalysis => {
+const storyText = (analysis: MotionStoryAnalysis): string => _.compact([analysis.title, analysis.logline]).join(C.TEXT.SPACE);
+export const motionStoryTraits = (analysis: MotionStoryAnalysis): MotionTraits => motionMergeTraits(motionTextTraits(analysis.era), motionTextTraits(analysis.videoDna?.era?.storyPeriod), motionTextTraits(storyText(analysis)));
+const memberWords = (member: MotionCastMember): string => _.compact([member.name, member.role, member.description, member.look, ...(member.tags || [])]).join(C.TEXT.SPACE);
+const placeWords = (place: MotionPlace): string => _.compact([place.name, place.description, ...(place.tags || [])]).join(C.TEXT.SPACE);
+export const motionMemberTraits = (member: MotionCastMember, story: MotionTraits): MotionTraits => motionMergeTraits(motionTextTraits(memberWords(member)), story);
+export const motionPlaceTraits = (place: MotionPlace, story: MotionTraits): MotionTraits => motionMergeTraits(motionTextTraits(placeWords(place)), story);
+export const motionMemberCostume = (member: MotionCastMember, analysis: MotionStoryAnalysis, traits: MotionTraits): MotionCostume | undefined => {
+  const story = motionStoryTraits(analysis);
+  const foreign = motionRegionGroup(traits.region) !== COSTUME.LOCAL_GROUP && motionRegionGroup(story.region) !== COSTUME.LOCAL_GROUP;
+  return motionCostumeFor(member, traits.from, foreign ? motionCostumeNation(_.toLower(storyText(analysis))) : undefined);
+};
+const partRegion = (design: any): MotionRegion | undefined => _.first(_.compact(_.map(Array.isArray(design?.parts) ? design.parts : [], (part) => MOTION_CHARACTER_REGION_PARTS[_.toString(part?.id)])));
+const itemTraitCache = new Map<string, MotionTraits>();
+export const sceneAssetTraits = (item: MotionSceneAsset): MotionTraits => {
+  const cached = itemTraitCache.get(item.id);
+  if (cached) return cached;
+  const data = getSceneAsset(item.id)?.data;
+  const text = motionTextTraits(_.compact([item.name, item.description, ...(item.tags || [])]).join(C.TEXT.SPACE));
+  const own = item.kind === C.KIND_LOCATION ? motionPropTraits(motionLocationPropKeys(data)) : { region: partRegion(data) };
+  const traits = motionCombineTraits(_.omitBy(own, _.isUndefined) as MotionTraits, text);
+  itemTraitCache.set(item.id, traits);
+  return traits;
+};
+export const motionStripForeignParts = (design: any, traits?: MotionTraits): any => {
+  const group = motionRegionGroup(traits?.region);
+  if (!group) return design;
+  return motionStripParts(design, (id) => !!MOTION_CHARACTER_REGION_PARTS[id] && motionRegionGroup(MOTION_CHARACTER_REGION_PARTS[id]) !== group);
+};
+export const motionPlaceScore = (item: MotionSceneAsset, place: MotionPlace, fit: (item: MotionSceneAsset) => number): number => FIT.BASE_WEIGHT + (item.interior === !!place.interior ? FIT.INTERIOR_WEIGHT : 0) + (item.time === place.time ? FIT.TIME_WEIGHT : 0) + Math.min(FIT.TAG_MAX, -fit(item) * FIT.TAG_WEIGHT);
+export interface MotionLibraryPlan { drawBudget?: number; weight?: (place: MotionPlace) => number; log?: (line: string) => void; }
+export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: string, mode: MotionSceneLibraryMode, characterMotion?: boolean, plan: MotionLibraryPlan = {}): MotionStoryAnalysis => {
   const strip = <T extends object>(entry: T): T => _.omit(entry, REUSE_FIELDS) as T;
   if (mode === MODES.OFF) return { ...analysis, cast: analysis.cast.map(strip), places: analysis.places.map(strip) };
   const characters = listSceneAssets(styleKey, C.KIND_CHARACTER).filter((item) => !characterMotion || item.motion);
   const locations = listSceneAssets(styleKey, C.KIND_LOCATION);
+  const story = motionStoryTraits(analysis);
   const usedCharacters = new Map<string, number>();
   const usedLocations = new Map<string, number>();
   const leastUsed = (items: MotionSceneAsset[], used: Map<string, number>, prefer: (item: MotionSceneAsset) => number = () => 0): MotionSceneAsset | undefined => _.orderBy(items, [(item) => used.get(item.id) || 0, prefer, (item) => item.uses || 0, (item) => item.createdAt], [C.TEXT.ASC, C.TEXT.ASC, C.TEXT.ASC, C.TEXT.ASC])[0];
   const cast = analysis.cast.map((member): MotionCastMember => {
-    const typed = (): MotionSceneAsset | undefined =>
-      member.type && member.type !== MOTION_SCENE_TYPE_OTHER
-        ? leastUsed(
-            characters.filter((item) => item.type === member.type && genderFits(item, member.gender)),
-            usedCharacters,
-            assetFit([member.role, member.description, member.look, ...(member.tags || [])]),
-          )
-        : undefined;
+    const traits = motionMemberTraits(member, story);
+    const costume = motionMemberCostume(member, analysis, traits);
+    const type = member.type && member.type !== MOTION_SCENE_TYPE_OTHER ? member.type : motionCostumeType(costume, undefined);
+    const ofType = (types: string[]) => characters.filter((item) => _.includes(types, item.type) && genderFits(item, member.gender));
+    const regional = (items: MotionSceneAsset[]) => items.filter((item) => motionRegionFits(sceneAssetTraits(item).region, traits.region));
+    const fallback = type ? MOTION_TYPE_FALLBACK[type]?.[motionRegionGroup(traits.region) || C.TEXT.EMPTY] || [] : [];
+    const typed = (): MotionSceneAsset | undefined => {
+      if (!type) return undefined;
+      const same = ofType([type]);
+      const pool = _.find([regional(same), regional(ofType(fallback)), same], (list) => list.length > 0) || [];
+      return leastUsed(pool, usedCharacters, assetFit([member.role, member.description, member.look, ...(member.tags || [])]));
+    };
     const chosen = (mode === MODES.AI && characters.find((item) => item.id === member.reuse)) || typed();
     if (!chosen) return strip(member);
     const variant = usedCharacters.get(chosen.id) || 0;
     usedCharacters.set(chosen.id, variant + 1);
-    const look = _.compact([chosen.description, characterVariantLook(member.type || chosen.type, { index: variant, colors: member.colors })]).join(C.TEXT.SENTENCE);
-    return { ...member, reuse: chosen.id, variant, look: _.truncate(look, { length: C.LOOK_MAX }) };
+    const look = _.compact([chosen.description, costume ? COSTUME.LOOK(costume.label) : characterVariantLook(member.type || chosen.type, { index: variant, colors: member.colors })]).join(C.TEXT.SENTENCE);
+    return _.omitBy({ ...member, reuse: chosen.id, variant, look: _.truncate(look, { length: C.LOOK_MAX }), costume, traits }, _.isUndefined) as MotionCastMember;
   });
-  const places = analysis.places.map((place): MotionPlace => {
+  const pickPlace = (place: MotionPlace, traits: MotionTraits, anyType: boolean): { item: MotionSceneAsset; score: number } | undefined => {
     const fit = assetFit([place.name, place.description, ...(place.tags || [])]);
-    const typed = (): MotionSceneAsset | undefined =>
-      place.type && place.type !== MOTION_SCENE_TYPE_OTHER
-        ? leastUsed(
-            locations.filter((item) => item.type === place.type),
-            usedLocations,
-            (item) => (item.interior === !!place.interior ? 0 : 20) + (item.time === place.time ? 0 : 10) + fit(item),
-          )
-        : undefined;
-    const chosen = (mode === MODES.AI && locations.find((item) => item.id === place.reuse)) || typed();
-    if (!chosen) return strip(place);
-    usedLocations.set(chosen.id, (usedLocations.get(chosen.id) || 0) + 1);
-    return { ...place, reuse: chosen.id };
+    const pool = locations.filter((item) => (anyType ? item.interior === !!place.interior : item.type === place.type));
+    const scored = pool.map((item) => ({ item, score: motionPlaceScore(item, place, fit) - (anyType && item.type !== place.type ? FIT.FALLBACK_PENALTY : 0), fits: motionTraitsFit(sceneAssetTraits(item), traits) }));
+    return _.first(_.orderBy(scored, [(entry) => (entry.fits ? 0 : 1), (entry) => usedLocations.get(entry.item.id) || 0, (entry) => -entry.score], [C.TEXT.ASC, C.TEXT.ASC, C.TEXT.ASC]));
+  };
+  const keep = (place: MotionPlace, traits: MotionTraits, item: MotionSceneAsset): MotionPlace => {
+    usedLocations.set(item.id, (usedLocations.get(item.id) || 0) + 1);
+    return { ...place, reuse: item.id, traits };
+  };
+  const pending: { index: number; place: MotionPlace; traits: MotionTraits }[] = [];
+  const places = analysis.places.map((place, index): MotionPlace => {
+    const traits = motionPlaceTraits(place, story);
+    const ai = mode === MODES.AI ? locations.find((item) => item.id === place.reuse) : undefined;
+    if (ai) return keep(place, traits, ai);
+    const best = place.type && place.type !== MOTION_SCENE_TYPE_OTHER ? pickPlace(place, traits, false) : undefined;
+    if (best && best.score >= FIT.LOCATION_MIN && motionRegionFits(sceneAssetTraits(best.item).region, traits.region)) return keep(place, traits, best.item);
+    pending.push({ index, place, traits });
+    return { ...strip(place), traits };
   });
+  if (plan.drawBudget != null) {
+    const ranked = _.orderBy(pending, [(entry) => plan.weight?.(entry.place) || 0], [C.TEXT.DESC]);
+    ranked.forEach((entry, rank) => {
+      if (rank < plan.drawBudget!) {
+        plan.log?.(MOTION_LIBRARY_LOG.DRAW(entry.place.name, MOTION_LIBRARY_LOG.NO_MATCH));
+        return;
+      }
+      const near = (entry.place.type && entry.place.type !== MOTION_SCENE_TYPE_OTHER ? pickPlace(entry.place, entry.traits, false) : undefined) || pickPlace(entry.place, entry.traits, true);
+      if (!near) return;
+      places[entry.index] = keep(entry.place, entry.traits, near.item);
+      plan.log?.(MOTION_LIBRARY_LOG.OVER_BUDGET(entry.place.name, near.item.name));
+    });
+  }
   return { ...analysis, cast, places };
 };
 export interface MotionBaseLibrary {
@@ -388,6 +437,20 @@ export const readBaseLibrary = (): MotionBaseLibrary => {
   baseCache = { stamp, data: { characters: data.characters || [], locations: data.locations || [], props: data.props || [] } };
   return baseCache.data;
 };
+let wardrobeCache: { stamp: MotionBaseLibrary; parts: Record<string, any> } | null = null;
+export const baseWardrobe = (): Record<string, any> => {
+  const base = readBaseLibrary();
+  if (wardrobeCache?.stamp === base) return wardrobeCache.parts;
+  const parts: Record<string, any> = {};
+  for (const c of base.characters)
+    for (const part of Array.isArray(c.design?.parts) ? c.design.parts : []) {
+      const id = _.toString(part?.id);
+      if (!parts[id] && (part.parent === COSTUME.HEAD_PARENT || part.parent === COSTUME.BODY_PARENT) && (COSTUME.HEADGEAR_RE.test(id) || _.includes(COSTUME.EXTRA_PARTS, id))) parts[id] = part;
+    }
+  wardrobeCache = { stamp: base, parts };
+  return parts;
+};
+export const baseRedressProps = (): { key: string; type: string; size: number[]; nodes: any[] }[] => readBaseLibrary().props.map((p) => ({ key: p.key, type: p.type, size: p.size, nodes: p.nodes }));
 const packArray = (value: unknown): any[] => (Array.isArray(value) ? value.filter((entry) => entry && typeof entry === MR.MOTION_TEXT_OBJECT && typeof entry.name === MR.MOTION_TEXT_STRING) : []);
 export const parseLibraryPack = (value: unknown): MotionBaseLibrary => {
   const data: any = value && typeof value === MR.MOTION_TEXT_OBJECT ? value : {};

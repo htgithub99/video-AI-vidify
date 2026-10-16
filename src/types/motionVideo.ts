@@ -1,4 +1,6 @@
 import type { MotionStyleFinish } from "../constants/motionStyleFinish.js";
+import type { MotionCostume } from "../constants/motionCostume.js";
+import type { MotionTraits } from "../constants/motionSceneTraits.js";
 export interface MotionMusicSegment { start: number; mood: string; }
 export enum MotionQuality {
   DRAFT = "draft",
@@ -73,8 +75,8 @@ export interface MotionJobState { id: string; status: MotionJobStatus; progress:
 export interface MotionResultItem { id: string; title: string; fileName: string; videoUrl: string; aspect: string; quality: string; width: number; height: number; fps: number; durationSeconds: number; sizeBytes: number; renderSeconds: number; encoder: string; createdAt: string; }
 export interface MotionStorySegment { t: number; text: string; }
 export interface MotionStorySource { kind?: "brief" | "transcript" | "article"; title: string; notes?: string; fetched?: { kind: "youtube" | "page"; ok: boolean; note: string; url: string }; cleaned?: { splitNumbers: number; soundCues: number; missingQuotes: number }; url?: string; text: string; segments: MotionStorySegment[]; words: number; sourceSeconds: number; }
-export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; }
-export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; reuse?: string; tags?: string[]; type?: string; }
+export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; costume?: MotionCostume; traits?: MotionTraits; }
+export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; reuse?: string; tags?: string[]; type?: string; traits?: MotionTraits; redress?: boolean; }
 export interface MotionChapter { id: string; title: string; summary: string; from?: number; to?: number; targetSeconds?: number; weight?: number; mustKeep?: boolean; hook?: string; keyPoints?: string[]; handoff?: string; musicMood?: string; }
 export interface MotionFact { claim: string; status: "ok" | "uncertain" | "wrong"; note?: string; }
 export interface MotionCreativeBlueprint {
@@ -184,8 +186,14 @@ export enum MotionStoryLength {
   FULL = "full",
   TEN = "10min",
   FIVE = "5min",
+  TWENTY = "20min",
   THIRTY = "30min",
+  FORTY = "40min",
+  FIFTY = "50min",
   SIXTY = "60min",
+  SEVENTY_FIVE = "75min",
+  NINETY = "90min",
+  ONE_HUNDRED_FIVE = "105min",
   SHORT = "short",
   ONE = "1min",
 }

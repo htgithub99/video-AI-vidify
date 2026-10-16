@@ -1,9 +1,10 @@
+import { budgetShotText } from "../../lib/motionTextBudget.js";
 import { motionStyleFinish } from "../../constants/motionStyleFinish.js";
 import { compileMotionSoundPlan } from "../../lib/motionSoundPlan.js";
 import type { MotionSoundCue } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { MOTION_HISTORY } from "../../constants/motionHistory.js";
-import { buildMotionHudTrack, motionGeomapParams, motionIconsParams, motionScoreboardParams, motionVerdictParams } from "../../lib/motionHistory.js";
+import { buildMotionHudTrack, motionHudStates, motionGeomapParams, motionIconsParams, motionScoreboardParams, motionVerdictParams } from "../../lib/motionHistory.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
 import { MOTION_VOICE } from "../../constants/motionVoice.js";
 import { motionMusicCues, motionMusicMood, motionMusicSegments } from "./motionMusicService.js";
@@ -117,6 +118,7 @@ const pickTransition = (beat: MotionBeat, prev: MotionBeat | undefined, index: n
   if (beat.visual === MOTION_TEXT_ENDING) return { type: MOTION_TEXT_FADE, duration: 1.2 };
   const isScene = beat.visual === MOTION_TEXT_SCENE,
     wasScene = prev.visual === MOTION_TEXT_SCENE;
+  if (!isScene && !wasScene) return { type: MOTION_STORY_CONFIG.GRAPHIC_TRANSITION, duration: MOTION_STORY_CONFIG.GRAPHIC_TRANSITION_SECONDS };
   if (!isScene || !wasScene) return { type: MOTION_TEXT_FADE, duration: NON_SCENE_TRANSITION_IN };
   const locA = _.get(gen, [MOTION_TEXT_STAGING, prev.id, MOTION_TEXT_LOCATION]) || prev.place,
     locB = _.get(gen, [MOTION_TEXT_STAGING, beat.id, MOTION_TEXT_LOCATION]) || beat.place;
@@ -267,6 +269,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
   const subtitles: { start: number; end: number; text: string }[] = [];
   const missing: string[] = [];
   const usedLocations = new Set<string>();
+  const hudStates = motionHudStates(beats);
   beats.forEach((beat, i) => {
     const start = shotStarts[i];
     let end = i + 1 < beats.length ? shotStarts[i + 1] : total;
@@ -289,7 +292,8 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
       const bg = bgOf(beats, i, gen);
       if (bg.bg3d) usedLocations.add(_.get(bg, [MOTION_TEXT_BG3D, MOTION_TEXT_LOCATION]) as string);
       const p = beat.visual === MOTION_TEXT_SCENE ? { template: MOTION_TEXT_QUOTE, params: { text: beat.action || beat.narration, author: MR.MOTION_TEXT_EMPTY, ...bg } } : graphicParams(beat, analysis, bg);
-      shots.push({ id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), ...p, transition });
+      const params = beat.visual === MOTION_TEXT_SCENE ? p.params : budgetShotText(p.template, p.params as Record<string, unknown>, beat.narration, hudStates[i]);
+      shots.push({ id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), ...p, params, transition });
     }
     const lines = opts.voiceTrack?.clips?.filter((clip) => clip.beatId === beat.id);
     if (lines?.length) {

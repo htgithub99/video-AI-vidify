@@ -1,5 +1,7 @@
 export const MOTION_HISTORY = {
   EMPTY: "",
+  SPACE: " ",
+  TRIM_TAIL: " ,;:-–/",
   HUD_CLEAR: "clear",
   STAMP_CUE_ID: (id: string): string => `${id}_stamp`,
   GEOMAP: "geomap",
@@ -23,6 +25,8 @@ export const MOTION_HISTORY = {
   MAP_FRONTS_MAX: 6,
   MAP_ARROWS_MAX: 8,
   MAP_TEXT_MAX: 40,
+  TITLE_MAX: 72,
+  WORD_CUT_MIN: 0.5,
   MAP_ZOOM_MIN: 1,
   MAP_ZOOM_MAX: 8,
   ICON_GROUPS_MAX: 3,
@@ -70,9 +74,9 @@ export const MOTION_HISTORY = {
   DEFAULT_REGION: "europe",
   COLOR_RE: /^#[0-9a-f]{3,8}$/i,
 } as const;
-export const MOTION_HISTORY_STORYBOARD = `  geomap: {"title","region":"${MOTION_HISTORY.REGIONS.join("|")}" or "bbox":[west,south,east,north],"date":"JUNE 1941","sides":[{"name","color":"#hex","countries":["Germany","Italy"]}],"highlight":["Poland"],"cities":[{"name":"Moscow","label":"on-screen name","capital":true}],"fronts":[{"line":["Leningrad","Smolensk","Kyiv"] or [[lon,lat],…],"to":[optional later line, same style],"color":"#hex","flip":false}],"arrows":[{"from":"Berlin","to":"Moscow","label","color":"#hex"}],"labels":[{"text":"SUEZ","at":"Suez" or [lon,lat],"big":true}],"zoomTo":"Stalingrad" or [lon,lat],"zoom":1..8} – a REAL geographic map with true borders. Countries use English Natural Earth names (Germany, Russia, United Kingdom, France, Italy, Japan, China, United States of America, Vietnam…) or the historical groups USSR, Yugoslavia, Czechoslovakia, Austria-Hungary, Ottoman Empire, French Indochina; borders are modern, so name the modern countries that cover the historical area. Cities may be referenced by name (major capitals and battle sites) or [lon,lat]. Fronts and arrows animate; "to" moves the front line during the beat. Use it whenever narration explains where something happens, who controls what, a front, an invasion route or a distance;
+export const MOTION_HISTORY_STORYBOARD = `  geomap: {"title","region":"${MOTION_HISTORY.REGIONS.join("|")}" or "bbox":[west,south,east,north],"date":"JUNE 1941" (only when the video has no HUD date),"sides":[{"name","color":"#hex","countries":["Germany","Italy"]}],"highlight":["Poland"],"cities":[{"name":"Moscow","label":"on-screen name","capital":true}],"fronts":[{"line":["Leningrad","Smolensk","Kyiv"] or [[lon,lat],…],"to":[optional later line, same style],"color":"#hex","flip":false}],"arrows":[{"from":"Berlin","to":"Moscow","label","color":"#hex"}],"labels":[{"text":"SUEZ","at":"Suez" or [lon,lat],"big":true}],"zoomTo":"Stalingrad" or [lon,lat],"zoom":1..8} – a REAL geographic map with true borders. Countries use English Natural Earth names (Germany, Russia, United Kingdom, France, Italy, Japan, China, United States of America, Vietnam…) or the historical groups USSR, Yugoslavia, Czechoslovakia, Austria-Hungary, Ottoman Empire, French Indochina; borders are modern, so name the modern countries that cover the historical area. Cities may be referenced by name (major capitals and battle sites) or [lon,lat]. Fronts and arrows animate; "to" moves the front line during the beat. Use it whenever narration explains where something happens, who controls what, a front, an invasion route or a distance;
   icons: {"title","groups":[{"icon":"${MOTION_HISTORY.ICON_KINDS.join("|")}","count":1..100,"highlight":0..count,"color":"#hex","label","note"}],"caption"} – rows of icons appearing one by one to compare quantities (1–3 groups, e.g. 10 tanks vs 3 tanks, or 100 barrels with 23 highlighted = 23%).
-  verdict: {"label":"SAVE 3/8","title":"OPERATION SEA LION","question":"Could the invasion have worked?","verdict":"STILL LOSES","tone":"${MOTION_HISTORY.VERDICT_TONES.join("|")}","note":"one short line"} – a judge's rubber stamp slammed onto a card: use it right after the narration gives the outcome of a scenario, test or claim (verdict text 1–3 words, in the narration language; tone lose = red, maybe = amber, draw = grey, close = orange, win = green);
+  verdict: {"label":"SAVE 3/8" (only when the video has no HUD counter),"title":"OPERATION SEA LION","question":"Could the invasion have worked?","verdict":"STILL LOSES","tone":"${MOTION_HISTORY.VERDICT_TONES.join("|")}","note":"one short line"} – a judge's rubber stamp slammed onto a card: use it right after the narration gives the outcome of a scenario, test or claim (verdict text 1–3 words, in the narration language; tone lose = red, maybe = amber, draw = grey, close = orange, win = green);
   scoreboard: {"title","rows":[{"label":"Dunkirk","verdict":"MAYBE","tone":"maybe"}],"highlight":index of the key row} – the recap of every verdict so far, rows stamped one by one (2–10 rows), for the summary near the end.
 - Optional "hud" on any beat: {"counter":"PART 3/8","date":"LATE 1944","bars":[{"label":"OIL","value":0..100}],"label":"short tag"} or {"clear":true}. The HUD is a persistent on-screen layer: it stays from this beat until a later beat changes or clears it, and bar values animate between changes. Use it for series structures (attempt/part counters), running dates and resource meters when the video DNA calls for them; keep each text very short.`;
 export const MOTION_HISTORY_STAGING = `- Moving vehicles: a prop node may carry "travel":{"to":[x,y,z],"start":0..1,"end":0..1} – the node moves from its pos to "to" during that fraction of the beat and turns to face its direction of travel (front = +Z). Use it for tank columns crossing the frame, trucks on a road, aircraft flying over, ships sailing; keep paths on free ground or in the sky and give columns staggered start times.
