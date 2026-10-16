@@ -1,5 +1,9 @@
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput, StudioSelect } from "./ui/Studio.js";
 import { MotionToggle } from "./motion-video/MotionToggle.js";
+import { MotionPartsCard } from "./motion-video/MotionPartsCard.js";
+import { MOTION_PARTS, MOTION_PARTS_TEXT } from "../constants/motionParts.js";
+import { MOTION_STORY_LENGTH_SECONDS } from "../constants/motionVideo.js";
+import { motionPartMinutes } from "../lib/motionParts.js";
 import { MotionReferenceControls } from "./motion-video/MotionReferenceControls.js";
 import { MotionVoicePanel } from "./motion-video/MotionVoicePanel.js";
 import { MotionSceneLibraryPanel, MotionStyleSetPicker } from "./motion-video/MotionSceneLibraryPanel.js";
@@ -11,7 +15,7 @@ import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } f
 import { MOTION_STYLE_PRESET_NONE, MOTION_STYLE_PRESET_TEXT, MOTION_STYLE_PRESETS, motionStylePreset } from "../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -185,6 +189,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
 export default MotionVideoCreator;
 interface MotionPreviewModalData { type: "location" | "beat"; id: string; title: string; imageUrl: string; score?: number; issues?: string[]; note?: string; narration?: string; action?: string; }
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
+  const partsText = currentLang === MR.MOTION_TEXT_EN ? MOTION_PARTS_TEXT.en : MOTION_PARTS_TEXT.vi;
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
@@ -341,6 +346,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     ),
                   )}
                 </MotionSelectField>
+                <MotionSelectField label={text.PARTS} value={String(state.parts || MOTION_PARTS.DEFAULT)} onChange={(e) => studio.setParts(Number(e.target.value))} disabled={studio.storyBusy || (!!state.series && state.series.index > 0)} title={text.PARTS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {_.map(MOTION_PARTS.OPTIONS, (count) => (
+                    <option key={count} value={count}>
+                      {count === 1 ? text.PARTS_ONE : partsText.OPTION(count, motionPartMinutes(MOTION_STORY_LENGTH_SECONDS[state.length] || state.source?.sourceSeconds, count))}
+                    </option>
+                  ))}
+                </MotionSelectField>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
                   <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
@@ -384,6 +396,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     disabled={studio.storyBusy}
                     onClick={() => patch({ autoContinue: state.autoContinue === false })}
                   />
+                </div>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.AUTO_EXPORT}</span>
+                  <MotionToggle checked={state.autoExport === true} label={text.AUTO_EXPORT} icon={Rocket} text={state.autoExport ? text.AUTO_EXPORT_ON : text.AUTO_EXPORT_OFF} title={text.AUTO_EXPORT_HINT} disabled={studio.busy} onClick={() => patch({ autoExport: state.autoExport !== true })} />
                 </div>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
@@ -709,11 +725,21 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} /> : null}
         </div>
         <div className={MOTION_STYLES.STUDIO_RIGHT_COLUMN}>
+          {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}
           <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
-            {studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
+            {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
-            {studio.ME ? (
+            {state.autoExport ? (
+              rj?.result ? (
+                <video src={rj.result.videoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
+              ) : (
+                <div className={MOTION_STYLES.SPACE_Y_3}>
+                  <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{studio.renderBusy ? text.AUTO_EXPORT_RENDERING : text.AUTO_EXPORT_WAITING}</p>
+                  {studio.renderBusy && <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />}
+                </div>
+              )
+            ) : studio.ME ? (
               <MotionSpecPlayer ME={studio.ME} spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} audioPending={studio.audioPreparing || !!studio.voiceError} pending={studio.audioPreparing || studio.renderBusy || busyKind === MOTION_TEXT_SCENES} />
             ) : (
               <div className={MOTION_STYLES.W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER}>
@@ -967,7 +993,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 {studio.renderBusy ? (
                   <StopBtn onClick={() => void studio.cancelRender()} label={renderStopping ? text.STOPPING : text.STOP_RENDER} stopping={renderStopping} />
                 ) : (
-                  <ActionBtn icon={Clapperboard} onClick={() => void studio.render()} disabled={!studio.compiled}>
+                  <ActionBtn icon={Clapperboard} onClick={() => void studio.render()} disabled={!studio.compiled && !(state.autoExport && state.script?.beats?.length)}>
                     {text.RENDER_BTN}
                   </ActionBtn>
                 )}

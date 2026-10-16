@@ -1,5 +1,5 @@
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
-import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
+import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
 import { throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import * as MR from "../../constants/motionRuntime.js";
@@ -207,8 +207,8 @@ const closesString = (rest: string, isKey: boolean): boolean => {
   const tail = rest.trimStart();
   if (isKey) return tail.startsWith(MR.MOTION_TEXT_SYMBOL_39);
   if (!tail) return true;
-  if (tail[0] === MR.MOTION_TEXT_COMMA) return /^[\s]*["{[\-\dtfn]/.test(tail.slice(1));
-  if (tail[0] === MR.MOTION_TEXT_SYMBOL_36 || tail[0] === MR.MOTION_TEXT_SYMBOL_51) return /^\s*([,}\]]|$)/.test(tail.slice(1));
+  if (tail[0] === MR.MOTION_TEXT_COMMA) return JP.VALUE_AFTER_COMMA.test(tail.slice(1));
+  if (tail[0] === MR.MOTION_TEXT_SYMBOL_36 || tail[0] === MR.MOTION_TEXT_SYMBOL_51) return JP.AFTER_CONTAINER.test(tail.slice(1));
   return false;
 };
 export const repairLooseJson = (text: string): string => {
@@ -233,16 +233,16 @@ export const repairLooseJson = (text: string): string => {
     }
     if (ch === MR.MOTION_TEXT_SYMBOL_47) {
       inString = true;
-      isKey = /[{,]\s*$/.test(out) && !/\[\s*$/.test(out) && closesString(text.slice(text.indexOf(MR.MOTION_TEXT_SYMBOL_47, i + 1) + 1), true);
+      isKey = JP.OBJECT_KEY_PREFIX.test(out) && !JP.ARRAY_PREFIX.test(out) && closesString(text.slice(text.indexOf(MR.MOTION_TEXT_SYMBOL_47, i + 1) + 1), true);
       out += ch;
       continue;
     }
     if (ch === MR.MOTION_TEXT_COMMA) {
-      const rest = text.slice(i + 1).match(/^\s*([}\]])/);
+      const rest = text.slice(i + 1).match(JP.CONTAINER_END);
       if (rest) continue;
     }
-    if (/[A-Za-z_$]/.test(ch) && /[{,]\s*$/.test(out)) {
-      const key = text.slice(i).match(/^([A-Za-z_$][\w$]*)("?)\s*:/);
+    if (JP.IDENTIFIER_START.test(ch) && JP.OBJECT_KEY_PREFIX.test(out)) {
+      const key = text.slice(i).match(JP.UNQUOTED_KEY);
       if (key) {
         out += MR.MOTION_TEXT_SYMBOL_47 + key[1] + MR.MOTION_TEXT_SYMBOL_47;
         i += key[1].length + key[2].length - 1;
@@ -266,10 +266,7 @@ const parseStrictRoomJson = (text: string): unknown => {
       return parseJson(candidate);
     } catch {
       try {
-        const cleaned = candidate
-          .replace(/```(?:json)?/gi, MR.MOTION_TEXT_EMPTY)
-          .replace(/```/g, MR.MOTION_TEXT_EMPTY)
-          .trim();
+        const cleaned = candidate.replace(JP.JSON_FENCE, MR.MOTION_TEXT_EMPTY).replace(JP.CODE_FENCE, MR.MOTION_TEXT_EMPTY).trim();
         const cleanStart = cleaned.indexOf(MOTION_TEXT_SYMBOL_35);
         const cleanEnd = cleaned.lastIndexOf(MOTION_TEXT_SYMBOL_36);
         if (cleanStart >= 0 && cleanEnd > cleanStart) {
@@ -315,7 +312,7 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity): 
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   if (!rooms || _.isEmpty(request.projectId)) return;
-  const prefix = SOURCE_TEMPLATE_SYMBOL_683(`${request.provider}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`, `${request.projectId}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`);
+  const prefix = SOURCE_TEMPLATE_SYMBOL_683(String(request.provider), String(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR), String(request.projectId), String(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR));
   const roomKeys = _.filter([...rooms.keys()], (key) => _.startsWith(key, prefix));
   await Promise.allSettled(
     _.map(roomKeys, async (key) => {
@@ -614,7 +611,7 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     });
     if (_.isEmpty(runControllers)) activePlanningControllers.delete(runId);
   });
-  const mutexPrefix = SOURCE_TEMPLATE_SYMBOL_75(`${provider}`, `${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`);
+  const mutexPrefix = SOURCE_TEMPLATE_SYMBOL_75(String(provider), String(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR));
   _.forEach([...planningMutexes.keys()], (roomKey) => {
     if (_.startsWith(roomKey, mutexPrefix)) planningMutexes.delete(roomKey);
   });
@@ -671,7 +668,7 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
     const candidate = candidates.nth(index);
     if (await candidate.isVisible().catch(() => false)) return candidate;
   }
-  throw new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND);
+  throw Object.assign(new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND), { [MR.MOTION_TEXT_ROOMPAGE]: page });
 };
 export const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
   page
@@ -692,7 +689,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             const identityElement = element.closest(identityConfig.selector) || element;
             const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MOTION_TEXT_EMPTY;
             const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
-            const identity = messageId || (testId ? `${testId}${SOURCE_TEXT_SYMBOL_16}${index}` : identityElement.id);
+            const identity = messageId || (testId ? testId + SOURCE_TEXT_SYMBOL_16 + index : identityElement.id);
             const codeText = browserPayload.preferCodeBlocks
               ? Array.from(element.querySelectorAll(browserPayload.codeSelector))
                   .map((block) => block.textContent || MOTION_TEXT_EMPTY)
@@ -1003,7 +1000,7 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
         }
     }
   }
-  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))}`)).trim());
+  if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(String(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX)), SOURCE_TEMPLATE_SYMBOL_86(String(_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))))).trim());
   if (scopedComposer) await page.keyboard.press(SOURCE_TEXT_ESCAPE);
 };
 const getComposerReadings = async (input: Locator): Promise<string[]> => {
@@ -1093,7 +1090,7 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
     let initialCount = 0;
     const normalizedPrompt = normalizeRoomPrompt(prompt);
     const responseDirective = isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
-    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${normalizedPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${responseDirective}`));
+    const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
     let submissionConfirmed = false;
     const markPendingSubmission = (): void => {
       pendingRoomResponses.set(roomKey, {
@@ -1167,6 +1164,12 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
           await sendButton.click();
         } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
         submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+        if (!submissionConfirmed && !isClaude && !isDeepSeek && (await getComposerText(input)).length > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS) {
+          appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
+          await input.focus().catch(() => undefined);
+          await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
+          submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+        }
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
       }
     }

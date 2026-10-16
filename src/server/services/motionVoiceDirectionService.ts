@@ -7,11 +7,13 @@ import { applyVoiceLibrary, findVoiceChannel } from "./motionVoiceLibraryService
 import { MOTION_AUDIO_DIRECTION, MOTION_AUDIO_CAST_PROMPT } from "../../constants/motionAudioDirection.js";
 import { motionAudioDirection } from "../../lib/motionAudioDirection.js";
 import { motionVoiceSignature, motionVoiceSpeaks, normalizeMotionUtterances, fallbackMotionUtterances, selectMotionVoiceRoles } from "../../lib/motionVoice.js";
-import type { MotionStoryScript, MotionStoryAnalysis, MotionVoicePlan, MotionAiExecution, MotionVoicePreset } from "../../types/motionVideo.js";
+import type { MotionBeat, MotionStoryScript, MotionStoryAnalysis, MotionVoicePlan, MotionAiExecution, MotionVoicePreset } from "../../types/motionVideo.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
-import { runMotionAi } from "./motionStoryService.js";
+import { mapMotionAiPool, runMotionAi } from "./motionStoryService.js";
+import _ from "lodash";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 export interface MotionVoiceOptions { exec: MotionAiExecution; aspect?: string; signal?: AbortSignal; log?: (value: string) => void; onProgress?: (done: number, total: number) => void; ai?: typeof runMotionAi; asr?: boolean; }
+const fallbackBeat = (beat: MotionBeat): MotionVoicePlan["beats"][number] => ({ id: beat.id, utterances: fallbackMotionUtterances(beat.id, beat.narration) });
 export const directMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => {
   const channel = findVoiceChannel(script.voiceChannel),
     pinned = new Set<string>(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})] : []);
@@ -73,9 +75,11 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
     if (explicit.length && !unvoiced) planned.set(beat.id, { id: beat.id, utterances: explicit });
   }
   const pending = script.beats.filter((beat) => !planned.has(beat.id));
-  for (let index = 0; index < pending.length; index += C.BATCH) {
+  const dialogue = speakers.length > 1 ? pending.filter((beat) => C.DIRECT_SPEECH_RE.test(beat.narration)) : [];
+  for (const beat of pending) if (!dialogue.includes(beat)) planned.set(beat.id, fallbackBeat(beat));
+  if (pending.length) opts.log?.(C.SPLIT_LOG(dialogue.length, pending.length - dialogue.length));
+  await mapMotionAiPool(_.chunk(dialogue, C.AI_BATCH), async (group) => {
     if (opts.signal?.aborted) throw new Error(C.CANCELLED);
-    const group = pending.slice(index, index + C.BATCH);
     try {
       const response = await (opts.ai || runMotionAi)([MOTION_VOICE_PROMPT, JSON.stringify({ direction, cast: analysis?.cast, beats: group.map((beat) => ({ id: beat.id, narration: beat.narration, cast: beat.cast, action: beat.action, scenePlan: beat.scenePlan })) })].join(MR.MOTION_TEXT_SYMBOL_27), C.ARTIFACT, opts.exec, opts.signal, opts.log);
       for (const item of Array.isArray(response?.beats) ? response.beats : []) {
@@ -88,8 +92,8 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
       if (opts.signal?.aborted) throw error;
       opts.log?.(C.PLAN_FALLBACK);
     }
-    for (const beat of group) if (!planned.has(beat.id)) planned.set(beat.id, { id: beat.id, utterances: fallbackMotionUtterances(beat.id, beat.narration) });
-  }
+    for (const beat of group) if (!planned.has(beat.id)) planned.set(beat.id, fallbackBeat(beat));
+  });
   const plan = { version: C.VERSION, signature, direction, roles, beats: script.beats.map((beat) => planned.get(beat.id)!) };
   fs.mkdirSync(path.dirname(planFile), { recursive: true });
   writeMotionJsonAtomic(planFile, plan);

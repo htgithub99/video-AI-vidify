@@ -57,6 +57,7 @@ export const MOTION_GEN_CONFIG = {
   LOG_AUTO_STAGED: (count: number): string => `Đã dàn dựng tự động ${count} beat`,
   LOG_AUTO_RESTAGED: (count: number): string => `Dàn dựng lại bằng code ${count} cảnh có ảnh xem trước lỗi (không gọi AI)`,
   AUTO_RESTAGE_ATTEMPTS: 2,
+  LOG_PREVIEWS_SKIPPED: "Tự động xuất video đang bật – bỏ qua ảnh xem trước từng cảnh, lỗi cảnh (nếu có) sẽ được báo khi render",
   AUTO_RESTAGE_OFFSET: 3,
   LOG_AUTO_FALLBACK: (count: number): string => `AI chưa dàn dựng được ${count} beat – dùng dàn dựng tự động`,
 } as const;
@@ -82,7 +83,7 @@ Requirements:
 4. "facts": proper names, dates, numbers and places that auto-transcripts often get wrong. status = ok | uncertain | wrong, short "note". Never invent facts. At most 12.
 5. "look": the closest renderer option among ${MOTION_GEN_LOOKS.join(", ")}; this is a technical rendering option, not a genre rule. The Video DNA defines the actual look. "accent": a hex accent colour supported by that blueprint.
 6. Write "title", "logline", chapter "title"/"summary", cast "name"/"role"/"description", place "name" and fact "claim"/"note" in ${o.language}.
-7. Keep it compact: chapter summary ≤ 35 words, cast description ≤ 20 words.
+7. Keep it compact so long videos fit in one reply: chapter summary ≤ 35 words, at most 4 keyPoints per chapter of ≤ 18 words each, hook and handoff ≤ 20 words, cast description ≤ 20 words.
 8. No gore or explicit violence. Leave out sexual content and anything the audience suitability excludes; do not list it in facts or cast, and never give it a chapter or a chapter title (if the source spends time on it, fold that time into a neighbouring chapter).
 9. "genre" and "genre2": optional descriptive metadata, use "" when unnecessary. They must not select narration, sets, light, structure or camera rules. "factual": true for an account presented as real events, false for fiction; note uncertainty in the Video DNA when the input does not establish this.
 10. Return one complete "videoDna" object following the contract below. Do not return the obsolete "dna" or "creativeBlueprint" fields. Keep "chapters", "cast", "places", "facts", "look", "accent", "era" and "sfxMood" at the JSON root, as siblings of "videoDna". The field "videoDna.visualDna.palette" must be one non-empty string describing the colours; if a reference supplies a colour array, describe those colours in this string.
@@ -329,3 +330,9 @@ Compare consecutive images for narrated object-state changes: the initial state 
 If an existing set object lacks functional details, has buried surfaces or wrong geometry/materials, report locationFix separately. Camera/staging changes cannot repair the set geometry. Check layered surfaces: dial/display/controls must be in front of the casing, not inside an opaque cap. Use staging fix only for actor positions, facing, extra props and camera.
 The film is staged "camera first": actors mostly hold still poses and the camera moves; an object action may be shown as the actor beside the object plus a close-up of the result. That is intended – never ask for more character movement or for hands to touch objects; judge content, readability and framing only.
 Return JSON: {"beats":[{"id":"…","ok":true|false,"fix":"staging correction, empty when ok","locationFix":"set geometry/material/light correction, empty if none"}]}`;
+export const MOTION_SERIES_PROMPT = {
+  FIRST: (index: number, count: number, previous: string): string => `This video is part ${index} of a ${count}-part series and is published as its own video. Open with one short sentence that reminds viewers where the previous part left off (${previous}), then continue the story from there without retelling it.`,
+  LAST: (index: number, count: number, next: string): string => `This video is part ${index} of a ${count}-part series. Do not conclude the whole story: end this part on an open question and one short line that makes viewers want the next part (${next}), without revealing its outcome.`,
+  OPENING: (index: number, count: number, previous: string): string => `This is the first chapter of part ${index}/${count}; the previous part ended with: ${previous}. Pick up naturally from there.`,
+  CLOSING: (next: string): string => `This is the last chapter of this part; the next part begins with: ${next}. Hand over to it with a cliffhanger, do not cover its points.`,
+};

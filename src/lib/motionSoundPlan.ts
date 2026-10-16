@@ -1,6 +1,6 @@
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_BED, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
-import { normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
+import { motionCueLimit, normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
 import type { MotionSoundCue, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoicePlan } from "../types/motionVideo.js";
@@ -20,7 +20,8 @@ export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, d
 };
 export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScript, analysis?: MotionStoryAnalysis | null, direction = motionAudioDirection(script || null, analysis || null), roles?: MotionVoicePlan["roles"]): MotionSoundCue[] => {
   const result: MotionSoundCue[] = [],
-    seen = new Set<string>();
+    seen = new Set<string>(),
+    cueLimit = motionCueLimit(spec.duration || 0);
   const add = (cue: Record<string, unknown>) => {
     const normalized = normalizeSoundCues([cue], spec.duration || C.MAX_DURATION)[0];
     if (normalized && !seen.has(normalized.id)) {
@@ -37,7 +38,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
   for (const shot of spec.shots) {
     if (!shot.params) continue;
     const staging: any = shot.params,
-      key = String(staging.soundBeatId || shot.id.replace(/_cam\d+$/, C.EMPTY)),
+      key = String(staging.soundBeatId || shot.id.replace(C.CAMERA_SUFFIX_RE, C.EMPTY)),
       start = shot.start - (Number(staging.tOffset) || 0);
     if (!groups.has(key)) groups.set(key, { start, duration: Number(staging.beatDur) || shot.end - start, staging, camera: staging.cameras?.[0] || staging.camera });
   }
@@ -57,8 +58,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
     const interior = place?.interior ?? location?.interior;
     const bed = MOTION_SOUND_BEDS.find((item) => item.pattern.test(context) && !(item.exteriorOnly && interior))?.kind || (interior ? MR.MOTION_TEXT_ROOM : undefined);
     const genreBed = MOTION_SOUND_GENRE_BED[(analysis?.genre || C.EMPTY) as keyof typeof MOTION_SOUND_GENRE_BED];
-    if (genreBed && (genreBed.always || MOTION_SOUND_SCARY_PLACE.test(context) || (!interior && /\bnight\b|ban dem|dem khuya|nua dem/.test(context))))
-      add({ id: MR.MOTION_TEMPLATE_AMBIENCE(beatId, genreBed.kind), beatId, t: start, kind: genreBed.kind, layer: MR.MOTION_TEXT_AMBIENCE, duration, gainDb: genreBed.gainDb, description: place?.description || location?.name, source: MR.MOTION_TEXT_OFFSCREEN });
+    if (genreBed && (genreBed.always || MOTION_SOUND_SCARY_PLACE.test(context) || (!interior && C.NIGHT_RE.test(context)))) add({ id: MR.MOTION_TEMPLATE_AMBIENCE(beatId, genreBed.kind), beatId, t: start, kind: genreBed.kind, layer: MR.MOTION_TEXT_AMBIENCE, duration, gainDb: genreBed.gainDb, description: place?.description || location?.name, source: MR.MOTION_TEXT_OFFSCREEN });
     const events = normalizeSoundEvents(staging.soundEvents || beat?.data?.soundEvents);
     if (bed && !events.some((event) => event.layer === MR.MOTION_TEXT_AMBIENCE)) {
       const placeKey = MR.MOTION_TEMPLATE_EMPTY_3(staging.location, staging.time || location?.time, bed);
@@ -100,7 +100,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
             if (marker.part && !design.parts?.some((part: any) => part.id === marker.part)) continue;
             if (marker.kind === MR.MOTION_TEXT_FOOTSTEP && actor.moveTo && !(segment.action === actor.action)) continue;
             const cycles = motion.loop ? Math.ceil((segment.end - segment.start + offset) / period) : 1;
-            for (let cycle = 0; cycle < Math.min(C.MAX_CUES, cycles) && result.length < C.MAX_CUES; cycle++) {
+            for (let cycle = 0; cycle < Math.min(cueLimit, cycles) && result.length < cueLimit; cycle++) {
               const local = segment.start + cycle * period + (marker.t || 0) - offset;
               if (local < segment.start || local >= segment.end || (marker.kind === MR.MOTION_TEXT_FOOTSTEP && actor.moveTo && (local < (actor.moveStart || 0) * duration || local >= (actor.moveEnd ?? 1) * duration))) continue;
               add({ ...marker, id: MR.MOTION_TEMPLATE_MOTION_2(beatId, actor.cast, segment.action, marker.id, cycle), beatId, actor: actor.cast, t: start + local, duration: marker.duration || MOTION_SOUND_KINDS.find((item) => item.kind === marker.kind)!.duration, ...motionSoundSpatial(spec, start + local, actor, duration, local) });
@@ -113,7 +113,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
             distance = Math.hypot(actor.moveTo[0] - actor.at[0], actor.moveTo[1] - actor.at[1]);
           if (distance < 0.05) continue;
           const interval = Math.max(0.22, Math.min(0.8, (end - first) / Math.max(1, distance / 0.55)));
-          for (let time = first, step = 0; time < end && result.length < C.MAX_CUES; time += interval, step++)
+          for (let time = first, step = 0; time < end && result.length < cueLimit; time += interval, step++)
             add({
               id: MR.MOTION_TEMPLATE_WALK(beatId, actor.cast, step),
               beatId,
@@ -147,5 +147,5 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
     }
     if (!merged.some((other) => other.beatId === cue.beatId && other.actor === cue.actor && other.prop === cue.prop && other.part === cue.part && other.kind === cue.kind && other.layer !== MR.MOTION_TEXT_AMBIENCE && Math.abs(other.t - cue.t) < 0.08)) merged.push(cue);
   }
-  return merged.slice(0, C.MAX_CUES);
+  return merged.slice(0, cueLimit);
 };

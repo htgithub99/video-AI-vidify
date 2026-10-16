@@ -41,8 +41,28 @@ import { jsonUtils } from "../lib/json.js";
 import { isMotionJobTerminal } from "../lib/motionJob.js";
 import { getMotionErrorMessage } from "../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../types.js";
-import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionJobState, type MotionResultItem, type MotionSpec, type MotionStoryAnalysis, type MotionStoryJobState, type MotionStoryScript, type MotionStorySource, type MotionVoiceTrack, type MotionSeoPack, type MotionThumbnail } from "../types/motionVideo.js";
+import {
+  MotionAspect,
+  MotionEncoderPreference,
+  MotionJobStatus,
+  MotionQuality,
+  MotionStoryJobKind,
+  MotionStoryLength,
+  type MotionJobState,
+  type MotionResultItem,
+  type MotionSpec,
+  type MotionStoryAnalysis,
+  type MotionStoryJobState,
+  type MotionStoryScript,
+  type MotionStorySource,
+  type MotionVoiceTrack,
+  type MotionSeoPack,
+  type MotionThumbnail,
+  type MotionSeriesState,
+} from "../types/motionVideo.js";
 import { retimeSeoPack } from "../lib/motionSeo.js";
+import { MOTION_PARTS } from "../constants/motionParts.js";
+import { motionCarryGen, motionPartAnalysis, motionSeriesStart } from "../lib/motionParts.js";
 import { motionMainAiExecution, motionSceneAiExecution } from "../lib/motionSceneAi.js";
 import type { StorageCleanResult, StorageJunkReport } from "../types/storage.js";
 const STOPPED_TOAST = MOTION_TEXT_DA_DUNG_STOPPED;
@@ -88,6 +108,9 @@ interface PersistedState {
   renderSignature?: string;
   activeStoryJobId: string;
   autoContinue: boolean;
+  autoExport?: boolean;
+  parts?: number;
+  series?: MotionSeriesState | null;
   seo: MotionSeoPack | null;
   thumbnail?: MotionThumbnail | null;
   thumbnails?: Record<number, MotionThumbnail>;
@@ -127,10 +150,17 @@ const DEFAULTS: PersistedState = {
   activeRenderJobId: MR.MOTION_TEXT_EMPTY,
   activeStoryJobId: MR.MOTION_TEXT_EMPTY,
   autoContinue: true,
+  autoExport: false,
+  parts: MOTION_PARTS.DEFAULT,
+  series: null,
   seo: null,
   thumbnail: null,
 };
 const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look });
+const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, language: string, look: string): Partial<PersistedState> => {
+  const started = motionSeriesStart(full, parts || MOTION_PARTS.DEFAULT, language);
+  return { ...analyzedState(started.analysis, look), series: started.series };
+};
 export interface MotionScenesRequest { beats?: string[]; locations?: string[]; restart?: boolean; restyle?: boolean; note?: string; }
 const compileStateKey = (state: PersistedState): string => JSON.stringify([state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.subtitles !== false, state.sfx, state.sfxVolume, state.soundOverrides]);
 export const narrationSignature = motionVoiceSignature;
@@ -182,18 +212,21 @@ export function useMotionStudio() {
   }, []);
   const mounted = useRef(true);
   const pollAbort = useRef<AbortController | null>(null);
-  const patch = useCallback(
-    (p: Partial<PersistedState>) =>
-      setState((s) => {
-        const next = { ...s, ...p };
-        if (p.rawText !== undefined && p.rawText !== s.rawText) next.source = null;
-        const synced = withVoiceChannel(next, channelsRef.current);
-        if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
-        stateRef.current = synced;
-        return synced;
-      }),
-    [],
-  );
+  const patch = useCallback((p: Partial<PersistedState>) => {
+    const apply = (s: PersistedState): PersistedState => {
+      const next = { ...s, ...p };
+      if (p.rawText !== undefined && p.rawText !== s.rawText) next.source = null;
+      const synced = withVoiceChannel(next, channelsRef.current);
+      if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
+      return synced;
+    };
+    stateRef.current = apply(stateRef.current);
+    setState((s) => {
+      const synced = apply(s);
+      stateRef.current = synced;
+      return synced;
+    });
+  }, []);
   const reloadVoiceChannels = useCallback(async (): Promise<MotionVoiceChannels> => {
     try {
       const data = await motionRequest<MotionVoiceChannels>(MOTION_VOICE_LIBRARY.CHANNELS_URL);
@@ -324,7 +357,7 @@ export function useMotionStudio() {
         logStoryTerminal(final);
         if (final.status !== MotionJobStatus.COMPLETED || !final.result) return;
         if (final.kind === MotionStoryJobKind.SCRIPT || final.kind === MotionStoryJobKind.SCENES) patch({ script: final.result as MotionStoryScript });
-        if (final.kind === MotionStoryJobKind.ANALYZE) patch(analyzedState(final.result as MotionStoryAnalysis, stateRef.current.look));
+        if (final.kind === MotionStoryJobKind.ANALYZE) patch(seriesState(final.result as MotionStoryAnalysis, stateRef.current.parts, stateRef.current.language, stateRef.current.look));
         if (final.kind === MotionStoryJobKind.VOICE) {
           const track = final.result as MotionVoiceTrack;
           setState((s) =>
@@ -369,13 +402,13 @@ export function useMotionStudio() {
     },
     [patch],
   );
-  const writeScriptRef = useRef<((chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume?: boolean) => Promise<void>) | null>(null);
+  const writeScriptRef = useRef<((chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume?: boolean, carryGen?: MotionSeriesState["carryGen"]) => Promise<void>) | null>(null);
   const analyze = useCallback(async () => {
     if (!state.source) return;
     setLogHistory([]);
     await inFlow(async () => {
       try {
-        const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, {
+        const full = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, {
           source: state.source,
           language: state.language,
           length: state.length,
@@ -389,7 +422,9 @@ export function useMotionStudio() {
           videoGenre: state.videoGenre || MOTION_VIDEO_GENRES.AUTO,
           stylePreset: state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE,
         })) as MotionStoryAnalysis;
-        patch(analyzedState(analysis, stateRef.current.look));
+        const started = seriesState(full, stateRef.current.parts, stateRef.current.language, stateRef.current.look);
+        const analysis = started.analysis!;
+        patch(started);
         setCompiled(null);
         toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(String(analysis.chapters.length), String(analysis.cast.length)));
         if (state.autoContinue !== false && writeScriptRef.current) await writeScriptRef.current(undefined, analysis);
@@ -399,7 +434,7 @@ export function useMotionStudio() {
     });
   }, [inFlow, state.source, state.language, state.length, state.drawingMode, state.styleReferences, state.characterMotion, state.aspect, state.libraryMode, state.videoGenre, state.stylePreset, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
-    async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false) => {
+    async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false, carryGen?: MotionSeriesState["carryGen"]) => {
       const analysis = analysisOverride || state.analysis;
       if (!state.source || !analysis) return;
       await inFlow(async () => {
@@ -418,6 +453,7 @@ export function useMotionStudio() {
               chapterIds,
               beats: analysisOverride ? [] : state.script?.beats || [],
               gen: chapterIds?.length ? state.script?.gen : undefined,
+              carryGen: carryGen || (stateRef.current.series?.index ? stateRef.current.series.carryGen : undefined),
               aspect: state.aspect,
               resume,
             },
@@ -428,7 +464,10 @@ export function useMotionStudio() {
           const missing = _.filter(analysis.chapters, (c) => !_.some(script.beats, { chapterId: c.id })).length;
           if (missing) toast.warning(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_BAM_VIET_TIEP_CHUONG_CON_THIEU(missing));
           if (state.autoContinue !== false && seoRef.current) await seoRef.current(script, analysis, true);
-          if (state.autoContinue !== false && scenesRef.current) await scenesRef.current({}, script, analysis);
+          if (state.autoContinue !== false && scenesRef.current) {
+            const built = await scenesRef.current({}, script, analysis);
+            if (built && !built.gen?.failed?.length && stateRef.current.autoExport && autoRenderRef.current) await autoRenderRef.current();
+          }
         } catch (e: any) {
           reportStoryError(e);
         }
@@ -472,17 +511,18 @@ export function useMotionStudio() {
     },
     [inFlow, state.analysis, state.seo, state.language, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.thumbnails, runStoryJob, patch],
   );
+  const autoRenderRef = useRef<(() => Promise<void>) | null>(null);
   const scenesRef = useRef<((req: MotionScenesRequest, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => Promise<MotionStoryScript | undefined>) | null>(null);
   const buildScenes = useCallback(
     async (req: MotionScenesRequest = {}, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => {
-      const script = scriptOverride || state.script;
-      const analysis = analysisOverride || state.analysis;
+      const script = withVoiceChannel({ ...stateRef.current, script: scriptOverride || stateRef.current.script }, channelsRef.current).script;
+      const analysis = analysisOverride || stateRef.current.analysis;
       if (!script?.beats?.length || !analysis) return;
       return inFlow(async () => {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: state.aspect, aiExecution: sceneAiExecution, mainAiExecution: aiExecution, asrCheck: state.asrCheck === true, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, review: state.aiReview !== false, ...req },
+            { script, analysis, aspect: state.aspect, aiExecution: sceneAiExecution, mainAiExecution: aiExecution, asrCheck: state.asrCheck === true, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, review: state.aiReview !== false, previews: stateRef.current.autoExport !== true, ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           patch({ script: result });
@@ -578,7 +618,7 @@ export function useMotionStudio() {
       compiledSig.current = MR.MOTION_TEXT_EMPTY;
       return;
     }
-    if (!hydrated) return;
+    if (!hydrated || state.autoExport) return;
     const sig = compileStateKey(state);
     if (sig === compiledSig.current) return;
     compileRevision.current++;
@@ -627,6 +667,8 @@ export function useMotionStudio() {
         logMotionActivity(MOTION_ACTIVITY_PREFIX.render, final.status === MotionJobStatus.COMPLETED ? WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.done : final.status === MotionJobStatus.CANCELLED ? WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.stop : WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail, final.error || final.result?.fileName);
         if (final.status === MotionJobStatus.COMPLETED && final.result) {
           setResults((rs) => [final.result!, ..._.reject(rs, { id: final.result!.id })]);
+          const series = stateRef.current.series;
+          if (series) patch({ series: { ...series, done: [..._.reject(series.done, { index: series.index }), { index: series.index, title: stateRef.current.analysis?.title || final.result.title, videoUrl: final.result.videoUrl, fileName: final.result.fileName }] } });
           toast.success(final.result.fileName);
         } else if (final.status === MotionJobStatus.ERROR) toast.error(final.error);
         else if (final.status === MotionJobStatus.CANCELLED) toast.info(STOPPED_TOAST);
@@ -641,6 +683,7 @@ export function useMotionStudio() {
     async () =>
       inFlow(async () => {
         let renderRequested = false;
+        const state = stateRef.current;
         try {
           let c = compiled;
           const changedScenePlan = !!state.analysis?.videoDna && state.script?.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && state.script?.gen?.scenePlanKeys?.[beat.id] !== sceneExecutionKey(beat));
@@ -706,6 +749,29 @@ export function useMotionStudio() {
       }),
     [inFlow, compiled, compile, buildScenes, generateVoice, state.drawingMode, state.characterMotion, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch],
   );
+  autoRenderRef.current = render;
+  const setParts = useCallback(
+    (parts: number) => {
+      const current = stateRef.current;
+      const full = current.series?.analysis || current.analysis;
+      if (full && !current.script && (!current.series || current.series.index === 0)) patch({ parts, ...seriesState(full, parts, current.language, current.look) });
+      else patch({ parts });
+    },
+    [patch],
+  );
+  const continuePart = useCallback(async () => {
+    const current = stateRef.current;
+    const series = current.series;
+    if (!series || series.index + 1 >= series.parts.length) return;
+    const index = series.index + 1;
+    const analysis = motionPartAnalysis(series.analysis, series.parts, index, current.language);
+    const done = _.some(series.done, { index: series.index }) ? series.done : [...series.done, { index: series.index, title: current.analysis?.title || series.analysis.title }];
+    const carryGen = motionCarryGen(current.script?.gen) || series.carryGen;
+    patch({ ...analyzedState(analysis, current.look), series: { ...series, index, done, carryGen } });
+    setCompiled(null);
+    setRenderJob(null);
+    if (writeScriptRef.current) await writeScriptRef.current(undefined, analysis, false, carryGen);
+  }, [patch]);
   const cancelRender = useCallback(async () => {
     await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: renderJob?.id }).catch(_.noop);
   }, [renderJob]);
@@ -791,6 +857,8 @@ export function useMotionStudio() {
     cancelStory,
     check,
     render,
+    continuePart,
+    setParts,
     cancelRender,
     deleteResult,
     deleteAllResults,

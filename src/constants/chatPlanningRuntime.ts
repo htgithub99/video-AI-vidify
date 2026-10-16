@@ -29,3 +29,14 @@ export const CHAT_PLANNING_RUNTIME = {
   UPLOAD_PATH_PATTERN: /(?:upload|attachment|\/files?(?:\/|$))/i,
   MULTIPART_PATTERN: /multipart\/form-data/i,
 } as const;
+export const CHAT_JSON_PATTERNS = {
+  VALUE_AFTER_COMMA: /^[\s]*["{[\-\dtfn]/,
+  AFTER_CONTAINER: /^\s*([,}\]]|$)/,
+  OBJECT_KEY_PREFIX: /[{,]\s*$/,
+  ARRAY_PREFIX: /\[\s*$/,
+  CONTAINER_END: /^\s*([}\]])/,
+  IDENTIFIER_START: /[A-Za-z_$]/,
+  UNQUOTED_KEY: /^([A-Za-z_$][\w$]*)("?)\s*:/,
+  JSON_FENCE: /```(?:json)?/gi,
+  CODE_FENCE: /```/g,
+} as const;

@@ -83,7 +83,7 @@ import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
-import { buildScenes, customSceneSeed, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
+import { buildScenes, customSceneSeed, emptyGen, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
 import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
@@ -338,7 +338,8 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       const retry = failed.splice(0);
       for (const chapter of retry) await writeOne(chapter);
       if (failed.length) ctx.log(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_CAC_CHUONG_KHAC_VAN_DUOC_GIU_BAM_VIET_T(failed.length, _.map(failed, MR.MOTION_TEXT_TITLE).join(MR.MOTION_TEXT_SYMBOL_14)));
-      const keepGen = _.isEmpty(only) ? undefined : (req.body?.gen as MotionStoryScript["gen"]);
+      const carried = req.body?.carryGen ? ({ ...emptyGen(), ...req.body.carryGen } as MotionStoryScript["gen"]) : undefined;
+      const keepGen = _.isEmpty(only) ? carried : (req.body?.gen as MotionStoryScript["gen"]) || carried;
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = _.every(chapters, (c) => byChapter[c.id]?.length);
@@ -422,6 +423,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         characterMotion: req.body?.characterMotion === true,
         note: note || undefined,
         review: req.body?.review !== false,
+        skipPreviews: req.body?.previews === false,
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
       });
       if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {

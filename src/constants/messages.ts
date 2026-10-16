@@ -1313,6 +1313,7 @@ export const CHAT_UI_AUTOMATION_MESSAGES = {
   CLEANUP_NO_CONVERSATIONS: (provider: string) => `[Dọn dẹp AI] ${provider}: không còn cuộc trò chuyện nào.`,
   CLEANUP_CONVERSATIONS_FOUND: (provider: string, count: number) => `[Dọn dẹp AI] ${provider}: tìm thấy ${count} cuộc trò chuyện.`,
   INPUT_AREA_NOT_FOUND: "Không tìm thấy ô nhập nội dung trên giao diện AI.",
+  SUBMIT_ENTER_FALLBACK: "Nút gửi không đẩy được nội dung đi – nhấn Enter trong ô nhập để gửi lại.",
   PLANNING_JSON_EARLY_RECEIVED: (length: number, _elapsedMs: number) => `Đã nhận kịch bản hoàn chỉnh từ AI (${length} ký tự).`,
   PLANNING_RESPONSE_COMPLETE: (length: number) => `Đã nhận toàn bộ nội dung từ AI (${length} ký tự).`,
   PLANNING_WAITING_INPUT: "Đang chờ ô nhập nội dung sẵn sàng...",

@@ -358,6 +358,7 @@ export const motionStripForeignParts = (design: any, traits?: MotionTraits): any
   return motionStripParts(design, (id) => !!MOTION_CHARACTER_REGION_PARTS[id] && motionRegionGroup(MOTION_CHARACTER_REGION_PARTS[id]) !== group);
 };
 export const motionPlaceScore = (item: MotionSceneAsset, place: MotionPlace, fit: (item: MotionSceneAsset) => number): number => FIT.BASE_WEIGHT + (item.interior === !!place.interior ? FIT.INTERIOR_WEIGHT : 0) + (item.time === place.time ? FIT.TIME_WEIGHT : 0) + Math.min(FIT.TAG_MAX, -fit(item) * FIT.TAG_WEIGHT);
+export const motionPlaceFit = (item: MotionSceneAsset, place: MotionPlace): number => motionPlaceScore(item, place, assetFit([place.name, place.description, ...(place.tags || [])]));
 export interface MotionLibraryPlan { drawBudget?: number; weight?: (place: MotionPlace) => number; log?: (line: string) => void; }
 export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: string, mode: MotionSceneLibraryMode, characterMotion?: boolean, plan: MotionLibraryPlan = {}): MotionStoryAnalysis => {
   const strip = <T extends object>(entry: T): T => _.omit(entry, REUSE_FIELDS) as T;

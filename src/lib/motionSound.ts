@@ -50,8 +50,9 @@ export const normalizeSoundEvents = (raw: unknown): MotionSoundEvent[] =>
       },
     ];
   });
+export const motionCueLimit = (duration: number): number => Math.max(C.MAX_CUES, Math.ceil((Number.isFinite(duration) ? duration : 0) / C.MINUTE_SECONDS) * C.CUES_PER_MINUTE);
 export const normalizeSoundCues = (raw: unknown, duration: number = C.MAX_DURATION): MotionSoundCue[] =>
-  (Array.isArray(raw) ? raw : []).slice(0, C.MAX_CUES).flatMap((value, index) => {
+  (Array.isArray(raw) ? raw : []).slice(0, motionCueLimit(duration)).flatMap((value, index) => {
     if (!value || !Number.isFinite(Number(value.t)) || value.t < 0 || value.t >= duration) return [];
     const event = normalizeSoundEvents([{ ...value, kind: value.kind === MR.MOTION_TEXT_HIT || value.kind === MR.MOTION_TEXT_CHAPTER ? MR.MOTION_TEXT_IMPACT : value.kind === MR.MOTION_TEXT_RISE ? MR.MOTION_TEXT_WHOOSH : value.kind }])[0];
     if (!event) return [];

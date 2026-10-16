@@ -26,7 +26,7 @@ import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js
 import _ from "lodash";
 import path from "path";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
-import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES } from "../../constants/motionGenPrompts.js";
+import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES, MOTION_SERIES_PROMPT } from "../../constants/motionGenPrompts.js";
 import { normalizeMotionAnalysisResponse } from "../../lib/motionAnalysisResponse.js";
 import {
   MOTION_TEMPLATE_2_2,
@@ -153,7 +153,8 @@ import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifi
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { parseClaudeChatModel } from "../../constants/claudeChatModels.js";
-import { DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
+import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
+import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi, prepareChatPlanningRoom } from "./chatUiPlanningService.js";
 import { generateContentWithRetry } from "./geminiService.js";
@@ -309,7 +310,7 @@ const probeRoomPage = async (page: any, requestId: string): Promise<Record<strin
               counts[s] = -1;
             }
           });
-          const body = (document.body?.innerText || motionBrowserTexts.MOTION_TEXT_EMPTY).replace(MP.WHITESPACE_GLOBAL, motionBrowserTexts.MOTION_TEXT_SYMBOL_13);
+          const body = (document.body?.innerText || motionBrowserTexts.MOTION_TEXT_EMPTY).replace(new RegExp(motionBrowserTexts.WHITESPACE_SOURCE, motionBrowserTexts.WHITESPACE_FLAGS), motionBrowserTexts.MOTION_TEXT_SYMBOL_13);
           return { url: location.href, title: document.title, counts, textTail: body.slice(-1500), textHead: body.slice(0, 600) };
         },
         {
@@ -327,6 +328,8 @@ const probeRoomPage = async (page: any, requestId: string): Promise<Record<strin
           MOTION_TEXT_BUTTON_ARIA_LABEL_GUI_I,
           MOTION_TEXT_ROLE_ALERT,
           MOTION_TEXT_SYMBOL_13,
+          WHITESPACE_SOURCE: MP.WHITESPACE_GLOBAL.source,
+          WHITESPACE_FLAGS: MP.WHITESPACE_GLOBAL.flags,
         },
       )
       .catch((e: any) => ({ error: _.toString(e?.message) }));
@@ -456,6 +459,22 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
   return results;
 };
 const blockedRoomProviders = new Map<string, number>();
+const providerGates = new Map<string, { active: number; queue: (() => void)[]; last: number }>();
+const acquireProviderGate = async (provider: string): Promise<() => void> => {
+  const limit = MOTION_STORY_CONFIG.PROVIDER_PARALLEL[provider];
+  if (!limit) return _.noop;
+  const gate = providerGates.get(provider) || { active: 0, queue: [], last: 0 };
+  providerGates.set(provider, gate);
+  while (gate.active >= limit) await new Promise<void>((resolve) => gate.queue.push(resolve));
+  gate.active++;
+  const wait = gate.last + MOTION_STORY_CONFIG.PROVIDER_MIN_GAP_MS - Date.now();
+  gate.last = Math.max(Date.now(), gate.last + MOTION_STORY_CONFIG.PROVIDER_MIN_GAP_MS);
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  return _.once(() => {
+    gate.active--;
+    gate.queue.shift()?.();
+  });
+};
 const countMotionRequest = (provider: string, log?: (s: string) => void): void => {
   const run = motionAiRunStore.getStore();
   if (!run) return;
@@ -471,13 +490,19 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(String(prompt), String(identity));
   const runGeminiFallback = () => runMotionAi(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0);
   const switchTo = MOTION_STORY_CONFIG.ROOM_SWITCH[provider];
-  const runSwitched = () => {
-    log?.(MOTION_STORY_CONFIG.ROOM_SWITCH_LOG(provider, switchTo.provider));
-    return runMotionAi(prompt, artifactType, { ...exec, provider: switchTo.provider as AiPlanningFallbackProvider, model: switchTo.model as AiPlanningChatModel }, signal, log, images, 0);
+  const limitTo = switchTo || MOTION_STORY_CONFIG.LIMIT_SWITCH[provider];
+  const isBlocked = (name: string): boolean => (blockedRoomProviders.get(name) || 0) > Date.now();
+  const runSwitched = (target = switchTo) => {
+    log?.(MOTION_STORY_CONFIG.ROOM_SWITCH_LOG(provider, target.provider));
+    return runMotionAi(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0);
   };
-  if (useRoom && provider !== AiPlanningFallbackProvider.GeminiChat && (blockedRoomProviders.get(provider) || 0) > Date.now()) return switchTo && (blockedRoomProviders.get(switchTo.provider as AiPlanningFallbackProvider) || 0) <= Date.now() ? runSwitched() : runGeminiFallback();
+  if (useRoom && isBlocked(provider)) {
+    if (limitTo && !isBlocked(limitTo.provider)) return runSwitched(limitTo);
+    if (provider !== AiPlanningFallbackProvider.GeminiChat && !isBlocked(AiPlanningFallbackProvider.GeminiChat)) return runGeminiFallback();
+  }
   let fallbackToGemini = false,
-    fallbackToSwitch = false;
+    fallbackToSwitch = false,
+    fallbackToLimit = false;
   if (useRoom) {
     const run = motionAiRunStore.getStore();
     const projectId = run?.projectId || MR.MOTION_TEMPLATE_SYMBOL_294(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, requestId);
@@ -488,13 +513,17 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
+    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
     const watchdog = setTimeout(() => {
       timedOut = true;
       roomCtrl.abort();
-    }, MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS);
+    }, roomTimeout);
     let retryRoom = false;
+    let restartBrowser = false;
     let roomOk = false;
+    let releaseGate: () => void = _.noop;
     try {
+      releaseGate = await acquireProviderGate(provider);
       log?.(MOTION_TEMPLATE_GUI_YEU_CAU_TOI_PHONG_CHAT_AI_CAU(String(provider)));
       const model =
         provider === AiPlanningFallbackProvider.ClaudeChat
@@ -533,16 +562,38 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         return salvaged;
       }
-      const limited = !!switchTo && (_.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR || CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(_.toString(diag?.lastCandidate)) || CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(JSON.stringify(roomProbe || {})));
-      if (limited) {
+      const limitText = [_.toString(caught?.message), _.toString(diag?.lastCandidate), JSON.stringify(roomProbe || {})];
+      const limited = !!limitTo && (_.includes([CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR, DEEPSEEK_CHAT_CONFIG.RATE_LIMIT_ERROR], limitText[0]) || _.some(limitText, (text) => CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(text) || MOTION_STORY_CONFIG.ROOM_LIMIT_PATTERN.test(text)));
+      const captcha = _.some(limitText, (text) => MOTION_STORY_CONFIG.ROOM_CAPTCHA_PATTERN.test(text));
+      if (captcha) {
+        blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_CAPTCHA_BLOCK_MS);
+        log?.(MOTION_STORY_CONFIG.ROOM_CAPTCHA_LOG(provider, limitTo?.provider || AiPlanningFallbackProvider.GeminiChat));
+      }
+      const noInput = !limited && !captcha && limitText[0] === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
+      const unavailable = noInput && !!limitTo && !switchTo && attempt > 0;
+      if (captcha) {
+        fallbackToLimit = !!limitTo && !isBlocked(limitTo.provider);
+        if (switchTo) fallbackToSwitch = !fallbackToLimit;
+        if (!fallbackToLimit && !fallbackToSwitch && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
+      } else if (noInput && attempt === 0) {
+        retryRoom = true;
+        restartBrowser = true;
+        log?.(MOTION_STORY_CONFIG.ROOM_RESTART_LOG(provider));
+      } else if (unavailable) {
+        blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_BLOCK_MS);
+        log?.(MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_LOG(provider, limitTo.provider));
+        fallbackToLimit = !isBlocked(limitTo.provider);
+        if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
+      } else if (limited) {
         blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
-        log?.(MOTION_STORY_CONFIG.ROOM_LIMIT_LOG(provider, switchTo.provider));
-        fallbackToSwitch = true;
+        log?.(MOTION_STORY_CONFIG.ROOM_LIMIT_LOG(provider, limitTo.provider));
+        fallbackToLimit = !isBlocked(limitTo.provider);
+        if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
       } else if (!switchTo && !timedOut && _.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR && attempt < MOTION_STORY_CONFIG.ROOM_PROVIDER_RETRIES) {
         retryRoom = true;
         log?.(MOTION_STORY_CONFIG.ROOM_RETRY_LOG);
       } else {
-        const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS / 60000)))) : caught;
+        const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
         const blocked = !timedOut && provider !== AiPlanningFallbackProvider.GeminiChat && MOTION_STORY_CONFIG.ROOM_BLOCKED_RE.test(_.toString(error?.message));
         if (blocked) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_BLOCK_MS);
@@ -553,11 +604,16 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         } else if (mode === AiPlanningExecutionMode.RoomOnly) throw error;
       }
     } finally {
+      releaseGate();
       clearTimeout(watchdog);
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
       run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
       if (run) {
         if (!roomOk) await closeMotionAiRoom(run, workerId!);
+        if (restartBrowser) {
+          cancelGlobalBrowserCleanup();
+          await closeChatBrowserIfIdle().catch(_.noop);
+        }
       } else {
         await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
         if (!retryRoom) await closeChatBrowserIfIdle().catch(_.noop);
@@ -565,6 +621,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       if (motionAiSessions || retryRoom) cancelGlobalBrowserCleanup();
     }
     if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
+    if (fallbackToLimit) return runSwitched(limitTo);
     if (fallbackToSwitch) return runSwitched();
     if (fallbackToGemini) return runGeminiFallback();
   }
@@ -936,12 +993,13 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter): 
   if (!_.some(analysis.chapters, (c) => c.hook || c.keyPoints?.length || c.handoff)) return MR.MOTION_TEXT_EMPTY;
   const prev = idx > 0 ? analysis.chapters[idx - 1] : undefined;
   const next = analysis.chapters[idx + 1];
+  const series = analysis.series;
   const others = _.compact(_.map(analysis.chapters, (c, i) => (i === idx ? null : MR.MOTION_TEMPLATE_SYMBOL_312(c.id, c.title, (c.keyPoints || []).join(MR.MOTION_TEXT_SYMBOL_56) || c.summary)))).join(MR.MOTION_TEXT_SYMBOL_27);
   return [
     MR.MOTION_TEXT_WHOLE_VIDEO_OUTLINE_PLANNED_ONCE_FOLLOW_IT_SO_THE_CHAPTERS_READ_A,
     MR.MOTION_TEMPLATE_THIS_CHAPTER_HOOK_MUST_COVER_ENDS_BY_HANDING_OVER(idx + 1, analysis.chapters.length, chapter.hook || MR.MOTION_TEXT_SYMBOL_19, (chapter.keyPoints || []).join(MR.MOTION_TEXT_SYMBOL_56) || chapter.summary, chapter.handoff || (next ? MR.MOTION_TEMPLATE_TOWARD(next.title) : MR.MOTION_TEXT_THE_ENDING)),
-    prev ? MR.MOTION_TEMPLATE_THE_PREVIOUS_CHAPTER_ENDED_WITH_OPEN_AS_ITS_NATURAL_CONTINUATION_(prev.handoff || prev.summary) : MR.MOTION_TEXT_THIS_IS_THE_OPENING_CHAPTER_ESTABLISH_THE_ESSENTIAL_CONTEXT_IN_TH,
-    next ? MR.MOTION_TEMPLATE_THE_NEXT_CHAPTER_STARTS_WITH_DO_NOT_COVER_ITS_POINTS(next.title, next.hook || next.summary) : MR.MOTION_TEXT_THIS_IS_THE_FINAL_CHAPTER_DELIVER_THE_CONCLUSION,
+    prev ? MR.MOTION_TEMPLATE_THE_PREVIOUS_CHAPTER_ENDED_WITH_OPEN_AS_ITS_NATURAL_CONTINUATION_(prev.handoff || prev.summary) : series?.previous ? MOTION_SERIES_PROMPT.OPENING(series.index + 1, series.count, series.previous) : MR.MOTION_TEXT_THIS_IS_THE_OPENING_CHAPTER_ESTABLISH_THE_ESSENTIAL_CONTEXT_IN_TH,
+    next ? MR.MOTION_TEMPLATE_THE_NEXT_CHAPTER_STARTS_WITH_DO_NOT_COVER_ITS_POINTS(next.title, next.hook || next.summary) : series?.next ? MOTION_SERIES_PROMPT.CLOSING(series.next) : MR.MOTION_TEXT_THIS_IS_THE_FINAL_CHAPTER_DELIVER_THE_CONCLUSION,
     idx > 0 ? MR.MOTION_TEMPLATE_FIRST_LINE_STYLE_UNLESS_THE_PLANNED_HOOK_CLEARLY_NEEDS_ANOTHER_OP(OPENING_STYLES[(idx - 1) % OPENING_STYLES.length]) : MR.MOTION_TEXT_EMPTY,
     MR.MOTION_TEMPLATE_POINTS_COVERED_BY_OTHER_CHAPTERS_DO_NOT_REPEAT_THEM(_.truncate(others, { length: 3500 })),
   ]
@@ -973,8 +1031,8 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     seconds,
     beats: beatsWanted,
     perBeat: Math.max(8, Math.round(units / beatsWanted)),
-    firstNote: opts.isFirst ? MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY : MR.MOTION_TEXT_EMPTY,
-    lastNote: opts.isLast ? MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_ : MR.MOTION_TEXT_EMPTY,
+    firstNote: opts.isFirst ? (analysis.series?.previous ? MOTION_SERIES_PROMPT.FIRST(analysis.series.index + 1, analysis.series.count, analysis.series.previous) : MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY) : MR.MOTION_TEXT_EMPTY,
+    lastNote: opts.isLast ? (analysis.series?.next ? MOTION_SERIES_PROMPT.LAST(analysis.series.index + 1, analysis.series.count, analysis.series.next) : MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_) : MR.MOTION_TEXT_EMPTY,
     previous: prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2(String(prev)) : MR.MOTION_TEXT_EMPTY,
     rules: _.compact([MOTION_GEN_STORYBOARD_RULES(language), MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis), motionVideoGenreDirective(analysis.videoGenre)]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: _.map(analysis.cast, (c) => MOTION_TEMPLATE_SYMBOL_54(String(c.key), String(c.name), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MR.MOTION_TEXT_EMPTY))).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_NONE_2,

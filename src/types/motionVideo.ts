@@ -110,6 +110,7 @@ export interface MotionStoryAnalysis {
   look: string;
   accent?: string;
   era?: string;
+  series?: MotionSeriesInfo;
   chapters: MotionChapter[];
   cast: MotionCastMember[];
   places: MotionPlace[];
@@ -168,6 +169,10 @@ export interface MotionGenState {
   assetStyleKey?: string;
   assetSources?: Record<string, string>;
 }
+export interface MotionSeriesInfo { index: number; count: number; previous?: string; next?: string; }
+export interface MotionSeriesPart { index: number; chapterIds: string[]; seconds: number; }
+export interface MotionSeriesRecord { index: number; title: string; videoUrl?: string; fileName?: string; }
+export interface MotionSeriesState { analysis: MotionStoryAnalysis; parts: MotionSeriesPart[]; index: number; done: MotionSeriesRecord[]; carryGen?: Partial<MotionGenState>; }
 export interface MotionStoryScript { voiceTrack?: MotionVoiceTrack; voiceSettings?: MotionVoiceSettings; voiceChannel?: string; title: string; language: string; beats: MotionBeat[]; gen?: MotionGenState; edit?: { reviewed: number; rewritten: number; notes: string[] }; }
 export interface MotionSeoOption { title: string; description: string; hashtags: string[]; tags: string[]; seoScore: number; }
 export interface MotionThumbnail { image: string; prompt: string; optionIndex?: number; }

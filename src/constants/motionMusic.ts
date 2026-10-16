@@ -32,7 +32,7 @@ export const MOTION_MUSIC_AMBIENCE: Record<string, { gain: number }> = { project
 export const MOTION_MUSIC_VOICES = { NONE: "none", PLUCK: "pluck", CHIP: "chip", BELL: "bell", PIANO: "piano", PROJECTOR: "projector", VINYL: "vinyl", NIGHT: "night", CHALK: "chalk" } as const;
 export const MOTION_MUSIC_SCALES = { MAJOR_PENTATONIC: [0, 2, 4, 7, 9], MINOR_PENTATONIC: [0, 3, 5, 7, 10], MINOR_THIRD: 3 };
 export const MOTION_MUSIC = {
-  VERSION: 2,
+  VERSION: 3,
   AUTO: "auto",
   DEFAULT_MOOD: "neutral",
   DEFAULT_VOLUME: 0.35,
@@ -45,6 +45,8 @@ export const MOTION_MUSIC = {
   FADE_IN: 2,
   FADE_OUT: 3,
   CROSSFADE: 2,
+  BLOCK_SECONDS: 180,
+  BLOCK_SEED_STRIDE: 1000,
   MOOD_JOIN: " → ",
   PEAK: 0.7,
   REVERB: { COMBS: [1116, 1188, 1277, 1356], SPREAD: 23, ALLPASS: [556, 441], FEEDBACK: 0.8, DAMP: 0.3, WET: 0.28, ALLPASS_GAIN: 0.5 },

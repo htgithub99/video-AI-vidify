@@ -136,7 +136,7 @@ import {
   baseWardrobe,
   motionMemberCostume,
   motionMemberTraits,
-  motionPlaceScore,
+  motionPlaceFit,
   motionPlaceTraits,
   motionStoryTraits,
   motionStripForeignParts,
@@ -178,6 +178,7 @@ export interface GenOptions {
   restyle?: boolean;
   note?: string;
   review?: boolean;
+  skipPreviews?: boolean;
   drawingMode?: "2d" | "3d";
   openingBeatId?: string;
   preamble?: string;
@@ -921,14 +922,7 @@ const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o
     const rel = libraryPreviewRel(asset.item.id);
     gen.locationInfo[place.key] = { files: rel ? [rel] : [], issues: [], at: new Date().toISOString() };
     used.push(asset.item.id);
-    o.log(
-      MOTION_LIBRARY_LOG.PLACE(
-        place.name,
-        asset.item.name,
-        motionPlaceScore(asset.item, place, () => 0),
-        fits ? MR.MOTION_TEXT_EMPTY : motionTraitsLabel(traits),
-      ),
-    );
+    o.log(MOTION_LIBRARY_LOG.PLACE(place.name, asset.item.name, motionPlaceFit(asset.item, place), fits ? MR.MOTION_TEXT_EMPTY : motionTraitsLabel(traits)));
   }
   touchSceneAssets(used);
 };
@@ -1133,17 +1127,20 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     emit();
     await releaseMotionAiSession(o.log);
     progress(0.8, MOTION_TEXT_PREVIEW);
-    const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
-    const previewList = [...stageList, ...stale];
-    o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(String(previewList.length)));
-    await previewBeats(previewList, script, gen, session, o);
-    emit();
-    for (let attempt = 1; attempt <= MOTION_GEN_CONFIG.AUTO_RESTAGE_ATTEMPTS; attempt++) {
-      const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
-      if (!broken.length) break;
-      autoStageBeats(broken, script, analysis, gen, o, attempt * MOTION_GEN_CONFIG.AUTO_RESTAGE_OFFSET);
-      await previewBeats(broken, script, gen, session, o);
+    if (o.skipPreviews) o.log(MOTION_GEN_CONFIG.LOG_PREVIEWS_SKIPPED);
+    else {
+      const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
+      const previewList = [...stageList, ...stale];
+      o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(String(previewList.length)));
+      await previewBeats(previewList, script, gen, session, o);
       emit();
+      for (let attempt = 1; attempt <= MOTION_GEN_CONFIG.AUTO_RESTAGE_ATTEMPTS; attempt++) {
+        const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
+        if (!broken.length) break;
+        autoStageBeats(broken, script, analysis, gen, o, attempt * MOTION_GEN_CONFIG.AUTO_RESTAGE_OFFSET);
+        await previewBeats(broken, script, gen, session, o);
+        emit();
+      }
     }
     await recordSceneLibrary(script, analysis, gen, session, o);
     emit();
@@ -1152,7 +1149,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
   }
   progress(0.95, MOTION_TEXT_REVIEW);
   gen.failed = _.map(
-    _.filter(sceneBeats, (b) => !gen.staging[b.id] || needsMotionPreview(gen.previews[b.id])),
+    _.filter(sceneBeats, (b) => !gen.staging[b.id] || (!o.skipPreviews && needsMotionPreview(gen.previews[b.id]))),
     MOTION_TEXT_ID,
   );
   gen.updatedAt = new Date().toISOString();

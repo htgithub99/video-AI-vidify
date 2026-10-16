@@ -171,7 +171,7 @@ const reverb = (left: Float32Array, right: Float32Array, rate: number): void => 
     right[i] = right[i] * (1 - R.WET) + wetR[i] * gain;
   }
 };
-export const synthesizeMotionMusic = (duration: number, moodName: string, cues: number[], seed: number, instrumentName?: string): MotionStereoAudio => {
+const synthesizeMotionMusic = (duration: number, moodName: string, cues: number[], seed: number, instrumentName?: string): MotionStereoAudio => {
   const inst = MOTION_MUSIC_INSTRUMENTS[_.toString(instrumentName)] || MOTION_MUSIC_INSTRUMENTS.default,
     mood = withInstrument(MOTION_MUSIC_MOODS[moodName] || MOTION_MUSIC_MOODS[M.DEFAULT_MOOD], inst),
     table = tableOf(inst.pad),
@@ -330,53 +330,81 @@ export const synthesizeMotionMusic = (duration: number, moodName: string, cues: 
   }
   return { left, right, rate };
 };
-const writeWav = async (file: string, left: Float32Array, right: Float32Array, rate: number): Promise<void> => {
-  const data = Buffer.alloc(left.length * 4);
-  for (let i = 0; i < left.length; i++) {
-    data.writeInt16LE(Math.round(Math.max(-1, Math.min(1, left[i])) * 32767), i * 4);
-    data.writeInt16LE(Math.round(Math.max(-1, Math.min(1, right[i])) * 32767), i * 4 + 2);
-  }
-  await fs.promises.writeFile(file, Buffer.concat([motionWavHeader(data.length, M.CHANNELS, rate), data]));
+const musicBlocks = (duration: number, segments: MotionMusicSegment[]): { from: number; to: number; mood: string; seed: number }[] => {
+  const list = segments.length ? segments : [{ start: 0, mood: M.DEFAULT_MOOD }];
+  return _.flatMap(list, (segment, index) => {
+    const start = Math.max(0, segment.start),
+      end = Math.min(duration, list[index + 1]?.start ?? duration);
+    if (end <= start) return [];
+    const count = Math.max(1, Math.ceil((end - start) / M.BLOCK_SECONDS)),
+      size = (end - start) / count;
+    return _.times(count, (k) => ({ from: start + k * size, to: start + (k + 1) * size, mood: segment.mood, seed: index * M.BLOCK_SEED_STRIDE + k }));
+  });
 };
-const synthesizeSegments = (duration: number, segments: MotionMusicSegment[], cues: number[], seed: number, instrument?: string): MotionStereoAudio => {
-  if (segments.length < 2) return synthesizeMotionMusic(duration, segments[0]?.mood || M.DEFAULT_MOOD, cues, seed, instrument);
+const pcmChunk = (left: Float32Array, right: Float32Array, from: number, to: number): Buffer => {
+  const data = Buffer.alloc((to - from) * 4);
+  for (let i = from; i < to; i++) {
+    data.writeInt16LE(Math.round(Math.max(-1, Math.min(1, left[i])) * 32767), (i - from) * 4);
+    data.writeInt16LE(Math.round(Math.max(-1, Math.min(1, right[i])) * 32767), (i - from) * 4 + 2);
+  }
+  return data;
+};
+const streamMusic = async (file: string, duration: number, segments: MotionMusicSegment[], cues: number[], seed: number, instrument?: string, ambience?: string): Promise<void> => {
   const rate = M.SAMPLE_RATE,
     frames = Math.ceil(duration * rate),
-    left = new Float32Array(frames),
-    right = new Float32Array(frames),
-    overlap = M.CROSSFADE;
-  segments.forEach((segment, index) => {
-    const from = Math.max(0, segment.start - (index ? overlap : 0)),
-      to = Math.min(duration, (segments[index + 1]?.start ?? duration) + (index + 1 < segments.length ? overlap : 0)),
-      part = synthesizeMotionMusic(
-        to - from,
-        segment.mood,
-        _.map(
-          _.filter(cues, (cue) => cue >= from && cue < to),
-          (cue) => cue - from,
-        ),
-        seed + index,
-        instrument,
-      ),
-      offset = Math.floor(from * rate),
-      fadeIn = index ? overlap * rate : 0,
-      fadeOut = index + 1 < segments.length ? overlap * rate : 0;
-    for (let i = 0; i < part.left.length && offset + i < frames; i++) {
-      const gain = Math.min(1, fadeIn ? i / fadeIn : 1, fadeOut ? (part.left.length - i) / fadeOut : 1);
-      left[offset + i] += part.left[i] * gain;
-      right[offset + i] += part.right[i] * gain;
+    overlap = Math.floor(M.CROSSFADE * rate),
+    blocks = musicBlocks(duration, segments),
+    handle = await fs.promises.open(file, MR.MOTION_TEXT_W);
+  try {
+    await handle.write(motionWavHeader(frames * 4, M.CHANNELS, rate));
+    let written = 0,
+      tailL = new Float32Array(0),
+      tailR = new Float32Array(0);
+    for (const [index, block] of blocks.entries()) {
+      const last = index === blocks.length - 1,
+        from = Math.max(0, block.from - (index ? M.CROSSFADE : 0)),
+        to = Math.min(duration, block.to + (last ? 0 : M.CROSSFADE)),
+        part = synthesizeMotionMusic(
+          to - from,
+          block.mood,
+          _.map(
+            _.filter(cues, (cue) => cue >= from && cue < to),
+            (cue) => cue - from,
+          ),
+          seed + block.seed,
+          instrument,
+        );
+      if (ambience) ambienceBed(part.left, part.right, rate, ambience, seed + block.seed);
+      const length = part.left.length,
+        fadeIn = index ? Math.min(overlap, tailL.length) : 0,
+        fadeOut = last ? 0 : Math.min(overlap, length);
+      for (let i = 0; i < length; i++) {
+        const gain = Math.min(1, fadeIn ? i / fadeIn : 1, fadeOut ? (length - i) / fadeOut : 1);
+        part.left[i] *= gain;
+        part.right[i] *= gain;
+        if (i < tailL.length) {
+          part.left[i] += tailL[i];
+          part.right[i] += tailR[i];
+        }
+      }
+      const keep = last ? 0 : Math.min(fadeOut, length),
+        until = Math.min(length - keep, frames - written);
+      await handle.write(pcmChunk(part.left, part.right, 0, Math.max(0, until)));
+      written += Math.max(0, until);
+      tailL = part.left.slice(length - keep);
+      tailR = part.right.slice(length - keep);
     }
-  });
-  return { left, right, rate };
+    if (written < frames) await handle.write(Buffer.alloc((frames - written) * 4));
+  } finally {
+    await handle.close();
+  }
 };
 export const buildMotionMusic = async (duration: number, segments: MotionMusicSegment[], cues: number[], seed: number, instrument?: string, ambience?: string): Promise<string> => {
   const id = M.PREFIX + hash([M.VERSION, duration.toFixed(2), segments, cues, seed, instrument || MR.MOTION_TEXT_EMPTY, ambience || MR.MOTION_TEXT_EMPTY]) + M.WAV,
     file = path.join(getMotionAudioDirectory(), id);
   if (!fs.existsSync(file)) {
     const temp = file + randomUUID() + M.WAV;
-    const { left, right, rate } = synthesizeSegments(duration, segments, cues, seed, instrument);
-    if (ambience) ambienceBed(left, right, rate, ambience, seed);
-    await writeWav(temp, left, right, rate);
+    await streamMusic(temp, duration, segments, cues, seed, instrument, ambience);
     fs.renameSync(temp, file);
   }
   return file;
