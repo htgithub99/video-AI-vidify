@@ -27,7 +27,7 @@ export const MOTION_VIDEO_CONSTANTS = {
   MEMORY_PER_WORKER_MB: 700,
   MIN_FRAMES_PER_WORKER: 240,
   MAX_RESULTS: 60,
-  MAX_LOG_LINES: 80,
+  MAX_LOG_LINES: 400,
   MAX_AUDIO_BYTES: 300 * 1024 * 1024,
   JOB_TTL_MS: 60 * 60 * 1000,
   SAVE_TOKEN_TTL_MS: 10 * 60 * 1000,
@@ -68,6 +68,20 @@ export const MOTION_STORY_CONFIG = {
   ROOM_RETRY_LOG: "AI báo lỗi tạm thời – mở phòng chat mới và hỏi lại…",
   ROOM_BLOCKED_RE: /security_verification|cloudflare|chờ một chút|just a moment|not_ready_or_login|chưa hoàn tất đăng nhập|login_required|đăng nhập/i,
   ROOM_BLOCK_MS: 15 * 60 * 1000,
+  ROOM_SWITCH: { "claude-chat": { provider: "chatgpt-ui", model: "chatgpt-auto" } } as Record<string, { provider: string; model: string }>,
+  ROOM_SWITCH_LOG: (from: string, to: string): string => `Phòng chat ${from} lỗi – gửi lại yêu cầu này bằng ${to}…`,
+  LOG_HISTORY_JOBS: 30,
+  RENDER_LOG_KIND: "render",
+  BUSY_ALLOW_ATTR: "data-busy-allow",
+  BUSY_LOCK_CLASS: "motion-busy-lock",
+  LOG_STEP_HEADER: (label: string): string => `── ${label} ──`,
+  ROOM_LIMIT_BLOCK_MS: 5 * 60 * 60 * 1000,
+  ROOM_LIMIT_LOG: (from: string, to: string): string => `${from} đã hết lượt – các yêu cầu còn lại trong phiên chuyển thẳng sang ${to}`,
+  API_PROVIDER: "api",
+  REQUEST_COUNT_LOG: (counts: Record<string, number>): string =>
+    `Số request đã gửi: ${Object.entries(counts)
+      .map(([provider, count]) => `${provider} ${count}`)
+      .join(", ")}`,
   ROOM_FALLBACK_LOG: (provider: string): string => `Phòng chat ${provider} đang bị chặn (xác minh Cloudflare/đăng nhập) – chuyển sang Gemini để chạy tiếp…`,
 } as const;
 export const MOTION_PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };

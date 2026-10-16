@@ -10,6 +10,8 @@ import type { Request, Response } from "express";
 import fs from "fs";
 import { motionVideoGenre } from "../../constants/motionGenre.js";
 import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../services/motionVoiceSourceService.js";
+import { motionStylePreset } from "../../constants/motionStylePresets.js";
+import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate } from "../services/motionSpeechRateService.js";
 import path from "path";
@@ -161,6 +163,7 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
       mixedAudioId: MOTION_VOICE_PATTERNS.MIX_TRACK.test(o.mixedAudioId) ? o.mixedAudioId : undefined,
       sfxId: MOTION_VOICE_PATTERNS.SFX_TRACK.test(o.sfxId) ? o.sfxId : undefined,
       sfxVolume: _.toNumber(o.sfxVolume ?? 0.5),
+      music: o.music && o.music.mood !== MOTION_MUSIC.OFF ? { mood: _.toString(o.music.mood || MOTION_MUSIC.AUTO), volume: _.clamp(_.toNumber(o.music.volume ?? MOTION_MUSIC.DEFAULT_VOLUME) || 0, 0, 1) } : undefined,
       sfx:
         o.sfx && _.isArray(o.sfx.cues)
           ? {
@@ -252,7 +255,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const length = storyLength(req.body?.length);
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const exec = aiExec(req.body?.aiExecution);
-    const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(source.words), String(Math.round(source.sourceSeconds / 60))));
       const analysis = await analyzeStory(source, {
@@ -261,6 +264,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
         styleReferences,
         libraryMode: motionLibraryMode(req.body?.libraryMode),
         videoGenre: motionVideoGenre(req.body?.videoGenre),
+        stylePreset: motionStylePreset(req.body?.stylePreset)?.id,
         characterMotion: req.body?.characterMotion === true,
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
         aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
@@ -298,7 +302,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
     const only: string[] = _.map(_.castArray(req.body?.chapterIds || []), _.toString);
     const existing: MotionBeat[] = _.castArray(req.body?.beats || []);
     const speechRate = motionSpeechRate(req.body?.voiceChannel, language);
-    const job = startStoryJob(MotionStoryJobKind.SCRIPT, async (ctx) => {
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCRIPT, async (ctx) => {
       ctx.log(
         MOTION_STORY_CONFIG.SPEECH_RATE_LOG(
           speechRate,
@@ -365,7 +369,7 @@ export const seoMotionStory = (req: Request, res: Response): void => {
     const language = storyLanguage(req.body?.language);
     const exec = aiExec(req.body?.aiExecution);
     const durations = _.isArray(req.body?.durations) && req.body.durations.length === script.beats.length ? _.map(req.body.durations, _.toNumber) : undefined;
-    const job = startStoryJob(MotionStoryJobKind.SEO, (ctx) => generateMotionSeo(analysis, script, { language, exec, durations, signal: ctx.signal, log: ctx.log }));
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SEO, (ctx) => generateMotionSeo(analysis, script, { language, exec, durations, signal: ctx.signal, log: ctx.log }));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
@@ -378,7 +382,7 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
     const seo = _.isPlainObject(req.body?.seo) ? (req.body.seo as MotionSeoOption) : undefined;
     const exec = aiExec(req.body?.aiExecution);
     const licenseKey = getResolvedLicenseKey(req);
-    const job = startStoryJob(MotionStoryJobKind.THUMBNAIL, async (ctx) => {
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.THUMBNAIL, async (ctx) => {
       const result = await generateMotionThumbnail(analysis, seo, { language: storyLanguage(req.body?.language), aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }), exec, chromeHeadless: exec.chromeHeadless, signal: ctx.signal, log: ctx.log });
       if (licenseKey) await LicenseService.incrementUsage(licenseKey, FeatureType.IMAGE, 1).catch(_.noop);
       return result;
@@ -394,16 +398,18 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
     const exec = aiExec(req.body?.aiExecution);
+    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : exec;
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const onlyBeats: string[] = _.map(_.castArray(req.body?.beats || []), _.toString);
     const onlyLocations: string[] = _.map(_.castArray(req.body?.locations || []), _.toString);
     const note = _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
     if (req.body?.restart) delete script.gen;
-    const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => {
-      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec, signal: ctx.signal, log: ctx.log }) : undefined;
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
+      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec: mainExec, signal: ctx.signal, log: ctx.log }) : undefined;
       const result = await buildScenes(script, analysis, {
         audioDirection: voicePlan?.direction,
         exec,
+        mainExec,
         signal: ctx.signal,
         log: ctx.log,
         progress: ctx.progress,
@@ -420,7 +426,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
       });
       if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
         ctx.progress(0.95, MOTION_VOICE.GENERATING);
-        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.95 + (0.04 * done) / total, MOTION_VOICE.GENERATING) });
+        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.95 + (0.04 * done) / total, MOTION_VOICE.GENERATING) });
         ctx.partial(result);
       }
       return result;
@@ -450,8 +456,8 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     if (!script?.beats?.length) throw new Error(MOTION_VOICE.EMPTY);
     const analysis = (req.body?.analysis as MotionStoryAnalysis) || null;
     const exec = aiExec(req.body?.aiExecution);
-    const job = startStoryJob(MotionStoryJobKind.VOICE, async (ctx) => {
-      const track = await buildMotionVoiceTrack(script, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.VOICE, async (ctx) => {
+      const track = await buildMotionVoiceTrack(script, analysis, { exec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
       ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
       const measured = recordSpeechRate(script, track.totalSeconds);
       if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
@@ -699,7 +705,7 @@ export const seedSceneLibraryJob = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
     const characterMotion = req.body?.characterMotion === true;
-    const job = startStoryJob(MotionStoryJobKind.LIBRARY, async (ctx) => {
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, async (ctx) => {
       const referenceStyle = styleReferences.length ? await resolveMotionReferenceStyle(styleReferences, { exec, signal: ctx.signal, log: ctx.log }) : undefined;
       return seedSceneLibrary(seed, referenceStyle, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode, characterMotion });
     });
@@ -714,7 +720,7 @@ export const importSceneLibraryJob = (req: Request, res: Response): void => {
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
     const pack = req.body?.pack ? parseLibraryPack(req.body.pack) : undefined;
-    const job = startStoryJob(MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: aiExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: aiExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);

@@ -62,6 +62,22 @@ export const ensureVieneuRuntime = async (signal?: AbortSignal, log?: (value: st
     });
   return setup;
 };
+let asrSetup: Promise<void> | undefined;
+export const ensureVieneuAsr = (signal?: AbortSignal, log?: (value: string) => void): Promise<void> => {
+  if (!asrSetup)
+    asrSetup = (async () => {
+      const python = await ensureVieneuRuntime(signal, log),
+        marker = path.join(vieneuRoot(), C.RUNTIME, C.ASR.MARKER);
+      if (fs.existsSync(marker) && JSON.parse(fs.readFileSync(marker, MR.MOTION_TEXT_UTF8)).package === C.ASR.PACKAGE) return;
+      log?.(C.ASR.SETUP);
+      await execute(python, [MR.MOTION_TEXT_M, MR.MOTION_TEXT_PIP, MR.MOTION_TEXT_INSTALL, MR.MOTION_TEXT_DISABLE_PIP_VERSION_CHECK, C.ASR.PACKAGE], signal);
+      fs.writeFileSync(marker, JSON.stringify({ package: C.ASR.PACKAGE }));
+    })().catch((error) => {
+      asrSetup = undefined;
+      throw error;
+    });
+  return asrSetup;
+};
 export const closeVieneuWorker = (): void => {
   clearTimeout(idle);
   const child = worker;
@@ -140,4 +156,8 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
 export const listVieneuVoices = (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => request({ command: MR.MOTION_TEXT_VOICES }, signal, log);
 export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file }, signal, log);
 export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file }, signal);
+export const transcribeVieneuAudio = async (file: string, language: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ text: string; words: { w: string; s: number; e: number }[] }> => {
+  await ensureVieneuAsr(signal, log);
+  return request({ command: C.ASR.COMMAND, file, language, model: C.ASR.MODEL }, signal, log);
+};
 process.once(MR.MOTION_TEXT_EXIT, closeVieneuWorker);

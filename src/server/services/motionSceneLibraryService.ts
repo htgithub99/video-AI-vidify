@@ -79,8 +79,15 @@ export const motionAssetStyleKey = (references: unknown, drawingMode: unknown): 
 };
 export const sharedStyleKey = (styleKey: string): string => C.STYLE_SHARED + (styleKey.startsWith(MR.MOTION_TEXT_2D + C.TEXT.DASH) || styleKey.endsWith(C.TEXT.DASH + MR.MOTION_TEXT_2D) ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D);
 export const sharedStyleKeyOf = (drawingMode: unknown): string => C.STYLE_SHARED + drawingModeOf(drawingMode);
-export const sceneStyleFits = (itemKey: string, styleKey: string): boolean => itemKey === styleKey || itemKey === sharedStyleKey(styleKey);
-export const listSceneAssets = (styleKey?: string, kind?: MotionSceneAssetKind): MotionSceneAsset[] => readIndex().items.filter((item) => (!styleKey || sceneStyleFits(item.styleKey, styleKey)) && (!kind || item.kind === kind));
+const otherSharedKey = (styleKey: string): string => C.STYLE_SHARED + (sharedStyleKey(styleKey) === C.STYLE_SHARED + MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_3D : MR.MOTION_TEXT_2D);
+export const sceneStyleFits = (itemKey: string, styleKey: string): boolean => itemKey === styleKey || itemKey === sharedStyleKey(styleKey) || itemKey === otherSharedKey(styleKey);
+export const listSceneAssets = (styleKey?: string, kind?: MotionSceneAssetKind): MotionSceneAsset[] => {
+  const items = readIndex().items.filter((item) => (!styleKey || sceneStyleFits(item.styleKey, styleKey)) && (!kind || item.kind === kind));
+  if (!styleKey) return items;
+  const other = otherSharedKey(styleKey),
+    own = new Set(items.filter((item) => item.styleKey !== other).map((item) => item.kind + C.TEXT.PIPE + item.name));
+  return items.filter((item) => item.styleKey !== other || !own.has(item.kind + C.TEXT.PIPE + item.name));
+};
 export const clearSceneLibrary = (): void => {
   [C.ITEMS_FOLDER, C.THUMBS_FOLDER, C.STYLES_FOLDER].forEach((name) => fs.rmSync(path.join(libraryRoot(), name), { recursive: true, force: true }));
   writeIndex({ version: C.VERSION, items: [] });
@@ -335,16 +342,15 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
   const usedLocations = new Map<string, number>();
   const leastUsed = (items: MotionSceneAsset[], used: Map<string, number>, prefer: (item: MotionSceneAsset) => number = () => 0): MotionSceneAsset | undefined => _.orderBy(items, [(item) => used.get(item.id) || 0, prefer, (item) => item.uses || 0, (item) => item.createdAt], [C.TEXT.ASC, C.TEXT.ASC, C.TEXT.ASC, C.TEXT.ASC])[0];
   const cast = analysis.cast.map((member): MotionCastMember => {
-    const chosen =
-      mode === MODES.AI
-        ? characters.find((item) => item.id === member.reuse)
-        : member.type && member.type !== MOTION_SCENE_TYPE_OTHER
-          ? leastUsed(
-              characters.filter((item) => item.type === member.type && genderFits(item, member.gender)),
-              usedCharacters,
-              assetFit([member.role, member.description, member.look, ...(member.tags || [])]),
-            )
-          : undefined;
+    const typed = (): MotionSceneAsset | undefined =>
+      member.type && member.type !== MOTION_SCENE_TYPE_OTHER
+        ? leastUsed(
+            characters.filter((item) => item.type === member.type && genderFits(item, member.gender)),
+            usedCharacters,
+            assetFit([member.role, member.description, member.look, ...(member.tags || [])]),
+          )
+        : undefined;
+    const chosen = (mode === MODES.AI && characters.find((item) => item.id === member.reuse)) || typed();
     if (!chosen) return strip(member);
     const variant = usedCharacters.get(chosen.id) || 0;
     usedCharacters.set(chosen.id, variant + 1);
@@ -353,16 +359,15 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
   });
   const places = analysis.places.map((place): MotionPlace => {
     const fit = assetFit([place.name, place.description, ...(place.tags || [])]);
-    const chosen =
-      mode === MODES.AI
-        ? locations.find((item) => item.id === place.reuse)
-        : place.type && place.type !== MOTION_SCENE_TYPE_OTHER
-          ? leastUsed(
-              locations.filter((item) => item.type === place.type),
-              usedLocations,
-              (item) => (item.interior === !!place.interior ? 0 : 20) + (item.time === place.time ? 0 : 10) + fit(item),
-            )
-          : undefined;
+    const typed = (): MotionSceneAsset | undefined =>
+      place.type && place.type !== MOTION_SCENE_TYPE_OTHER
+        ? leastUsed(
+            locations.filter((item) => item.type === place.type),
+            usedLocations,
+            (item) => (item.interior === !!place.interior ? 0 : 20) + (item.time === place.time ? 0 : 10) + fit(item),
+          )
+        : undefined;
+    const chosen = (mode === MODES.AI && locations.find((item) => item.id === place.reuse)) || typed();
     if (!chosen) return strip(place);
     usedLocations.set(chosen.id, (usedLocations.get(chosen.id) || 0) + 1);
     return { ...place, reuse: chosen.id };
@@ -407,7 +412,12 @@ export const exportSceneLibrary = (styleKey?: string): MotionBaseLibrary => {
 };
 export const pendingBaseLibrary = (drawingMode: unknown, pack?: MotionBaseLibrary): MotionBaseLibrary => {
   const base = pack || readBaseLibrary();
-  const known = new Set(listSceneAssets(sharedStyleKeyOf(drawingMode)).map((item) => item.kind + C.TEXT.PIPE + item.name));
+  const shared = sharedStyleKeyOf(drawingMode);
+  const known = new Set(
+    readIndex()
+      .items.filter((item) => item.styleKey === shared)
+      .map((item) => item.kind + C.TEXT.PIPE + item.name),
+  );
   const fresh = (kind: string, name: string) => !known.has(kind + C.TEXT.PIPE + name);
   return { characters: base.characters.filter((c) => fresh(C.KIND_CHARACTER, c.name)), locations: base.locations.filter((l) => fresh(C.KIND_LOCATION, l.name)), props: base.props.filter((p) => fresh(C.KIND_PROP, p.name)) };
 };

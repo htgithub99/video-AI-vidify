@@ -10,7 +10,7 @@ import { motionSoundSpatial } from "../../lib/motionSoundPlan.js";
 import { directedSpeechText, motionVoiceSignature } from "../../lib/motionVoice.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
-import { vieneuRoot } from "./vieneuTtsService.js";
+import { transcribeVieneuAudio, vieneuRoot } from "./vieneuTtsService.js";
 import { listMotionVoices, synthesizeMotionSpeech } from "./motionVoiceSourceService.js";
 import { buildMotionSoundTrack, motionWavHeader, runMotionAudioProcess } from "./motionSoundMixService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
@@ -29,53 +29,96 @@ const wavSeconds = (wav: Buffer): number => {
   const { length, availableBytes } = motionWavData(wav);
   return (length ? Math.min(length, availableBytes) : 0) / 2 / C.SAMPLE_RATE;
 };
-const speechClip = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ id: string; bytes: number; duration: number }> => {
+const speechTokens = (text: string): string[] => _.compact(text.toLowerCase().normalize(C.ASR.NORMALIZE).split(C.ASR.TOKEN_RE));
+const speechError = (expected: string, heard: string): number => {
+  const a = speechTokens(expected),
+    b = speechTokens(heard);
+  if (!a.length) return 0;
+  let row = _.range(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++) next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    row = next;
+  }
+  return row[b.length] / a.length;
+};
+type ClipWords = [number, number][];
+interface SpeechClipAudio { id: string; bytes: number; duration: number; words?: ClipWords; }
+const checkClip = async (file: string, line: MotionUtterance, language: unknown, opts: MotionVoiceOptions): Promise<{ error: number; words: ClipWords } | null> => {
+  try {
+    const result = await transcribeVieneuAudio(file, language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, opts.signal, opts.log);
+    return { error: speechError(line.text, result.text), words: _.map(result.words, (word) => [word.s, word.e] as [number, number]) };
+  } catch (error) {
+    if (opts.signal?.aborted) throw error;
+    opts.log?.(C.ASR.UNAVAILABLE(_.toString((error as Error)?.message || error)));
+    return null;
+  }
+};
+const speechClip = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<SpeechClipAudio> => {
   const id = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, C.TEMPO, language, line.text, voiceId, line.emotion, line.speed, line.emphasis]) + MR.MOTION_TEXT_WAV,
-    file = path.join(getMotionAudioDirectory(), id);
-  if (!fs.existsSync(file) || fs.statSync(file).size < 48) {
-    const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, id),
-      temp = file + randomUUID() + MR.MOTION_TEXT_WAV,
-      measured = file + randomUUID() + MR.MOTION_TEXT_WAV;
-    fs.mkdirSync(path.dirname(original), { recursive: true });
-    try {
-      let failure: unknown;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (opts.signal?.aborted) throw new Error(C.CANCELLED);
-        try {
-          await (deps.synthesize || synthesizeMotionSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log);
-          failure = undefined;
-          break;
-        } catch (error) {
-          failure = error;
-          if (opts.signal?.aborted) throw error;
+    file = path.join(getMotionAudioDirectory(), id),
+    wordsFile = file + C.ASR.WORDS_EXT;
+  let words: ClipWords | undefined;
+  try {
+    if (fs.existsSync(file) && fs.existsSync(wordsFile)) words = JSON.parse(fs.readFileSync(wordsFile, MR.MOTION_TEXT_UTF8));
+  } catch {}
+  for (let check = 0; ; check++) {
+    if (!fs.existsSync(file) || fs.statSync(file).size < 48) {
+      const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, id),
+        temp = file + randomUUID() + MR.MOTION_TEXT_WAV,
+        measured = file + randomUUID() + MR.MOTION_TEXT_WAV;
+      fs.mkdirSync(path.dirname(original), { recursive: true });
+      try {
+        let failure: unknown;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+          try {
+            await (deps.synthesize || synthesizeMotionSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log);
+            failure = undefined;
+            break;
+          } catch (error) {
+            failure = error;
+            if (opts.signal?.aborted) throw error;
+          }
         }
+        if (failure) throw failure;
+        const encode = (source: string, tempo: number) =>
+          runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(tempo.toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
+        await encode(original, 1);
+        const tempo = deliveryTempo(line, language, wavSeconds(await fs.promises.readFile(temp)));
+        if (Math.abs(tempo - 1) > 0.005) {
+          await fs.promises.rename(temp, measured);
+          await encode(measured, tempo);
+        }
+        const wav = await fs.promises.readFile(temp);
+        const { start, length, availableBytes } = motionWavData(wav);
+        if (!length || length > availableBytes) throw new Error(C.FAILED);
+        await fs.promises.writeFile(temp, Buffer.concat([motionWavHeader(length, 1), wav.subarray(start, start + length)]));
+        fs.renameSync(temp, file);
+      } finally {
+        await fs.promises.rm(temp, { force: true }).catch(() => {});
+        await fs.promises.rm(measured, { force: true }).catch(() => {});
       }
-      if (failure) throw failure;
-      const encode = (source: string, tempo: number) =>
-        runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(tempo.toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
-      await encode(original, 1);
-      const tempo = deliveryTempo(line, language, wavSeconds(await fs.promises.readFile(temp)));
-      if (Math.abs(tempo - 1) > 0.005) {
-        await fs.promises.rename(temp, measured);
-        await encode(measured, tempo);
-      }
-      const wav = await fs.promises.readFile(temp);
-      const { start, length, availableBytes } = motionWavData(wav);
-      if (!length || length > availableBytes) throw new Error(C.FAILED);
-      await fs.promises.writeFile(temp, Buffer.concat([motionWavHeader(length, 1), wav.subarray(start, start + length)]));
-      fs.renameSync(temp, file);
-    } finally {
-      await fs.promises.rm(temp, { force: true }).catch(() => {});
-      await fs.promises.rm(measured, { force: true }).catch(() => {});
     }
+    if (!opts.asr || words) break;
+    const result = await checkClip(file, line, language, opts);
+    if (!result) break;
+    if (result.error <= C.ASR.MAX_ERROR || check >= C.ASR.RETRIES) {
+      if (result.error > C.ASR.MAX_ERROR) opts.log?.(C.ASR.KEPT(line.text, result.error));
+      words = result.words;
+      await fs.promises.writeFile(wordsFile, JSON.stringify(words));
+      break;
+    }
+    opts.log?.(C.ASR.RETRY(line.text, result.error));
+    await fs.promises.rm(file, { force: true });
   }
   const bytes = fs.statSync(file).size - 44;
-  return { id, bytes, duration: bytes / 2 / C.SAMPLE_RATE };
+  return { id, bytes, duration: bytes / 2 / C.SAMPLE_RATE, ...(words ? { words } : {}) };
 };
 export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> => {
   const voices = await (deps.voices || listMotionVoices)(opts.signal, opts.log),
     plan = await directMotionVoice(script, analysis, voices, opts);
-  const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging]) + MR.MOTION_TEXT_WAV,
+  const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging, opts.asr === true]) + MR.MOTION_TEXT_WAV,
     folder = getMotionAudioDirectory(),
     file = path.join(folder, id),
     metadata = file + MR.MOTION_TEXT_JSON;
@@ -87,7 +130,7 @@ export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis:
   if (running) return running;
   const task = (async (): Promise<MotionVoiceTrack> => {
     opts.log?.(C.GENERATING);
-    const local: { beatId: string; line: MotionUtterance; voiceId: string; audio: { id: string; bytes: number; duration: number }; t: number }[] = [],
+    const local: { beatId: string; line: MotionUtterance; voiceId: string; audio: SpeechClipAudio; t: number }[] = [],
       durations: number[] = [];
     const totalLines = plan.beats.reduce((sum, beat) => sum + beat.utterances.length, 0);
     let done = 0;
@@ -117,7 +160,7 @@ export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis:
     const clips = local.map((item) => {
       const index = script.beats.findIndex((beat) => beat.id === item.beatId);
       const start = timeline.starts[index] + item.t;
-      return { id: item.line.id, beatId: item.beatId, speaker: item.line.speaker, voiceId: item.voiceId, text: item.line.text, audioId: item.audio.id, start, end: start + item.audio.duration };
+      return { id: item.line.id, beatId: item.beatId, speaker: item.line.speaker, voiceId: item.voiceId, text: item.line.text, audioId: item.audio.id, start, end: start + item.audio.duration, ...(item.audio.words ? { words: item.audio.words } : {}) };
     });
     const handle = await fs.promises.open(temporary, MR.MOTION_TEXT_W);
     try {

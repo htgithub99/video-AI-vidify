@@ -1,29 +1,50 @@
 import motion_vieneu_texts as T
 import contextlib
+import io
 import json
 import os
 import sys
 import traceback
 from pathlib import Path
-sys.stdout.reconfigure(encoding=T.UTF_8)
-sys.stdin.reconfigure(encoding=T.UTF_8)
-sys.stderr.reconfigure(encoding=T.UTF_8)
+from typing import TypedDict
+class TranscriptWord(TypedDict):
+    w: str
+    s: float
+    e: float
+for stream in (sys.stdout, sys.stdin, sys.stderr):
+    if isinstance(stream, io.TextIOWrapper):
+        stream.reconfigure(encoding=T.UTF_8)
 root = Path(sys.argv[1]).resolve()
 root.mkdir(parents=True, exist_ok=True)
-os.environ["HF_HOME"] = str(root / T.MODELS)
-os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = T.VALUE_1
-os.environ["HF_HUB_DOWNLOAD_TIMEOUT"] = T.VALUE_300
+os.environ[T.HF_HOME] = str(root / T.MODELS)
+os.environ[T.HF_HUB_DISABLE_PROGRESS_BARS] = T.VALUE_1
+os.environ[T.HF_HUB_DOWNLOAD_TIMEOUT] = T.VALUE_300
 engine = None
+recognizers = {}
 def execute(request):
     global engine
     import importlib.resources
-    if request["command"] == T.VOICES:
+    if request[T.COMMAND] == T.VOICES:
         asset = importlib.resources.files(T.VIENEU).joinpath(T.ASSETS_VOICES_V3_TURBO_JSON)
         data = json.loads(asset.read_text(encoding=T.UTF_8))
         saved = root / T.VOICES_V3_TURBO_JSON
         if saved.exists():
-            data["presets"].update(json.loads(saved.read_text(encoding=T.UTF_8))["presets"])
-        return [{"id": name, "name": value.get(T.DESCRIPTION, name) if name.startswith(T.CUSTOM) else name, "gender": value.get(T.GENDER, T.EMPTY_2), "description": value.get(T.DESCRIPTION, T.EMPTY_2)} for name, value in data["presets"].items()]
+            data[T.PRESETS].update(json.loads(saved.read_text(encoding=T.UTF_8))[T.PRESETS])
+        return [{T.ID: name, T.NAME: value.get(T.DESCRIPTION, name) if name.startswith(T.CUSTOM) else name, T.GENDER: value.get(T.GENDER, T.EMPTY_2), T.DESCRIPTION: value.get(T.DESCRIPTION, T.EMPTY_2)} for name, value in data[T.PRESETS].items()]
+    if request[T.COMMAND] == T.TRANSCRIBE:
+        source = Path(request[T.FILE]).resolve()
+        if not source.is_file() or source.suffix != T.WAV:
+            raise ValueError(T.INVALID_ASR_SOURCE)
+        from faster_whisper import WhisperModel
+        name = str(request.get(T.MODEL) or T.ASR_DEFAULT_MODEL)
+        if name not in recognizers:
+            recognizers[name] = WhisperModel(name, device=T.ASR_DEVICE, compute_type=T.ASR_COMPUTE, download_root=str(root / T.MODELS))
+        segments, _ = recognizers[name].transcribe(str(source), language=request.get(T.LANGUAGE) or None, word_timestamps=True, beam_size=1, vad_filter=False)
+        words: list[TranscriptWord] = []
+        for segment in segments:
+            for word in segment.words or []:
+                words.append({T.WORD_TEXT: word.word.strip(), T.WORD_START: round(float(word.start), 3), T.WORD_END: round(float(word.end), 3)})
+        return {T.TEXT: T.SPACE.join(item[T.WORD_TEXT] for item in words), T.WORDS: words}
     from vieneu import Vieneu
     import numpy as np
     import soundfile as sf
@@ -38,36 +59,36 @@ def execute(request):
         OnnxV3LiteEngine._fetch = staticmethod(fetch_local)
         engine = Vieneu(mode=T.V3TURBO, backend=os.environ.get(T.MOTION_VIENEU_BACKEND, T.AUTO), precision=T.FP32, max_batch_size=8, babble_retries=1)
         engine._load_repo_voices(str(root))
-    if request["command"] == T.REGISTER:
-        source = Path(request["file"]).resolve()
+    if request[T.COMMAND] == T.REGISTER:
+        source = Path(request[T.FILE]).resolve()
         if not source.is_relative_to(root):
             raise ValueError(T.INVALID_REFERENCE_SOURCE)
-        engine.add_voice(request["voice"], str(source), denoise=True, description=request.get(T.NAME, T.EMPTY_2), gender=request.get(T.GENDER, T.EMPTY_2))
+        engine.add_voice(request[T.VOICE], str(source), denoise=True, description=request.get(T.NAME, T.EMPTY_2), gender=request.get(T.GENDER, T.EMPTY_2))
         temporary = root / T.VOICES_V3_TURBO_JSON_TMP
         engine.save_voices(str(temporary))
         temporary.replace(root / T.VOICES_V3_TURBO_JSON)
-        return {"id": request["voice"], "name": request.get(T.NAME, request["voice"]), "gender": request.get(T.GENDER, T.EMPTY_2)}
+        return {T.ID: request[T.VOICE], T.NAME: request.get(T.NAME, request[T.VOICE]), T.GENDER: request.get(T.GENDER, T.EMPTY_2)}
     text = str(request.get(T.TEXT, T.EMPTY_2)).strip()
     if not text or len(text) > 1800:
         raise ValueError(T.INVALID_SPEECH_TEXT)
-    target = Path(request["file"]).resolve()
+    target = Path(request[T.FILE]).resolve()
     if not target.is_relative_to(root) or target.suffix != T.WAV:
         raise ValueError(T.INVALID_SPEECH_DESTINATION)
-    wav = np.asarray(engine.infer(text, voice=request["voice"], max_chars=256), dtype=np.float32).reshape(-1)
+    wav = np.asarray(engine.infer(text, voice=request[T.VOICE], max_chars=256), dtype=np.float32).reshape(-1)
     if not wav.size or not np.isfinite(wav).all() or np.max(np.abs(wav)) < 0.0001:
         raise ValueError(T.EMPTY_SPEECH_AUDIO)
     target.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(target), wav, engine.sample_rate, subtype=T.PCM_16)
-    return {"seconds": wav.size / engine.sample_rate, "sampleRate": engine.sample_rate, "backend": engine.backend}
+    return {T.SECONDS: wav.size / engine.sample_rate, T.SAMPLE_RATE: engine.sample_rate, T.BACKEND: engine.backend}
 for line in sys.stdin:
     request = {}
     try:
         request = json.loads(line)
         with contextlib.redirect_stdout(sys.stderr):
             result = execute(request)
-        response = {"id": request["id"], "result": result}
+        response = {T.ID: request[T.ID], T.RESULT: result}
     except Exception as error:
         traceback.print_exc(file=sys.stderr)
-        response = {"id": request.get(T.ID), "error": str(error)}
+        response = {T.ID: request.get(T.ID), T.ERROR: str(error)}
     sys.stdout.write(json.dumps(response, ensure_ascii=False) + T.EMPTY)
     sys.stdout.flush()

@@ -4,6 +4,8 @@ import * as MR from "../../constants/motionRuntime.js";
 import { MOTION_HISTORY } from "../../constants/motionHistory.js";
 import { buildMotionHudTrack, motionGeomapParams, motionIconsParams, motionScoreboardParams, motionVerdictParams } from "../../lib/motionHistory.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
+import { MOTION_VOICE } from "../../constants/motionVoice.js";
+import { motionMusicCues, motionMusicMood, motionMusicSegments } from "./motionMusicService.js";
 import _ from "lodash";
 import {
   MOTION_TEMPLATE_C_3,
@@ -40,7 +42,7 @@ import {
 } from "../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../constants/motionVideo.js";
 import { planMotionCoverage } from "../../lib/motionCoverage.js";
-import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../types/motionVideo.js";
+import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoiceTrack } from "../../types/motionVideo.js";
 const NON_SCENE_TRANSITION_IN = 0.55;
 const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
 const countUnits = (text: string): number => _.size(_.compact(_.toString(text).split(P.WORDS)));
@@ -224,6 +226,18 @@ const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, b
   }
 };
 export interface CompiledStory { spec: MotionSpec; starts: number[]; ends: number[]; sfxCues: MotionSoundCue[]; missing: string[]; }
+const speechRanges = (clip: MotionVoiceClip, origin: number): number[][] => {
+  const words = clip.words?.length ? clip.words : [[0, clip.end - clip.start] as [number, number]];
+  const out: number[][] = [];
+  for (const [s, e] of words) {
+    const from = +(clip.start + s - origin).toFixed(3),
+      to = +(clip.start + e - origin).toFixed(3),
+      last = out[out.length - 1];
+    if (last && from - last[1] < MOTION_VOICE.ASR.MERGE_GAP) last[1] = to;
+    else out.push([from, to]);
+  }
+  return out;
+};
 export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speechStart: number, beatIndex = 0, speech?: Record<string, number[][]>): MotionShot[] => {
   const stg: any = gen.staging[beat.id];
   const dur = end - start;
@@ -263,7 +277,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
           _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id && !!clip.speaker),
           (clip) => clip.speaker,
         ),
-        (clips) => _.map(clips, (clip) => [+(clip.start - start).toFixed(3), +(clip.end - start).toFixed(3)]),
+        (clips) => _.flatMap(clips, (clip) => speechRanges(clip, start)),
       );
       const list = sceneShots(beat, gen, start, end, starts[i], i, speech);
       if (list.length) list[0].transition = i === 0 && analysis?.videoDna ? { type: MR.MOTION_TEXT_CUT, duration: 0 } : transition;
@@ -299,6 +313,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitles,
     duration: +total.toFixed(3),
   };
+  spec.music = { mood: motionMusicMood(analysis), cues: motionMusicCues(spec), segments: motionMusicSegments(analysis, beats, shotStarts) };
   const hud = buildMotionHudTrack(beats, shotStarts, total);
   if (hud.length) spec.hud = hud;
   const stampCues = normalizeSoundCues(

@@ -1419,3 +1419,9 @@ html.dark .modal-close-button-custom:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
+.motion-busy-lock :is(button, input, select, textarea, a, label, [role="button"], [role="switch"], [role="tab"]):not([data-busy-allow]) {
+  pointer-events: none;
+}
+.motion-busy-lock :is(button, input, select, textarea, [role="button"], [role="switch"], [role="tab"]):not([data-busy-allow]) {
+  opacity: 0.5;
+}

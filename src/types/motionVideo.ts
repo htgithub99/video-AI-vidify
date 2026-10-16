@@ -40,7 +40,24 @@ export interface MotionGenSpec { characterMotion?: boolean; characterMode?: "dra
 export interface MotionHudBar { label: string; value: number; color?: string; }
 export interface MotionHud { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; clear?: boolean; }
 export interface MotionHudSegment { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; start: number; end: number; }
-export interface MotionSpec { fadeIn?: number; fadeOut?: number; title?: string; aspect?: MotionAspect | string; fps?: number; look?: string; accent?: string; letterbox?: boolean; subtitleStyle?: string; gen?: MotionGenSpec; shots: MotionShot[]; subtitles?: { start: number; end: number; text: string }[]; hud?: MotionHudSegment[]; duration?: number; audio?: { id?: string; volume?: number }; }
+export interface MotionSpec {
+  fadeIn?: number;
+  fadeOut?: number;
+  title?: string;
+  aspect?: MotionAspect | string;
+  fps?: number;
+  look?: string;
+  accent?: string;
+  letterbox?: boolean;
+  subtitleStyle?: string;
+  gen?: MotionGenSpec;
+  shots: MotionShot[];
+  subtitles?: { start: number; end: number; text: string }[];
+  hud?: MotionHudSegment[];
+  music?: { mood: string; cues: number[]; segments?: { start: number; mood: string }[] };
+  duration?: number;
+  audio?: { id?: string; volume?: number };
+}
 export type MotionSoundLayer = "ambience" | "action" | "character" | "accent";
 export interface MotionSoundEvent { id: string; kind: string; layer: MotionSoundLayer; at?: number; t?: number; anchor?: "beat" | "cut"; camera?: number; duration?: number; description?: string; source?: "visible" | "offscreen"; actor?: string; prop?: string; part?: string; assetId?: string; gainDb?: number; pan?: number; }
 export interface MotionSoundCue extends MotionSoundEvent { speakerGender?: "male" | "female"; t: number; beatId: string; duration: number; loop?: boolean; position?: number[]; priority?: number; }
@@ -48,14 +65,14 @@ export interface MotionSoundOverride { muted?: boolean; assetId?: string; gainDb
 export interface MotionSoundAsset { id: string; file: string; name: string; duration: number; kinds: string[]; tags: string[]; sources: { source: string; file: string; license: string }[]; }
 export interface MotionSoundSelection { cue: MotionSoundCue; asset?: Pick<MotionSoundAsset, "id" | "name" | "duration">; alternatives: Pick<MotionSoundAsset, "id" | "name" | "duration">[]; previewStart?: number; previewDuration?: number; skipped?: boolean; }
 export interface MotionCompiledPreview { spec: MotionSpec; sfxCues: MotionSoundCue[]; missing: string[]; compilationKey?: string; audioPreviewId?: string; sfxId?: string; soundSelections?: MotionSoundSelection[]; }
-export interface MotionRenderOptions { quality: MotionQuality; aspect: MotionAspect | string; fps?: number; encoder: MotionEncoderPreference; title?: string; audioId?: string; audioVolume?: number; sfxId?: string; sfxVolume?: number; mixedAudioId?: string; sfx?: { cues: (MotionSoundCue | { t: number; kind: string })[]; mood?: string }; }
+export interface MotionRenderOptions { quality: MotionQuality; aspect: MotionAspect | string; fps?: number; encoder: MotionEncoderPreference; title?: string; audioId?: string; audioVolume?: number; sfxId?: string; sfxVolume?: number; mixedAudioId?: string; sfx?: { cues: (MotionSoundCue | { t: number; kind: string })[]; mood?: string }; music?: { mood: string; volume: number }; }
 export interface MotionJobState { id: string; status: MotionJobStatus; progress: number; stage?: string; framesDone: number; framesTotal: number; fpsRender?: number; etaSeconds?: number; workers?: number; encoder?: string; browser?: string; error?: string; result?: MotionResultItem; startedAt: number; log: string[]; }
 export interface MotionResultItem { id: string; title: string; fileName: string; videoUrl: string; aspect: string; quality: string; width: number; height: number; fps: number; durationSeconds: number; sizeBytes: number; renderSeconds: number; encoder: string; createdAt: string; }
 export interface MotionStorySegment { t: number; text: string; }
 export interface MotionStorySource { kind?: "brief" | "transcript" | "article"; title: string; notes?: string; fetched?: { kind: "youtube" | "page"; ok: boolean; note: string; url: string }; cleaned?: { splitNumbers: number; soundCues: number; missingQuotes: number }; url?: string; text: string; segments: MotionStorySegment[]; words: number; sourceSeconds: number; }
 export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; }
 export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; reuse?: string; tags?: string[]; type?: string; }
-export interface MotionChapter { id: string; title: string; summary: string; from?: number; to?: number; targetSeconds?: number; weight?: number; mustKeep?: boolean; hook?: string; keyPoints?: string[]; handoff?: string; }
+export interface MotionChapter { id: string; title: string; summary: string; from?: number; to?: number; targetSeconds?: number; weight?: number; mustKeep?: boolean; hook?: string; keyPoints?: string[]; handoff?: string; musicMood?: string; }
 export interface MotionFact { claim: string; status: "ok" | "uncertain" | "wrong"; note?: string; }
 export interface MotionCreativeBlueprint {
   intent: string;
@@ -76,6 +93,9 @@ export interface MotionStoryAnalysis {
   logline: string;
   genre?: string;
   videoGenre?: string;
+  stylePreset?: string;
+  musicMood?: string;
+  libraryMode?: string;
   genre2?: string;
   factual?: boolean;
   genreReason?: string;
@@ -156,7 +176,7 @@ export interface MotionVoiceChannel { id: string; name: string; narratorVoiceId:
 export interface MotionVoiceChannels { channels: MotionVoiceChannel[]; defaultId?: string; }
 export interface MotionVoicePlan { direction?: MotionAudioDirection; version: number; signature: string; roles: { speaker: string; name: string; voiceId: string; gender?: string; age?: string; locked?: boolean }[]; beats: { id: string; utterances: MotionUtterance[] }[]; }
 export interface MotionAudioDirection { mode: "film" | "storytelling" | "documentary" | "explainer" | "mixed"; factual: boolean; narrationStyle: string; soundStyle: string; dialect: string; }
-export interface MotionVoiceClip { id: string; beatId: string; speaker: string; voiceId: string; text: string; audioId: string; start: number; end: number; }
+export interface MotionVoiceClip { id: string; beatId: string; speaker: string; voiceId: string; text: string; audioId: string; start: number; end: number; words?: [number, number][]; }
 export enum MotionStoryLength {
   FULL = "full",
   TEN = "10min",
@@ -175,6 +195,7 @@ export enum MotionStoryJobKind {
   THUMBNAIL = "thumbnail",
   LIBRARY = "library",
 }
+export interface MotionLogEntry { id: string; kind: string; lines: string[]; }
 export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; }
 export interface MotionStoryJobState { id: string; kind: MotionStoryJobKind; status: MotionJobStatus; progress: number; stage?: string; log: string[]; error?: string; result?: unknown; startedAt: number; }
 export type MotionSceneAssetKind = "location" | "character" | "prop";

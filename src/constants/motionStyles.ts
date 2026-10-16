@@ -180,6 +180,8 @@ export const MOTION_STYLES = {
   TEXT_10PX_FONT_MONO_TEXT_SLATE_500_DARK_TEXT_SLATE_400_SPACE_Y_0_5: "text-[10px] font-mono text-slate-500 dark:text-slate-400 space-y-0.5",
   TEXT_11PX_TEXT_PURPLE_300: "text-[11px] text-purple-300",
   FONT_BOLD: "font-bold",
+  BREAK_WORDS: "break-words",
+  FLOW_LOG_BOX: "max-h-72 overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-400 bg-slate-955/90 p-2.5 rounded-xl border border-slate-800 space-y-1",
   FONT_MONO_TRUNCATE: "font-mono truncate",
   TEXT_11PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_LEADING_RELAXED: "text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed",
   FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3: "flex items-center justify-between gap-3",

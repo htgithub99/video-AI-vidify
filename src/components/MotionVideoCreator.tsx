@@ -8,6 +8,8 @@ import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../cons
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../constants/motionGenre.js";
+import { MOTION_STYLE_PRESET_NONE, MOTION_STYLE_PRESET_TEXT, MOTION_STYLE_PRESETS, motionStylePreset } from "../constants/motionStylePresets.js";
+import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
 import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
@@ -100,22 +102,23 @@ import {
 } from "../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../constants/motionVideoTexts.js";
+import { MOTION_STORY_CONFIG } from "../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
 import { needsAuthoredCharacters } from "../lib/motionVideoDna.js";
-import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
+import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
-import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
+import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSeoCard } from "./motion-video/MotionSeoCard.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
 import { MotionVideoDnaCard } from "./motion-video/MotionVideoDnaCard.js";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { Tooltip } from "./ui/Tooltip";
-import { MOTION_VOICE_TEXT, MOTION_VOICE_CHANNEL_TEXT } from "../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_TEXT, MOTION_VOICE_CHANNEL_TEXT } from "../constants/motionVoice.js";
 const cardCls = MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P;
 const inputCls = MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL;
 const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_TEXT_VI as Lang }) => {
@@ -141,7 +144,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
                       { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
                       { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
                       { id: MotionWorkspaceTab.LIBRARY, label: MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Library },
-                      { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(`${text.TAB_RESULTS}`, `${studio.results.length}`), icon: FolderKanban },
+                      { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(String(text.TAB_RESULTS), String(studio.results.length)), icon: FolderKanban },
                     ],
                     ({ id, label, icon: Icon }) => (
                       <Button key={id} variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setTab(id)} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_LG_TEXT_XS, tab === id ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_TEXT_WHITE_SHADOW_SM_SHADOW_PURPLE_500_20 : MOTION_STYLES.TEXT_SLATE_400_HOVER_TEXT_SLATE_100_HOVER_BG_SLATE_900)}>
@@ -168,7 +171,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
             <span>{studio.engineError}</span>
           </div>
         )}
-        <div className={MOTION_STYLES.W_FULL}>
+        <div className={cn(MOTION_STYLES.W_FULL, studio.busy && MOTION_STORY_CONFIG.BUSY_LOCK_CLASS)}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.VOICES && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.LIBRARY && <MotionSceneLibraryPanel studio={studio} currentLang={currentLang} />}
@@ -179,22 +182,15 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
   );
 };
 export default MotionVideoCreator;
-interface MotionPreviewModalData {
-  type: "location" | "beat";
-  id: string;
-  title: string;
-  imageUrl: string;
-  score?: number;
-  issues?: string[];
-  note?: string;
-  narration?: string;
-  action?: string;
-}
+interface MotionPreviewModalData { type: "location" | "beat"; id: string; title: string; imageUrl: string; score?: number; issues?: string[]; note?: string; narration?: string; action?: string; }
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const libraryText = MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const musicText = MOTION_MUSIC.UI[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const asrText = MOTION_VOICE.ASR.UI[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const presetText = MOTION_STYLE_PRESET_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const genreText = MOTION_VIDEO_GENRE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
@@ -229,6 +225,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
   const rj = studio.renderJob;
+  const stepLabel = (kind: string): string =>
+    ({
+      [MotionStoryJobKind.ANALYZE]: text.STEP_ANALYSIS,
+      [MotionStoryJobKind.SCRIPT]: text.STEP_SCRIPT,
+      [MotionStoryJobKind.SCENES]: text.STEP_SCENES,
+      [MotionStoryJobKind.VOICE]: text.STEP_VOICE,
+      [MotionStoryJobKind.SEO]: text.STEP_SEO,
+      [MotionStoryJobKind.THUMBNAIL]: text.STEP_THUMBNAIL,
+      [MotionStoryJobKind.LIBRARY]: text.STEP_LIBRARY,
+      [MOTION_STORY_CONFIG.RENDER_LOG_KIND]: text.STEP_RENDER,
+    })[kind] || kind;
   const currentStep = useMemo(() => {
     if (rj || rj?.result) return 4;
     if (state.script?.beats?.length) return 3;
@@ -339,6 +346,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </option>
                   ))}
                 </MotionSelectField>
+                <MotionSelectField label={musicText.LABEL} value={state.musicMood || MOTION_MUSIC.AUTO} onChange={(e) => patch({ musicMood: e.target.value })} title={musicText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {_.map(musicText.MOODS, (label, mood) => (
+                    <option key={mood} value={mood}>
+                      {label}
+                    </option>
+                  ))}
+                  <option value={MOTION_MUSIC.OFF}>{musicText.OFF}</option>
+                </MotionSelectField>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{asrText.LABEL}</span>
+                  <MotionToggle checked={state.asrCheck === true} label={asrText.LABEL} icon={ScanSearch} text={state.asrCheck ? asrText.ON : asrText.OFF} title={asrText.HINT} disabled={studio.storyBusy} onClick={() => patch({ asrCheck: state.asrCheck !== true })} />
+                </div>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
                   <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />
@@ -374,6 +393,23 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   {_.map(MOTION_VIDEO_GENRES, (genre) => (
                     <option key={genre} value={genre}>
                       {genreText.OPTIONS[genre]}
+                    </option>
+                  ))}
+                </MotionSelectField>
+                <MotionSelectField
+                  label={presetText.LABEL}
+                  value={state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE}
+                  onChange={(e) => {
+                    const chosen = motionStylePreset(e.target.value);
+                    patch(chosen ? { stylePreset: chosen.id, drawingMode: chosen.mode, styleReferences: [] } : { stylePreset: MOTION_STYLE_PRESET_NONE });
+                  }}
+                  disabled={studio.storyBusy}
+                  title={presetText.HINT}
+                  className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  <option value={MOTION_STYLE_PRESET_NONE}>{presetText.NONE}</option>
+                  {_.map(MOTION_STYLE_PRESETS, (item) => (
+                    <option key={item.id} value={item.id}>
+                      {(item.mode === MR.MOTION_TEXT_2D ? presetText.MODE_2D : presetText.MODE_3D) + MR.MOTION_TEXT_SYMBOL_41 + item.label[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI]}
                     </option>
                   ))}
                 </MotionSelectField>
@@ -584,12 +620,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 n={MOTION_TEXT_03}
                 icon={Film}
                 title={text.STEP_SCRIPT}
-                badge={MOTION_TEMPLATE_BEATS(`${state.script.beats.length}`)}
+                badge={MOTION_TEMPLATE_BEATS(String(state.script.beats.length))}
                 right={
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400}>
                     {formatSeconds(estimateTotal)}
                     {MR.MOTION_TEXT_SYMBOL_13}
-                    {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(`${text.ESTIMATED}`) : MR.MOTION_TEXT_EMPTY}
+                    {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(String(text.ESTIMATED)) : MR.MOTION_TEXT_EMPTY}
                   </span>
                 }
               />
@@ -635,9 +671,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                                 {b.visual === MOTION_TEXT_SCENE ? MOTION_TEXT_SCENE_2 : b.visual === MOTION_TEXT_TITLE ? MOTION_TEXT_TITLE_2 : b.visual === MOTION_TEXT_STATS ? MOTION_TEXT_STATS_2 : b.visual}
                               </span>
                               {b.visual === MOTION_TEXT_SCENE && (b.place || b.time) && (
-                                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_400_BG_SLATE_955_80_PX_2_PY_0_5} title={MOTION_TEMPLATE_SYMBOL_7(`${b.place || MR.MOTION_TEXT_EMPTY}`, `${b.time || MR.MOTION_TEXT_EMPTY}`)}>
+                                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_400_BG_SLATE_955_80_PX_2_PY_0_5} title={MOTION_TEMPLATE_SYMBOL_7(String(b.place || MR.MOTION_TEXT_EMPTY), String(b.time || MR.MOTION_TEXT_EMPTY))}>
                                   {b.place}
-                                  {b.time ? MOTION_TEMPLATE_SYMBOL_6(`${b.time}`) : MR.MOTION_TEXT_EMPTY}
+                                  {b.time ? MOTION_TEMPLATE_SYMBOL_6(String(b.time)) : MR.MOTION_TEXT_EMPTY}
                                 </span>
                               )}
                               {b.visual === MOTION_TEXT_SCENE && gen?.staging?.[b.id] ? <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_400} /> : null}
@@ -675,7 +711,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           </StudioCard>
           {state.script && state.analysis && (
             <StudioCard className={cardCls}>
-              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneBeats.length ? MOTION_TEMPLATE_SYMBOL_4(`${builtCount}`, `${sceneBeats.length}`) : undefined} />
+              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneBeats.length ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneBeats.length)) : undefined} />
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{text.SCENES_HINT}</p>
                 <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.storyBusy} />
@@ -776,7 +812,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <div className={MOTION_STYLES.SPACE_Y_1_5}>
                     <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>
                       {text.SCENES_BEATS}
-                      {gen?.failed?.length ? MOTION_TEMPLATE_SYMBOL_57(`${gen.failed.length}`, `${text.SCENES_FAILED}`) : MR.MOTION_TEXT_EMPTY}
+                      {gen?.failed?.length ? MOTION_TEMPLATE_SYMBOL_57(String(gen.failed.length), String(text.SCENES_FAILED)) : MR.MOTION_TEXT_EMPTY}
                     </div>
                     <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2_MAX_H_360PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                       {_.map(sceneBeats, (b) => {
@@ -924,21 +960,15 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               </div>
             </div>
           </StudioCard>
-          {(job || rj) && (
+          {(job || rj || studio.logHistory.length > 0) && (
             <StudioCard className={cardCls}>
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
-                <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{rj ? MOTION_TEXT_RENDER_VIDEO_MP4 : job?.kind === MOTION_TEXT_ANALYZE ? text.STEP_ANALYSIS : job?.kind === MOTION_TEXT_SCRIPT ? text.STEP_SCRIPT : job?.kind === MOTION_TEXT_SCENES ? text.STEP_SCENES : text.STEP_VOICE}</span>
-                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{rj ? MOTION_TEMPLATE_SYMBOL_3(`${Math.round((rj.progress || 0) * 100)}`) : MOTION_TEMPLATE_SYMBOL_3(`${Math.round((job?.progress || 0) * 100)}`)}</span>
+                <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{studio.renderBusy || (rj && !studio.storyBusy) ? MOTION_TEXT_RENDER_VIDEO_MP4 : job ? stepLabel(job.kind) : text.STEP_LOG}</span>
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{rj ? MOTION_TEMPLATE_SYMBOL_3(String(Math.round((rj.progress || 0) * 100))) : MOTION_TEMPLATE_SYMBOL_3(String(Math.round((job?.progress || 0) * 100)))}</span>
               </div>
               {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={job.kind === MOTION_TEXT_VOICE ? text.STEP_VOICE : text.WAITING_AI} suffix={text.ELAPSED} />}
               <MotionProgressBar progress={rj ? rj.progress : job?.progress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
-              <div className={MOTION_STYLES.MAX_H_36_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_FONT_MONO_TEXT_10PX_TEXT_SLATE_400_BG_SLATE_955_90}>
-                {_.map(_.takeRight((rj ? rj.log : job?.log) || [], 15), (l, i) => (
-                  <div key={i} className={MOTION_STYLES.TRUNCATE}>
-                    {l}
-                  </div>
-                ))}
-              </div>
+              <MotionFlowLog entries={studio.logHistory} label={stepLabel} className={MOTION_STYLES.FLOW_LOG_BOX} />
               {rj?.result && (
                 <div className={MR.MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800}>
                   <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP}>
@@ -1129,7 +1159,7 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
                           {formatBytes(it.bytes)}
                         </div>
                       ))}
-                      {g.items.length > 4 && <div>{MOTION_TEMPLATE_JUNK_MORE(`${g.items.length - 4}`, text.JUNK_MORE)}</div>}
+                      {g.items.length > 4 && <div>{MOTION_TEMPLATE_JUNK_MORE(String(g.items.length - 4), text.JUNK_MORE)}</div>}
                     </div>
                   </div>
                 </label>
@@ -1202,7 +1232,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
     <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_4_W_FULL_PB_16_TEXT_LEFT}>
       <StudioCard className={cn(cardCls, MR.MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX)}>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_XS_SM_TEXT_SM_FONT_BOL}>
-          <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(`${studio.results.length}`, text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</span>
+          <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(String(studio.results.length), text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</span>
         </div>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_ML_AUTO_MY_AUTO}>
           {junkButton}

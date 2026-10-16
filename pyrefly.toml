@@ -1,0 +1,3 @@
+project-includes = ["python_scripts/motion_vieneu_worker.py", "python_scripts/motion_vieneu_texts.py"]
+search-path = ["python_scripts"]
+python-interpreter-path = "storage/vieneu/runtime/Scripts/python.exe"

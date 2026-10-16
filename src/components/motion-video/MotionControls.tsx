@@ -1,7 +1,9 @@
 import { StudioSelect } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { Film, Sparkles, Square } from "lucide-react";
-import { FC, useEffect, useId, useState, type SelectHTMLAttributes } from "react";
+import { FC, useEffect, useId, useRef, useState, type SelectHTMLAttributes } from "react";
+import type { MotionLogEntry } from "../../types/motionVideo.js";
+import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA, MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_2, MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT_2, MOTION_TEXT_BG_SLATE_100_HOVER_BG_SLATE_200_TEXT, MOTION_TEXT_PRIMARY, MOTION_TEXT_SYMBOL, MOTION_TEXT_SYMBOL_6, MOTION_TEXT_SYMBOL_7 } from "../../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../../constants/motionStyles.js";
 import { cn } from "../../lib/utils";
@@ -43,11 +45,32 @@ export const ActionBtn: FC<{ onClick: () => void; disabled?: boolean; busy?: boo
   );
 };
 export const StopBtn: FC<{ onClick: () => void; label: string; stopping?: boolean; className?: string }> = ({ onClick, label, stopping, className }) => (
-  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={stopping} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_ROUNDED_XL, className)}>
+  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={stopping} {...{ [MOTION_STORY_CONFIG.BUSY_ALLOW_ATTR]: true }} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_ROUNDED_XL, className)}>
     {stopping ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Square className={MOTION_STYLES.W_3_5_H_3_5_FILL_CURRENT} />}
     <span>{label}</span>
   </Button>
 );
+export const MotionFlowLog: FC<{ entries: MotionLogEntry[]; label: (kind: string) => string; className?: string }> = ({ entries, label, className }) => {
+  const box = useRef<HTMLDivElement>(null);
+  const count = entries.reduce((sum, entry) => sum + entry.lines.length + 1, 0);
+  useEffect(() => {
+    if (box.current) box.current.scrollTop = box.current.scrollHeight;
+  }, [count]);
+  return (
+    <div ref={box} className={className}>
+      {entries.map((entry) => (
+        <div key={entry.id}>
+          <div className={MOTION_STYLES.FONT_BOLD}>{MOTION_STORY_CONFIG.LOG_STEP_HEADER(label(entry.kind))}</div>
+          {entry.lines.map((line, index) => (
+            <div key={index} className={MOTION_STYLES.BREAK_WORDS}>
+              {line}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 export const ElapsedLine: FC<{ since: number; label: string; suffix: string }> = ({ since, label, suffix }) => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {

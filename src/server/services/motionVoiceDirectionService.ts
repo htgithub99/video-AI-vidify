@@ -11,7 +11,7 @@ import type { MotionStoryScript, MotionStoryAnalysis, MotionVoicePlan, MotionAiE
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { runMotionAi } from "./motionStoryService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
-export interface MotionVoiceOptions { exec: MotionAiExecution; aspect?: string; signal?: AbortSignal; log?: (value: string) => void; onProgress?: (done: number, total: number) => void; ai?: typeof runMotionAi; }
+export interface MotionVoiceOptions { exec: MotionAiExecution; aspect?: string; signal?: AbortSignal; log?: (value: string) => void; onProgress?: (done: number, total: number) => void; ai?: typeof runMotionAi; asr?: boolean; }
 export const directMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => {
   const channel = findVoiceChannel(script.voiceChannel),
     pinned = new Set<string>(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})] : []);

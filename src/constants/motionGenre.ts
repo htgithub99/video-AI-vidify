@@ -24,6 +24,19 @@ const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   documentary: "News / documentary. Neutral, factual narration; headline, timeline, quote (only real quotes), stats and geomap for facts, places and dates; scenes are restrained reconstructions; a hud date may track when events happen. Subtle ambience, no dramatic stingers.",
   kids: "Kids. Bright daytime scenes, friendly characters, simple words and short sentences, gentle humour; nothing scary or violent; playful SFX and cheerful music; simple icons or counters for numbers.",
 };
+const PACKAGING: Record<Exclude<MotionVideoGenre, "auto">, string> = {
+  story: "Narrated story: titles promise the emotional turn or mystery of the story without spoiling the ending; tags cover the story's themes and setting.",
+  horror: "Ghost / horror story: titles build dread and curiosity (a place, a night, an unexplained event), never gore; thumbnails dark with one half-hidden threat; tags include horror story, ghost story and the setting.",
+  history_map: "History / war map documentary: titles name the war, front or decision with a concrete number or date; thumbnails a bold map with arrows or fronts; tags include the war, countries, battles and years.",
+  what_if: 'What-if / alternate history played as a war game: titles pose the counterfactual question ("What if … had …?", "Could … have won?") or the number of replays; thumbnails a war-game board or map with two sides and a verdict stamp; tags include what if, alternate history, counterfactual, the war and both sides.',
+  explainer: "Explainer / science: titles state the question or surprising fact the video answers; thumbnails one clear visual metaphor with a short number or word; tags cover the concept and related questions.",
+  documentary: "News / documentary: neutral factual titles with the who, what and when; no clickbait; tags cover the people, places and dates.",
+  kids: "Kids: simple, cheerful, safe titles; bright friendly thumbnails; tags suitable for children's content.",
+};
+export const motionVideoGenrePackaging = (value: unknown): string => {
+  const genre = motionVideoGenre(value);
+  return genre === MOTION_VIDEO_GENRES.AUTO ? "" : `VIDEO GENRE (chosen by the user, follow it): ${PACKAGING[genre]}`;
+};
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRES.AUTO);
 export const motionVideoGenreDirective = (value: unknown): string => {
   const genre = motionVideoGenre(value);
