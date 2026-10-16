@@ -1,6 +1,9 @@
 import { compileMotionSoundPlan } from "../../lib/motionSoundPlan.js";
 import type { MotionSoundCue } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
+import { MOTION_HISTORY } from "../../constants/motionHistory.js";
+import { buildMotionHudTrack, motionGeomapParams, motionIconsParams, motionScoreboardParams, motionVerdictParams } from "../../lib/motionHistory.js";
+import { normalizeSoundCues } from "../../lib/motionSound.js";
 import _ from "lodash";
 import {
   MOTION_TEMPLATE_C_3,
@@ -39,7 +42,7 @@ import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { planMotionCoverage } from "../../lib/motionCoverage.js";
 import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../types/motionVideo.js";
 const NON_SCENE_TRANSITION_IN = 0.55;
-const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE];
+const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
 const countUnits = (text: string): number => _.size(_.compact(_.toString(text).split(/\s+/)));
 export const estimateBeatSeconds = (beat: MotionBeat, language: string): number => {
   const rate = language === MOTION_TEXT_EN ? MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND : MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND;
@@ -109,11 +112,9 @@ const pickTransition = (beat: MotionBeat, prev: MotionBeat | undefined, index: n
   if (!prev) return { type: MOTION_TEXT_CUT, duration: 0 };
   if (beat.visual === MOTION_TEXT_CHAPTER || beat.chapterId !== prev.chapterId) return { type: MOTION_TEXT_DIP, duration: 0.9 };
   if (beat.visual === MOTION_TEXT_ENDING) return { type: MOTION_TEXT_FADE, duration: 1.2 };
-  const isScene = beat.visual === MOTION_TEXT_SCENE,
-    wasScene = prev.visual === MOTION_TEXT_SCENE;
+  const isScene = beat.visual === MOTION_TEXT_SCENE, wasScene = prev.visual === MOTION_TEXT_SCENE;
   if (!isScene || !wasScene) return { type: MOTION_TEXT_FADE, duration: NON_SCENE_TRANSITION_IN };
-  const locA = _.get(gen, [MOTION_TEXT_STAGING, prev.id, MOTION_TEXT_LOCATION]) || prev.place,
-    locB = _.get(gen, [MOTION_TEXT_STAGING, beat.id, MOTION_TEXT_LOCATION]) || beat.place;
+  const locA = _.get(gen, [MOTION_TEXT_STAGING, prev.id, MOTION_TEXT_LOCATION]) || prev.place, locB = _.get(gen, [MOTION_TEXT_STAGING, beat.id, MOTION_TEXT_LOCATION]) || beat.place;
   if (locA !== locB) return beat.time !== prev.time ? { type: MOTION_TEXT_DIP, duration: 0.6 } : { type: MOTION_TEXT_FADE, duration: 0.5 };
   return { type: MOTION_TEXT_CUT, duration: 0 };
 };
@@ -134,6 +135,14 @@ const bgOf = (beats: MotionBeat[], i: number, gen?: MotionGenState): Record<stri
 const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, bg: Record<string, unknown>): Pick<MotionShot, "template" | "params"> => {
   const d = (beat.data || {}) as Record<string, any>;
   switch (beat.visual) {
+    case MOTION_HISTORY.GEOMAP:
+      return { template: MOTION_HISTORY.GEOMAP, params: motionGeomapParams(d) };
+    case MOTION_HISTORY.VERDICT:
+      return { template: MOTION_HISTORY.VERDICT, params: motionVerdictParams(d) };
+    case MOTION_HISTORY.SCOREBOARD:
+      return { template: MOTION_HISTORY.SCOREBOARD, params: motionScoreboardParams(d) };
+    case MOTION_HISTORY.ICONS:
+      return { template: MOTION_HISTORY.ICONS, params: { ...motionIconsParams(d), ...bg } };
     case MOTION_TEXT_TITLE:
       return { template: MOTION_TEXT_TITLE, params: { kicker: d.kicker || MR.MOTION_TEXT_EMPTY, title: d.title || analysis?.title || MR.MOTION_TEXT_EMPTY, subtitle: d.subtitle || MR.MOTION_TEXT_EMPTY, ...bg } };
     case MOTION_TEXT_CHAPTER:
@@ -285,5 +294,11 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitles,
     duration: +total.toFixed(3),
   };
-  return { spec, starts, ends, sfxCues: compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles), missing };
+  const hud = buildMotionHudTrack(beats, shotStarts, total);
+  if (hud.length) spec.hud = hud;
+  const stampCues = normalizeSoundCues(
+    _.map(_.filter(shots, { template: MOTION_HISTORY.VERDICT }), (shot) => ({ id: MOTION_HISTORY.STAMP_CUE_ID(shot.id), beatId: shot.id, kind: MOTION_HISTORY.VERDICT_SFX_KIND, layer: MOTION_HISTORY.VERDICT_SFX_LAYER, t: +(shot.start + MOTION_HISTORY.VERDICT_STAMP_AT * (shot.end - shot.start)).toFixed(3), duration: MOTION_HISTORY.VERDICT_SFX_SECONDS })),
+    spec.duration,
+  );
+  return { spec, starts, ends, sfxCues: [...compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles), ...stampCues], missing };
 };

@@ -17,7 +17,7 @@ import { cn } from "../../lib/utils";
 import { MotionJobStatus, type MotionSceneAsset, type MotionSceneCustomItem, type MotionSceneLibraryList, type MotionSceneStyleSet, type MotionStoryJobState, type MotionStyleReference } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
-import { ActionBtn } from "./MotionControls.js";
+import { ActionBtn, MotionSelectField } from "./MotionControls.js";
 import { motionRequest } from "./motionApi";
 const STYLES_TAB = C.STYLES_FOLDER;
 type LibraryTab = MotionSceneGroup | typeof STYLES_TAB;
@@ -54,7 +54,7 @@ const useSceneLibrary = () => {
   const reload = useCallback(async () => {
     try {
       const result = await motionRequest<MotionSceneLibraryList>(C.URLS.LIST);
-      setData({ items: result.items || [], styles: result.styles || [], base: result.base });
+      setData({ items: result.items || [], styles: result.styles || [], base: result.base, pending: result.pending });
     } catch (error) {
       toast.error(getMotionErrorMessage(error));
     }
@@ -155,6 +155,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
     return data.styles.filter((style) => style.name.toLowerCase().includes(normalizedQuery) || style.key.toLowerCase().includes(normalizedQuery));
   }, [data.styles, normalizedQuery]);
   const seeding = !!job && ACTIVE.includes(job.status);
+  const basePending = data.pending?.[studio.state.drawingMode];
   const run = async (key: string, task: () => Promise<void>) => {
     setBusy(key);
     try {
@@ -305,7 +306,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             <ActionBtn icon={Upload} variant={C.TEXT.SECONDARY} busy={seeding} disabled={seeding || studio.storyBusy} onClick={() => fileInput.current?.click()} className={S.TEXT_XS_PX_3_5_PY_2}>
               {seeding ? t.SEED_RUNNING : t.UPLOAD}
             </ActionBtn>
-            <ActionBtn icon={Package} variant={C.TEXT.SECONDARY} disabled={seeding || studio.storyBusy} onClick={() => void startSeed({}, C.URLS.IMPORT)} className={S.TEXT_XS_PX_3_5_PY_2}>
+            <ActionBtn icon={Package} variant={C.TEXT.SECONDARY} disabled={seeding || studio.storyBusy || basePending === 0} title={basePending === 0 ? t.BUILTIN_DONE : basePending ? t.BUILTIN_PENDING(basePending) : undefined} onClick={() => void startSeed({}, C.URLS.IMPORT)} className={S.TEXT_XS_PX_3_5_PY_2}>
               {t.BUILTIN}
             </ActionBtn>
             <div className={S.FLEX_ITEMS_CENTER_GAP_1_PL_1_SM_BORDER_L_SM_BORDER_SLATE_800_80_SM_PL_2}>
@@ -378,20 +379,25 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             })}
           </div>
           {tab !== STYLES_TAB && styleKeys.length > 1 && (
-            <div className={S.FLEX_ITEMS_CENTER_GAP_2_SHRINK_0}>
-              <span className={S.TEXT_XS_TEXT_SLATE_400}>
-                {t.STYLE_FILTER}
-                {SRT.SOURCE_TEXT_SYMBOL_16}
-              </span>
-              <select className={S.SELECT} value={styleFilter} onChange={(event) => setStyleFilter(event.target.value)}>
-                <option value={ALL}>{t.ALL_STYLES}</option>
-                {styleKeys.map((key) => (
-                  <option key={key} value={key}>
-                    {styleLabel(key, data.styles, t)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MotionSelectField
+              label={
+                <>
+                  {t.STYLE_FILTER}
+                  {SRT.SOURCE_TEXT_SYMBOL_16}
+                </>
+              }
+              wrapperClassName={S.FLEX_ITEMS_CENTER_GAP_2_SHRINK_0}
+              labelClassName={S.TEXT_XS_TEXT_SLATE_400}
+              className={S.SELECT}
+              value={styleFilter}
+              onChange={(event) => setStyleFilter(event.target.value)}>
+              <option value={ALL}>{t.ALL_STYLES}</option>
+              {styleKeys.map((key) => (
+                <option key={key} value={key}>
+                  {styleLabel(key, data.styles, t)}
+                </option>
+              ))}
+            </MotionSelectField>
           )}
         </div>
         <div className={S.SPACE_Y_3}>
@@ -406,26 +412,31 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
               )}
             </div>
             {tab !== STYLES_TAB && _.size(typeCounts) > 0 && (
-              <div className={S.FLEX_ITEMS_CENTER_GAP_2_SHRINK_0}>
-                <span className={S.TEXT_XS_TEXT_SLATE_400_HIDDEN_MD_INLINE}>
-                  {t.TYPE}
-                  {SRT.SOURCE_TEXT_SYMBOL_16}
-                </span>
-                <select className={S.SELECT} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                  <option value={ALL}>
-                    {t.ALL_TYPES} {SRT.SOURCE_TEXT_SYMBOL_11}
-                    {groupItems.length}
+              <MotionSelectField
+                label={
+                  <>
+                    {t.TYPE}
+                    {SRT.SOURCE_TEXT_SYMBOL_16}
+                  </>
+                }
+                wrapperClassName={S.FLEX_ITEMS_CENTER_GAP_2_SHRINK_0}
+                labelClassName={S.TEXT_XS_TEXT_SLATE_400_HIDDEN_MD_INLINE}
+                className={S.SELECT}
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value)}>
+                <option value={ALL}>
+                  {t.ALL_TYPES} {SRT.SOURCE_TEXT_SYMBOL_11}
+                  {groupItems.length}
+                  {SRT.SOURCE_TEXT_SYMBOL_12}
+                </option>
+                {MOTION_SCENE_TYPES.filter((type) => typeCounts[type.id]).map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {typeLabel(type.id, currentLang)} {SRT.SOURCE_TEXT_SYMBOL_11}
+                    {typeCounts[type.id]}
                     {SRT.SOURCE_TEXT_SYMBOL_12}
                   </option>
-                  {MOTION_SCENE_TYPES.filter((type) => typeCounts[type.id]).map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {typeLabel(type.id, currentLang)} {SRT.SOURCE_TEXT_SYMBOL_11}
-                      {typeCounts[type.id]}
-                      {SRT.SOURCE_TEXT_SYMBOL_12}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </MotionSelectField>
             )}
           </div>
           {tab !== STYLES_TAB && _.size(typeCounts) > 0 && (
@@ -708,64 +719,58 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
           <div className={S.SPACE_Y_4}>
             <p className={S.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED}>{t.AI_MODAL_SUB}</p>
             <div className={S.GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_3_5}>
-              <div className={S.SPACE_Y_1}>
-                <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.GROUP}</label>
-                <select
+              <MotionSelectField
+                label={t.GROUP}
+                wrapperClassName={S.SPACE_Y_1}
+                labelClassName={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}
+                className={S.SELECT}
+                value={draft.group}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    group: event.target.value,
+                    type: MOTION_SCENE_TYPES.find((type) => type.group === event.target.value)?.id || draft.type,
+                  })
+                }>
+                {MOTION_SCENE_GROUPS.map((group) => (
+                  <option key={group} value={group}>
+                    {t.GROUPS[group]}
+                  </option>
+                ))}
+              </MotionSelectField>
+              <MotionSelectField label={t.TYPE} wrapperClassName={S.SPACE_Y_1} labelClassName={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300} className={S.SELECT} value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}>
+                {draftTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {typeLabel(type.id, currentLang)}
+                  </option>
+                ))}
+              </MotionSelectField>
+              {draft.group === C.KIND_CHARACTER && (
+                <MotionSelectField
+                  label={t.GENDER}
+                  wrapperClassName={S.SPACE_Y_1}
+                  labelClassName={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}
                   className={S.SELECT}
-                  value={draft.group}
+                  value={draft.gender}
                   onChange={(event) =>
                     setDraft({
                       ...draft,
-                      group: event.target.value,
-                      type: MOTION_SCENE_TYPES.find((type) => type.group === event.target.value)?.id || draft.type,
+                      gender: event.target.value === MR.MOTION_TEXT_FEMALE ? MR.MOTION_TEXT_FEMALE : MR.MOTION_TEXT_MALE,
                     })
                   }>
-                  {MOTION_SCENE_GROUPS.map((group) => (
-                    <option key={group} value={group}>
-                      {t.GROUPS[group]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={S.SPACE_Y_1}>
-                <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.TYPE}</label>
-                <select className={S.SELECT} value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}>
-                  {draftTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {typeLabel(type.id, currentLang)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {draft.group === C.KIND_CHARACTER && (
-                <div className={S.SPACE_Y_1}>
-                  <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.GENDER}</label>
-                  <select
-                    className={S.SELECT}
-                    value={draft.gender}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        gender: event.target.value === MR.MOTION_TEXT_FEMALE ? MR.MOTION_TEXT_FEMALE : MR.MOTION_TEXT_MALE,
-                      })
-                    }>
-                    <option value={MR.MOTION_TEXT_MALE}>{t.MALE}</option>
-                    <option value={MR.MOTION_TEXT_FEMALE}>{t.FEMALE}</option>
-                  </select>
-                </div>
+                  <option value={MR.MOTION_TEXT_MALE}>{t.MALE}</option>
+                  <option value={MR.MOTION_TEXT_FEMALE}>{t.FEMALE}</option>
+                </MotionSelectField>
               )}
               {draft.group === C.KIND_LOCATION && (
                 <>
-                  <div className={S.SPACE_Y_1}>
-                    <label className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300}>{t.TIME}</label>
-                    <select className={S.SELECT} value={draft.time} onChange={(event) => setDraft({ ...draft, time: event.target.value })}>
-                      {TIMES.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <MotionSelectField label={t.TIME} wrapperClassName={S.SPACE_Y_1} labelClassName={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_300} className={S.SELECT} value={draft.time} onChange={(event) => setDraft({ ...draft, time: event.target.value })}>
+                    {TIMES.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </MotionSelectField>
                   <div className={S.FLEX_ITEMS_CENTER_GAP_2_PT_6}>
                     <input type={C.TEXT.CHECKBOX} id={XRT.INTERIOR_CHECKBOX} className={S.ROUNDED_BORDER_SLATE_700_TEXT_PURPLE_600_FOCUS_RING_PURPLE_500} checked={!!draft.interior} onChange={(event) => setDraft({ ...draft, interior: event.target.checked })} />
                     <label htmlFor={XRT.INTERIOR_CHECKBOX} className={S.TEXT_XS_TEXT_SLATE_300_FONT_MEDIUM_CURSOR_POINTER}>

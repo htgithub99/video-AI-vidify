@@ -8,6 +8,7 @@ import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../l
 import { randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import fs from "fs";
+import { motionVideoGenre } from "../../constants/motionGenre.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate } from "../services/motionSpeechRateService.js";
 import path from "path";
@@ -82,7 +83,7 @@ import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } fr
 import { buildScenes, customSceneSeed, importBaseLibrary, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
-import { baseLibraryCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
+import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
@@ -253,7 +254,19 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(`${source.words}`, `${Math.round(source.sourceSeconds / 60)}`));
-      const analysis = await analyzeStory(source, { language, length, styleReferences, libraryMode: motionLibraryMode(req.body?.libraryMode), characterMotion: req.body?.characterMotion === true, drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
+      const analysis = await analyzeStory(source, {
+        language,
+        length,
+        styleReferences,
+        libraryMode: motionLibraryMode(req.body?.libraryMode),
+        videoGenre: motionVideoGenre(req.body?.videoGenre),
+        characterMotion: req.body?.characterMotion === true,
+        drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
+        aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
+        exec,
+        signal: ctx.signal,
+        log: ctx.log,
+      });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.places.length}`, `${analysis.facts.length}`));
       return analysis;
     });
@@ -457,18 +470,8 @@ export const listMotionVoices = async (_req: Request, res: Response): Promise<vo
 };
 export const previewMotionVoice = async (req: Request, res: Response): Promise<void> => {
   try {
-    const voice = String(req.body?.voice || MOTION_VOICE.DEFAULT).slice(0, 100),
-      text = String(req.body?.text || MOTION_VOICE.PREVIEW_TEXT)
-        .trim()
-        .slice(0, 400);
-    const folder = path.join(vieneuRoot(), MOTION_VOICE.PREVIEW_DIR),
-      file = path.join(
-        folder,
-        createHash(MR.MOTION_TEXT_SHA256)
-          .update(JSON.stringify([voice, text]))
-          .digest(MR.MOTION_TEXT_HEX)
-          .slice(0, 24) + MR.MOTION_TEXT_WAV,
-      );
+    const voice = String(req.body?.voice || MOTION_VOICE.DEFAULT).slice(0, 100), text = String(req.body?.text || MOTION_VOICE.PREVIEW_TEXT) .trim() .slice(0, 400);
+    const folder = path.join(vieneuRoot(), MOTION_VOICE.PREVIEW_DIR), file = path.join( folder, createHash(MR.MOTION_TEXT_SHA256) .update(JSON.stringify([voice, text])) .digest(MR.MOTION_TEXT_HEX) .slice(0, 24) + MR.MOTION_TEXT_WAV, );
     fs.mkdirSync(folder, { recursive: true });
     const result = fs.existsSync(file) ? { seconds: 0 } : await synthesizeVieneuSpeech(text, voice, file);
     res.json({ success: true, seconds: result.seconds, base64: (await fs.promises.readFile(file)).toString(MR.MOTION_TEXT_BASE64) });
@@ -515,15 +518,13 @@ export const removeMotionVoiceChannel = (req: Request, res: Response): void => {
   }
 };
 export const registerMotionVoice = async (req: Request, res: Response): Promise<void> => {
-  const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100),
-    data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(/^data:[^,]*,/, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
+  const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100), data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(/^data:[^,]*,/, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
   let source: string = MR.MOTION_TEXT_EMPTY;
   try {
     if (!data.length || data.length > MOTION_VOICE.MAX_REFERENCE_BYTES) throw new Error(MOTION_VOICE.REFERENCE_INVALID);
     const root = path.join(vieneuRoot(), MR.MOTION_TEXT_REFERENCES);
     fs.mkdirSync(root, { recursive: true });
-    const id = MR.MOTION_TEXT_CUSTOM + createHash(MR.MOTION_TEXT_SHA256).update(data).digest(MR.MOTION_TEXT_HEX).slice(0, 32),
-      file = path.join(root, id + MR.MOTION_TEXT_WAV);
+    const id = MR.MOTION_TEXT_CUSTOM + createHash(MR.MOTION_TEXT_SHA256).update(data).digest(MR.MOTION_TEXT_HEX).slice(0, 32), file = path.join(root, id + MR.MOTION_TEXT_WAV);
     source = path.join(root, randomUUID() + MR.MOTION_TEXT_INPUT);
     await fs.promises.writeFile(source, data);
     const seconds = await probeMediaDuration(source);
@@ -556,10 +557,8 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
       );
     const directedScript = typeof req.body?.characterMotion === "boolean" && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
     const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent, voiceTrack });
-    const duration = compiled.spec.duration || 1,
-      voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
-    let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },
-      audioPreviewId: string | undefined;
+    const duration = compiled.spec.duration || 1, voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
+    let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] }, audioPreviewId: string | undefined;
     if (req.body?.sfx === true)
       try {
         sound = await buildMotionSoundTrack(duration, compiled.sfxCues, req.body?.soundOverrides);
@@ -609,7 +608,7 @@ export const serveMotionSfx = async (req: Request, res: Response): Promise<void>
 };
 export const listSceneLibrary = (_req: Request, res: Response): void => {
   try {
-    res.json({ success: true, items: listSceneAssets(), styles: listSceneStyles(), base: baseLibraryCounts() });
+    res.json({ success: true, items: listSceneAssets(), styles: listSceneStyles(), base: baseLibraryCounts(), pending: pendingBaseCounts() });
   } catch (error) {
     fail(res, 400, error);
   }

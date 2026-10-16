@@ -29,9 +29,7 @@
   const blotches = (g, w, h, seed, n, alpha) => {
     const r = rng(seed);
     for (let i = 0; i < n; i++) {
-      const x = r() * w,
-        y = r() * h,
-        rad = 10 + r() * w * 0.18;
+      const x = r() * w, y = r() * h, rad = 10 + r() * w * 0.18;
       const gr = g.createRadialGradient(x, y, 0, x, y, rad);
       const dark = r() > 0.45;
       gr.addColorStop(0, dark ? MT.RGBA_0_0_0_2 + alpha + MT.SYMBOL_17 : MT.RGBA_255_255_255 + alpha * 0.7 + MT.SYMBOL_17);
@@ -97,10 +95,8 @@
       noiseFill(g, w, h, 9, 0.05, 2);
     },
     brick(g, w, h, m) {
-      const rows = m.rows || 8,
-        cols = m.cols || 4;
-      const bh = h / rows,
-        bw = w / cols;
+      const rows = m.rows || 8, cols = m.cols || 4;
+      const bh = h / rows, bw = w / cols;
       const r = rng(21);
       g.fillStyle = m.patternColor || MT.RGBA_220_215_205_0_9;
       g.fillRect(0, 0, w, h);
@@ -144,8 +140,7 @@
       for (let i = 0; i < 14; i++) {
         g.strokeStyle = MT.RGBA_90_90_100 + (0.06 + r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 0.6 + r() * 2.2;
-        let x = r() * w,
-          y = 0;
+        let x = r() * w, y = 0;
         g.beginPath();
         g.moveTo(x, y);
         while (y < h) {
@@ -191,8 +186,7 @@
         const v = r();
         g.strokeStyle = v > 0.5 ? MT.RGBA_200_230_120 + (0.08 + r() * 0.12).toFixed(3) + MT.SYMBOL_17 : MT.RGBA_0_30_0 + (0.08 + r() * 0.15).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1;
-        const x = r() * w,
-          y = r() * h;
+        const x = r() * w, y = r() * h;
         g.beginPath();
         g.moveTo(x, y);
         g.lineTo(x + (r() - 0.5) * 4, y - 3 - r() * 7);
@@ -222,9 +216,7 @@
       for (let i = 0; i < 260; i++) {
         g.strokeStyle = MT.RGBA_255_255_255 + (r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1 + r() * 2;
-        const x = r() * w,
-          y = r() * h,
-          l = 10 + r() * 40;
+        const x = r() * w, y = r() * h, l = 10 + r() * 40;
         g.beginPath();
         g.moveTo(x, y);
         g.quadraticCurveTo(x + l / 2, y - 3, x + l, y);
@@ -256,8 +248,7 @@
       noiseFill(g, w, h, 103, 0.06, 2);
     },
     panels(g, w, h, m) {
-      const cols = m.cols || 4,
-        rows = m.rows || 4;
+      const cols = m.cols || 4, rows = m.rows || 4;
       g.strokeStyle = m.patternColor || MT.RGBA_0_0_0_0_5;
       g.lineWidth = Math.max(3, w / 120);
       for (let i = 0; i <= cols; i++) {
@@ -357,17 +348,12 @@
     return mat;
   };
   const boxUV = (geo, scale) => {
-    const pos = geo.attributes.position,
-      nor = geo.attributes.normal;
+    const pos = geo.attributes.position, nor = geo.attributes.normal;
     if (!pos || !nor) return geo;
     const uv = new Float32Array(pos.count * 2);
     for (let i = 0; i < pos.count; i++) {
-      const nx = Math.abs(nor.getX(i)),
-        ny = Math.abs(nor.getY(i)),
-        nz = Math.abs(nor.getZ(i));
-      const x = pos.getX(i),
-        y = pos.getY(i),
-        z = pos.getZ(i);
+      const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
       let u, v;
       if (ny >= nx && ny >= nz) {
         u = x;
@@ -403,10 +389,7 @@
   };
   const roundedBox = (w, h, d, r) => {
     const sh = new T.Shape();
-    const x = -w / 2 + r,
-      y = -h / 2 + r,
-      W = w - 2 * r,
-      H = h - 2 * r;
+    const x = -w / 2 + r, y = -h / 2 + r, W = w - 2 * r, H = h - 2 * r;
     sh.moveTo(x, y - r);
     sh.lineTo(x + W, y - r);
     sh.quadraticCurveTo(x + W + r, y - r, x + W + r, y);
@@ -426,14 +409,10 @@
     const pts = n.straight || raw.length < 3 ? raw : new T.CatmullRomCurve3(raw, !!n.closed, MT.CENTRIPETAL).getPoints(Math.max(12, raw.length * 10));
     if (n.fill && pts.length >= 3) return new T.ShapeGeometry(new T.Shape(pts.map((p) => new T.Vector2(p.x, p.y))));
     const loop = n.closed && !n.fill ? [...pts, pts[0]] : pts;
-    const half = n.width / 2,
-      position = [],
-      index = [];
+    const half = n.width / 2, position = [], index = [];
     for (let i = 0; i < loop.length; i++) {
-      const prev = loop[Math.max(0, i - 1)],
-        next = loop[Math.min(loop.length - 1, i + 1)];
-      let dx = next.x - prev.x,
-        dy = next.y - prev.y;
+      const prev = loop[Math.max(0, i - 1)], next = loop[Math.min(loop.length - 1, i + 1)];
+      let dx = next.x - prev.x, dy = next.y - prev.y;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len;
       dy /= len;
@@ -538,8 +517,7 @@
     const tex = new T.CanvasTexture(c);
     tex.colorSpace = T.SRGBColorSpace;
     tex.anisotropy = 8;
-    const h = n.height,
-      w = (h * c.width) / c.height;
+    const h = n.height, w = (h * c.width) / c.height;
     const mat = n.glow ? new T.MeshBasicMaterial({ map: tex, transparent: !n.bg, toneMapped: false }) : new T.MeshStandardMaterial({ map: tex, transparent: !n.bg, roughness: 0.6, emissive: new T.Color(MT.FFFFFF), emissiveMap: tex, emissiveIntensity: 0.25 });
     if (n.glow) mat.color = new T.Color(1.8, 1.8, 1.8);
     const m = new T.Mesh(new T.PlaneGeometry(w, h), mat);
@@ -743,8 +721,7 @@
         for (let j = 0; j < ny; j++)
           for (let k = 0; k < nz; k++) {
             if (n.skip && r() < n.skip) continue;
-            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0,
-              jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
+            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0, jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
             offs.push([i * n.step[0] + jx, j * n.step[1], k * n.step[2] + jz]);
           }
       if (simple && offs.length > 3) {
@@ -787,6 +764,7 @@
       if (n.rot) o.rotation.set(n.rot[0] * DEG, n.rot[1] * DEG, n.rot[2] * DEG, MT.YXZ);
       if (n.scale) o.scale.set(n.scale[0], n.scale[1], n.scale[2]);
     } else applyTransform(o, n);
+    if (n.travel) (env.travelers = env.travelers || []).push({ o, from: o.position.clone(), to: new T.Vector3(n.travel.to[0], n.travel.to[1], n.travel.to[2]), start: n.travel.start, end: Math.min(1, n.travel.end) });
     if (n.name) o.name = n.name;
     return o;
   };
@@ -811,6 +789,15 @@
       }
     }
     env.disposables.length = 0;
+  };
+  GEN.animateTravel = (env, p) => {
+    for (const v of env.travelers || []) {
+      const k = U.clamp((p - v.start) / Math.max(0.01, v.end - v.start), 0, 1);
+      const e = k * k * (3 - 2 * k) * 0.35 + k * 0.65;
+      v.o.position.lerpVectors(v.from, v.to, e);
+      const dx = v.to.x - v.from.x, dz = v.to.z - v.from.z;
+      if (dx * dx + dz * dz > MT.TRAVEL_MIN_TURN * MT.TRAVEL_MIN_TURN) v.o.rotation.y = Math.atan2(dx, dz);
+    }
   };
   GEN.animateLights = (env, t) => {
     for (const a of env.animated) {

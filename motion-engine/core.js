@@ -2,6 +2,7 @@
   "use strict";
   const MT = root.MotionEngineText, MF = root.MotionEngineTemplate;
   const ME = (root.MotionEngine = root.MotionEngine || {});
+  const warn = (...args) => root.console?.warn(...args);
   ME.version = MT.VALUE_1_0_0;
   const U = (ME.util = {});
   U.stringifyJson = (value, replacer, space) => JSON.stringify(value, replacer, space);
@@ -42,7 +43,7 @@
   U.fbm = (x, seed = 0) => U.noise(x, seed) * 0.6 + U.noise(x * 2.1, seed + 7) * 0.3 + U.noise(x * 4.3, seed + 13) * 0.1;
   U.strHash = (s) => {
     let h = 2166136261;
-    s = String(s || "");
+    s = String(s || MT.EMPTY);
     for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
     return Math.abs(h);
   };
@@ -55,15 +56,31 @@
     m[0] = d[0];
     m[n - 1] = d[n - 2];
     for (let i = 1; i < n - 1; i++) {
-      if (d[i - 1] * d[i] <= 0) m[i] = 0; else { const w1 = 2 * (T[i + 1] - T[i]) + (T[i] - T[i - 1]), w2 = T[i + 1] - T[i] + 2 * (T[i] - T[i - 1]); m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]); }
+      if (d[i - 1] * d[i] <= 0) m[i] = 0;
+      else {
+        const w1 = 2 * (T[i + 1] - T[i]) + (T[i] - T[i - 1]), w2 = T[i + 1] - T[i] + 2 * (T[i] - T[i - 1]);
+        m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
+      }
     }
-    return (t) => { if (t <= T[0]) return Y[0]; if (t >= T[n - 1]) return Y[n - 1]; let i = 0; while (t > T[i + 1]) i++; const h = T[i + 1] - T[i], s = (t - T[i]) / h, s2 = s * s, s3 = s2 * s; return (2 * s3 - 3 * s2 + 1) * Y[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * Y[i + 1] + (s3 - s2) * h * m[i + 1]; };
+    return (t) => {
+      if (t <= T[0]) return Y[0];
+      if (t >= T[n - 1]) return Y[n - 1];
+      let i = 0;
+      while (t > T[i + 1]) i++;
+      const h = T[i + 1] - T[i], s = (t - T[i]) / h, s2 = s * s, s3 = s2 * s;
+      return (2 * s3 - 3 * s2 + 1) * Y[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * Y[i + 1] + (s3 - s2) * h * m[i + 1];
+    };
   };
   U.path = (keys) => {
     const ks = (keys || []).slice().sort((a, b) => a[0] - b[0]);
     if (!ks.length) return () => [];
     const T = ks.map((k) => k[0]);
-    const fns = ks[0].slice(1).map((_, j) => U.pchip( T, ks.map((k) => k[j + 1]), ), );
+    const fns = ks[0].slice(1).map((_, j) =>
+      U.pchip(
+        T,
+        ks.map((k) => k[j + 1]),
+      ),
+    );
     return (t) => fns.map((f) => f(t));
   };
   const C = (ME.color = {});
@@ -71,8 +88,12 @@
   C.rgb = (hex) => {
     if (Array.isArray(hex)) return hex;
     if (hexCache[hex]) return hexCache[hex];
-    let h = String(hex || MT.VALUE_000).replace(MT.SYMBOL_2, "");
-    if (h.length === 3) h = h .split("") .map((c) => c + c) .join("");
+    let h = String(hex || MT.VALUE_000).replace(MT.SYMBOL_2, MT.EMPTY);
+    if (h.length === 3)
+      h = h
+        .split(MT.EMPTY)
+        .map((c) => c + c)
+        .join(MT.EMPTY);
     const v = [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0];
     hexCache[hex] = v;
     return v;
@@ -85,7 +106,7 @@
           .toString(16)
           .padStart(2, MT.VALUE_0),
       )
-      .join("");
+      .join(MT.EMPTY);
   C.mix = (a, b, k) => {
     const A = C.rgb(a), B = C.rgb(b);
     return C.hex([U.lerp(A[0], B[0], k), U.lerp(A[1], B[1], k), U.lerp(A[2], B[2], k)]);
@@ -135,7 +156,7 @@
   ME.font = (weight, size, fam = MT.BODY, style = MT.NORMAL) => MF.PX(`${style}`, `${weight}`, `${Math.round(size * 10) / 10}`, `${ME.FONTS[fam] || fam}`);
   ME.measure = (g, str, o = {}) => {
     const size = o.size || 40;
-    const chars = Array.from(String(str == null ? "" : str));
+    const chars = Array.from(String(str == null ? MT.EMPTY : str));
     g.save();
     g.font = ME.font(o.weight || 700, size, o.family || MT.BODY, o.style || MT.NORMAL);
     const w = chars.reduce((a, c) => a + g.measureText(c).width, 0) + (o.tracking || 0) * size * Math.max(0, chars.length - 1);
@@ -143,7 +164,7 @@
     return w;
   };
   ME.text = (g, str, x, y, o = {}) => {
-    str = String(str == null ? "" : str);
+    str = String(str == null ? MT.EMPTY : str);
     const size = o.size || 40;
     g.save();
     g.font = ME.font(o.weight || 700, size, o.family || MT.BODY, o.style || MT.NORMAL);
@@ -155,7 +176,11 @@
     let cx = o.align === MT.CENTER ? x - total / 2 : o.align === MT.RIGHT ? x - total : x;
     const p = o.progress == null ? 1 : U.clamp(o.progress);
     const mode = o.reveal || MT.FADE;
-    if (o.shadow !== false) { g.shadowColor = o.shadowColor || MT.RGBA_0_0_0_0_55; g.shadowBlur = (o.shadowBlur == null ? 0.35 : o.shadowBlur) * size; g.shadowOffsetY = size * 0.05; }
+    if (o.shadow !== false) {
+      g.shadowColor = o.shadowColor || MT.RGBA_0_0_0_0_55;
+      g.shadowBlur = (o.shadowBlur == null ? 0.35 : o.shadowBlur) * size;
+      g.shadowOffsetY = size * 0.05;
+    }
     const n = chars.length;
     for (let i = 0; i < n; i++) {
       const local = mode === MT.NONE ? 1 : U.clamp((p * (n + 6)) / 6 - i / 6);
@@ -172,12 +197,17 @@
   ME.wrap = (g, str, maxW, font) => {
     g.save();
     g.font = font;
-    const words = String(str || "") .split(/\s+/) .filter(Boolean);
+    const words = String(str || MT.EMPTY)
+      .split(/\s+/)
+      .filter(Boolean);
     const lines = [];
-    let cur = "";
+    let cur = MT.EMPTY;
     for (const w of words) {
       const test = cur ? cur + MT.SYMBOL_3 + w : w;
-      if (g.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; } else cur = test;
+      if (g.measureText(test).width > maxW && cur) {
+        lines.push(cur);
+        cur = w;
+      } else cur = test;
     }
     if (cur) lines.push(cur);
     g.restore();
@@ -277,11 +307,44 @@
         grains.push(gc);
       }
     }
-    const splitTone = (() => { if (!look.split) return null; const c = ME.makeCanvas(4, 256), x = c.getContext(MT.VALUE_2D); const gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, C.rgba(look.highlights, 1)); gr.addColorStop(1, C.rgba(look.shadows, 1)); x.fillStyle = gr; x.fillRect(0, 0, 4, 256); return c; })();
-    const ctxBase = { spec, W: SW, H: SH, ss, unit: Math.min(SW, SH) / 1080, aspect, fps, quality: q, look, cast: spec.cast || {}, preview: !!opts.preview, };
+    const splitTone = (() => {
+      if (!look.split) return null;
+      const c = ME.makeCanvas(4, 256), x = c.getContext(MT.VALUE_2D);
+      const gr = x.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, C.rgba(look.highlights, 1));
+      gr.addColorStop(1, C.rgba(look.shadows, 1));
+      x.fillStyle = gr;
+      x.fillRect(0, 0, 4, 256);
+      return c;
+    })();
+    const ctxBase = { spec, W: SW, H: SH, ss, unit: Math.min(SW, SH) / 1080, aspect, fps, quality: q, look, cast: spec.cast || {}, preview: !!opts.preview };
     const shots = spec.shots.map((sh, index) => ({ shot: sh, tpl: ME.registry.templates[sh.template], state: null, ready: false, index }));
-    const ensure = (inst) => { if (inst.ready) return; inst.ready = true; try { inst.state = inst.tpl.init ? inst.tpl.init(Object.assign({}, ctxBase, { shot: inst.shot, params: inst.shot.params || {} })) : {}; inst.error = null; } catch (e) { inst.error = e; if (typeof console !== MT.UNDEFINED) console.warn(MT.MOTION_INIT_FAILED, inst.shot.template, e); } };
-    const release = (keepFrom, keepTo) => { for (const inst of shots) { if (inst.ready && (inst.index < keepFrom || inst.index > keepTo)) { inst.ready = false; if (inst.state && typeof inst.state.dispose === MT.FUNCTION) { try { inst.state.dispose(); } catch (e) { void e; } } inst.state = null; } } };
+    const ensure = (inst) => {
+      if (inst.ready) return;
+      inst.ready = true;
+      try {
+        inst.state = inst.tpl.init ? inst.tpl.init(Object.assign({}, ctxBase, { shot: inst.shot, params: inst.shot.params || {} })) : {};
+        inst.error = null;
+      } catch (e) {
+        inst.error = e;
+        warn(MT.MOTION_INIT_FAILED, inst.shot.template, e);
+      }
+    };
+    const release = (keepFrom, keepTo) => {
+      for (const inst of shots) {
+        if (inst.ready && (inst.index < keepFrom || inst.index > keepTo)) {
+          inst.ready = false;
+          if (inst.state && typeof inst.state.dispose === MT.FUNCTION) {
+            try {
+              inst.state.dispose();
+            } catch (e) {
+              void e;
+            }
+          }
+          inst.state = null;
+        }
+      }
+    };
     let liveFrom = -1;
     const drawShot = (g, inst, t) => {
       ensure(inst);
@@ -299,7 +362,7 @@
         try {
           inst.tpl.draw(g, Object.assign({}, ctxBase, { shot: sh, params: sh.params || {}, state: inst.state, t: lt, u: lt / dur, dur, abs: t }));
         } catch (e) {
-          if (!inst.warned && typeof console !== MT.UNDEFINED) console.warn(MT.MOTION_DRAW_FAILED, sh.template, e);
+          if (!inst.warned) warn(MT.MOTION_DRAW_FAILED, sh.template, e);
           inst.warned = true;
           if (opts.strict) throw e;
         }
@@ -311,19 +374,33 @@
       let cur = -1;
       for (let i = 0; i < shots.length; i++) if (t >= shots[i].shot.start) cur = i;
       if (cur < 0) cur = 0;
-      if (cur !== liveFrom) { release(cur - 1, cur + 1); liveFrom = cur; }
+      if (cur !== liveFrom) {
+        release(cur - 1, cur + 1);
+        liveFrom = cur;
+      }
       const B = shots[cur];
-      if (!B) { sg.fillStyle = MT.VALUE_000; sg.fillRect(0, 0, SW, SH); return; }
+      if (!B) {
+        sg.fillStyle = MT.VALUE_000;
+        sg.fillRect(0, 0, SW, SH);
+        return;
+      }
       const tr = transitionOf(B.shot);
       const A = shots[cur - 1];
       const k = tr.type === MT.CUT || !A ? 1 : U.clamp((t - B.shot.start) / Math.max(0.05, tr.duration));
-      if (k >= 1) { drawShot(sg, B, t); return; }
+      if (k >= 1) {
+        drawShot(sg, B, t);
+        return;
+      }
       const ga = layerA.getContext(MT.VALUE_2D), gb = layerB.getContext(MT.VALUE_2D);
       drawShot(ga, A, t);
       drawShot(gb, B, t);
       ME.transitions(tr.type)(sg, layerA, layerB, k, SW, SH, tr);
     };
-    const subtitleAt = (t) => { const list = spec.subtitles || []; for (let i = 0; i < list.length; i++) if (t >= list[i].start && t < list[i].end) return list[i]; return null; };
+    const subtitleAt = (t) => {
+      const list = spec.subtitles || [];
+      for (let i = 0; i < list.length; i++) if (t >= list[i].start && t < list[i].end) return list[i];
+      return null;
+    };
     const drawOverlays = (t) => {
       for (const inst of shots) {
         const sh = inst.shot;
@@ -333,6 +410,7 @@
           ME.drawOverlay(out, ov, t - sh.start, sh, { W, H, unit, aspect, look });
         }
       }
+      if (ME.drawHud && spec.hud) ME.drawHud(out, spec.hud, t, { W, H, unit });
       const sub = spec.subtitleStyle === MT.OFF ? null : subtitleAt(t);
       if (sub) ME.drawSubtitle(out, sub, t, { W, H, unit, aspect, style: spec.subtitleStyle || MT.CINEMA, letterbox: spec.letterbox });
     };
@@ -347,11 +425,31 @@
       out.filter = look.filter || MT.NONE;
       out.drawImage(src, 0, 0, W, H);
       out.filter = MT.NONE;
-      if (bloomC) { const b = bloomC.getContext(MT.VALUE_2D); b.globalCompositeOperation = MT.COPY; b.filter = MT.BRIGHTNESS_0_85_CONTRAST_2_6_BLUR_3PX; b.drawImage(src, 0, 0, bloomC.width, bloomC.height); b.filter = MT.NONE; out.globalCompositeOperation = MT.SCREEN; out.globalAlpha = look.bloom; out.drawImage(bloomC, 0, 0, W, H); out.globalAlpha = 1; }
-      if (splitTone) { out.globalCompositeOperation = MT.SOFT_LIGHT; out.globalAlpha = look.split; out.drawImage(splitTone, 0, 0, W, H); out.globalAlpha = 1; }
+      if (bloomC) {
+        const b = bloomC.getContext(MT.VALUE_2D);
+        b.globalCompositeOperation = MT.COPY;
+        b.filter = MT.BRIGHTNESS_0_85_CONTRAST_2_6_BLUR_3PX;
+        b.drawImage(src, 0, 0, bloomC.width, bloomC.height);
+        b.filter = MT.NONE;
+        out.globalCompositeOperation = MT.SCREEN;
+        out.globalAlpha = look.bloom;
+        out.drawImage(bloomC, 0, 0, W, H);
+        out.globalAlpha = 1;
+      }
+      if (splitTone) {
+        out.globalCompositeOperation = MT.SOFT_LIGHT;
+        out.globalAlpha = look.split;
+        out.drawImage(splitTone, 0, 0, W, H);
+        out.globalAlpha = 1;
+      }
       out.globalCompositeOperation = MT.SOURCE_OVER;
       out.drawImage(vig, 0, 0);
-      if (spec.letterbox) { const bar = spec.aspect === MT.VALUE_16_9 ? Math.round((H - W / 2.39) / 2) : Math.round(H * 0.06); out.fillStyle = MT.VALUE_000; out.fillRect(0, 0, W, bar); out.fillRect(0, H - bar, W, bar); }
+      if (spec.letterbox) {
+        const bar = spec.aspect === MT.VALUE_16_9 ? Math.round((H - W / 2.39) / 2) : Math.round(H * 0.06);
+        out.fillStyle = MT.VALUE_000;
+        out.fillRect(0, 0, W, bar);
+        out.fillRect(0, H - bar, W, bar);
+      }
       drawOverlays(t);
       if (grains.length) {
         out.globalCompositeOperation = MT.OVERLAY;
@@ -377,7 +475,18 @@
     const drawFrame = (t) => {
       const frameIndex = Math.round(t * fps);
       const K = Math.max(1, Math.round(q.motionBlur || 1));
-      if (K > 1 && accC) { const ag = accC.getContext(MT.VALUE_2D); const shutter = (spec.shutter == null ? 0.5 : spec.shutter) / fps; for (let i = 0; i < K; i++) { const ts = t + (i / (K - 1) - 0.5) * shutter; renderScene(Math.max(0, ts)); ag.globalAlpha = 1 / (i + 1); ag.globalCompositeOperation = MT.SOURCE_OVER; ag.drawImage(sceneC, 0, 0); } ag.globalAlpha = 1; } else renderScene(t);
+      if (K > 1 && accC) {
+        const ag = accC.getContext(MT.VALUE_2D);
+        const shutter = (spec.shutter == null ? 0.5 : spec.shutter) / fps;
+        for (let i = 0; i < K; i++) {
+          const ts = t + (i / (K - 1) - 0.5) * shutter;
+          renderScene(Math.max(0, ts));
+          ag.globalAlpha = 1 / (i + 1);
+          ag.globalCompositeOperation = MT.SOURCE_OVER;
+          ag.drawImage(sceneC, 0, 0);
+        }
+        ag.globalAlpha = 1;
+      } else renderScene(t);
       post(t, frameIndex);
     };
     return {
@@ -396,8 +505,14 @@
         for (let t = 0; t < spec.duration; t += step) {
           for (const inst of shots) {
             if (t < inst.shot.start || t > inst.shot.end) continue;
-            if (!inst.ready) { release(inst.index - 1, inst.index); ensure(inst); }
-            if (inst.error) { errs.push({ t, shot: inst.shot.id || inst.shot.index, error: String(inst.error.message || inst.error) }); continue; }
+            if (!inst.ready) {
+              release(inst.index - 1, inst.index);
+              ensure(inst);
+            }
+            if (inst.error) {
+              errs.push({ t, shot: inst.shot.id || inst.shot.index, error: String(inst.error.message || inst.error) });
+              continue;
+            }
             try {
               drawShot(sg, inst, t);
             } catch (e) {
@@ -427,7 +542,13 @@
   };
   T.dip = (g, a, b, k, W, H, tr) => {
     const col = tr.color || MT.VALUE_000;
-    if (k < 0.5) { g.drawImage(a, 0, 0); g.fillStyle = C.rgba(col, U.smooth(k * 2)); } else { g.drawImage(b, 0, 0); g.fillStyle = C.rgba(col, 1 - U.smooth((k - 0.5) * 2)); }
+    if (k < 0.5) {
+      g.drawImage(a, 0, 0);
+      g.fillStyle = C.rgba(col, U.smooth(k * 2));
+    } else {
+      g.drawImage(b, 0, 0);
+      g.fillStyle = C.rgba(col, 1 - U.smooth((k - 0.5) * 2));
+    }
     g.fillRect(0, 0, W, H);
   };
   T.flash = (g, a, b, k, W, H) => {
@@ -435,7 +556,14 @@
     g.fillStyle = MF.RGBA_255_248_235(`${Math.pow(1 - Math.abs(k - 0.5) * 2, 2) * 0.95}`);
     g.fillRect(0, 0, W, H);
   };
-  const smear = (g, img, dx, blurPx, W) => { const n = 6; for (let i = 0; i < n; i++) { g.globalAlpha = i === 0 ? 1 : 1 / (i + 1); g.drawImage(img, dx + (i / (n - 1) - 0.5) * blurPx, 0, W, g.canvas.height); } g.globalAlpha = 1; };
+  const smear = (g, img, dx, blurPx, W) => {
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      g.globalAlpha = i === 0 ? 1 : 1 / (i + 1);
+      g.drawImage(img, dx + (i / (n - 1) - 0.5) * blurPx, 0, W, g.canvas.height);
+    }
+    g.globalAlpha = 1;
+  };
   T.whip = (g, a, b, k, W, H, tr) => {
     const dir = tr.direction === MT.RIGHT ? 1 : -1;
     const e = U.ease(k);
@@ -511,7 +639,12 @@
     g.font = font;
     g.textAlign = MT.CENTER;
     g.textBaseline = MT.ALPHABETIC;
-    if (o.style === MT.BOXED || o.style === MT.CINEMA) { const maxW = Math.max(...lines.map((l) => g.measureText(l).width)); g.fillStyle = MT.RGBA_6_8_12_0_68; ME.roundRect(g, W / 2 - maxW / 2 - size * 0.6, baseY - size * 1.05 + rise, maxW + size * 1.2, lh * lines.length + size * 0.35, size * 0.25); g.fill(); }
+    if (o.style === MT.BOXED || o.style === MT.CINEMA) {
+      const maxW = Math.max(...lines.map((l) => g.measureText(l).width));
+      g.fillStyle = MT.RGBA_6_8_12_0_68;
+      ME.roundRect(g, W / 2 - maxW / 2 - size * 0.6, baseY - size * 1.05 + rise, maxW + size * 1.2, lh * lines.length + size * 0.35, size * 0.25);
+      g.fill();
+    }
     lines.forEach((ln, i) => {
       const y = baseY + i * lh + rise;
       g.shadowColor = MT.RGBA_0_0_0_0_85;
@@ -564,7 +697,10 @@
       g.scale(sc, sc);
       ME.text(g, ov.text, 0, 0, { size: s, weight: 700, family: MT.HEAD, align: MT.CENTER, tracking: 0.04, color: ov.textColor || MT.F6F1E7 });
       if (ov.sub) ME.text(g, ov.sub, 0, s * 0.62, { size: s * 0.24, weight: 600, align: MT.CENTER, tracking: 0.3, color: accent });
-    } else if (ov.type === MT.CAPTION) { const s = 30 * unit; ME.text(g, ov.text, W / 2, H * (ov.y || 0.15), { size: s, weight: 600, align: MT.CENTER, tracking: 0.18, color: ov.textColor || MT.E9E3D8, progress: U.clamp(k / 1) }); }
+    } else if (ov.type === MT.CAPTION) {
+      const s = 30 * unit;
+      ME.text(g, ov.text, W / 2, H * (ov.y || 0.15), { size: s, weight: 600, align: MT.CENTER, tracking: 0.18, color: ov.textColor || MT.E9E3D8, progress: U.clamp(k / 1) });
+    }
     g.restore();
   };
 })(typeof window !== globalThis.MotionEngineText.UNDEFINED ? window : globalThis);

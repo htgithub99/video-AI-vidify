@@ -7,6 +7,7 @@ import type { MotionCompiledPreview, MotionSoundOverride, MotionStyleReference, 
 import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../services/motionWorkflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../constants/workflowActivity";
 import * as MR from "../constants/motionRuntime.js";
+import { MOTION_VIDEO_GENRES, type MotionVideoGenre } from "../constants/motionGenre.js";
 import _ from "lodash";
 import { bindVideoDnaSettings, needsAuthoredCharacters, sceneExecutionKey } from "../lib/motionVideoDna.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -75,6 +76,7 @@ interface PersistedState {
   aiHeadless: boolean;
   aiReview: boolean;
   libraryMode?: MotionSceneLibraryMode;
+  videoGenre?: MotionVideoGenre;
   activeRenderJobId: string;
   renderSignature?: string;
   activeStoryJobId: string;
@@ -110,6 +112,7 @@ const DEFAULTS: PersistedState = {
   aiHeadless: true,
   aiReview: true,
   libraryMode: MOTION_SCENE_LIBRARY_MODES.AUTO,
+  videoGenre: MOTION_VIDEO_GENRES.AUTO,
   activeRenderJobId: MR.MOTION_TEXT_EMPTY,
   activeStoryJobId: MR.MOTION_TEXT_EMPTY,
   autoContinue: true,
@@ -339,7 +342,18 @@ export function useMotionStudio() {
   const analyze = useCallback(async () => {
     if (!state.source) return;
     try {
-      const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, { source: state.source, language: state.language, length: state.length, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, aspect: state.aspect, aiExecution, libraryMode: state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO })) as MotionStoryAnalysis;
+      const analysis = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, {
+        source: state.source,
+        language: state.language,
+        length: state.length,
+        drawingMode: state.drawingMode,
+        styleReferences: state.styleReferences,
+        characterMotion: state.characterMotion,
+        aspect: state.aspect,
+        aiExecution,
+        libraryMode: state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO,
+        videoGenre: state.videoGenre || MOTION_VIDEO_GENRES.AUTO,
+      })) as MotionStoryAnalysis;
       patch({ analysis, script: null, voice: null, seo: null, thumbnail: null, look: analysis.look || state.look });
       setCompiled(null);
       toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(`${analysis.chapters.length}`, `${analysis.cast.length}`));
@@ -347,7 +361,7 @@ export function useMotionStudio() {
     } catch (e: any) {
       reportStoryError(e);
     }
-  }, [state.source, state.language, state.length, state.drawingMode, state.styleReferences, state.characterMotion, state.aspect, state.libraryMode, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
+  }, [state.source, state.language, state.length, state.drawingMode, state.styleReferences, state.characterMotion, state.aspect, state.libraryMode, state.videoGenre, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
     async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false) => {
       const analysis = analysisOverride || state.analysis;
@@ -426,8 +440,7 @@ export function useMotionStudio() {
   const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   const generateVoice = useCallback(
     async (scriptOverride?: MotionStoryScript): Promise<MotionVoiceTrack | undefined> => {
-      const snapshot = stateRef.current,
-        script = scriptOverride || snapshot.script;
+      const snapshot = stateRef.current, script = scriptOverride || snapshot.script;
       if (!script?.beats?.length) return;
       const signature = narrationSignature(script, snapshot.analysis);
       if (voicePending.current?.signature === signature) return voicePending.current.promise;

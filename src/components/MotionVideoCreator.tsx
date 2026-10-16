@@ -6,6 +6,7 @@ import { MOTION_SCENE_LIBRARY_TEXT } from "../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
+import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../constants/motionGenre.js";
 import _ from "lodash";
 import { Activity, AlertTriangle, BookOpen, Box, Captions, Check, ChevronDown, ChevronUp, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Maximize2, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, SlidersHorizontal, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState } from "react";
@@ -106,7 +107,7 @@ import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryLength
 import type { StorageJunkReport } from "../types/storage.js";
 import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
-import { ActionBtn, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
+import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSeoCard } from "./motion-video/MotionSeoCard.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
 import { MotionVideoDnaCard } from "./motion-video/MotionVideoDnaCard.js";
@@ -202,6 +203,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const libraryText = MOTION_SCENE_LIBRARY_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const genreText = MOTION_VIDEO_GENRE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
   const [sceneNote, setSceneNote] = useState<string>(MR.MOTION_TEXT_EMPTY);
@@ -315,42 +317,36 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </p>
               ) : null}
               <div className={MOTION_STYLES.STEP1_SETTINGS_ROW}>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LENGTH}</span>
-                  <select value={state.length} onChange={(e) => patch({ length: e.target.value as MotionStoryLength })} disabled={studio.storyBusy} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                    {_.map(
-                      [
-                        [MotionStoryLength.FULL, text.LENGTH_FULL],
-                        [MotionStoryLength.TEN, text.LENGTH_10],
-                        [MotionStoryLength.FIVE, text.LENGTH_5],
-                        [MotionStoryLength.THIRTY, text.LENGTH_30],
-                        [MotionStoryLength.SIXTY, text.LENGTH_60],
-                        [MotionStoryLength.SHORT, text.LENGTH_SHORT],
-                        [MotionStoryLength.ONE, text.LENGTH_1],
-                      ],
-                      ([id, label]) => (
-                        <option key={id} value={id}>
-                          {label}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
+                <MotionSelectField label={text.LENGTH} value={state.length} onChange={(e) => patch({ length: e.target.value as MotionStoryLength })} disabled={studio.storyBusy} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {_.map(
+                    [
+                      [MotionStoryLength.FULL, text.LENGTH_FULL],
+                      [MotionStoryLength.TEN, text.LENGTH_10],
+                      [MotionStoryLength.FIVE, text.LENGTH_5],
+                      [MotionStoryLength.THIRTY, text.LENGTH_30],
+                      [MotionStoryLength.SIXTY, text.LENGTH_60],
+                      [MotionStoryLength.SHORT, text.LENGTH_SHORT],
+                      [MotionStoryLength.ONE, text.LENGTH_1],
+                    ],
+                    ([id, label]) => (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    ),
+                  )}
+                </MotionSelectField>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
                   <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
                 </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{voiceText.PICK_CHANNEL}</span>
-                  <select value={state.voiceChannelId ?? studio.voiceChannels.defaultId ?? MR.MOTION_TEXT_EMPTY} onChange={(e) => patch({ voiceChannelId: e.target.value })} disabled={studio.storyBusy} title={voiceText.CHANNELS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                    <option value={MR.MOTION_TEXT_EMPTY}>{voiceText.NO_CHANNEL}</option>
-                    {_.map(studio.voiceChannels.channels, (channel) => (
-                      <option key={channel.id} value={channel.id}>
-                        {channel.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <MotionSelectField label={voiceText.PICK_CHANNEL} value={state.voiceChannelId ?? studio.voiceChannels.defaultId ?? MR.MOTION_TEXT_EMPTY} onChange={(e) => patch({ voiceChannelId: e.target.value })} disabled={studio.storyBusy} title={voiceText.CHANNELS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  <option value={MR.MOTION_TEXT_EMPTY}>{voiceText.NO_CHANNEL}</option>
+                  {_.map(studio.voiceChannels.channels, (channel) => (
+                    <option key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </option>
+                  ))}
+                </MotionSelectField>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
                   <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />
@@ -375,16 +371,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                   <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                 </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{libraryText.MODE}</span>
-                  <select value={state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO} onChange={(e) => patch({ libraryMode: e.target.value as MotionSceneLibraryMode })} disabled={studio.storyBusy} title={libraryText.MODE_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                    {_.map(MOTION_SCENE_LIBRARY_MODES, (mode) => (
-                      <option key={mode} value={mode}>
-                        {libraryText.MODES[mode]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <MotionSelectField label={libraryText.MODE} value={state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO} onChange={(e) => patch({ libraryMode: e.target.value as MotionSceneLibraryMode })} disabled={studio.storyBusy} title={libraryText.MODE_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {_.map(MOTION_SCENE_LIBRARY_MODES, (mode) => (
+                    <option key={mode} value={mode}>
+                      {libraryText.MODES[mode]}
+                    </option>
+                  ))}
+                </MotionSelectField>
+                <MotionSelectField label={genreText.LABEL} value={state.videoGenre || MOTION_VIDEO_GENRES.AUTO} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {_.map(MOTION_VIDEO_GENRES, (genre) => (
+                    <option key={genre} value={genre}>
+                      {genreText.OPTIONS[genre]}
+                    </option>
+                  ))}
+                </MotionSelectField>
               </div>
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
               <MotionStyleSetPicker studio={studio} currentLang={currentLang} disabled={studio.storyBusy || studio.renderBusy} />

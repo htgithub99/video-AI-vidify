@@ -1,3 +1,4 @@
+import { MOTION_HISTORY_STAGING, MOTION_HISTORY_STORYBOARD } from "./motionHistory.js";
 import { MOTION_SOUND_PROMPT } from "./motionSound.js";
 import { MOTION_SFX_MOODS } from "./motionAudio.js";
 export const MOTION_GEN_CONFIG = {
@@ -61,7 +62,7 @@ JSON format:
 TRANSCRIPT:
 ${o.transcript}`;
 export const MOTION_GEN_STORYBOARD_RULES = (language: string): string => `STORYBOARD RULES – the picture must tell the same story as the words:
-- Every beat has "visual": scene | title | chapter | quote | stats | counter | map | timeline | starmap | bitmap | headline | ending.
+- Every beat has "visual": scene | title | chapter | quote | stats | counter | map | timeline | starmap | bitmap | headline | ending | geomap | icons.
 - "scene" = a scene rendered in the selected 2D or 3D mode; actors are optional. Fields: "place" (a place key), "time" (day|dusk|night|dawn|overcast|interior|interior_dark), "weather" (none|rain|snow|fog), "shot" (wide|medium|close|over_shoulder|low|high|aerial|insert), "cast" (only visible people; may be empty), "action": ONE concrete English sentence describing the visible state, subject, camera emphasis and relevant props. Humans hold static poses; camera and props may move. Represent events through supported visual states, not impossible character animation. Follow the project-specific visual language and pacing.
 - Choose scenes or supported graphics according to the input and Video DNA. Use stats, counter, map, timeline, starmap, bitmap, quote and headline only when needed by the content. Do not enforce a fixed scene-to-graphic ratio.
 - Do not add explanatory scene labels or floating captions; narration subtitles provide the explanation.
@@ -69,8 +70,9 @@ export const MOTION_GEN_STORYBOARD_RULES = (language: string): string => `STORYB
 - "data" for the other visuals:
   title: {"kicker","title","subtitle"}; chapter: {"number","title"}; quote: {"text","author","highlight":[words],"sourceQuote"} – a quote card with an author must quote words that really exist in the transcript: "sourceQuote" = those exact words copied from the transcript in its original language (at least 5 words), "text" = their faithful translation. Never quote a line marked [audio quote not in transcript], never turn a paraphrase or summary into quotation marks; if the exact words are not in the transcript, narrate the idea in a scene beat as reported speech ("X warned that…") instead;
   stats: {"title","items":[{"value":8,"prefix":"","suffix":" m","label":"…"}]} (1–4 numbers); counter: {"from":0,"to":60,"label":"NIGHTS","format":"int|clock"};
-  map: {"title","points":[{"id","x":0..1,"y":0..1,"label","sub"}],"routes":[{"from","to"}]} (schematic, not a real map);
-  timeline: {"title","events":[{"date","text"}]}; starmap: {"title","stars":[{"id","x":0..1,"y":0..1,"label","sub","center":true|false}],"links":[{"from","to","label":"4.2 light-years"}]} (space chart for stars, planets, probes and distances; 2–12 stars); bitmap: {"title","rows":["0110…","1001…"],"caption"} (a pixel grid of 0/1 rows, at most 48 columns × 64 rows, for transmitted messages, pixel images or binary data – the rows must really draw the described picture); headline: {"paper":"a generic newspaper name, never a real one","date","headline","sub"}; ending: {"text","sub"}.
+  map: {"title","points":[{"id","x":0..1,"y":0..1,"label","sub"}],"routes":[{"from","to"}]} (schematic diagram for invented or abstract places only; for any real country, city, battle or route use geomap);
+  timeline: {"title","events":[{"date","text"}]}; starmap: {"title","stars":[{"id","x":0..1,"y":0..1,"label","sub","center":true|false}],"links":[{"from","to","label":"4.2 light-years"}]} (space chart for stars, planets, probes and distances; 2–12 stars); bitmap: {"title","rows":["0110…","1001…"],"caption"} (a pixel grid of 0/1 rows, at most 48 columns × 64 rows, for transmitted messages, pixel images or binary data – the rows must really draw the described picture); headline: {"paper":"a generic newspaper name, never a real one","date","headline","sub"}; ending: {"text","sub"};
+${MOTION_HISTORY_STORYBOARD}
   All on-screen text (data, label) must be in ${language}.
 - No gore, blood or bodies; suggest violent moments with light and darkness.`;
 export const MOTION_GEN_CHAPTER_PROMPT = (o: {
@@ -261,6 +263,7 @@ RULES:
 - Show exactly the "action" sentence of each beat: the right people, the right place, the right objects and what happens to them.
 - Put actors on FREE floor: never inside furniture, cars or walls (check the object sizes). Use spacing appropriate to authored character dimensions; subjects who talk or interact face each other; groups form a natural arc toward the camera.
 - Explain actions with camera framing and visible props. Do not add floating billboard text, explanatory captions or annotation arrows. Keep only text physically belonging to the scene, such as an EXIT sign or instrument display.
+${MOTION_HISTORY_STAGING}
 - Ghosts and spirits: an actor with "ghost":true; reveal it slowly (far away, half hidden, in fog or at the end of a corridor) rather than in plain view.
 - Follow AUTHORITATIVE CHARACTER MOTION: static poses when disabled; supported animation and safe grounded paths when enabled. Keep the same coordinates and numeric facing across consecutive beats in the same place unless the input explicitly cuts to a new tableau. Choose framing, subject size, negative space and relevant detail targets from the project's visual DNA. People are optional and must not dominate an object-led scene.
 - Object actions (opening, taking, putting, writing, digging…): do NOT animate the contact. Stage the actor next to the object in a fitting pose, then cut (a second camera) to an "insert" close-up of the object already in its result state (use "props" and "hide": the box already open, the clock already inside, the note already on the table).

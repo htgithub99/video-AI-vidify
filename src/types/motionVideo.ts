@@ -37,7 +37,10 @@ export interface MotionReferenceImageInfo { name: string; role: "character" | "s
 export interface MotionReferenceStyle { description: string; palette: string[]; outlineColor?: string; outlineWidth?: number; kit?: MotionStyleKit; images?: MotionReferenceImageInfo[]; }
 export type MotionDrawingMode = "2d" | "3d";
 export interface MotionGenSpec { characterMotion?: boolean; characterMode?: "drawn"; videoDna?: MotionVideoDna; drawingMode?: MotionDrawingMode; style?: MotionGenStyle; cast?: Record<string, unknown>; locations?: Record<string, unknown>; }
-export interface MotionSpec { fadeIn?: number; fadeOut?: number; title?: string; aspect?: MotionAspect | string; fps?: number; look?: string; accent?: string; letterbox?: boolean; subtitleStyle?: string; gen?: MotionGenSpec; shots: MotionShot[]; subtitles?: { start: number; end: number; text: string }[]; duration?: number; audio?: { id?: string; volume?: number }; }
+export interface MotionHudBar { label: string; value: number; color?: string; }
+export interface MotionHud { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; clear?: boolean; }
+export interface MotionHudSegment { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; start: number; end: number; }
+export interface MotionSpec { fadeIn?: number; fadeOut?: number; title?: string; aspect?: MotionAspect | string; fps?: number; look?: string; accent?: string; letterbox?: boolean; subtitleStyle?: string; gen?: MotionGenSpec; shots: MotionShot[]; subtitles?: { start: number; end: number; text: string }[]; hud?: MotionHudSegment[]; duration?: number; audio?: { id?: string; volume?: number }; }
 export type MotionSoundLayer = "ambience" | "action" | "character" | "accent";
 export interface MotionSoundEvent { id: string; kind: string; layer: MotionSoundLayer; at?: number; t?: number; anchor?: "beat" | "cut"; camera?: number; duration?: number; description?: string; source?: "visible" | "offscreen"; actor?: string; prop?: string; part?: string; assetId?: string; gainDb?: number; pan?: number; }
 export interface MotionSoundCue extends MotionSoundEvent { speakerGender?: "male" | "female"; t: number; beatId: string; duration: number; loop?: boolean; position?: number[]; priority?: number; }
@@ -72,6 +75,7 @@ export interface MotionStoryAnalysis {
   title: string;
   logline: string;
   genre?: string;
+  videoGenre?: string;
   genre2?: string;
   factual?: boolean;
   genreReason?: string;
@@ -86,7 +90,7 @@ export interface MotionStoryAnalysis {
   places: MotionPlace[];
   facts: MotionFact[];
 }
-export interface MotionBeat { utterances?: MotionUtterance[]; id: string; chapterId: string; narration: string; visual: string; place?: string; time?: string; weather?: string; shot?: string; cast?: string[]; action?: string; label?: string; emphasis?: boolean; data?: Record<string, unknown>; duration?: number; audioFile?: string; scenePlan?: MotionScenePlan; }
+export interface MotionBeat { utterances?: MotionUtterance[]; id: string; chapterId: string; narration: string; visual: string; place?: string; time?: string; weather?: string; shot?: string; cast?: string[]; action?: string; label?: string; emphasis?: boolean; data?: Record<string, unknown>; duration?: number; audioFile?: string; scenePlan?: MotionScenePlan; hud?: MotionHud; }
 export interface MotionVideoDnaSettings { length: MotionStoryLength; targetSeconds: number; language: "vi" | "en"; aspect: string; drawingMode: MotionDrawingMode; characterMode: "drawn"; }
 export interface MotionVideoDna extends MotionCreativeBlueprint {
   version: 1;
@@ -176,5 +180,5 @@ export interface MotionStoryJobState { id: string; kind: MotionStoryJobKind; sta
 export type MotionSceneAssetKind = "location" | "character" | "prop";
 export interface MotionSceneAsset { id: string; kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description: string; tags: string[]; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; thumb?: boolean; uses: number; createdAt: number; usedAt?: number; }
 export interface MotionSceneStyleSet { key: string; name: string; drawingMode: MotionDrawingMode; images: string[]; referenceStyle?: MotionReferenceStyle; genStyle?: MotionGenStyle; createdAt: number; usedAt?: number; }
-export interface MotionSceneLibraryList { items: MotionSceneAsset[]; styles: MotionSceneStyleSet[]; base?: { characters: number; locations: number; props: number }; }
+export interface MotionSceneLibraryList { items: MotionSceneAsset[]; styles: MotionSceneStyleSet[]; base?: { characters: number; locations: number; props: number }; pending?: Partial<Record<MotionDrawingMode, number>>; }
 export interface MotionSceneCustomItem { group: string; type: string; name: string; description: string; time?: string; interior?: boolean; gender?: "male" | "female"; }

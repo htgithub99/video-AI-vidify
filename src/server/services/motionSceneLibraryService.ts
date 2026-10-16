@@ -404,6 +404,19 @@ export const exportSceneLibrary = (styleKey?: string): MotionBaseLibrary => {
     props: items.filter(({ item, data }) => item.kind === C.KIND_PROP && Array.isArray(data)).map(({ item, data }) => ({ ...common(item), key: item.id, description: item.description || MR.MOTION_TEXT_EMPTY, nodes: data, size: item.size || [] })),
   };
 };
+export const pendingBaseLibrary = (drawingMode: unknown, pack?: MotionBaseLibrary): MotionBaseLibrary => {
+  const base = pack || readBaseLibrary();
+  const known = new Set(listSceneAssets(sharedStyleKeyOf(drawingMode)).map((item) => item.kind + C.TEXT.PIPE + item.name));
+  const fresh = (kind: string, name: string) => !known.has(kind + C.TEXT.PIPE + name);
+  return { characters: base.characters.filter((c) => fresh(C.KIND_CHARACTER, c.name)), locations: base.locations.filter((l) => fresh(C.KIND_LOCATION, l.name)), props: base.props.filter((p) => fresh(C.KIND_PROP, p.name)) };
+};
+export const pendingBaseCounts = (): Record<MotionDrawingMode, number> =>
+  _.fromPairs(
+    _.map([MR.MOTION_TEXT_2D, MR.MOTION_TEXT_3D], (mode) => {
+      const pending = pendingBaseLibrary(mode);
+      return [mode, pending.characters.length + pending.locations.length + pending.props.length];
+    }),
+  ) as Record<MotionDrawingMode, number>;
 export const baseLibraryCounts = (): { characters: number; locations: number; props: number } => {
   const base = readBaseLibrary();
   return { characters: base.characters.length, locations: base.locations.length, props: base.props.length };

@@ -151,6 +151,11 @@
     }
     if (n.shadow === false) out.noShadow = true;
     if (n.hidden) out.hidden = true;
+    if (n.travel && typeof n.travel === MT.OBJECT && !Array.isArray(n.travel)) {
+      const to = vec(n.travel.to, null);
+      const start = num(n.travel.start, 0, 0, 1);
+      if (to) out.travel = { to, start, end: Math.max(start + 0.05, num(n.travel.end, 1, 0, 1)) };
+    }
     const size3 = (d) => vec(n.size, d, 3, 0.001, 2000);
     switch (shape) {
       case MT.BOX:
@@ -237,8 +242,7 @@
         out.weight = num(n.weight, 700, 300, 900);
         break;
       case MT.ARROW: {
-        const from = vec(n.from, null),
-          to = vec(n.to, null);
+        const from = vec(n.from, null), to = vec(n.to, null);
         if (!from || !to) {
           errors.push(where + MT.ARROW_NEEDS);
           return null;
@@ -392,9 +396,7 @@
     return { value: out, errors: st.errors, warnings: st.warnings, stats: { nodes: st.count, lights: st.lights, instances: st.instances } };
   };
   GEN.validateCharacter = (raw) => {
-    const source = raw && typeof raw === MT.OBJECT ? raw : {},
-      st = newState(),
-      out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null), expressions: Object.create(null) };
+    const source = raw && typeof raw === MT.OBJECT ? raw : {}, st = newState(), out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null), expressions: Object.create(null) };
     st.materials = out.materials;
     const cleanTransform = (value) => {
       const result = {};
@@ -445,8 +447,7 @@
     }
     for (const [name, motion] of Object.entries(source.motions || {}).slice(0, 64)) {
       if (!idOk(name) || !motion || typeof motion !== MT.OBJECT) continue;
-      const duration = num(motion.duration, 1, 0.05, 120),
-        tracks = [];
+      const duration = num(motion.duration, 1, 0.05, 120), tracks = [];
       for (const track of (Array.isArray(motion.tracks) ? motion.tracks : []).slice(0, 64)) {
         if (!track || !ids.has(track.part)) continue;
         const keys = (Array.isArray(track.keys) ? track.keys : [])

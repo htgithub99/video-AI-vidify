@@ -10,6 +10,7 @@ import type { MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import { createHash } from "crypto";
+import { motionVideoGenreDirective } from "../../constants/motionGenre.js";
 import _ from "lodash";
 import path from "path";
 import { MOTION_PRODUCTION_BRIEF, productionBriefFor, productionLocationErrors, productionStaging, productionStagingErrors } from "../../lib/motionProductionDesign.js";
@@ -120,7 +121,7 @@ import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "./motionStoryS
 import { MOTION_SCENE_LIBRARY, MOTION_SCENE_LIBRARY_PROMPT } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_CATALOG_PROMPT, MOTION_SCENE_SHOWROOM, motionSceneType, type MotionSeedCast, type MotionSeedPlace, type MotionSeedProp } from "../../constants/motionSceneCatalog.js";
 import { applyCharacterVariant } from "../../lib/motionCharacterVariant.js";
-import { attachSceneProps, extractSceneProps, readBaseLibrary, getSceneAsset, listSceneAssets, motionAssetStyleKey, readSceneStyle, saveSceneAsset, saveSceneStyle, sceneAssetThumbPath, sceneStyleFits, scenePropCatalog, sharedStyleKeyOf, touchSceneAssets, type MotionBaseLibrary } from "./motionSceneLibraryService.js";
+import { attachSceneProps, extractSceneProps, pendingBaseLibrary, getSceneAsset, listSceneAssets, motionAssetStyleKey, readSceneStyle, saveSceneAsset, saveSceneStyle, sceneAssetThumbPath, sceneStyleFits, scenePropCatalog, sharedStyleKeyOf, touchSceneAssets, type MotionBaseLibrary } from "./motionSceneLibraryService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 export interface GenOptions {
   audioDirection?: MotionAudioDirection;
@@ -174,9 +175,7 @@ const aborted = (o: GenOptions) => {
 const storyLine = (a: MotionStoryAnalysis): string => MOTION_TEMPLATE_SYMBOL_50(`${a.title}`, `${a.logline}`);
 const castLines = (a: MotionStoryAnalysis): string => _.map(a.cast, (c) => MOTION_TEMPLATE_LOOK(`${c.key}`, `${c.gender || MOTION_TEXT_MALE}`, `${c.name}`, `${c.role || MR.MOTION_TEXT_EMPTY}`, `${c.look || c.description || MOTION_TEXT_SYMBOL_25}`)).join(MOTION_TEXT_SYMBOL_27);
 const kitRenderStyle = (analysis: MotionStoryAnalysis): Partial<MotionGenState["style"]> => {
-  const render = analysis.referenceStyle?.kit?.render || {},
-    outline = _.toLower(render.outline || MR.MOTION_TEXT_EMPTY),
-    tones = parseInt(String(render.shadingTones || MR.MOTION_TEXT_EMPTY), 10);
+  const render = analysis.referenceStyle?.kit?.render || {}, outline = _.toLower(render.outline || MR.MOTION_TEXT_EMPTY), tones = parseInt(String(render.shadingTones || MR.MOTION_TEXT_EMPTY), 10);
   return {
     ...(/silhouette|outer|outline only/.test(outline) ? { outlineSilhouette: true } : {}),
     ...(tones >= 2 || /cel|gradient|painterly/.test(_.toLower(render.mode || MR.MOTION_TEXT_EMPTY)) ? { faceShading: true } : {}),
@@ -260,10 +259,8 @@ const genSpec = (gen: MotionGenState, locations: Record<string, unknown>, shots:
   ({ aspect, fps: 30, fadeIn: 0, fadeOut: 0, look: MOTION_TEXT_CLEAN, gen: { characterMotion: gen.characterMotion, characterMode: gen.characterMode, videoDna: gen.videoDna, drawingMode: gen.drawingMode, style: gen.style, cast: gen.cast, locations }, shots, subtitles: [], duration: _.max(_.map(shots, MOTION_TEXT_END)) || 4 }) as MotionSpec;
 const reverseCamera = (L: any) => {
   const c = L.stage.center;
-  const p = L.camera.pos,
-    t = L.camera.target;
-  const dx = p[0] - t[0],
-    dz = p[2] - t[2];
+  const p = L.camera.pos, t = L.camera.target;
+  const dx = p[0] - t[0], dz = p[2] - t[2];
   const d = Math.max(4, Math.hypot(dx, dz));
   return { pos: [c[0] - (dx / Math.hypot(dx, dz || 1e-3)) * d * 0.9, Math.max(1.6, p[1]), c[1] - (dz / Math.hypot(dx || 1e-3, dz)) * d * 0.9], target: [c[0], 1.2, c[1]], fov: 50 };
 };
@@ -420,8 +417,7 @@ const nodeBounds = (n: any, L: any, depth = 0): [number, number, number, number,
       break;
     case MOTION_TEXT_EXTRUDE: {
       const pts = (n.points || []) as number[][];
-      const xs = pts.map((q) => q[0]),
-        ys = pts.map((q) => q[1]);
+      const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
       b = [Math.min(...xs), Math.min(...ys), -n.depth / 2, Math.max(...xs), Math.max(...ys), n.depth / 2];
       break;
     }
@@ -459,8 +455,7 @@ const nodeBounds = (n: any, L: any, depth = 0): [number, number, number, number,
     [bb[0] * s[0], bb[5] * s[2]],
     [bb[3] * s[0], bb[5] * s[2]],
   ];
-  const rx = _.map(corners, ([x, z]) => x * Math.cos(rad) + z * Math.sin(rad)),
-    rz = _.map(corners, ([x, z]) => -x * Math.sin(rad) + z * Math.cos(rad));
+  const rx = _.map(corners, ([x, z]) => x * Math.cos(rad) + z * Math.sin(rad)), rz = _.map(corners, ([x, z]) => -x * Math.sin(rad) + z * Math.cos(rad));
   const p = n.pos || [0, 0, 0];
   return [p[0] + _.min(rx)!, p[1] + bb[1] * s[1], p[2] + _.min(rz)!, p[0] + _.max(rx)!, p[1] + bb[4] * s[1], p[2] + _.max(rz)!];
 };
@@ -514,7 +509,7 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
     const prompt = MOTION_GEN_STAGING_PROMPT({
       preamble: o.preamble || MOTION_GEN_PREAMBLE,
       story: storyLine(analysis),
-      actions: [MOTION_GEN_ACTIONS_GUIDE(), MOTION_SOUND_PROMPT, MOTION_SCENE_LIBRARY_PROMPT.STAGING_SOUND, await motionSoundCatalogPrompt(beatLines(todo, lang, localNotes))].join(MR.MOTION_TEXT_SYMBOL_27),
+      actions: [MOTION_GEN_ACTIONS_GUIDE(), MOTION_SOUND_PROMPT, MOTION_SCENE_LIBRARY_PROMPT.STAGING_SOUND, await motionSoundCatalogPrompt(beatLines(todo, lang, localNotes)), motionVideoGenreDirective(analysis.videoGenre)].join(MR.MOTION_TEXT_SYMBOL_27),
       cast: castInfo,
       locations: _.map(locKeys, (k) => locationSummary(k, gen.locations[k], _.find(analysis.places, { key: k }))).join(MOTION_TEXT_SYMBOL_37),
       beats: beatLines(todo, lang, localNotes),
@@ -671,8 +666,7 @@ export const directExistingMotionSound = async (script: MotionStoryScript, gen: 
         staging.soundSilence = item.soundSilence === true;
       }
       for (const item of Array.isArray(response?.motionEvents) ? response.motionEvents : []) {
-        const design: any = gen.cast[item?.cast],
-          motion = design?.motions?.[item?.action];
+        const design: any = gen.cast[item?.cast], motion = design?.motions?.[item?.action];
         if (!motion || !Array.isArray(motion.tracks)) continue;
         motion.events = normalizeSoundEvents(item.events)
           .filter((event) => !event.part || design.parts?.some((part: any) => part.id === event.part))
@@ -770,9 +764,7 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
   if (!styleKey) return;
   const sources = (gen.assetSources ||= {});
   const from = _.truncate(analysis.title || script.title, { length: MOTION_SCENE_LIBRARY.NAME_MAX });
-  let characters = 0,
-    locations = 0,
-    props = 0;
+  let characters = 0, locations = 0, props = 0;
   try {
     saveSceneStyle(styleKey, { references: o.styleReferences, drawingMode: gen.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, referenceStyle: analysis.referenceStyle, genStyle: gen.style, name: from });
     const dir = path.join(previewRoot(), runId(script, o), MOTION_SCENE_LIBRARY.PREVIEW_FOLDER);
@@ -1023,14 +1015,9 @@ export const seedSceneLibrary = async (seed: MotionSceneSeed, referenceStyle: Mo
   return { characters: _.filter(cast, (c) => hasAuthoredCharacter(gen.cast[c.key])).length, locations: _.filter(places, (p) => !!gen.locations[p.key]).length, props };
 };
 export const importBaseLibrary = async (o: GenOptions, pack?: MotionBaseLibrary): Promise<{ characters: number; locations: number; props: number }> => {
-  const base = pack || readBaseLibrary();
   const drawingMode = o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
   const styleKey = sharedStyleKeyOf(drawingMode);
-  const known = new Set(listSceneAssets(styleKey).map((item) => item.kind + MOTION_SCENE_LIBRARY.TEXT.PIPE + item.name));
-  const fresh = (kind: string, name: string) => !known.has(kind + MOTION_SCENE_LIBRARY.TEXT.PIPE + name);
-  const characters = base.characters.filter((c) => fresh(MOTION_SCENE_LIBRARY.KIND_CHARACTER, c.name));
-  const locations = base.locations.filter((l) => fresh(MOTION_SCENE_LIBRARY.KIND_LOCATION, l.name));
-  const props = base.props.filter((p) => fresh(MOTION_SCENE_LIBRARY.KIND_PROP, p.name));
+  const { characters, locations, props } = pendingBaseLibrary(drawingMode, pack);
   o.log(MOTION_SCENE_LIBRARY.LOGS.IMPORT_START(characters.length, locations.length, props.length));
   const stored = readSceneStyle(styleKey)?.genStyle;
   const gen: MotionGenState = { ...emptyGen(), drawingMode, characterMode: MR.MOTION_TEXT_DRAWN, style: stored && !_.isEmpty(stored) ? cloneJson(stored) : { ...MOTION_SCENE_LIBRARY.DEFAULT_GEN_STYLE }, assetStyleKey: styleKey };

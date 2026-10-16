@@ -16,6 +16,9 @@ import * as MR from "../../constants/motionRuntime.js";
 import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
+import { MOTION_HISTORY } from "../../constants/motionHistory.js";
+import { normalizeMotionHud } from "../../lib/motionHistory.js";
+import { motionVideoGenre, motionVideoGenreDirective, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import _ from "lodash";
 import path from "path";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
@@ -213,8 +216,7 @@ export const resolveTargetSeconds = (source: MotionStorySource, length: MotionSt
 };
 const formatTs = (s: number) => MOTION_TEMPLATE_SYMBOL_11(`${Math.floor(s / 60)}`, `${String(Math.floor(s % 60)).padStart(2, MOTION_TEXT_0)}`);
 const sourceSlice = (source: MotionStorySource, from?: number, to?: number): string => {
-  const a = from ?? 0,
-    b = to ?? Infinity;
+  const a = from ?? 0, b = to ?? Infinity;
   const picked = _.filter(source.segments, (s) => s.t >= a - 0.5 && s.t < b);
   return _.map(_.isEmpty(picked) ? source.segments : picked, (s) => MOTION_TEMPLATE_SYMBOL_21(`${formatTs(s.t)}`, `${s.text}`)).join(MOTION_TEXT_SYMBOL_27);
 };
@@ -225,8 +227,7 @@ export const extractJson = (raw: string): any => {
   try {
     return parseJson(text);
   } catch {
-    const a = text.indexOf(MOTION_TEXT_SYMBOL_35),
-      b = text.lastIndexOf(MOTION_TEXT_SYMBOL_36);
+    const a = text.indexOf(MOTION_TEXT_SYMBOL_35), b = text.lastIndexOf(MOTION_TEXT_SYMBOL_36);
     if (a >= 0 && b > a) {
       try {
         return parseJson(text.slice(a, b + 1));
@@ -245,9 +246,7 @@ export const extractJson = (raw: string): any => {
 };
 const closeJson = (raw: string): string | null => {
   const stack: string[] = [];
-  let inString = false,
-    escaped = false,
-    end = -1;
+  let inString = false, escaped = false, end = -1;
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i];
     if (inString) {
@@ -551,7 +550,7 @@ const slugKey = (s: string): string =>
 const TIMES = [MOTION_TEXT_DAY, MOTION_TEXT_DUSK, MOTION_TEXT_NIGHT, MOTION_TEXT_DAWN, MOTION_TEXT_OVERCAST, MOTION_TEXT_TOON_CAT_INTERIOR, MOTION_TEXT_INTERIOR_DARK];
 const WEATHERS = [MOTION_TEXT_NONE, MOTION_TEXT_RAIN, MOTION_TEXT_SNOW, MOTION_TEXT_FOG];
 const SHOTS = [MOTION_TEXT_WIDE, MOTION_TEXT_MEDIUM, MOTION_TEXT_CLOSE, MOTION_TEXT_OVER_SHOULDER, MOTION_TEXT_LOW, MOTION_TEXT_HIGH, MOTION_TEXT_AERIAL, MOTION_TEXT_INSERT];
-const VISUALS = [MOTION_TEXT_SCENE, MOTION_TEXT_TITLE, MOTION_TEXT_CHAPTER, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_TEXT_ENDING];
+const VISUALS = [MOTION_TEXT_SCENE, MOTION_TEXT_TITLE, MOTION_TEXT_CHAPTER, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_TEXT_ENDING, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
 const MOTION_ANALYSIS_ATTEMPTS = MOTION_REFERENCE_CONFIG.ANALYSIS_ATTEMPTS;
 const sourceDirections = (source: MotionStorySource): string => {
   const parts: string[] = [MR.MOTION_TEXT_SOURCE_BOX_IT_MAY_MIX_THE_USER_S_DIRECTIONS_WANTED_VIDEO_FORMAT_T];
@@ -565,8 +564,7 @@ const LEDGER_CHUNK_CHARS = 35000;
 export const buildSourceLedger = async (source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<string> => {
   if (source.kind === MR.MOTION_TEXT_BRIEF || source.text.length < LEDGER_MIN_CHARS) return MR.MOTION_TEXT_EMPTY;
   const chunks: { from: number; to: number }[] = [];
-  let size = 0,
-    start = source.segments[0]?.t ?? 0;
+  let size = 0, start = source.segments[0]?.t ?? 0;
   source.segments.forEach((s, i) => {
     size += s.text.length;
     const next = source.segments[i + 1];
@@ -586,8 +584,7 @@ export const buildSourceLedger = async (source: MotionStorySource, opts: { exec:
         _.map(_.castArray(raw?.events || []), (e: any) => {
           const point = _.trim(_.toString(e?.point));
           if (!point) return null;
-          const who = _.trim(_.toString(e?.who)),
-            quote = _.trim(_.toString(e?.quote));
+          const who = _.trim(_.toString(e?.who)), quote = _.trim(_.toString(e?.quote));
           return MR.MOTION_TEMPLATE_SYMBOL_303(_.toString(e?.t || MR.MOTION_TEXT_EMPTY), point, who ? MR.MOTION_TEMPLATE_SYMBOL_339(who) : MR.MOTION_TEXT_EMPTY, quote ? MR.MOTION_TEMPLATE_SYMBOL_340(quote) : MR.MOTION_TEXT_EMPTY).trim();
         }),
       );
@@ -620,7 +617,7 @@ const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: Moti
 export const resolveMotionReferenceStyle = (references: MotionStyleReference[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => withCachedMotionReferenceStyle(references, () => withMotionReferenceFiles(references, (images) => analyzeReferenceStyle(images, opts)), opts);
 export const analyzeStory = async (
   source: MotionStorySource,
-  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; assetStyleKey?: string; libraryMode?: MotionSceneLibraryMode },
+  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; assetStyleKey?: string; libraryMode?: MotionSceneLibraryMode; videoGenre?: MotionVideoGenre },
 ): Promise<MotionStoryAnalysis> => {
   if (opts.styleReferences?.length) {
     const referenceStyle = await withCachedMotionReferenceStyle(opts.styleReferences, () => withMotionReferenceFiles(opts.styleReferences, (images) => analyzeReferenceStyle(images, opts)), opts);
@@ -656,10 +653,17 @@ export const analyzeStory = async (
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const libraryMode = opts.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO;
   const assetStyleKey = opts.assetStyleKey || motionAssetStyleKey([], opts.drawingMode);
-  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion);
+  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion), videoGenre: motionVideoGenre(opts.videoGenre) });
   const catalog = sceneLibraryCatalog(assetStyleKey, _.truncate([source.title, source.text].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE), { length: MOTION_SCENE_LIBRARY.CONTEXT_MAX }), { characterMotion: opts.characterMotion, items: libraryMode === MOTION_SCENE_LIBRARY_MODES.AI });
   if (catalog.locations || catalog.characters) opts.log?.(MOTION_SCENE_LIBRARY.LOGS.CATALOG(catalog.locations, catalog.characters));
-  const fullRequest = MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) + MR.MOTION_TEXT_SYMBOL_27 + (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) + MR.MOTION_TEXT_SYMBOL_27 + catalog.prompt;
+  const genreDirective = motionVideoGenreDirective(opts.videoGenre);
+  const fullRequest =
+    MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) +
+    MR.MOTION_TEXT_SYMBOL_27 +
+    (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
+    MR.MOTION_TEXT_SYMBOL_27 +
+    catalog.prompt +
+    (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY);
   let errors: string[] = [];
   let roomHasContext = false;
   let lastRaw: any = null;
@@ -916,7 +920,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     firstNote: opts.isFirst ? MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY : MR.MOTION_TEXT_EMPTY,
     lastNote: opts.isLast ? MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_ : MR.MOTION_TEXT_EMPTY,
     previous: prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2(`${prev}`) : MR.MOTION_TEXT_EMPTY,
-    rules: [MOTION_GEN_STORYBOARD_RULES(language), MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis)].join(MR.MOTION_TEXT_SYMBOL_27),
+    rules: _.compact([MOTION_GEN_STORYBOARD_RULES(language), MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis), motionVideoGenreDirective(analysis.videoGenre)]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: _.map(analysis.cast, (c) => MOTION_TEMPLATE_SYMBOL_54(`${c.key}`, `${c.name}`, `${c.role || MR.MOTION_TEXT_EMPTY}`, `${c.look || c.description || MR.MOTION_TEXT_EMPTY}`)).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_NONE_2,
     places: _.map(analysis.places, (p) => MOTION_TEMPLATE_SYMBOL_55(`${p.key}`, `${p.name}`, `${p.description}`)).join(MOTION_TEXT_SYMBOL_27),
     transcript: sourceSlice(source, chapter.from, chapter.to),
@@ -991,6 +995,8 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
       beat.action = _.truncate(_.toString(v?.action || v?.description || _.map(shots, MOTION_TEXT_ACTION).join(MOTION_TEXT_SYMBOL_13) || MR.MOTION_TEXT_EMPTY), { length: 400 });
       if (v?.label) beat.label = _.truncate(_.toString(v.label), { length: 48 });
     } else beat.data = _.isPlainObject(v?.data) ? v.data : {};
+    const hud = normalizeMotionHud(b?.hud ?? v?.hud);
+    if (hud) beat.hud = hud;
     if (b?.emphasis) beat.emphasis = true;
     out.push(beat);
   });
