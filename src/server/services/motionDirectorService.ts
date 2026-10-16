@@ -38,15 +38,15 @@ import {
   MOTION_TEXT_TIMELINE,
   MOTION_TEXT_TITLE,
 } from "../../constants/motionRuntime.js";
-import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
+import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../constants/motionVideo.js";
 import { planMotionCoverage } from "../../lib/motionCoverage.js";
 import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../types/motionVideo.js";
 const NON_SCENE_TRANSITION_IN = 0.55;
 const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
-const countUnits = (text: string): number => _.size(_.compact(_.toString(text).split(/\s+/)));
+const countUnits = (text: string): number => _.size(_.compact(_.toString(text).split(P.WORDS)));
 export const estimateBeatSeconds = (beat: MotionBeat, language: string): number => {
   const rate = language === MOTION_TEXT_EN ? MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND : MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND;
-  const pauses = (beat.narration.match(/[,.;:!?…]/g) || []).length * 0.18;
+  const pauses = (beat.narration.match(P.PUNCTUATION) || []).length * 0.18;
   return Math.max(1.2, countUnits(beat.narration) / rate + pauses);
 };
 export const computeBeatTimeline = (beats: MotionBeat[], durations: number[]): { starts: number[]; ends: number[]; total: number } => {
@@ -66,29 +66,29 @@ export const computeBeatTimeline = (beats: MotionBeat[], durations: number[]): {
   return { starts, ends, total: (_.last(ends) || 3) + tail };
 };
 const splitSubtitle = (text: string, max: number): string[] => {
-  const sentences = _.compact(_.map(_.toString(text).match(/[^.!?…]+[.!?…]*["”»)]*/g) || [text], _.trim));
+  const sentences = _.compact(_.map(_.toString(text).match(P.SENTENCES) || [text], _.trim));
   const out: string[] = [];
   for (const s of sentences) {
     if (s.length <= max) {
       out.push(s);
       continue;
     }
-    const parts = _.compact(_.map(s.split(/(?<=[,;:–—])\s+/), _.trim));
+    const parts = _.compact(_.map(s.split(P.CLAUSES), _.trim));
     let cur: string = MR.MOTION_TEXT_EMPTY;
     for (const p of parts) {
       if ((cur + MOTION_TEXT_SYMBOL_13 + p).trim().length > max && cur) {
         out.push(cur.trim());
         cur = p;
-      } else cur = MOTION_TEMPLATE_JOIN_SPACE(`${cur}`, `${p}`);
+      } else cur = MOTION_TEMPLATE_JOIN_SPACE(String(cur), String(p));
     }
     if (cur.trim()) {
-      const words = cur.trim().split(/\s+/);
+      const words = cur.trim().split(P.WORDS);
       let line: string = MR.MOTION_TEXT_EMPTY;
       for (const w of words) {
         if ((line + MOTION_TEXT_SYMBOL_13 + w).trim().length > max && line) {
           out.push(line.trim());
           line = w;
-        } else line = MOTION_TEMPLATE_JOIN_SPACE(`${line}`, `${w}`);
+        } else line = MOTION_TEMPLATE_JOIN_SPACE(String(line), String(w));
       }
       if (line.trim()) out.push(line.trim());
     }
@@ -97,7 +97,7 @@ const splitSubtitle = (text: string, max: number): string[] => {
 };
 const buildSubtitles = (beat: MotionBeat, start: number, end: number): { start: number; end: number; text: string }[] => {
   const pieces = splitSubtitle(beat.narration, MOTION_STORY_CONFIG.SUBTITLE_MAX_CHARS);
-  const weights = _.map(pieces, (p) => countUnits(p) + (/[,.;:!?…]$/.test(p) ? 0.8 : 0));
+  const weights = _.map(pieces, (p) => countUnits(p) + (P.SENTENCE_END.test(p) ? 0.8 : 0));
   const total = _.sum(weights) || 1;
   let t = start;
   return _.map(pieces, (text, i) => {
@@ -112,9 +112,11 @@ const pickTransition = (beat: MotionBeat, prev: MotionBeat | undefined, index: n
   if (!prev) return { type: MOTION_TEXT_CUT, duration: 0 };
   if (beat.visual === MOTION_TEXT_CHAPTER || beat.chapterId !== prev.chapterId) return { type: MOTION_TEXT_DIP, duration: 0.9 };
   if (beat.visual === MOTION_TEXT_ENDING) return { type: MOTION_TEXT_FADE, duration: 1.2 };
-  const isScene = beat.visual === MOTION_TEXT_SCENE, wasScene = prev.visual === MOTION_TEXT_SCENE;
+  const isScene = beat.visual === MOTION_TEXT_SCENE,
+    wasScene = prev.visual === MOTION_TEXT_SCENE;
   if (!isScene || !wasScene) return { type: MOTION_TEXT_FADE, duration: NON_SCENE_TRANSITION_IN };
-  const locA = _.get(gen, [MOTION_TEXT_STAGING, prev.id, MOTION_TEXT_LOCATION]) || prev.place, locB = _.get(gen, [MOTION_TEXT_STAGING, beat.id, MOTION_TEXT_LOCATION]) || beat.place;
+  const locA = _.get(gen, [MOTION_TEXT_STAGING, prev.id, MOTION_TEXT_LOCATION]) || prev.place,
+    locB = _.get(gen, [MOTION_TEXT_STAGING, beat.id, MOTION_TEXT_LOCATION]) || beat.place;
   if (locA !== locB) return beat.time !== prev.time ? { type: MOTION_TEXT_DIP, duration: 0.6 } : { type: MOTION_TEXT_FADE, duration: 0.5 };
   return { type: MOTION_TEXT_CUT, duration: 0 };
 };
@@ -169,7 +171,7 @@ const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, b
         params: {
           title: d.title || MR.MOTION_TEXT_EMPTY,
           note: MOTION_TEXT_SO_DO_MINH_HOA_2,
-          points: _.map(_.castArray(d.points || []), (p: any, i: number, arr: any[]) => ({ id: _.toString(p?.id || MOTION_TEMPLATE_P(`${i}`)), x: _.clamp(_.toNumber(p?.x) || 0.5, 0.05, 0.95), y: _.clamp(_.toNumber(p?.y) || 0.5, 0.08, 0.92), label: _.toString(p?.label || MR.MOTION_TEXT_EMPTY), sub: p?.sub, at: 0.05 + (0.5 * i) / Math.max(1, arr.length) })),
+          points: _.map(_.castArray(d.points || []), (p: any, i: number, arr: any[]) => ({ id: _.toString(p?.id || MOTION_TEMPLATE_P(String(i))), x: _.clamp(_.toNumber(p?.x) || 0.5, 0.05, 0.95), y: _.clamp(_.toNumber(p?.y) || 0.5, 0.08, 0.92), label: _.toString(p?.label || MR.MOTION_TEXT_EMPTY), sub: p?.sub, at: 0.05 + (0.5 * i) / Math.max(1, arr.length) })),
           routes: _.map(_.castArray(d.routes || []), (r: any, i: number) => ({ from: _.toString(r?.from), to: _.toString(r?.to), at: 0.2 + i * 0.15, dur: 0.35, bend: 0.12 })),
         },
       };
@@ -208,11 +210,7 @@ const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, b
     }
     case MR.MOTION_TEXT_BITMAP: {
       const rows = _.take(
-        _.map(_.castArray(d.rows || d.grid || []), (r: unknown) =>
-          _.toString(r)
-            .replace(/[^01#.* ]/g, MR.MOTION_TEXT_EMPTY)
-            .slice(0, 48),
-        ),
+        _.map(_.castArray(d.rows || d.grid || []), (r: unknown) => _.toString(r).replace(P.BITMAP, MR.MOTION_TEXT_EMPTY).slice(0, 48)),
         64,
       ).filter((r) => r.length);
       return { template: MR.MOTION_TEXT_BITMAP, params: { title: d.title || MR.MOTION_TEXT_EMPTY, caption: _.toString(d.caption || MR.MOTION_TEXT_EMPTY), rows: rows.length ? rows : [MR.MOTION_TEXT_0110, MR.MOTION_TEXT_1001, MR.MOTION_TEXT_1001, MR.MOTION_TEXT_0110] } };
@@ -226,7 +224,7 @@ const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, b
   }
 };
 export interface CompiledStory { spec: MotionSpec; starts: number[]; ends: number[]; sfxCues: MotionSoundCue[]; missing: string[]; }
-export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speechStart: number, beatIndex = 0): MotionShot[] => {
+export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speechStart: number, beatIndex = 0, speech?: Record<string, number[][]>): MotionShot[] => {
   const stg: any = gen.staging[beat.id];
   const dur = end - start;
   const cams: any[] = planMotionCoverage(stg, dur, beatIndex, MR.MOTION_TEMPLATE_SYMBOL_115(beat.narration, beat.action || MR.MOTION_TEXT_EMPTY), beat);
@@ -236,8 +234,8 @@ export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number,
     const s0 = start + cuts[i] * dur;
     const s1 = i + 1 < cams.length ? start + cuts[i + 1] * dur : end;
     if (s1 - s0 < 0.8 && i > 0) return;
-    const params = { ..._.omit(stg, [MOTION_TEXT_CAMERA, MOTION_TEXT_CAMERAS]), soundBeatId: beat.id, cameras: [cam], beatDur: +dur.toFixed(3), tOffset: +(s0 - start).toFixed(3) };
-    shots.push({ id: i ? MOTION_TEMPLATE_C_3(`${beat.id}`, `${i + 1}`) : beat.id, start: +s0.toFixed(3), end: +s1.toFixed(3), template: MOTION_TEXT_GEN3D, params, transition: i === 0 ? undefined : { type: MOTION_TEXT_CUT, duration: 0 } });
+    const params = { ..._.omit(stg, [MOTION_TEXT_CAMERA, MOTION_TEXT_CAMERAS]), ...(speech && !_.isEmpty(speech) ? { speech } : {}), soundBeatId: beat.id, cameras: [cam], beatDur: +dur.toFixed(3), tOffset: +(s0 - start).toFixed(3) };
+    shots.push({ id: i ? MOTION_TEMPLATE_C_3(String(beat.id), String(i + 1)) : beat.id, start: +s0.toFixed(3), end: +s1.toFixed(3), template: MOTION_TEXT_GEN3D, params, transition: i === 0 ? undefined : { type: MOTION_TEXT_CUT, duration: 0 } });
   });
   void speechStart;
   return shots;
@@ -260,7 +258,14 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     if (end - start < MOTION_STORY_CONFIG.MIN_SHOT_SECONDS && i + 1 < beats.length) end = start + MOTION_STORY_CONFIG.MIN_SHOT_SECONDS;
     const transition = pickTransition(beat, beats[i - 1], i, gen);
     if (beat.visual === MOTION_TEXT_SCENE && gen?.staging?.[beat.id] && gen.locations?.[_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string]) {
-      const list = sceneShots(beat, gen, start, end, starts[i], i);
+      const speech = _.mapValues(
+        _.groupBy(
+          _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id && !!clip.speaker),
+          (clip) => clip.speaker,
+        ),
+        (clips) => _.map(clips, (clip) => [+(clip.start - start).toFixed(3), +(clip.end - start).toFixed(3)]),
+      );
+      const list = sceneShots(beat, gen, start, end, starts[i], i, speech);
       if (list.length) list[0].transition = i === 0 && analysis?.videoDna ? { type: MR.MOTION_TEXT_CUT, duration: 0 } : transition;
       usedLocations.add(_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string);
       shots.push(...list);

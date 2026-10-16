@@ -1,4 +1,5 @@
 import { AiPlanningChatModel } from "../types.js";
+export const MOTION_SCENE_LIBRARY_PATTERNS = { WHITESPACE: /\s+/g, HYPHEN: /-/g, DIACRITICS: /[\u0300-\u036f]/g, LOWER_D: /đ/g, TOKENS: /[^a-z0-9]+/ } as const;
 export const MOTION_SCENE_LIBRARY = {
   FOLDER: "scene-library",
   INDEX_FILE: "index.json",
@@ -8,6 +9,7 @@ export const MOTION_SCENE_LIBRARY = {
   STYLE_FILE: "style.json",
   PREVIEW_FOLDER: "library",
   VERSION: 1,
+  PAGE_SIZE: 20,
   KIND_LOCATION: "location",
   KIND_CHARACTER: "character",
   KIND_PROP: "prop",
@@ -34,6 +36,7 @@ export const MOTION_SCENE_LIBRARY = {
   PROP_MIN_SIZE: 0.6,
   PROP_MAX_DEPTH: 6,
   THUMB_EXT: ".jpg",
+  THUMB_MIN_BYTES: 512,
   REF_EXT: ".jpg",
   MIME_JPEG: "image/jpeg",
   DATA_URL_JPEG: "data:image/jpeg;base64,",
@@ -230,6 +233,8 @@ export const MOTION_SCENE_LIBRARY_TEXT = {
     MODE_3D: "3D",
     PLAIN_STYLE: "Không ảnh mẫu",
     REFRESH: "Làm mới",
+    LOADING: "Đang tải kho tài nguyên…",
+    LOADING_HINT: "Đang lấy danh sách nhân vật, bối cảnh và các bộ ảnh mẫu.",
     SEARCH_PLACEHOLDER: "Tìm kiếm nhân vật, bối cảnh, đạo cụ...",
     SCROLL_LEFT: "Cuộn sang trái",
     SCROLL_RIGHT: "Cuộn sang phải",
@@ -310,6 +315,8 @@ export const MOTION_SCENE_LIBRARY_TEXT = {
     MODE_3D: "3D",
     PLAIN_STYLE: "No reference images",
     REFRESH: "Refresh",
+    LOADING: "Loading asset library…",
+    LOADING_HINT: "Fetching characters, locations and reference image sets.",
     SEARCH_PLACEHOLDER: "Search characters, locations, props...",
     SCROLL_LEFT: "Scroll left",
     SCROLL_RIGHT: "Scroll right",

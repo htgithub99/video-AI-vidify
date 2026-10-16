@@ -2,7 +2,7 @@ import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { MOTION_VOICE as C } from "../../constants/motionVoice.js";
+import { MOTION_VOICE as C, MOTION_VOICE_PATTERNS as P } from "../../constants/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance } from "../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
@@ -10,14 +10,15 @@ import { motionSoundSpatial } from "../../lib/motionSoundPlan.js";
 import { directedSpeechText, motionVoiceSignature } from "../../lib/motionVoice.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
-import { listVieneuVoices, synthesizeVieneuSpeech, vieneuRoot } from "./vieneuTtsService.js";
+import { vieneuRoot } from "./vieneuTtsService.js";
+import { listMotionVoices, synthesizeMotionSpeech } from "./motionVoiceSourceService.js";
 import { buildMotionSoundTrack, motionWavHeader, runMotionAudioProcess } from "./motionSoundMixService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import _ from "lodash";
 import { motionAudioHash as hash, motionWavData } from "./motionAudioUtils.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
-export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeVieneuSpeech; }
+export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeMotionSpeech; }
 const deliveryMood = (line: MotionUtterance): number => _.clamp(line.speed || 1, C.TEMPO.SPEED_MIN, C.TEMPO.SPEED_MAX) * (C.DELIVERY_MOOD[line.emotion] || 1);
 const deliveryTempo = (line: MotionUtterance, language: unknown, seconds: number): number => {
   const units = speechUnits(line.text),
@@ -41,7 +42,7 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
       for (let attempt = 0; attempt < 2; attempt++) {
         if (opts.signal?.aborted) throw new Error(C.CANCELLED);
         try {
-          await (deps.synthesize || synthesizeVieneuSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log);
+          await (deps.synthesize || synthesizeMotionSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log);
           failure = undefined;
           break;
         } catch (error) {
@@ -72,7 +73,7 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
   return { id, bytes, duration: bytes / 2 / C.SAMPLE_RATE };
 };
 export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> => {
-  const voices = await (deps.voices || listVieneuVoices)(opts.signal, opts.log),
+  const voices = await (deps.voices || listMotionVoices)(opts.signal, opts.log),
     plan = await directMotionVoice(script, analysis, voices, opts);
   const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging]) + MR.MOTION_TEXT_WAV,
     folder = getMotionAudioDirectory(),
@@ -181,7 +182,7 @@ export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audio
 };
 export const buildSfxTrack = async (durationSeconds: number, cues: unknown, _mood?: string, signal?: AbortSignal): Promise<string | undefined> => (await buildMotionSoundTrack(durationSeconds, cues, {}, signal)).sfxId;
 export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, analysis: MotionStoryAnalysis | null = null): MotionVoiceTrack | undefined => {
-  if (typeof id !== "string" || !/^voice-vieneu-[a-f0-9]{32}\.wav$/.test(id)) return;
+  if (typeof id !== "string" || !P.VOICE_TRACK.test(id)) return;
   const file = path.join(getMotionAudioDirectory(), id);
   try {
     const track = JSON.parse(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;

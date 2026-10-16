@@ -6,7 +6,7 @@ import _ from "lodash";
 import path from "path";
 import * as MR from "../../constants/motionRuntime.js";
 import { MOTION_REFERENCE_CONFIG as RC } from "../../constants/motionReference.js";
-import { MOTION_SCENE_LIBRARY as C, MOTION_SCENE_LIBRARY_PROMPT as P } from "../../constants/motionSceneLibrary.js";
+import { MOTION_SCENE_LIBRARY_PATTERNS as LP, MOTION_SCENE_LIBRARY as C, MOTION_SCENE_LIBRARY_PROMPT as P } from "../../constants/motionSceneLibrary.js";
 import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import { MOTION_SCENE_CATALOG_PROMPT, MOTION_SCENE_LIBRARY_MODES as MODES, MOTION_SCENE_TYPE_OTHER, motionSceneType, motionSceneTypesPrompt, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
 import { characterVariantLook } from "../../lib/motionCharacterVariant.js";
@@ -36,10 +36,11 @@ const readJson = <T>(file: string, fallback: T): T => {
   }
 };
 let indexCache: SceneIndex | null = null;
+const validThumb = (file: string): boolean => fs.existsSync(file) && fs.statSync(file).size >= C.THUMB_MIN_BYTES;
 const readIndex = (): SceneIndex => {
   if (indexCache) return indexCache;
   const data = readJson<SceneIndex>(indexFile(), { version: C.VERSION, items: [] });
-  indexCache = { version: C.VERSION, items: Array.isArray(data.items) ? data.items.filter((item) => C.ID_RE.test(item?.id || MR.MOTION_TEXT_EMPTY)) : [] };
+  indexCache = { version: C.VERSION, items: Array.isArray(data.items) ? data.items.filter((item) => C.ID_RE.test(item?.id || MR.MOTION_TEXT_EMPTY)).map((item) => (item.thumb && !validThumb(thumbFile(item.id)) ? { ...item, thumb: false } : item)) : [] };
   return indexCache;
 };
 const writeIndex = (index: SceneIndex): void => {
@@ -49,7 +50,7 @@ const writeIndex = (index: SceneIndex): void => {
 const cleanText = (value: unknown, max: number): string =>
   _.truncate(
     _.toString(value ?? MR.MOTION_TEXT_EMPTY)
-      .replace(/\s+/g, C.TEXT.SPACE)
+      .replace(LP.WHITESPACE, C.TEXT.SPACE)
       .trim(),
     { length: max },
   );
@@ -92,10 +93,10 @@ export const getSceneAsset = (id: unknown): { item: MotionSceneAsset; data: any 
   return data ? { item, data } : null;
 };
 export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description?: string; tags?: unknown; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string }, data: unknown, thumb?: string | null): MotionSceneAsset => {
-  const id = C.ID_PREFIX[input.kind] + randomUUID().replace(/-/g, MR.MOTION_TEXT_EMPTY).slice(0, 10);
+  const id = C.ID_PREFIX[input.kind] + randomUUID().replace(LP.HYPHEN, MR.MOTION_TEXT_EMPTY).slice(0, 10);
   writeMotionJsonAtomic(itemFile(id), data);
   let hasThumb = false;
-  if (thumb && fs.existsSync(thumb)) {
+  if (thumb && validThumb(thumb)) {
     fs.copyFileSync(thumb, thumbFile(id));
     hasThumb = true;
   }
@@ -148,12 +149,12 @@ export const renameSceneAsset = (id: unknown, name: unknown): MotionSceneAsset =
   writeIndex({ ...index, items: index.items.map((entry) => (entry.id === item.id ? next : entry)) });
   return next;
 };
-export const sceneAssetThumbPath = (id: unknown): string | null => (isSceneAssetId(id) && fs.existsSync(thumbFile(id)) ? thumbFile(id) : null);
-const foldText = (value: string): string => value.normalize(MR.MOTION_TEXT_NFD).replace(/[̀-ͯ]/g, MR.MOTION_TEXT_EMPTY).replace(/đ/g, MR.MOTION_TEXT_D).toLowerCase();
+export const sceneAssetThumbPath = (id: unknown): string | null => (isSceneAssetId(id) && validThumb(thumbFile(id)) ? thumbFile(id) : null);
+const foldText = (value: string): string => value.normalize(MR.MOTION_TEXT_NFD).replace(LP.DIACRITICS, MR.MOTION_TEXT_EMPTY).replace(LP.LOWER_D, MR.MOTION_TEXT_D).toLowerCase();
 const tokensOf = (value: string): Set<string> =>
   new Set(
     foldText(value)
-      .split(/[^a-z0-9]+/)
+      .split(LP.TOKENS)
       .filter((token) => token.length > 2),
   );
 const assetTokens = (item: MotionSceneAsset): Set<string> => tokensOf(_.compact([item.name, item.role, item.description, ...(item.tags || [])]).join(C.TEXT.SPACE));

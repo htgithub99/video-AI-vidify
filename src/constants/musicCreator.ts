@@ -1,4 +1,5 @@
 export const MUSIC_CREATOR_RUNTIME = {
+  EMPTY: "",
   ABORT_ERROR_NAME: "AbortError",
   SEO_SECTION_SEPARATOR: "\n\n",
   SEO_OPTION_SEPARATOR: "\n----------------------------------------\n\n",
@@ -21,4 +22,11 @@ export const MUSIC_DIAGNOSTIC_EVENTS = {
   IMAGE_PROMPT_COMPLETED: "music_image_prompt_completed",
   IMAGE_PROMPT_FAILED: "music_image_prompt_failed",
   IMAGE_GENERATION_FAILED: "music_image_generation_failed",
+} as const;
+export const MUSIC_CREATOR_FORMAT = {
+  JOIN_WITH_SPACE: (first: unknown, second: unknown): string => `${first} ${second}`,
+  TRACKLIST: (heading: unknown, lines: unknown, suffix: unknown): string => `${heading}\n${lines}${suffix}`,
+  PARAGRAPH: (value: unknown): string => `\n\n${value}`,
+  UTF8_BOM: (value: unknown): string => `\uFEFF${value}`,
+  PERCENTAGE: (value: unknown): string => `${value}%`,
 } as const;

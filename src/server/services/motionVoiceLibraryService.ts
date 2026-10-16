@@ -7,16 +7,17 @@ import { MOTION_VOICE_LIBRARY as L } from "../../constants/motionVoice.js";
 import type { MotionVoiceChannel, MotionVoiceChannels, MotionVoiceGroup, MotionVoicePreset } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { vieneuRoot } from "./vieneuTtsService.js";
+import { isAi33Voice } from "../../lib/motionVoice.js";
 interface VoiceMeta { name?: string; gender?: string; age?: string; hidden?: boolean; }
 type VoiceLibrary = Record<string, VoiceMeta>;
-const fileOf = (name: string): string => {
+export const motionVoiceLibraryFile = (name: string): string => {
   const root = vieneuRoot();
   fs.mkdirSync(root, { recursive: true });
   return path.join(root, name);
 };
-const readJson = <T>(name: string, fallback: T): T => {
+export const readMotionVoiceLibraryJson = <T>(name: string, fallback: T): T => {
   try {
-    return JSON.parse(fs.readFileSync(fileOf(name), MR.MOTION_TEXT_UTF8)) as T;
+    return JSON.parse(fs.readFileSync(motionVoiceLibraryFile(name), MR.MOTION_TEXT_UTF8)) as T;
   } catch {
     return fallback;
   }
@@ -27,7 +28,7 @@ const cleanText = (value: unknown): string =>
     .slice(0, L.NAME_MAX);
 const cleanGender = (value: unknown): string => (([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(String(value)) ? String(value) : MR.MOTION_TEXT_EMPTY);
 const cleanAge = (value: unknown): string => ((L.AGES as readonly string[]).includes(String(value)) ? String(value) : MR.MOTION_TEXT_EMPTY);
-export const readVoiceLibrary = (): VoiceLibrary => readJson<VoiceLibrary>(L.LIBRARY_FILE, {});
+export const readVoiceLibrary = (): VoiceLibrary => readMotionVoiceLibraryJson<VoiceLibrary>(L.LIBRARY_FILE, {});
 export const isCustomVoice = (id: string): boolean => id.startsWith(MR.MOTION_TEXT_CUSTOM);
 export const applyVoiceLibrary = (voices: MotionVoicePreset[]): MotionVoicePreset[] => {
   const library = readVoiceLibrary();
@@ -47,21 +48,21 @@ export const updateVoiceMeta = (id: string, patch: { name?: unknown; gender?: un
   if (patch.age !== undefined) next.age = cleanAge(patch.age) || undefined;
   if (restore) delete next.hidden;
   library[id] = next;
-  writeMotionJsonAtomic(fileOf(L.LIBRARY_FILE), library);
+  writeMotionJsonAtomic(motionVoiceLibraryFile(L.LIBRARY_FILE), library);
   return next;
 };
 export const readVoiceChannels = (): MotionVoiceChannels => {
-  const data = readJson<MotionVoiceChannels>(L.CHANNELS_FILE, { channels: [] });
+  const data = readMotionVoiceLibraryJson<MotionVoiceChannels>(L.CHANNELS_FILE, { channels: [] });
   return { channels: Array.isArray(data.channels) ? data.channels : [], ...(data.defaultId ? { defaultId: data.defaultId } : {}) };
 };
-const writeVoiceChannels = (data: MotionVoiceChannels): void => writeMotionJsonAtomic(fileOf(L.CHANNELS_FILE), data);
+const writeVoiceChannels = (data: MotionVoiceChannels): void => writeMotionJsonAtomic(motionVoiceLibraryFile(L.CHANNELS_FILE), data);
 export const removeCustomVoice = (id: string): void => {
-  if (!isCustomVoice(id)) throw new Error(L.VOICE_NOT_CUSTOM);
+  if (!isCustomVoice(id) && !isAi33Voice(id)) throw new Error(L.VOICE_NOT_CUSTOM);
   const users = readVoiceChannels().channels.filter((channel) => channel.narratorVoiceId === id || Object.values(channel.roleVoices || {}).includes(id));
   if (users.length) throw new Error(L.VOICE_IN_USE + users.map((channel) => channel.name).join(MR.MOTION_TEXT_SYMBOL_41));
   const library = readVoiceLibrary();
   library[id] = { ...(library[id] || {}), hidden: true };
-  writeMotionJsonAtomic(fileOf(L.LIBRARY_FILE), library);
+  writeMotionJsonAtomic(motionVoiceLibraryFile(L.LIBRARY_FILE), library);
 };
 export const saveVoiceChannel = (raw: any, voices: MotionVoicePreset[], makeDefault?: boolean): MotionVoiceChannels => {
   const known = (id: unknown): string | undefined => (typeof id === MR.MOTION_TEXT_STRING && voices.some((voice) => voice.id === id) ? (id as string) : undefined);

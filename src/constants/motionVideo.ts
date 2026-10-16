@@ -1,4 +1,5 @@
 import { MotionAspect, MotionQuality } from "../types/motionVideo.js";
+export const MOTION_DIRECTOR_PATTERNS = { WORDS: /\s+/, PUNCTUATION: /[,.;:!?…]/g, SENTENCES: /[^.!?…]+[.!?…]*["”»)]*/g, CLAUSES: /(?<=[,;:–—])\s+/, SENTENCE_END: /[,.;:!?…]$/, BITMAP: /[^01#.* ]/g } as const;
 export interface MotionQualityPreset { id: MotionQuality; scale: number; fps: number; supersample: number; motionBlur: number; layerScale: number; bloom: boolean; grain: boolean; jpegQuality: number; crf: number; x264Preset: string; gpuCq: number; audioBitrate: string; maxBpp: number; }
 export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> = {
   [MotionQuality.DRAFT]: { id: MotionQuality.DRAFT, scale: 2 / 3, fps: 24, supersample: 1, motionBlur: 1, layerScale: 0.75, bloom: false, grain: true, jpegQuality: 0.85, crf: 24, x264Preset: "veryfast", gpuCq: 26, audioBitrate: "160k", maxBpp: 0.12 },

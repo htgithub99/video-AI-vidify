@@ -1,4 +1,5 @@
 export const MOTION_VERIFICATION_TEXTS = {
+  MOTION_ENGINE_CORE_JS: "../motion-engine/core.js",
   MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON: "motion-engine/demo/editorial-qa.json",
   UTF8: "utf8",
   VIDEO: "--video",

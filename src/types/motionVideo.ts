@@ -150,7 +150,7 @@ export interface MotionSeoPack { options: MotionSeoOption[]; chapters: { id: str
 export interface MotionVoiceTrack { provider?: "vieneu"; signature?: string; plan?: MotionVoicePlan; clips?: MotionVoiceClip[]; subtitles?: { start: number; end: number; text: string; speaker?: string }[]; audioId: string; voiceId: string; durations: number[]; totalSeconds: number; }
 export interface MotionUtterance { id: string; speaker: string; role: "narration" | "dialogue" | "thought" | "offscreen"; text: string; emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited"; speed: number; pauseBefore: number; pauseAfter: number; emphasis: string[]; }
 export interface MotionVoiceSettings { voices?: Record<string, string>; utterances?: Record<string, MotionUtterance[]>; }
-export interface MotionVoicePreset { id: string; name: string; gender?: string; description?: string; age?: string; custom?: boolean; }
+export interface MotionVoicePreset { id: string; name: string; gender?: string; description?: string; age?: string; custom?: boolean; source?: string; language?: string; }
 export type MotionVoiceGroup = "male_adult" | "female_adult" | "child" | "senior_male" | "senior_female";
 export interface MotionVoiceChannel { id: string; name: string; narratorVoiceId: string; roleVoices?: Partial<Record<MotionVoiceGroup, string>>; updatedAt: number; }
 export interface MotionVoiceChannels { channels: MotionVoiceChannel[]; defaultId?: string; }

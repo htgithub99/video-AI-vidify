@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import fs from "fs";
 import { motionVideoGenre } from "../../constants/motionGenre.js";
+import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../services/motionVoiceSourceService.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate } from "../services/motionSpeechRateService.js";
 import path from "path";
@@ -72,10 +73,10 @@ import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
 import { libraryMime } from "../services/motionAssetLibraryService.js";
 import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
-import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_LIBRARY, MOTION_VOICE_PATTERNS } from "../../constants/motionVoice.js";
 import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../services/motionVoiceLibraryService.js";
 import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
-import { listVieneuVoices, registerVieneuVoice, synthesizeVieneuSpeech, vieneuRoot } from "../services/vieneuTtsService.js";
+import { registerVieneuVoice, vieneuRoot } from "../services/vieneuTtsService.js";
 import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
@@ -125,7 +126,7 @@ export const uploadMotionAudio = async (req: Request, res: Response): Promise<vo
     const name = path.basename(_.toString(req.body?.name || MOTION_TEXT_VOICE_MP3));
     const ext = _.toLower(path.extname(name)) || MOTION_TEXT_MP3;
     if (!_.includes([MOTION_TEXT_MP3, MOTION_TEXT_WAV, MOTION_TEXT_M4A, MOTION_TEXT_AAC, MOTION_TEXT_OGG, MOTION_TEXT_FLAC], ext)) throw new Error(MOTION_TEXT_DINH_DANG_AM_THANH_KHONG_HO_TRO);
-    const buf = Buffer.from(_.toString(req.body?.base64).replace(/^data:[^,]+,/, MR.MOTION_TEXT_EMPTY), MOTION_TEXT_BASE64);
+    const buf = Buffer.from(_.toString(req.body?.base64).replace(MOTION_VOICE_PATTERNS.DATA_URL, MR.MOTION_TEXT_EMPTY), MOTION_TEXT_BASE64);
     if (buf.length < 1000) throw new Error(MOTION_TEXT_TEP_AM_THANH_TRONG);
     if (buf.length > MOTION_VIDEO_CONSTANTS.MAX_AUDIO_BYTES) throw new Error(MOTION_TEXT_TEP_AM_THANH_QUA_LON);
     const id = MR.MOTION_TEMPLATE_SYMBOL_81(randomUUID(), ext);
@@ -157,8 +158,8 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
       title: _.truncate(_.toString(o.title || spec.title || MR.MOTION_TEXT_EMPTY), { length: 120 }),
       audioId: o.audioId ? path.basename(_.toString(o.audioId)) : undefined,
       audioVolume: _.toNumber(o.audioVolume ?? 1),
-      mixedAudioId: /^mix-motion-[a-f0-9]{32}\.wav$/.test(o.mixedAudioId) ? o.mixedAudioId : undefined,
-      sfxId: /^sfx-real-[a-f0-9]{32}\.wav$/.test(o.sfxId) ? o.sfxId : undefined,
+      mixedAudioId: MOTION_VOICE_PATTERNS.MIX_TRACK.test(o.mixedAudioId) ? o.mixedAudioId : undefined,
+      sfxId: MOTION_VOICE_PATTERNS.SFX_TRACK.test(o.sfxId) ? o.sfxId : undefined,
       sfxVolume: _.toNumber(o.sfxVolume ?? 0.5),
       sfx:
         o.sfx && _.isArray(o.sfx.cues)
@@ -208,7 +209,7 @@ export const clearMotionVideoResults = (_req: Request, res: Response): void => {
 };
 export const selectMotionSaveDestination = async (req: Request, res: Response): Promise<void> => {
   try {
-    const suggested = path.basename(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(`${MOTION_VIDEO_CONSTANTS.EXT_MP4}`)));
+    const suggested = path.basename(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(String(MOTION_VIDEO_CONSTANTS.EXT_MP4))));
     const target = await execFileText(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), MOTION_TEXT_SELECT_SAVE_FILE, suggested, MOTION_VIDEO_CONSTANTS.EXT_MP4]);
     if (!target) return void res.json({ success: true, cancelled: true });
     const token = randomUUID();
@@ -253,7 +254,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const exec = aiExec(req.body?.aiExecution);
     const job = startStoryJob(MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
-      ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(`${source.words}`, `${Math.round(source.sourceSeconds / 60)}`));
+      ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(source.words), String(Math.round(source.sourceSeconds / 60))));
       const analysis = await analyzeStory(source, {
         language,
         length,
@@ -267,7 +268,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
         signal: ctx.signal,
         log: ctx.log,
       });
-      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(`${analysis.chapters.length}`, `${analysis.cast.length}`, `${analysis.places.length}`, `${analysis.facts.length}`));
+      ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(String(analysis.chapters.length), String(analysis.cast.length), String(analysis.places.length), String(analysis.facts.length)));
       return analysis;
     });
     res.json({ success: true, job });
@@ -313,7 +314,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         if (ctx.signal.aborted) throw new Error(MOTION_TEXT_CANCELLED);
         const idx = _.findIndex(chapters, { id: chapter.id });
         ctx.progress(done / todo.length, chapter.id);
-        ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(`${idx + 1}`, `${chapters.length}`, `${chapter.title}`));
+        ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(String(idx + 1), String(chapters.length), String(chapter.title)));
         const prevChapter = idx > 0 ? chapters[idx - 1] : undefined;
         const previous = prevChapter ? byChapter[prevChapter.id] : undefined;
         try {
@@ -326,7 +327,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         }
         done++;
         ctx.progress(done / todo.length, chapter.id);
-        ctx.log(MOTION_TEMPLATE_BEAT(`${byChapter[chapter.id].length}`));
+        ctx.log(MOTION_TEMPLATE_BEAT(String(byChapter[chapter.id].length)));
         ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) });
       };
       await mapMotionAiPool(todo, writeOne);
@@ -399,7 +400,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const note = _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
     if (req.body?.restart) delete script.gen;
     const job = startStoryJob(MotionStoryJobKind.SCENES, async (ctx) => {
-      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listVieneuVoices(ctx.signal, ctx.log), { exec, signal: ctx.signal, log: ctx.log }) : undefined;
+      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec, signal: ctx.signal, log: ctx.log }) : undefined;
       const result = await buildScenes(script, analysis, {
         audioDirection: voicePlan?.direction,
         exec,
@@ -451,7 +452,7 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const job = startStoryJob(MotionStoryJobKind.VOICE, async (ctx) => {
       const track = await buildMotionVoiceTrack(script, analysis, { exec, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
-      ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(`${Math.round(track.totalSeconds)}`));
+      ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
       const measured = recordSpeechRate(script, track.totalSeconds);
       if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
       return track;
@@ -463,17 +464,31 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
 };
 export const listMotionVoices = async (_req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, voices: applyVoiceLibrary(await listVieneuVoices()) });
+    res.json({ success: true, voices: applyVoiceLibrary(await listMotionVoiceSources()) });
   } catch (error) {
     fail(res, 503, error);
   }
 };
 export const previewMotionVoice = async (req: Request, res: Response): Promise<void> => {
   try {
-    const voice = String(req.body?.voice || MOTION_VOICE.DEFAULT).slice(0, 100), text = String(req.body?.text || MOTION_VOICE.PREVIEW_TEXT) .trim() .slice(0, 400);
-    const folder = path.join(vieneuRoot(), MOTION_VOICE.PREVIEW_DIR), file = path.join( folder, createHash(MR.MOTION_TEXT_SHA256) .update(JSON.stringify([voice, text])) .digest(MR.MOTION_TEXT_HEX) .slice(0, 24) + MR.MOTION_TEXT_WAV, );
+    const voice = String(req.body?.voice || MOTION_VOICE.DEFAULT).slice(0, 100),
+      text = String(req.body?.text || MOTION_VOICE.PREVIEW_TEXT)
+        .trim()
+        .slice(0, 400);
+    const folder = path.join(vieneuRoot(), MOTION_VOICE.PREVIEW_DIR);
+    const previewFile = (key: string): string =>
+      path.join(
+        folder,
+        createHash(MR.MOTION_TEXT_SHA256)
+          .update(JSON.stringify([voice, key]))
+          .digest(MR.MOTION_TEXT_HEX)
+          .slice(0, 24) + MR.MOTION_TEXT_WAV,
+      );
     fs.mkdirSync(folder, { recursive: true });
-    const result = fs.existsSync(file) ? { seconds: 0 } : await synthesizeVieneuSpeech(text, voice, file);
+    const file = previewFile(text),
+      sampleFile = previewFile(MOTION_VOICE_LIBRARY.SAMPLE_KEY);
+    if (_.includes([MOTION_VOICE.PREVIEW_TEXT, MOTION_VOICE.PREVIEW_TEXT_EN], text) && isAi33Voice(voice) && (fs.existsSync(sampleFile) || (await ai33VoiceSample(voice, sampleFile).catch(() => false)))) return void res.json({ success: true, seconds: 0, sample: true, base64: (await fs.promises.readFile(sampleFile)).toString(MR.MOTION_TEXT_BASE64) });
+    const result = fs.existsSync(file) ? { seconds: 0 } : await synthesizeMotionSpeech(text, voice, file);
     res.json({ success: true, seconds: result.seconds, base64: (await fs.promises.readFile(file)).toString(MR.MOTION_TEXT_BASE64) });
   } catch (error) {
     fail(res, 400, error);
@@ -482,7 +497,7 @@ export const previewMotionVoice = async (req: Request, res: Response): Promise<v
 export const updateMotionVoiceMeta = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = String(req.body?.id || MR.MOTION_TEXT_EMPTY);
-    if (!applyVoiceLibrary(await listVieneuVoices()).some((voice) => voice.id === id)) throw new Error(MOTION_VOICE_LIBRARY.VOICE_NOT_FOUND);
+    if (!applyVoiceLibrary(await listMotionVoiceSources()).some((voice) => voice.id === id)) throw new Error(MOTION_VOICE_LIBRARY.VOICE_NOT_FOUND);
     res.json({ success: true, meta: updateVoiceMeta(id, { name: req.body?.name, gender: req.body?.gender, age: req.body?.age }) });
   } catch (error) {
     fail(res, 400, error);
@@ -490,8 +505,17 @@ export const updateMotionVoiceMeta = async (req: Request, res: Response): Promis
 };
 export const removeMotionVoice = (req: Request, res: Response): void => {
   try {
-    removeCustomVoice(String(req.body?.id || MR.MOTION_TEXT_EMPTY));
+    const id = String(req.body?.id || MR.MOTION_TEXT_EMPTY);
+    removeCustomVoice(id);
+    removeAi33Voice(id);
     res.json({ success: true });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const addMotionAi33Voice = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, voice: addAi33Voice(req.body?.voice) });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -505,7 +529,7 @@ export const listMotionVoiceChannels = (_req: Request, res: Response): void => {
 };
 export const saveMotionVoiceChannel = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, ...saveVoiceChannel(req.body?.channel, applyVoiceLibrary(await listVieneuVoices()), req.body?.makeDefault === true) });
+    res.json({ success: true, ...saveVoiceChannel(req.body?.channel, applyVoiceLibrary(await listMotionVoiceSources()), req.body?.makeDefault === true) });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -518,13 +542,15 @@ export const removeMotionVoiceChannel = (req: Request, res: Response): void => {
   }
 };
 export const registerMotionVoice = async (req: Request, res: Response): Promise<void> => {
-  const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100), data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(/^data:[^,]*,/, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
+  const name = String(req.body?.name || MOTION_VOICE.NARRATOR).slice(0, 100),
+    data = Buffer.from(String(req.body?.base64 || MR.MOTION_TEXT_EMPTY).replace(MOTION_VOICE_PATTERNS.OPTIONAL_DATA_URL, MR.MOTION_TEXT_EMPTY), MR.MOTION_TEXT_BASE64);
   let source: string = MR.MOTION_TEXT_EMPTY;
   try {
     if (!data.length || data.length > MOTION_VOICE.MAX_REFERENCE_BYTES) throw new Error(MOTION_VOICE.REFERENCE_INVALID);
     const root = path.join(vieneuRoot(), MR.MOTION_TEXT_REFERENCES);
     fs.mkdirSync(root, { recursive: true });
-    const id = MR.MOTION_TEXT_CUSTOM + createHash(MR.MOTION_TEXT_SHA256).update(data).digest(MR.MOTION_TEXT_HEX).slice(0, 32), file = path.join(root, id + MR.MOTION_TEXT_WAV);
+    const id = MR.MOTION_TEXT_CUSTOM + createHash(MR.MOTION_TEXT_SHA256).update(data).digest(MR.MOTION_TEXT_HEX).slice(0, 32),
+      file = path.join(root, id + MR.MOTION_TEXT_WAV);
     source = path.join(root, randomUUID() + MR.MOTION_TEXT_INPUT);
     await fs.promises.writeFile(source, data);
     const seconds = await probeMediaDuration(source);
@@ -557,8 +583,10 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
       );
     const directedScript = typeof req.body?.characterMotion === "boolean" && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
     const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent, voiceTrack });
-    const duration = compiled.spec.duration || 1, voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
-    let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] }, audioPreviewId: string | undefined;
+    const duration = compiled.spec.duration || 1,
+      voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
+    let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },
+      audioPreviewId: string | undefined;
     if (req.body?.sfx === true)
       try {
         sound = await buildMotionSoundTrack(duration, compiled.sfxCues, req.body?.soundOverrides);

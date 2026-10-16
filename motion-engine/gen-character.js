@@ -2,9 +2,20 @@
   "use strict";
   const MT = root.MotionEngineText,
     GEN = root.MotionEngine.GEN,
-    T = GEN.T;
+    T = GEN.T,
+    U = root.MotionEngine.util;
   if (!T) return;
   const DEG = Math.PI / 180;
+  const wobble = (t, rate, seed) => (U.noise(t * rate, seed) - 0.5) * 2;
+  GEN.blinking = (t, seed) => {
+    const clock = t + seed * MT.FACE_BLINK_PERIOD * 0.37,
+      n = Math.floor(clock / MT.FACE_BLINK_PERIOD);
+    for (const k of [n - 1, n]) {
+      const at = k * MT.FACE_BLINK_PERIOD + U.noise(k * 1.37, seed + 17) * MT.FACE_BLINK_JITTER;
+      if (clock >= at && clock < at + MT.FACE_BLINK_DURATION) return true;
+    }
+    return false;
+  };
   const transform = (object, value) => {
     if (value.pos) object.position.fromArray(value.pos);
     if (value.rot) object.rotation.set(...value.rot.map((x) => x * DEG));
@@ -50,11 +61,11 @@
       }
     }
     if (!faces[MT.TALK]) {
-      const open = definition.parts.find((part) => variantOf(part.id) && /mouth|lip/i.test(part.id));
+      const open = definition.parts.find((part) => variantOf(part.id) && MT.FACE_MOUTH_RE.test(part.id));
       if (open) faces[MT.TALK] = { [variantOf(open.id)]: { visible: false }, [open.id]: { visible: true } };
     }
     if (!faces[MT.BLINK]) {
-      const eyes = definition.parts.find((part) => /^eyes?$/i.test(part.id));
+      const eyes = definition.parts.find((part) => MT.FACE_EYES_RE.test(part.id));
       if (eyes) faces[MT.BLINK] = { [eyes.id]: { scale: [1, 0.12, 1] } };
     }
     const style = opts.style || {};
@@ -125,9 +136,24 @@
         };
         if (face) {
           if (face.expression && faces[face.expression]) apply(face.expression);
-          const clock = face.time || 0;
-          if (face.talking && faces[MT.TALK] && Math.floor(clock * 7 + face.seed) % 2 === 0) apply(MT.TALK);
-          if (faces[MT.BLINK] && (clock + face.seed * 1.7) % 3.6 < 0.13) apply(MT.BLINK);
+          const clock = face.time || 0,
+            seed = face.seed || 0;
+          if (face.talking && faces[MT.TALK] && U.noise(clock * MT.FACE_TALK_RATE, seed + 11) > MT.FACE_TALK_OPEN) {
+            apply(MT.TALK);
+            const jaw = MT.FACE_TALK_MIN + U.noise(clock * MT.FACE_TALK_RATE * 1.7, seed + 21) * MT.FACE_TALK_RANGE;
+            for (const [id, value] of Object.entries(faces[MT.TALK])) if (parts[id] && value && value.visible === true) parts[id].scale.y *= jaw;
+          }
+          if (faces[MT.BLINK] && GEN.blinking(clock, seed)) apply(MT.BLINK);
+          const head = parts[definition.anchors[MT.HEAD]] || parts[MT.HEAD];
+          if (head) {
+            head.rotation.y += MT.FACE_HEAD_YAW * DEG * wobble(clock, MT.FACE_HEAD_RATE, seed + 3);
+            head.rotation.x += (MT.FACE_HEAD_PITCH * wobble(clock, MT.FACE_HEAD_RATE, seed + 7) + (face.talking ? MT.FACE_HEAD_TALK * wobble(clock, MT.FACE_NOD_RATE, seed + 5) : 0)) * DEG;
+            head.rotation.z += MT.FACE_HEAD_ROLL * DEG * wobble(clock, MT.FACE_HEAD_RATE * 0.7, seed + 9);
+          }
+          const chest = parts[MT.TORSO];
+          if (chest) chest.position.y += MT.FACE_BREATH * Math.sin(clock * MT.FACE_BREATH_RATE + seed);
+          const eyes = parts[MT.FACE_EYES];
+          if (eyes) eyes.position.x += (MT.FACE_GAZE * Math.round(wobble(Math.floor(clock * MT.FACE_GAZE_RATE) + 0.5, 1, seed + 13) * 2)) / 2;
         }
         for (const [id, angle] of Object.entries(actor.limbSplay)) parts[id].rotation.z += angle;
         for (const [id, delta] of Object.entries(actor.partShift)) parts[id].position.add(delta);
@@ -333,7 +359,7 @@
       box = new T.Box3(),
       down = new T.Vector3(0, 0, -1),
       centre = actor.bounds().getCenter(V3());
-    const roots = Object.values(actor.parts).filter((p) => MT.LIMB_RE.test(p.name) && !(p.parent && MT.LIMB_RE.test(p.parent.name || MT.EMPTY)) && !/leg|foot|tail/i.test(p.name));
+    const roots = Object.values(actor.parts).filter((p) => MT.LIMB_RE.test(p.name) && !(p.parent && MT.LIMB_RE.test(p.parent.name || MT.EMPTY)) && !MT.LOWER_LIMB_RE.test(p.name));
     const seen = (root) => {
       model.updateMatrixWorld(true);
       const own = meshes.filter((o) => under(o, root));

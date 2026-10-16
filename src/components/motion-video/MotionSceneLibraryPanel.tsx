@@ -1,4 +1,7 @@
-import { StudioCard, StudioHeader, StudioInput, StudioTextarea } from "../ui/Studio.js";
+import { StudioCard, StudioHeader, StudioInput, StudioLoadingState, StudioTextarea } from "../ui/Studio.js";
+import { Pagination } from "../ui/Pagination.js";
+import { STUDIO_PAGINATION_TEXT } from "../../constants/studioTheme.js";
+import { getPagination } from "../../lib/pagination.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { MotionDetailRow } from "./MotionDetailRow.js";
@@ -52,18 +55,27 @@ const styleLabel = (key: string, styles: MotionSceneStyleSet[], t: ReturnType<ty
 };
 const useSceneLibrary = () => {
   const [data, setData] = useState<MotionSceneLibraryList>({ items: [], styles: [] });
-  const reload = useCallback(async () => {
+  const [loading, setLoading] = useState(true);
+  const requestId = useRef(0);
+  const reload = useCallback(async (showLoading = true) => {
+    const id = ++requestId.current;
+    if (showLoading) setLoading(true);
     try {
       const result = await motionRequest<MotionSceneLibraryList>(C.URLS.LIST);
-      setData({ items: result.items || [], styles: result.styles || [], base: result.base, pending: result.pending });
+      if (id === requestId.current) setData({ items: result.items || [], styles: result.styles || [], base: result.base, pending: result.pending });
     } catch (error) {
-      toast.error(getMotionErrorMessage(error));
+      if (id === requestId.current) toast.error(getMotionErrorMessage(error));
+    } finally {
+      if (id === requestId.current) setLoading(false);
     }
   }, []);
   useEffect(() => {
     void reload();
+    return () => {
+      requestId.current++;
+    };
   }, [reload]);
-  return { data, reload };
+  return { data, reload, loading };
 };
 const applyStyleSet = async (studio: MotionStudio, style: MotionSceneStyleSet, t: ReturnType<typeof textOf>): Promise<void> => {
   const result = await motionRequest<{ references: MotionStyleReference[] }>(C.URLS.STYLE + encodeURIComponent(style.key));
@@ -106,7 +118,8 @@ const emptyDraft = (): MotionSceneCustomItem => ({
 });
 export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: Lang }> = ({ studio, currentLang }) => {
   const t = textOf(currentLang);
-  const { data, reload } = useSceneLibrary();
+  const { data, reload, loading } = useSceneLibrary();
+  const [page, setPage] = useState(1);
   const [tab, setTab] = useState<LibraryTab>(C.KIND_CHARACTER);
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [styleFilter, setStyleFilter] = useState<string>(ALL);
@@ -154,6 +167,16 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
     if (!normalizedQuery) return data.styles;
     return data.styles.filter((style) => style.name.toLowerCase().includes(normalizedQuery) || style.key.toLowerCase().includes(normalizedQuery));
   }, [data.styles, normalizedQuery]);
+  const totalItems = tab === STYLES_TAB ? visibleStyles.length : visible.length;
+  const { page: currentPage, pageCount, start: pageStart, end: pageEnd } = getPagination(totalItems, page, C.PAGE_SIZE);
+  const pageItems = visible.slice(pageStart, pageEnd);
+  const pageStyles = visibleStyles.slice(pageStart, pageEnd);
+  useEffect(() => {
+    setPage(1);
+  }, [tab, typeFilter, styleFilter, normalizedQuery]);
+  useEffect(() => {
+    setPage((value) => Math.min(value, pageCount));
+  }, [pageCount]);
   const seeding = !!job && ACTIVE.includes(job.status);
   const basePending = data.pending?.[studio.state.drawingMode];
   const run = async (key: string, task: () => Promise<void>) => {
@@ -172,7 +195,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
         try {
           const result = await motionRequest<{ job: MotionStoryJobState }>(C.URLS.STATUS + id);
           setJob(result.job);
-          void reload();
+          void reload(false);
           if (ACTIVE.includes(result.job.status)) return poll(id);
           if (result.job.status === MotionJobStatus.COMPLETED) toast.success(t.SEED_DONE);
           else if (result.job.error) toast.error(result.job.error);
@@ -304,7 +327,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
                   <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_300_TRANSITIO} disabled={!data.items.length} onClick={exportLibrary} title={t.EXPORT}>
                     <Download className={S.W_4_H_4} />
                   </Button>
-                  <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_TRANSI} onClick={() => void reload()} title={t.REFRESH}>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_8_H_8_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_TRANSI} onClick={() => void reload()} disabled={loading} title={t.REFRESH}>
                     <RefreshCw className={S.W_4_H_4} />
                   </Button>
                   <Button
@@ -350,7 +373,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
           </div>
         )}
       </StudioCard>
-      <StudioCard className={S.CARD}>
+      <StudioCard className={S.CARD} aria-busy={loading}>
         <div className={S.FLEX_FLEX_COL_LG_FLEX_ROW_LG_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_4_PB_2_BORDER_B_BORDER}>
           <div className={S.TABS_CONTAINER}>
             {tabs.map(({ id, label, icon: Icon, count, color }) => {
@@ -450,10 +473,12 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             </div>
           )}
         </div>
-        {tab === STYLES_TAB ? (
+        {loading ? (
+          <StudioLoadingState title={t.LOADING} description={t.LOADING_HINT} />
+        ) : tab === STYLES_TAB ? (
           visibleStyles.length ? (
             <div className={S.GRID}>
-              {visibleStyles.map((style) => (
+              {pageStyles.map((style) => (
                 <div key={style.key} className={S.ITEM}>
                   <div className={S.STYLE_STRIP}>
                     {_.range(Math.min(style.images.length, STYLE_THUMBS)).map((index) => (
@@ -502,7 +527,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
           )
         ) : visible.length ? (
           <div className={S.GRID}>
-            {visible.map((item) => {
+            {pageItems.map((item) => {
               const itemTypeStr = typeLabel(item.type, currentLang);
               const isCharacter = item.kind === C.KIND_CHARACTER;
               const isLocation = item.kind === C.KIND_LOCATION;
@@ -599,6 +624,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             </div>
           </div>
         )}
+        {!loading && <Pagination page={currentPage} pageSize={C.PAGE_SIZE} total={totalItems} onChange={setPage} texts={STUDIO_PAGINATION_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI]} />}
       </StudioCard>
       {previewItem && (
         <Modal isOpen={Boolean(previewItem)} onClose={() => setPreviewItem(null)} title={previewItem.name} maxWidth={S.MAX_W_3XL}>

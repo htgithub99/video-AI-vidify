@@ -35,6 +35,7 @@ import {
   startMotionVideoRender,
   uploadMotionAudio,
   voiceMotionStory,
+  addMotionAi33Voice,
   previewMotionVoice,
 } from "../controllers/motionVideoController.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
@@ -44,6 +45,7 @@ router.post(MOTION_VOICE.REFERENCE_ROUTE, registerMotionVoice);
 router.post(MOTION_VOICE.PREVIEW_ROUTE, previewMotionVoice);
 router.post(MOTION_VOICE_LIBRARY.META_ROUTE, updateMotionVoiceMeta);
 router.post(MOTION_VOICE_LIBRARY.REMOVE_ROUTE, removeMotionVoice);
+router.post(MOTION_VOICE_LIBRARY.AI33_ROUTE, addMotionAi33Voice);
 router.get(MOTION_VOICE_LIBRARY.CHANNELS_ROUTE, listMotionVoiceChannels);
 router.post(MOTION_VOICE_LIBRARY.CHANNELS_ROUTE, saveMotionVoiceChannel);
 router.post(MOTION_VOICE_LIBRARY.CHANNEL_DELETE_ROUTE, removeMotionVoiceChannel);
@@ -62,7 +64,7 @@ router.get(MOTION_SOUND_CONFIG.LIST_ROUTE, listMotionSfx);
 router.get(MOTION_SOUND_CONFIG.ASSET_ROUTE, serveMotionSfx);
 router.get(MOTION_VIDEO_API_PATHS.ENGINE, getMotionEngineScript);
 router.get(MOTION_VIDEO_API_PATHS.DEMO, getMotionDemo);
-router.get(MOTION_TEMPLATE_SYMBOL_13(`${MOTION_VIDEO_API_PATHS.ASSET}`), serveMotionAsset);
+router.get(MOTION_TEMPLATE_SYMBOL_13(String(MOTION_VIDEO_API_PATHS.ASSET)), serveMotionAsset);
 router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);

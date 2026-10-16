@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "reac
 import { toast } from "sonner";
 import { Check, ChevronDown, ChevronUp, Mic, Mic2, Music, Pencil, Plus, Radio, RotateCcw, Search, Sparkles, Star, Trash2, Upload, Volume2, X } from "lucide-react";
 import * as MR from "../../constants/motionRuntime.js";
-import { MOTION_VOICE, MOTION_VOICE_AUDIO, MOTION_VOICE_FILTER as F, MOTION_VOICE_PANEL_TEXT as P, MOTION_VOICE_CHANNEL_TEXT, MOTION_VOICE_LIBRARY as L, MOTION_VOICE_PANEL_STYLES as S } from "../../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_PATTERNS, MOTION_VOICE_AUDIO, MOTION_VOICE_FILTER as F, MOTION_VOICE_PANEL_TEXT as P, MOTION_VOICE_CHANNEL_TEXT, MOTION_VOICE_LIBRARY as L, MOTION_VOICE_PANEL_STYLES as S } from "../../constants/motionVoice.js";
 import type { MotionStudio } from "../../hooks/useMotionStudio.js";
 import type { Lang } from "../../lib/lang.js";
 import { getMotionErrorMessage } from "../../lib/motionUtils.js";
+import { motionLanguageCode, motionVoiceMatchesFilter, motionVoiceSpeaks } from "../../lib/motionVoice.js";
 import { cn } from "../../lib/utils";
 import type { MotionVoiceChannel, MotionVoiceGroup, MotionVoicePreset } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
@@ -15,6 +16,7 @@ import { Modal } from "../ui/Modal";
 import { MotionVoicePreviewButton } from "./MotionVoicePreviewButton.js";
 import { ActionBtn, StepHeader } from "./MotionControls.js";
 import { formatBytes, motionRequest, readFileBase64 } from "./motionApi";
+import { VoiceSelectionDialog, type Voice } from "../VoiceSelectionDialog";
 type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>> };
 type VoiceFilter = (typeof F)[keyof typeof F];
 const emptyDraft = (voiceId: string = MR.MOTION_TEXT_EMPTY): Draft => ({
@@ -33,6 +35,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
   const [searchQuery, setSearchQuery] = useState<string>(MR.MOTION_TEXT_EMPTY);
   const [filter, setFilter] = useState<VoiceFilter>(F.ALL);
   const [showUpload, setShowUpload] = useState(false);
+  const [showAi33, setShowAi33] = useState(false);
   const [sample, setSample] = useState<{ file: File | null; name: string; gender: string; age: string }>({
     file: null,
     name: MR.MOTION_TEXT_EMPTY,
@@ -73,14 +76,12 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
   const voiceName = useCallback((id?: string) => voiceItem(id)?.name || id || MR.MOTION_TEXT_EMPTY, [voiceItem]);
   const ageLabel = (age?: string) => (age === MR.MOTION_TEXT_CHILD ? t.AGE_CHILD : age === MR.MOTION_TEXT_SENIOR ? t.AGE_SENIOR : t.AGE_ADULT);
   const genderLabel = (gender?: string) => (gender === MR.MOTION_TEXT_FEMALE ? t.FEMALE : gender === MR.MOTION_TEXT_MALE ? t.MALE : MR.MOTION_TEXT_EMPTY);
+  const voiceSourceLabel = (voice: MotionVoicePreset): string => (voice.source === L.AI33_SOURCE ? t.AI33 : voice.custom ? t.CUSTOM : MR.MOTION_TEXT_EMPTY);
   const sortedVoices = useMemo(() => _.sortBy(voices, [(voice) => (voice.custom ? 0 : 1), (voice) => voice.name]), [voices]);
   const filteredVoices = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return sortedVoices.filter((voice) => {
-      if (filter === F.PRESET && voice.custom) return false;
-      if (filter === F.CUSTOM && !voice.custom) return false;
-      if (filter === F.MALE && voice.gender !== MR.MOTION_TEXT_MALE) return false;
-      if (filter === F.FEMALE && voice.gender !== MR.MOTION_TEXT_FEMALE) return false;
+      if (!motionVoiceMatchesFilter(voice, filter)) return false;
       if (q) {
         const nameMatch = voice.name.toLowerCase().includes(q);
         const descMatch = (voice.description || MR.MOTION_TEXT_EMPTY).toLowerCase().includes(q);
@@ -90,16 +91,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       return true;
     });
   }, [sortedVoices, filter, searchQuery]);
-  const counts = useMemo(
-    () => ({
-      all: voices.length,
-      preset: voices.filter((v) => !v.custom).length,
-      custom: voices.filter((v) => v.custom).length,
-      male: voices.filter((v) => v.gender === MR.MOTION_TEXT_MALE).length,
-      female: voices.filter((v) => v.gender === MR.MOTION_TEXT_FEMALE).length,
-    }),
-    [voices],
-  );
+  const counts = useMemo(() => Object.fromEntries(Object.values(F).map((key) => [key, voices.filter((voice) => motionVoiceMatchesFilter(voice, key)).length])) as Record<VoiceFilter, number>, [voices]);
   const testPresets = useMemo(
     () => [
       { label: t.PRESET_SENTENCE_DEFAULT, text: MOTION_VOICE.PREVIEW_TEXT },
@@ -127,9 +119,11 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       }
       stopAudio();
       void run(voice, async () => {
+        const preset = voices.find((item) => item.id === voice);
+        const sample = previewText || MOTION_VOICE.PREVIEW_TEXT;
         const data = await motionRequest<{ base64: string }>(L.PREVIEW_URL, {
           voice,
-          text: previewText || MOTION_VOICE.PREVIEW_TEXT,
+          text: sample === MOTION_VOICE.PREVIEW_TEXT && preset && !motionVoiceSpeaks(preset, MR.MOTION_TEXT_VI) ? MOTION_VOICE.PREVIEW_TEXT_EN : sample,
         });
         const audio = new Audio(MOTION_VOICE_AUDIO.MIME_PREFIX + data.base64);
         audioRef.current = audio;
@@ -148,7 +142,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
         await audio.play();
       });
     },
-    [playingId, previewText, stopAudio],
+    [playingId, previewText, stopAudio, voices],
   );
   const saveChannel = () =>
     draft &&
@@ -189,7 +183,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       const base64 = await readFileBase64(sample.file!);
       const data = await motionRequest<{ voice: MotionVoicePreset }>(MOTION_VOICE.REFERENCE_URL, {
         base64,
-        name: sample.name || sample.file!.name.replace(/\.[^.]+$/, MR.MOTION_TEXT_EMPTY),
+        name: sample.name || sample.file!.name.replace(MOTION_VOICE_PATTERNS.FILE_EXTENSION, MR.MOTION_TEXT_EMPTY),
         gender: sample.gender,
         age: sample.age,
       });
@@ -206,6 +200,15 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       setEditing(null);
       await loadVoices();
     });
+  const addAi33 = (voice: Voice) =>
+    run(L.AI33_SOURCE, async () => {
+      const data = await motionRequest<{ voice: MotionVoicePreset }>(L.AI33_URL, { voice });
+      setShowAi33(false);
+      await loadVoices();
+      setFilter(F.AI33);
+      toast.success(t.AI33_ADDED(data.voice?.name || voice.name));
+      if (data.voice?.id) void preview(data.voice.id);
+    });
   const removeVoice = (voice: MotionVoicePreset) =>
     run(voice.id, async () => {
       await motionRequest(L.REMOVE_URL, { id: voice.id });
@@ -217,7 +220,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       {allowAuto ? <option value={MR.MOTION_TEXT_EMPTY}>{t.AUTO}</option> : null}
       {_.map(sortedVoices, (voice) => (
         <option key={voice.id} value={voice.id}>
-          {_.compact([voice.name, genderLabel(voice.gender), ageLabel(voice.age), voice.custom ? t.CUSTOM : MR.MOTION_TEXT_EMPTY]).join(MR.MOTION_TEXT_SYMBOL_41)}
+          {_.compact([voice.name, genderLabel(voice.gender), ageLabel(voice.age), voiceSourceLabel(voice)]).join(MR.MOTION_TEXT_SYMBOL_41)}
         </option>
       ))}
     </StudioSelect>
@@ -282,7 +285,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
               n={MR.MOTION_TEXT_EMPTY + 1}
               icon={Radio}
               title={t.CHANNELS}
-              badge={`${channels.length}`}
+              badge={String(channels.length)}
               right={
                 <ActionBtn icon={Plus} variant={MR.MOTION_TEXT_PRIMARY} onClick={openNewChannelModal} disabled={!voices.length}>
                   {t.NEW_CHANNEL}
@@ -393,13 +396,19 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
               n={MR.MOTION_TEXT_EMPTY + 2}
               icon={Mic2}
               title={t.LIBRARY}
-              badge={`${voices.length}`}
+              badge={String(voices.length)}
               right={
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setShowUpload(!showUpload)} className={cn(S.UPLOAD_TOGGLE, showUpload ? S.UPLOAD_TOGGLE_ACTIVE : S.UPLOAD_TOGGLE_INACTIVE)}>
-                  <Upload className={S.ICON_SMALL_PURPLE} />
-                  <span>{t.CREATE_VOICE_BTN}</span>
-                  {showUpload ? <ChevronUp className={S.ICON_COLLAPSE} /> : <ChevronDown className={S.ICON_COLLAPSE} />}
-                </Button>
+                <div className={S.INLINE_ROW}>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setShowAi33(true)} disabled={busy === L.AI33_SOURCE} title={t.ADD_AI33_HINT} className={cn(S.UPLOAD_TOGGLE, S.UPLOAD_TOGGLE_INACTIVE)}>
+                    <Volume2 className={S.ICON_SMALL_PURPLE} />
+                    <span>{t.ADD_AI33}</span>
+                  </Button>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setShowUpload(!showUpload)} className={cn(S.UPLOAD_TOGGLE, showUpload ? S.UPLOAD_TOGGLE_ACTIVE : S.UPLOAD_TOGGLE_INACTIVE)}>
+                    <Upload className={S.ICON_SMALL_PURPLE} />
+                    <span>{t.CREATE_VOICE_BTN}</span>
+                    {showUpload ? <ChevronUp className={S.ICON_COLLAPSE} /> : <ChevronDown className={S.ICON_COLLAPSE} />}
+                  </Button>
+                </div>
               }
             />
             <p className={S.HINT}>{t.LIBRARY_HINT}</p>
@@ -423,7 +432,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                     setSample({
                       ...sample,
                       file,
-                      name: sample.name || (file ? file.name.replace(/\.[^.]+$/, MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEXT_EMPTY),
+                      name: sample.name || (file ? file.name.replace(MOTION_VOICE_PATTERNS.FILE_EXTENSION, MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEXT_EMPTY),
                     });
                   }}
                   className={S.HIDDEN}
@@ -546,6 +555,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                       { id: F.ALL, label: P.FILTER_LABEL(t.FILTER_ALL, counts.all) },
                       { id: F.PRESET, label: P.FILTER_LABEL(t.FILTER_PRESET, counts.preset) },
                       { id: F.CUSTOM, label: P.FILTER_LABEL(t.FILTER_CUSTOM, counts.custom) },
+                      { id: F.AI33, label: P.FILTER_LABEL(t.FILTER_AI33, counts.ai33) },
                       { id: F.MALE, label: P.FILTER_LABEL(t.FILTER_MALE, counts.male) },
                       { id: F.FEMALE, label: P.FILTER_LABEL(t.FILTER_FEMALE, counts.female) },
                     ] as const
@@ -562,6 +572,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 {_.map(filteredVoices, (voice) => {
                   const isPlaying = playingId === voice.id;
                   const isMale = voice.gender === MR.MOTION_TEXT_MALE;
+                  const isPreset = motionVoiceMatchesFilter(voice, F.PRESET);
                   return (
                     <div key={voice.id} className={isPlaying ? S.ITEM_ACTIVE : S.ITEM}>
                       <MotionVoicePreviewButton voiceId={voice.id} playingId={playingId} busyId={busy} playLabel={t.PREVIEW} stopLabel={t.STOP_PREVIEW} onPreview={preview} />
@@ -580,9 +591,10 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                           <>
                             <div className={S.ROW}>
                               <span className={S.ITEM_TITLE}>{voice.name}</span>
-                              <span className={voice.custom ? S.BADGE : S.BADGE_MUTED}>{voice.custom ? t.CUSTOM : t.PRESET}</span>
+                              <span className={isPreset ? S.BADGE_MUTED : S.BADGE}>{voiceSourceLabel(voice) || t.PRESET}</span>
                               {voice.gender && <span className={isMale ? S.BADGE_GENDER_MALE : S.BADGE_GENDER_FEMALE}>{genderLabel(voice.gender)}</span>}
                               {voice.age && <span className={S.AGE_BADGE}>{ageLabel(voice.age)}</span>}
+                              {voice.language && <span className={S.AGE_BADGE}>{motionLanguageCode(voice.language).toUpperCase()}</span>}
                             </div>
                             {voice.description && <div className={S.ITEM_SUB}>{voice.description}</div>}
                           </>
@@ -595,7 +607,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                           <span className={S.EQUALIZER_RIGHT} />
                         </div>
                       )}
-                      {voice.custom && !editing && (
+                      {!isPreset && !editing && (
                         <div className={S.VOICE_ACTIONS}>
                           <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.RENAME} disabled={!!busy} onClick={() => setEditing({ id: voice.id, name: voice.name })} className={S.ICON_BTN}>
                             <Pencil className={S.ICON} />
@@ -674,6 +686,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
           </div>
         )}
       </Modal>
+      <VoiceSelectionDialog isOpen={showAi33} onClose={() => setShowAi33(false)} onSelectVoice={addAi33} currentLang={currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI} favoriteVoices={[]} onToggleFavoriteVoice={_.noop} persistenceScope={L.AI33_SCOPE} />
     </div>
   );
 };

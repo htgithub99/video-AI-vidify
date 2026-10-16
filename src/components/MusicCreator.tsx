@@ -1,4 +1,8 @@
-import { StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "./ui/Studio.js";
+import { useMotionClipboard } from "../hooks/useMotionClipboard.js";
+import * as SRT from "../constants/sourceText.js";
+import * as MCS from "../constants/musicCreatorStyles.js";
+import { MUSIC_CREATOR_FORMAT as MCF } from "../constants/musicCreator.js";
+import { StudioLoadingState, StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_1_1,
   SOURCE_TEMPLATE_HTTP,
@@ -179,10 +183,7 @@ const writeMusicMedia = async (key: string, value: string): Promise<void> => {
     transaction.onerror = () => reject(transaction.error);
   });
 };
-interface SavedMusicStyle {
-  title: string;
-  content: string;
-}
+interface SavedMusicStyle { title: string; content: string; }
 type SavedMusicInspo = SavedMusicStyle;
 const readSavedInspos = (): SavedMusicInspo[] => {
   const items = jsonUtils.getItem<SavedMusicInspo[]>(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, []);
@@ -192,23 +193,8 @@ const readSavedStyles = (): SavedMusicStyle[] => {
   const items = jsonUtils.getItem<any[]>(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, []);
   return _.compact(_.map(items, (item) => (_.isString(item) ? { title: _.split(item, SOURCE_TEXT_SYMBOL_4)[0], content: item } : item?.title && item?.content ? item : undefined)));
 };
-interface SongSeoOption {
-  title: string;
-  description: string;
-  hashtags: string[];
-  tags: string[];
-  seoScore: number;
-}
-interface GeneratedSong {
-  songId: string;
-  title: string;
-  lyrics: string;
-  genre: string;
-  mood: string;
-  tempoBpm: number;
-  structure: string[];
-  originalityNotes: string[];
-}
+interface SongSeoOption { title: string; description: string; hashtags: string[]; tags: string[]; seoScore: number; }
+interface GeneratedSong { songId: string; title: string; lyrics: string; genre: string; mood: string; tempoBpm: number; structure: string[]; originalityNotes: string[]; }
 interface MusicStyleAnalysis {
   market: { country: string; region: string; language: string; dialect: string; audienceAge: string; lyricalCharacterAge: string; contentSuitability: string; confidence: number };
   era: { songwritingEra: string; productionEra: string };
@@ -226,7 +212,7 @@ const formatStyleAnalysisItems = (items: unknown[]): string =>
   _.chain(items)
     .map((item) => {
       if (_.isString(item)) return _.trim(item);
-      if (!_.isPlainObject(item)) return "";
+      if (!_.isPlainObject(item)) return MUSIC_CREATOR_RUNTIME.EMPTY;
       return _.chain(item as Record<string, unknown>)
         .values()
         .filter((value) => _.isString(value) || _.isNumber(value))
@@ -238,28 +224,9 @@ const formatStyleAnalysisItems = (items: unknown[]): string =>
     .compact()
     .join(SOURCE_TEXT_SYMBOL_6)
     .value();
-interface CuratedDownloadedTrack {
-  songId: string;
-  title: string;
-  qualityScore: number;
-  durationSeconds: number;
-  startSeconds: number;
-}
-interface DownloadedMusicTrack {
-  songId: string;
-  title: string;
-}
-interface SunoSettings {
-  excludeStyles: string;
-  vocalGender: "male" | "female" | "auto";
-  duration: "auto";
-  maxMode: boolean;
-  weirdness: number;
-  styleInfluence: number;
-  audioInfluence: number;
-  variety: number;
-  personalize: boolean;
-}
+interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number; }
+interface DownloadedMusicTrack { songId: string; title: string; }
+interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence: number; variety: number; personalize: boolean; }
 interface SunoSettingsAnalysis {
   productionAssessment: { syntheticRole: string; cultureAndMarket: string; eraAndGenre: string; vocalProfile: string; songAndArrangementProfile: string; productionGoal: string; risks: string[] };
   parameterRationale: { excludeStyles: string; vocalGender: string; maxMode: string; weirdness: string; styleInfluence: string; audioInfluence: string; variety: string; personalize: string };
@@ -275,13 +242,13 @@ const SunoParameterAnalysisDetails = ({ analysis, texts }: { analysis?: SunoPara
     [texts.SUNO_SETTINGS_INTERACTION_LABEL, analysis.interactions],
   ];
   return (
-    <div className={cn("space-y-1.5 pt-1.5 border-t border-slate-800/60 min-w-0")}>
+    <div className={cn(MCS.SPACE_Y_1_5_PT_1_5_BORDER_T_BORDER_SLATE_800_60_MIN_W_0)}>
       {_.map(
         rows,
         ([label, value]) =>
           value && (
-            <p key={label} className={cn("text-[10px] text-slate-300 leading-relaxed break-words")}>
-              <span className={cn("font-bold text-slate-500")}>
+            <p key={label} className={cn(MCS.TEXT_10PX_TEXT_SLATE_300_LEADING_RELAXED_BREAK_WORDS)}>
+              <span className={cn(MCS.FONT_BOLD_TEXT_SLATE_500)}>
                 {label}
                 {SOURCE_TEXT_SYMBOL_7}
               </span>
@@ -289,7 +256,7 @@ const SunoParameterAnalysisDetails = ({ analysis, texts }: { analysis?: SunoPara
             </p>
           ),
       )}
-      <span className={cn("inline-flex text-[9px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded")}>
+      <span className={cn(MCS.INLINE_FLEX_TEXT_9PX_FONT_BOLD_TEXT_CYAN_300_BG_CYAN_500_10_BORDER_BORDER_C)}>
         {texts.SUNO_SETTINGS_CONFIDENCE_LABEL}
         {SOURCE_TEXT_SYMBOL_7}
         {analysis.confidence}
@@ -305,43 +272,43 @@ const formatPlaylistTimestamp = (seconds: number): string => {
   const hours = Math.floor(wholeSeconds / 3600);
   const minutes = Math.floor((wholeSeconds % 3600) / 60);
   const remainingSeconds = wholeSeconds % 60;
-  return hours > 0 ? SOURCE_TEMPLATE_SYMBOL_7(`${_.padStart(_.toString(hours), 2, SOURCE_TEXT_0)}`, `${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`, `${_.padStart(_.toString(remainingSeconds), 2, SOURCE_TEXT_0)}`) : SOURCE_TEMPLATE_SYMBOL_8(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`, `${_.padStart(_.toString(remainingSeconds), 2, SOURCE_TEXT_0)}`);
+  return hours > 0 ? SOURCE_TEMPLATE_SYMBOL_7(String(_.padStart(_.toString(hours), 2, SOURCE_TEXT_0)), String(_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)), String(_.padStart(_.toString(remainingSeconds), 2, SOURCE_TEXT_0))) : SOURCE_TEMPLATE_SYMBOL_8(String(_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)), String(_.padStart(_.toString(remainingSeconds), 2, SOURCE_TEXT_0)));
 };
 const replaceSeoTracklistWithTimestamps = (description: string, tracks: CuratedDownloadedTrack[]): string => {
   const heading = SUNO_AUTOMATION_CONFIG.SEO_HEADING_TRACKLIST;
   const headingIndex = description.indexOf(heading);
-  const timestampLines = _.map(tracks, (track) => `${formatPlaylistTimestamp(track.startSeconds)} ${track.title}`).join("\n");
+  const timestampLines = _.map(tracks, (track) => MCF.JOIN_WITH_SPACE(formatPlaylistTimestamp(track.startSeconds), track.title)).join(SRT.SOURCE_TEXT_SYMBOL_56);
   if (headingIndex < 0) {
-    const lines = description.split("\n");
+    const lines = description.split(SRT.SOURCE_TEXT_SYMBOL_56);
     const existingTimestamps = _.findIndex(lines, (line) => MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(line));
-    if (existingTimestamps < 0) return _.compact([_.trim(description), timestampLines]).join("\n\n");
+    if (existingTimestamps < 0) return _.compact([_.trim(description), timestampLines]).join(MUSIC_CREATOR_RUNTIME.SEO_SECTION_SEPARATOR);
     let afterTimestamps = existingTimestamps;
     while (afterTimestamps < lines.length && MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(lines[afterTimestamps])) afterTimestamps += 1;
-    return _.compact([_.trim(_.slice(lines, 0, existingTimestamps).join("\n")), timestampLines, _.trim(_.slice(lines, afterTimestamps).join("\n"))]).join("\n\n");
+    return _.compact([_.trim(_.slice(lines, 0, existingTimestamps).join(SRT.SOURCE_TEXT_SYMBOL_56)), timestampLines, _.trim(_.slice(lines, afterTimestamps).join(SRT.SOURCE_TEXT_SYMBOL_56))]).join(MUSIC_CREATOR_RUNTIME.SEO_SECTION_SEPARATOR);
   }
   const beforeTracklist = description.slice(0, headingIndex + heading.length);
   const afterHeading = description.slice(headingIndex + heading.length);
-  const remainingLines = afterHeading.split("\n");
+  const remainingLines = afterHeading.split(SRT.SOURCE_TEXT_SYMBOL_56);
   let lineIndex = 0;
   while (lineIndex < remainingLines.length && (_.isEmpty(_.trim(remainingLines[lineIndex])) || MUSIC_CREATOR_REGEXES.NUMBERED_LINE.test(remainingLines[lineIndex]) || MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE.test(remainingLines[lineIndex]))) lineIndex += 1;
-  const suffix = _.slice(remainingLines, lineIndex).join("\n").trim();
-  return `${beforeTracklist}\n${timestampLines}${suffix ? `\n\n${suffix}` : ""}`;
+  const suffix = _.slice(remainingLines, lineIndex).join(SRT.SOURCE_TEXT_SYMBOL_56).trim();
+  return MCF.TRACKLIST(beforeTracklist, timestampLines, suffix ? MCF.PARAGRAPH(suffix) : MUSIC_CREATOR_RUNTIME.EMPTY);
 };
 const restoreSeoTimestampTitles = (description: string, songs: Array<{ title: string }>): string => {
   let songIndex = 0;
-  return _.map(description.split("\n"), (line) => {
+  return _.map(description.split(SRT.SOURCE_TEXT_SYMBOL_56), (line) => {
     const match = line.match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE);
     if (!match) return line;
     const title = _.trim(songs[songIndex]?.title);
     songIndex += 1;
-    return title ? `${match[1]} ${title}` : line;
-  }).join("\n");
+    return title ? MCF.JOIN_WITH_SPACE(match[1], title) : line;
+  }).join(SRT.SOURCE_TEXT_SYMBOL_56);
 };
 const getSeoTrackOrder = (description: string): string =>
   _.compact(
-    _.map(description.split("\n"), (line) => {
+    _.map(description.split(SRT.SOURCE_TEXT_SYMBOL_56), (line) => {
       const match = line.match(MUSIC_CREATOR_REGEXES.TIMESTAMP_LINE);
-      return match ? _.trim(line.slice(match[1].length)) : "";
+      return match ? _.trim(line.slice(match[1].length)) : MUSIC_CREATOR_RUNTIME.EMPTY;
     }),
   ).join(SOURCE_TEXT_SYMBOL_2);
 interface PersistedMusicCreatorState {
@@ -390,16 +357,9 @@ const readMusicCreatorState = (): PersistedMusicCreatorState => {
     songTitleSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION,
   };
 };
-interface MusicCreatorProps {
-  currentLang?: "vi" | "en";
-}
+interface MusicCreatorProps { currentLang?: "vi" | "en"; }
 type MusicCreatorTexts = (typeof MUSIC_CREATOR_TEXTS)[keyof typeof MUSIC_CREATOR_TEXTS];
-interface HeaderProps {
-  texts: MusicCreatorTexts;
-  isAiConfigOpen: boolean;
-  onToggleAiConfig: () => void;
-  isLoading: boolean;
-}
+interface HeaderProps { texts: MusicCreatorTexts; isAiConfigOpen: boolean; onToggleAiConfig: () => void; isLoading: boolean; }
 const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onToggleAiConfig, isLoading }) => (
   <StudioHeader
     icon={Music2}
@@ -408,7 +368,7 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onTo
     badge={<>{texts.HEADER_BADGE}</>}
     actions={
       <>
-        <div className={cn("flex items-center gap-2 self-start sm:self-auto")}>
+        <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SELF_START)}>
           <Tooltip content={texts.AI_CONFIG_TOOLTIP} align={SOURCE_TEXT_END}>
             <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={onToggleAiConfig} disabled={isLoading} expanded={isAiConfigOpen} label={<>{texts.AI_CONFIG_TITLE}</>} />
           </Tooltip>
@@ -416,213 +376,190 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onTo
       </>
     }></StudioHeader>
 );
-interface SongCardProps {
-  song: GeneratedSong;
-  index: number;
-  texts: MusicCreatorTexts;
-}
+interface SongCardProps { song: GeneratedSong; index: number; texts: MusicCreatorTexts; }
 const toSentenceCase = (text: string): string => {
   const trimmed = _.trim(text);
-  if (!trimmed) return "";
+  if (!trimmed) return MUSIC_CREATOR_RUNTIME.EMPTY;
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
 const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const handleCopy = (text: string, key: string, successMsg: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast.success(successMsg);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  const { copiedKey, copyText: handleCopy } = useMotionClipboard();
   const displayTitle = toSentenceCase(song.title);
   return (
-    <StudioCard className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3.5 sm:p-4 shadow-lg space-y-2 hover:border-purple-500/40 transition-all text-left backdrop-blur-md")}>
-      <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800/80")}>
-        <div className={cn("flex items-center gap-2.5 min-w-0 flex-wrap")}>
-          <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-mono text-xs sm:text-sm font-black shrink-0 select-none shadow-2xs")}>
+    <StudioCard className={cn(MCS.ROUNDED_2XL_BORDER_BORDER_SLATE_800_80_BG_SLATE_900_60_P_3_5_SM_P_4_SHADOW)}>
+      <div className={cn(MCS.FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200)}>
+        <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0_FLEX_WRAP)}>
+          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_PY_0_5_ROUNDED_LG_BG_PURPLE_50)}>
             {SOURCE_TEXT_SYMBOL_9}
             {index + 1}
           </span>
-          <h3 className={cn("text-sm sm:text-base font-black !text-[#0f172a] dark:!text-slate-100 truncate max-w-[200px] sm:max-w-md")} title={displayTitle}>
+          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_TRUNCATE_MA)} title={displayTitle}>
             {displayTitle}
           </h3>
-          <Button
-            variant={SOURCE_TEXT_UNSTYLED}
-            type={SOURCE_TEXT_BUTTON}
-            onClick={() => handleCopy(displayTitle, SOURCE_TEMPLATE_TITLE(`${index}`), texts.COPY_TITLE_SUCCESS)}
-            className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
-            title={copiedKey === SOURCE_TEMPLATE_TITLE(`${index}`) ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
-            {copiedKey === SOURCE_TEMPLATE_TITLE(`${index}`) ? <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} /> : <Copy className={cn("w-3.5 h-3.5 shrink-0")} />}
+          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(displayTitle, SOURCE_TEMPLATE_TITLE(String(index)), texts.COPY_TITLE_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_TITLE(String(index)) ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
+            {copiedKey === SOURCE_TEMPLATE_TITLE(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
           </Button>
         </div>
-        <div className={cn("flex items-center gap-1.5 flex-wrap")}>
-          {song.genre && <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800/60 !text-[#0369a1] dark:!text-sky-300 select-none")}>{song.genre}</span>}
+        <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX)}>
+          {song.genre && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_SKY_50_DARK_BG_SKY_950_50_BOR)}>{song.genre}</span>}
           {song.tempoBpm > 0 && (
-            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 !text-[#9a3412] dark:!text-amber-300 inline-flex items-center gap-1 select-none")}>
-              <Clock className={cn("w-3 h-3 !text-[#c2410c] dark:!text-amber-400 shrink-0")} />
+            <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_AMBER_50_DARK_BG_AMBER_950_50)}>
+              <Clock className={cn(MCS.W_3_H_3_TEXT_C2410C_DARK_TEXT_AMBER_400_SHRINK_0)} />
               <span>
                 {song.tempoBpm} {texts.BPM_UNIT}
               </span>
             </span>
           )}
-          {song.mood && <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 !text-[#065f46] dark:!text-emerald-300 select-none")}>{song.mood}</span>}
+          {song.mood && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_EMERALD_50_DARK_BG_EMERALD_95)}>{song.mood}</span>}
         </div>
       </div>
       {song.lyrics && (
-        <div className={cn("space-y-1.5 pt-0.5")}>
-          <div className={cn("flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300")}>
-            <span className={cn("flex items-center gap-1.5 font-mono text-[10px] text-pink-600 dark:text-pink-400 uppercase tracking-wider font-bold")}>
-              <FileText className={cn("w-3 h-3")} />
+        <div className={cn(MCS.SPACE_Y_1_5_PT_0_5)}>
+          <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_TEXT_XS_FONT_BOLD_TEXT_SLATE_700_DARK_TEX)}>
+            <span className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_FONT_MONO_TEXT_10PX_TEXT_PINK_600_DARK_TEXT_PINK)}>
+              <FileText className={cn(SRT.SOURCE_TEXT_W_3_H_3)} />
               {texts.LYRICS_TITLE}
             </span>
-            <Button
-              variant={SOURCE_TEXT_UNSTYLED}
-              type={SOURCE_TEXT_BUTTON}
-              onClick={() => handleCopy(song.lyrics, SOURCE_TEMPLATE_LYRICS(`${index}`), texts.COPY_LYRICS_SUCCESS)}
-              className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
-              title={copiedKey === SOURCE_TEMPLATE_LYRICS(`${index}`) ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
-              {copiedKey === SOURCE_TEMPLATE_LYRICS(`${index}`) ? <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} /> : <Copy className={cn("w-3.5 h-3.5 shrink-0")} />}
+            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(song.lyrics, SOURCE_TEMPLATE_LYRICS(String(index)), texts.COPY_LYRICS_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_LYRICS(String(index)) ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
+              {copiedKey === SOURCE_TEMPLATE_LYRICS(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
             </Button>
           </div>
-          <pre className={cn("p-3.5 rounded-xl bg-slate-955/90 border border-slate-800/90 text-xs font-sans whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar text-slate-200 leading-relaxed shadow-inner")}>{song.lyrics}</pre>
+          <pre className={cn(MCS.P_3_5_ROUNDED_XL_BG_SLATE_955_90_BORDER_BORDER_SLATE_800_90_TEXT_XS_FONT_SA)}>{song.lyrics}</pre>
         </div>
       )}
     </StudioCard>
   );
 };
-interface PlaylistSeoCardProps {
-  seoOptions: SongSeoOption[];
-  texts: MusicCreatorTexts;
-  playlistUrl: string;
-  columns?: 1 | 2 | 3;
-}
+interface PlaylistSeoCardProps { seoOptions: SongSeoOption[]; texts: MusicCreatorTexts; playlistUrl: string; columns?: 1 | 2 | 3; }
 const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, playlistUrl, columns = 3 }) => {
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const handleCopy = (text: string, key: string, successMsg: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast.success(successMsg);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  const { copiedKey, copyText: handleCopy } = useMotionClipboard();
   const handleCopyFullOption = (opt: SongSeoOption, index: number) => {
     const trackOrder = getSeoTrackOrder(opt.description);
-    const trackOrderSection = trackOrder ? SOURCE_TEMPLATE_SYMBOL_9(`${texts.SEO_TRACK_ORDER}`, `${trackOrder}`) : "";
-    const fullText = SOURCE_TEMPLATE_SYMBOL_10(`${texts.formatOptionLabel(index + 1)}`, `${texts.formatScoreLabel(opt.seoScore)}`, `${texts.SEO_FIELD_TITLE}`, `${opt.title}`, `${texts.SEO_FIELD_DESCRIPTION}`, `${opt.description}`, `${trackOrderSection}`, `${texts.SEO_HASHTAGS_SECTION}`, `${opt.hashtags.join(" ")}`, `${texts.SEO_TAGS_SECTION}`, `${opt.tags.join(SOURCE_TEXT_SYMBOL_10)}`);
-    handleCopy(fullText, SOURCE_TEMPLATE_SEO_ALL(`${index}`), texts.COPY_SEO_OPTION_SUCCESS);
+    const trackOrderSection = trackOrder ? SOURCE_TEMPLATE_SYMBOL_9(String(texts.SEO_TRACK_ORDER), String(trackOrder)) : MUSIC_CREATOR_RUNTIME.EMPTY;
+    const fullText = SOURCE_TEMPLATE_SYMBOL_10(
+      String(texts.formatOptionLabel(index + 1)),
+      String(texts.formatScoreLabel(opt.seoScore)),
+      String(texts.SEO_FIELD_TITLE),
+      String(opt.title),
+      String(texts.SEO_FIELD_DESCRIPTION),
+      String(opt.description),
+      String(trackOrderSection),
+      String(texts.SEO_HASHTAGS_SECTION),
+      String(opt.hashtags.join(SRT.SOURCE_TEXT_SYMBOL_52)),
+      String(texts.SEO_TAGS_SECTION),
+      String(opt.tags.join(SOURCE_TEXT_SYMBOL_10)),
+    );
+    handleCopy(fullText, SOURCE_TEMPLATE_SEO_ALL(String(index)), texts.COPY_SEO_OPTION_SUCCESS);
   };
   const handleExportText = async () => {
     const optionSections = _.map(seoOptions, (opt, index) => {
       const trackOrder = getSeoTrackOrder(opt.description);
-      const trackOrderSection = trackOrder ? SOURCE_TEMPLATE_SYMBOL_9(`${texts.SEO_TRACK_ORDER}`, `${trackOrder}`) : "";
-      return SOURCE_TEMPLATE_SYMBOL_10(`${texts.formatOptionLabel(index + 1)}`, `${texts.formatScoreLabel(opt.seoScore)}`, `${texts.SEO_FIELD_TITLE}`, `${opt.title}`, `${texts.SEO_FIELD_DESCRIPTION}`, `${opt.description}`, `${trackOrderSection}`, `${texts.SEO_HASHTAGS_SECTION}`, `${opt.hashtags.join(" ")}`, `${texts.SEO_TAGS_SECTION}`, `${opt.tags.join(SOURCE_TEXT_SYMBOL_10)}`);
+      const trackOrderSection = trackOrder ? SOURCE_TEMPLATE_SYMBOL_9(String(texts.SEO_TRACK_ORDER), String(trackOrder)) : MUSIC_CREATOR_RUNTIME.EMPTY;
+      return SOURCE_TEMPLATE_SYMBOL_10(
+        String(texts.formatOptionLabel(index + 1)),
+        String(texts.formatScoreLabel(opt.seoScore)),
+        String(texts.SEO_FIELD_TITLE),
+        String(opt.title),
+        String(texts.SEO_FIELD_DESCRIPTION),
+        String(opt.description),
+        String(trackOrderSection),
+        String(texts.SEO_HASHTAGS_SECTION),
+        String(opt.hashtags.join(SRT.SOURCE_TEXT_SYMBOL_52)),
+        String(texts.SEO_TAGS_SECTION),
+        String(opt.tags.join(SOURCE_TEXT_SYMBOL_10)),
+      );
     });
-    const exportText = SOURCE_TEMPLATE_SYMBOL_11(`${texts.SEO_EXPORT_TITLE}`, `${texts.SEO_PLAYLIST_URL_LABEL}`, `${_.trim(playlistUrl) || texts.SEO_PLAYLIST_URL_EMPTY}`, `${optionSections.join(SUNO_AUTOMATION_CONFIG.SECTION_DIVIDER)}`);
+    const exportText = SOURCE_TEMPLATE_SYMBOL_11(String(texts.SEO_EXPORT_TITLE), String(texts.SEO_PLAYLIST_URL_LABEL), String(_.trim(playlistUrl) || texts.SEO_PLAYLIST_URL_EMPTY), String(optionSections.join(SUNO_AUTOMATION_CONFIG.SECTION_DIVIDER)));
     try {
-      const saved = await saveMusicBlobWithDialog(new Blob([`\uFEFF${exportText}`], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), `${SUNO_AUTOMATION_CONFIG.SEO_EXPORT_FILENAME}${SUNO_AUTOMATION_CONFIG.TXT_EXTENSION}`);
+      const saved = await saveMusicBlobWithDialog(new Blob([MCF.UTF8_BOM(exportText)], { type: SUNO_AUTOMATION_CONFIG.TEXT_PLAIN_UTF8 }), String(SUNO_AUTOMATION_CONFIG.SEO_EXPORT_FILENAME));
       if (saved) toast.success(texts.SEO_EXPORT_TXT_SUCCESS);
     } catch (error) {
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
     }
   };
   const CopyFieldButton = ({ text, field, optionIndex, titleText }: { text: string; field: string; optionIndex: number; titleText?: string }) => {
-    const key = SOURCE_TEMPLATE_SEO(`${optionIndex}`, `${field}`);
+    const key = SOURCE_TEMPLATE_SEO(String(optionIndex), String(field));
     const isCopied = copiedKey === key;
     return (
-      <Button
-        variant={SOURCE_TEXT_UNSTYLED}
-        type={SOURCE_TEXT_BUTTON}
-        onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)}
-        className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
-        title={isCopied ? texts.COPIED_LABEL : titleText || texts.COPY_FIELD_BTN}>
-        {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0")} /> : <Copy className={cn("w-3.5 h-3.5 shrink-0")} />}
+      <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={isCopied ? texts.COPIED_LABEL : titleText || texts.COPY_FIELD_BTN}>
+        {isCopied ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
       </Button>
     );
   };
   const gridColumnsClass = columns === 3 ? SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS : columns === 2 ? SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS : SOURCE_TEXT_GRID_COLS_1;
   return (
-    <StudioCard className={cn("rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md")}>
-      <div className={cn("flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-3")}>
-        <div className={cn("flex items-center gap-2")}>
-          <Sparkles className={cn("w-4 h-4 text-fuchsia-500 shrink-0")} />
-          <h3 className={cn("text-sm sm:text-base font-extrabold !text-[#0f172a] dark:!text-slate-100")}>{texts.PLAYLIST_SEO_TITLE}</h3>
+    <StudioCard className={cn(MCS.ROUNDED_2XL_BORDER_BORDER_SLATE_800_80_BG_SLATE_900_60_P_4_SM_P_5_SHADOW_LG)}>
+      <div className={cn(MCS.FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200_2)}>
+        <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
+          <Sparkles className={cn(MCS.W_4_H_4_TEXT_FUCHSIA_500_SHRINK_0)} />
+          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_0F172A_DARK_TEXT_SLATE_100)}>{texts.PLAYLIST_SEO_TITLE}</h3>
         </div>
-        <div className={cn("flex items-center gap-2")}>
-          <span className={cn("text-[11px] font-mono font-bold !text-[#a21caf] dark:!text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg shadow-2xs")}>{texts.SEO_OPTIONS_COUNT_BADGE}</span>
-          <Button
-            variant={SOURCE_TEXT_UNSTYLED}
-            type={SOURCE_TEXT_BUTTON}
-            onClick={handleExportText}
-            disabled={_.isEmpty(seoOptions)}
-            title={texts.SEO_EXPORT_TXT_TOOLTIP}
-            className={cn("h-8 px-3 rounded-lg inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 border border-fuchsia-400/40 shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer")}>
-            <Download className={cn("w-3.5 h-3.5")} />
+        <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
+          <span className={cn(MCS.TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_A21CAF_DARK_TEXT_FUCHSIA_300_BG_FUCHSIA)}>{texts.SEO_OPTIONS_COUNT_BADGE}</span>
+          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleExportText} disabled={_.isEmpty(seoOptions)} title={texts.SEO_EXPORT_TXT_TOOLTIP} className={cn(MCS.H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_TEXT_XS)}>
+            <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
             <span>{texts.SEO_EXPORT_TXT_BTN}</span>
           </Button>
         </div>
       </div>
-      <div className={cn("grid gap-4 items-stretch", gridColumnsClass)}>
+      <div className={cn(MCS.GRID_GAP_4_ITEMS_STRETCH, gridColumnsClass)}>
         {_.map(seoOptions, (opt, sIdx) => {
           const trackOrder = getSeoTrackOrder(opt.description);
           return (
-            <StudioCard key={sIdx} className={cn("p-4 rounded-2xl bg-white/70 dark:bg-slate-955/90 border border-slate-200 dark:border-slate-800/80 space-y-3 transition-all hover:border-purple-400/50 dark:hover:border-slate-700 shadow-sm flex flex-col justify-between")}>
-              <div className={cn("flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5")}>
-                <div className={cn("flex items-center gap-2 min-w-0")}>
-                  <span className={cn("inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 !text-[#a21caf] dark:!text-fuchsia-300 font-mono text-xs font-black shadow-2xs")}>{texts.formatOptionLabel(sIdx + 1)}</span>
-                  <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 !text-[#047857] dark:!text-emerald-300 font-mono text-xs font-black shadow-2xs")}>
-                    <Sparkles className={cn("w-3 h-3 text-emerald-600 dark:text-emerald-400")} />
+            <StudioCard key={sIdx} className={cn(MCS.P_4_ROUNDED_2XL_BG_WHITE_70_DARK_BG_SLATE_955_90_BORDER_BORDER_SLATE_200_DA)}>
+              <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200_80_DARK_B)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W)}>
+                  <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_BG_FUCHSIA)}>{texts.formatOptionLabel(sIdx + 1)}</span>
+                  <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2_5_PY_0_5_ROUNDED_LG_BG_EMERALD_500_15_B)}>
+                    <Sparkles className={cn(MCS.W_3_H_3_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400)} />
                     <span>{texts.formatScoreLabel(opt.seoScore)}</span>
                   </span>
                 </div>
-                <Button
-                  variant={SOURCE_TEXT_UNSTYLED}
-                  type={SOURCE_TEXT_BUTTON}
-                  onClick={() => handleCopyFullOption(opt, sIdx)}
-                  className={cn("btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer")}
-                  title={copiedKey === SOURCE_TEMPLATE_SEO_ALL(`${sIdx}`) ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}>
-                  {copiedKey === SOURCE_TEMPLATE_SEO_ALL(`${sIdx}`) ? <Check className={cn("w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0")} /> : <Copy className={cn("w-4 h-4 shrink-0")} />}
+                <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopyFullOption(opt, sIdx)} className={cn(MCS.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_MAX_W_28PX_MIN_H_28PX_MAX_H_28PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_SEO_ALL(String(sIdx)) ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}>
+                  {copiedKey === SOURCE_TEMPLATE_SEO_ALL(String(sIdx)) ? <Check className={cn(MCS.W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />}
                 </Button>
               </div>
-              <div className={cn("space-y-2.5 flex-1 flex flex-col justify-between")}>
-                <div className={cn("space-y-2.5")}>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center justify-between gap-2")}>
-                      <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
-                        <FileText className={cn("w-3 h-3 text-purple-500")} />
+              <div className={cn(MCS.SPACE_Y_2_5_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN)}>
+                <div className={cn(MCS.SPACE_Y_2_5)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                        <FileText className={cn(MCS.W_3_H_3_TEXT_PURPLE_500)} />
                         <span>{texts.SEO_FIELD_TITLE}</span>
                       </span>
                       <CopyFieldButton text={opt.title} field={SOURCE_TEXT_TITLE} optionIndex={sIdx} />
                     </div>
-                    <h4 className={cn("text-xs sm:text-[13px] font-black !text-[#0f172a] dark:!text-slate-100 leading-snug break-words")}>{opt.title}</h4>
+                    <h4 className={cn(MCS.TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_LEADING_SNU)}>{opt.title}</h4>
                   </StudioCard>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center justify-between gap-2")}>
-                      <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
-                        <SlidersHorizontal className={cn("w-3 h-3 text-sky-500")} />
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                        <SlidersHorizontal className={cn(MCS.W_3_H_3_TEXT_SKY_500)} />
                         <span>{texts.SEO_FIELD_DESCRIPTION}</span>
                       </span>
                       <CopyFieldButton text={opt.description} field={SOURCE_TEXT_DESCRIPTION} optionIndex={sIdx} />
                     </div>
-                    <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-32 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden whitespace-pre-line break-words")}>{opt.description}</p>
+                    <p className={cn(MCS.TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_OVERFLOW_Y)}>{opt.description}</p>
                   </StudioCard>
                   {!_.isEmpty(trackOrder) && (
-                    <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shadow-2xs")}>
-                      <div className={cn("flex items-center justify-between gap-2")}>
-                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
-                          <Music2 className={cn("w-3 h-3 text-fuchsia-500")} />
+                    <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                      <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                          <Music2 className={cn(MCS.W_3_H_3_TEXT_FUCHSIA_500)} />
                           <span>{texts.SEO_TRACK_ORDER}</span>
                         </span>
                         <CopyFieldButton text={trackOrder} field={SOURCE_TEXT_TRACK_ORDER} optionIndex={sIdx} />
                       </div>
-                      <p className={cn("text-xs !text-[#334155] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words")}>{trackOrder}</p>
+                      <p className={cn(MCS.TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_24_OVERFLOW_Y)}>{trackOrder}</p>
                     </StudioCard>
                   )}
                 </div>
-                <div className={cn("grid grid-cols-1 2xl:grid-cols-2 gap-2.5 pt-1")}>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
-                    <div className={cn("space-y-2")}>
-                      <div className={cn("flex items-center justify-between gap-2")}>
-                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
-                          <span className={cn("font-bold text-purple-600 dark:text-purple-400")}>{texts.HASH_SYMBOL}</span>
+                <div className={cn(MCS.GRID_GRID_COLS_1_2XL_GRID_COLS_2_GAP_2_5_PT_1)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200_2)}>
+                    <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2)}>
+                      <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                          <span className={cn(MCS.FONT_BOLD_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400)}>{texts.HASH_SYMBOL}</span>
                           <span>
                             {texts.HASHTAGS_LABEL}
                             {SOURCE_TEXT_SYMBOL_11}
@@ -630,22 +567,22 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                             {SOURCE_TEXT_SYMBOL_12}
                           </span>
                         </span>
-                        <CopyFieldButton text={opt.hashtags.join(" ")} field={SOURCE_TEXT_HASHTAGS} optionIndex={sIdx} />
+                        <CopyFieldButton text={opt.hashtags.join(SRT.SOURCE_TEXT_SYMBOL_52)} field={SOURCE_TEXT_HASHTAGS} optionIndex={sIdx} />
                       </div>
-                      <div className={cn("flex flex-wrap gap-x-2.5 gap-y-2 max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden")}>
+                      <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_X_2_5_GAP_Y_2_MAX_H_24_OVERFLOW_Y_AUTO_SCROLLBAR_NONE_SC)}>
                         {_.map(opt.hashtags, (tag, i) => (
-                          <span key={i} className={cn("text-[10px] font-mono font-bold !text-[#7e22ce] dark:!text-purple-300 select-all hover:underline cursor-pointer")}>
+                          <span key={i} className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_7E22CE_DARK_TEXT_PURPLE_300_SELECT_ALL_H)}>
                             {tag}
                           </span>
                         ))}
                       </div>
                     </div>
                   </StudioCard>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between")}>
-                    <div className={cn("space-y-2")}>
-                      <div className={cn("flex items-center justify-between gap-2")}>
-                        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5")}>
-                          <Search className={cn("w-3 h-3 text-emerald-500")} />
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200_2)}>
+                    <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2)}>
+                      <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                          <Search className={cn(MCS.W_3_H_3_TEXT_EMERALD_500)} />
                           <span>
                             {texts.TAGS_LABEL}
                             {SOURCE_TEXT_SYMBOL_11}
@@ -655,7 +592,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                         </span>
                         <CopyFieldButton text={opt.tags.join(SOURCE_TEXT_SYMBOL_10)} field={SOURCE_TEXT_TAGS} optionIndex={sIdx} />
                       </div>
-                      <p className={cn("text-[10px] font-mono !text-[#475569] dark:!text-slate-300 leading-relaxed max-h-24 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden break-words select-all")}>{opt.tags.join(SOURCE_TEXT_SYMBOL_10)}</p>
+                      <p className={cn(MCS.TEXT_10PX_FONT_MONO_TEXT_475569_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_2)}>{opt.tags.join(SOURCE_TEXT_SYMBOL_10)}</p>
                     </div>
                   </StudioCard>
                 </div>
@@ -671,16 +608,16 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const texts = MUSIC_CREATOR_TEXTS[currentLang] || MUSIC_CREATOR_TEXTS.vi;
   const [initialState] = useState<PersistedMusicCreatorState>(readMusicCreatorState);
   const [initialSavedStyles] = useState<SavedMusicStyle[]>(readSavedStyles);
-  const [style, setStyle] = useState(() => initialState.style || "");
-  const [styleDraft, setStyleDraft] = useState("");
+  const [style, setStyle] = useState(() => initialState.style || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [styleDraft, setStyleDraft] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [savedStyles, setSavedStyles] = useState<SavedMusicStyle[]>(initialSavedStyles);
-  const [styleName, setStyleName] = useState("");
+  const [styleName, setStyleName] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
   const [copiedStyleIndex, setCopiedStyleIndex] = useState<number | null>(null);
   const [copiedInspoIndex, setCopiedInspoIndex] = useState<number | null>(null);
   const [outputCount, setOutputCount] = useState<number>(initialState.outputCount || MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
-  const [referenceSongs, setReferenceSongs] = useState(initialState.referenceSongs || "");
+  const [referenceSongs, setReferenceSongs] = useState(initialState.referenceSongs || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [provider, setProvider] = useState<AiPlanningFallbackProvider>(initialState.provider || AiPlanningFallbackProvider.ChatGptUi);
   const [model, setModel] = useState<AiPlanningChatModel>(initialState.model || AiPlanningChatModel.ChatGptAuto);
   const [executionMode, setExecutionMode] = useState<AiPlanningExecutionMode>(initialState.executionMode || AiPlanningExecutionMode.RoomOnly);
@@ -702,7 +639,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
-  const [generationError, setGenerationError] = useState("");
+  const [generationError, setGenerationError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
   const [songs, setSongs] = useState<GeneratedSong[]>(initialState.songs || []);
   const [styleAnalysis, setStyleAnalysis] = useState<MusicStyleAnalysis | undefined>(initialState.styleAnalysis);
@@ -718,42 +655,42 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     }));
     if (!_.isEqual(restoredOptions, playlistSeoOptions)) setPlaylistSeoOptions(restoredOptions);
   }, [songs, playlistSeoOptions, curatedDownloadedTracks]);
-  const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || "");
-  const [thumbnailReference, setThumbnailReference] = useState<string>("");
-  const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || "");
-  const [generatedThumbnail, setGeneratedThumbnail] = useState<string>("");
+  const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [thumbnailReference, setThumbnailReference] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [thumbnailReferenceName, setThumbnailReferenceName] = useState(initialState.thumbnailReferenceName || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [generatedThumbnail, setGeneratedThumbnail] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [isNormalizingThumbnailNote, setIsNormalizingThumbnailNote] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [isCreatingSunoTest, setIsCreatingSunoTest] = useState(false);
-  const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || "");
+  const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [sunoTestTrackIds, setSunoTestTrackIds] = useState<string[]>(initialState.sunoTestTrackIds || []);
-  const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || "");
-  const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || "");
+  const [sunoPlaylistUrl, setSunoPlaylistUrl] = useState(initialState.sunoPlaylistUrl || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
   const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || SOURCE_TEXT_WAV);
   const [sunoEvaluateTracks, setSunoEvaluateTracks] = useState(initialState.sunoEvaluateTracks ?? true);
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
-  const [sunoDownloadError, setSunoDownloadError] = useState("");
+  const [sunoDownloadError, setSunoDownloadError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
-  const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || "");
-  const [sunoInspoDraft, setSunoInspoDraft] = useState("");
+  const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [sunoInspoDraft, setSunoInspoDraft] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [savedInspos, setSavedInspos] = useState<SavedMusicInspo[]>(readSavedInspos);
-  const [inspoName, setInspoName] = useState("");
+  const [inspoName, setInspoName] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [editingInspoIndex, setEditingInspoIndex] = useState<number | null>(null);
   const [inspoToDelete, setInspoToDelete] = useState<SavedMusicInspo | null>(null);
   const [sunoSettings, setSunoSettings] = useState<SunoSettings | undefined>(initialState.sunoSettings);
   const [sunoSettingsAnalysis, setSunoSettingsAnalysis] = useState<SunoSettingsAnalysis | undefined>(initialState.sunoSettingsAnalysis);
   const [downloadedMusicTracks, setDownloadedMusicTracks] = useState<DownloadedMusicTrack[]>(initialState.downloadedMusicTracks || []);
-  const [videoBackgroundDescription, setVideoBackgroundDescription] = useState(initialState.videoBackgroundDescription || "");
-  const [videoBackgroundReference, setVideoBackgroundReference] = useState("");
-  const [videoBackgroundReferenceName, setVideoBackgroundReferenceName] = useState(initialState.videoBackgroundReferenceName || "");
+  const [videoBackgroundDescription, setVideoBackgroundDescription] = useState(initialState.videoBackgroundDescription || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [videoBackgroundReference, setVideoBackgroundReference] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [videoBackgroundReferenceName, setVideoBackgroundReferenceName] = useState(initialState.videoBackgroundReferenceName || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [showVideoTrackList, setShowVideoTrackList] = useState(initialState.showVideoTrackList ?? true);
-  const [generatedVideoBackground, setGeneratedVideoBackground] = useState("");
+  const [generatedVideoBackground, setGeneratedVideoBackground] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isGeneratingVideoBackground, setIsGeneratingVideoBackground] = useState(false);
   const [isNormalizingVideoBackgroundNote, setIsNormalizingVideoBackgroundNote] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { copiedKey, copyText } = useMotionClipboard();
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoBackgroundFileInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -858,8 +795,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   };
   const handleCancelStyleEdit = () => {
     setEditingStyleIndex(null);
-    setStyleDraft("");
-    setStyleName("");
+    setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
   };
   const handleSaveStyle = () => {
     const nextContent = _.trim(styleDraft);
@@ -870,8 +807,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     persistStyles(nextStyles);
     setStyle(nextContent);
     setEditingStyleIndex(null);
-    setStyleDraft("");
-    setStyleName("");
+    setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
     toast.success(texts.STYLE_SAVE_SUCCESS);
   };
   const persistInspos = (items: SavedMusicInspo[]) => {
@@ -885,28 +822,28 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     persistInspos(editingInspoIndex === null ? [...savedInspos, item] : _.map(savedInspos, (value, index) => (index === editingInspoIndex ? item : value)));
     setSunoInspo(content);
     setEditingInspoIndex(null);
-    setSunoInspoDraft("");
-    setInspoName("");
+    setSunoInspoDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setInspoName(MUSIC_CREATOR_RUNTIME.EMPTY);
     toast.success(texts.INSPO_SAVE_SUCCESS);
   };
   const handleCancelInspoEdit = () => {
     setEditingInspoIndex(null);
-    setInspoName("");
-    setSunoInspoDraft("");
+    setInspoName(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setSunoInspoDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
   };
   const confirmDeleteInspo = () => {
     if (!inspoToDelete) return;
     persistInspos(_.reject(savedInspos, (item) => _.isEqual(item, inspoToDelete)));
-    if (_.isEqual(sunoInspo, inspoToDelete.content)) setSunoInspo("");
+    if (_.isEqual(sunoInspo, inspoToDelete.content)) setSunoInspo(MUSIC_CREATOR_RUNTIME.EMPTY);
     setInspoToDelete(null);
   };
   const handleDeleteStyle = (savedStyle: SavedMusicStyle) => {
     const nextStyles = _.reject(savedStyles, (item) => _.isEqual(item.content, savedStyle.content));
     persistStyles(nextStyles);
     if (_.isEqual(style, savedStyle.content)) {
-      setStyle("");
-      setStyleDraft("");
-      setStyleName("");
+      setStyle(MUSIC_CREATOR_RUNTIME.EMPTY);
+      setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+      setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
       setEditingStyleIndex(null);
     }
   };
@@ -917,12 +854,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     toast.success(texts.STYLE_DELETE_SUCCESS);
   };
   const handleFillSampleReferences = () => {
-    setReferenceSongs(_.join(MUSIC_CREATOR_CONSTANTS.SAMPLE_REFERENCES, "\n"));
+    setReferenceSongs(_.join(MUSIC_CREATOR_CONSTANTS.SAMPLE_REFERENCES, SRT.SOURCE_TEXT_SYMBOL_56));
     toast.success(texts.QUICK_FILL_LABEL);
   };
   const handleTrySampleTemplate = () => {
     setStyle(MUSIC_CREATOR_CONSTANTS.PRESET_STYLES[0]);
-    setReferenceSongs(_.join(MUSIC_CREATOR_CONSTANTS.SAMPLE_REFERENCES, "\n"));
+    setReferenceSongs(_.join(MUSIC_CREATOR_CONSTANTS.SAMPLE_REFERENCES, SRT.SOURCE_TEXT_SYMBOL_56));
     setOutputCount(MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
     toast.success(texts.TRY_SAMPLE_BTN);
   };
@@ -936,9 +873,9 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const handleCopyAllSeo = () => {
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCopy);
     if (_.isEmpty(displayedSeoOptions)) return;
-    const allContent = _.map(displayedSeoOptions, (opt, idx) => SOURCE_TEMPLATE_SYMBOL_12(`${texts.formatOptionLabel(idx + 1)}`, `${texts.formatScoreLabel(opt.seoScore)}`, `${texts.SEO_FIELD_TITLE}`, `${opt.title}`, `${texts.SEO_FIELD_DESCRIPTION}`, `${opt.description}`, `${texts.HASHTAGS_LABEL}`, `${opt.hashtags.join(" ")}`, `${texts.TAGS_LABEL}`, `${opt.tags.join(SOURCE_TEXT_SYMBOL_10)}`)).join(
-      SOURCE_TEXT_SYMBOL_14,
-    );
+    const allContent = _.map(displayedSeoOptions, (opt, idx) =>
+      SOURCE_TEMPLATE_SYMBOL_12(String(texts.formatOptionLabel(idx + 1)), String(texts.formatScoreLabel(opt.seoScore)), String(texts.SEO_FIELD_TITLE), String(opt.title), String(texts.SEO_FIELD_DESCRIPTION), String(opt.description), String(texts.HASHTAGS_LABEL), String(opt.hashtags.join(SRT.SOURCE_TEXT_SYMBOL_52)), String(texts.TAGS_LABEL), String(opt.tags.join(SOURCE_TEXT_SYMBOL_10))),
+    ).join(SOURCE_TEXT_SYMBOL_14);
     navigator.clipboard.writeText(allContent);
     toast.success(texts.COPY_ALL_SEO_SUCCESS);
   };
@@ -947,7 +884,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanStart, outputCount);
     musicStoppedByUserRef.current = false;
     thumbnailStoppedRef.current = false;
-    setGenerationError("");
+    setGenerationError(MUSIC_CREATOR_RUNTIME.EMPTY);
     const trimmedStyle = _.trim(style);
     const referenceSource = _.trim(referenceSongs);
     const previousSongs = songs;
@@ -962,12 +899,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setViewMode(SOURCE_TEXT_LYRICS);
     setIsLoading(true);
     setIsGeneratingThumbnail(true);
-    setSunoPlaylistUrl("");
-    setDownloadPlaylistUrl("");
-    setSunoTestPlaylistUrl("");
+    setSunoPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setDownloadPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
+    setSunoTestPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
     setSunoTrackIds([]);
     const runSignature = jsonUtils.safeStringify([outputCount, trimmedStyle, referenceSource, sunoInspo, provider, model]);
-    const runId = musicResumeRef.current?.signature === runSignature ? musicResumeRef.current.runId : SOURCE_TEMPLATE_MUSIC(`${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+    const runId = musicResumeRef.current?.signature === runSignature ? musicResumeRef.current.runId : SOURCE_TEMPLATE_MUSIC(String(Date.now()), String(Math.random().toString(36).slice(2)));
     musicResumeRef.current = { signature: runSignature, runId };
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
@@ -997,26 +934,26 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.success) {
-        throw new Error(result?.error || SOURCE_TEMPLATE_HTTP(`${texts.ERROR_GENERATION_FAILED}`, `${response.status}`));
+        throw new Error(result?.error || SOURCE_TEMPLATE_HTTP(String(texts.ERROR_GENERATION_FAILED), String(response.status)));
       }
       const generatedSongs = _.get(result, SOURCE_TEXT_DATA_SONGS, []) as GeneratedSong[];
       const generatedStyleAnalysis = _.get(result, SOURCE_TEXT_DATA_STYLEANALYSIS) as MusicStyleAnalysis;
       const generatedPlaylistSeo = _.get(result, SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS, []) as SongSeoOption[];
-      const seoWarning = _.toString(_.get(result, SOURCE_TEXT_DATA_SEOWARNING, ""));
+      const seoWarning = _.toString(_.get(result, SOURCE_TEXT_DATA_SEOWARNING, MUSIC_CREATOR_RUNTIME.EMPTY));
       setSunoSettings(_.get(result, SOURCE_TEXT_DATA_SUNOSETTINGS) as SunoSettings);
       setSunoSettingsAnalysis(_.get(result, SOURCE_TEXT_DATA_SUNOSETTINGSANALYSIS) as SunoSettingsAnalysis);
       setSongs(generatedSongs);
       setStyleAnalysis(generatedStyleAnalysis);
       setCuratedDownloadedTracks([]);
       setDownloadedMusicTracks([]);
-      setSunoDownloadError("");
+      setSunoDownloadError(MUSIC_CREATOR_RUNTIME.EMPTY);
       setPlaylistSeoOptions(generatedPlaylistSeo);
-      setGeneratedThumbnail("");
-      setGeneratedVideoBackground("");
+      setGeneratedThumbnail(MUSIC_CREATOR_RUNTIME.EMPTY);
+      setGeneratedVideoBackground(MUSIC_CREATOR_RUNTIME.EMPTY);
       setShowVideoTrackList(true);
       setPreviewThumbnail(null);
-      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
-      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, "").catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
+      void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
       setSelectedSeoSongIndex(0);
       musicResumeRef.current = null;
       sunoPendingPlaylistRef.current = null;
@@ -1028,7 +965,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       } else
         void (async () => {
           const imageAbortController = new AbortController();
-          const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(`${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+          const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(String(Date.now()), String(Math.random().toString(36).slice(2)));
           thumbnailAbortControllerRef.current = imageAbortController;
           thumbnailRunIdRef.current = imageRunId;
           try {
@@ -1101,7 +1038,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSeoStart);
     setViewMode(SOURCE_TEXT_SEO);
     setIsRegeneratingSeo(true);
-    const runId = SOURCE_TEMPLATE_SEO_2(`${SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX}`, `${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+    const runId = SOURCE_TEMPLATE_SEO_2(String(SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX), String(Date.now()), String(Math.random().toString(36).slice(2)));
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, {
         method: HTTP_METHODS.POST,
@@ -1165,11 +1102,11 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setIsCreatingSuno(true);
     setIsCreatingSunoTest(testOnly);
     if (testOnly) {
-      setSunoTestPlaylistUrl("");
+      setSunoTestPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
       setSunoTestTrackIds([]);
     } else {
-      setSunoPlaylistUrl("");
-      setDownloadPlaylistUrl("");
+      setSunoPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
+      setDownloadPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
       setCuratedDownloadedTracks([]);
     }
     try {
@@ -1177,7 +1114,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const sourceTitle = testOnly ? requestedSongs[0]?.title : playlistSeoOptions[0]?.title || requestedSongs[0]?.title;
       const pending = sunoPendingPlaylistRef.current;
       const canResume = pending?.sourceTitle === sourceTitle && pending.testOnly === testOnly;
-      const playlistName = canResume ? pending.playlistName : formatSunoPlaylistName(sourceTitle, testOnly, _.slice(crypto.randomUUID().split(SOURCE_TEXT_SYMBOL_15), 0, 2).join("").toUpperCase());
+      const playlistName = canResume ? pending.playlistName : formatSunoPlaylistName(sourceTitle, testOnly, _.slice(crypto.randomUUID().split(SOURCE_TEXT_SYMBOL_15), 0, 2).join(MUSIC_CREATOR_RUNTIME.EMPTY).toUpperCase());
       const resumeSongIds = canResume ? pending.songIds : [];
       if (_.isEmpty(resumeSongIds) && !testOnly) setSunoTrackIds([]);
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
@@ -1257,7 +1194,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       return;
     }
     sunoDownloadStoppedByUserRef.current = false;
-    setSunoDownloadError("");
+    setSunoDownloadError(MUSIC_CREATOR_RUNTIME.EMPTY);
     const abortController = new AbortController();
     sunoDownloadAbortControllerRef.current = abortController;
     setIsDownloadingSuno(true);
@@ -1273,17 +1210,17 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const tracks = isTestPlaylistDownload
         ? _.map(_.take(sunoTestTrackIds, 1), (songId) => ({
             songId,
-            title: SOURCE_TEMPLATE_1_1(`${songs[0]?.title || texts.SUNO_TRACK_LABEL}`),
+            title: SOURCE_TEMPLATE_1_1(String(songs[0]?.title || texts.SUNO_TRACK_LABEL)),
           }))
         : requestedPlaylistUrl
           ? []
           : _.map(sunoTrackIds, (songId, index) => {
               const songIndex = Math.floor(index / 2);
               const songNumber = songIndex + 1;
-              const variantSuffix = SOURCE_TEMPLATE_SYMBOL_13(`${(index % 2) + 1}`);
-              return { songId, title: SOURCE_TEMPLATE_SYMBOL_14(`${songNumber}`, `${songs[songIndex]?.title || `${texts.SUNO_TRACK_LABEL} ${songNumber}`}`, `${variantSuffix}`) };
+              const variantSuffix = SOURCE_TEMPLATE_SYMBOL_13(String((index % 2) + 1));
+              return { songId, title: SOURCE_TEMPLATE_SYMBOL_14(String(songNumber), String(songs[songIndex]?.title || MCF.JOIN_WITH_SPACE(texts.SUNO_TRACK_LABEL, songNumber)), String(variantSuffix)) };
             });
-      const evaluationProjectId = SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION(`${Date.now()}`);
+      const evaluationProjectId = SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION(String(Date.now()));
       sunoDownloadRunIdRef.current = evaluationProjectId;
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
@@ -1364,9 +1301,9 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       .then((reference) => {
         setThumbnailReference(reference);
         setThumbnailReferenceName(file.name);
-        setGeneratedThumbnail("");
+        setGeneratedThumbnail(MUSIC_CREATOR_RUNTIME.EMPTY);
         void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_REFERENCE, reference).catch(() => undefined);
-        void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, "").catch(() => undefined);
+        void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
       })
       .catch(() => undefined);
   };
@@ -1381,9 +1318,9 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       .then((reference) => {
         setVideoBackgroundReference(reference);
         setVideoBackgroundReferenceName(file.name);
-        setGeneratedVideoBackground("");
+        setGeneratedVideoBackground(MUSIC_CREATOR_RUNTIME.EMPTY);
         void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND_REFERENCE, reference).catch(() => undefined);
-        void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, "").catch(() => undefined);
+        void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
       })
       .catch(() => undefined);
   };
@@ -1392,7 +1329,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const extension = generatedThumbnail.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
     try {
       const blob = await fetch(generatedThumbnail).then((response) => response.blob());
-      const saved = await saveMusicBlobWithDialog(blob, SOURCE_TEMPLATE_SYMBOL_15(`${SUNO_AUTOMATION_CONFIG.THUMBNAIL_EXPORT_FILENAME}`, `${extension}`));
+      const saved = await saveMusicBlobWithDialog(blob, SOURCE_TEMPLATE_SYMBOL_15(String(SUNO_AUTOMATION_CONFIG.THUMBNAIL_EXPORT_FILENAME), String(extension)));
       if (saved) toast.success(texts.THUMBNAIL_SAVE_SUCCESS);
     } catch (error) {
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
@@ -1438,7 +1375,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStart);
     thumbnailStoppedRef.current = false;
     const imageAbortController = new AbortController();
-    const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(`${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+    const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(String(Date.now()), String(Math.random().toString(36).slice(2)));
     thumbnailAbortControllerRef.current = imageAbortController;
     thumbnailRunIdRef.current = imageRunId;
     setIsGeneratingThumbnail(true);
@@ -1511,7 +1448,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     if (_.isEmpty(downloadedMusicTracks) || _.isEmpty(videoBackgroundReference) || isBusy) return;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicBackgroundStart);
     const imageAbortController = new AbortController();
-    const imageRunId = SOURCE_TEMPLATE_MUSIC_BACKGROUND(`${Date.now()}`, `${Math.random().toString(36).slice(2)}`);
+    const imageRunId = SOURCE_TEMPLATE_MUSIC_BACKGROUND(String(Date.now()), String(Math.random().toString(36).slice(2)));
     videoBackgroundAbortControllerRef.current = imageAbortController;
     videoBackgroundRunIdRef.current = imageRunId;
     setIsGeneratingVideoBackground(true);
@@ -1558,7 +1495,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const extension = generatedVideoBackground.startsWith(SUNO_AUTOMATION_CONFIG.JPEG_DATA_PREFIX) ? SUNO_AUTOMATION_CONFIG.JPG_EXTENSION : SUNO_AUTOMATION_CONFIG.PNG_EXTENSION;
     try {
       const blob = await fetch(generatedVideoBackground).then((response) => response.blob());
-      const saved = await saveMusicBlobWithDialog(blob, SOURCE_TEMPLATE_SYMBOL_15(`${SUNO_AUTOMATION_CONFIG.VIDEO_BACKGROUND_EXPORT_FILENAME}`, `${extension}`));
+      const saved = await saveMusicBlobWithDialog(blob, SOURCE_TEMPLATE_SYMBOL_15(String(SUNO_AUTOMATION_CONFIG.VIDEO_BACKGROUND_EXPORT_FILENAME), String(extension)));
       if (saved) toast.success(texts.VIDEO_BACKGROUND_SUCCESS);
     } catch (error) {
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
@@ -1572,51 +1509,39 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       <StudioCanvas>
         <MusicCreatorHeader texts={texts} isAiConfigOpen={isAiConfigOpen} onToggleAiConfig={() => setIsAiConfigOpen(!isAiConfigOpen)} isLoading={isBusy} />
         {isAiConfigOpen && (
-          <StudioFieldset disabled={isBusy} className={cn("glass-card rounded-2xl p-4 bg-slate-900/80 border border-slate-800/90 shadow-xl space-y-4")}>
+          <StudioFieldset disabled={isBusy} className={cn(SRT.SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
             <ChatPlanningSettingsBlock provider={provider} model={model} executionMode={executionMode} chromeHeadless={chromeHeadless} onProviderChange={setProvider} onModelChange={setModel} onExecutionModeChange={setExecutionMode} onChromeHeadlessChange={setChromeHeadless} currentLang={currentLang} />
           </StudioFieldset>
         )}
-        <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch")}>
-          <div className={cn("lg:col-span-2 flex flex-col gap-5 min-w-0 h-full")}>
-            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full shrink-0")}>
-              <div className={cn("flex items-center justify-between relative z-10 flex-wrap gap-2")}>
-                <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{texts.STEP_01}</span>
-                  <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
-                    <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
+        <div className={cn(SRT.SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS_2)}>
+          <div className={cn(MCS.LG_COL_SPAN_2_FLEX_FLEX_COL_GAP_5_MIN_W_0_H_FULL)}>
+            <StudioCard className={cn(MCS.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE_Y_4_SHADOW_XL_BORDER_BORDER)}>
+              <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_RELATIVE_Z)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
+                  <span className={cn(SRT.SOURCE_TEXT_W_6_H_6_ROUNDED_XL_BG)}>{texts.STEP_01}</span>
+                  <h3 className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER)}>
+                    <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT)} />
                     <span>{texts.STYLE_LABEL}</span>
-                    <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>{texts.STYLE_BADGE}</span>
+                    <span className={cn(SRT.SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED_3)}>{texts.STYLE_BADGE}</span>
                   </h3>
                 </div>
                 {!_.isEmpty(_.trim(styleDraft)) && (
-                  <div className={cn("flex items-center gap-1.5")}>
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleSaveStyle}
-                      disabled={isBusy}
-                      className={cn(
-                        "h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white",
-                      )}>
-                      <Save className={cn("w-3 h-3 shrink-0")} />
-                      <span className={cn("inline-flex items-center leading-none")}>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                  <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5)}>
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleSaveStyle} disabled={isBusy} className={cn(MCS.H_8_PX_2_5_ROUNDED_LG_BORDER_BORDER_PURPLE_500_30_BG_PURPLE_500_15_HOVER_BG)}>
+                      <Save className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                      <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{editingStyleIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                     </Button>
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleCancelStyleEdit}
-                      disabled={isBusy}
-                      className={cn("h-8 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
-                      <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelStyleEdit} disabled={isBusy} className={cn(MCS.H_8_PX_2_5_ROUNDED_LG_BORDER_BORDER_SLATE_300_HOVER_BORDER_ROSE_500_50_BG_T)}>
+                      <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
                     </Button>
                   </div>
                 )}
               </div>
-              <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2 relative z-10")}>
-                <div className={cn("sm:col-span-4")}>
-                  <StudioInput type={SOURCE_TEXT_TEXT} value={styleName} onChange={(event) => setStyleName(event.target.value)} placeholder={texts.STYLE_NAME_PLACEHOLDER} disabled={isBusy} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
+              <div className={cn(MCS.GRID_GRID_COLS_1_SM_GRID_COLS_12_GAP_2_RELATIVE_Z_10)}>
+                <div className={cn(MCS.SM_COL_SPAN_4)}>
+                  <StudioInput type={SOURCE_TEXT_TEXT} value={styleName} onChange={(event) => setStyleName(event.target.value)} placeholder={texts.STYLE_NAME_PLACEHOLDER} disabled={isBusy} className={cn(MCS.W_FULL_H_8_5_BG_SLATE_955_90_TEXT_SLATE_100_PX_3_ROUNDED_XL_TEXT_XS_OUTLINE)} />
                 </div>
-                <div className={cn("sm:col-span-8")}>
+                <div className={cn(MCS.SM_COL_SPAN_8)}>
                   <StudioInput
                     type={SOURCE_TEXT_TEXT}
                     value={styleDraft}
@@ -1626,24 +1551,24 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     }}
                     placeholder={texts.STYLE_PLACEHOLDER}
                     disabled={isBusy}
-                    className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
+                    className={cn(MCS.W_FULL_H_8_5_BG_SLATE_955_90_TEXT_SLATE_100_PX_3_ROUNDED_XL_TEXT_XS_OUTLINE_2)}
                   />
                 </div>
               </div>
-              <div className={cn("space-y-1.5 pt-0.5 relative z-10")}>
-                <div className={cn("flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
-                  <Flame className={cn("w-3.5 h-3.5 text-amber-400")} />
+              <div className={cn(MCS.SPACE_Y_1_5_PT_0_5_RELATIVE_Z_10)}>
+                <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_10PX_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
+                  <Flame className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT_12)} />
                   <span>{texts.STYLE_YOUR_STYLES}</span>
                 </div>
-                <div className={cn("flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5")}>
+                <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_MAX_H_28_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_P_0_5)}>
                   {_.map(savedStyles, (savedStyle, styleIndex) => {
                     const isSelected = _.isEqual(style, savedStyle.content);
                     return (
                       <div
-                        key={SOURCE_TEMPLATE_SYMBOL_5(`${styleIndex}`, `${savedStyle.title}`)}
-                        className={cn("group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]", {
-                          "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                          "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !isSelected,
+                        key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))}
+                        className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, {
+                          [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
+                          [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
                         })}>
                         <Tooltip content={savedStyle.content} align={SOURCE_TEXT_START}>
                           <Button
@@ -1651,20 +1576,20 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             type={SOURCE_TEXT_BUTTON}
                             onClick={() => {
                               const shouldClear = _.isEqual(style, savedStyle.content);
-                              setStyle(shouldClear ? "" : savedStyle.content);
+                              setStyle(shouldClear ? MUSIC_CREATOR_RUNTIME.EMPTY : savedStyle.content);
                               setEditingStyleIndex(null);
-                              setStyleDraft("");
-                              setStyleName("");
+                              setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+                              setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
                             }}
                             disabled={isBusy}
-                            className={cn("text-[11px] font-black truncate max-w-[120px] cursor-pointer text-left flex items-center gap-1.5 !text-[#1e1b4b] dark:!text-white leading-none h-full")}
+                            className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_120PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}
                             title={savedStyle.content}>
-                            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-all", { "bg-white ring-2 ring-white/40 shadow-xs": isSelected, "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400": !isSelected })} />
-                            <span className={cn("truncate font-black text-[11px] leading-none transition-colors", { "!text-white": isSelected, "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white": !isSelected })}>{savedStyle.title}</span>
+                            <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
+                            <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE]: !isSelected })}>{savedStyle.title}</span>
                           </Button>
                         </Tooltip>
-                        <div className={cn("flex items-center gap-1 ml-1.5 shrink-0 self-center")}>
-                          <Tooltip content={texts.COPY_STYLE_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                        <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_ML_1_5_SHRINK_0_SELF_CENTER)}>
+                          <Tooltip content={texts.COPY_STYLE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                             <Button
                               variant={SOURCE_TEXT_UNSTYLED}
                               type={SOURCE_TEXT_BUTTON}
@@ -1674,14 +1599,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.COPY_STYLE_BTN}
-                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected,
-                                "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !isSelected,
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
+                                [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected,
                               })}>
-                              {copiedStyleIndex === styleIndex ? <Check className={cn("w-2.5 h-2.5 shrink-0", { "text-emerald-300": isSelected, "text-emerald-500": !isSelected })} /> : <Copy className={cn("w-2.5 h-2.5 shrink-0")} />}
+                              {copiedStyleIndex === styleIndex ? <Check className={cn(MCS.W_2_5_H_2_5_SHRINK_0, { [MCS.TEXT_EMERALD_300]: isSelected, [SRT.SOURCE_TEXT_TEXT_EMERALD_500]: !isSelected })} /> : <Copy className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />}
                             </Button>
                           </Tooltip>
-                          <Tooltip content={texts.STYLE_UPDATE_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                          <Tooltip content={texts.STYLE_UPDATE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                             <Button
                               variant={SOURCE_TEXT_UNSTYLED}
                               type={SOURCE_TEXT_BUTTON}
@@ -1691,14 +1616,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.STYLE_UPDATE_BTN}
-                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected,
-                                "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !isSelected,
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
+                                [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected,
                               })}>
-                              <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
+                              <Pencil className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                             </Button>
                           </Tooltip>
-                          <Tooltip content={texts.STYLE_DELETE_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                          <Tooltip content={texts.STYLE_DELETE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                             <Button
                               variant={SOURCE_TEXT_UNSTYLED}
                               type={SOURCE_TEXT_BUTTON}
@@ -1708,58 +1633,46 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.STYLE_DELETE_BTN}
-                              className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected,
-                                "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !isSelected,
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected,
+                                [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected,
                               })}>
-                              <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
+                              <Trash2 className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                             </Button>
                           </Tooltip>
                         </div>
                       </div>
                     );
                   })}
-                  {_.isEmpty(savedStyles) && <span className={cn("text-[11px] text-slate-500 italic py-1")}>{texts.STYLE_EMPTY_HINT}</span>}
+                  {_.isEmpty(savedStyles) && <span className={cn(MCS.TEXT_11PX_TEXT_SLATE_500_ITALIC_PY_1)}>{texts.STYLE_EMPTY_HINT}</span>}
                 </div>
               </div>
-              <div className={cn("space-y-2.5 relative z-10 border-t border-slate-800/60 pt-3")}>
-                <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
-                  <div className={cn("flex items-center gap-2 min-w-0")}>
-                    <Disc3 className={cn("w-3.5 h-3.5 text-purple-400")} />
-                    <span className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
+              <div className={cn(MCS.SPACE_Y_2_5_RELATIVE_Z_10_BORDER_T_BORDER_SLATE_800_60_PT_3)}>
+                <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP)}>
+                  <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W)}>
+                    <Disc3 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT)} />
+                    <span className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER)}>
                       <span>{texts.SUNO_INSPO_LABEL}</span>
-                      <span className={cn("px-1.5 py-0.2 rounded text-[9px] bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono")}>{texts.SUNO_INSPO_BADGE}</span>
+                      <span className={cn(SRT.SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED_3)}>{texts.SUNO_INSPO_BADGE}</span>
                     </span>
                   </div>
                   {!_.isEmpty(_.trim(sunoInspoDraft)) && (
-                    <div className={cn("flex items-center gap-1.5")}>
-                      <Button
-                        variant={SOURCE_TEXT_UNSTYLED}
-                        type={SOURCE_TEXT_BUTTON}
-                        onClick={handleSaveInspo}
-                        disabled={isBusy}
-                        className={cn(
-                          "h-7.5 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white inline-flex items-center justify-center gap-1.5 text-[11px] font-bold cursor-pointer transition-all shadow-xs leading-none [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white",
-                        )}>
-                        <Save className={cn("w-3 h-3 shrink-0")} />
-                        <span className={cn("inline-flex items-center leading-none")}>{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5)}>
+                      <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleSaveInspo} disabled={isBusy} className={cn(MCS.H_7_5_PX_2_5_ROUNDED_LG_BORDER_BORDER_PURPLE_500_30_BG_PURPLE_500_15_HOVER)}>
+                        <Save className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                        <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{editingInspoIndex === null ? texts.STYLE_SAVE_CURRENT_BTN : texts.STYLE_UPDATE_BTN}</span>
                       </Button>
-                      <Button
-                        variant={SOURCE_TEXT_UNSTYLED}
-                        type={SOURCE_TEXT_BUTTON}
-                        onClick={handleCancelInspoEdit}
-                        disabled={isBusy}
-                        className={cn("h-7.5 px-2.5 rounded-lg border border-slate-300 hover:border-rose-500/50 bg-transparent hover:bg-rose-500/10 dark:border-slate-700/80 !text-[#475569] hover:!text-rose-600 dark:!text-slate-400 dark:hover:!text-rose-400 text-[11px] font-bold cursor-pointer transition-colors inline-flex items-center justify-center leading-none")}>
-                        <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
+                      <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelInspoEdit} disabled={isBusy} className={cn(MCS.H_7_5_PX_2_5_ROUNDED_LG_BORDER_BORDER_SLATE_300_HOVER_BORDER_ROSE_500_50_BG)}>
+                        <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
                       </Button>
                     </div>
                   )}
                 </div>
-                <div className={cn("grid grid-cols-1 sm:grid-cols-12 gap-2")}>
-                  <div className={cn("sm:col-span-4")}>
-                    <StudioInput type={SOURCE_TEXT_TEXT} value={inspoName} onChange={(event) => setInspoName(event.target.value)} disabled={isBusy} placeholder={texts.INSPO_NAME_PLACEHOLDER} className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80")} />
+                <div className={cn(MCS.GRID_GRID_COLS_1_SM_GRID_COLS_12_GAP_2)}>
+                  <div className={cn(MCS.SM_COL_SPAN_4)}>
+                    <StudioInput type={SOURCE_TEXT_TEXT} value={inspoName} onChange={(event) => setInspoName(event.target.value)} disabled={isBusy} placeholder={texts.INSPO_NAME_PLACEHOLDER} className={cn(MCS.W_FULL_H_8_5_BG_SLATE_955_90_TEXT_SLATE_100_PX_3_ROUNDED_XL_TEXT_XS_OUTLINE)} />
                   </div>
-                  <div className={cn("sm:col-span-8")}>
+                  <div className={cn(MCS.SM_COL_SPAN_8)}>
                     <StudioInput
                       type={SOURCE_TEXT_TEXT}
                       value={sunoInspoDraft}
@@ -1769,25 +1682,25 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       }}
                       disabled={isBusy}
                       placeholder={texts.SUNO_INSPO_PLACEHOLDER}
-                      className={cn("w-full h-8.5 bg-slate-955/90 text-slate-100 px-3 rounded-xl text-xs outline-none shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20")}
+                      className={cn(MCS.W_FULL_H_8_5_BG_SLATE_955_90_TEXT_SLATE_100_PX_3_ROUNDED_XL_TEXT_XS_OUTLINE_2)}
                     />
                   </div>
                 </div>
                 {!_.isEmpty(savedInspos) && (
-                  <div className={cn("space-y-1.5 pt-0.5")}>
-                    <div className={cn("flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold")}>
-                      <Sparkles className={cn("w-3.5 h-3.5 text-purple-400")} />
+                  <div className={cn(MCS.SPACE_Y_1_5_PT_0_5)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_10PX_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
+                      <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT)} />
                       <span>{texts.INSPO_YOUR_INSPOS}</span>
                     </div>
-                    <div className={cn("flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-0.5")}>
+                    <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_MAX_H_28_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_P_0_5)}>
                       {_.map(savedInspos, (item, index) => {
                         const isSelected = _.isEqual(sunoInspo, item.content);
                         return (
                           <div
-                            key={SOURCE_TEMPLATE_SYMBOL_5(`${item.title}`, `${index}`)}
-                            className={cn("group relative inline-flex items-center pl-2.5 pr-1.5 rounded-xl border transition-all duration-200 shadow-2xs backdrop-blur-sm shrink-0 h-[32px] min-h-[32px]", {
-                              "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                              "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !isSelected,
+                            key={SOURCE_TEMPLATE_SYMBOL_5(String(item.title), String(index))}
+                            className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, {
+                              [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
+                              [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
                             })}>
                             <Tooltip content={item.content} align={SOURCE_TEXT_START}>
                               <Button
@@ -1795,20 +1708,20 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                 type={SOURCE_TEXT_BUTTON}
                                 onClick={() => {
                                   const shouldClear = _.isEqual(sunoInspo, item.content);
-                                  setSunoInspo(shouldClear ? "" : item.content);
+                                  setSunoInspo(shouldClear ? MUSIC_CREATOR_RUNTIME.EMPTY : item.content);
                                   setEditingInspoIndex(null);
-                                  setSunoInspoDraft("");
-                                  setInspoName("");
+                                  setSunoInspoDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
+                                  setInspoName(MUSIC_CREATOR_RUNTIME.EMPTY);
                                 }}
                                 disabled={isBusy}
-                                className={cn("text-[11px] font-black truncate max-w-[130px] cursor-pointer text-left flex items-center gap-1.5 leading-none h-full")}
+                                className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_130PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}
                                 title={item.content}>
-                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-all", { "bg-white ring-2 ring-white/40 shadow-xs": isSelected, "bg-slate-400 dark:bg-slate-500 group-hover:bg-purple-400": !isSelected })} />
-                                <span className={cn("truncate font-black text-[11px] leading-none transition-colors", { "!text-white": isSelected, "!text-[#1e1b4b] group-hover:!text-[#6b21a8] dark:!text-slate-200 dark:group-hover:!text-white": !isSelected })}>{item.title}</span>
+                                <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
+                                <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE]: !isSelected })}>{item.title}</span>
                               </Button>
                             </Tooltip>
-                            <div className={cn("flex items-center gap-1 ml-1.5 shrink-0 self-center")}>
-                              <Tooltip content={texts.INSPO_COPY_NAME_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                            <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_ML_1_5_SHRINK_0_SELF_CENTER)}>
+                              <Tooltip content={texts.INSPO_COPY_NAME_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                                 <Button
                                   variant={SOURCE_TEXT_UNSTYLED}
                                   type={SOURCE_TEXT_BUTTON}
@@ -1822,14 +1735,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   title={texts.INSPO_COPY_NAME_BTN}
                                   aria-label={texts.INSPO_COPY_NAME_BTN}
                                   disabled={isBusy}
-                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                    "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected,
-                                    "bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-700 dark:text-sky-300": !isSelected,
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                    [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
+                                    [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected,
                                   })}>
-                                  {copiedInspoIndex === index ? <Check className={cn("w-2.5 h-2.5 shrink-0", { "text-emerald-300": isSelected, "text-emerald-500": !isSelected })} /> : <Copy className={cn("w-2.5 h-2.5 shrink-0")} />}
+                                  {copiedInspoIndex === index ? <Check className={cn(MCS.W_2_5_H_2_5_SHRINK_0, { [MCS.TEXT_EMERALD_300]: isSelected, [SRT.SOURCE_TEXT_TEXT_EMERALD_500]: !isSelected })} /> : <Copy className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />}
                                 </Button>
                               </Tooltip>
-                              <Tooltip content={texts.STYLE_UPDATE_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                              <Tooltip content={texts.STYLE_UPDATE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                                 <Button
                                   variant={SOURCE_TEXT_UNSTYLED}
                                   type={SOURCE_TEXT_BUTTON}
@@ -1842,14 +1755,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   }}
                                   disabled={isBusy}
                                   title={texts.STYLE_UPDATE_BTN}
-                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                    "bg-white/20 hover:bg-white/30 border border-white/30 text-white": isSelected,
-                                    "bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[#7e22ce] dark:text-purple-300": !isSelected,
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                    [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
+                                    [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected,
                                   })}>
-                                  <Pencil className={cn("w-2.5 h-2.5 shrink-0")} />
+                                  <Pencil className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                                 </Button>
                               </Tooltip>
-                              <Tooltip content={texts.STYLE_DELETE_BTN} align={SOURCE_TEXT_CENTER} className={cn("w-5 h-5 min-w-5 min-h-5 max-w-5 max-h-5 shrink-0 self-center p-0 flex items-center justify-center")}>
+                              <Tooltip content={texts.STYLE_DELETE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                                 <Button
                                   variant={SOURCE_TEXT_UNSTYLED}
                                   type={SOURCE_TEXT_BUTTON}
@@ -1859,11 +1772,11 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   }}
                                   disabled={isBusy}
                                   title={texts.STYLE_DELETE_BTN}
-                                  className={cn("btn-icon-tiny !w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] !max-w-[20px] !max-h-[20px] !p-0 aspect-square rounded-[5px] inline-flex items-center justify-center cursor-pointer transition-all shadow-2xs shrink-0", {
-                                    "bg-rose-500/30 hover:bg-rose-500/50 border border-rose-300/40 text-white": isSelected,
-                                    "bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-[#e11d48] dark:text-rose-400": !isSelected,
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
+                                    [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected,
+                                    [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected,
                                   })}>
-                                  <Trash2 className={cn("w-2.5 h-2.5 shrink-0")} />
+                                  <Trash2 className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                                 </Button>
                               </Tooltip>
                             </div>
@@ -1875,57 +1788,43 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 )}
               </div>
             </StudioCard>
-            <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex-1 flex flex-col")}>
-              <div className={cn("flex items-center justify-between relative z-10 shrink-0")}>
-                <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <span className={cn("w-6 h-6 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-purple-500/20")}>{texts.STEP_02}</span>
-                  <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
-                    <FileText className={cn("w-3.5 h-3.5 text-purple-400")} />
+            <StudioCard className={cn(MCS.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE_Y_4_SHADOW_XL_BORDER_BORDER_2)}>
+              <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_RELATIVE_Z_10_SHRINK_0)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
+                  <span className={cn(SRT.SOURCE_TEXT_W_6_H_6_ROUNDED_XL_BG)}>{texts.STEP_02}</span>
+                  <h3 className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER)}>
+                    <FileText className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT)} />
                     <span>{texts.REFERENCE_LABEL}</span>
                   </h3>
                 </div>
-                <Button
-                  variant={SOURCE_TEXT_UNSTYLED}
-                  type={SOURCE_TEXT_BUTTON}
-                  onClick={handleFillSampleReferences}
-                  disabled={isBusy}
-                  className={cn(
-                    "text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-600 hover:border-purple-600 shadow-xs leading-none !text-[#6b21a8] hover:!text-white dark:!text-purple-300 dark:hover:!text-white [&>svg]:text-[#6b21a8] dark:[&>svg]:text-purple-300 hover:[&>svg]:!text-white dark:hover:[&>svg]:!text-white",
-                  )}>
-                  <Sparkles className={cn("w-3 h-3 shrink-0")} />
-                  <span className={cn("inline-flex items-center leading-none")}>{texts.QUICK_FILL_LABEL}</span>
+                <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleFillSampleReferences} disabled={isBusy} className={cn(MCS.TEXT_XS_FONT_BOLD_TRANSITION_ALL_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GA)}>
+                  <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                  <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.QUICK_FILL_LABEL}</span>
                 </Button>
               </div>
-              <div className={cn("relative z-10 flex-1 flex flex-col min-h-0")}>
-                <StudioTextarea
-                  rows={4}
-                  value={referenceSongs}
-                  onChange={(e) => setReferenceSongs(e.target.value)}
-                  placeholder={texts.REFERENCE_PLACEHOLDER}
-                  disabled={isBusy}
-                  className={cn("w-full flex-1 min-h-[140px] sm:min-h-[180px] bg-slate-955/90 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-y shadow-inner transition-all placeholder:text-slate-500 font-sans border border-slate-800/80 focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/20 custom-scrollbar")}
-                />
+              <div className={cn(MCS.RELATIVE_Z_10_FLEX_1_FLEX_FLEX_COL_MIN_H_0)}>
+                <StudioTextarea rows={4} value={referenceSongs} onChange={(e) => setReferenceSongs(e.target.value)} placeholder={texts.REFERENCE_PLACEHOLDER} disabled={isBusy} className={cn(MCS.W_FULL_FLEX_1_MIN_H_140PX_SM_MIN_H_180PX_BG_SLATE_955_90_TEXT_SLATE_100_P_3)} />
               </div>
             </StudioCard>
           </div>
-          <div className={cn("lg:col-span-1 flex flex-col gap-5 min-w-0 h-full")}>
-            <StudioCard className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-4 text-left relative overflow-hidden backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
-              <div className={cn("flex items-center justify-between border-b border-slate-800/80 pb-3")}>
-                <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 p-0.5 shadow-xs shadow-amber-500/20 shrink-0")}>
-                    <div className={cn("w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center")}>
-                      <SlidersHorizontal className={cn("w-4 h-4 text-amber-400")} />
+          <div className={cn(SRT.SOURCE_TEXT_LG_COL_SPAN_1_FLEX_FLEX_COL)}>
+            <StudioCard className={cn(SRT.SOURCE_TEXT_GLASS_CARD_BG_SLATE_900_90_BORDER)}>
+              <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
+                  <div className={cn(SRT.SOURCE_TEXT_W_8_H_8_ROUNDED_LG_BG)}>
+                    <div className={cn(SRT.SOURCE_TEXT_W_FULL_H_FULL_BG_SLATE_950_3)}>
+                      <SlidersHorizontal className={cn(SRT.SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400)} />
                     </div>
                   </div>
                   <div>
-                    <h2 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>{texts.STUDIO_CONFIG_TITLE}</h2>
+                    <h2 className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER)}>{texts.STUDIO_CONFIG_TITLE}</h2>
                   </div>
                 </div>
-                <span className={cn("px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-black tracking-normal")}>{texts.STUDIO_CONFIG_BADGE}</span>
+                <span className={cn(SRT.SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_4)}>{texts.STUDIO_CONFIG_BADGE}</span>
               </div>
-              <div className={cn("space-y-2")}>
-                <label className={cn("text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block")}>{texts.COUNT_LABEL}</label>
-                <div className={cn("grid grid-cols-3 gap-2")}>
+              <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2)}>
+                <label className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER_BLOCK)}>{texts.COUNT_LABEL}</label>
+                <div className={cn(MCS.GRID_GRID_COLS_3_GAP_2)}>
                   {_.map(MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS, (count) => {
                     const isSelected = _.isEqual(outputCount, count);
                     const isRecommended = _.isEqual(count, MUSIC_CREATOR_CONSTANTS.RECOMMENDED_SONG_COUNT);
@@ -1936,104 +1835,99 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         type={SOURCE_TEXT_BUTTON}
                         onClick={() => setOutputCount(count)}
                         disabled={isBusy}
-                        className={cn("relative h-9 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer shadow-xs select-none", {
-                          "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                          "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !isSelected,
+                        className={cn(MCS.RELATIVE_H_9_ROUNDED_XL_BORDER_FONT_BOLD_TEXT_XS_FLEX_FLEX_COL_ITEMS_CENTER, {
+                          [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
+                          [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
                         })}>
                         <span>{texts.formatSongCount(count)}</span>
-                        {isRecommended && !isSelected && <span className={cn("absolute -top-1 px-1 rounded text-[7px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30")}>{texts.RECOMMENDED_BADGE}</span>}
+                        {isRecommended && !isSelected && <span className={cn(MCS.ABSOLUTE_TOP_1_PX_1_ROUNDED_TEXT_7PX_FONT_MONO_UPPERCASE_BG_AMBER_500_20_TE)}>{texts.RECOMMENDED_BADGE}</span>}
                       </Button>
                     );
                   })}
                 </div>
               </div>
-              <div className={cn("p-3 rounded-xl bg-slate-955/70 border border-slate-800/80 space-y-1.5 text-[11px] font-mono text-slate-400")}>
-                <div className={cn("flex items-center justify-between")}>
+              <div className={cn(SRT.SOURCE_TEXT_P_3_ROUNDED_XL_BG_SLATE_955)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
                   <span>
                     {texts.COUNT_LABEL}
                     {SOURCE_TEXT_SYMBOL_16}
                   </span>
-                  <span className={cn("font-bold text-slate-200")}>
+                  <span className={cn(SRT.SOURCE_TEXT_FONT_BOLD_TEXT_SLATE_200)}>
                     {outputCount} {texts.SONG_UNIT}
                   </span>
                 </div>
-                <div className={cn("flex items-center justify-between")}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
                   <span>
                     {texts.ENGINE_LABEL}
                     {SOURCE_TEXT_SYMBOL_16}
                   </span>
-                  <span className={cn("font-bold text-purple-300")}>{texts.HEADER_BADGE}</span>
+                  <span className={cn(SRT.SOURCE_TEXT_FONT_BOLD_TEXT_PURPLE_300)}>{texts.HEADER_BADGE}</span>
                 </div>
-                <div className={cn("flex items-center justify-between")}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
                   <span>
                     {texts.MODEL_LABEL}
                     {SOURCE_TEXT_SYMBOL_16}
                   </span>
-                  <span className={cn("font-bold text-slate-200 truncate max-w-[130px]")}>{model}</span>
+                  <span className={cn(MCS.FONT_BOLD_TEXT_SLATE_200_TRUNCATE_MAX_W_130PX)}>{model}</span>
                 </div>
               </div>
-              <div className={cn("space-y-2 pt-1")}>
-                <div className={cn("flex items-center gap-2")}>
+              <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2_PT_1)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
                   <Button
                     variant={SOURCE_TEXT_UNSTYLED}
                     type={SOURCE_TEXT_BUTTON}
                     onClick={handleGenerate}
                     disabled={!isFormValid || isBusy}
-                    className={cn("h-11 min-h-[44px] px-4 rounded-xl font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all shadow-lg tracking-wider uppercase font-sans border leading-none", {
-                      "flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": isLoading,
-                      "w-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !isLoading && isFormValid,
-                      "w-full bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !isLoading && !isFormValid,
+                    className={cn(MCS.H_11_MIN_H_44PX_PX_4_ROUNDED_XL_FONT_EXTRABOLD_TEXT_XS_INLINE_FLEX_ITEMS_CE, {
+                      [MCS.FLEX_1_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_PINK_600_TO_INDIGO_600_BORDER_P]: isLoading,
+                      [MCS.W_FULL_BG_GRADIENT_TO_R_FROM_ROSE_600_VIA_PURPLE_600_TO_INDIGO_600_HOVER_FR]: !isLoading && isFormValid,
+                      [MCS.W_FULL_BG_SLATE_800_80_BORDER_SLATE_700_TEXT_SLATE_500_CURSOR_NOT_ALLOWED_S]: !isLoading && !isFormValid,
                     })}>
                     {isLoading ? (
                       <>
-                        <Sparkles className={cn("w-4 h-4 animate-spin text-white shrink-0")} />
-                        <span className={cn("truncate inline-flex items-center leading-none")}>{texts.BLOCK_LYRICS_LOADING}</span>
+                        <Sparkles className={cn(SRT.SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2)} />
+                        <span className={cn(SRT.SOURCE_TEXT_TRUNCATE_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.BLOCK_LYRICS_LOADING}</span>
                       </>
                     ) : (
                       <>
-                        <WandSparkles className={cn("w-4 h-4 shrink-0")} />
-                        <span className={cn("inline-flex items-center leading-none")}>{texts.formatGenerateBtn(outputCount)}</span>
+                        <WandSparkles className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />
+                        <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.formatGenerateBtn(outputCount)}</span>
                       </>
                     )}
                   </Button>
                   {(isLoading || isStopping) && (
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleCancelGeneration}
-                      disabled={isStopping}
-                      className={cn("h-11 min-h-[44px] px-4 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60 shadow-md transition-all active:scale-95 shrink-0 leading-none")}>
-                      <X className={cn("w-4 h-4 shrink-0")} />
-                      <span className={cn("inline-flex items-center leading-none")}>{isStopping ? texts.STOPPING_BTN : texts.STOP_BTN}</span>
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelGeneration} disabled={isStopping} className={cn(MCS.H_11_MIN_H_44PX_PX_4_ROUNDED_XL_BORDER_BORDER_ROSE_500_50_BG_GRADIENT_TO_R)}>
+                      <X className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />
+                      <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isStopping ? texts.STOPPING_BTN : texts.STOP_BTN}</span>
                     </Button>
                   )}
                 </div>
                 {generationError && (
-                  <div role={SOURCE_TEXT_ALERT} className={cn("rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words")}>
-                    <AlertTriangle className={cn("mr-1.5 inline h-3.5 w-3.5")} />
+                  <div role={SOURCE_TEXT_ALERT} className={cn(MCS.ROUNDED_XL_BORDER_BORDER_ROSE_500_40_BG_ROSE_500_10_PX_3_PY_2_TEXT_XS_TEXT)}>
+                    <AlertTriangle className={cn(MCS.MR_1_5_INLINE_H_3_5_W_3_5)} />
                     {generationError}
                   </div>
                 )}
                 {!isLoading && _.isEmpty(songs) && (
-                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTrySampleTemplate} disabled={isBusy} className={cn("w-full py-2 text-center text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 hover:underline cursor-pointer transition-colors inline-flex items-center justify-center gap-1 leading-none")}>
-                    <Sparkles className={cn("w-3 h-3 shrink-0")} />
-                    <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTrySampleTemplate} disabled={isBusy} className={cn(MCS.W_FULL_PY_2_TEXT_CENTER_TEXT_XS_FONT_BOLD_TEXT_PURPLE_700_HOVER_TEXT_PURPLE)}>
+                    <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TRY_SAMPLE_BTN}</span>
                   </Button>
                 )}
               </div>
             </StudioCard>
-            <StudioCard className={cn("glass-card bg-slate-900/90 border border-slate-800/80 p-5 space-y-3 text-left backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl")}>
-              <div className={cn("flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3")}>
-                <h3 className={cn("text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5")}>
-                  <ImageIcon className={cn("w-3.5 h-3.5 text-fuchsia-400")} />
+            <StudioCard className={cn(MCS.GLASS_CARD_BG_SLATE_900_90_BORDER_BORDER_SLATE_800_80_P_5_SPACE_Y_3_TEXT_LE)}>
+              <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_800_80_PB_3)}>
+                <h3 className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER)}>
+                  <ImageIcon className={cn(MCS.W_3_5_H_3_5_TEXT_FUCHSIA_400)} />
                   {texts.THUMBNAIL_TITLE}
                 </h3>
-                <span className={cn("text-[9px] font-bold text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2 py-0.5 rounded-full")}>{texts.THUMBNAIL_RATIO_BADGE}</span>
+                <span className={cn(MCS.TEXT_9PX_FONT_BOLD_TEXT_FUCHSIA_300_BG_FUCHSIA_500_15_BORDER_BORDER_FUCHSIA)}>{texts.THUMBNAIL_RATIO_BADGE}</span>
               </div>
-              <StudioInput ref={thumbnailFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} disabled={isBusy} className={cn("hidden")} />
-              <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
+              <StudioInput ref={thumbnailFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleThumbnailReferenceChange} disabled={isBusy} className={cn(SRT.SOURCE_TEXT_HIDDEN)} />
+              <div className={cn(MCS.GRID_GRID_COLS_2_GAP_2_5_ITEMS_START)}>
                 {thumbnailReference ? (
-                  <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md flex items-center justify-center")}>
+                  <div className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_SLATE_700_BG)}>
                     <img
                       src={thumbnailReference}
                       alt={texts.THUMBNAIL_REFERENCE_ALT}
@@ -2043,11 +1937,11 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         event.stopPropagation();
                         setPreviewThumbnail(thumbnailReference);
                       }}
-                      className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")}
+                      className={cn(MCS.ABSOLUTE_INSET_0_W_FULL_H_FULL_OBJECT_CONTAIN_CURSOR_ZOOM_IN)}
                     />
-                    <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
-                      <span className={cn("text-[9px] font-mono font-bold text-white/90 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_REFERENCE_BADGE}</span>
-                      <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_OVERLAY}</span>
+                    <div className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_INSET_0_BG_GRADIENT_TO_T_FROM_BLACK_70_VIA_TRA)}>
+                      <span className={cn(MCS.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_WHITE_90_BG_BLACK_60_PX_1_5_PY_0_2_ROUNDE)}>{texts.THUMBNAIL_REFERENCE_BADGE}</span>
+                      <span className={cn(MCS.TEXT_9PX_FONT_MONO_TEXT_WHITE_80_BG_BLACK_60_PX_1_5_PY_0_2_ROUNDED_BACKDROP)}>{texts.THUMBNAIL_RATIO_OVERLAY}</span>
                     </div>
                     <Button
                       variant={SOURCE_TEXT_UNSTYLED}
@@ -2058,24 +1952,19 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       }}
                       title={texts.CHANGE_IMAGE_BTN}
                       disabled={isBusy}
-                      className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white/90 hover:text-white backdrop-blur-xs border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md flex items-center justify-center")}>
-                      <Upload className={cn("w-3.5 h-3.5 shrink-0")} />
+                      className={cn(MCS.BTN_ICON_TINY_ABSOLUTE_TOP_2_RIGHT_2_W_7_H_7_MIN_W_28PX_MAX_W_28PX_MIN_H_28)}>
+                      <Upload className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => thumbnailFileInputRef.current?.click()}
-                    disabled={isBusy}
-                    className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-fuchsia-500/70 bg-slate-955/80 overflow-hidden transition-colors flex flex-col items-center justify-center gap-1 group cursor-pointer shadow-inner p-2 text-center")}>
-                    <Upload className={cn("w-4 h-4 text-slate-400 group-hover:text-fuchsia-300 transition-colors")} />
-                    <span className={cn("text-[10px] font-bold text-slate-300 group-hover:text-fuchsia-200 leading-tight")}>{texts.THUMBNAIL_UPLOAD}</span>
-                    <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => thumbnailFileInputRef.current?.click()} disabled={isBusy} className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_DASHED_BORDER)}>
+                    <Upload className={cn(MCS.W_4_H_4_TEXT_SLATE_400_GROUP_HOVER_TEXT_FUCHSIA_300_TRANSITION_COLORS)} />
+                    <span className={cn(MCS.TEXT_10PX_FONT_BOLD_TEXT_SLATE_300_GROUP_HOVER_TEXT_FUCHSIA_200_LEADING_TIG)}>{texts.THUMBNAIL_UPLOAD}</span>
+                    <span className={cn(MCS.TEXT_8PX_FONT_MONO_TEXT_SLATE_500)}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
                   </Button>
                 )}
                 {generatedThumbnail && !isGeneratingThumbnail ? (
-                  <div className={cn("relative group block min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
+                  <div className={cn(MCS.RELATIVE_GROUP_BLOCK_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_F)}>
                     <img
                       src={generatedThumbnail}
                       alt={texts.THUMBNAIL_RESULT_ALT}
@@ -2085,44 +1974,37 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         event.stopPropagation();
                         setPreviewThumbnail(generatedThumbnail);
                       }}
-                      className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")}
+                      className={cn(MCS.ABSOLUTE_INSET_0_W_FULL_H_FULL_OBJECT_CONTAIN_CURSOR_ZOOM_IN)}
                     />
-                    <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
-                      <span className={cn("text-[9px] font-mono font-bold text-fuchsia-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_AI_BADGE}</span>
-                      <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.THUMBNAIL_RATIO_HD}</span>
+                    <div className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_INSET_0_BG_GRADIENT_TO_T_FROM_BLACK_70_VIA_TRA)}>
+                      <span className={cn(MCS.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_FUCHSIA_300_BG_BLACK_60_PX_1_5_PY_0_2_ROU)}>{texts.THUMBNAIL_AI_BADGE}</span>
+                      <span className={cn(MCS.TEXT_9PX_FONT_MONO_TEXT_WHITE_80_BG_BLACK_60_PX_1_5_PY_0_2_ROUNDED_BACKDROP)}>{texts.THUMBNAIL_RATIO_HD}</span>
                     </div>
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleDownloadThumbnail}
-                      disabled={isBusy}
-                      title={texts.THUMBNAIL_DOWNLOAD}
-                      aria-label={texts.THUMBNAIL_DOWNLOAD}
-                      className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
-                      <Download className={cn("w-3.5 h-3.5")} />
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleDownloadThumbnail} disabled={isBusy} title={texts.THUMBNAIL_DOWNLOAD} aria-label={texts.THUMBNAIL_DOWNLOAD} className={cn(MCS.BTN_ICON_TINY_ABSOLUTE_TOP_2_RIGHT_2_Z_10_W_7_H_7_P_0_ROUNDED_LG_BG_BLACK_7)}>
+                      <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                     </Button>
                   </div>
                 ) : isGeneratingThumbnail ? (
-                  <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-fuchsia-500/40 bg-gradient-to-b from-fuchsia-500/10 via-purple-500/5 to-slate-900/40 dark:from-fuchsia-950/40 dark:to-slate-955/80 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center shadow-inner")}>
-                    <div className={cn("w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-purple-600 p-0.5 shadow-xs")}>
-                      <div className={cn("w-full h-full bg-white dark:bg-slate-900 rounded-[6px] flex items-center justify-center")}>
-                        <Sparkles className={cn("w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400 animate-spin")} />
+                  <div className={cn(MCS.MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_FUCHSIA_500_40_BG_GRAD)}>
+                    <div className={cn(MCS.W_7_H_7_ROUNDED_LG_BG_GRADIENT_TO_TR_FROM_FUCHSIA_500_TO_PURPLE_600_P_0_5_S)}>
+                      <div className={cn(MCS.W_FULL_H_FULL_BG_WHITE_DARK_BG_SLATE_900_ROUNDED_6PX_FLEX_ITEMS_CENTER_JUST)}>
+                        <Sparkles className={cn(MCS.W_3_5_H_3_5_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_400_ANIMATE_SPIN)} />
                       </div>
                     </div>
-                    <p className={cn("text-[10px] font-black tracking-tight !text-[#86198f] dark:!text-fuchsia-300 leading-tight")}>{texts.THUMBNAIL_GENERATING}</p>
-                    <p className={cn("text-[8px] font-medium !text-slate-500 dark:!text-slate-400")}>{texts.THUMBNAIL_MODEL_TAG}</p>
+                    <p className={cn(MCS.TEXT_10PX_FONT_BLACK_TRACKING_TIGHT_TEXT_86198F_DARK_TEXT_FUCHSIA_300_LEADI)}>{texts.THUMBNAIL_GENERATING}</p>
+                    <p className={cn(MCS.TEXT_8PX_FONT_MEDIUM_TEXT_SLATE_500_DARK_TEXT_SLATE_400)}>{texts.THUMBNAIL_MODEL_TAG}</p>
                   </div>
                 ) : (
-                  <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 dark:border-slate-800 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500")}>
-                    <Sparkles className={cn("w-4 h-4 text-slate-600 dark:text-slate-500")} />
-                    <span className={cn("text-[10px] font-semibold text-slate-400 dark:text-slate-400 leading-tight")}>{texts.THUMBNAIL_AI_TITLE}</span>
-                    <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_NOT_CREATED}</span>
+                  <div className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_DASHED_BORDER_2)}>
+                    <Sparkles className={cn(MCS.W_4_H_4_TEXT_SLATE_600_DARK_TEXT_SLATE_500)} />
+                    <span className={cn(MCS.TEXT_10PX_FONT_SEMIBOLD_TEXT_SLATE_400_DARK_TEXT_SLATE_400_LEADING_TIGHT)}>{texts.THUMBNAIL_AI_TITLE}</span>
+                    <span className={cn(MCS.TEXT_8PX_FONT_MONO_TEXT_SLATE_500)}>{texts.THUMBNAIL_NOT_CREATED}</span>
                   </div>
                 )}
               </div>
-              <div className={cn("space-y-1")}>
-                <div className={cn("flex items-center justify-between gap-2")}>
-                  <span className={cn("text-[11px] font-semibold text-slate-300")}>{texts.COVER_IMAGE_NOTE_LABEL}</span>
+              <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                  <span className={cn(MCS.TEXT_11PX_FONT_SEMIBOLD_TEXT_SLATE_300)}>{texts.COVER_IMAGE_NOTE_LABEL}</span>
                   <Button
                     variant={SOURCE_TEXT_UNSTYLED}
                     type={SOURCE_TEXT_BUTTON}
@@ -2130,162 +2012,134 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       void handleNormalizeImageNote(SOURCE_TEXT_COVER);
                     }}
                     disabled={isBusy || _.isEmpty(_.trim(thumbnailDescription))}
-                    className={cn(
-                      "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed",
-                    )}
+                    className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC_2)}
                     title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}>
-                    {isNormalizingThumbnailNote ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-400")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
+                    {isNormalizingThumbnailNote ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                   </Button>
                 </div>
-                <StudioTextarea
-                  rows={4}
-                  value={thumbnailDescription}
-                  onChange={(event) => setThumbnailDescription(event.target.value)}
-                  disabled={isBusy}
-                  placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER}
-                  className={cn("w-full min-h-[95px] sm:min-h-[110px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-fuchsia-500/80 custom-scrollbar")}
-                />
+                <StudioTextarea rows={4} value={thumbnailDescription} onChange={(event) => setThumbnailDescription(event.target.value)} disabled={isBusy} placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER} className={cn(MCS.W_FULL_MIN_H_95PX_SM_MIN_H_110PX_BG_SLATE_955_90_TEXT_SLATE_100_P_3_ROUNDED)} />
               </div>
               {!_.isEmpty(songs) && (
-                <div className={cn("grid grid-cols-2 gap-2")}>
+                <div className={cn(MCS.GRID_GRID_COLS_2_GAP_2)}>
                   <Button
                     variant={SOURCE_TEXT_UNSTYLED}
                     type={SOURCE_TEXT_BUTTON}
                     onClick={handleRegenerateThumbnail}
                     disabled={isBusy}
-                    className={cn("h-9 px-3 rounded-xl border text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all select-none shadow-2xs leading-none", {
-                      "border-fuchsia-500/40 bg-fuchsia-100/90 dark:bg-fuchsia-950/70 !text-[#86198f] dark:!text-fuchsia-300 cursor-wait": isGeneratingThumbnail,
-                      "border-fuchsia-500/40 bg-fuchsia-500/10 hover:bg-fuchsia-600 dark:bg-fuchsia-500/20 dark:hover:bg-fuchsia-600 !text-[#86198f] hover:!text-white dark:!text-fuchsia-300 dark:hover:!text-white cursor-pointer active:scale-95 col-span-2": !isGeneratingThumbnail,
+                    className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTI, {
+                      [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_100_90_DARK_BG_FUCHSIA_950_70_TEXT_86198F]: isGeneratingThumbnail,
+                      [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_500_10_HOVER_BG_FUCHSIA_600_DARK_BG_FUCHSI]: !isGeneratingThumbnail,
                     })}>
-                    {isGeneratingThumbnail ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-fuchsia-600 dark:text-fuchsia-400")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
-                    <span className={cn("inline-flex items-center leading-none")}>{isGeneratingThumbnail ? texts.THUMBNAIL_CREATING_SHORT : generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN}</span>
+                    {isGeneratingThumbnail ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isGeneratingThumbnail ? texts.THUMBNAIL_CREATING_SHORT : generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN}</span>
                   </Button>
                   {isGeneratingThumbnail ? (
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleStopThumbnail}
-                      title={texts.THUMBNAIL_STOP_TOOLTIP}
-                      aria-label={texts.THUMBNAIL_STOP_TOOLTIP}
-                      className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
-                      <X className={cn("w-3.5 h-3.5")} />
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleStopThumbnail} title={texts.THUMBNAIL_STOP_TOOLTIP} aria-label={texts.THUMBNAIL_STOP_TOOLTIP} className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_BORDER_ROSE_500_50_BG_ROSE_500_10_HOVER_BG_ROSE)}>
+                      <X className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                       <span>{texts.THUMBNAIL_STOP}</span>
                     </Button>
                   ) : null}
                 </div>
               )}
-              <div className={cn("pt-4 border-t border-slate-800/80 space-y-3")}>
-                <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
-                  <div className={cn("flex items-center gap-2 min-w-0")}>
-                    <div className={cn("w-6 h-6 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0")}>
-                      <ImageIcon className={cn("w-3.5 h-3.5")} />
+              <div className={cn(MCS.PT_4_BORDER_T_BORDER_SLATE_800_80_SPACE_Y_3)}>
+                <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP)}>
+                  <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W)}>
+                    <div className={cn(MCS.W_6_H_6_ROUNDED_LG_BG_CYAN_500_15_BORDER_BORDER_CYAN_500_30_TEXT_CYAN_400_F)}>
+                      <ImageIcon className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                     </div>
-                    <h3 className={cn("text-xs font-black uppercase tracking-wider text-slate-100 font-mono")}>{texts.VIDEO_BACKGROUND_TITLE}</h3>
+                    <h3 className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDER)}>{texts.VIDEO_BACKGROUND_TITLE}</h3>
                   </div>
                   <label
-                    className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all select-none", {
-                      "border-slate-800/80 bg-slate-900/40 text-slate-500 cursor-not-allowed opacity-60": isTrackListUnavailable,
-                      "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 cursor-pointer shadow-xs": !isTrackListUnavailable && showVideoTrackList,
-                      "border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300 hover:text-slate-100 cursor-pointer": !isTrackListUnavailable && !showVideoTrackList,
+                    className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_PY_1_ROUNDED_LG_BORDER_TEXT_11PX_FO, {
+                      [MCS.BORDER_SLATE_800_80_BG_SLATE_900_40_TEXT_SLATE_500_CURSOR_NOT_ALLOWED_OPACI]: isTrackListUnavailable,
+                      [MCS.BORDER_CYAN_500_40_BG_CYAN_500_15_TEXT_CYAN_300_CURSOR_POINTER_SHADOW_XS]: !isTrackListUnavailable && showVideoTrackList,
+                      [MCS.BORDER_SLATE_800_HOVER_BORDER_SLATE_700_BG_SLATE_900_80_TEXT_SLATE_300_HOVE]: !isTrackListUnavailable && !showVideoTrackList,
                     })}>
-                    <StudioInput type={SOURCE_TEXT_CHECKBOX} checked={showVideoTrackList} onChange={(event) => setShowVideoTrackList(event.target.checked)} disabled={isTrackListUnavailable} className={cn("h-3.5 w-3.5 rounded border-slate-600 accent-cyan-500 cursor-pointer disabled:cursor-not-allowed")} />
+                    <StudioInput type={SOURCE_TEXT_CHECKBOX} checked={showVideoTrackList} onChange={(event) => setShowVideoTrackList(event.target.checked)} disabled={isTrackListUnavailable} className={cn(MCS.H_3_5_W_3_5_ROUNDED_BORDER_SLATE_600_ACCENT_CYAN_500_CURSOR_POINTER_DISABLE)} />
                     <span>{texts.VIDEO_BACKGROUND_TRACKLIST}</span>
                   </label>
                 </div>
                 {isLoading || isCreatingSuno || _.isEmpty(downloadedMusicTracks) ? (
-                  <StudioCard className={cn("rounded-2xl border border-dashed border-slate-800 bg-gradient-to-b from-slate-950/60 to-slate-900/30 p-4 text-center space-y-2.5 shadow-inner")}>
-                    <div className={cn("w-9 h-9 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 flex items-center justify-center mx-auto shadow-xs")}>
-                      <Lock className={cn("w-4 h-4 text-slate-400")} />
+                  <StudioCard className={cn(MCS.ROUNDED_2XL_BORDER_BORDER_DASHED_BORDER_SLATE_800_BG_GRADIENT_TO_B_FROM_SLA)}>
+                    <div className={cn(MCS.W_9_H_9_ROUNDED_XL_BG_SLATE_800_60_BORDER_BORDER_SLATE_700_60_TEXT_SLATE_40)}>
+                      <Lock className={cn(MCS.W_4_H_4_TEXT_SLATE_400)} />
                     </div>
-                    <div className={cn("space-y-1")}>
-                      <p className={cn("text-xs font-bold text-slate-300")}>{texts.VIDEO_BACKGROUND_LOCKED}</p>
-                      <p className={cn("text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto")}>{SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH}</p>
+                    <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1)}>
+                      <p className={cn(SRT.SOURCE_TEXT_TEXT_XS_FONT_BOLD_TEXT_SLATE_300)}>{texts.VIDEO_BACKGROUND_LOCKED}</p>
+                      <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_400_LEADING_RELAXED_MAX_W_XS_MX_AUTO)}>{SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH}</p>
                     </div>
-                    <div className={cn("flex items-center justify-center gap-2 pt-1")}>
-                      <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border", { "bg-emerald-500/10 text-emerald-300 border-emerald-500/20": !isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks), "bg-slate-900 text-slate-400 border-slate-800": !(isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks)) })}>
-                        {!isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <Disc3 className={cn("w-3 h-3 text-slate-500")} />}
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PT_1)}>
+                      <div className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_PY_1_ROUNDED_MD_TEXT_10PX_FONT_MONO, { [MCS.BG_EMERALD_500_10_TEXT_EMERALD_300_BORDER_EMERALD_500_20]: !isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks), [MCS.BG_SLATE_900_TEXT_SLATE_400_BORDER_SLATE_800]: !(isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks)) })}>
+                        {!isLoading && !isCreatingSuno && !_.isEmpty(downloadedMusicTracks) ? <Check className={cn(SRT.SOURCE_TEXT_W_3_H_3_TEXT_EMERALD_400)} /> : <Disc3 className={cn(MCS.W_3_H_3_TEXT_SLATE_500)} />}
                         <span>{SOURCE_TEXT_TAI_NHAC_SUNO}</span>
                       </div>
-                      <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border", { "bg-emerald-500/10 text-emerald-300 border-emerald-500/20": !_.isEmpty(videoBackgroundReference), "bg-slate-900 text-slate-400 border-slate-800": !_.isEmpty(videoBackgroundReference) })}>
-                        {!_.isEmpty(videoBackgroundReference) ? <Check className={cn("w-3 h-3 text-emerald-400")} /> : <ImageIcon className={cn("w-3 h-3 text-slate-500")} />}
+                      <div className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_PY_1_ROUNDED_MD_TEXT_10PX_FONT_MONO, { [MCS.BG_EMERALD_500_10_TEXT_EMERALD_300_BORDER_EMERALD_500_20]: !_.isEmpty(videoBackgroundReference), [MCS.BG_SLATE_900_TEXT_SLATE_400_BORDER_SLATE_800]: !_.isEmpty(videoBackgroundReference) })}>
+                        {!_.isEmpty(videoBackgroundReference) ? <Check className={cn(SRT.SOURCE_TEXT_W_3_H_3_TEXT_EMERALD_400)} /> : <ImageIcon className={cn(MCS.W_3_H_3_TEXT_SLATE_500)} />}
                         <span>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                       </div>
                     </div>
                   </StudioCard>
                 ) : (
-                  <div className={cn("space-y-3")}>
-                    <StudioInput ref={videoBackgroundFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} disabled={isBusy} className={cn("hidden")} />
-                    <div className={cn("grid grid-cols-2 gap-2.5 items-start")}>
+                  <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_3)}>
+                    <StudioInput ref={videoBackgroundFileInputRef} type={SOURCE_TEXT_FILE} accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL} onChange={handleVideoBackgroundReferenceChange} disabled={isBusy} className={cn(SRT.SOURCE_TEXT_HIDDEN)} />
+                    <div className={cn(MCS.GRID_GRID_COLS_2_GAP_2_5_ITEMS_START)}>
                       {videoBackgroundReference ? (
-                        <div className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-slate-700 bg-black/90 overflow-hidden group shadow-md")}>
-                          <img src={videoBackgroundReference} alt={texts.VIDEO_BACKGROUND_REFERENCE_ALT} title={texts.CLICK_TO_ZOOM} onClick={() => setPreviewThumbnail(videoBackgroundReference)} className={cn("absolute inset-0 w-full h-full object-contain cursor-zoom-in")} />
-                          <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5")}>
-                            <span className={cn("text-[9px] font-mono font-bold text-white bg-black/60 px-1.5 py-0.5 rounded")}>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
+                        <div className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_SLATE_700_BG_2)}>
+                          <img src={videoBackgroundReference} alt={texts.VIDEO_BACKGROUND_REFERENCE_ALT} title={texts.CLICK_TO_ZOOM} onClick={() => setPreviewThumbnail(videoBackgroundReference)} className={cn(MCS.ABSOLUTE_INSET_0_W_FULL_H_FULL_OBJECT_CONTAIN_CURSOR_ZOOM_IN)} />
+                          <div className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_INSET_0_BG_GRADIENT_TO_T_FROM_BLACK_70_VIA_TRA_2)}>
+                            <span className={cn(MCS.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_WHITE_BG_BLACK_60_PX_1_5_PY_0_5_ROUNDED)}>{texts.VIDEO_BACKGROUND_REFERENCE_ALT}</span>
                           </div>
-                          <Button
-                            variant={SOURCE_TEXT_UNSTYLED}
-                            type={SOURCE_TEXT_BUTTON}
-                            onClick={() => videoBackgroundFileInputRef.current?.click()}
-                            disabled={isBusy}
-                            title={texts.CHANGE_IMAGE_BTN}
-                            className={cn("btn-icon-tiny absolute top-2 right-2 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 cursor-pointer flex items-center justify-center")}>
-                            <Upload className={cn("w-3.5 h-3.5")} />
+                          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isBusy} title={texts.CHANGE_IMAGE_BTN} className={cn(MCS.BTN_ICON_TINY_ABSOLUTE_TOP_2_RIGHT_2_W_7_H_7_P_0_ROUNDED_LG_BG_BLACK_70_HOV)}>
+                            <Upload className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                           </Button>
                         </div>
                       ) : (
-                        <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isBusy} className={cn("relative min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700 hover:border-cyan-500/70 bg-slate-955/80 flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer")}>
-                          <Upload className={cn("w-4 h-4 text-slate-400")} />
-                          <span className={cn("text-[10px] font-bold text-slate-300")}>{texts.THUMBNAIL_UPLOAD}</span>
-                          <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
+                        <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => videoBackgroundFileInputRef.current?.click()} disabled={isBusy} className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_DASHED_BORDER_3)}>
+                          <Upload className={cn(MCS.W_4_H_4_TEXT_SLATE_400)} />
+                          <span className={cn(MCS.TEXT_10PX_FONT_BOLD_TEXT_SLATE_300)}>{texts.THUMBNAIL_UPLOAD}</span>
+                          <span className={cn(MCS.TEXT_8PX_FONT_MONO_TEXT_SLATE_500)}>{texts.THUMBNAIL_SAMPLE_RATIO}</span>
                         </Button>
                       )}
                       {(generatedVideoBackground || isGeneratingVideoBackground) && (
-                        <div className={cn("relative group min-w-0 w-full aspect-video rounded-xl border border-cyan-500/40 bg-black/90 overflow-hidden shadow-md flex items-center justify-center")}>
+                        <div className={cn(MCS.RELATIVE_GROUP_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_CYAN_50)}>
                           {generatedVideoBackground && (
                             <img
                               src={generatedVideoBackground}
                               alt={texts.VIDEO_BACKGROUND_ALT}
                               title={isGeneratingVideoBackground ? undefined : texts.CLICK_TO_ZOOM}
                               onClick={isGeneratingVideoBackground ? undefined : () => setPreviewThumbnail(generatedVideoBackground)}
-                              className={cn("absolute inset-0 w-full h-full object-contain", { "opacity-35": isGeneratingVideoBackground, "cursor-zoom-in": !isGeneratingVideoBackground })}
+                              className={cn(MCS.ABSOLUTE_INSET_0_W_FULL_H_FULL_OBJECT_CONTAIN, { [MCS.OPACITY_35]: isGeneratingVideoBackground, [MCS.CURSOR_ZOOM_IN]: !isGeneratingVideoBackground })}
                             />
                           )}
                           {isGeneratingVideoBackground ? (
-                            <div role={SOURCE_TEXT_STATUS} aria-live={SOURCE_TEXT_POLITE} className={cn("absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/45 text-cyan-200")}>
-                              <Sparkles className={cn("w-7 h-7 animate-spin")} />
-                              <span className={cn("text-xs font-bold")}>{texts.VIDEO_BACKGROUND_CREATING}</span>
+                            <div role={SOURCE_TEXT_STATUS} aria-live={SOURCE_TEXT_POLITE} className={cn(MCS.ABSOLUTE_INSET_0_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_BG_SLATE_9)}>
+                              <Sparkles className={cn(MCS.W_7_H_7_ANIMATE_SPIN)} />
+                              <span className={cn(MCS.TEXT_XS_FONT_BOLD)}>{texts.VIDEO_BACKGROUND_CREATING}</span>
                             </div>
                           ) : (
-                            <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-1.5")}>
-                              <span className={cn("text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{SOURCE_TEXT_16_9_HD}</span>
-                              <span className={cn("text-[9px] font-mono text-white/80 bg-black/60 px-1.5 py-0.2 rounded backdrop-blur-xs")}>{texts.CLICK_TO_ZOOM}</span>
+                            <div className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_INSET_0_BG_GRADIENT_TO_T_FROM_BLACK_70_VIA_TRA)}>
+                              <span className={cn(MCS.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_CYAN_300_BG_BLACK_60_PX_1_5_PY_0_2_ROUNDE)}>{SOURCE_TEXT_16_9_HD}</span>
+                              <span className={cn(MCS.TEXT_9PX_FONT_MONO_TEXT_WHITE_80_BG_BLACK_60_PX_1_5_PY_0_2_ROUNDED_BACKDROP)}>{texts.CLICK_TO_ZOOM}</span>
                             </div>
                           )}
                           {generatedVideoBackground && !isGeneratingVideoBackground && (
-                            <Button
-                              variant={SOURCE_TEXT_UNSTYLED}
-                              type={SOURCE_TEXT_BUTTON}
-                              onClick={handleDownloadVideoBackground}
-                              disabled={isBusy}
-                              title={texts.VIDEO_BACKGROUND_DOWNLOAD}
-                              aria-label={texts.VIDEO_BACKGROUND_DOWNLOAD}
-                              className={cn("btn-icon-tiny absolute top-2 right-2 z-10 w-7 h-7 !p-0 rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center justify-center cursor-pointer")}>
-                              <Download className={cn("w-3.5 h-3.5")} />
+                            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleDownloadVideoBackground} disabled={isBusy} title={texts.VIDEO_BACKGROUND_DOWNLOAD} aria-label={texts.VIDEO_BACKGROUND_DOWNLOAD} className={cn(MCS.BTN_ICON_TINY_ABSOLUTE_TOP_2_RIGHT_2_Z_10_W_7_H_7_P_0_ROUNDED_LG_BG_BLACK_7)}>
+                              <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                             </Button>
                           )}
                         </div>
                       )}
                       {!generatedVideoBackground && !isGeneratingVideoBackground && (
-                        <div className={cn("min-w-0 w-full aspect-video rounded-xl border border-dashed border-slate-700/60 bg-slate-955/50 flex flex-col items-center justify-center gap-1 p-2 text-center text-slate-500")}>
-                          <Sparkles className={cn("w-4 h-4 text-slate-500")} />
-                          <span className={cn("text-[10px] font-semibold text-slate-400")}>{texts.VIDEO_BACKGROUND_TITLE}</span>
-                          <span className={cn("text-[8px] font-mono text-slate-500")}>{texts.THUMBNAIL_NOT_CREATED}</span>
+                        <div className={cn(MCS.MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_DASHED_BORDER_SLATE_70)}>
+                          <Sparkles className={cn(MCS.W_4_H_4_TEXT_SLATE_500)} />
+                          <span className={cn(MCS.TEXT_10PX_FONT_SEMIBOLD_TEXT_SLATE_400)}>{texts.VIDEO_BACKGROUND_TITLE}</span>
+                          <span className={cn(MCS.TEXT_8PX_FONT_MONO_TEXT_SLATE_500)}>{texts.THUMBNAIL_NOT_CREATED}</span>
                         </div>
                       )}
                     </div>
-                    <div className={cn("space-y-1")}>
-                      <div className={cn("flex items-center justify-between gap-2")}>
-                        <span className={cn("text-[11px] font-semibold text-slate-300")}>{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
+                    <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1)}>
+                      <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                        <span className={cn(MCS.TEXT_11PX_FONT_SEMIBOLD_TEXT_SLATE_300)}>{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
                         <Button
                           variant={SOURCE_TEXT_UNSTYLED}
                           type={SOURCE_TEXT_BUTTON}
@@ -2293,39 +2147,21 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO);
                           }}
                           disabled={isBusy || _.isEmpty(_.trim(videoBackgroundDescription))}
-                          className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none disabled:opacity-40 disabled:cursor-not-allowed")}
+                          className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC_3)}
                           title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}>
-                          {isNormalizingVideoBackgroundNote ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-400")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
+                          {isNormalizingVideoBackgroundNote ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_CYAN_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                         </Button>
                       </div>
-                      <StudioTextarea
-                        rows={3}
-                        value={videoBackgroundDescription}
-                        onChange={(event) => setVideoBackgroundDescription(event.target.value)}
-                        disabled={isBusy}
-                        placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER}
-                        className={cn("w-full min-h-[78px] bg-slate-955/90 text-slate-100 p-3 rounded-xl text-xs leading-relaxed outline-none resize-y shadow-inner placeholder:text-slate-500 border border-slate-800/80 focus:border-cyan-500/80 custom-scrollbar")}
-                      />
+                      <StudioTextarea rows={3} value={videoBackgroundDescription} onChange={(event) => setVideoBackgroundDescription(event.target.value)} disabled={isBusy} placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER} className={cn(MCS.W_FULL_MIN_H_78PX_BG_SLATE_955_90_TEXT_SLATE_100_P_3_ROUNDED_XL_TEXT_XS_LEA)} />
                     </div>
-                    <div className={cn("grid grid-cols-2 gap-2")}>
-                      <Button
-                        variant={SOURCE_TEXT_UNSTYLED}
-                        type={SOURCE_TEXT_BUTTON}
-                        onClick={handleGenerateVideoBackground}
-                        disabled={isBusy || _.isEmpty(videoBackgroundReference)}
-                        className={cn("h-9 px-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-600 text-cyan-300 hover:text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait", { "col-span-2": !isGeneratingVideoBackground })}>
-                        {isGeneratingVideoBackground ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-cyan-300")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0")} />}
+                    <div className={cn(MCS.GRID_GRID_COLS_2_GAP_2)}>
+                      <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleGenerateVideoBackground} disabled={isBusy || _.isEmpty(videoBackgroundReference)} className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_BORDER_CYAN_500_40_BG_CYAN_500_10_HOVER_BG_CYAN, { [MCS.COL_SPAN_2]: !isGeneratingVideoBackground })}>
+                        {isGeneratingVideoBackground ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_CYAN_300)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                         <span>{isGeneratingVideoBackground ? texts.VIDEO_BACKGROUND_CREATING : generatedVideoBackground ? texts.VIDEO_BACKGROUND_REGENERATE : texts.VIDEO_BACKGROUND_CREATE}</span>
                       </Button>
                       {isGeneratingVideoBackground ? (
-                        <Button
-                          variant={SOURCE_TEXT_UNSTYLED}
-                          type={SOURCE_TEXT_BUTTON}
-                          onClick={handleStopVideoBackground}
-                          title={texts.VIDEO_BACKGROUND_STOP_TOOLTIP}
-                          aria-label={texts.VIDEO_BACKGROUND_STOP_TOOLTIP}
-                          className={cn("h-9 px-3 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer")}>
-                          <X className={cn("w-3.5 h-3.5")} />
+                        <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleStopVideoBackground} title={texts.VIDEO_BACKGROUND_STOP_TOOLTIP} aria-label={texts.VIDEO_BACKGROUND_STOP_TOOLTIP} className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_BORDER_ROSE_500_50_BG_ROSE_500_10_HOVER_BG_ROSE)}>
+                          <X className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
                           <span>{texts.VIDEO_BACKGROUND_STOP}</span>
                         </Button>
                       ) : null}
@@ -2336,127 +2172,84 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             </StudioCard>
           </div>
         </div>
-        <StudioCard className={cn("glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full space-y-4")}>
-          <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5")}>
-            <div className={cn("flex items-center gap-2.5 min-w-0")}>
-              <div className={cn("w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0")}>
-                <Music2 className={cn("w-4 h-4")} />
+        <StudioCard className={cn(MCS.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_4_SM_P_6_SHADOW_XL_BORDER_BORDER_SL)}>
+          <div className={cn(MCS.FLEX_FLEX_COL_SM_FLEX_ROW_SM_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_BORDER_B_BO)}>
+            <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
+              <div className={cn(MCS.W_8_H_8_ROUNDED_XL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE)}>
+                <Music2 className={cn(SRT.SOURCE_TEXT_W_4_H_4)} />
               </div>
-              <div className={cn("flex items-center gap-2")}>
-                <h2 className={cn("text-sm sm:text-base font-extrabold text-slate-100 uppercase tracking-tight")}>{texts.RESULTS_TITLE}</h2>
+              <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
+                <h2 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_SLATE_100_UPPERCASE_TRACKING_TIGHT)}>{texts.RESULTS_TITLE}</h2>
                 {!_.isEmpty(songs) && (
-                  <span className={cn("text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300")}>
+                  <span className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_PX_2_PY_0_5_ROUNDED_FULL_BG_PURPLE_500_15_BOR)}>
                     {songs.length} {texts.SONG_UNIT}
                   </span>
                 )}
               </div>
             </div>
-            <div className={cn("flex items-center gap-2 flex-wrap justify-between sm:justify-end")}>
+            <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_JUSTIFY_BETWEEN_SM_JUSTIFY_END)}>
               {!_.isEmpty(songs) && (
                 <StudioSegmentedControl>
                   <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.LYRICS} onClick={() => setViewMode(SOURCE_TEXT_LYRICS)} disabled={isBusy}>
-                    <Music2 className={cn("w-3 h-3 shrink-0")} />
-                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_LYRICS}</span>
+                    <Music2 className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TAB_LYRICS}</span>
                   </StudioSegmentButton>
                   <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.SEO} onClick={() => setViewMode(SOURCE_TEXT_SEO)} disabled={isBusy}>
-                    <Sparkles className={cn("w-3 h-3 shrink-0")} />
-                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SEO}</span>
+                    <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TAB_SEO}</span>
                   </StudioSegmentButton>
                   <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.SPLIT} onClick={() => setViewMode(SOURCE_TEXT_SPLIT)} disabled={isBusy}>
-                    <Columns className={cn("w-3 h-3 shrink-0")} />
-                    <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SPLIT}</span>
+                    <Columns className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TAB_SPLIT}</span>
                   </StudioSegmentButton>
                 </StudioSegmentedControl>
               )}
               {!_.isEmpty(songs) && (
-                <div className={cn("flex items-center gap-2 shrink-0")}>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={handleGenerate}
-                    disabled={isBusy}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-100 hover:bg-purple-200/80 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none",
-                    )}
-                    title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
-                    {isLoading ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300 animate-spin")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-300")} />}
-                    <span className={cn("inline-flex items-center leading-none")}>{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SHRINK_0)}>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleGenerate} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_PURPLE_100_HOVER_BG_PURPLE_200)} title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
+                    {isLoading ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_600_DARK_TEXT_PURPLE_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_600_DARK_TEXT_PURPLE_300)} />}
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
                   </Button>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={handleRegenerateSeo}
-                    disabled={isBusy}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold bg-fuchsia-100 hover:bg-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-700 dark:text-fuchsia-200 border border-fuchsia-300 dark:border-fuchsia-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none",
-                    )}
-                    title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
-                    {isRegeneratingSeo ? <Sparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300 animate-spin")} /> : <WandSparkles className={cn("w-3.5 h-3.5 shrink-0 text-fuchsia-600 dark:text-fuchsia-300")} />}
-                    <span className={cn("inline-flex items-center leading-none")}>{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleRegenerateSeo} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_FUCHSIA_100_HOVER_BG_FUCHSIA_20)} title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
+                    {isRegeneratingSeo ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_300)} />}
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
                   </Button>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={handleCreateSunoTest}
-                    disabled={isBusy}
-                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-100 hover:bg-cyan-200/80 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-600/50 disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-sm active:scale-95 leading-none")}>
-                    {isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
-                    <span className={cn("inline-flex items-center leading-none")}>{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCreateSunoTest} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_CYAN_100_HOVER_BG_CYAN_200_80_D)}>
+                    {isCreatingSunoTest ? <Disc3 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_3)} /> : <Music2 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isCreatingSunoTest ? texts.SUNO_TEST_CREATING_BTN : texts.SUNO_TEST_CREATE_BTN}</span>
                   </Button>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={handleCreateSunoMusic}
-                    disabled={isBusy}
-                    className={cn("px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-400 hover:to-rose-400 disabled:opacity-60 text-white border border-orange-400/50 inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm leading-none")}>
-                    {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className={cn("w-3.5 h-3.5 animate-spin shrink-0")} /> : <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />}
-                    <span className={cn("inline-flex items-center leading-none")}>{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCreateSunoMusic} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_GRADIENT_TO_R_FROM_ORANGE_500_T)}>
+                    {isCreatingSuno && !isCreatingSunoTest ? <Disc3 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_3)} /> : <Music2 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+                    <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isCreatingSuno && !isCreatingSunoTest ? texts.SUNO_CREATING_BTN : texts.SUNO_CREATE_BTN}</span>
                   </Button>
                   {isCreatingSuno && (
-                    <Button
-                      variant={SOURCE_TEXT_UNSTYLED}
-                      type={SOURCE_TEXT_BUTTON}
-                      onClick={handleCancelSunoMusic}
-                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95 leading-none")}>
-                      <X className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_CANCEL_BTN}</span>
+                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelSunoMusic} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_ROSE_500_50_BG_GRADI)}>
+                      <X className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_CANCEL_BTN}</span>
                     </Button>
                   )}
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={viewMode === MUSIC_VIEW_MODES.SEO ? handleCopyAllSeo : handleCopyAllLyrics}
-                    disabled={isBusy}
-                    className={cn("btn-icon-tiny w-8 h-8 min-w-[32px] max-w-[32px] min-h-[32px] max-h-[32px] !p-0 aspect-square rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95")}
-                    title={texts.COPY_ALL_BTN}>
-                    <Copy className={cn("w-4 h-4 shrink-0")} />
+                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={viewMode === MUSIC_VIEW_MODES.SEO ? handleCopyAllSeo : handleCopyAllLyrics} disabled={isBusy} className={cn(MCS.BTN_ICON_TINY_W_8_H_8_MIN_W_32PX_MAX_W_32PX_MIN_H_32PX_MAX_H_32PX_P_0_ASPEC)} title={texts.COPY_ALL_BTN}>
+                    <Copy className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />
                   </Button>
                 </div>
               )}
             </div>
           </div>
-          <div className={cn("flex flex-wrap items-center gap-2")}>
-            <div className={cn("relative min-w-[240px] flex-1")}>
-              <Link2 className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400")} />
-              <StudioInput
-                type={SOURCE_TEXT_URL}
-                value={downloadPlaylistUrl}
-                onChange={(event) => setDownloadPlaylistUrl(event.target.value)}
-                placeholder={texts.SUNO_DOWNLOAD_PLAYLIST_PLACEHOLDER}
-                disabled={isBusy}
-                className={cn("h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60")}
-              />
+          <div className={cn(SRT.SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_GAP_2)}>
+            <div className={cn(MCS.RELATIVE_MIN_W_240PX_FLEX_1)}>
+              <Link2 className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_LEFT_3_TOP_1_2_H_4_W_4_TRANSLATE_Y_1_2_TEXT_PU)} />
+              <StudioInput type={SOURCE_TEXT_URL} value={downloadPlaylistUrl} onChange={(event) => setDownloadPlaylistUrl(event.target.value)} placeholder={texts.SUNO_DOWNLOAD_PLAYLIST_PLACEHOLDER} disabled={isBusy} className={cn(MCS.H_9_W_FULL_ROUNDED_XL_BORDER_BORDER_SLATE_700_80_BG_SLATE_950_70_PL_10_PR_3)} />
             </div>
             <StudioSegmentedControl>
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align={SOURCE_TEXT_CENTER}>
                 <StudioSegmentButton selected={sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(true)} disabled={isBusy}>
-                  <Sparkles className={cn("w-3 h-3 shrink-0")} />
-                  <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_ON}</span>
+                  <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
+                  <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_EVALUATE_ON}</span>
                 </StudioSegmentButton>
               </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align={SOURCE_TEXT_CENTER}>
                 <StudioSegmentButton selected={!sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(false)} disabled={isBusy}>
-                  <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_OFF}</span>
+                  <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_EVALUATE_OFF}</span>
                 </StudioSegmentButton>
               </Tooltip>
             </StudioSegmentedControl>
@@ -2474,246 +2267,226 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               type={SOURCE_TEXT_BUTTON}
               onClick={handleDownloadSunoMusic}
               disabled={isBusy || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)}
-              className={cn("h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 leading-none transition-all border cursor-pointer active:scale-95 shadow-md shrink-0 select-none", {
-                "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 border-amber-400/60 text-white cursor-wait shadow-lg shadow-orange-500/30": isDownloadingSuno,
-                "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:via-orange-400 hover:to-rose-500 text-white border-amber-400/50 shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed": !isDownloadingSuno,
+              className={cn(MCS.H_9_PX_3_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CE, {
+                [MCS.BG_GRADIENT_TO_R_FROM_AMBER_600_VIA_ORANGE_600_TO_ROSE_600_BORDER_AMBER_400]: isDownloadingSuno,
+                [MCS.BG_GRADIENT_TO_R_FROM_AMBER_500_VIA_ORANGE_500_TO_ROSE_600_HOVER_FROM_AMBER]: !isDownloadingSuno,
               })}>
-              {isDownloadingSuno ? <Disc3 className={cn("w-3.5 h-3.5 shrink-0 animate-spin text-amber-200")} /> : <Download className={cn("w-3.5 h-3.5 shrink-0")} />}
-              <span className={cn("inline-flex items-center leading-none")}>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
+              {isDownloadingSuno ? <Disc3 className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_AMBER_200)} /> : <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>
             {isDownloadingSuno && (
-              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelSunoDownload} className={cn("h-9 px-3 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-600 hover:bg-rose-500 text-white inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer active:scale-95 shadow-sm shrink-0 select-none")}>
-                <X className={cn("w-3.5 h-3.5 shrink-0")} />
-                <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_DOWNLOAD_CANCEL_BTN}</span>
+              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCancelSunoDownload} className={cn(MCS.H_9_PX_3_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_ROSE_500_50_BG_ROSE_600)}>
+                <X className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_DOWNLOAD_CANCEL_BTN}</span>
               </Button>
             )}
             <Tooltip content={isCopiedPlaylistUrl ? texts.COPIED_LABEL : texts.SUNO_PLAYLIST_COPY_BTN} align={SOURCE_TEXT_CENTER}>
-              <Button
-                variant={SOURCE_TEXT_UNSTYLED}
-                type={SOURCE_TEXT_BUTTON}
-                onClick={handleCopyPlaylistUrl}
-                disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)}
-                className={cn("h-9 w-7 inline-flex items-center justify-center text-slate-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer bg-transparent border-none p-0 shrink-0 select-none active:scale-90 shadow-none")}>
-                {isCopiedPlaylistUrl ? <Check className={cn("w-4 h-4 shrink-0 text-emerald-400")} /> : <Copy className={cn("w-4 h-4 shrink-0")} />}
+              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCopyPlaylistUrl} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn(MCS.H_9_W_7_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_A)}>
+                {isCopiedPlaylistUrl ? <Check className={cn(MCS.W_4_H_4_SHRINK_0_TEXT_EMERALD_400)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />}
               </Button>
             </Tooltip>
-            <Button
-              variant={SOURCE_TEXT_UNSTYLED}
-              type={SOURCE_TEXT_BUTTON}
-              onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SOURCE_TEXT_NOOPENER_NOREFERRER)}
-              disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)}
-              className={cn("h-9 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 hover:text-white border border-slate-700/80 hover:border-amber-500/50 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs")}>
-              <ExternalLink className={cn("w-3.5 h-3.5 shrink-0 text-amber-400")} />
-              <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
+            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => window.open(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SOURCE_TEXT_NOOPENER_NOREFERRER)} disabled={_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl)} className={cn(MCS.H_9_PX_3_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_SLATE_800_90_HOVER_BG_SLATE_700_90)}>
+              <ExternalLink className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_AMBER_400)} />
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_PLAYLIST_OPEN_BTN}</span>
             </Button>
-            <Button
-              variant={SOURCE_TEXT_UNSTYLED}
-              type={SOURCE_TEXT_BUTTON}
-              onClick={() => window.open(sunoTestPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SUNO_AUTOMATION_CONFIG.OPENER_POLICY)}
-              disabled={_.isEmpty(sunoTestPlaylistUrl)}
-              className={cn("h-9 px-3 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-200 hover:text-white border border-cyan-600/40 hover:border-cyan-400/60 inline-flex items-center justify-center gap-1.5 leading-none disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer select-none active:scale-95 shrink-0 shadow-xs")}>
-              <ExternalLink className={cn("w-3.5 h-3.5 shrink-0 text-cyan-400")} />
-              <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_TEST_OPEN_BTN}</span>
+            <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => window.open(sunoTestPlaylistUrl, SUNO_AUTOMATION_CONFIG.TARGET_BLANK, SUNO_AUTOMATION_CONFIG.OPENER_POLICY)} disabled={_.isEmpty(sunoTestPlaylistUrl)} className={cn(MCS.H_9_PX_3_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_CYAN_950_70_HOVER_BG_CYAN_900_80_T)}>
+              <ExternalLink className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_CYAN_400)} />
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_TEST_OPEN_BTN}</span>
             </Button>
           </div>
           {sunoDownloadError && (
-            <div role={SOURCE_TEXT_ALERT} className={cn("rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200 break-words")}>
-              <AlertTriangle className={cn("mr-1.5 inline h-3.5 w-3.5")} />
+            <div role={SOURCE_TEXT_ALERT} className={cn(MCS.ROUNDED_XL_BORDER_BORDER_ROSE_500_40_BG_ROSE_500_10_PX_3_PY_2_TEXT_XS_TEXT)}>
+              <AlertTriangle className={cn(MCS.MR_1_5_INLINE_H_3_5_W_3_5)} />
               {sunoDownloadError}
             </div>
           )}
           {styleAnalysis && !isLoading && (
-            <details className={cn("rounded-2xl border border-slate-800/90 bg-slate-900/80 backdrop-blur-md shadow-xl overflow-hidden group transition-all")}>
-              <summary className={cn("flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-slate-900/90 via-slate-850 to-slate-900/90 hover:bg-slate-800/80 transition-colors border-b border-transparent group-open:border-slate-800/80 select-none")}>
-                <div className={cn("flex items-center gap-2.5 min-w-0")}>
-                  <div className={cn("w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0")}>
-                    <Sparkles className={cn("h-3.5 w-3.5 text-amber-400")} />
+            <details className={cn(MCS.ROUNDED_2XL_BORDER_BORDER_SLATE_800_90_BG_SLATE_900_80_BACKDROP_BLUR_MD_SHA)}>
+              <summary className={cn(MCS.FLEX_CURSOR_POINTER_LIST_NONE_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_PX_4_PY_3)}>
+                <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN)}>
+                  <div className={cn(MCS.W_6_H_6_ROUNDED_LG_BG_AMBER_500_15_BORDER_BORDER_AMBER_500_30_FLEX_ITEMS_CE)}>
+                    <Sparkles className={cn(MCS.H_3_5_W_3_5_TEXT_AMBER_400)} />
                   </div>
-                  <div className={cn("flex items-center gap-2 flex-wrap")}>
-                    <span className={cn("font-bold text-xs sm:text-sm text-slate-100 tracking-tight")}>{texts.DNA_ANALYSIS_TITLE}</span>
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-2xs")}>
+                  <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP)}>
+                    <span className={cn(MCS.FONT_BOLD_TEXT_XS_SM_TEXT_SM_TEXT_SLATE_100_TRACKING_TIGHT)}>{texts.DNA_ANALYSIS_TITLE}</span>
+                    <span className={cn(MCS.PX_2_PY_0_5_ROUNDED_FULL_TEXT_10PX_FONT_MONO_FONT_BOLD_BG_EMERALD_500_15_TE)}>
                       {styleAnalysis.market.confidence}
                       {SOURCE_TEXT_SYMBOL_17}
                       {texts.RECOMMENDED_BADGE || SOURCE_TEXT_KHOP}
                     </span>
                   </div>
                 </div>
-                <div className={cn("flex items-center gap-1 text-xs text-slate-400 group-hover:text-slate-200")}>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 group-open:rotate-180")} />
+                <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_TEXT_XS_TEXT_SLATE_400_GROUP_HOVER_TEXT_SLATE_200)}>
+                  <ChevronDown className={cn(MCS.H_4_W_4_TRANSITION_TRANSFORM_DURATION_200_GROUP_OPEN_ROTATE_180)} />
                 </div>
               </summary>
-              <div className={cn("p-4 sm:p-5 space-y-4 text-left")}>
-                <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
-                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
-                      <Globe className={cn("w-3 h-3 text-indigo-400 shrink-0")} />
-                      <span>{texts.MARKET_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+              <div className={cn(MCS.P_4_SM_P_5_SPACE_Y_4_TEXT_LEFT)}>
+                <div className={cn(MCS.GRID_GRID_COLS_1_SM_GRID_COLS_2_LG_GRID_COLS_4_GAP_3)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_1_5_FLEX)}>
+                    <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_FLEX)}>
+                      <Globe className={cn(SRT.SOURCE_TEXT_W_3_H_3_TEXT_INDIGO_400)} />
+                      <span>{texts.MARKET_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </span>
-                    <p className={cn("text-xs font-semibold text-slate-100 leading-snug")}>{_.compact([styleAnalysis.market.country, styleAnalysis.market.region, styleAnalysis.market.language]).join(SOURCE_TEXT_SYMBOL_18)}</p>
+                    <p className={cn(MCS.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_LEADING_SNUG)}>{_.compact([styleAnalysis.market.country, styleAnalysis.market.region, styleAnalysis.market.language]).join(SOURCE_TEXT_SYMBOL_18)}</p>
                   </StudioCard>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
-                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
-                      <Users className={cn("w-3 h-3 text-violet-400 shrink-0")} />
-                      <span>{texts.AUDIENCE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_1_5_FLEX)}>
+                    <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_FLEX)}>
+                      <Users className={cn(MCS.W_3_H_3_TEXT_VIOLET_400_SHRINK_0)} />
+                      <span>{texts.AUDIENCE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </span>
-                    <div className={cn("flex items-center justify-between gap-1.5 flex-wrap")}>
-                      <span className={cn("text-xs font-semibold text-slate-100 leading-snug")}>{styleAnalysis.market.audienceAge}</span>
-                      <span className={cn("text-[10px] font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded shadow-2xs")}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_1_5_FLEX_WRAP)}>
+                      <span className={cn(MCS.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_LEADING_SNUG)}>{styleAnalysis.market.audienceAge}</span>
+                      <span className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_EMERALD_300_BG_EMERALD_950_60_BORDER_BOR)}>
                         {styleAnalysis.market.confidence}
                         {SOURCE_TEXT_SYMBOL_8}
                       </span>
                     </div>
                   </StudioCard>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
-                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
-                      <Music2 className={cn("w-3 h-3 text-purple-400 shrink-0")} />
-                      <span>{texts.GENRE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_1_5_FLEX)}>
+                    <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_FLEX)}>
+                      <Music2 className={cn(MCS.W_3_H_3_TEXT_PURPLE_400_SHRINK_0)} />
+                      <span>{texts.GENRE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </span>
-                    <div className={cn("flex items-center gap-1.5 flex-wrap")}>
-                      <span className={cn("text-[11px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md shadow-2xs")}>{styleAnalysis.genre.primary}</span>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX)}>
+                      <span className={cn(MCS.TEXT_11PX_FONT_BOLD_TEXT_PURPLE_300_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_5)}>{styleAnalysis.genre.primary}</span>
                       {_.map(_.slice(styleAnalysis.genre.secondary, 0, 2), (sec, idx) => (
-                        <span key={idx} className={cn("text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700/60")}>
+                        <span key={idx} className={cn(MCS.TEXT_10PX_TEXT_SLATE_300_BG_SLATE_800_PX_1_5_PY_0_5_ROUNDED_BORDER_BORDER_S)}>
                           {sec}
                         </span>
                       ))}
                     </div>
                   </StudioCard>
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 flex flex-col justify-between shadow-2xs")}>
-                    <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 flex items-center gap-1.5")}>
-                      <Clock className={cn("w-3 h-3 text-amber-400 shrink-0")} />
-                      <span>{texts.ERA_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_1_5_FLEX)}>
+                    <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_FLEX)}>
+                      <Clock className={cn(MCS.W_3_H_3_TEXT_AMBER_400_SHRINK_0)} />
+                      <span>{texts.ERA_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </span>
-                    <p className={cn("text-xs font-semibold text-slate-100 leading-snug")}>
+                    <p className={cn(MCS.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_LEADING_SNUG)}>
                       {styleAnalysis.era.songwritingEra}
                       {SOURCE_TEXT_SYMBOL_2}
                       {styleAnalysis.era.productionEra}
                     </p>
                   </StudioCard>
                 </div>
-                <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-3")}>
-                  <div className={cn("p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/30 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-indigo-300 font-mono font-bold text-[11px] uppercase tracking-wider")}>
-                      <SlidersHorizontal className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.CREATIVE_ROLE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                <div className={cn(MCS.GRID_GRID_COLS_1_MD_GRID_COLS_2_GAP_3)}>
+                  <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_INDIGO_950_20_BORDER_BORDER_INDIGO_500_30_SPACE_Y_1_5_S)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_INDIGO_300_FONT_MONO_FONT_BOLD_TEXT_11PX_UPP)}>
+                      <SlidersHorizontal className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.CREATIVE_ROLE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-xs text-slate-200 leading-relaxed font-normal")}>{styleAnalysis.creativeProfile.role}</p>
+                    <p className={cn(MCS.TEXT_XS_TEXT_SLATE_200_LEADING_RELAXED_FONT_NORMAL)}>{styleAnalysis.creativeProfile.role}</p>
                   </div>
-                  <div className={cn("p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-purple-300 font-mono font-bold text-[11px] uppercase tracking-wider")}>
-                      <Music2 className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.MUSIC_DNA_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_PURPLE_950_20_BORDER_BORDER_PURPLE_500_30_SPACE_Y_1_5_S)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_PURPLE_300_FONT_MONO_FONT_BOLD_TEXT_11PX_UPP)}>
+                      <Music2 className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.MUSIC_DNA_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-xs text-slate-200 leading-relaxed font-normal")}>{_.compact([styleAnalysis.musicalDna.rhythm, styleAnalysis.musicalDna.tempoRange, styleAnalysis.musicalDna.vocalCharacter]).join(SOURCE_TEXT_SYMBOL_18)}</p>
+                    <p className={cn(MCS.TEXT_XS_TEXT_SLATE_200_LEADING_RELAXED_FONT_NORMAL)}>{_.compact([styleAnalysis.musicalDna.rhythm, styleAnalysis.musicalDna.tempoRange, styleAnalysis.musicalDna.vocalCharacter]).join(SOURCE_TEXT_SYMBOL_18)}</p>
                   </div>
                 </div>
-                <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-3")}>
-                  <div className={cn("p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-emerald-400 font-bold text-xs")}>
-                      <Check className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.PRESERVE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                <div className={cn(MCS.GRID_GRID_COLS_1_MD_GRID_COLS_3_GAP_3)}>
+                  <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_EMERALD_950_20_BORDER_BORDER_EMERALD_500_30_SPACE_Y_1_5)}>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_TEXT_2)}>
+                      <Check className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.PRESERVE_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>{styleAnalysis.mustPreserve.join(SOURCE_TEXT_SYMBOL_6)}</p>
+                    <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_200_LEADING_RELAXED)}>{styleAnalysis.mustPreserve.join(SOURCE_TEXT_SYMBOL_6)}</p>
                   </div>
-                  <div className={cn("p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-amber-400 font-bold text-xs")}>
-                      <RefreshCw className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.MUST_VARY_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_AMBER_950_20_BORDER_BORDER_AMBER_500_30_SPACE_Y_1_5_SHA)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_AMBER_400_FONT_BOLD_TEXT_XS)}>
+                      <RefreshCw className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.MUST_VARY_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>{styleAnalysis.mustVary.join(SOURCE_TEXT_SYMBOL_6)}</p>
+                    <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_200_LEADING_RELAXED)}>{styleAnalysis.mustVary.join(SOURCE_TEXT_SYMBOL_6)}</p>
                   </div>
-                  <div className={cn("p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-rose-400 font-bold text-xs")}>
-                      <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.MUST_NOT_COPY_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_ROSE_950_20_BORDER_BORDER_ROSE_500_30_SPACE_Y_1_5_SHADO)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_ROSE_400_FONT_BOLD_TEXT_XS)}>
+                      <AlertTriangle className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.MUST_NOT_COPY_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-[11px] text-slate-200 leading-relaxed")}>{styleAnalysis.mustNotCopy.join(SOURCE_TEXT_SYMBOL_6)}</p>
+                    <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_200_LEADING_RELAXED)}>{styleAnalysis.mustNotCopy.join(SOURCE_TEXT_SYMBOL_6)}</p>
                   </div>
                 </div>
                 {!_.isEmpty(styleAnalysis.uncertainties) && (
-                  <StudioCard className={cn("p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1 shadow-2xs")}>
-                    <div className={cn("flex items-center gap-1.5 text-slate-400 font-bold text-[11px]")}>
-                      <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0")} />
-                      <span>{texts.UNCERTAINTIES_LABEL.replace(SOURCE_TEXT_SYMBOL_16, "")}</span>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_40_BORDER_BORDER_SLATE_800_80_SPACE_Y_1_SHADOW)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_SLATE_400_FONT_BOLD_TEXT_11PX)}>
+                      <AlertTriangle className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
+                      <span>{texts.UNCERTAINTIES_LABEL.replace(SOURCE_TEXT_SYMBOL_16, MUSIC_CREATOR_RUNTIME.EMPTY)}</span>
                     </div>
-                    <p className={cn("text-[11px] text-slate-300 leading-relaxed")}>{formatStyleAnalysisItems(styleAnalysis.uncertainties)}</p>
+                    <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED)}>{formatStyleAnalysisItems(styleAnalysis.uncertainties)}</p>
                   </StudioCard>
                 )}
                 {sunoSettings && (
-                  <div className={cn("pt-4 border-t border-fuchsia-500/20 space-y-3.5")}>
-                    <div className={cn("flex items-center gap-2 text-fuchsia-300")}>
-                      <SlidersHorizontal className={cn("h-4 w-4 shrink-0")} />
-                      <span className={cn("text-xs sm:text-sm font-bold")}>{texts.SUNO_SETTINGS_ANALYSIS_TITLE}</span>
+                  <div className={cn(MCS.PT_4_BORDER_T_BORDER_FUCHSIA_500_20_SPACE_Y_3_5)}>
+                    <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_2_TEXT_FUCHSIA_300)}>
+                      <SlidersHorizontal className={cn(MCS.H_4_W_4_SHRINK_0)} />
+                      <span className={cn(MCS.TEXT_XS_SM_TEXT_SM_FONT_BOLD)}>{texts.SUNO_SETTINGS_ANALYSIS_TITLE}</span>
                     </div>
                     {sunoSettingsAnalysis && (
-                      <div className={cn("p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/25 space-y-2 shadow-2xs")}>
-                        <div className={cn("text-[11px] uppercase tracking-wider font-mono font-bold text-purple-300 flex items-center gap-1.5")}>
-                          <WandSparkles className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
+                      <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_PURPLE_950_20_BORDER_BORDER_PURPLE_500_25_SPACE_Y_2_SHA)}>
+                        <div className={cn(MCS.TEXT_11PX_UPPERCASE_TRACKING_WIDER_FONT_MONO_FONT_BOLD_TEXT_PURPLE_300_FLEX)}>
+                          <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT_8)} />
                           <span>{texts.SUNO_PRODUCTION_ASSESSMENT_LABEL}</span>
                         </div>
-                        <div className={cn("flex flex-wrap gap-1.5 text-xs text-slate-200")}>
+                        <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_TEXT_XS_TEXT_SLATE_200)}>
                           {_.map(
                             _.compact([sunoSettingsAnalysis.productionAssessment.syntheticRole, sunoSettingsAnalysis.productionAssessment.cultureAndMarket, sunoSettingsAnalysis.productionAssessment.eraAndGenre, sunoSettingsAnalysis.productionAssessment.vocalProfile, sunoSettingsAnalysis.productionAssessment.songAndArrangementProfile, sunoSettingsAnalysis.productionAssessment.productionGoal]),
                             (assessment, idx) => (
-                              <span key={idx} className={cn("inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-slate-200 text-[11px] leading-relaxed")}>
+                              <span key={idx} className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_PX_2_5_PY_1_ROUNDED_LG_BG_PURPLE_500_10_BORDER_BOR)}>
                                 {assessment}
                               </span>
                             ),
                           )}
                         </div>
                         {!_.isEmpty(sunoSettingsAnalysis.productionAssessment.risks) && (
-                          <div className={cn("flex items-start gap-1.5 pt-1 text-[11px] text-amber-300 leading-relaxed border-t border-amber-500/20")}>
-                            <AlertTriangle className={cn("w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5")} />
+                          <div className={cn(MCS.FLEX_ITEMS_START_GAP_1_5_PT_1_TEXT_11PX_TEXT_AMBER_300_LEADING_RELAXED_BORD)}>
+                            <AlertTriangle className={cn(MCS.W_3_5_H_3_5_TEXT_AMBER_400_SHRINK_0_MT_0_5)} />
                             <span>{sunoSettingsAnalysis.productionAssessment.risks.join(SOURCE_TEXT_SYMBOL_6)}</span>
                           </div>
                         )}
                       </div>
                     )}
-                    <div className={cn("p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs min-w-0")}>
-                      <div className={cn("flex items-center justify-between gap-2 flex-wrap")}>
-                        <div className={cn("flex items-center gap-1.5 text-rose-400 font-mono font-bold text-[11px] uppercase tracking-wider")}>
-                          <X className={cn("w-3.5 h-3.5 shrink-0")} />
+                    <div className={cn(MCS.P_3_5_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_2_SHADO)}>
+                      <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP)}>
+                        <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_TEXT_ROSE_400_FONT_MONO_FONT_BOLD_TEXT_11PX_UPPER)}>
+                          <X className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />
                           <span>{texts.SUNO_EXCLUDE_STYLES_LABEL}</span>
                         </div>
                         {sunoSettings.excludeStyles && (
                           <Button
                             variant={SOURCE_TEXT_UNSTYLED}
                             type={SOURCE_TEXT_BUTTON}
-                            onClick={() => {
-                              navigator.clipboard.writeText(sunoSettings.excludeStyles);
-                              setCopiedKey(SOURCE_TEXT_EXCLUDESTYLES);
-                              toast.success(texts.SUNO_COPY_EXCLUDE_STYLES_SUCCESS);
-                              setTimeout(() => setCopiedKey(null), 2000);
-                            }}
-                            className={cn("btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none")}
+                            onClick={() => copyText(sunoSettings.excludeStyles, SOURCE_TEXT_EXCLUDESTYLES, texts.SUNO_COPY_EXCLUDE_STYLES_SUCCESS)}
+                            className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC_4)}
                             title={copiedKey === COPY_KEYS.EXCLUDE_STYLES ? texts.COPIED_LABEL : texts.SUNO_COPY_EXCLUDE_STYLES_BTN}>
-                            {copiedKey === COPY_KEYS.EXCLUDE_STYLES ? <Check className={cn("w-3.5 h-3.5 text-emerald-400 shrink-0")} /> : <Copy className={cn("w-3.5 h-3.5 shrink-0")} />}
+                            {copiedKey === COPY_KEYS.EXCLUDE_STYLES ? <Check className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT_4)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                           </Button>
                         )}
                       </div>
                       {sunoSettings.excludeStyles ? (
-                        <div className={cn("flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1 py-0.5")}>
+                        <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_MAX_H_36_OVERFLOW_Y_AUTO_PR_1_PY_0_5)}>
                           {_.map(sunoSettings.excludeStyles.split(SOURCE_TEXT_SYMBOL_4), (styleItem, idx) => {
                             const trimmed = _.trim(styleItem);
                             if (!trimmed) return null;
                             return (
-                              <span key={idx} className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-950/40 text-rose-200 border border-rose-500/20")}>
+                              <span key={idx} className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_PX_2_PY_0_5_ROUNDED_MD_TEXT_11PX_FONT_MEDIUM_BG_RO)}>
                                 {trimmed}
                               </span>
                             );
                           })}
                         </div>
                       ) : (
-                        <span className={cn("text-[11px] font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-md inline-block")}>{texts.SUNO_AUTO_VALUE}</span>
+                        <span className={cn(MCS.TEXT_11PX_FONT_BOLD_TEXT_SLATE_400_BG_SLATE_800_60_PX_2_PY_0_5_ROUNDED_MD_I)}>{texts.SUNO_AUTO_VALUE}</span>
                       )}
                       {sunoSettingsAnalysis?.parameterRationale.excludeStyles && (
-                        <div className={cn("space-y-0.5 pt-1.5 border-t border-slate-800/60 min-w-0")}>
-                          <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
-                          <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{sunoSettingsAnalysis.parameterRationale.excludeStyles}</p>
+                        <div className={cn(MCS.SPACE_Y_0_5_PT_1_5_BORDER_T_BORDER_SLATE_800_60_MIN_W_0)}>
+                          <span className={cn(MCS.TEXT_9PX_UPPERCASE_TRACKING_WIDER_FONT_BOLD_TEXT_SLATE_500)}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                          <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED_BREAK_WORDS)}>{sunoSettingsAnalysis.parameterRationale.excludeStyles}</p>
                         </div>
                       )}
                       <SunoParameterAnalysisDetails analysis={sunoSettingsAnalysis?.parameterAnalysis?.excludeStyles} texts={texts} />
                     </div>
-                    <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3")}>
+                    <div className={cn(SRT.SOURCE_TEXT_GRID_GRID_COLS_2_SM_GRID_COLS)}>
                       {_.map(
                         [
                           {
@@ -2726,7 +2499,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           {
                             label: texts.SUNO_DURATION_LABEL,
                             value: texts.SUNO_AUTO_VALUE,
-                            reason: "",
+                            reason: MUSIC_CREATOR_RUNTIME.EMPTY,
                             analysis: sunoSettingsAnalysis?.parameterAnalysis?.duration,
                             badgeClass: SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800,
                           },
@@ -2750,29 +2523,29 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           },
                         ],
                         (item) => (
-                          <StudioCard key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 shadow-2xs flex flex-col justify-between min-w-0")}>
-                            <div className={cn("flex items-start justify-between gap-1.5")}>
-                              <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 shrink-0")}>{item.label}</span>
+                          <StudioCard key={item.label} className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_2_SHADOW)}>
+                            <div className={cn(MCS.FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP_1_5)}>
+                              <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_SHRIN)}>{item.label}</span>
                               {SOURCE_TEXT_SETTINGKEY in item && item.settingKey ? (
                                 <button
                                   type={SOURCE_TEXT_BUTTON}
                                   role={SOURCE_TEXT_SWITCH}
                                   aria-checked={item.enabled}
                                   aria-label={item.label}
-                                  title={SOURCE_TEMPLATE_SYMBOL_16(`${item.label}`, `${item.enabled ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE}`)}
+                                  title={SOURCE_TEMPLATE_SYMBOL_16(String(item.label), String(item.enabled ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE))}
                                   disabled={isBusy}
                                   onClick={() => setSunoSettings((current) => (current ? { ...current, [item.settingKey]: !current[item.settingKey] } : current))}
-                                  className={cn("toggle-switch select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:opacity-40 disabled:cursor-not-allowed", item.enabled ? "!bg-emerald-500 border border-emerald-400/60 shadow-sm shadow-emerald-500/30" : "!bg-slate-800 border border-slate-700/80 hover:border-slate-600")}>
-                                  <span aria-hidden={SOURCE_TEXT_TRUE} className={cn("toggle-switch-thumb shadow-md", item.enabled ? "translate-x-[20px] bg-white" : "translate-x-0 !bg-slate-300")} />
+                                  className={cn(MCS.TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE_FOCUS_VISIBLE_RING_2_FOCUS_VIS, item.enabled ? MCS.BG_EMERALD_500_BORDER_BORDER_EMERALD_400_60_SHADOW_SM_SHADOW_EMERALD_500_30 : SRT.SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}>
+                                  <span aria-hidden={SOURCE_TEXT_TRUE} className={cn(MCS.TOGGLE_SWITCH_THUMB_SHADOW_MD, item.enabled ? SRT.SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE : SRT.SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300)} />
                                 </button>
                               ) : (
-                                <span className={cn("text-[11px] font-bold border px-2 py-0.5 rounded-md shrink-0", item.badgeClass)}>{item.value}</span>
+                                <span className={cn(MCS.TEXT_11PX_FONT_BOLD_BORDER_PX_2_PY_0_5_ROUNDED_MD_SHRINK_0, item.badgeClass)}>{item.value}</span>
                               )}
                             </div>
                             {item.reason && (
-                              <div className={cn("space-y-0.5 min-w-0")}>
-                                <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
-                                <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
+                              <div className={cn(MCS.SPACE_Y_0_5_MIN_W_0)}>
+                                <span className={cn(MCS.TEXT_9PX_UPPERCASE_TRACKING_WIDER_FONT_BOLD_TEXT_SLATE_500)}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                                <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED_BREAK_WORDS)}>{item.reason}</p>
                               </div>
                             )}
                             <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
@@ -2780,7 +2553,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         ),
                       )}
                     </div>
-                    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3")}>
+                    <div className={cn(MCS.GRID_GRID_COLS_1_SM_GRID_COLS_2_LG_GRID_COLS_4_GAP_3)}>
                       {_.map(
                         [
                           {
@@ -2813,21 +2586,21 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           },
                         ],
                         (item) => (
-                          <StudioCard key={item.label} className={cn("p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2.5 shadow-2xs min-w-0")}>
-                            <div className={cn("flex items-center justify-between gap-2")}>
-                              <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400")}>{item.label}</span>
-                              <span className={cn("text-xs font-mono font-bold text-fuchsia-300 bg-fuchsia-500/10 border border-fuchsia-500/25 px-2 py-0.5 rounded-md shrink-0")}>
+                          <StudioCard key={item.label} className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_2_5_SHADO)}>
+                            <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
+                              <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400)}>{item.label}</span>
+                              <span className={cn(MCS.TEXT_XS_FONT_MONO_FONT_BOLD_TEXT_FUCHSIA_300_BG_FUCHSIA_500_10_BORDER_BORDE)}>
                                 {item.value}
                                 {SOURCE_TEXT_SYMBOL_8}
                               </span>
                             </div>
-                            <div className={cn("w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden")}>
-                              <div className={cn("h-full rounded-full transition-all duration-300 bg-gradient-to-r", item.gradient)} style={{ width: `${Math.min(100, Math.max(0, item.value))}%` }} />
+                            <div className={cn(MCS.W_FULL_BG_SLATE_800_80_ROUNDED_FULL_H_1_5_OVERFLOW_HIDDEN)}>
+                              <div className={cn(MCS.H_FULL_ROUNDED_FULL_TRANSITION_ALL_DURATION_300_BG_GRADIENT_TO_R, item.gradient)} style={{ width: MCF.PERCENTAGE(Math.min(100, Math.max(0, item.value))) }} />
                             </div>
                             {item.reason && (
-                              <div className={cn("space-y-0.5 min-w-0")}>
-                                <span className={cn("text-[9px] uppercase tracking-wider font-bold text-slate-500")}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
-                                <p className={cn("text-[11px] text-slate-300 leading-relaxed break-words")}>{item.reason}</p>
+                              <div className={cn(MCS.SPACE_Y_0_5_MIN_W_0)}>
+                                <span className={cn(MCS.TEXT_9PX_UPPERCASE_TRACKING_WIDER_FONT_BOLD_TEXT_SLATE_500)}>{texts.SUNO_SETTINGS_REASON_LABEL}</span>
+                                <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED_BREAK_WORDS)}>{item.reason}</p>
                               </div>
                             )}
                             <SunoParameterAnalysisDetails analysis={item.analysis} texts={texts} />
@@ -2841,58 +2614,50 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             </details>
           )}
           {isLoading || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
-            <div className={cn("py-16 flex flex-col items-center justify-center text-center space-y-4")}>
-              <div className={cn("w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg", { "bg-fuchsia-500/15 border-fuchsia-500/30 shadow-fuchsia-500/20": isRegeneratingSeo, "bg-purple-500/15 border-purple-500/30 shadow-purple-500/20": !isRegeneratingSeo })}>
-                {isRegeneratingSeo ? <Search className={cn("w-7 h-7 text-fuchsia-400 animate-pulse")} /> : <Disc3 className={cn("w-7 h-7 text-purple-400 animate-spin")} />}
-              </div>
-              <div className={cn("space-y-1")}>
-                <p className={cn("text-sm font-extrabold text-slate-200")}>{isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING}</p>
-                <p className={cn("text-xs text-slate-400")}>{isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : SOURCE_TEMPLATE_SYMBOL_17(`${texts.HEADER_BADGE}`, `${outputCount}`, `${texts.SONG_UNIT}`)}</p>
-              </div>
-            </div>
+            <StudioLoadingState secondary={isRegeneratingSeo} icon={isRegeneratingSeo ? Search : Disc3} title={isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING} description={isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : SOURCE_TEMPLATE_SYMBOL_17(String(texts.HEADER_BADGE), String(outputCount), String(texts.SONG_UNIT))} />
           ) : _.isEmpty(songs) ? (
-            <div className={cn("py-14 flex flex-col items-center justify-center text-center space-y-3.5")}>
-              <div className={cn("w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-500 shadow-inner")}>
-                <Music2 className={cn("w-7 h-7 text-purple-400/80")} />
+            <div className={cn(SRT.SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER)}>
+              <div className={cn(SRT.SOURCE_TEXT_W_14_H_14_ROUNDED_2XL_BG)}>
+                <Music2 className={cn(SRT.SOURCE_TEXT_W_7_H_7_TEXT_PURPLE_400_2)} />
               </div>
-              <div className={cn("space-y-1 max-w-sm")}>
-                <h3 className={cn("text-sm font-extrabold text-slate-200")}>{texts.BLOCK_LYRICS_EMPTY_TITLE}</h3>
-                <p className={cn("text-xs text-slate-400 leading-relaxed")}>{texts.BLOCK_LYRICS_EMPTY_DESC}</p>
+              <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1_MAX_W_SM)}>
+                <h3 className={cn(SRT.SOURCE_TEXT_TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{texts.BLOCK_LYRICS_EMPTY_TITLE}</h3>
+                <p className={cn(SRT.SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2)}>{texts.BLOCK_LYRICS_EMPTY_DESC}</p>
               </div>
-              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTrySampleTemplate} disabled={isBusy} className={cn("px-4 py-2 rounded-xl text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 inline-flex items-center justify-center gap-1.5 leading-none transition-all cursor-pointer shadow-xs")}>
-                <Sparkles className={cn("w-3.5 h-3.5 text-purple-400 shrink-0")} />
-                <span className={cn("inline-flex items-center leading-none")}>{texts.TRY_SAMPLE_BTN}</span>
+              <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTrySampleTemplate} disabled={isBusy} className={cn(MCS.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_PURPLE_600_20_HOVER_BG_PURPLE_600)}>
+                <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT_8)} />
+                <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TRY_SAMPLE_BTN}</span>
               </Button>
             </div>
           ) : (
             <div>
               {!_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl) && (
-                <div className={cn("relative mb-5 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-slate-900/95 via-amber-955/20 to-slate-900/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-xl shadow-black/40 transition-all hover:border-amber-500/40")}>
-                  <div className={cn("pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent")} />
-                  <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-3.5")}>
-                    <div className={cn("flex items-center gap-3 min-w-0")}>
-                      <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md shadow-orange-500/20 shrink-0")}>
-                        <div className={cn("w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400")}>
-                          <Disc3 className={cn("w-5 h-5 animate-spin [animation-duration:8s]")} />
+                <div className={cn(MCS.RELATIVE_MB_5_OVERFLOW_HIDDEN_ROUNDED_2XL_BORDER_BORDER_AMBER_500_30_BG_GRA)}>
+                  <div className={cn(MCS.POINTER_EVENTS_NONE_ABSOLUTE_INSET_X_0_TOP_0_H_1PX_BG_GRADIENT_TO_R_FROM_TR)} />
+                  <div className={cn(MCS.FLEX_FLEX_COL_MD_FLEX_ROW_MD_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_5)}>
+                    <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3_MIN_W)}>
+                      <div className={cn(MCS.W_10_H_10_ROUNDED_XL_BG_GRADIENT_TO_TR_FROM_AMBER_500_VIA_ORANGE_500_TO_ROS)}>
+                        <div className={cn(MCS.W_FULL_H_FULL_BG_SLATE_950_ROUNDED_10PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TE)}>
+                          <Disc3 className={cn(MCS.W_5_H_5_ANIMATE_SPIN_ANIMATION_DURATION_8S)} />
                         </div>
                       </div>
-                      <div className={cn("min-w-0 space-y-0.5")}>
-                        <div className={cn("flex items-center gap-2 flex-wrap")}>
-                          <span className={cn("font-black text-slate-100 text-sm sm:text-base tracking-tight")}>{texts.SUNO_PLAYLIST_LABEL}</span>
-                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-xs")}>
-                            <span className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse")} />
+                      <div className={cn(MCS.MIN_W_0_SPACE_Y_0_5)}>
+                        <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP)}>
+                          <span className={cn(MCS.FONT_BLACK_TEXT_SLATE_100_TEXT_SM_SM_TEXT_BASE_TRACKING_TIGHT)}>{texts.SUNO_PLAYLIST_LABEL}</span>
+                          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2_PY_0_5_ROUNDED_FULL_TEXT_10PX_FONT_BOLD)}>
+                            <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_BG_EMERALD_400_ANIMATE_PULSE)} />
                             {texts.SUNO_PLAYLIST_STATUS_READY}
                           </span>
-                          {!_.isEmpty(sunoTrackIds) && <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-xs")}>{texts.formatTrackCount(sunoTrackIds.length)}</span>}
+                          {!_.isEmpty(sunoTrackIds) && <span className={cn(MCS.PX_2_PY_0_5_ROUNDED_FULL_TEXT_10PX_FONT_MONO_FONT_BOLD_BG_AMBER_500_15_BORD)}>{texts.formatTrackCount(sunoTrackIds.length)}</span>}
                         </div>
-                        <p className={cn("text-[11px] text-slate-400 leading-normal truncate max-w-md sm:max-w-xl")}>{texts.SUNO_PLAYLIST_SUBTITLE}</p>
+                        <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_400_LEADING_NORMAL_TRUNCATE_MAX_W_MD_SM_MAX_W_XL)}>{texts.SUNO_PLAYLIST_SUBTITLE}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
               {viewMode === MUSIC_VIEW_MODES.LYRICS && (
-                <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[700px] overflow-y-auto custom-scrollbar pr-1")}>
+                <div className={cn(MCS.GRID_GRID_COLS_1_MD_GRID_COLS_2_GAP_4_MAX_H_700PX_OVERFLOW_Y_AUTO_CUSTOM_SC)}>
                   {_.map(songs, (song, idx) => (
                     <SongCard key={song.songId || idx} song={song} index={idx} texts={texts} />
                   ))}
@@ -2900,8 +2665,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               )}
               {viewMode === MUSIC_VIEW_MODES.SEO && <PlaylistSeoCard seoOptions={displayedSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} />}
               {viewMode === MUSIC_VIEW_MODES.SPLIT && (
-                <div className={cn("space-y-4")}>
-                  <div className={cn("flex items-center gap-1.5 overflow-x-auto pb-2 custom-scrollbar")}>
+                <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_4)}>
+                  <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_OVERFLOW_X_AUTO_PB_2_CUSTOM_SCROLLBAR)}>
                     {_.map(songs, (song, idx) => {
                       const isSelected = selectedSeoSongIndex === idx;
                       return (
@@ -2910,18 +2675,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           key={idx}
                           type={SOURCE_TEXT_BUTTON}
                           onClick={() => setSelectedSeoSongIndex(idx)}
-                          className={cn("px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0 inline-flex items-center justify-center gap-1.5 group select-none shadow-2xs leading-none", {
-                            "bg-gradient-to-r from-indigo-600 to-purple-600 !text-white border-indigo-400 shadow-sm shadow-indigo-600/20": isSelected,
-                            "bg-white/80 dark:bg-slate-955/90 border-slate-200/90 dark:border-slate-800 !text-[#1e293b] hover:!text-[#4338ca] dark:!text-slate-300 dark:hover:!text-white hover:border-indigo-400/60 dark:hover:border-indigo-500/40 hover:bg-indigo-50/70 dark:hover:bg-slate-900/90": !isSelected,
+                          className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_WHITESPACE_NOWRAP_TRANSITION_ALL_C, {
+                            [MCS.BG_GRADIENT_TO_R_FROM_INDIGO_600_TO_PURPLE_600_TEXT_WHITE_BORDER_INDIGO_400]: isSelected,
+                            [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800]: !isSelected,
                           })}>
-                          <span className={cn("font-mono font-black inline-flex items-center leading-none", { "!text-indigo-100": isSelected, "!text-indigo-600 group-hover:!text-indigo-800 dark:!text-indigo-400 dark:group-hover:!text-indigo-300": !isSelected })}>{texts.formatTrackBadge(idx + 1)}</span>
-                          <span className={cn("inline-flex items-center leading-none")}>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
+                          <span className={cn(MCS.FONT_MONO_FONT_BLACK_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE, { [MCS.TEXT_INDIGO_100]: isSelected, [MCS.TEXT_INDIGO_600_GROUP_HOVER_TEXT_INDIGO_800_DARK_TEXT_INDIGO_400_DARK_GROUP]: !isSelected })}>{texts.formatTrackBadge(idx + 1)}</span>
+                          <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>
                       );
                     })}
                   </div>
                   {songs[selectedSeoSongIndex] && (
-                    <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4 items-start")}>
+                    <div className={cn(MCS.GRID_GRID_COLS_1_LG_GRID_COLS_2_GAP_4_ITEMS_START)}>
                       <SongCard song={songs[selectedSeoSongIndex]} index={selectedSeoSongIndex} texts={texts} />
                       <PlaylistSeoCard seoOptions={displayedSeoOptions} texts={texts} playlistUrl={_.trim(downloadPlaylistUrl) || sunoPlaylistUrl} columns={1} />
                     </div>
@@ -2938,35 +2703,31 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         onClose={() => setStyleToDelete(null)}
         maxWidth={SOURCE_TEXT_MAX_W_MD}
         title={
-          <span className={cn("inline-flex items-center gap-2 leading-none text-slate-900 dark:text-slate-100")}>
-            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0 self-center -translate-y-[1px]")} />
-            <span className={cn("leading-none text-sm font-extrabold")}>{texts.STYLE_DELETE_BTN}</span>
+          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_2_LEADING_NONE_TEXT_SLATE_900_DARK_TEXT_SLATE)}>
+            <Trash2 className={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0_SELF_CENTER_TRANSLATE_Y_1PX)} />
+            <span className={cn(MCS.LEADING_NONE_TEXT_SM_FONT_EXTRABOLD)}>{texts.STYLE_DELETE_BTN}</span>
           </span>
         }>
-        <div className={cn("space-y-4 text-left")}>
-          <p className={cn("text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed")}>
-            {texts.STYLE_DELETE_CONFIRM}{" "}
-            <span className={cn("font-extrabold !text-[#1e1b4b] dark:!text-white")}>
+        <div className={cn(MCS.SPACE_Y_4_TEXT_LEFT)}>
+          <p className={cn(MCS.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED)}>
+            {texts.STYLE_DELETE_CONFIRM}
+            {SRT.SOURCE_TEXT_SYMBOL_52}
+            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_1E1B4B_DARK_TEXT_WHITE)}>
               {SOURCE_TEXT_SYMBOL_19}
               {styleToDelete?.title}
               {SOURCE_TEXT_SYMBOL_20}
             </span>
             {SOURCE_TEXT_SYMBOL_21}
           </p>
-          <DestructiveActionNotice className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2")} iconClassName={cn("w-4 h-4 text-rose-500 shrink-0")}>
+          <DestructiveActionNotice className={cn(MCS.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK)} iconClassName={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0)}>
             {texts.CANNOT_BE_UNDONE}
           </DestructiveActionNotice>
-          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
-            <Button
-              type={SOURCE_TEXT_BUTTON}
-              variant={SOURCE_TEXT_OUTLINE}
-              size={SOURCE_TEXT_SM}
-              onClick={() => setStyleToDelete(null)}
-              className={cn("h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none")}>
-              <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
+          <div className={cn(MCS.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_200_DARK_B)}>
+            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_SM} onClick={() => setStyleToDelete(null)} className={cn(MCS.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_DARK_BORDER_S)}>
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
             </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteStyle} className={cn("h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none")}>
-              <span className={cn("inline-flex items-center leading-none")}>{texts.STYLE_DELETE_BTN}</span>
+            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteStyle} className={cn(MCS.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_EXTRABOLD_SHADOW_MD_SHADOW_ROSE_600_20_ACT)}>
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.STYLE_DELETE_BTN}</span>
             </Button>
           </div>
         </div>
@@ -2976,35 +2737,31 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         onClose={() => setInspoToDelete(null)}
         maxWidth={SOURCE_TEXT_MAX_W_MD}
         title={
-          <span className={cn("inline-flex items-center gap-2 leading-none text-slate-900 dark:text-slate-100")}>
-            <Trash2 className={cn("w-4 h-4 text-rose-500 shrink-0 self-center -translate-y-[1px]")} />
-            <span className={cn("leading-none text-sm font-extrabold")}>{texts.INSPO_DELETE_CONFIRM}</span>
+          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_2_LEADING_NONE_TEXT_SLATE_900_DARK_TEXT_SLATE)}>
+            <Trash2 className={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0_SELF_CENTER_TRANSLATE_Y_1PX)} />
+            <span className={cn(MCS.LEADING_NONE_TEXT_SM_FONT_EXTRABOLD)}>{texts.INSPO_DELETE_CONFIRM}</span>
           </span>
         }>
-        <div className={cn("space-y-4 text-left")}>
-          <p className={cn("text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed")}>
-            {texts.INSPO_DELETE_CONFIRM}{" "}
-            <span className={cn("font-extrabold !text-[#1e1b4b] dark:!text-white")}>
+        <div className={cn(MCS.SPACE_Y_4_TEXT_LEFT)}>
+          <p className={cn(MCS.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED)}>
+            {texts.INSPO_DELETE_CONFIRM}
+            {SRT.SOURCE_TEXT_SYMBOL_52}
+            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_1E1B4B_DARK_TEXT_WHITE)}>
               {SOURCE_TEXT_SYMBOL_19}
               {inspoToDelete?.title}
               {SOURCE_TEXT_SYMBOL_20}
             </span>
             {SOURCE_TEXT_SYMBOL_21}
           </p>
-          <DestructiveActionNotice className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2")} iconClassName={cn("w-4 h-4 text-rose-500 shrink-0")}>
+          <DestructiveActionNotice className={cn(MCS.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK)} iconClassName={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0)}>
             {texts.CANNOT_BE_UNDONE}
           </DestructiveActionNotice>
-          <div className={cn("flex justify-end items-center gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800")}>
-            <Button
-              type={SOURCE_TEXT_BUTTON}
-              variant={SOURCE_TEXT_OUTLINE}
-              size={SOURCE_TEXT_SM}
-              onClick={() => setInspoToDelete(null)}
-              className={cn("h-9 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors shadow-2xs inline-flex items-center justify-center leading-none")}>
-              <span className={cn("inline-flex items-center leading-none")}>{texts.CANCEL_BTN}</span>
+          <div className={cn(MCS.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_200_DARK_B)}>
+            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_SM} onClick={() => setInspoToDelete(null)} className={cn(MCS.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_DARK_BORDER_S)}>
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
             </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteInspo} className={cn("h-9 px-5 rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20 active:scale-95 transition-all inline-flex items-center justify-center leading-none")}>
-              <span className={cn("inline-flex items-center leading-none")}>{texts.STYLE_DELETE_BTN}</span>
+            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteInspo} className={cn(MCS.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_EXTRABOLD_SHADOW_MD_SHADOW_ROSE_600_20_ACT)}>
+              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.STYLE_DELETE_BTN}</span>
             </Button>
           </div>
         </div>
