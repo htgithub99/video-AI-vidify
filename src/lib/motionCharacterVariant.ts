@@ -20,6 +20,7 @@ export const cleanCharacterColors = (value: unknown): Partial<Record<MotionChara
 };
 const chooseColors = (type: string | undefined, variant: MotionCharacterVariant): { hex: Partial<Record<MotionCharacterRole, string>>; names: string[] } => {
   const def = motionSceneType(type);
+  if (def?.uniform) return { hex: {}, names: [] };
   const hex: Partial<Record<MotionCharacterRole, string>> = { ...(variant.colors || {}) };
   const names: string[] = Object.entries(variant.colors || {}).map(([role, value]) => V.COLOUR(role, value as string));
   const recolour = variant.index > 0 && !def?.animal && !String(type || XRT.EMPTY).startsWith(SRT.SOURCE_TEXT_GHOST) && type !== XRT.MONSTER;

@@ -10,7 +10,7 @@ import { getFfmpegPath } from "./shortsPreprocessService.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { ensureMotionSfxLibrary, motionSfxRoot, resolveMotionSfxAsset, soundCandidates } from "./motionSfxLibraryService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
-import { motionAudioHash as hash } from "./motionAudioUtils.js";
+import { motionAudioHash as hash, motionWavData } from "./motionAudioUtils.js";
 const pending = new Map<string, Promise<string>>();
 export const runMotionAudioProcess = (args: string[], signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -232,6 +232,29 @@ export const motionAudioMixGraph = (hasVoice: boolean, hasSfx: boolean, duration
   if (hasVoice && hasSfx) return MR.MOTION_TEMPLATE_0_A_ARESAMPLE_48000_AFORMAT_CHANNEL_LAYOUTS_STEREO_VOLUME_AP(voiceVolume, sfxVolume, tail);
   return MR.MOTION_TEMPLATE_0_A_ARESAMPLE_48000_AFORMAT_CHANNEL_LAYOUTS_STEREO_VOLUME_MI(hasVoice ? voiceVolume : sfxVolume, tail);
 };
+const sfxMakeupGain = async (file: string): Promise<number> => {
+  const wav = await fs.promises.readFile(file),
+    { start } = motionWavData(wav),
+    window = Math.max(1, Math.round(C.SFX_WINDOW_SECONDS * C.SAMPLE_RATE)) * C.CHANNELS,
+    floor = Math.pow(10, C.SFX_ACTIVE_FLOOR_DB / 10);
+  let energy = 0,
+    windows = 0;
+  for (let index = start; index + window * 2 <= wav.length; index += window * 2) {
+    let sum = 0;
+    for (let sample = 0; sample < window; sample++) {
+      const value = wav.readInt16LE(index + sample * 2) / 32768;
+      sum += value * value;
+    }
+    const mean = sum / window;
+    if (mean > floor) {
+      energy += mean;
+      windows++;
+    }
+  }
+  if (!windows) return 1;
+  const level = 10 * Math.log10(energy / windows);
+  return Math.pow(10, Math.max(0, Math.min(C.SFX_MAKEUP_MAX_DB, C.SFX_TARGET_DB - level)) / 20);
+};
 export const mixMotionSoundAudio = async (duration: number, voiceId?: string, sfxId?: string, sfxVolume = 0.5, voiceVolume = 1, signal?: AbortSignal): Promise<string | undefined> => {
   const folder = getMotionAudioDirectory(),
     voice = voiceId ? path.join(folder, path.basename(voiceId)) : C.EMPTY,
@@ -239,7 +262,7 @@ export const mixMotionSoundAudio = async (duration: number, voiceId?: string, sf
   const hasVoice = !!voice && fs.existsSync(voice),
     hasSfx = !!sfx && fs.existsSync(sfx);
   if (!hasVoice && !hasSfx) return undefined;
-  const volume = Math.max(0, Math.min(1.5, Number(sfxVolume) || 0)) * C.SFX_MIX_GAIN,
+  const volume = Math.max(0, Math.min(1.5, Number(sfxVolume) || 0)) * C.SFX_MIX_GAIN * (hasSfx ? await sfxMakeupGain(sfx) : 1),
     voiceGain = Math.max(0, Math.min(2, Number(voiceVolume) || 0));
   const signature = (file: string) => {
     const stat = fs.statSync(file);

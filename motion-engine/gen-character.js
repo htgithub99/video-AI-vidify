@@ -137,7 +137,20 @@
       limbSplay: {},
       partShift: {},
       hold(nodes, part) {
-        GEN.buildNodes(nodes, env, parts[definition.anchors[part]] || parts[part] || model);
+        const target = parts[definition.anchors[part]] || parts[part] || model,
+          held = new T.Group();
+        group.updateMatrixWorld(true);
+        const tall = new T.Box3().setFromObject(model).getSize(new T.Vector3()).y;
+        target.add(held);
+        GEN.buildNodes(nodes, env, held);
+        held.updateMatrixWorld(true);
+        const dims = new T.Box3()
+            .setFromObject(held)
+            .getSize(new T.Vector3())
+            .toArray()
+            .sort((a, b) => a - b),
+          fit = tall > 0 ? Math.min(1, (MT.HOLD_MAX_WIDTH * tall) / Math.max(1e-6, dims[1]), (MT.HOLD_MAX_LENGTH * tall) / Math.max(1e-6, dims[2])) : 1;
+        if (fit < 1) held.scale.multiplyScalar(fit);
       },
       dispose() {
         GEN.disposeEnv(env);

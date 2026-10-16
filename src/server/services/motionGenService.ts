@@ -777,9 +777,20 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
     saveSceneStyle(styleKey, { references: o.styleReferences, drawingMode: gen.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, referenceStyle: analysis.referenceStyle, genStyle: gen.style, name: from });
     const dir = path.join(previewRoot(), runId(script, o), MOTION_SCENE_LIBRARY.PREVIEW_FOLDER);
     fs.mkdirSync(dir, { recursive: true });
+    const stored = new Map(
+      listSceneAssets(styleKey)
+        .filter((item) => item.styleKey === styleKey)
+        .map((item) => [item.kind + MOTION_SCENE_LIBRARY.TEXT.PIPE + item.name, item.id]),
+    );
+    const storedId = (kind: string, name: string): string | undefined => stored.get(kind + MOTION_SCENE_LIBRARY.TEXT.PIPE + name);
     for (const c of analysis.cast) {
       const design: any = gen.cast[c.key];
       if (sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] || !hasAuthoredCharacter(design)) continue;
+      const sameCharacter = storedId(MOTION_SCENE_LIBRARY.KIND_CHARACTER, c.name);
+      if (sameCharacter) {
+        sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = sameCharacter;
+        continue;
+      }
       const thumb = await renderCharacterThumb(session, gen, c.key, dir).catch(() => null);
       const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_CHARACTER, styleKey, type: c.type, name: c.name, description: _.compact([c.look, c.description]).join(MOTION_SCENE_LIBRARY.TEXT.SEP), tags: c.tags, gender: c.gender, role: c.role, motion: !_.isEmpty(design?.motions), from }, design, thumb);
       sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = item.id;
@@ -789,6 +800,11 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
     for (const place of analysis.places) {
       const location: any = gen.locations[place.key];
       if (!location || sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key]) continue;
+      const samePlace = storedId(MOTION_SCENE_LIBRARY.KIND_LOCATION, place.name);
+      if (samePlace) {
+        sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = samePlace;
+        continue;
+      }
       const preview = gen.locationInfo[place.key]?.files?.[0];
       const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_LOCATION, styleKey, type: place.type, name: place.name, description: place.description, tags: place.tags, time: location.time || place.time, interior: !!(location.interior ?? place.interior), from }, location, preview ? resolveGenPreview(preview) : null);
       sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = item.id;

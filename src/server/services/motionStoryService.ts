@@ -938,7 +938,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
       if (quotesIndex) problems.push(...quoteErrors(rawBeats, quotesIndex).slice(0, 4));
       if (analysis.videoDna) {
         const spokenUnits = beats.reduce((sum, beat) => sum + beat.narration.split(/\s+/).filter(Boolean).length, 0);
-        const expectedUnits = seconds * (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND);
+        const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
         if (spokenUnits < expectedUnits * 0.65 || spokenUnits > expectedUnits * 1.35) problems.push(MR.MOTION_TEMPLATE_NARRATION_LENGTH_DOES_NOT_RESPECT_THE_SELECTED_VIDEO_DURATION_WOR(spokenUnits, seconds, units));
       }
       if (problems.length) throw new Error(problems.join(MR.MOTION_TEXT_SYMBOL_41));

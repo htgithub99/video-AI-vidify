@@ -156,14 +156,16 @@ const tokensOf = (value: string): Set<string> =>
       .split(/[^a-z0-9]+/)
       .filter((token) => token.length > 2),
   );
+const assetTokens = (item: MotionSceneAsset): Set<string> => tokensOf(_.compact([item.name, item.role, item.description, ...(item.tags || [])]).join(C.TEXT.SPACE));
+const tokenMatches = (wanted: Set<string>, offered: Set<string>): number => _.sumBy([...wanted], (token) => (offered.has(token) ? 1 : 0));
+const assetFit = (words: (string | undefined)[]): ((item: MotionSceneAsset) => number) => {
+  const wanted = tokensOf(_.compact(words).join(C.TEXT.SPACE));
+  return (item) => -tokenMatches(wanted, assetTokens(item));
+};
 const rankAssets = (items: MotionSceneAsset[], context: string, limit: number): MotionSceneAsset[] => {
   const words = tokensOf(context);
   const score = (item: MotionSceneAsset): number => {
-    const own = tokensOf([item.name, item.description, item.tags.join(C.TEXT.SPACE), item.role || MR.MOTION_TEXT_EMPTY].join(C.TEXT.SPACE));
-    let hits = 0;
-    own.forEach((token) => {
-      if (words.has(token)) hits++;
-    });
+    const hits = tokenMatches(words, assetTokens(item));
     return hits * 10 + Math.min(item.uses || 0, 20) + (item.usedAt || item.createdAt) / 1e13;
   };
   return _.take(_.orderBy(items, [score], [MR.MOTION_TEXT_DESC]), limit);
@@ -339,6 +341,7 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
           ? leastUsed(
               characters.filter((item) => item.type === member.type && genderFits(item, member.gender)),
               usedCharacters,
+              assetFit([member.role, member.description, member.look, ...(member.tags || [])]),
             )
           : undefined;
     if (!chosen) return strip(member);
@@ -348,6 +351,7 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
     return { ...member, reuse: chosen.id, variant, look: _.truncate(look, { length: C.LOOK_MAX }) };
   });
   const places = analysis.places.map((place): MotionPlace => {
+    const fit = assetFit([place.name, place.description, ...(place.tags || [])]);
     const chosen =
       mode === MODES.AI
         ? locations.find((item) => item.id === place.reuse)
@@ -355,7 +359,7 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
           ? leastUsed(
               locations.filter((item) => item.type === place.type),
               usedLocations,
-              (item) => (item.interior === !!place.interior ? 0 : 2) + (item.time === place.time ? 0 : 1),
+              (item) => (item.interior === !!place.interior ? 0 : 20) + (item.time === place.time ? 0 : 10) + fit(item),
             )
           : undefined;
     if (!chosen) return strip(place);
@@ -369,12 +373,14 @@ export interface MotionBaseLibrary {
   locations: { type: string; name: string; time: string; interior: boolean; description: string; tags: string[]; location: any }[];
   props: { type: string; key: string; name: string; description: string; tags: string[]; nodes: any[]; size: number[] }[];
 }
-let baseCache: MotionBaseLibrary | null = null;
+let baseCache: { stamp: number; data: MotionBaseLibrary } | null = null;
 export const readBaseLibrary = (): MotionBaseLibrary => {
-  if (baseCache) return baseCache;
-  const data = readJson<Partial<MotionBaseLibrary>>(path.join(getMotionEngineDir(), ...C.BASE_FILE), {});
-  baseCache = { characters: data.characters || [], locations: data.locations || [], props: data.props || [] };
-  return baseCache;
+  const file = path.join(getMotionEngineDir(), ...C.BASE_FILE);
+  const stamp = fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
+  if (baseCache?.stamp === stamp) return baseCache.data;
+  const data = readJson<Partial<MotionBaseLibrary>>(file, {});
+  baseCache = { stamp, data: { characters: data.characters || [], locations: data.locations || [], props: data.props || [] } };
+  return baseCache.data;
 };
 const packArray = (value: unknown): any[] => (Array.isArray(value) ? value.filter((entry) => entry && typeof entry === MR.MOTION_TEXT_OBJECT && typeof entry.name === MR.MOTION_TEXT_STRING) : []);
 export const parseLibraryPack = (value: unknown): MotionBaseLibrary => {

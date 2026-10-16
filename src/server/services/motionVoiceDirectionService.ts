@@ -65,8 +65,9 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
   if (channel) opts.log?.(MOTION_VOICE_LIBRARY.LOCKED_LOG + channel.name);
   const planned = new Map<string, MotionVoicePlan["beats"][number]>();
   for (const beat of script.beats) {
-    const explicit = normalizeMotionUtterances(script.voiceSettings?.utterances?.[beat.id] || beat.utterances, beat.id, speakers, beat.narration);
-    if (explicit.length) planned.set(beat.id, { id: beat.id, utterances: explicit });
+    const explicit = normalizeMotionUtterances(script.voiceSettings?.utterances?.[beat.id] || beat.utterances, beat.id, speakers, beat.narration),
+      unvoiced = speakers.length > 1 && explicit.every((line) => line.speaker === C.NARRATOR) && C.DIRECT_SPEECH_RE.test(beat.narration);
+    if (explicit.length && !unvoiced) planned.set(beat.id, { id: beat.id, utterances: explicit });
   }
   const pending = script.beats.filter((beat) => !planned.has(beat.id));
   for (let index = 0; index < pending.length; index += C.BATCH) {

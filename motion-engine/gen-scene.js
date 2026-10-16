@@ -542,6 +542,46 @@
       light.intensity *= f;
     }
   };
+  const keepActorsClear = (S) => {
+    const boxes = walkBoxes(S);
+    if (!boxes.length) return;
+    for (const A of S.actors) {
+      if (!Array.isArray(A.def.at) || A.def.moveTo || A.def.heldBy || MT.REST_ACTION_RE.test(A.def.action || MT.EMPTY)) continue;
+      const g = A.actor.group,
+        position = g.position.clone(),
+        rotation = g.rotation.clone();
+      g.position.set(0, 0, 0);
+      g.rotation.set(0, 0, 0);
+      A.actor.sample(A.def.action || MT.IDLE, 0, false);
+      const sz = A.actor.bounds().getSize(new T.Vector3());
+      g.position.copy(position);
+      g.rotation.copy(rotation);
+      g.updateMatrixWorld(true);
+      const r = Math.min(MT.ACTOR_FOOT_MAX, Math.max(MT.ACTOR_FOOT_RADIUS, Math.min(sz.x, sz.z) / 2));
+      let [x, z] = A.def.at;
+      for (let pass = 0; pass < MT.ACTOR_CLEAR_PASSES; pass++) {
+        let moved = false;
+        for (const { bb } of boxes) {
+          const x0 = bb.min.x - r,
+            x1 = bb.max.x + r,
+            z0 = bb.min.z - r,
+            z1 = bb.max.z + r;
+          if (x <= x0 || x >= x1 || z <= z0 || z >= z1) continue;
+          const exits = [
+            [x0 - x, 0],
+            [x1 - x, 0],
+            [0, z0 - z],
+            [0, z1 - z],
+          ].sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+          x += exits[0][0];
+          z += exits[0][1];
+          moved = true;
+        }
+        if (!moved) break;
+      }
+      if (x !== A.def.at[0] || z !== A.def.at[1]) A.def = Object.assign({}, A.def, { at: [x, z] });
+    }
+  };
   const separateActors = (S, stg, viewPos) => {
     const list = S.actors.filter((A) => Array.isArray(A.def.at) && !A.def.moveTo);
     if (list.length < 2) return;
@@ -1140,6 +1180,7 @@
       }
       S.flatView = G.drawingMode === MT.VALUE_2D;
       separateActors(S, stg);
+      keepActorsClear(S);
       for (const A of S.actors) A.segs = planActor(A.def, S.dur, S.characterMotion);
     }
     S.preIssues = [];
@@ -1173,6 +1214,7 @@
       cam.lookAt(fit.tgt);
       cam.updateMatrixWorld(true);
       separateActors(S, stg, fit.pos.toArray());
+      keepActorsClear(S);
       for (const A of S.actors) {
         A.segs = planActor(A.def, S.dur, S.characterMotion);
         A.poseLocked = false;
@@ -1421,6 +1463,14 @@
     GEN.info[ctx.shot && ctx.shot.id != null ? ctx.shot.id : MT.X_2] = { issues: S.issues, camera: { pos: S.cam0.pos.toArray().map((v) => +v.toFixed(2)), target: S.cam0.tgt.toArray().map((v) => +v.toFixed(2)), fov: cam.fov } };
     return S;
   };
+  const meshDimensions = (o) => {
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const sc = o.getWorldScale(new T.Vector3()),
+      radius = o.geometry.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z),
+      dims = o.geometry.boundingBox.getSize(new T.Vector3()).multiply(sc);
+    return { radius, thin: Math.min(dims.x, dims.y, dims.z) < Math.max(dims.x, dims.y, dims.z) * 0.35 };
+  };
   const veilVolumes = (S, cam) => {
     if (!S.volumes) {
       S.volumes = [];
@@ -1428,13 +1478,16 @@
         if (!o.isMesh || !o.geometry || S.actors.some((A) => isUnder(o, A.actor.group))) return;
         const m = Array.isArray(o.material) ? o.material[0] : o.material;
         if (!m || !m.transparent || !(m.opacity < 0.75) || m.blending === T.AdditiveBlending) return;
-        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
-        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-        const sc = o.getWorldScale(new T.Vector3()),
-          r = o.geometry.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z),
-          dims = o.geometry.boundingBox.getSize(new T.Vector3()).multiply(sc),
-          thin = Math.min(dims.x, dims.y, dims.z) < Math.max(dims.x, dims.y, dims.z) * 0.35;
-        if (r >= 1.2 && !thin) S.volumes.push(o);
+        const { radius: r, thin } = meshDimensions(o);
+        if (r >= MT.HALO_MAX_RADIUS && !thin) S.volumes.push(o);
+      });
+      S.halos = [];
+      S.scene.traverse((o) => {
+        if (!o.isMesh || !o.geometry || S.actors.some((A) => isUnder(o, A.actor.group))) return;
+        const m = Array.isArray(o.material) ? o.material[0] : o.material;
+        if (!m || !m.transparent || !(m.opacity < MT.HALO_VEIL_OPACITY || m.blending === T.AdditiveBlending || (m.opacity < 0.75 && ((m.emissive && m.emissive.getHex() !== 0) || (m.userData && m.userData.glow))))) return;
+        const { radius: r, thin } = meshDimensions(o);
+        if (r >= MT.HALO_MIN_RADIUS && r < MT.HALO_MAX_RADIUS && !thin) S.halos.push({ o, r });
       });
       const cfg = S.stg.camera || {},
         subject = [];
@@ -1457,6 +1510,32 @@
       } else if (!veil && o.userData.veiled) {
         o.visible = true;
         o.userData.veiled = false;
+      }
+    }
+  };
+  const veilHalos = (S, cam) => {
+    if (!S.halos || !S.halos.length) return;
+    cam.updateMatrixWorld();
+    const heads = S.actors.filter((A) => A.actor.group.visible).map((A) => A.actor.anchor(MT.HEAD)),
+      right = new T.Vector3().setFromMatrixColumn(cam.matrixWorld, 0),
+      aspect = cam.isPerspectiveCamera ? cam.aspect : (cam.right - cam.left) / Math.max(1e-6, cam.top - cam.bottom),
+      flat = (p) => {
+        const q = p.clone().project(cam);
+        return new T.Vector2(q.x * aspect, q.y);
+      },
+      reach = (p, r) => flat(p.clone().addScaledVector(right, r)).distanceTo(flat(p));
+    for (const h of S.halos) {
+      const c = h.o.localToWorld(h.o.geometry.boundingSphere.center.clone()),
+        r = h.o.geometry.boundingSphere.radius * Math.max(...h.o.getWorldScale(new T.Vector3()).toArray()),
+        ahead = c.clone().sub(cam.position).dot(cam.getWorldDirection(new T.Vector3())) > 0,
+        near = heads.some((p) => p.distanceTo(c) < r + MT.HALO_HEAD_GAP || (ahead && flat(p).distanceTo(flat(c)) < reach(c, r) + reach(p, MT.HALO_HEAD_GAP)));
+      if (near && h.o.visible) {
+        h.o.visible = false;
+        h.o.userData.haloHidden = true;
+        if (!S.issues.includes(MT.HALO_NEAR_HEAD_HIDDEN)) S.issues.push(MT.HALO_NEAR_HEAD_HIDDEN);
+      } else if (!near && h.o.userData.haloHidden) {
+        h.o.visible = true;
+        h.o.userData.haloHidden = false;
       }
     }
   };
@@ -1586,6 +1665,7 @@
     updateWeather(S.weather, t);
     const cam = S.camera;
     veilVolumes(S, cam);
+    veilHalos(S, cam);
     if (S.env.billboards) {
       const q = new T.Quaternion();
       for (const b of S.env.billboards) {
