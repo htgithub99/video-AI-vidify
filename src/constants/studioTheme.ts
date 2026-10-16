@@ -21,6 +21,8 @@ export const STUDIO_UI = {
   INPUT: "studio-input",
   SELECT: "studio-input studio-select",
   TEXTAREA: "studio-input studio-textarea",
+  SEGMENTED: "studio-segmented",
+  SEGMENT: "studio-segment",
   EMPTY: "",
   BUTTON_TYPE: "button",
   UNSTYLED: "unstyled",
@@ -44,4 +46,13 @@ export const STUDIO_BUTTON_PATTERNS = {
   PRIMARY: /(?:^|\s)(?:bg-gradient-to-|bg-(?:purple|violet|indigo|blue|fuchsia|pink)-[567]00(?:\s|$))/,
   ACCENT: /(?:^|\s)(?:bg|border|text)-(?:purple|violet|indigo|blue|cyan|sky|fuchsia|pink|rose)-\d/,
   SECONDARY: /(?:^|\s)(?:bg-slate-\d|bg-white(?:\/\d+)?(?:\s|$))/,
+} as const;
+export const STUDIO_CONTROL_CONTENT = {
+  ICON_TAG: "svg",
+  MEDIA_TAGS: ["img", "picture", "video", "canvas", "iframe"],
+  ROLES: ["switch", "checkbox", "radio", "combobox"],
+  HIDDEN_LABEL: /(?:^|\s)sr-only(?:\s|$)/,
+  ICON_NAME: /Icon$/,
+  ICON_APPEARANCE: /(?:^|:)!?(?:bg-|from-|via-|to-|border(?:-|$)|shadow(?:-|$)|ring(?:-|$))/,
+  INTERACTION_APPEARANCE: /(?:^|:)(?:hover|active|focus|focus-within|focus-visible|group-hover|group-active|group-focus-within):!?(?:bg-|from-|via-|to-|border(?:-|$)|ring(?:-|$)|shadow(?:-|$))/,
 } as const;

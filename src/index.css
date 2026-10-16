@@ -220,7 +220,7 @@ html.light .advanced-config-icon {
   border: 1px solid rgba(220, 210, 195, 0.8) !important;
   color: #334155 !important;
 }
-button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]):not(.toggle-switch):not([role="switch"]) {
+button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]):not(.toggle-switch):not(.studio-segment):not([role="switch"]) {
   min-height: 40px !important;
 }
 .toggle-switch,
@@ -444,16 +444,6 @@ select:not([multiple]),
   height: 2.5rem !important;
   box-sizing: border-box !important;
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):not(.search-input-clean):hover,
-textarea:not(.bg-transparent):hover {
-  border-color: rgba(245, 158, 11, 0.45) !important;
-}
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):not(.search-input-clean):focus,
-textarea:not(.bg-transparent):focus {
-  outline: none !important;
-  border-color: var(--color-rose-600) !important;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important;
-}
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
@@ -535,10 +525,6 @@ input[type="range"]::-webkit-slider-runnable-track {
     background 0.15s ease,
     border-color 0.15s ease;
 }
-input[type="range"]:hover::-webkit-slider-runnable-track {
-  background: #1a2234;
-  border-color: #4a5568;
-}
 input[type="range"]::-moz-range-track {
   width: 100%;
   height: 8px;
@@ -561,9 +547,6 @@ input[type="range"]::-webkit-slider-thumb {
     transform 0.1s ease,
     background-color 0.15s ease;
 }
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.18);
-}
 input[type="range"]::-moz-range-thumb {
   border: 2px solid #ffffff;
   height: 19px;
@@ -574,9 +557,6 @@ input[type="range"]::-moz-range-thumb {
     0 4px 6px -1px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
 }
-input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.18);
-}
 :root.light input[type="range"]::-webkit-slider-runnable-track {
   background: #cbd5e1;
   border: 1.5px solid #94a3b8;
@@ -584,10 +564,6 @@ input[type="range"]::-moz-range-thumb:hover {
 :root.light input[type="range"]::-moz-range-track {
   background: #cbd5e1;
   border: 1.5px solid #94a3b8;
-}
-:root.light input[type="range"]:hover::-webkit-slider-runnable-track {
-  background: #94a3b8;
-  border-color: #64748b;
 }
 :root.light input[type="range"]::-webkit-slider-thumb {
   border: 2px solid #ffffff;
@@ -694,16 +670,6 @@ textarea:not(.bg-transparent) {
   color: #09090b;
   border: 1px solid #e4e4e7;
 }
-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):not(.search-input-clean):hover,
-textarea:not(.bg-transparent):hover {
-  border-color: rgba(245, 158, 11, 0.4);
-}
-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):not(.search-input-clean):focus,
-textarea:not(.bg-transparent):focus {
-  outline: none;
-  border-color: var(--color-rose-500);
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-}
 input.bg-transparent,
 :root.light input.bg-transparent,
 html.light input.bg-transparent,
@@ -730,25 +696,6 @@ html.light .search-input-clean {
   appearance: none !important;
   -webkit-appearance: none !important;
 }
-input.bg-transparent:hover,
-input.bg-transparent:focus,
-input.bg-transparent:active,
-:root.light input.bg-transparent:hover,
-:root.light input.bg-transparent:focus,
-:root.light input.bg-transparent:active,
-input.search-input-clean:hover,
-input.search-input-clean:focus,
-input.search-input-clean:active,
-.search-input-clean:hover,
-.search-input-clean:focus,
-.search-input-clean:active {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -764,14 +711,8 @@ input[type="range"]::-webkit-slider-runnable-track {
   border-radius: 9999px;
   transition: background 0.15s ease;
 }
-input[type="range"]:hover::-webkit-slider-runnable-track {
-  background: #3f3f46;
-}
 :root.light input[type="range"]::-webkit-slider-runnable-track {
   background: #e4e4e7;
-}
-:root.light input[type="range"]:hover::-webkit-slider-runnable-track {
-  background: #d4d4d8;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -784,9 +725,6 @@ input[type="range"]::-webkit-slider-thumb {
   border: 2px solid #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 0.1s ease;
-}
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
 }
 .font-logo {
   font-family: var(--font-logo), var(--font-sans) !important;

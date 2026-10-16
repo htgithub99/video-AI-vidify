@@ -2,9 +2,9 @@ import { StudioInput } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
 import _ from "lodash";
 import { Pause, Play, SkipBack } from "lucide-react";
-import { FC, useEffect, useMemo, useRef, useState } from "react";
-import { MOTION_TEXT_16_9, MOTION_TEXT_AUTO, MOTION_TEXT_RANGE, MOTION_TEXT_SYMBOL_19, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
-import { MOTION_STYLES } from "../../constants/motionStyles.js";
+import { type CSSProperties, FC, useEffect, useMemo, useRef, useState } from "react";
+import { MOTION_TEXT_16_9, MOTION_TEXT_AUTO, MOTION_TEXT_RANGE, MOTION_TEXT_SYMBOL_24 } from "../../constants/motionRuntime.js";
+import { MOTION_PLAYER_PROGRESS_PROPERTY, MOTION_STYLES } from "../../constants/motionStyles.js";
 import { MOTION_PREVIEW_QUALITY, MOTION_PREVIEW_SIZES } from "../../constants/motionVideo.js";
 import { cn } from "../../lib/utils";
 import type { MotionSpec } from "../../types/motionVideo.js";
@@ -174,7 +174,6 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
         {!spec && !videoUrl && !loading && (
           <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2}>
             <Play className={MOTION_STYLES.W_8_H_8_TEXT_SLATE_600_DARK_TEXT_SLATE_700_STROKE_1} />
-            <span>{MOTION_TEXT_SYMBOL_19}</span>
           </div>
         )}
         {loading && (
@@ -219,12 +218,21 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
           {playing ? <Pause className={MOTION_STYLES.W_4_H_4} /> : <Play className={MOTION_STYLES.W_4_H_4} />}
         </Button>
         <div className={MOTION_STYLES.RELATIVE_FLEX_1_H_6_FLEX_ITEMS_CENTER}>
-          <div className={MOTION_STYLES.ABSOLUTE_INSET_X_0_H_2_ROUNDED_FULL_BG_SLATE_200_DARK_BG_SLATE_800} />
+          <StudioInput
+            type={MOTION_TEXT_RANGE}
+            aria-label={MR.MOTION_TEXT_TIEN_TRINH}
+            min={0}
+            max={duration || 1}
+            step={0.01}
+            value={time}
+            onChange={(e) => seek(_.toNumber(e.target.value))}
+            className={MOTION_STYLES.PLAYER_SEEK_INPUT}
+            style={{ [MOTION_PLAYER_PROGRESS_PROPERTY]: MR.MOTION_TEMPLATE_SYMBOL_48(duration ? _.clamp((time / duration) * 100, 0, 100) : 0) } as CSSProperties}
+            disabled={controlsDisabled}
+          />
           {_.map(marks, (m, i) => (
-            <div key={i} className={MOTION_STYLES.ABSOLUTE_H_3_5_W_PX_BG_SLATE_400_DARK_BG_SLATE_600} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
+            <div key={i} className={MOTION_STYLES.PLAYER_SEEK_MARK} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
           ))}
-          <div className={MOTION_STYLES.ABSOLUTE_H_2_ROUNDED_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_TO_PINK_500} style={{ width: MR.MOTION_TEMPLATE_SYMBOL_48(duration ? (time / duration) * 100 : 0) }} />
-          <StudioInput type={MOTION_TEXT_RANGE} min={0} max={duration || 1} step={0.01} value={time} onChange={(e) => seek(_.toNumber(e.target.value))} className={MOTION_STYLES.ABSOLUTE_INSET_0_W_FULL_OPACITY_0_CURSOR_POINTER} disabled={controlsDisabled} />
         </div>
         <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
           {formatSeconds(time)}

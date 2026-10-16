@@ -2,7 +2,7 @@ import { VIDEO_EXPORT_TEXT_NUMBER, VIDEO_EXPORT_TEXT_STRING } from "../../consta
 import { SOURCE_TEXT_MD, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import { STUDIO_UI } from "../../constants/studioTheme.js";
-import { studioButtonVariant } from "../../lib/studioTheme.js";
+import { isIconOnlyButton, isStudioControlRole, studioButtonVariant, studioControlClassName, studioIconButtonClassName } from "../../lib/studioTheme.js";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
 import { BUTTON_CLASS_NAME, BUTTON_SIZE_CLASS_NAME, BUTTON_TOOLTIP_PREFIX, BUTTON_VARIANT_CLASS_NAME, DETECTOR_VIETNAMESE_REGEX } from "../../constants";
@@ -23,6 +23,9 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = SOURCE_
   const variantStyles = isUnstyled ? "" : _.defaultTo(BUTTON_VARIANT_CLASS_NAME[variant], BUTTON_VARIANT_CLASS_NAME.primary);
   const finalBaseStyles = isUnstyled ? "" : BUTTON_CLASS_NAME.BASE;
   const cleanText = getChildrenText(children).trim();
+  const isControl = isStudioControlRole(props.role);
+  const iconOnly = !isControl && isIconOnlyButton(children);
+  const buttonClassName = cn(STUDIO_UI.BUTTON, finalBaseStyles, sizeStyles, variantStyles, className, { [BUTTON_CLASS_NAME.LOADING]: Boolean(isLoading) });
   let computedTitle = props.title;
   if (!computedTitle && cleanText) {
     if (DETECTOR_VIETNAMESE_REGEX.test(cleanText)) {
@@ -32,14 +35,7 @@ export const Button: React.FC<IBaseButtonProps> = ({ children, variant = SOURCE_
     }
   }
   return (
-    <button
-      data-variant={studioButtonVariant(variant, className)}
-      className={cn(STUDIO_UI.BUTTON, finalBaseStyles, sizeStyles, variantStyles, className, {
-        [BUTTON_CLASS_NAME.LOADING]: Boolean(isLoading),
-      })}
-      disabled={disabled || isLoading}
-      title={computedTitle}
-      {...props}>
+    <button data-variant={studioButtonVariant(variant, className)} data-icon-only={iconOnly || undefined} className={iconOnly ? studioIconButtonClassName(buttonClassName) : isControl ? studioControlClassName(buttonClassName) : buttonClassName} disabled={disabled || isLoading} title={computedTitle} {...props}>
       {isLoading ? (
         <span className={cn(BUTTON_CLASS_NAME.LOADING_CONTENT)}>
           <Sparkles className={cn(BUTTON_CLASS_NAME.LOADING_SPINNER)} />

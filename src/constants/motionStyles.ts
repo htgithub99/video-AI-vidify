@@ -1,4 +1,7 @@
+export const MOTION_PLAYER_PROGRESS_PROPERTY = "--motion-player-progress";
 export const MOTION_STYLES = {
+  PLAYER_SEEK_INPUT: "motion-player-seek w-full min-w-0",
+  PLAYER_SEEK_MARK: "absolute h-1.5 w-px bg-black pointer-events-none",
   CREATION_WORKSPACE_W_FULL_H_FULL_MIN_H_0_FLEX_FLEX_COL_OVERFLOW_Y_AUTO: "creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto p-4 sm:p-6 bg-slate-955 font-sans text-slate-100 custom-scrollbar",
   BG_GRADIENT_TO_B_FROM_SLATE_900_90_TO_SLATE_950_95_ROUNDED_XL_SM_ROUNDED_2XL_P_4_SM_P_6: "bg-gradient-to-b from-slate-900/90 to-slate-950/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-visible w-full border border-slate-800/80",
   GLASS_CARD_ROUNDED_XL_PX_3_PY_2_SM_PX_4_SM_PY_2_5_SHADOW_SM: "glass-card rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0",

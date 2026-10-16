@@ -377,9 +377,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </option>
                   ))}
                 </MotionSelectField>
+                <MotionStyleSetPicker studio={studio} currentLang={currentLang} disabled={studio.storyBusy || studio.renderBusy} />
               </div>
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
-              <MotionStyleSetPicker studio={studio} currentLang={currentLang} disabled={studio.storyBusy || studio.renderBusy} />
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP}>
                 <div />
                 {busyKind === MOTION_TEXT_ANALYZE ? (

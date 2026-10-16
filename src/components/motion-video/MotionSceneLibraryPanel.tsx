@@ -1,4 +1,4 @@
-import { StudioCard, StudioHeader, StudioSelect, StudioInput, StudioTextarea } from "../ui/Studio.js";
+import { StudioCard, StudioHeader, StudioInput, StudioTextarea } from "../ui/Studio.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { MotionDetailRow } from "./MotionDetailRow.js";
@@ -76,24 +76,23 @@ export const MotionStyleSetPicker: FC<{ studio: MotionStudio; currentLang: Lang;
   const sets = data.styles.filter((style) => style.images.length);
   if (!sets.length) return null;
   return (
-    <div className={S.PICKER}>
-      <Images className={S.ICON} />
-      <StudioSelect
-        className={S.SELECT}
-        value={MR.MOTION_TEXT_EMPTY}
-        disabled={disabled}
-        onChange={(event) => {
-          const style = sets.find((entry) => entry.key === event.target.value);
-          if (style) void applyStyleSet(studio, style, t).catch((error) => toast.error(getMotionErrorMessage(error)));
-        }}>
-        <option value={MR.MOTION_TEXT_EMPTY}>{t.PICK_STYLE}</option>
-        {sets.map((style) => (
-          <option key={style.key} value={style.key}>
-            {styleLabel(style.key, sets, t) + C.TEXT.SEP + style.images.length + C.TEXT.SPACE + t.IMAGES}
-          </option>
-        ))}
-      </StudioSelect>
-    </div>
+    <MotionSelectField
+      label={t.STYLE_SET_LABEL}
+      title={t.PICK_STYLE}
+      className={cn(MR.MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}
+      value={MR.MOTION_TEXT_EMPTY}
+      disabled={disabled}
+      onChange={(event) => {
+        const style = sets.find((entry) => entry.key === event.target.value);
+        if (style) void applyStyleSet(studio, style, t).catch((error) => toast.error(getMotionErrorMessage(error)));
+      }}>
+      <option value={MR.MOTION_TEXT_EMPTY}>{t.PICK_STYLE}</option>
+      {sets.map((style) => (
+        <option key={style.key} value={style.key}>
+          {styleLabel(style.key, sets, t) + C.TEXT.SEP + style.images.length + C.TEXT.SPACE + t.IMAGES}
+        </option>
+      ))}
+    </MotionSelectField>
   );
 };
 const emptyDraft = (): MotionSceneCustomItem => ({

@@ -2,14 +2,18 @@ import { forwardRef, type HTMLAttributes, type FieldsetHTMLAttributes, type Butt
 import { ChevronDown, ChevronUp, SlidersHorizontal, Sparkles, type LucideIcon } from "lucide-react";
 import { STUDIO_UI as S } from "../../constants/studioTheme.js";
 import { cn } from "../../lib/utils.js";
+import { studioControlClassName } from "../../lib/studioTheme.js";
 import { Button } from "./Button.js";
+import type { IBaseButtonProps } from "../../types.js";
 export const StudioPage = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.PAGE, className)} />);
 export const StudioCanvas = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CANVAS, className)} />);
 export const StudioCard = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CARD, className)} />);
 export const StudioFieldset = forwardRef<HTMLFieldSetElement, FieldsetHTMLAttributes<HTMLFieldSetElement>>(({ className, ...props }, ref) => <fieldset {...props} ref={ref} className={cn(S.FIELDSET, className)} />);
-export const StudioInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => <input {...props} ref={ref} className={cn(S.INPUT, className)} />);
-export const StudioSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(({ className, ...props }, ref) => <select {...props} ref={ref} className={cn(S.SELECT, className)} />);
-export const StudioTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => <textarea {...props} ref={ref} className={cn(S.TEXTAREA, className)} />);
+export const StudioInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => <input {...props} ref={ref} className={studioControlClassName(cn(S.INPUT, className))} />);
+export const StudioSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(({ className, ...props }, ref) => <select {...props} ref={ref} className={studioControlClassName(cn(S.SELECT, className))} />);
+export const StudioTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => <textarea {...props} ref={ref} className={studioControlClassName(cn(S.TEXTAREA, className))} />);
+export const StudioSegmentedControl = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div role="group" {...props} ref={ref} className={cn(S.SEGMENTED, className)} />);
+export const StudioSegmentButton = ({ selected, className, ...props }: Omit<IBaseButtonProps, "variant"> & { selected: boolean }) => <Button {...props} type={props.type ?? S.BUTTON_TYPE} variant={S.UNSTYLED} aria-pressed={selected} className={cn(S.SEGMENT, className)} />;
 export const StudioIcon = ({ icon: Icon }: { icon: LucideIcon }) => (
   <div className={S.ICON_FRAME}>
     <div className={S.ICON_INNER}>

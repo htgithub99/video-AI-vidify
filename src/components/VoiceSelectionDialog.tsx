@@ -1,4 +1,4 @@
-import { StudioInput, StudioSelect } from "./ui/Studio.js";
+import { StudioSegmentedControl, StudioSegmentButton, StudioInput, StudioSelect } from "./ui/Studio.js";
 import _ from "lodash";
 import { Activity, Check, ChevronDown, Globe2, Heart, Mic, Play, Search, Square, User } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -281,24 +281,16 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 <User className={cn("w-3.5 h-3.5 text-amber-500")} />
                 {dialogTexts.genderLabel}
               </label>
-              <div className={cn("flex gap-1 bg-slate-955 rounded-xl p-1 border border-slate-800 h-10 items-center")}>
+              <StudioSegmentedControl>
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
-                    <Button
-                      variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                      key={g}
-                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                      onClick={() => setGender(g)}
-                      className={cn("flex-1 h-8 rounded-lg text-[10px] font-bold transition-all select-none cursor-pointer flex items-center justify-center", {
-                        "bg-rose-600 text-white shadow-sm shadow-rose-600/30": isActive,
-                        "text-slate-400 hover:text-slate-100 hover:bg-slate-900": !isActive,
-                      })}>
+                    <StudioSegmentButton selected={isActive} key={g} onClick={() => setGender(g)}>
                       {_.isEmpty(g) ? dialogTexts.allGender : _.isEqual(g, VOICE_GENDER.MALE) ? dialogTexts.maleGender : dialogTexts.femaleGender}
-                    </Button>
+                    </StudioSegmentButton>
                   );
                 })}
-              </div>
+              </StudioSegmentedControl>
             </div>
             <div className={cn("space-y-1.5")}>
               <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>

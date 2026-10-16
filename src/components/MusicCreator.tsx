@@ -1,4 +1,4 @@
-import { StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "./ui/Studio.js";
+import { StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_1_1,
   SOURCE_TEMPLATE_HTTP,
@@ -2353,35 +2353,20 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             </div>
             <div className={cn("flex items-center gap-2 flex-wrap justify-between sm:justify-end")}>
               {!_.isEmpty(songs) && (
-                <div className={cn("flex items-center p-1 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner")}>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => setViewMode(SOURCE_TEXT_LYRICS)}
-                    disabled={isBusy}
-                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-purple-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.LYRICS, "!text-slate-700 hover:!text-purple-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.LYRICS) })}>
+                <StudioSegmentedControl>
+                  <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.LYRICS} onClick={() => setViewMode(SOURCE_TEXT_LYRICS)} disabled={isBusy}>
                     <Music2 className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_LYRICS}</span>
-                  </Button>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => setViewMode(SOURCE_TEXT_SEO)}
-                    disabled={isBusy}
-                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-fuchsia-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SEO, "!text-slate-700 hover:!text-fuchsia-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SEO) })}>
+                  </StudioSegmentButton>
+                  <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.SEO} onClick={() => setViewMode(SOURCE_TEXT_SEO)} disabled={isBusy}>
                     <Sparkles className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SEO}</span>
-                  </Button>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => setViewMode(SOURCE_TEXT_SPLIT)}
-                    disabled={isBusy}
-                    className={cn("px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none leading-none", { "bg-indigo-600 !text-white shadow-sm": viewMode === MUSIC_VIEW_MODES.SPLIT, "!text-slate-700 hover:!text-indigo-700 dark:!text-slate-400 dark:hover:!text-slate-100": !(viewMode === MUSIC_VIEW_MODES.SPLIT) })}>
+                  </StudioSegmentButton>
+                  <StudioSegmentButton selected={viewMode === MUSIC_VIEW_MODES.SPLIT} onClick={() => setViewMode(SOURCE_TEXT_SPLIT)} disabled={isBusy}>
                     <Columns className={cn("w-3 h-3 shrink-0")} />
                     <span className={cn("inline-flex items-center leading-none")}>{texts.TAB_SPLIT}</span>
-                  </Button>
-                </div>
+                  </StudioSegmentButton>
+                </StudioSegmentedControl>
               )}
               {!_.isEmpty(songs) && (
                 <div className={cn("flex items-center gap-2 shrink-0")}>
@@ -2462,43 +2447,28 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 className={cn("h-9 w-full rounded-xl border border-slate-700/80 bg-slate-950/70 pl-10 pr-3 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-purple-500/60 disabled:cursor-wait disabled:opacity-60")}
               />
             </div>
-            <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
+            <StudioSegmentedControl>
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align={SOURCE_TEXT_CENTER}>
-                <Button
-                  variant={SOURCE_TEXT_UNSTYLED}
-                  type={SOURCE_TEXT_BUTTON}
-                  onClick={() => setSunoEvaluateTracks(true)}
-                  disabled={isBusy}
-                  className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1 leading-none", { "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-xs": sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": !sunoEvaluateTracks })}>
+                <StudioSegmentButton selected={sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(true)} disabled={isBusy}>
                   <Sparkles className={cn("w-3 h-3 shrink-0")} />
                   <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_ON}</span>
-                </Button>
+                </StudioSegmentButton>
               </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align={SOURCE_TEXT_CENTER}>
-                <Button
-                  variant={SOURCE_TEXT_UNSTYLED}
-                  type={SOURCE_TEXT_BUTTON}
-                  onClick={() => setSunoEvaluateTracks(false)}
-                  disabled={isBusy}
-                  className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-slate-700/80 border border-slate-600/80 text-slate-200 shadow-xs": !sunoEvaluateTracks, "text-slate-400 hover:text-slate-200 border border-transparent": sunoEvaluateTracks })}>
+                <StudioSegmentButton selected={!sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(false)} disabled={isBusy}>
                   <span className={cn("inline-flex items-center leading-none")}>{texts.SUNO_EVALUATE_OFF}</span>
-                </Button>
+                </StudioSegmentButton>
               </Tooltip>
-            </div>
-            <div className={cn("inline-flex items-center p-0.5 rounded-xl bg-slate-955/90 border border-slate-800/90 shadow-inner h-9 box-border")}>
+            </StudioSegmentedControl>
+            <StudioSegmentedControl>
               {_.map([SOURCE_TEXT_MP3, SOURCE_TEXT_WAV] as SunoDownloadFormat[], (format) => (
                 <Tooltip key={format} content={format === AUDIO_FORMATS.MP3 ? texts.FORMAT_MP3_TOOLTIP : texts.FORMAT_WAV_TOOLTIP} align={SOURCE_TEXT_CENTER}>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => setSunoDownloadFormat(format)}
-                    disabled={isBusy}
-                    className={cn("h-7.5 px-2.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer select-none inline-flex items-center justify-center leading-none", { "bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-xs": sunoDownloadFormat === format, "text-slate-400 hover:text-slate-200 border border-transparent": sunoDownloadFormat !== format })}>
+                  <StudioSegmentButton selected={sunoDownloadFormat === format} onClick={() => setSunoDownloadFormat(format)} disabled={isBusy}>
                     {format}
-                  </Button>
+                  </StudioSegmentButton>
                 </Tooltip>
               ))}
-            </div>
+            </StudioSegmentedControl>
             <Button
               variant={SOURCE_TEXT_UNSTYLED}
               type={SOURCE_TEXT_BUTTON}
