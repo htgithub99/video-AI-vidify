@@ -36,3 +36,41 @@ export const MOTION_DRAFT_VERIFICATION = {
   PATCHES: [{ length: "20min" }, { language: "en" }, { styleReferences: [] }, { stylePreset: "pixel_art", drawingMode: "2d", styleReferences: [] }, { characterMotion: true }, { aspect: "9:16" }, { videoGenre: "horror" }, { quality: "draft", fps: 24 }, { musicMood: "warm", musicVolume: 0.2 }, { subtitles: false }, { aiReview: false }],
   PASSED: "Motion draft passed: settings and source edits preserve generated data and storage; failed/cancelled analysis retains the draft; successful analysis replaces it for normal and resumed jobs.\n",
 } as const;
+export const MOTION_STYLE_PICKER_VERIFICATION = {
+  ENTRY: `import React, { useState } from "react";
+    import { createRoot } from "react-dom/client";
+    import { useMotionStudio } from "./src/hooks/useMotionStudio.ts";
+    import { MotionStyleSetPicker } from "./src/components/motion-video/MotionSceneLibraryPanel.tsx";
+    function Studio() {
+      const studio = useMotionStudio();
+      globalThis.motionStyleStudio = studio;
+      return <MotionStyleSetPicker studio={studio} currentLang="vi" />;
+    }
+    function Fixture() {
+      const [revision, setRevision] = useState(0);
+      globalThis.remountMotionStyleStudio = () => setRevision(value => value + 1);
+      return <Studio key={revision} />;
+    }
+    createRoot(document.getElementById("root")).render(<Fixture />);`,
+  API_STUB: MOTION_DRAFT_VERIFICATION.API_STUB + `export const formatMotionProgress = String; export const formatSeconds = String;`,
+  TOAST_STUB: `export const toast = Object.fromEntries(["success", "error", "info", "warning"].map(kind => [kind, message => globalThis.motionStyleToasts.push({ kind, message })]));`,
+  FIXTURE: "style-picker-fixture",
+  COMBOBOX: "combobox",
+  SELECT: "select",
+  EMPTY: "",
+  INITIAL_PRESET: "pixel_art",
+  REFERENCES: [{ name: "style-reference-1", dataUrl: "data:image/png;base64,aGVsbG8=" }],
+  STYLES: [
+    { key: "test-style-2d", name: "Reference 2D", drawingMode: "2d", images: ["one.png"], createdAt: 1 },
+    { key: "test-style-3d", name: "Reference 3D", drawingMode: "3d", images: ["one.png"], createdAt: 2 },
+  ],
+  REQUEST_FAILURE: "request",
+  EMPTY_FAILURE: "empty",
+  DOWNLOAD_ERROR: "Reference download failed",
+  SUCCESS: "success",
+  ERROR: "error",
+  RETAIN_SELECTION: "The applied set must stay selected",
+  CLEAR_SELECTION: "The default option must allow clearing the selected set",
+  RETAIN_FAILED_SELECTION: "Failed downloads must retain the previously applied set",
+  PASSED: "Motion style picker passed: applied images and drawing mode, retained selection, clearing selection, persisted restore, download errors, empty sets, and manual changes.\n",
+} as const;

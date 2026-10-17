@@ -17,6 +17,8 @@ import type { MotionStudio } from "../../hooks/useMotionStudio.js";
 import type { Lang } from "../../lib/lang.js";
 import { getMotionErrorMessage } from "../../lib/motionUtils.js";
 import { motionSceneAiExecution } from "../../lib/motionSceneAi.js";
+import { normalizeMotionReferences } from "../../lib/motionReference.js";
+import { MOTION_STYLE_PRESET_NONE } from "../../constants/motionStylePresets.js";
 import { cn } from "../../lib/utils";
 import { MotionJobStatus, type MotionSceneAsset, type MotionSceneCustomItem, type MotionSceneLibraryList, type MotionSceneStyleSet, type MotionStoryJobState, type MotionStyleReference } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
@@ -41,6 +43,7 @@ const GROUP_CONFIG: Record<MotionSceneGroup, { icon: typeof Box; color: string; 
 };
 const ACTIVE = [MotionJobStatus.RENDERING, MotionJobStatus.QUEUED, MotionJobStatus.PREPARING];
 const textOf = (lang: Lang) => MOTION_SCENE_LIBRARY_TEXT[lang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+const sortNewestFirst = <T extends { createdAt?: number }>(items: T[]): T[] => _.orderBy(items, [(item) => item.createdAt || 0], [C.TEXT.DESC]);
 const groupOf = (item: MotionSceneAsset): MotionSceneGroup => motionSceneType(item.type)?.group || (item.kind === C.KIND_CHARACTER ? C.KIND_CHARACTER : item.kind === C.KIND_LOCATION ? C.KIND_LOCATION : (C.KIND_PROP as MotionSceneGroup));
 const typeLabel = (id: string | undefined, lang: Lang): string => {
   const type = motionSceneType(id);
@@ -79,24 +82,38 @@ const useSceneLibrary = () => {
 };
 const applyStyleSet = async (studio: MotionStudio, style: MotionSceneStyleSet, t: ReturnType<typeof textOf>): Promise<void> => {
   const result = await motionRequest<{ references: MotionStyleReference[] }>(C.URLS.STYLE + encodeURIComponent(style.key));
-  studio.patch({ styleReferences: result.references || [], drawingMode: style.drawingMode });
+  const references = normalizeMotionReferences(result.references);
+  if (!references.length) throw new Error(t.STYLE_EMPTY);
+  studio.patch({ styleReferences: references, styleSetKey: style.key, drawingMode: style.drawingMode, stylePreset: MOTION_STYLE_PRESET_NONE });
   toast.success(t.STYLE_APPLIED);
 };
 export const MotionStyleSetPicker: FC<{ studio: MotionStudio; currentLang: Lang; disabled?: boolean }> = ({ studio, currentLang, disabled }) => {
   const t = textOf(currentLang);
   const { data } = useSceneLibrary();
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const applying = pendingKey !== null;
   const sets = data.styles.filter((style) => style.images.length);
+  const selectedKey = sets.some((style) => style.key === studio.state.styleSetKey) ? studio.state.styleSetKey : MR.MOTION_TEXT_EMPTY;
   if (!sets.length) return null;
   return (
     <MotionSelectField
       label={t.STYLE_SET_LABEL}
       title={t.PICK_STYLE}
       className={cn(MR.MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}
-      value={MR.MOTION_TEXT_EMPTY}
-      disabled={disabled}
+      value={pendingKey ?? selectedKey}
+      disabled={disabled || applying}
+      aria-busy={applying}
       onChange={(event) => {
+        if (event.target.value === MR.MOTION_TEXT_EMPTY) {
+          studio.patch({ styleReferences: [], styleSetKey: MR.MOTION_TEXT_EMPTY });
+          return;
+        }
         const style = sets.find((entry) => entry.key === event.target.value);
-        if (style) void applyStyleSet(studio, style, t).catch((error) => toast.error(getMotionErrorMessage(error)));
+        if (!style) return;
+        setPendingKey(style.key);
+        void applyStyleSet(studio, style, t)
+          .catch((error) => toast.error(getMotionErrorMessage(error)))
+          .finally(() => setPendingKey(null));
       }}>
       <option value={MR.MOTION_TEXT_EMPTY}>{t.PICK_STYLE}</option>
       {sets.map((style) => (
@@ -161,11 +178,11 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
       const tagMatch = item.tags?.some((tag) => tag.toLowerCase().includes(normalizedQuery));
       return Boolean(nameMatch || descMatch || typeMatch || tagMatch);
     });
-    return _.orderBy(filtered, [(item) => item.type || MR.MOTION_TEXT_EMPTY, (item) => item.name]);
+    return sortNewestFirst(filtered);
   }, [groupItems, typeFilter, normalizedQuery, currentLang]);
   const visibleStyles = useMemo(() => {
-    if (!normalizedQuery) return data.styles;
-    return data.styles.filter((style) => style.name.toLowerCase().includes(normalizedQuery) || style.key.toLowerCase().includes(normalizedQuery));
+    const filtered = normalizedQuery ? data.styles.filter((style) => style.name.toLowerCase().includes(normalizedQuery) || style.key.toLowerCase().includes(normalizedQuery)) : data.styles;
+    return sortNewestFirst(filtered);
   }, [data.styles, normalizedQuery]);
   const totalItems = tab === STYLES_TAB ? visibleStyles.length : visible.length;
   const { page: currentPage, pageCount, start: pageStart, end: pageEnd } = getPagination(totalItems, page, C.PAGE_SIZE);

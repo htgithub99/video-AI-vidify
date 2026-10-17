@@ -74,6 +74,7 @@ const reportStoryError = (error: unknown): void => {
 interface PersistedState {
   voiceChannelId?: string;
   styleReferences: MotionStyleReference[];
+  styleSetKey?: string;
   characterMotion: boolean;
   rawText: string;
   source: MotionStorySource | null;
@@ -117,6 +118,7 @@ interface PersistedState {
 }
 const DEFAULTS: PersistedState = {
   styleReferences: [],
+  styleSetKey: MR.MOTION_TEXT_EMPTY,
   characterMotion: false,
   rawText: MR.MOTION_TEXT_EMPTY,
   source: null,
@@ -215,6 +217,7 @@ export function useMotionStudio() {
   const patch = useCallback((p: Partial<PersistedState>) => {
     const apply = (s: PersistedState): PersistedState => {
       const next = { ...s, ...p };
+      if (p.styleSetKey === undefined && (p.styleReferences !== undefined || (p.drawingMode !== undefined && p.drawingMode !== s.drawingMode))) next.styleSetKey = MR.MOTION_TEXT_EMPTY;
       if (p.rawText !== undefined && p.rawText !== s.rawText) next.source = null;
       const synced = withVoiceChannel(next, channelsRef.current);
       if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
