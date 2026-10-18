@@ -1,8 +1,10 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import { buriedSurfaceErrors, productionLocationErrors, productionStagingErrors } from "../src/lib/motionProductionDesign.ts";
 import { emptyGen, stageBeats } from "../src/server/services/motionGenService.ts";
 import { MOTION_GEN_CONFIG } from "../src/constants/motionGenPrompts.ts";
+import { validateGenStaging } from "../src/server/services/motionEngineService.ts";
 const room = { interior: true, stage: { center: [0, 0], size: [5, 5] }, camera: { pos: [0, 2, 4], target: [0, 1, 0] }, defs: { dial: [{ shape: VT.SPHERE }] }, nodes: [] as any[] };
 assert.ok(productionLocationErrors(room).some((e) => e.includes(VT.NEVER_PLACED)));
 assert.ok(productionLocationErrors(room).some((e) => e.includes(VT.NO_MOTIVATED_LIGHTS)));
@@ -64,4 +66,36 @@ const missing = await stageBeats([beat], script, analysis, gen, {
 assert.deepEqual(missing, [beat.id], VT.MISSING_SCENE_DATA_IS_REPORTED_FOR_RECOVERY);
 assert.equal(attempts, MOTION_GEN_CONFIG.STAGING_TRIES);
 assert.equal(gen.staging.invalid, undefined, VT.MISSING_SCENE_DATA_MUST_NOT_SILENTLY_BECOME_DEFAULT_STAGING);
+room.defs = { oil_lamp: [{ shape: VT.USE, ref: RT.LAMP_BODY }], lamp_body: [{ shape: VT.BOX, size: [0.2, 0.3, 0.2] }] } as any;
+const ctx = { locations: { room }, cast: [] };
+const source = { location: VT.ROOM, props: [{ shape: VT.GROUP, children: [{ shape: VT.USE, ref: RT.OIL_LAMP, pos: [1, 1, 0] }] }] };
+const checked = validateGenStaging(source, ctx);
+assert.deepEqual(checked.errors, []);
+assert.equal(checked.value.props[0].children[0].ref, RT.OIL_LAMP);
+assert.ok(validateGenStaging({ location: VT.ROOM, props: [{ shape: VT.USE, ref: RT.MISSING_LAMP }] }, ctx).errors.some((error) => error.includes(RT.NOT_IN_DEFS)));
+assert.deepEqual(Object.keys(room.defs), [RT.OIL_LAMP, RT.LAMP_BODY], RT.VALIDATION_MUST_NOT_MUTATE_THE_LOCATION);
+for (const [input, output] of [
+  [undefined, VT.POINT],
+  [RT.POINTLIGHT, VT.POINT],
+  [RT.SPOT_LIGHT, RT.SPOT],
+  [RT.DIRECTIONALLIGHT, RT.SUN],
+  [RT.HEMISPHERE, RT.HEMI],
+  [RT.AMBIENTLIGHT, VT.AMBIENT],
+]) {
+  const result = validateGenStaging({ location: VT.ROOM, props: [{ shape: VT.LIGHT, type: input }] }, ctx);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.value.props[0].type, output);
+  assert.equal(result.warnings?.length, 1, RT.A_NORMALIZED_LIGHT_REMAINS_VISIBLE_AS_A_WARNING);
+}
+assert.ok(validateGenStaging({ location: VT.ROOM, props: [{ shape: VT.LIGHT, type: RT.UNSUPPORTED_LASER }] }, ctx).errors.length, RT.UNSUPPORTED_LIGHTS_MUST_STILL_BE_REJECTED);
+attempts = 0;
+await stageBeats([beat], script, analysis, gen, {
+  log: (line: string) => logs.push(line),
+  ai: async () => {
+    attempts++;
+    return { beats: [{ id: beat.id, ...source, props: [...source.props, { shape: VT.LIGHT, type: RT.POINTLIGHT }] }] };
+  },
+} as any);
+assert.equal(attempts, 1, RT.KNOWN_REFS_AND_RECOVERABLE_LIGHTS_MUST_NOT_TRIGGER_ANOTHER_AI_REQUEST);
+assert.ok(gen.staging.invalid);
 process.stdout.write(VT.SCENE_CONTRACT_PASSED_STRUCTURAL_DIAGNOSTICS_NESTED_INSTANCES_ADVISORY_P + VT.EMPTY);

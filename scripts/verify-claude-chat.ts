@@ -1,3 +1,4 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { CLAUDE_VERIFICATION_TEXTS as CT } from "./claudeVerificationTexts.js";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -51,6 +52,8 @@ context.newPage = async () => {
   return page;
 };
 (globalThis as any).__claudeFixture = { context, account: { email: CT.FIXTURE_EXAMPLE_TEST } };
+const modelSelections: (AiPlanningChatModel | undefined)[] = [];
+(globalThis as any).__claudeModelSelections = modelSelections;
 try {
   const bundle = await build({
     entryPoints: [CT.SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS],
@@ -64,9 +67,14 @@ try {
       {
         name: CT.ISOLATED_CLAUDE_BROWSER,
         setup(builder) {
-          builder.onResolve({ filter: /imageGeneratorService\.js$/ }, () => ({ path: CT.FIXTURE_BROWSER, namespace: CT.FIXTURE }));
-          builder.onLoad({ filter: /.*/, namespace: CT.FIXTURE }, () => ({ contents: CT.BROWSER_SERVICE_FIXTURE, loader: CT.JS }));
-          builder.onLoad({ filter: /cinematicConstants\.ts$/ }, async (args) => {
+          builder.onLoad({ filter: RT.PATTERN_CLAUDEMODELSERVICE_TS }, async (args) => ({
+            contents: (await readFile(args.path, CT.UTF8)).replace(RT.EXPORT_CONST_SELECTCLAUDECHATMODEL, RT.CONST_APPLYCLAUDECHATMODEL) + RT.EXPORT_CONST_SELECTCLAUDECHATMODEL_ASYNC_ARGS_PARAMETERS_TYPEOF_APPLYC,
+            loader: CT.TS,
+            resolveDir: path.dirname(args.path),
+          }));
+          builder.onResolve({ filter: RT.PATTERN_IMAGEGENERATORSERVICE_JS }, () => ({ path: CT.FIXTURE_BROWSER, namespace: CT.FIXTURE }));
+          builder.onLoad({ filter: RT.PATTERN_EMPTY, namespace: CT.FIXTURE }, () => ({ contents: CT.BROWSER_SERVICE_FIXTURE, loader: CT.JS }));
+          builder.onLoad({ filter: RT.PATTERN_CINEMATICCONSTANTS_TS }, async (args) => {
             let contents = await readFile(args.path, CT.UTF8);
             const timing = {
               PAGE_READY_TIMEOUT_MS: 500,
@@ -92,8 +100,8 @@ try {
             }
             return { contents, loader: CT.TS, resolveDir: path.dirname(args.path) };
           });
-          builder.onResolve({ filter: /musicDiagnosticService\.js$/ }, () => ({ path: CT.FIXTURE_DIAGNOSTICS, namespace: CT.DIAGNOSTICS }));
-          builder.onLoad({ filter: /.*/, namespace: CT.DIAGNOSTICS }, () => ({ contents: CT.DIAGNOSTICS_SERVICE_FIXTURE, loader: CT.JS }));
+          builder.onResolve({ filter: RT.PATTERN_MUSICDIAGNOSTICSERVICE_JS }, () => ({ path: CT.FIXTURE_DIAGNOSTICS, namespace: CT.DIAGNOSTICS }));
+          builder.onLoad({ filter: RT.PATTERN_EMPTY, namespace: CT.DIAGNOSTICS }, () => ({ contents: CT.DIAGNOSTICS_SERVICE_FIXTURE, loader: CT.JS }));
         },
       },
     ],
@@ -105,15 +113,19 @@ try {
     const service = await import(pathToFileURL(workspaceBundle).href + CT.FORMAT_RUN(Date.now()));
     const request = (projectId: string, requestId: string, chromeHeadless = true) => ({ provider, model: AiPlanningChatModel.ClaudeAuto, projectId, chromeHeadless, requestId, artifactType: CT.CLAUDE_TEST, expectedSceneIds: [CT.SCENE_1], prompt: CT.FORMAT_WRITE_THE_SCENE_REQUEST_ID(requestId) });
     await service.prepareChatPlanningRoom(request(CT.PROJECT_A, CT.FIRST));
+    assert.equal(modelSelections.length, 0, RT.WARMING_A_ROOM_MUST_NOT_SELECT_A_MODEL_BEFORE_GENERATION_SELECTS_IT);
     assert.equal(pages.length, 1);
     assert.equal(navigations[0], CT.HTTPS_CLAUDE_AI_NEW);
     const first = await service.generatePlanningWithChatUi(request(CT.PROJECT_A, CT.FIRST));
+    assert.deepEqual(modelSelections, [AiPlanningChatModel.ClaudeAuto], RT.PREPARE_THEN_SEND_MUST_SELECT_THE_REQUESTED_MODEL_ONLY_ONCE);
     assert.equal(JSON.parse(first.text).requestId, CT.FIRST);
     assert.equal(first.provider, provider);
     const second = await service.generatePlanningWithChatUi(request(CT.PROJECT_A, CT.SECOND));
+    assert.equal(modelSelections.length, 2, RT.EACH_NEW_PROMPT_MUST_STILL_CHECK_THE_REQUESTED_MODEL);
     assert.equal(JSON.parse(second.text).requestId, CT.SECOND, CT.DO_NOT_REUSE_AN_OLD_RESPONSE);
     assert.equal(pages.length, 1, CT.REUSE_THE_CURRENT_PROJECT_ROOM);
     const third = await service.generatePlanningWithChatUi(request(CT.PROJECT_B, CT.THIRD));
+    assert.equal(modelSelections.length, 3, RT.A_NEW_ROOM_MUST_ALSO_SELECT_THE_REQUESTED_MODEL_ONCE);
     assert.equal(JSON.parse(third.text).requestId, CT.THIRD);
     assert.equal(pages.length, 2, CT.PROJECTS_MUST_GET_DISTINCT_ROOMS);
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.PROJECT_A });
@@ -123,17 +135,17 @@ try {
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.PROJECT_B });
     assert.equal(await service.closeChatBrowserIfIdle(), true);
     mode = CT.LOGIN;
-    await assert.rejects(service.prepareChatPlanningRoom(request(CT.LOGIN, CT.LOGIN)), /claude_login_required/);
+    await assert.rejects(service.prepareChatPlanningRoom(request(CT.LOGIN, CT.LOGIN)), RT.PATTERN_CLAUDE_LOGIN_REQUIRED);
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.LOGIN });
     mode = CT.VISIBLE_LOGIN;
     await service.prepareChatPlanningRoom(request(CT.VISIBLE, CT.VISIBLE, false));
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.VISIBLE });
     mode = CT.LIMITED;
-    await assert.rejects(service.generatePlanningWithChatUi(request(CT.LIMITED, CT.LIMITED)), /Claude đã hết lượt/);
+    await assert.rejects(service.generatePlanningWithChatUi(request(CT.LIMITED, CT.LIMITED)), RT.PATTERN_CLAUDE_DA_HET_LUOT);
     assert.equal(await pages.at(-1)!.evaluate(() => (window as any).sent), 0);
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.LIMITED });
     mode = CT.INVALID_JSON;
-    await assert.rejects(service.generatePlanningWithChatUi({ ...request(CT.INVALID_JSON, CT.INVALID_JSON), artifactType: undefined, requestId: undefined, expectedSceneIds: [] }), /chat_planning_invalid_json_response/);
+    await assert.rejects(service.generatePlanningWithChatUi({ ...request(CT.INVALID_JSON, CT.INVALID_JSON), artifactType: undefined, requestId: undefined, expectedSceneIds: [] }), RT.PATTERN_CHAT_PLANNING_INVALID_JSON_RESPONSE);
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.INVALID_JSON });
     mode = CT.CODE_ARRAY;
     const array = await service.generatePlanningWithChatUi({ ...request(CT.CODE_ARRAY, CT.CODE_ARRAY), artifactType: undefined, requestId: undefined, expectedSceneIds: [] });
@@ -187,7 +199,7 @@ try {
     await service.closeChatPlanningRoomsForProject({ provider, projectId: CT.DOCUMENT });
     for (const failureMode of [CT.UPLOAD_FAILED, CT.MISSING_PREVIEW, CT.WRONG_FILENAME] as const) {
       mode = failureMode;
-      await assert.rejects(service.generatePlanningWithChatUi({ ...request(failureMode, failureMode), attachments: [{ name: CT.NOTES_TXT, mimeType: CT.TEXT_PLAIN, buffer: Buffer.from(CT.UPLOAD_FAILURE_TEST) }] }), /claude_attachment(?:s_not_ready|_upload_failed)/);
+      await assert.rejects(service.generatePlanningWithChatUi({ ...request(failureMode, failureMode), attachments: [{ name: CT.NOTES_TXT, mimeType: CT.TEXT_PLAIN, buffer: Buffer.from(CT.UPLOAD_FAILURE_TEST) }] }), RT.PATTERN_CLAUDE_ATTACHMENT_S_NOT_READY_UPLOAD_FAILED);
       assert.equal(await pages.at(-1)!.evaluate(() => (window as any).sent), 0, CT.FORMAT_MUST_BLOCK_SENDING(failureMode));
       await service.closeChatPlanningRoomsForProject({ provider, projectId: failureMode });
     }
@@ -196,7 +208,7 @@ try {
     await service.prepareChatPlanningRoom(request(CT.UPLOAD_CANCEL, CT.UPLOAD_CANCEL));
     const uploadPage = pages.at(-1)!;
     const uploading = service.generatePlanningWithChatUi({ ...request(CT.UPLOAD_CANCEL, CT.UPLOAD_CANCEL), attachments: [{ name: CT.SAMPLE_PNG, mimeType: CT.IMAGE_PNG, buffer: png }], signal: uploadAbort.signal });
-    const uploadRejected = assert.rejects(uploading, /chat_planning_cancelled/);
+    const uploadRejected = assert.rejects(uploading, RT.PATTERN_CHAT_PLANNING_CANCELLED);
     await uploadPage.locator(CT.ROLE_PROGRESSBAR).waitFor({ state: CT.VISIBLE });
     const uploadClosed = uploadPage.waitForEvent(CT.CLOSE);
     uploadAbort.abort();
@@ -208,7 +220,7 @@ try {
     await service.prepareChatPlanningRoom(request(CT.CANCEL, CT.CANCEL));
     const cancelPage = pages.at(-1)!;
     const pending = service.generatePlanningWithChatUi({ ...request(CT.CANCEL, CT.CANCEL), signal: abort.signal });
-    const rejected = assert.rejects(pending, /chat_planning_cancelled/);
+    const rejected = assert.rejects(pending, RT.PATTERN_CHAT_PLANNING_CANCELLED);
     await cancelPage.waitForFunction(() => (window as any).sent === 1);
     const cancelClosed = cancelPage.waitForEvent(CT.CLOSE);
     abort.abort();
@@ -287,5 +299,6 @@ try {
   }
 } finally {
   delete (globalThis as any).__claudeFixture;
+  delete (globalThis as any).__claudeModelSelections;
   await browser.close();
 }

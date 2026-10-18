@@ -408,6 +408,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const note = _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
     if (req.body?.restart) delete script.gen;
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
+      ctx.progress(0, req.body?.autoVoice !== false ? MOTION_VOICE.PLANNING : MOTION_STORY_CONFIG.SCENES_PREPARING);
       const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec: mainExec, signal: ctx.signal, log: ctx.log }) : undefined;
       const voiceTiming = voicePlan
         ? measureMotionVoice(script, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, signal: ctx.signal, log: ctx.log })
@@ -429,7 +430,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         mainExec,
         signal: ctx.signal,
         log: ctx.log,
-        progress: ctx.progress,
+        progress: (value, stage) => ctx.progress(value * (req.body?.autoVoice !== false ? 0.85 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
         partial: (r) => r && ctx.partial(r),
         aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9),
         onlyBeats,
@@ -444,8 +445,8 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
       });
       if (voicePlan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, voicePlan.roles);
       if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
-        ctx.progress(0.95, MOTION_VOICE.GENERATING);
-        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.95 + (0.04 * done) / total, MOTION_VOICE.GENERATING) });
+        ctx.progress(0.85, MOTION_VOICE.GENERATING);
+        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.85 + (0.13 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)) });
         ctx.partial(result);
       }
       return result;
@@ -486,7 +487,7 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     const analysis = (req.body?.analysis as MotionStoryAnalysis) || null;
     const exec = aiExec(req.body?.aiExecution);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.VOICE, async (ctx) => {
-      const track = await buildMotionVoiceTrack(script, analysis, { exec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(done / total, MOTION_VOICE.GENERATING) });
+      const track = await buildMotionVoiceTrack(script, analysis, { exec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress((0.98 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)) });
       ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
       const measured = recordSpeechRate(script, track.totalSeconds);
       if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));

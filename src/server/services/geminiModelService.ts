@@ -62,9 +62,11 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
     if (!(await waitUntil(page, async () => baseLabel.test((await button.innerText()).trim()), signal))) throw unavailable();
     const option = optionFor(page, level.pattern);
     if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => available(option), signal))) throw unavailable();
-    if (!(await checked(option))) await option.click();
-    await closeMenus(page);
-    if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => checked(option), signal))) throw unavailable();
+    if (!(await checked(option))) {
+      await option.click();
+      await closeMenus(page);
+      if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => checked(option), signal))) throw unavailable();
+    }
     throwIfPlanningCancelled(signal);
   } catch (error) {
     throwIfPlanningCancelled(signal);

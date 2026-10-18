@@ -1,3 +1,4 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { GEMINI_VERIFICATION_TEXTS as T, GEMINI_VERIFICATION_FORMATS as F } from "./geminiVerificationTexts.ts";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -36,6 +37,16 @@ try {
   await resetPicker(T.READY, false, true);
   await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.LOW));
   assert.equal(await page.evaluate(() => (window as any).level), T.LOW, T.RECOGNIZE_THE_ALREADY_SELECTED_DA_CHON_THAP_MENU_ITEM);
+  await page.evaluate(
+    ({ RT }) => {
+      (window as any).pickerOpens = 0;
+      document.querySelector(RT.BUTTON_DATA_TEST_ID_BARD_MODE_MENU_BUTTON)!.addEventListener(RT.CLICK, () => (window as any).pickerOpens++, true);
+    },
+    { RT: { BUTTON_DATA_TEST_ID_BARD_MODE_MENU_BUTTON: RT.BUTTON_DATA_TEST_ID_BARD_MODE_MENU_BUTTON, CLICK: RT.CLICK } },
+  );
+  await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.LOW));
+  assert.equal(await page.evaluate(() => (window as any).pickerOpens), 1, RT.AN_ALREADY_SELECTED_THINKING_LEVEL_MUST_NOT_REOPEN_ITS_MENU_FOR_VERIFI);
+  assert.equal(await page.getByRole(T.MENU).count(), 0);
   for (const level of [T.HIGH, T.MEDIUM, T.LOW] as const) {
     await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, level));
     assert.equal(await page.evaluate(() => (window as any).level), level, T.VERIFY_A_SELECTION_AFTER_GEMINI_ADDS_ITS_SELECTED_ICON_ACCESSIBLE_LABEL);

@@ -175,7 +175,7 @@ import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionJob
 import { libraryMime } from "./motionAssetLibraryService.js";
 import { buildSfxTrack } from "./motionAudioService.js";
 import { MOTION_ASSET_BASE, buildMotionRenderHtml, resolveMotionAsset } from "./motionEngineService.js";
-import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory } from "./motionLibraryService.js";
+import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "./motionLibraryService.js";
 import { getFfmpegPath } from "./shortsPreprocessService.js";
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
@@ -601,7 +601,12 @@ export const startMotionRender = (spec: MotionSpec, options: MotionRenderOptions
 const publicJob = (job: MotionJobState & { controller?: AbortController }): MotionJobState => _.omit(job, [MOTION_TEXT_CONTROLLER]) as MotionJobState;
 export const getMotionJob = (id: string): MotionJobState | null => {
   const job = jobs.get(id);
-  return job ? publicJob(job) : null;
+  if (job && job.status !== MotionJobStatus.COMPLETED) return publicJob(job);
+  const result = listMotionResults().find((item) => item.id === id);
+  if (!result) return null;
+  if (job) return publicJob(job);
+  const frames = Math.round(result.durationSeconds * result.fps);
+  return { id, status: MotionJobStatus.COMPLETED, stage: MOTION_TEXT_DONE, progress: 1, framesDone: frames, framesTotal: frames, encoder: result.encoder, result, startedAt: Date.parse(result.createdAt) - result.renderSeconds * 1000, log: [] };
 };
 export const cancelMotionJob = (id?: string): boolean => {
   const targets = id ? _.compact([jobs.get(id)]) : [...jobs.values()];

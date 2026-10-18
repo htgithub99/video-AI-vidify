@@ -165,6 +165,10 @@ export const MOTION_SCENE_AI = {
   RETRY_DELAY_MS: 4000,
   BLOCKED_WAIT_MS: 90 * 1000,
 } as const;
+export const MOTION_AI_SETTINGS_TEXT = {
+  vi: { MAIN_TITLE: "AI hỗ trợ nội dung", MAIN_NOTE: "Phân tích nội dung, viết kịch bản và dàn dựng phân cảnh.", DRAW_TITLE: "AI vẽ cảnh chính", DRAW_NOTE: "Chọn AI vẽ nhân vật và bối cảnh. AI phụ vẫn dùng Claude khi AI chính lỗi đủ lượt." },
+  en: { MAIN_TITLE: "Content AI", MAIN_NOTE: "Analyze content, write scripts and stage scenes.", DRAW_TITLE: "Primary scene drawing AI", DRAW_NOTE: "Choose the AI that draws characters and locations. The secondary AI remains Claude after the primary exhausts its attempts." },
+} as const;
 export const MOTION_DRAW_ROUTING_LOGS = {
   ATTEMPT: (task: string, provider: string, turn: number, turns: number, total: number): string => `Vẽ ${task}: gửi ${provider} lượt ${turn}/${turns} (tổng ${total})`,
   UNUSABLE: (task: string, provider: string, reason: string): string => `Vẽ ${task}: ${provider} chưa trả dữ liệu dùng được (${reason}) – gửi lại yêu cầu gốc, không kèm nhận xét`,

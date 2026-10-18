@@ -751,7 +751,7 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR);
   }
 };
-const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string): Promise<string> => {
+export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string): Promise<string> => {
   const startedAt = Date.now();
   const absoluteDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS;
   let activityDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS;
@@ -842,10 +842,14 @@ const waitForStableResponse = async (page: Page, responseSelector: string, busyS
     lastBusyState = isBusy;
     lastIdentityMatch = belongsToCurrentRequest;
     const isCompleteJson = !_.isUndefined(parsedLatest);
-    if (_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) && !isBusy) {
+    const isRefusal = !isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test(latestText);
+    if ((_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) || isRefusal) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
       if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
+        if (isRefusal && !_.isEmpty(responseCandidates)) {
+          throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: false, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
+        }
         const mayUseUnmarkedJsonFallback = _.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson;
         if (isCompleteJson && (belongsToCurrentRequest || mayUseUnmarkedJsonFallback)) {
           if (!belongsToCurrentRequest) {
@@ -1542,21 +1546,18 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
     await ensureDeepSeekReady(room, request);
-    await selectDeepSeekChatModel(room, request.model, request.signal);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ClaudeChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
     await ensureClaudeReady(room, request);
-    await selectClaudeChatModel(room, request.model, request.signal);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
     await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
-    await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
@@ -1571,7 +1572,6 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
     try {
       const room = await createRoom(browser.context, EXTERNAL_URLS.GROK_CHAT, grokRooms, getPlanningRoomKey(request), request.signal);
       await ensureGrokReady(room, request);
-      await selectChatModel(room, request.model, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_MODEL_BUTTON_SELECTOR);
     } finally {
       releaseBootstrap();
     }

@@ -1,11 +1,15 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import { runMotionDrawTask } from "../src/server/services/motionDrawRoutingService.ts";
 import { designBible, emptyGen } from "../src/server/services/motionGenService.ts";
 import type { MotionStoryAnalysis } from "../src/types/motionVideo.ts";
+import { encodeGeminiChatModel } from "../src/constants/geminiChatModels.ts";
+import { encodeClaudeChatModel } from "../src/constants/claudeChatModels.ts";
+import { AiPlanningChatModel } from "../src/types.ts";
 const CHATGPT = VT.CHATGPT_UI;
 const CLAUDE = VT.CLAUDE_CHAT;
-const base = { provider: VT.GEMINI_CHAT, model: VT.GEMINI_FLASH, mode: VT.API_ONLY, chromeHeadless: true };
+const base = { provider: CHATGPT, model: AiPlanningChatModel.ChatGptAuto, mode: VT.API_ONLY, chromeHeadless: true };
 const quiet = () => {};
 const route = async (results: (boolean | Error)[], maxAttempts?: number) => {
   const sent: string[] = [];
@@ -58,6 +62,36 @@ await assert.rejects(
   }),
 );
 assert.equal(calls, 1, VT.CANCEL_STOPS_THE_CYCLE_INCLUDING_THE_WAIT_BEFORE_THE_NEXT_SEND);
+const selectedModel = encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, VT.HIGH);
+const selected: { provider?: string; model?: string }[] = [];
+await runMotionDrawTask({
+  task: RT.CONFIGURED_DRAWING,
+  exec: { provider: VT.GEMINI_CHAT, model: selectedModel, chromeHeadless: false },
+  log: quiet,
+  retryDelayMs: 0,
+  attempt: async (exec) => {
+    selected.push(exec);
+    assert.equal(exec.mode, VT.ROOM_ONLY);
+    assert.equal(exec.chromeHeadless, false);
+    assert.equal(exec.strictProvider, true);
+    return selected.length === 4 ? VT.OK : undefined;
+  },
+});
+assert.deepEqual(
+  selected.map(({ provider, model }) => ({ provider, model })),
+  [...Array(3).fill({ provider: VT.GEMINI_CHAT, model: selectedModel }), { provider: CLAUDE, model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, VT.MEDIUM) }],
+  RT.USE_THE_SELECTED_PRIMARY_MODEL_AND_THINKING_LEVEL_THEN_THE_UNCHANGED_C,
+);
+await runMotionDrawTask({
+  task: RT.LEGACY_DEFAULT,
+  exec: {},
+  log: quiet,
+  attempt: async (exec) => {
+    assert.equal(exec.provider, CHATGPT);
+    assert.equal(exec.model, AiPlanningChatModel.ChatGptAuto);
+    return true;
+  },
+});
 const analysis = {
   title: VT.DINNER,
   logline: VT.DINNER_IN_A_DARK_ROOM,

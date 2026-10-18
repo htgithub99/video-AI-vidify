@@ -112,7 +112,7 @@ import { estimateBeatSeconds, sceneShots } from "./motionDirectorService.js";
 import { validateGenLocation, validateGenCharacter, validateGenStaging } from "./motionEngineService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { openStillSession, type MotionStillSession } from "./motionRenderService.js";
-import { mapMotionAiPool, releaseMotionAiSession, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { mapMotionAiPool, releaseMotionAiSession, resolveMotionReferenceStyle, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
 import { runMotionDrawTask } from "./motionDrawRoutingService.js";
 import { MOTION_POSES } from "../../constants/motionPoses.js";
 import { motionCastNeeds, motionCastSummary, motionPartOutline, motionPoseNamesIn, motionProceduralPose, motionSanitizePoses, type MotionCastNeeds } from "../../lib/motionPoses.js";
@@ -189,7 +189,7 @@ export const emptyGen = (): MotionGenState => ({ style: {}, cast: {}, locations:
 export const prepareMotionGen = (previous: MotionGenState | undefined, analysis: MotionStoryAnalysis, drawingMode: "2d" | "3d" = MR.MOTION_TEXT_3D, referenceKey: string = MR.MOTION_TEXT_EMPTY): MotionGenState => {
   const characterMode = MR.MOTION_TEXT_DRAWN;
   const signature = createHash(MR.MOTION_TEXT_SHA256)
-    .update(JSON.stringify({ previewVersion: 5, referenceKey, referenceStyle: analysis.referenceStyle, blueprint: analysis.videoDna || analysis.creativeBlueprint, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look, characterMode, drawingMode }))
+    .update(JSON.stringify({ previewVersion: 5, referenceDrawingVersion: analysis.referenceStyle?.kit ? 1 : undefined, referenceKey, referenceStyle: analysis.referenceStyle, blueprint: analysis.videoDna || analysis.creativeBlueprint, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look, characterMode, drawingMode }))
     .digest(MR.MOTION_TEXT_HEX);
   const compatible = previous?.creativeSignature === signature;
   return { ...emptyGen(), ...(compatible ? cloneJson(previous || {}) : {}), ...(previous?.voiceCast ? { voiceCast: { ...previous.voiceCast } } : {}), creativeSignature: signature, referenceKey, characterMode, drawingMode, videoDna: analysis.videoDna };
@@ -216,13 +216,18 @@ const talkExec = (o: GenOptions): MotionAiExecution => o.mainExec || o.exec;
 const storyLine = (a: MotionStoryAnalysis): string => MOTION_TEMPLATE_SYMBOL_50(String(a.title), String(a.logline));
 const castLines = (a: MotionStoryAnalysis): string => _.map(a.cast, (c) => MOTION_TEMPLATE_LOOK(String(c.key), String(c.gender || MOTION_TEXT_MALE), String(c.name), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MOTION_TEXT_SYMBOL_25))).join(MOTION_TEXT_SYMBOL_27);
 const kitRenderStyle = (analysis: MotionStoryAnalysis): Partial<MotionGenState["style"]> => {
+  if (!analysis.referenceStyle?.kit) return {};
   const render = analysis.referenceStyle?.kit?.render || {},
     outline = _.toLower(render.outline || MR.MOTION_TEXT_EMPTY),
     tones = parseInt(String(render.shadingTones || MR.MOTION_TEXT_EMPTY), 10);
   return {
-    ...(MP.SILHOUETTE.test(outline) ? { outlineSilhouette: true } : {}),
-    ...(tones >= 2 || MP.FACE_SHADING.test(_.toLower(render.mode || MR.MOTION_TEXT_EMPTY)) ? { faceShading: true } : {}),
+    outlineSilhouette: MP.SILHOUETTE.test(outline),
+    faceShading: tones >= 2 || MP.FACE_SHADING.test(_.toLower(render.mode || MR.MOTION_TEXT_EMPTY)),
   };
+};
+const applyReferenceRenderStyle = (analysis: MotionStoryAnalysis, gen: MotionGenState): void => {
+  if (!analysis.referenceStyle) return;
+  gen.style = { ...gen.style, grade: MOTION_TEXT_NEUTRAL, notes: _.truncate(analysis.referenceStyle.description, { length: 200 }), palette: [...(analysis.referenceStyle.palette || [])], outlineColor: analysis.referenceStyle.outlineColor, outlineWidth: analysis.referenceStyle.outlineWidth, ...kitRenderStyle(analysis) };
 };
 const LEGACY_CHARACTER_KEYS = [MR.MOTION_TEXT_DRAWNBODY, MR.MOTION_TEXT_SOCKET, MR.MOTION_TEXT_LAYERS, MR.MOTION_TEXT_BUILD, MR.MOTION_TEXT_BODY];
 const characterNodes = (nodes: any[], materials: Record<string, any>): any[] =>
@@ -234,6 +239,7 @@ const characterNodes = (nodes: any[], materials: Record<string, any>): any[] =>
     ...(node?.node ? { node: characterNodes([node.node], materials)[0] } : {}),
   }));
 export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions, needs: Record<string, MotionCastNeeds> = {}): Promise<void> => {
+  applyReferenceRenderStyle(analysis, gen);
   o.log(MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH);
   const preamble = MR.MOTION_TEMPLATE_SYMBOL_147(o.preamble || MOTION_GEN_PREAMBLE, planningPrompt(analysis), MOTION_PRODUCTION_BRIEF);
   let styled = false;
@@ -253,7 +259,13 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
           const others = _.filter(analysis.cast, (other) => !_.includes(keys, other.key));
           const wanted = _.compact(_.map(open, (c) => (needs[c.key] ? MOTION_GEN_POSE_PROMPTS.NEEDS(c.key, needs[c.key]) : undefined))).join(MOTION_TEXT_SYMBOL_27);
           const castText = (open.length > 1 ? MOTION_GEN_CONFIG.BATCH_CAST : MR.MOTION_TEXT_EMPTY) + castLines({ ...analysis, cast: open }) + (wanted ? MOTION_TEXT_SYMBOL_27 + wanted : MR.MOTION_TEXT_EMPTY) + (others.length ? MOTION_TEXT_SYMBOL_27 + MOTION_GEN_CONFIG.OTHER_CAST + castLines({ ...analysis, cast: others }) : MR.MOTION_TEXT_EMPTY);
-          const raw = await (o.ai || runMotionAi)(MOTION_GEN_BIBLE_PROMPT({ preamble, story: storyLine(analysis), era: analysis.era || MR.MOTION_TEXT_EMPTY, look: analysis.look, cast: castText }) + MOTION_TEXT_SYMBOL_27 + POSE_RULE + MOTION_TEXT_SYMBOL_27 + MOTION_SCENE_CATALOG_PROMPT.CHARACTER_SCHEMA, MOTION_GEN_CONFIG.ARTIFACT_BIBLE, exec, o.signal, o.log);
+          const raw = await (o.ai || runMotionAi)(
+            [MOTION_GEN_BIBLE_PROMPT({ preamble, story: storyLine(analysis), era: analysis.era || MR.MOTION_TEXT_EMPTY, look: analysis.look, cast: castText }), POSE_RULE, MOTION_SCENE_CATALOG_PROMPT.CHARACTER_SCHEMA, MOTION_REFERENCE_PROMPTS.DRAW_STYLE(analysis.referenceStyle, MR.MOTION_TEXT_CHARACTER, gen.drawingMode)].filter(Boolean).join(MOTION_TEXT_SYMBOL_27),
+            MOTION_GEN_CONFIG.ARTIFACT_BIBLE,
+            exec,
+            o.signal,
+            o.log,
+          );
           if (!raw) return undefined;
           const failed: typeof open = [];
           for (const c of open) {
@@ -368,7 +380,8 @@ export const designLocation = async (place: MotionPlace, script: MotionStoryScri
   const productionBrief = MR.MOTION_TEMPLATE_SYMBOL_156(planningPrompt(analysis), productionBriefFor(place, uses));
   const style = MOTION_TEMPLATE_FILM_LOOK_GRADE(String(analysis.look), String(gen.style.notes || MR.MOTION_TEXT_EMPTY), String(gen.style.grade || MOTION_TEXT_NEUTRAL));
   const styleKey = gen.assetStyleKey || MR.MOTION_TEXT_EMPTY;
-  const library = _.compact([libraryFor(place, uses, analysis.era || MR.MOTION_TEXT_EMPTY), styleKey ? scenePropCatalog(styleKey, [place.name, place.description, uses].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE)) : MR.MOTION_TEXT_EMPTY, MOTION_SCENE_LIBRARY_PROMPT.LOCATION_DEFS]).join(MOTION_TEXT_SYMBOL_27);
+  const useLibrary = analysis.libraryMode !== MOTION_SCENE_LIBRARY_MODES.OFF;
+  const library = _.compact([useLibrary ? libraryFor(place, uses, analysis.era || MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEXT_EMPTY, useLibrary && styleKey ? scenePropCatalog(styleKey, [place.name, place.description, uses].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE)) : MR.MOTION_TEXT_EMPTY, MOTION_SCENE_LIBRARY_PROMPT.LOCATION_DEFS]).join(MOTION_TEXT_SYMBOL_27);
   if (gen.assetSources) delete gen.assetSources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key];
   const previous = o.note && gen.locations[place.key] ? gen.locations[place.key] : null;
   const prompt = previous
@@ -405,9 +418,9 @@ export const designLocation = async (place: MotionPlace, script: MotionStoryScri
     attempt: async (exec) => {
       aborted(o);
       o.log(MOTION_TEMPLATE_AI_VE_BOI_CANH(String(place.name)));
-      const res = await (o.ai || runMotionAi)(prompt, MOTION_GEN_CONFIG.ARTIFACT_LOCATION, exec, o.signal, o.log);
+      const res = await (o.ai || runMotionAi)([prompt, MOTION_REFERENCE_PROMPTS.DRAW_STYLE(analysis.referenceStyle, MR.MOTION_TEXT_LOCATION, gen.drawingMode)].filter(Boolean).join(MOTION_TEXT_SYMBOL_27), MOTION_GEN_CONFIG.ARTIFACT_LOCATION, exec, o.signal, o.log);
       const raw = res?.location || res;
-      const props = styleKey ? attachSceneProps(raw, styleKey) : [];
+      const props = useLibrary && styleKey ? attachSceneProps(raw, styleKey) : [];
       if (props.length) o.log(MOTION_SCENE_LIBRARY.LOGS.PROPS_ADDED(props.join(MOTION_SCENE_LIBRARY.TEXT.LIST)));
       const v = validateGenLocation(raw);
       const suggestions = productionLocationErrors(v.value);
@@ -584,6 +597,7 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
       raw = await (o.ai || runMotionAi)(prompt, MOTION_GEN_CONFIG.ARTIFACT_STAGING, talkExec(o), o.signal, o.log);
     } catch (e) {
       if (o.signal?.aborted) throw e;
+      for (const beat of todo) reasons[beat.id] = getMotionErrorSummary(e);
       o.log(MOTION_TEMPLATE_DAN_DUNG_LOI(String(getMotionErrorSummary(e))));
       continue;
     }
@@ -609,7 +623,7 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
       }
       const v = validateGenStaging(prepared, ctx);
       const serious = [..._.filter(v.errors, (e) => !MP.UNKNOWN_ACTION.test(e)), ...(Array.isArray(b.cast) ? (v.value.actors || []).filter((actor: any) => !b.cast!.includes(actor.cast)).map((actor: any) => MR.MOTION_TEMPLATE_ACTOR_IS_NOT_REQUESTED_BY_THIS_BEAT_USE_ONLY_BEAT_CAST_AN_EMPTY_C(actor.cast)) : [])];
-      const suggestions = [...productionStagingErrors(v.value, gen.locations[input.location]), ...scenePlanStagingErrors(b.scenePlan, v.value, gen.locations[input.location])];
+      const suggestions = [...(v.warnings || []), ...productionStagingErrors(v.value, gen.locations[input.location]), ...scenePlanStagingErrors(b.scenePlan, v.value, gen.locations[input.location])];
       if (suggestions.length) o.log(MOTION_QA_MESSAGES.ADVISORY(suggestions));
       if (serious.length) {
         failed.push(b);
@@ -649,14 +663,15 @@ export const previewBeats = async (beats: MotionBeat[], script: MotionStoryScrip
         script.beats.findIndex((beat) => beat.id === b.id),
       );
       const [aw, ah] = (o.aspect || MR.MOTION_TEXT_16_9).split(MR.MOTION_TEXT_SYMBOL_39).map(Number);
-      const width = Math.round(MOTION_GEN_CONFIG.PREVIEW_WIDTH * Math.min(1, aw / ah));
+      const width = Math.round((o.skipPreviews ? MOTION_GEN_CONFIG.THUMBNAIL_WIDTH : MOTION_GEN_CONFIG.PREVIEW_WIDTH) * Math.min(1, aw / ah));
       const height = Math.round((width * ah) / aw);
-      const r = await session.render(spec, picks, dir, { width, height, quality: MOTION_TEXT_DRAFT, label: true });
+      const r = await session.render(spec, o.skipPreviews ? picks.slice(1, 2) : picks, dir, { width, height, quality: MOTION_TEXT_DRAFT, label: true });
       gen.previews[b.id] = { ...(gen.previews[b.id] || {}), file: genPreviewRel(r[0].file), files: r.map((frame) => genPreviewRel(frame.file)), issues: _.uniq(r.flatMap((frame) => frame.issues)), score: undefined, at: new Date().toISOString() };
     } catch (e) {
       if (o.signal?.aborted) throw e;
       gen.previews[b.id] = { ...(gen.previews[b.id] || {}), file: undefined, files: [], score: 0, issues: [MOTION_TEMPLATE_RENDER_ERROR(String(getMotionErrorSummary(e)))] };
     }
+    o.partial?.(null);
   }
 };
 const aiGroupSize = (count: number): number => _.clamp(Math.ceil(count / MOTION_STORY_CONFIG.AI_PARALLEL), MOTION_GEN_CONFIG.MIN_BEATS_PER_AI_CALL, MOTION_GEN_CONFIG.BEATS_PER_STAGING_CALL);
@@ -983,6 +998,10 @@ const fillSceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o:
   return { ...analysis, cast: _.map(analysis.cast, (c) => _.find(filled.cast, { key: c.key }) || c), places: _.map(analysis.places, (p) => _.find(filled.places, { key: p.key }) || p) };
 };
 const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o: GenOptions): void => {
+  if (analysis.libraryMode === MOTION_SCENE_LIBRARY_MODES.OFF) {
+    applyReferenceRenderStyle(analysis, gen);
+    return;
+  }
   const styleKey = gen.assetStyleKey || MR.MOTION_TEXT_EMPTY;
   const story = motionStoryTraits(analysis);
   const sources = (gen.assetSources ||= {});
@@ -994,6 +1013,7 @@ const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o
       o.log(MOTION_SCENE_LIBRARY.LOGS.REUSED_STYLE);
     }
   }
+  applyReferenceRenderStyle(analysis, gen);
   if (o.restyle) _.forEach(analysis.cast, (c) => delete sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key]);
   else
     for (const c of analysis.cast) {
@@ -1106,6 +1126,9 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
 };
 export const buildScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, o: GenOptions): Promise<MotionStoryScript> => {
   if (o.styleReferences?.length && !o.referenceKey) return buildScenes(script, analysis, { ...o, referenceKey: createHash(MR.MOTION_TEXT_SHA256).update(JSON.stringify(o.styleReferences)).digest(MR.MOTION_TEXT_HEX) });
+  if (o.styleReferences?.length) {
+    analysis = { ...analysis, referenceStyle: await resolveMotionReferenceStyle(o.styleReferences, { exec: talkExec(o), signal: o.signal, log: o.log, ai: o.ai }) };
+  }
   analysis = bindVideoDnaSettings({ ...analysis, characterMotion: o.characterMotion === true }, { drawingMode: o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, characterMode: MR.MOTION_TEXT_DRAWN, aspect: o.aspect || MR.MOTION_TEXT_16_9 });
   const gen = prepareMotionGen(script.gen, analysis, o.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, o.referenceKey);
   if (gen.characterMotion !== (o.characterMotion === true)) {
@@ -1208,6 +1231,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     const groups = longVideo && !focusBeats ? _.chunk(keyList, MOTION_GEN_CONFIG.KEY_BEATS_PER_STAGING_CALL) : _.flatMap(_.values(_.groupBy(keyList, MOTION_TEXT_CHAPTERID)), (list) => _.chunk(list, aiGroupSize(keyList.length)));
     const unstaged: string[] = [];
     let g = 0;
+    if (groups.length) progress(0.5, MOTION_TEXT_STAGING);
     await mapMotionAiPool(
       groups,
       async (group) => {
@@ -1218,7 +1242,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
       },
       poolLimit(talkExec(o)),
     );
-    if (unstaged.length) o.log(MOTION_GEN_CONFIG.LOG_AUTO_FALLBACK(unstaged.length));
+    if (unstaged.length) o.log(MOTION_GEN_CONFIG.LOG_AUTO_FALLBACK(unstaged.length, unstaged));
     autoStageBeats([...autoList, ..._.filter(keyList, (b) => !gen.staging[b.id])], script, analysis, gen, o);
     emit();
     progress(0.76, MOTION_TEXT_REVIEW);
@@ -1226,18 +1250,19 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     emit();
     await releaseMotionAiSession(o.log);
     progress(0.8, MOTION_TEXT_PREVIEW);
+    const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
+    const previewList = [...stageList, ...stale];
+    const previewOptions = { ...o, partial: () => emit() };
     if (o.skipPreviews) o.log(MOTION_GEN_CONFIG.LOG_PREVIEWS_SKIPPED);
-    else {
-      const stale = focusBeats ? [] : _.filter(sceneBeats, (b) => placeOk(b) && !!gen.staging[b.id] && !_.includes(stageList, b) && needsMotionPreview(gen.previews[b.id]));
-      const previewList = [...stageList, ...stale];
-      o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(String(previewList.length)));
-      await previewBeats(previewList, script, gen, session, o);
-      emit();
+    else o.log(MOTION_TEMPLATE_DUNG_ANH_XEM_TRUOC_CANH(String(previewList.length)));
+    await previewBeats(previewList, script, gen, session, previewOptions);
+    emit();
+    if (!o.skipPreviews) {
       for (let attempt = 1; attempt <= MOTION_GEN_CONFIG.AUTO_RESTAGE_ATTEMPTS; attempt++) {
         const broken = previewList.filter((beat) => needsMotionPreview(gen.previews[beat.id]));
         if (!broken.length) break;
         autoStageBeats(broken, script, analysis, gen, o, attempt * MOTION_GEN_CONFIG.AUTO_RESTAGE_OFFSET);
-        await previewBeats(broken, script, gen, session, o);
+        await previewBeats(broken, script, gen, session, previewOptions);
         emit();
       }
     }

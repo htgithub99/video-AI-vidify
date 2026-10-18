@@ -1,5 +1,7 @@
 (function (root) {
   root.MotionEngineText = {
+    LIGHT_TYPE_SEPARATORS_RE: /[\s_-]/g,
+    LIGHT_TYPE_SUFFIX_RE: /light$/,
     GEN_COLOR_RE: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i,
     GEN_ID_RE: /^[A-Za-z][\w-]{0,40}$/,
     GEN_WORD_SEPARATOR_RE: /[\s-]+/g,
@@ -439,6 +441,7 @@
     USE_ONE_OF: "' (use one of ",
     DOUBLE: "double",
     LIGHT_TYPE_MUST_BE_ONE_OF: ": light type must be one of ",
+    LIGHT_TYPE_NORMALIZED: ": normalized light type to ",
     VALUE_3A3530: "#3a3530",
     NEEDS_AT_LEAST: ": needs at least ",
     X_Y_POINTS: " [x,y] points",
@@ -596,7 +599,7 @@
     VALUE_050608: "#050608",
     VARYING_VEC3_VDIR_VOID_MAIN_VDIR_NORMALIZE: "varying vec3 vDir;void main(){vDir=normalize(position);vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_Position=p.xyww;}",
     UNIFORM_VEC3_UTOP_UNIFORM_VEC3_UHZ_UNIFORM:
-      "uniform vec3 uTop;uniform vec3 uHz;uniform vec3 uSun;uniform vec3 uSunCol;uniform float uSunK;uniform float uCity;varying vec3 vDir;void main(){float h=clamp(vDir.y,-1.0,1.0);float k=pow(clamp(h,0.0,1.0),0.55);vec3 c=mix(uHz,uTop,k);if(h<0.0)c=mix(uHz,uHz*0.55,clamp(-h*3.0,0.0,1.0));float s=max(dot(normalize(vDir),normalize(uSun)),0.0);c+=uSunCol*(pow(s,8.0)*0.35+pow(s,600.0)*3.0)*uSunK;c+=vec3(1.0,0.62,0.32)*uCity*0.35*exp(-max(h,0.0)*14.0)*step(-0.05,h);gl_FragColor=vec4(c,1.0);}",
+      "uniform vec3 uTop;uniform vec3 uHz;uniform vec3 uSun;uniform vec3 uSunCol;uniform float uSunK;uniform float uCity;varying vec3 vDir;void main(){float h=clamp(vDir.y,-1.0,1.0);float k=pow(clamp(h,0.0,1.0),0.55);vec3 c=mix(uHz,uTop,k);if(h<0.0)c=mix(uHz,uHz*0.55,clamp(-h*3.0,0.0,1.0));float s=max(dot(normalize(vDir),normalize(uSun)),0.0);c+=uSunCol*(pow(s,8.0)*0.35+pow(s,600.0)*3.0)*uSunK;c+=vec3(1.0,0.62,0.32)*uCity*0.35*exp(-max(h,0.0)*14.0)*step(-0.05,h);gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}",
     AAB8C8: "#aab8c8",
     C8B49A: "#c8b49a",
     CLEAN: "__clean",

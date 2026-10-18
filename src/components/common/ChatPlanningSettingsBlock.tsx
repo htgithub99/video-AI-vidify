@@ -54,6 +54,7 @@ interface ChatPlanningSettingsBlockProps {
   title?: string;
   note?: string;
   allowHybrid?: boolean;
+  roomOnly?: boolean;
   extraControl?: React.ReactNode;
 }
 const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: PlanningTexts): string => {
@@ -69,7 +70,7 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return SOURCE_TEMPLATE_SYMBOL_32(name, modeText);
 };
-export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, extraControl }: ChatPlanningSettingsBlockProps) {
+export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;
@@ -140,14 +141,16 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <option value={AiPlanningFallbackProvider.DeepSeekChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.DEEPSEEK_CHAT_OPTION}
           </option>
-          {allowHybrid && (
+          {allowHybrid && !roomOnly && (
             <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
               {texts.PLANNING_HYBRID}
             </option>
           )}
-          <option value={AiPlanningExecutionMode.ApiOnly} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.PLANNING_API_ONLY}
-          </option>
+          {!roomOnly && (
+            <option value={AiPlanningExecutionMode.ApiOnly} className={CHAT_PLANNING_STYLES.OPTION}>
+              {texts.PLANNING_API_ONLY}
+            </option>
+          )}
         </PlanningSelectField>
         <PlanningSelectField
           title={texts.PLANNING_MODEL_LABEL}

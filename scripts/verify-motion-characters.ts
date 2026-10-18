@@ -1,3 +1,4 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -6,6 +7,7 @@ import { buildMotionRenderHtml, validateGenCharacter, MOTION_ASSET_BASE } from "
 import { designBible, emptyGen, prepareMotionGen } from "../src/server/services/motionGenService.ts";
 import { needsAuthoredCharacters } from "../src/lib/motionVideoDna.ts";
 import { MOTION_GEN_BIBLE_PROMPT } from "../src/constants/motionGenPrompts.ts";
+import { MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
 import type { MotionCharacterDesign, MotionStoryAnalysis, MotionStoryScript } from "../src/types/motionVideo.ts";
 const design: MotionCharacterDesign = {
   materials: { face: { color: VT.D9D6C8, unlit: true } },
@@ -57,6 +59,22 @@ await designBible(analysis, gen, {
   },
 });
 assert.equal(calls, 1);
+const referenceStyle = { description: RT.SMOOTH_FLAT_WHITE_FACES_BLACK_OVAL_EYES_AND_NO_HAIR, palette: [VT.FFFFFF, VT.VALUE_111111], kit: { render: { mode: RT.FLAT }, character: { headShape: RT.WHITE_CIRCLE, hair: RT.NONE } } };
+const referencedGen = emptyGen();
+referencedGen.drawingMode = VT.VALUE_2D;
+referencedGen.style = { outlineWidth: 0.06, outlineSilhouette: true, faceShading: true, grade: RT.NOIR };
+await designBible({ ...analysis, referenceStyle }, referencedGen, {
+  exec: {},
+  log: () => {},
+  preamble: RT.A_CUSTOM_PREAMBLE_MUST_NOT_LOSE_THE_REFERENCE_STYLE,
+  ai: async (prompt) => {
+    assert.ok(prompt.endsWith(MOTION_REFERENCE_PROMPTS.DRAW_STYLE(referenceStyle, VT.CHARACTER, VT.VALUE_2D)), RT.THE_CURRENT_STYLE_MUST_REACH_CHARACTER_DRAWING_EVEN_WITH_A_CUSTOM_PREA);
+    return { style: {}, cast: { hero: design } };
+  },
+});
+assert.equal(referencedGen.style.faceShading, false, RT.FLAT_REFERENCE_SHADING_MUST_REPLACE_STALE_RENDER_FLAGS);
+assert.equal(referencedGen.style.outlineSilhouette, false);
+assert.equal(referencedGen.style.grade, VT.NEUTRAL);
 assert.equal((gen.cast.hero as MotionCharacterDesign).parts.length, 3);
 assert.equal(needsAuthoredCharacters({ gen } as MotionStoryScript), false);
 assert.equal(needsAuthoredCharacters({ gen: { ...gen, cast: { hero: {} } } } as unknown as MotionStoryScript), true);

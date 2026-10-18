@@ -1,3 +1,4 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { CLAUDE_VERIFICATION_TEXTS as CT } from "./claudeVerificationTexts.js";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
@@ -27,6 +28,17 @@ const reset = async (mode: Mode = CT.READY) => {
 };
 try {
   await reset();
+  await selectClaudeChatModel(page, encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, CT.HIGH));
+  await page.evaluate(
+    ({ CT, RT }) => {
+      (window as any).pickerOpens = 0;
+      document.querySelector(CT.BUTTON)!.addEventListener(RT.CLICK, () => (window as any).pickerOpens++, true);
+    },
+    { CT: { BUTTON: CT.BUTTON }, RT: { CLICK: RT.CLICK } },
+  );
+  await selectClaudeChatModel(page, encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, CT.HIGH));
+  assert.equal(await page.evaluate(() => (window as any).pickerOpens), 1, RT.AN_ALREADY_SELECTED_EFFORT_MUST_NOT_REOPEN_ITS_MENU_FOR_VERIFICATION);
+  assert.equal(await page.getByRole(CT.MENU).count(), 0);
   for (const model of CLAUDE_CHAT_MODELS) {
     await selectClaudeChatModel(page, model.value);
     assert.equal(await page.evaluate(() => (window as any).current), model.value);
@@ -41,13 +53,13 @@ try {
   for (const mode of [CT.LOCKED, CT.DISABLED, CT.MISSING, CT.IGNORE_MODEL, CT.IGNORE_EFFORT] as const) {
     await reset(mode);
     const model = mode === CT.LOCKED ? AiPlanningChatModel.ClaudeOpus55 : mode === CT.MISSING ? AiPlanningChatModel.ClaudeSonnet5 : mode === CT.IGNORE_EFFORT ? encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, CT.HIGH) : AiPlanningChatModel.ClaudeHaiku55;
-    await assert.rejects(selectClaudeChatModel(page, model), /claude_model_unavailable/, mode);
+    await assert.rejects(selectClaudeChatModel(page, model), RT.PATTERN_CLAUDE_MODEL_UNAVAILABLE, mode);
     assert.equal(await page.locator(CT.ROLE_MENU).count(), 0, CT.ALWAYS_DISMISS_MODEL_MENUS_ON_FAILURE);
     assert.equal(await page.evaluate(() => (window as any).upgradeClicks), 0, CT.NEVER_CLICK_UPGRADE_INSTEAD_OF_SELECTING_A_MODEL);
   }
   const abort = new AbortController();
   abort.abort();
-  await assert.rejects(selectClaudeChatModel(page, AiPlanningChatModel.ClaudeSonnet55, abort.signal), /chat_planning_cancelled/);
+  await assert.rejects(selectClaudeChatModel(page, AiPlanningChatModel.ClaudeSonnet55, abort.signal), RT.PATTERN_CHAT_PLANNING_CANCELLED);
   process.stdout.write(CT.CLAUDE_MODELS_ALL_13_MODEL_SELECTIONS_SUPPORTED_EFFORT_LEVELS_EXACT_VERSION);
 } finally {
   timing.MODEL_PICKER_TIMEOUT_MS = originalTimeout;

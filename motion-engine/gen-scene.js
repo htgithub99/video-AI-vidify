@@ -394,7 +394,7 @@
   const SHOT_SIZE = { wide: [0.28, 0.42, 0.62], medium: [0.45, 0.6, 0.8], over_shoulder: [0.4, 0.55, 0.8], close: [0.42, 0.55, 0.72], extreme_close: [0.55, 0.7, 0.9] };
   const sizeShot = (S, cam, tgt, subjects, shot, issues) => {
     const want = SHOT_SIZE[shot];
-    if (!want || !subjects.length) return;
+    if (!want || !subjects.length || (S.stg.camera || {}).focusProp) return;
     cam.updateMatrixWorld(true);
     let top = -Infinity,
       bot = Infinity,
@@ -419,7 +419,12 @@
     const tallest = Math.max(...subjects.map((A) => A.actor.bounds().getSize(v.clone()).y)),
       frac = ((top - bot) / 2) * (shot === MT.WIDE ? Math.max(1, 1.6 / Math.max(0.1, tallest)) : 1);
     if (frac >= want[0] && frac <= want[2]) return;
-    const dir = cam.position.clone().sub(tgt);
+    const center = new T.Vector3();
+    for (const A of subjects) center.add(A.actor.bounds().getCenter(v.clone()));
+    center.divideScalar(subjects.length);
+    const midY = (headTopY + lowY) / 2;
+    if (isFinite(midY)) center.y = midY;
+    const dir = cam.position.clone().sub(center);
     const d = dir.length();
     if (d < 1e-3) return;
     dir.normalize();
@@ -429,14 +434,13 @@
     let done = d;
     for (let i = 1; i <= stepN; i++) {
       const dd = d + ((goal - d) * i) / stepN;
-      const p = tgt.clone().addScaledVector(dir, dd);
-      if (S.occluders.length && solidsOf(S).some((x) => x.b.containsPoint(p) && !x.b.containsPoint(tgt))) break;
+      const p = center.clone().addScaledVector(dir, dd);
+      if (S.occluders.length && solidsOf(S).some((x) => x.b.containsPoint(p) && !x.b.containsPoint(center))) break;
       if (inStage(S, start) && !inStage(S, p)) break;
       done = dd;
     }
     if (Math.abs(done - d) < 0.05) return;
-    const midY = (headTopY + lowY) / 2;
-    if (isFinite(midY)) tgt.y = U.lerp(tgt.y, midY, 0.7);
+    tgt.copy(center);
     cam.position.copy(tgt).addScaledVector(dir, done);
     cam.lookAt(tgt);
     cam.updateMatrixWorld(true);

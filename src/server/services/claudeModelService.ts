@@ -80,11 +80,13 @@ export const selectClaudeChatModel = async (page: Page, model?: AiPlanningChatMo
         .filter({ visible: true })
         .last();
       if (!(await waitUntil(page, () => option.isVisible().catch(() => false), signal)) || !(await option.isEnabled()) || (await option.getAttribute(C.DATA_DISABLED)) !== null) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, setting.label));
-      if ((await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED)) !== ST.SOURCE_TEXT_TRUE) await option.click();
-      await closeMenu(page);
-      await openPicker(page, button);
-      await openSubmenu(page, C.EFFORT_MENU_PATTERN);
-      if (!(await waitUntil(page, async () => (await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED).catch(() => null)) === ST.SOURCE_TEXT_TRUE, signal))) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, setting.label));
+      if ((await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED)) !== ST.SOURCE_TEXT_TRUE) {
+        await option.click();
+        await closeMenu(page);
+        await openPicker(page, button);
+        await openSubmenu(page, C.EFFORT_MENU_PATTERN);
+        if (!(await waitUntil(page, async () => (await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED).catch(() => null)) === ST.SOURCE_TEXT_TRUE, signal))) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, setting.label));
+      }
     }
     checkCancelled(signal);
   } catch (error) {

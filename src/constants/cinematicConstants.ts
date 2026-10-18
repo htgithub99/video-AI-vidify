@@ -110,6 +110,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   MIN_RESPONSE_CHARACTERS: 20,
   INVALID_JSON_RESPONSE_ERROR: "chat_planning_invalid_json_response",
   PROVIDER_ERROR_RESPONSE_ERROR: "chat_planning_provider_error_response",
+  REFUSAL_RESPONSE_ERROR: "chat_planning_refusal_response",
+  REFUSAL_RESPONSE_PATTERN:
+    /^\s*[*_]*(?:(?:I(?:'m| am) sorry[,.:!]?\s*)?I (?:cannot|can['’]t|am unable to) (?:help|assist|fulfill|comply|generate|create)|(?:As (?:a|an)|I(?:'m| am) (?:just|only) a) (?:text[- ]based|language|AI)[\s\S]{0,300}?(?:cannot|can['’]t|unable)|(?:Xin lỗi[,.:!]?\s*)?(?:Tôi|Mình) (?:không thể (?:giúp|hỗ trợ|trợ giúp|thực hiện|tạo)|chỉ là[^\n]{0,200}?(?:văn bản|ngôn ngữ)[^\n]{0,120}?không thể))/i,
   PROVIDER_ERROR_ROOM_RELOAD_ERROR: "chat_planning_provider_error_room_reload",
   PROVIDER_ERROR_ROOM_RELOAD_FAILED_ERROR: "chat_planning_provider_error_room_reload_failed",
   PROVIDER_ERROR_RESPONSE_PATTERN: /Sorry, something went wrong|Please try your request again|I seem to be encountering an error|Can I try something else|I encountered an error|We ran into an error|hard time fulfilling your request|something else instead|Đã xảy ra lỗi|Vui lòng thử lại|Tôi gặp lỗi/i,

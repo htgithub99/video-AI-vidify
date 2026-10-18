@@ -5,13 +5,10 @@ import { MOTION_TEXT_ABORT, MOTION_TEXT_CANCELLED } from "../../constants/motion
 import { getMotionErrorSummary } from "../../lib/motionUtils.js";
 import { AiPlanningExecutionMode } from "../../types.js";
 import type { MotionAiExecution } from "../../types/motionVideo.js";
+import { resolveMotionSceneExecution } from "../../lib/motionSceneAi.js";
 import { motionRoomBlockedMs, resetMotionAiRoom } from "./motionStoryService.js";
 export interface MotionDrawTurn { provider: string; model: string; turn: number; turns: number; total: number; }
 export interface MotionDrawTaskOptions<T> { task: string; exec: MotionAiExecution; signal?: AbortSignal; log: (s: string) => void; attempt: (exec: MotionAiExecution, turn: MotionDrawTurn) => Promise<T | undefined>; maxAttempts?: number; retryDelayMs?: number; }
-const ROUTE = [
-  { provider: MOTION_SCENE_AI.PRIMARY_PROVIDER as string, model: MOTION_SCENE_AI.PRIMARY_MODEL as string, turns: MOTION_SCENE_AI.PRIMARY_TURNS },
-  { provider: MOTION_SCENE_AI.SECONDARY_PROVIDER as string, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT) as string, turns: MOTION_SCENE_AI.SECONDARY_TURNS },
-];
 const cancelled = (signal?: AbortSignal): Error => (signal?.reason instanceof Error ? signal.reason : new Error(MOTION_TEXT_CANCELLED));
 const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -30,16 +27,21 @@ const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
 export const motionDrawExec = (base: MotionAiExecution, provider: string, model: string): MotionAiExecution => ({
   provider,
   model,
-  mode: base.mode === AiPlanningExecutionMode.ApiOnly || !base.mode ? AiPlanningExecutionMode.RoomOnly : base.mode,
+  mode: AiPlanningExecutionMode.RoomOnly,
   chromeHeadless: base.chromeHeadless,
   strictProvider: true,
 });
 export const runMotionDrawTask = async <T>(o: MotionDrawTaskOptions<T>): Promise<T> => {
+  const primary = resolveMotionSceneExecution(o.exec);
+  const routes = [
+    { provider: primary.provider, model: primary.model, turns: MOTION_SCENE_AI.PRIMARY_TURNS },
+    { provider: MOTION_SCENE_AI.SECONDARY_PROVIDER, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT), turns: MOTION_SCENE_AI.SECONDARY_TURNS },
+  ];
   let total = 0;
   for (let cycle = 0; ; cycle++) {
-    for (let step = 0; step < ROUTE.length; step++) {
-      const route = ROUTE[step];
-      if (total) o.log(L.SWITCH(o.task, ROUTE[(step + ROUTE.length - 1) % ROUTE.length].provider, route.provider));
+    for (let step = 0; step < routes.length; step++) {
+      const route = routes[step];
+      if (total) o.log(L.SWITCH(o.task, routes[(step + routes.length - 1) % routes.length].provider, route.provider));
       for (let turn = 1; turn <= route.turns; turn++) {
         if (o.signal?.aborted) throw cancelled(o.signal);
         const blocked = motionRoomBlockedMs(route.provider);

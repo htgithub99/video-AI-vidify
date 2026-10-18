@@ -70,9 +70,13 @@
     return out;
   };
   GEN.cleanMaterial = cleanMaterial;
-  const cleanLight = (l, errors, where) => {
-    const type = LIGHT_TYPES.includes(l.type) ? l.type : MT.POINT;
-    if (!LIGHT_TYPES.includes(l.type)) errors.push(where + MT.LIGHT_TYPE_MUST_BE_ONE_OF + LIGHT_TYPES.join(MT.SYMBOL_19));
+  const cleanLight = (l, st, where) => {
+    const requested = typeof l.type === MT.STRING ? l.type.trim().toLowerCase().replace(MT.LIGHT_TYPE_SEPARATORS_RE, MT.EMPTY).replace(MT.LIGHT_TYPE_SUFFIX_RE, MT.EMPTY) : MT.EMPTY;
+    const aliases = { directional: MT.SUN, hemisphere: MT.HEMI };
+    const normalized = aliases[requested] || requested || MT.POINT;
+    const type = LIGHT_TYPES.includes(normalized) ? normalized : MT.POINT;
+    if (!LIGHT_TYPES.includes(normalized)) st.errors.push(where + MT.LIGHT_TYPE_MUST_BE_ONE_OF + LIGHT_TYPES.join(MT.SYMBOL_19));
+    else if (l.type !== type) st.warnings.push(where + MT.LIGHT_TYPE_NORMALIZED + type);
     const out = { shape: MT.LIGHT, type, color: color(l.color, MT.FFF4E0), intensity: num(l.intensity, type === MT.SUN ? 2.5 : type === MT.HEMI || type === MT.AMBIENT ? 0.6 : 3, 0, 60) };
     if (type === MT.POINT || type === MT.SPOT) {
       out.pos = vec(l.pos || l.position, [0, 3, 0]);
@@ -135,7 +139,7 @@
         errors.push(MT.TOO_MANY_LIGHTS_MAX + LIMITS.lights + MT.SYMBOL_17);
         return null;
       }
-      return cleanLight(n, errors, where);
+      return cleanLight(n, st, where);
     }
     const out = { shape };
     if (n.name && typeof n.name === MT.STRING) out.name = n.name.slice(0, 40);
@@ -512,6 +516,7 @@
   GEN.MOVES = [MT.STATIC, MT.DOLLY_IN, MT.DOLLY_OUT, MT.PAN_LEFT, MT.PAN_RIGHT, MT.ORBIT_LEFT, MT.ORBIT_RIGHT, MT.CRANE_UP, MT.CRANE_DOWN, MT.TRUCK_LEFT, MT.TRUCK_RIGHT, MT.FOLLOW, MT.HANDHELD];
   GEN.validateStaging = (raw, ctx) => {
     const errors = [];
+    const warnings = [];
     const s = raw && typeof raw === MT.OBJECT ? raw : {};
     const out = {};
     const locs = (ctx && ctx.locations) || {};
@@ -575,11 +580,15 @@
         const st = newState(L.materials || {});
         const nodes = GEN.smallNodes(Array.isArray(a.hold) ? a.hold : a.hold.nodes || [a.hold], st, MT.ACTORS + i + MT.HOLD, 2.4);
         errors.push(...st.errors);
+        warnings.push(...st.warnings);
         if (nodes.length) o.hold = { part: idOk(a.hold.part || a.part) ? a.hold.part || a.part : MT.BODY, nodes };
       }
       out.actors.push(o);
     });
     const st = newState(L.materials || {});
+    Object.keys(L.defs || {}).forEach((key) => {
+      st.defs[key] = true;
+    });
     const withoutCallouts = (nodes) =>
       (Array.isArray(nodes) ? nodes : [])
         .filter((n) => n && n.shape !== MT.ARROW && !(n.shape === MT.TEXT && n.billboard))
@@ -593,6 +602,7 @@
     out.props = GEN.cleanNodes(withoutCallouts(s.props), st, MT.PROPS);
     out.hide = Array.isArray(s.hide) ? s.hide.filter((x) => typeof x === MT.STRING).slice(0, 20) : [];
     errors.push(...st.errors);
+    warnings.push(...st.warnings);
     const cleanCam = (cam) => {
       cam = cam && typeof cam === MT.OBJECT ? cam : {};
       const c = { shot: GEN.SHOTS.includes(cam.shot) ? cam.shot : MT.MEDIUM, move: GEN.MOVES.includes(cam.move) ? cam.move : MT.STATIC, amount: num(cam.amount, 1, 0, 4), angle: num(cam.angle, 0, -180, 180), fov: num(cam.fov, 0, 0, 100) || undefined, at: num(cam.at, 0, 0, 0.95) };
@@ -618,6 +628,6 @@
     if (s.beatDur != null) out.beatDur = num(s.beatDur, 0, 0, 600) || undefined;
     if (s.mood && typeof s.mood === MT.STRING) out.mood = s.mood.slice(0, 40);
     if (s.weather && [MT.RAIN, MT.SNOW, MT.FOG, MT.DUST, MT.NONE].includes(s.weather)) out.weather = s.weather;
-    return { value: out, errors };
+    return { value: out, errors, warnings };
   };
 })(typeof window !== globalThis.MotionEngineText.UNDEFINED ? window : globalThis);

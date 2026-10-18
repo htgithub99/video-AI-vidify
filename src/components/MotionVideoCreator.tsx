@@ -99,7 +99,6 @@ import {
   MOTION_TEXT_TU,
   MOTION_TEXT_UNSTYLED,
   MOTION_TEXT_VI,
-  MOTION_TEXT_VOICE,
   MOTION_TEXT_WRONG,
   MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL,
   MOTION_TEXT_XOA,
@@ -114,7 +113,7 @@ import { cn } from "../lib/utils";
 import { needsAuthoredCharacters } from "../lib/motionVideoDna.js";
 import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
-import ChatPlanningSettingsBlock from "./common/ChatPlanningSettingsBlock.js";
+import { MotionAiSettings } from "./motion-video/MotionAiSettings.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
 import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSeoCard } from "./motion-video/MotionSeoCard.js";
@@ -167,7 +166,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
           }></StudioHeader>
         {aiOpen && (
           <StudioFieldset disabled={studio.storyBusy} className={MOTION_STYLES.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_SHADOW_XL}>
-            <ChatPlanningSettingsBlock provider={state.aiProvider} model={state.aiModel} executionMode={state.aiMode} chromeHeadless={state.aiHeadless} onProviderChange={(v) => patch({ aiProvider: v })} onModelChange={(v) => patch({ aiModel: v })} onExecutionModeChange={(v) => patch({ aiMode: v })} onChromeHeadlessChange={(v) => patch({ aiHeadless: v })} currentLang={currentLang} allowHybrid />
+            <MotionAiSettings state={state} patch={patch} currentLang={currentLang} />
           </StudioFieldset>
         )}
         {studio.engineError && (
@@ -231,6 +230,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
   const rj = studio.renderJob;
+  const displayedProgress = studio.storyBusy ? job?.progress : rj ? rj.progress : job?.progress;
+  const storyStage = job?.stage ? MOTION_STORY_CONFIG.STAGE_LABELS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][job.stage] || job.stage : text.WAITING_AI;
   const stepLabel = (kind: string): string =>
     ({
       [MotionStoryJobKind.ANALYZE]: text.STEP_ANALYSIS,
@@ -1004,10 +1005,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <StudioCard className={cardCls}>
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
                 <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{studio.renderBusy || (rj && !studio.storyBusy) ? MOTION_TEXT_RENDER_VIDEO_MP4 : job ? stepLabel(job.kind) : text.STEP_LOG}</span>
-                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{rj ? MOTION_TEMPLATE_SYMBOL_3(String(Math.round((rj.progress || 0) * 100))) : MOTION_TEMPLATE_SYMBOL_3(String(Math.round((job?.progress || 0) * 100)))}</span>
+                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>
               </div>
-              {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={job.kind === MOTION_TEXT_VOICE ? text.STEP_VOICE : text.WAITING_AI} suffix={text.ELAPSED} />}
-              <MotionProgressBar progress={rj ? rj.progress : job?.progress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
+              {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={storyStage} suffix={text.ELAPSED} />}
+              <MotionProgressBar progress={displayedProgress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
               <MotionFlowLog entries={studio.logHistory} label={stepLabel} className={MOTION_STYLES.FLOW_LOG_BOX} />
               {rj?.result && (
                 <div className={MR.MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800}>

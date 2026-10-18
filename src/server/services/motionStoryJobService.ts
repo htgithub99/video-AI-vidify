@@ -21,7 +21,8 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
       job.log = _.takeRight([...job.log, MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line))], MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
     },
     progress: (value, stage) => {
-      job.progress = _.clamp(value, 0, 1);
+      if (!_.includes(ACTIVE, job.status) || job.controller.signal.aborted) return;
+      if (Number.isFinite(value)) job.progress = Math.max(job.progress, _.clamp(value, 0, 0.99));
       if (stage) job.stage = stage;
     },
     partial: (result) => {
@@ -36,6 +37,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
       job.result = result;
       job.progress = 1;
       job.status = MotionJobStatus.COMPLETED;
+      job.stage = MOTION_TEXT_HOAN_TAT;
       ctx.log(MOTION_TEXT_HOAN_TAT);
     } catch (error: any) {
       const aborted = job.controller.signal.aborted;

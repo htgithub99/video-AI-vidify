@@ -1,10 +1,10 @@
 export const MOTION_VOICE = {
-  VERSION: 3,
+  VERSION: 4,
   DIRECT_SPEECH_RE: /[:：]\s*["“«‘']?\s*\p{Lu}|["“«][^"”»]{2,}["”»]/u,
-  CLIP_VERSION: 3,
-  TRACK_VERSION: 3,
+  CLIP_VERSION: 4,
+  TRACK_VERSION: 4,
   PAUSE: { FIRST: 0.15, SAME_SPEAKER: 0.1, SPEAKER_CHANGE: 0.22, BEAT_END: 0.22 },
-  TEMPO: { TARGET: { vi: 3.9, en: 2.75 }, MIN: 0.9, MAX: 1.6, SPEED_MIN: 0.95, SPEED_MAX: 1.08 },
+  TEMPO: { MIN: 0.9, MAX: 1.15, SPEED_MIN: 0.95, SPEED_MAX: 1.08 },
   PROVIDER: "vieneu",
   ASR: {
     PACKAGE: "faster-whisper==1.1.1",
@@ -62,6 +62,8 @@ export const MOTION_VOICE = {
   SETUP: "Chuẩn bị VieNeu-TTS; lần đầu cần tải runtime và model, các lần sau dùng cache.",
   PLANNING: "Phân vai và lên nhịp lời thoại theo kịch bản.",
   GENERATING: "Tạo lời thoại VieNeu-TTS theo nhân vật.",
+  PROGRESS: (done: number, total: number): string => `Tạo lời thoại: ${done}/${total} câu`,
+  MIXING: "Ghép lời thoại vào dòng thời gian.",
   PLAN_FALLBACK: "Giữ lời thoại gốc và dùng phân vai an toàn cho phần chưa xác định được.",
   CASTING_SKIPPED: "Kênh giọng đã khóa đủ người dẫn và mọi vai, giới tính/tuổi đã rõ – bỏ qua lượt AI phân vai giọng.",
   SPLIT_RETRY: "Phân vai lời thoại chưa dùng được – gửi lại yêu cầu gốc một lần (không kèm nhận xét).",

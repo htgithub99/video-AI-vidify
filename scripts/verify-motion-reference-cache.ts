@@ -1,3 +1,4 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -8,7 +9,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { withCachedMotionReferenceStyle } from "../src/server/services/motionReferenceCacheService.ts";
 import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
-import { MOTION_REFERENCE_CONFIG as C } from "../src/constants/motionReference.ts";
+import { MOTION_REFERENCE_AI, MOTION_REFERENCE_CONFIG as C } from "../src/constants/motionReference.ts";
 import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
 import { MotionStoryLength } from "../src/types/motionVideo.ts";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../src/types.ts";
@@ -55,6 +56,7 @@ const analyze = (text: string, references = [image], exec = {}) =>
     log: (line) => logs.push(line),
     ai: async (prompt, artifact, _exec, _signal, _log, images) => {
       if (artifact === MOTION_STORY_CONFIG.ARTIFACT_STYLE) {
+        assert.deepEqual(_exec, { ...exec, ...MOTION_REFERENCE_AI });
         styleCalls++;
         assert.equal(images?.length, references.length);
         assert.ok(images!.every((item) => fs.existsSync(item.path)));
@@ -66,6 +68,8 @@ const analyze = (text: string, references = [image], exec = {}) =>
   });
 const first = await analyze(AUT.DRAW_A_RED_OBJECT_ON_A_TABLE);
 assert.equal(styleCalls, 1);
+const firstCacheDirectory = path.join(directory, AUT.OUTPUT, AUT.MOTION_VIDEO, C.CACHE_FOLDER);
+const firstCacheFile = path.join(firstCacheDirectory, fs.readdirSync(firstCacheDirectory)[0]);
 const second = await analyze(AUT.EXPLAIN_A_DIFFERENT_STORY_WITH_A_RED_OBJECT, [{ ...image, name: AUT.RENAMED_FILE_PNG }], { provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekThink });
 assert.equal(styleCalls, 1, AUT.CHANGING_STORY_PROVIDER_MODEL_OR_FILENAME_MUST_NOT_RE_ANALYZE_UNCHANGED_IMAGES);
 assert.deepEqual(second.referenceStyle, first.referenceStyle);
@@ -76,6 +80,14 @@ const changed = { name: image.name, dataUrl: png(0, 0, 255) };
 await analyze(AUT.SHOW_THE_BLUE_OBJECT_IN_THE_NEXT_VIDEO, [changed]);
 assert.equal(styleCalls, 2, AUT.CHANGING_IMAGE_BYTES_UNDER_THE_SAME_FILENAME_MUST_TRIGGER_ANALYSIS);
 const cacheDirectory = path.join(directory, AUT.OUTPUT, AUT.MOTION_VIDEO, C.CACHE_FOLDER);
+const oldCache = JSON.parse(fs.readFileSync(firstCacheFile, AUT.UTF8));
+fs.writeFileSync(firstCacheFile, JSON.stringify({ ...oldCache, version: C.CACHE_VERSION - 1 }));
+let refreshed = 0;
+await withCachedMotionReferenceStyle([image], async () => {
+  refreshed++;
+  return profile();
+});
+assert.equal(refreshed, 1, RT.PROFILES_FROM_BEFORE_THE_CLAUDE_ROUTING_CHANGE_MUST_BE_ANALYZED_AGAIN);
 const beforePair = new Set(fs.readdirSync(cacheDirectory));
 await analyze(AUT.COMPARE_THE_TWO_OBJECTS_SIDE_BY_SIDE, [image, changed]);
 const cachedPair = path.join(cacheDirectory, fs.readdirSync(cacheDirectory).find((name) => !beforePair.has(name))!);
@@ -114,7 +126,7 @@ await started;
 const abort = new AbortController();
 const cancelled = assert.rejects(
   withCachedMotionReferenceStyle([waitingImage], async () => assert.fail(AUT.CANCELLED_WAITER_MUST_NOT_ANALYZE), { signal: abort.signal }),
-  /cancelled/,
+  RT.PATTERN_CANCELLED,
 );
 abort.abort();
 await cancelled;
@@ -124,7 +136,7 @@ await Promise.all([active, follower]);
 const failedImage = { name: AUT.DARK_PNG, dataUrl: png(1) };
 await assert.rejects(
   withCachedMotionReferenceStyle([failedImage], async () => undefined),
-  /AI không đọc được/,
+  RT.PATTERN_AI_KHONG_DOC_DUOC,
 );
 assert.ok(await withCachedMotionReferenceStyle([failedImage], async () => profile()));
 fs.writeFileSync(cachedPair, AUT.BROKEN_JSON);

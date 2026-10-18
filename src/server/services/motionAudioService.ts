@@ -14,21 +14,12 @@ import { transcribeVieneuAudio, vieneuRoot, type VieneuDelivery } from "./vieneu
 import { listMotionVoices, synthesizeMotionSpeech } from "./motionVoiceSourceService.js";
 import { buildMotionSoundTrack, motionWavHeader, runMotionAudioProcess } from "./motionSoundMixService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
-import { speechUnits } from "./motionSpeechRateService.js";
 import _ from "lodash";
 import { motionAudioHash as hash, motionWavData } from "./motionAudioUtils.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeMotionSpeech; }
-const deliveryTempo = (line: MotionUtterance, delivery: MotionVoiceDelivery, language: unknown, seconds: number): number => {
-  const units = speechUnits(line.text),
-    target = language === MR.MOTION_TEXT_EN ? C.TEMPO.TARGET.en : C.TEMPO.TARGET.vi;
-  return units && seconds > 0 ? _.clamp((target * _.clamp(line.speed || 1, C.TEMPO.SPEED_MIN, C.TEMPO.SPEED_MAX) * delivery.tempo * seconds) / units, C.TEMPO.MIN, C.TEMPO.MAX) : 1;
-};
+const deliveryTempo = (line: MotionUtterance, delivery: MotionVoiceDelivery): number => _.clamp(_.clamp(line.speed || 1, C.TEMPO.SPEED_MIN, C.TEMPO.SPEED_MAX) * delivery.tempo, C.TEMPO.MIN, C.TEMPO.MAX);
 const engineDelivery = (voiceId: string, delivery: MotionVoiceDelivery): VieneuDelivery => (isAi33Voice(voiceId) ? {} : { temperature: delivery.temperature, silence: delivery.silence });
-const wavSeconds = (wav: Buffer): number => {
-  const { length, availableBytes } = motionWavData(wav);
-  return (length ? Math.min(length, availableBytes) : 0) / 2 / C.SAMPLE_RATE;
-};
 const speechTokens = (text: string): string[] => _.compact(text.toLowerCase().normalize(C.ASR.NORMALIZE).split(C.ASR.TOKEN_RE));
 const speechError = (expected: string, heard: string): number => {
   const a = speechTokens(expected),
@@ -65,8 +56,7 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
   for (let check = 0; ; check++) {
     if (!fs.existsSync(file) || fs.statSync(file).size < 48) {
       const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, id),
-        temp = file + randomUUID() + MR.MOTION_TEXT_WAV,
-        measured = file + randomUUID() + MR.MOTION_TEXT_WAV;
+        temp = file + randomUUID() + MR.MOTION_TEXT_WAV;
       fs.mkdirSync(path.dirname(original), { recursive: true });
       try {
         let failure: unknown;
@@ -82,14 +72,8 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
           }
         }
         if (failure) throw failure;
-        const encode = (source: string, tempo: number) =>
-          runMotionAudioProcess([MR.MOTION_TEXT_I, source, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(tempo.toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
-        await encode(original, 1);
-        const tempo = deliveryTempo(line, delivery, language, wavSeconds(await fs.promises.readFile(temp)));
-        if (Math.abs(tempo - 1) > 0.005) {
-          await fs.promises.rename(temp, measured);
-          await encode(measured, tempo);
-        }
+        const tempo = deliveryTempo(line, delivery);
+        await runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(tempo.toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
         const wav = await fs.promises.readFile(temp);
         const { start, length, availableBytes } = motionWavData(wav);
         if (!length || length > availableBytes) throw new Error(C.FAILED);
@@ -97,7 +81,6 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
         fs.renameSync(temp, file);
       } finally {
         await fs.promises.rm(temp, { force: true }).catch(() => {});
-        await fs.promises.rm(measured, { force: true }).catch(() => {});
       }
     }
     if (!opts.asr || words) break;

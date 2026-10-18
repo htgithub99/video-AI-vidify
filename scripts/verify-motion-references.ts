@@ -1,11 +1,13 @@
+import { RUNTIME_VERIFICATION_TEXTS as RT, RUNTIME_VERIFICATION_FORMATS as RF } from "./runtimeVerificationTexts.ts";
 import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
-import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, parseStorySource, resolveMotionReferenceStyle } from "../src/server/services/motionStoryService.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRenderFailure, needsMotionPreview } from "../src/lib/motionReference.ts";
-import { MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
+import { MOTION_REFERENCE_AI, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../src/types.ts";
 import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
 import { withMotionReferenceFiles } from "../src/server/services/motionReferenceService.ts";
 import { prepareMotionGen } from "../src/server/services/motionGenService.ts";
@@ -66,12 +68,14 @@ const extracted = await analyzeStory(parseStorySource(VT.DRAW_A_CARTOON_DINNER_S
   exec: {},
   ai: async (prompt, artifact, _exec, _signal, _log, images) => {
     if (artifact === MOTION_STORY_CONFIG.ARTIFACT_STYLE) {
+      assert.deepEqual(_exec, MOTION_REFERENCE_AI, RT.STORY_ANALYSIS_ROUTES_STYLE_ATTACHMENTS_TO_CLAUDE_INDEPENDENTLY_OF_ITS);
       assert.ok(prompt.includes(MOTION_REFERENCE_PROMPTS.STYLE_ONLY));
       assert.ok(images?.[0].path && fs.existsSync(images[0].path));
       attached++;
       return { referenceStyle: profile };
     }
     assert.ok(prompt.includes(MOTION_REFERENCE_PROMPTS.PROFILE(profile)));
+    assert.deepEqual(_exec, {}, RT.STYLE_ROUTING_MUST_NOT_CHANGE_THE_MAIN_STORY_EXECUTION);
     motionDirected ||= prompt.includes(VT.AUTHORITATIVE_CHARACTER_MOTION_ENABLED);
     assert.equal(images, undefined);
     return { title: VT.DINNER, chapters: [{ title: VT.DINNER, summary: VT.PEOPLE_AT_A_TABLE }], referenceStyle: profile };
@@ -81,4 +85,31 @@ assert.equal(attached, 1);
 assert.equal(motionDirected, true);
 assert.deepEqual(extracted.referenceStyle, profile);
 assert.equal(extracted.characterMotion, true);
+const fourImages = Array.from({ length: 4 }, (_, index) => ({ ...image, name: RF.SAMPLE_REFERENCE_FILE(index) }));
+const selectedExec = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiArgon, mode: AiPlanningExecutionMode.ApiOnly, chromeHeadless: false };
+let styleAttempts = 0;
+await assert.rejects(
+  resolveMotionReferenceStyle(fourImages, {
+    exec: selectedExec,
+    ai: async (_prompt, artifact, execution, _signal, _log, images) => {
+      styleAttempts++;
+      assert.equal(artifact, MOTION_STORY_CONFIG.ARTIFACT_STYLE);
+      assert.deepEqual(execution, { ...selectedExec, ...MOTION_REFERENCE_AI });
+      assert.equal(images?.length, 4);
+      assert.ok(images!.every((item) => fs.existsSync(item.path)));
+      throw new Error(RT.CLAUDE_UNAVAILABLE);
+    },
+  }),
+  RT.PATTERN_AI_KHONG_DOC_DUOC_PHONG_CACH,
+);
+assert.equal(styleAttempts, MOTION_REFERENCE_PROMPTS.STYLE_ATTEMPTS, RT.ALL_BOUNDED_RETRIES_STAY_ON_CLAUDE_WITH_EVERY_IMAGE_ATTACHED);
+assert.equal(selectedExec.provider, AiPlanningFallbackProvider.GeminiChat, RT.DO_NOT_MUTATE_SHARED_AI_SETTINGS);
+const recovered = await resolveMotionReferenceStyle(fourImages, {
+  exec: selectedExec,
+  ai: async (_prompt, _artifact, execution, _signal, _log, images) => {
+    assert.deepEqual(execution, { ...selectedExec, ...MOTION_REFERENCE_AI });
+    return { referenceStyle: { ...profile, images: images!.map((_, index) => ({ ...profile.images![0], name: MOTION_REFERENCE_CONFIG.NAME_PREFIX + (index + 1) })) } };
+  },
+});
+assert.equal(recovered?.images?.length, 4);
 process.stdout.write(VT.STYLE_REFERENCES_PASSED_LIMITS_VALIDATION_ATTACHMENT_FILES_C);

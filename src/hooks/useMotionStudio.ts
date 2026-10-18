@@ -63,7 +63,8 @@ import {
 import { retimeSeoPack } from "../lib/motionSeo.js";
 import { MOTION_PARTS } from "../constants/motionParts.js";
 import { motionCarryGen, motionPartAnalysis, motionSeriesStart } from "../lib/motionParts.js";
-import { motionMainAiExecution, motionSceneAiExecution } from "../lib/motionSceneAi.js";
+import { motionMainAiExecution, motionSceneAiExecution, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
+import { MOTION_SCENE_AI } from "../constants/motionSceneLibrary.js";
 import type { StorageCleanResult, StorageJunkReport } from "../types/storage.js";
 const STOPPED_TOAST = MOTION_TEXT_DA_DUNG_STOPPED;
 const reportStoryError = (error: unknown): void => {
@@ -71,7 +72,7 @@ const reportStoryError = (error: unknown): void => {
   if (message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
   else toast.error(message);
 };
-interface PersistedState {
+interface PersistedState extends MotionSceneAiChoice {
   voiceChannelId?: string;
   styleReferences: MotionStyleReference[];
   styleSetKey?: string;
@@ -106,6 +107,7 @@ interface PersistedState {
   musicMood?: string;
   musicVolume?: number;
   activeRenderJobId: string;
+  lastRenderJobId?: string | null;
   renderSignature?: string;
   activeStoryJobId: string;
   autoContinue: boolean;
@@ -143,6 +145,9 @@ const DEFAULTS: PersistedState = {
   aiModel: AiPlanningChatModel.GeminiFlash,
   aiMode: AiPlanningExecutionMode.RoomOnly,
   aiHeadless: true,
+  sceneAiProvider: MOTION_SCENE_AI.PRIMARY_PROVIDER,
+  sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
+  sceneAiHeadless: true,
   aiReview: true,
   libraryMode: MOTION_SCENE_LIBRARY_MODES.AUTO,
   videoGenre: MOTION_VIDEO_GENRES.AUTO,
@@ -160,7 +165,7 @@ const DEFAULTS: PersistedState = {
   seo: null,
   thumbnail: null,
 };
-const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look });
+const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look, activeRenderJobId: MR.MOTION_TEXT_EMPTY, lastRenderJobId: null });
 const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, language: string, look: string): Partial<PersistedState> => {
   const started = motionSeriesStart(full, parts || MOTION_PARTS.DEFAULT, language);
   return { ...analyzedState(started.analysis, look), series: started.series };
@@ -251,7 +256,7 @@ export function useMotionStudio() {
     (async () => {
       const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
       if (!mounted.current) return;
-      const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), sfx: true, sfxVolume: MOTION_AUDIO_DIRECTION.SFX_VOLUME, soundOverrides: {}, uploadedAudio: null };
+      const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), sceneAiHeadless: saved.sceneAiHeadless ?? saved.aiHeadless ?? DEFAULTS.sceneAiHeadless, sfx: true, sfxVolume: MOTION_AUDIO_DIRECTION.SFX_VOLUME, soundOverrides: {}, uploadedAudio: null };
       if (restored.script?.voiceSettings) restored.script = { ...restored.script, voiceSettings: undefined };
       setState(withVoiceChannel(restored, channelsRef.current));
       setHydrated(true);
@@ -293,10 +298,6 @@ export function useMotionStudio() {
   }, [persist]);
   const stateRef = useRef(state);
   stateRef.current = state;
-  useEffect(() => {
-    if (!hydrated || !state.activeRenderJobId || renderJob) return;
-    void followRender(state.activeRenderJobId);
-  }, [hydrated]);
   useEffect(() => {
     if (!hydrated || !state.activeStoryJobId || storyJob) return;
     void resumeStoryJob(state.activeStoryJobId);
@@ -403,6 +404,10 @@ export function useMotionStudio() {
   );
   const parseSource = useCallback(
     async (text: string) => {
+      if (text !== stateRef.current.rawText) {
+        setRenderJob(null);
+        patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY, lastRenderJobId: null });
+      }
       patch({ rawText: text });
       if (_.trim(text).split(MP.WHITESPACE).length < 3 && !MP.URL.test(text)) return patch({ source: null });
       try {
@@ -556,7 +561,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiReview, state.drawingMode, state.styleReferences, state.characterMotion, runStoryJob, patch],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.aiReview, state.drawingMode, state.styleReferences, state.characterMotion, runStoryJob, patch],
   );
   scenesRef.current = buildScenes;
   const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
@@ -671,13 +676,15 @@ export function useMotionStudio() {
       setChecking(false);
     }
   }, [compiled, compile]);
+  const recordRenderResult = useCallback((result: MotionResultItem) => setResults((items) => [result, ..._.reject(items, { id: result.id })]), []);
   const followRender = useCallback(
     async (jobId: string) => {
+      const sourceText = stateRef.current.rawText;
       try {
         const final = await pollMotionJob<MotionJobState>(
           motionJobStatusUrl(API_ROUTES.MOTION_VIDEO_STATUS, jobId),
           (j) => {
-            if (!mounted.current) return;
+            if (!mounted.current || stateRef.current.rawText !== sourceText) return;
             setRenderJob(j);
             trackLog(j.id, MOTION_STORY_CONFIG.RENDER_LOG_KIND, j.log);
           },
@@ -686,22 +693,37 @@ export function useMotionStudio() {
           MOTION_VIDEO_CONSTANTS.POLL_INTERVAL_MS,
         );
         if (!mounted.current) return;
-        patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY });
+        if (stateRef.current.rawText !== sourceText) {
+          if (final.result) recordRenderResult(final.result);
+          return;
+        }
+        patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY, ...(final.status === MotionJobStatus.COMPLETED && final.result ? { lastRenderJobId: final.result.id } : {}) });
         logMotionActivity(MOTION_ACTIVITY_PREFIX.render, final.status === MotionJobStatus.COMPLETED ? WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.done : final.status === MotionJobStatus.CANCELLED ? WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.stop : WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail, final.error || final.result?.fileName);
         if (final.status === MotionJobStatus.COMPLETED && final.result) {
-          setResults((rs) => [final.result!, ..._.reject(rs, { id: final.result!.id })]);
+          recordRenderResult(final.result);
           const series = stateRef.current.series;
           if (series) patch({ series: { ...series, done: [..._.reject(series.done, { index: series.index }), { index: series.index, title: stateRef.current.analysis?.title || final.result.title, videoUrl: final.result.videoUrl, fileName: final.result.fileName }] } });
           toast.success(final.result.fileName);
         } else if (final.status === MotionJobStatus.ERROR) toast.error(final.error);
         else if (final.status === MotionJobStatus.CANCELLED) toast.info(STOPPED_TOAST);
       } catch (error) {
-        if (mounted.current) logMotionActivity(MOTION_ACTIVITY_PREFIX.render, WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail, getMotionErrorMessage(error));
-        if (mounted.current) patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY });
+        if (mounted.current && stateRef.current.rawText === sourceText) {
+          logMotionActivity(MOTION_ACTIVITY_PREFIX.render, WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.fail, getMotionErrorMessage(error));
+          patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY });
+        }
       }
     },
-    [patch],
+    [patch, recordRenderResult],
   );
+  const restoredRenderJob = useRef<string>();
+  useEffect(() => {
+    if (!hydrated || renderJob) return;
+    const partFile = state.series?.done.find((part) => part.index === state.series?.index)?.fileName;
+    const jobId = state.activeRenderJobId || state.lastRenderJobId || (state.lastRenderJobId === undefined && partFile ? results.find((result) => result.fileName === partFile)?.id : undefined);
+    if (!jobId || restoredRenderJob.current === jobId) return;
+    restoredRenderJob.current = jobId;
+    void followRender(jobId);
+  }, [hydrated, state.activeRenderJobId, state.lastRenderJobId, state.series, results, renderJob, followRender]);
   const render = useCallback(
     async () =>
       inFlow(async () => {
@@ -813,18 +835,25 @@ export function useMotionStudio() {
   const cancelRender = useCallback(async () => {
     await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: renderJob?.id }).catch(_.noop);
   }, [renderJob]);
-  const deleteResult = useCallback(async (id: string): Promise<number> => {
-    const r = await loggedMotionAction(MOTION_ACTIVITY_PREFIX.delete, () => motionRequest<{ freedBytes?: number }>(MOTION_TEMPLATE_SYMBOL_4(String(API_ROUTES.MOTION_VIDEO_RESULTS), String(id)), undefined, MOTION_TEXT_DELETE));
-    setResults((rs) => _.reject(rs, { id }));
-    return _.toNumber(r.freedBytes) || 0;
-  }, []);
+  const deleteResult = useCallback(
+    async (id: string): Promise<number> => {
+      const r = await loggedMotionAction(MOTION_ACTIVITY_PREFIX.delete, () => motionRequest<{ freedBytes?: number }>(MOTION_TEMPLATE_SYMBOL_4(String(API_ROUTES.MOTION_VIDEO_RESULTS), String(id)), undefined, MOTION_TEXT_DELETE));
+      setResults((rs) => _.reject(rs, { id }));
+      setRenderJob((job) => (job?.result?.id === id ? null : job));
+      if (stateRef.current.lastRenderJobId === id) patch({ lastRenderJobId: null });
+      return _.toNumber(r.freedBytes) || 0;
+    },
+    [patch],
+  );
   const scanJunk = useCallback(async (): Promise<StorageJunkReport> => (await motionRequest<{ report: StorageJunkReport }>(API_ROUTES.MOTION_STORAGE_JUNK)).report, []);
   const cleanJunk = useCallback(async (groups: string[]): Promise<StorageCleanResult> => loggedMotionAction(MOTION_ACTIVITY_PREFIX.clean, () => motionRequest<StorageCleanResult>(API_ROUTES.MOTION_STORAGE_CLEAN, { groups })), []);
   const deleteAllResults = useCallback(async (): Promise<number> => {
     const r = await loggedMotionAction(MOTION_ACTIVITY_PREFIX.delete, () => motionRequest<{ freedBytes?: number }>(API_ROUTES.MOTION_VIDEO_RESULTS, undefined, MOTION_TEXT_DELETE));
     setResults([]);
+    setRenderJob((job) => (job?.status === MotionJobStatus.COMPLETED ? null : job));
+    patch({ lastRenderJobId: null });
     return _.toNumber(r.freedBytes) || 0;
-  }, []);
+  }, [patch]);
   const saveResult = useCallback(async (item: MotionResultItem) => {
     try {
       const pick = await motionRequest<{ cancelled?: boolean; token?: string }>(API_ROUTES.MOTION_VIDEO_SELECT_SAVE_DESTINATION, { suggestedName: item.fileName });
